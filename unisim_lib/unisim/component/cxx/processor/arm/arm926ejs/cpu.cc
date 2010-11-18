@@ -1602,6 +1602,111 @@ DrainWriteBuffer()
 		<< EndDebugWarning;
 }
 
+/** Clean DCache single entry using MVA
+ *
+ * Perform a clean of a single entry in the DCache using the given
+ *   address in MVA format.
+ *
+ * @param mva the address to clean
+ * @param invalidate true if the line needs to be also invalidated
+ */
+void 
+CPU::
+CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
+{
+	uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
+	uint32_t pa = mva;
+
+	if ( unlikely(verbose & 0x02) )
+	{
+		logger << DebugInfo
+			<< "Cleaning DCache single entry with MVA:" << std::endl
+			<< " - mva               = 0x" << std::hex << init_mva << std::endl
+			<< " - cache aligned mva = 0x" << mva << std::dec
+			<< EndDebugInfo;
+	}
+
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+	{
+		uint32_t cache_tag = dcache.GetTag(mva);
+		uint32_t cache_set = dcache.GetSet(mva);
+		uint32_t cache_way;
+		bool cache_hit = false;
+		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
+		{
+			if ( dcache.GetValid(cache_set, cache_way) )
+			{
+				cache_hit = true;
+			}
+			else
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugInfo
+						<< "Way found but not valid (way = "
+						<< cache_way << ")"
+						<< EndDebugInfo;
+		}
+
+		if ( likely(cache_hit) )
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "Cache hit (set = "
+					<< cache_set << ", way = "
+					<< cache_way << ")"
+					<< EndDebugInfo;
+			uint8_t cache_dirty = dcache.GetDirty(cache_set, cache_way);
+
+			if ( cache_dirty != 0 )
+			{
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugInfo
+						<< "Line is dirty, performing a cleaning"
+						<< EndDebugInfo;
+				uint8_t *data = 0;
+				// translate the address
+				if ( likely(cp15.IsMMUEnabled()) )
+					TranslateMVA(mva, pa);
+				dcache.GetData(cache_set, cache_way, &data);
+				if ( unlikely(verbose & 0x02) )
+				{
+					logger << DebugInfo
+						<< "Cleaning cache line:" << std::endl
+						<< " - mva = 0x" << std::hex << mva << std::endl
+						<< " - pa  = 0x" << pa << std::endl
+						<< " - tag = 0x" << cache_tag << std::endl
+						<< " - set = " << std::dec << cache_set << std::endl
+						<< " - way = " << cache_way << std::endl
+						<< " - data =" << std::hex;
+					for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
+						logger << " " << (unsigned int)data[i];
+					logger << std::dec
+						<< EndDebugInfo;
+				}
+				PrWrite(pa, data, dcache.LINE_SIZE);
+				dcache.SetDirty(cache_set, cache_way, 0);
+				if ( invalidate )
+					dcache.SetValid(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugInfo
+						<< "Line is already cleaned, doing nothing"
+						<< EndDebugInfo;
+			}
+		}
+		else
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "Cache miss (set = "
+					<< cache_set
+					<< ")"
+					<< EndDebugInfo;
+		}
+	}
+}
+
 /** Invalidate the caches.
  * Perform a complete invalidation of the instruction cache and/or the 
  *   data cache.

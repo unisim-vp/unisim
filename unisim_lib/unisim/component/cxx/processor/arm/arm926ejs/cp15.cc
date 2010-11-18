@@ -437,6 +437,7 @@ WriteRegister(uint8_t opcode1,
 #endif // CP15__DEBUG
 	if ( likely(opcode1 == 0) )
 	{
+		
 		// control registers
 		if ( crn == 1 )
 		{
@@ -468,6 +469,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		
 		// translation table base register
 		else if ( crn == 2 )
 		{
@@ -494,6 +496,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		
 		// domain access control
 		else if ( crn == 3 )
 		{
@@ -511,6 +514,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		
 		// cache management functions
 		else if ( crn == 7 )
 		{
@@ -526,54 +530,102 @@ WriteRegister(uint8_t opcode1,
 					handled = true;
 				}
 			}
-			if ( crm == 7 )
+		
+			else if ( crm == 7 )
 			{
-				switch ( opcode2 )
+				if ( opcode2 == 0 )
 				{
-					case 0:
 #ifdef CP15__DEBUG
 						std::cerr << "CP15: Invalidating instruction and data"
 							<< " caches" << std::endl;
 #endif // CP15__DEBUG
 						cpu->InvalidateCache(true, true);
 						handled = true;
-						break;
 				}
 			}
+			
 			else if ( crm == 10 )
 			{
-				switch ( opcode2 )
+				if ( opcode2 == 1 )
 				{
-					case 4:
 #ifdef CP15__DEBUG
-						std::cerr << "CP15: Draining write buffer"
-							<< std::endl;
+					std::cerr << "CP15: Clean DCache single entry (MVA)"
+						<< std::endl;
 #endif // CP15__DEBUG
-						cpu->DrainWriteBuffer();
-						handled = true;
-						break;
+					cpu->CleanDCacheSingleEntryWithMVA(value, false);
+					handled = true;
+				}
+
+				else if ( opcode2 == 4 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Draining write buffer"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->DrainWriteBuffer();
+					handled = true;
+				}
+			}
+
+			else if ( crm == 14 )
+			{
+				if ( opcode2 == 1 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Clean and invalidate DCache"
+						<< " single entry (MVA)"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->CleanDCacheSingleEntryWithMVA(value, true);
+					handled = true;
 				}
 			}
 		}
+
 		// TLB functions
 		else if ( crn == 8 )
 		{
 			if ( crm == 7 )
 			{
-				switch ( opcode2 )
+				if ( opcode2 == 0 )
 				{
-					case 0:
 #ifdef CP15__DEBUG
-						std::cerr << "CP15: Invalidating instruction and data"
-							<< " TLBs" << std::endl;
+					std::cerr << "CP15: Invalidating set-associative TLB"
+						<< std::endl;
 #endif // CP15__DEBUG
-						cpu->InvalidateTLB();
-						handled = true;
-						break;
+					cpu->InvalidateTLB();
+					handled = true;
+				}
+			}
+
+			else if ( crm == 5 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15_DEBUG
+					std::cerr << "CP15: Invalidating set-associative TLB"
+						<< std::endl;
+#endif // CP15_DEBUG
+					cpu->InvalidateTLB();
+					handled = true;
+				}
+			}
+
+			else if ( crm == 6 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15_DEBUG
+					std::cerr << "CP15: Invalidating set-associative TLB"
+						<< std::endl;
+#endif // CP15_DEBUG
+					cpu->InvalidateTLB();
+					handled = true;
 				}
 			}
 		}
 	}
+
 	if ( unlikely(!handled) )
 	{
 		assert("CP15 write register not handled" == 0);
