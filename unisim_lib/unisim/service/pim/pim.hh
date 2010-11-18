@@ -85,6 +85,7 @@ private:
 	char* fHost;
 
 	vector<component_t*> pim_model;
+	vector<VariableBase*> simulator_variables;
 
 	string				filename;
 	Parameter<string>	param_filename;
@@ -97,22 +98,9 @@ private:
 	xmlChar *ConvertInput(const char *in, const char *encoding);
 	void SavePimToXml(vector<component_t*> &pim, const string filename);
 
-	SocketServerThread *serverSockfd;
-	SocketClientThread *clientSockfd;
-	GenericThread *target;
+	SocketServerThread *socketfd;
+//	SocketClientThread *socketfd;
 
-};
-
-class TargetThread : public GenericThread {
-public:
-	TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
-
-	virtual void Run();
-
-private:
-	char* name;
-	vector<VariableBase*> *fVariables;
-	SocketThread *sockfd;
 };
 
 

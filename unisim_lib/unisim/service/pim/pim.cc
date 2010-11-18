@@ -41,10 +41,8 @@ PIM::PIM(const char *name, Simulator *simulator, uint16_t port, char* host, Obje
 }
 
 PIM::~PIM() {
-	if (target) { delete target; target = NULL; }
 
-	if (serverSockfd) { delete serverSockfd; serverSockfd = NULL; }
-	if (clientSockfd) { delete clientSockfd; clientSockfd = NULL; }
+	if (socketfd) { delete socketfd; socketfd = NULL; }
 
 	for (int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
@@ -63,6 +61,7 @@ void PIM::GetExportedVariables(vector<component_t*> &pim) {
 
 		if (!((VariableBase *) *it)->IsVisible()) continue;
 
+		simulator_variables.push_back((VariableBase *) *it);
 		string var_name(((VariableBase *) *it)->GetName());
 		size_t pos = var_name.find_first_of('.');
 		string component_name = var_name.substr(0, pos);
@@ -101,66 +100,33 @@ bool PIM::Setup() {
 
 }
 
-void PIM::getAllVariables(vector<VariableBase*> *variables) {
-
-	for (int i=0; i < pim_model.size(); i++) {
-		for (int j=0; j < pim_model[i]->pins.size(); j++) {
-			variables->push_back(pim_model[i]->pins[j]);
-		}
-	}
-
-}
-
 void PIM::Run() {
 
 	// Open Socket Stream
-	serverSockfd = new SocketServerThread(fHost, fPort);
-//	clientSockfd = new SocketClientThread(fHost, fPort);
+	socketfd = new SocketServerThread(fHost, fPort);
+//	socketfd = new SocketClientThread(fHost, fPort);
 
-	serverSockfd->start();
-//	clientSockfd->start();
+	socketfd->start();
 
-	serverSockfd->join();
-//	clientSockfd->join();
+	socketfd->join();
 
 	cerr << "PIM connection success " << std::endl;
 
-	vector<VariableBase*> variables;
-	getAllVariables(&variables);
-
-	// Start Simulation <-> ToolBox communication
-//	target = new TargetThread("Target", &variables, clientSockfd);
-	target = new TargetThread("Target", &variables, serverSockfd);
-
-	target->start();
-
-	target->join();
-
-}
-
-TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
-		sockfd(fd),
-		name(_name),
-		fVariables(variables)
-{
-
-}
-
-void TargetThread::Run(){
-
-	cerr << "PIM::TargetThread start RUN " << std::endl;
-
 	while (!isTerminated()) {
 
-		char *buffer = sockfd->receive();
+		char *buffer = socketfd->receive();
 
 		cerr << "PIM-Target receive " << buffer << std::endl;
 
 		if (!isTerminated()) {
 			string buf_str(buffer);
 
+// qRcmd,cmd:var_name:value
+			int index = buf_str.find(',');
+			string qRcmd = buf_str.substr(0, index);
+			buf_str = buf_str.substr(index+1);
 
-			int index = buf_str.find(':');
+			index = buf_str.find(':');
 			string cmd = buf_str.substr(0, index);
 			buf_str = buf_str.substr(index+1);
 
@@ -170,20 +136,20 @@ void TargetThread::Run(){
 				string name = buf_str.substr(0, index);
 				buf_str = buf_str.substr(index+1);
 
-				for (int i=0; i < fVariables->size(); i++) {
-					if (name.compare((*fVariables)[i]->GetName()) == 0) {
+				for (int i=0; i < simulator_variables.size(); i++) {
+					if (name.compare(simulator_variables[i]->GetName()) == 0) {
 
 						std::ostringstream os;
-						os << (*fVariables)[i]->GetName() << ":";
+						os << simulator_variables[i]->GetName() << ":";
 
-						double val = *((*fVariables)[i]);
+						double val = *(simulator_variables[i]);
 						os << stringify(val);
 
 						std::string str = os.str();
 
 						const char *buffer = str.c_str();
 
-						sockfd->send(buffer);
+						socketfd->send(buffer);
 
 						cout << name << " send: " << buffer << endl;
 
@@ -200,10 +166,10 @@ void TargetThread::Run(){
 
 				string value = buf_str.substr(index+1);
 
-				for (int i=0; i < fVariables->size(); i++) {
-					if (name.compare((*fVariables)[i]->GetName()) == 0) {
+				for (int i=0; i < simulator_variables.size(); i++) {
+					if (name.compare(simulator_variables[i]->GetName()) == 0) {
 
-						*((*fVariables)[i]) = convertTo<double>(value);
+						*(simulator_variables[i]) = convertTo<double>(value);
 						break;
 					}
 				}
@@ -225,88 +191,16 @@ void TargetThread::Run(){
 
 // *************************************************************
 
-void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
+void PIM::GeneratePimFile() {
 
-	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
-		cerr << "Error: Can't parse " << componentNode->name << endl;
-		return;
-	}
+	stringstream pimfile;
 
-	std::list<VariableBase *> lst;
+	pimfile << filename;
 
-	fSimulator->GetRegisters(lst);
+	GetExportedVariables(pim_model);
 
-	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
+	SavePimToXml(pim_model, pimfile.str());
 
-	xmlNodePtr 	componentChild = componentNode->xmlChildrenNode;
-	while (componentChild != NULL) {
-		if (!xmlStrcmp(componentChild->name, (const xmlChar *)"pin")) {
-
-			string onePinName = string((char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1));
-
-			onePinName = component->name + "." + onePinName;
-
-			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
-				if (strcmp(((VariableBase *) *it)->GetName(), onePinName.c_str()) == 0) {
-					component->pins.push_back((VariableBase *) *it);
-
-					break;
-				}
-			}
-
-
-		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"description"))) {
-			component->description = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
-		}
-
-		componentChild = componentChild->next;
-	}
-
-	return;
-}
-
-int PIM::LoadPimFromXml(vector<component_t*> &pim, const string filename) {
-
-	const char *path = "//component";
-
-	xmlDocPtr doc = NULL;
-	xmlXPathContextPtr context = NULL;
-	xmlXPathObjectPtr xmlobject;
-	int result = 0;
-
-	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
-	if (!doc)
-	{
-		cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << endl;
-		return (0);
-	}
-
-	xmlXPathInit ();
-	context = xmlXPathNewContext (doc);
-
-	xmlobject = xmlXPathEval ((xmlChar *) path, context);
-	xmlXPathFreeContext (context);
-	if ((xmlobject->type == XPATH_NODESET) && (xmlobject->nodesetval))
-	{
-		if (xmlobject->nodesetval->nodeNr)
-		{
-			result = xmlobject->nodesetval->nodeNr;
-
-			xmlNodePtr node;
-			component_t *component;
-			for (int i=0; i<xmlobject->nodesetval->nodeNr; i++) {
-				component = new component_t();
-				node = xmlobject->nodesetval->nodeTab[i];
-				ParseComponent (doc, node, component);
-				pim_model.push_back(component);
-			}
-		}
-	}
-
-	xmlXPathFreeObject (xmlobject);
-	xmlFreeDoc(doc);
-
-	return (result);
 }
 
 /**
@@ -540,17 +434,8 @@ void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
     xmlFreeDoc(doc);
 }
 
-void PIM::GeneratePimFile() {
 
-	stringstream pimfile;
-
-	pimfile << filename;
-
-	GetExportedVariables(pim_model);
-
-	SavePimToXml(pim_model, pimfile.str());
-
-}
+// **************************************************************
 
 void PIM::LoadPimFile() {
 
@@ -562,7 +447,89 @@ void PIM::LoadPimFile() {
 
 }
 
-// *************************************************************
+void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
+
+	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
+		cerr << "Error: Can't parse " << componentNode->name << endl;
+		return;
+	}
+
+	std::list<VariableBase *> lst;
+
+	fSimulator->GetRegisters(lst);
+
+	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
+
+	xmlNodePtr 	componentChild = componentNode->xmlChildrenNode;
+	while (componentChild != NULL) {
+		if (!xmlStrcmp(componentChild->name, (const xmlChar *)"pin")) {
+
+			string onePinName = string((char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1));
+
+			onePinName = component->name + "." + onePinName;
+
+			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+				if (strcmp(((VariableBase *) *it)->GetName(), onePinName.c_str()) == 0) {
+					component->pins.push_back((VariableBase *) *it);
+
+					break;
+				}
+			}
+
+
+		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"description"))) {
+			component->description = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
+		}
+
+		componentChild = componentChild->next;
+	}
+
+	return;
+}
+
+int PIM::LoadPimFromXml(vector<component_t*> &pim, const string filename) {
+
+	const char *path = "//component";
+
+	xmlDocPtr doc = NULL;
+	xmlXPathContextPtr context = NULL;
+	xmlXPathObjectPtr xmlobject;
+	int result = 0;
+
+	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
+	if (!doc)
+	{
+		cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << endl;
+		return (0);
+	}
+
+	xmlXPathInit ();
+	context = xmlXPathNewContext (doc);
+
+	xmlobject = xmlXPathEval ((xmlChar *) path, context);
+	xmlXPathFreeContext (context);
+	if ((xmlobject->type == XPATH_NODESET) && (xmlobject->nodesetval))
+	{
+		if (xmlobject->nodesetval->nodeNr)
+		{
+			result = xmlobject->nodesetval->nodeNr;
+
+			xmlNodePtr node;
+			component_t *component;
+			for (int i=0; i<xmlobject->nodesetval->nodeNr; i++) {
+				component = new component_t();
+				node = xmlobject->nodesetval->nodeTab[i];
+				ParseComponent (doc, node, component);
+				pim_model.push_back(component);
+			}
+		}
+	}
+
+	xmlXPathFreeObject (xmlobject);
+	xmlFreeDoc(doc);
+
+	return (result);
+}
 
 
 } // end pim
