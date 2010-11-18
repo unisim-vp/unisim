@@ -701,6 +701,8 @@ ReadMemory(uint64_t addr,
 		// non intrusive access with linux support
 		while (size != 0 && status)
 		{
+			mva = va + index;
+			pa = mva;
 			if ( likely(cp15.IsMMUEnabled()) )
 				status = NonIntrusiveTranslateVA(true, 
 						va + index, mva, pa, cacheable, bufferable);
@@ -721,10 +723,10 @@ ReadMemory(uint64_t addr,
 							dcache.GetIndex(mva);
 						uint32_t data_read_size =
 							dcache.GetDataCopy(cache_set,
-								cache_way, cache_index, 1,
+								cache_way, cache_index, size,
 								&(((uint8_t *)buffer)[index]));
-						index++;
-						size--;
+						index += data_read_size;
+						size -= data_read_size;
 						cache_hit = true;
 					}
 				}
@@ -732,7 +734,7 @@ ReadMemory(uint64_t addr,
 			if ( status && !cache_hit )
 			{
 				status = status &&
-					ExternalReadMemory(pa + index,
+					ExternalReadMemory(pa,
 									   &(((uint8_t *)buffer)[index]),
 									   1);
 				if ( status )
@@ -798,6 +800,8 @@ WriteMemory(uint64_t addr,
 		// non intrusive access with linux support
 		while ( size != 0 && status )
 		{
+			mva = va + index;
+			pa = mva;
 			if ( likely(cp15.IsMMUEnabled()) )
 				status = NonIntrusiveTranslateVA(false,
 						va + index, mva, pa, cacheable, bufferable);
@@ -813,11 +817,12 @@ WriteMemory(uint64_t addr,
 					if ( dcache.GetValid(cache_set, cache_way) )
 					{
 						uint32_t cache_index = dcache.GetIndex(mva);
-						dcache.SetData(cache_set, cache_way, cache_index, 
-									1, &(((uint8_t *)buffer)[index]));
+						uint32_t write_size =
+							dcache.SetData(cache_set, cache_way, cache_index, 
+									size, &(((uint8_t *)buffer)[index]));
 						dcache.SetDirty(cache_set, cache_way, 1);
-						index ++;
-						size --;
+						index += write_size;
+						size -= write_size;
 						cache_hit = true;
 					}
 				}
