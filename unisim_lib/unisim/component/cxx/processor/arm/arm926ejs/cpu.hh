@@ -749,6 +749,17 @@ protected:
 	/** Performs the load/stores present in the queue of memory operations.
 	 */
 	void PerformLoadStoreAccesses();
+	/** Check access permission and domain bits.
+	 *
+	 * @param is_read true if the access is a read
+	 * @param ap the access permission bits
+	 * @param domain the domain being used
+	 * 
+	 * @return true if correct, false otherwise
+	 */
+	bool CheckAccessPermission(bool is_read,
+			uint32_t ap,
+			uint32_t domain);
 	/** Translate address from MVA to physical address.
 	 *
 	 * @param mva the generated modified virtual address

@@ -1846,6 +1846,96 @@ UnpredictableInsnBehaviour()
 		<< EndDebugWarning;
 }
 
+/** Check access permission and domain bits.
+ *
+ * @param is_read true if the access is a read
+ * @param ap the access permission bits
+ * @param domain the domain being used
+ * 
+ * @return true if correct, false otherwise
+ */
+bool 
+CPU::
+CheckAccessPermission(bool is_read,
+		uint32_t ap,
+		uint32_t domain)
+{
+	if ( ap == 0x00UL )
+	{
+		return false;
+	}
+
+	else if ( ap == 0x01UL )
+	{
+		uint32_t mode = GetCPSR_Mode();
+		if ( mode == USER_MODE )
+		{
+			logger << DebugError
+				<< "Accessing privileged data under USER mode: "
+				<< std::endl
+				<< "- is_read = " << is_read << std::endl
+				<< "- ap  = " << ap << std::endl
+				<< "- domain = " << domain << std::endl
+				<< EndDebugError;
+			return false;
+		}
+		else
+		{
+			if ( verbose & 0x010 )
+				logger << DebugInfo
+					<< "Accessing privileged data under privileged mode."
+					<< EndDebugInfo;
+		}
+	}
+
+	else if ( ap == 0x02UL )
+	{
+		uint32_t mode = GetCPSR_Mode();
+		if ( mode == USER_MODE )
+		{
+			if ( !is_read )
+			{
+				logger << DebugError
+					<< "Accessing privileged data under USER mode: "
+					<< std::endl
+					<< "- is_read = " << is_read << std::endl
+					<< "- ap  = " << ap << std::endl
+					<< "- domain = " << domain << std::endl
+					<< EndDebugError;
+				return false;
+			}
+			else
+			{
+				if ( verbose & 0x010 )
+					logger << DebugInfo
+						<< "Accessing privileged data under user mode"
+						<< " (read-only)"
+						<< EndDebugInfo;
+			}
+		}
+		else
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< "Accessing privileged data under privileged mode."
+					<< EndDebugInfo;
+			}
+		}
+	}	
+
+	else if ( ap == 0x03UL )
+	{
+		if ( verbose & 0x010 )
+			logger << DebugInfo
+				<< "Accessing non protected data."
+				<< EndDebugInfo;
+	}
+
+	// all the checks succeded
+	return true;
+}
+
 /** Translate address from MVA to physical address.
  *
  * @param mva the generated modified virtual address
@@ -1915,17 +2005,6 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 	}
 
 	// ok, we have a valid entry check if it needs to be added to the main tlb
-//	logger << DebugInfo
-//		<< "Correct address translation for mva 0x"
-//		<< std:: hex << mva << std::dec
-//		<< " was found on the first level" << std::endl
-//		<< "- on memory = " << !found_first_level << std::endl
-//		<< "- translation = 0x"
-//		<< std::hex << first_level << std::dec << std::endl
-//		<< "- ttb = 0x"
-//		<< std::hex << ttb_addr << " (0x"
-//		<< cp15.GetTTB() << std::dec << ")"
-//		<< EndDebugInfo;
 	if ( !found_first_level)
 	{
 		// this is a correct entry fill the main tlb with it
@@ -1954,16 +2033,6 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 		uint32_t domain = (first_level >> 5) & 0x0fUL;
 		uint32_t c = (first_level >> 3) & 0x01UL;
 		uint32_t b = (first_level >> 2) & 0x01UL;
-//		logger << DebugInfo
-//			<< "MVA address translated using a section descriptor:" << std::endl
-//			<< "- mva = 0x" << mva << std::endl
-//			<< "- pa  = 0x" << pa << std::dec << std::endl
-//			<< "- ap  = " << ap << std::endl
-//			<< "- domain = " << domain << std::endl
-//			<< "- c   = " << c << std::endl
-//			<< "- b   = " << b
-//			<< EndDebugInfo;
-		// no need to check the access permissions
 	}
 	else
 	{
@@ -2020,12 +2089,10 @@ NonIntrusiveTranslateVA(bool is_read,
 	uint32_t way = 0;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
-		if ( ltlb.GetValid(way) )
-		{
-			first_level = ltlb.GetData(way);
-			found_first_level = true;
-		}
+		first_level = ltlb.GetData(way);
+		found_first_level = true;
 	}
+
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x020 )
@@ -2040,13 +2107,11 @@ NonIntrusiveTranslateVA(bool is_read,
 		uint32_t set = tlb.GetSet(ttb_addr);
 		if ( tlb.GetWay(tag, set, &way) )
 		{
-			if ( tlb.GetValid(set, way) )
-			{
-				first_level = tlb.GetData(set, way);
-				found_first_level = true;
-			}
+			first_level = tlb.GetData(set, way);
+			found_first_level = true;
 		}
 	}
+
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x020 )
@@ -2063,6 +2128,7 @@ NonIntrusiveTranslateVA(bool is_read,
 		memcpy(&first_level, first_level_data, 4);
 		first_level = LittleEndian2Host(first_level);
 	}
+
 	// NOTE: we let the found_first_level to false to signal that the
 	//   entry was found in the memory table
 	// now we have to check that the first level entry obtained is valid
@@ -2138,12 +2204,12 @@ TranslateVA(bool is_read,
 		cp15.GetTTB() | ((mva & 0xfff00000UL) >> 18);
 	if ( verbose & 0x010 )
 	{
-		logger << DebugWarning
+		logger << DebugInfo
 			<< "va = 0x" << std::hex << va 
 			<< std::endl
 			<< " - mva = 0x" << mva << std::endl
 			<< " - ttb = 0x" << cp15.GetTTB() << std::dec
-			<< EndDebugWarning;
+			<< EndDebugInfo;
 	}
 	// Get the first level descriptor
 	// Two TLB are available, the lockdown TLB and the regular TLB
@@ -2156,19 +2222,16 @@ TranslateVA(bool is_read,
 	uint32_t way = 0;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
-		if ( ltlb.GetValid(way) )
-		{
-			first_level = ltlb.GetData(way);
-			found_first_level = true;
-		}
+		first_level = ltlb.GetData(way);
+		found_first_level = true;
 	}
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x010 )
 		{
-			logger << DebugWarning
-				<< " - not found in the lookdown TLB"
-				<< EndDebugWarning;
+			logger << DebugInfo
+				<< " - not found in the lockdown TLB"
+				<< EndDebugInfo;
 		}
 		// the entry was not found in the lockdown tlb
 		// check the main tlb
@@ -2176,20 +2239,17 @@ TranslateVA(bool is_read,
 		uint32_t set = tlb.GetSet(ttb_addr);
 		if ( tlb.GetWay(tag, set, &way) )
 		{
-			if ( tlb.GetValid(set, way) )
-			{
-				first_level = tlb.GetData(set, way);
-				found_first_level = true;
-			}
+			first_level = tlb.GetData(set, way);
+			found_first_level = true;
 		}
 	}
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x010 )
 		{
-			logger << DebugWarning
+			logger << DebugInfo
 				<< " - not found in the main TLB"
-				<< EndDebugWarning;
+				<< EndDebugInfo;
 		}
 		uint8_t first_level_data[4];
 		// oops, we are forced to perform a page walk
@@ -2200,7 +2260,7 @@ TranslateVA(bool is_read,
 	// NOTE: we let the found_first_level to false to signal that the
 	//   entry was found in the memory table
 	// now we have to check that the first level entry obtained is valid
-	if ( (first_level & 0x03) == 0 )
+	if ( (first_level & 0x03UL) == 0 )
 	{
 		// this is an invalid entry, provoke a data abort
 		logger << DebugError
@@ -2213,44 +2273,317 @@ TranslateVA(bool is_read,
 	}
 
 	// ok, we have a valid entry check if it needs to be added to the main tlb
-//	logger << DebugInfo
-//		<< "Correct address translation for 0x"
-//		<< std:: hex << va << std::dec
-//		<< " was found on the first level" << std::endl
-//		<< "- on memory = " << !found_first_level << std::endl
-//		<< "- translation = 0x"
-//		<< std::hex << first_level << std::dec << std::endl
-//		<< "- ttb = 0x"
-//		<< std::hex << ttb_addr << " (0x"
-//		<< cp15.GetTTB() << std::dec << ")"
-//		<< EndDebugInfo;
 	if ( !found_first_level)
 	{
 		if ( verbose & 0x010 )
 		{
-			logger << DebugWarning
+			logger << DebugInfo
 				<< " - filling main TLB with 0x" << std::hex
 				<< first_level << std::dec
-				<< EndDebugWarning;
+				<< EndDebugInfo;
 		}
-		// this is a correct entry fill the main tlb with it
 		uint32_t tag = tlb.GetTag(ttb_addr);
 		uint32_t set = tlb.GetSet(ttb_addr);
 		uint32_t way = tlb.GetNewWay(set);
 		tlb.SetEntry(tag, set, way, first_level, 1);
-//		logger << DebugInfo
-//			<< "New entry created with:" << std::endl
-//			<< "- tag = 0x"
-//			<< std::hex << tag << std::dec << std::endl
-//			<< "- set = " << set << std::endl
-//			<< "- way = " << way << std::endl
-//			<< "- data = 0x"
-//			<< std::hex << first_level << std::dec
-//			<< EndDebugInfo;
 	}
 
 	// check wether is a section page or a second access is required
-	if ( first_level & 0x02UL )
+	if ( (first_level & 0x03UL) == 0 )
+	{
+		// fault page
+		assert("Translation fault (TODO: handle first level descriptor fault)"
+				== 0);
+	}
+
+	else if ( (first_level & 0x03UL) == 0x01UL ) // Coarse page
+	{
+		// a second level descriptor fetch is initiated
+		// build the address of the 2nd level descriptor
+		uint32_t coarse_addr =
+			(first_level & 0xfffffc00UL) |
+			((mva & 0x000ff000UL) >> 10);
+		if ( verbose & 0x010)
+		{
+			logger << DebugInfo
+				<< " - first level entry   = 0x" << std::hex
+				<< first_level << std::endl
+				<< " - mva                 = 0x" << mva << std::endl
+				<< " - coarse page address = 0x"
+				<< coarse_addr << std::dec
+				<< EndDebugInfo;
+		}
+		uint32_t second_way = 0;
+		if ( ltlb.GetWay(coarse_addr, &second_way) )
+		{
+			second_level = ltlb.GetData(second_way);
+			found_second_level = true;
+		}
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< " - not found in the lockdown TLB"
+					<< EndDebugInfo;
+			}
+			// the entry was not found in the lockdown tlb
+			// check the main tlb
+			uint32_t second_tag = tlb.GetTag(coarse_addr);
+			uint32_t second_set = tlb.GetSet(coarse_addr);
+			if ( tlb.GetWay(second_tag, second_set, &second_way) )
+			{
+				second_level = tlb.GetData(second_set, second_way);
+				found_second_level = true;
+			}
+		}
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< " - not found in the main TLB"
+					<< EndDebugInfo;
+			}
+			uint8_t second_level_data[4];
+			// oops, we are forced to perform a page walk
+			PrRead(coarse_addr, second_level_data, 4);
+			memcpy(&second_level, second_level_data, 4);
+			second_level = LittleEndian2Host(second_level);
+		}
+		// NOTE: we let the found_second_level to false to signal that the
+		//   entry was found in the memory table
+		// now we can check that the second level entry obtained is valid
+		if ( (second_level & 0x03UL) == 0 )
+		{
+			// this is an invalid entry, provoke a data abort
+			logger << DebugError
+				<< "Address translation for 0x"
+				<< std::hex << va << std::dec
+				<< " was not found" << std::endl
+				<< " - mva = 0x" << std::hex << mva << std::endl
+				<< " - first_level = 0x" << first_level << std::endl
+				<< " - coarse page address = 0x" << coarse_addr << std::endl
+				<< " - second_level = 0x" << second_level
+				<< EndDebugError;
+			assert("Translation fault (TODO: data abort)" == 0);
+			return false;
+		}
+
+		// ok, we have a valid entry check if it needs to be added to 
+		//   the main tlb
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< " - filling main TLB with 0x" << std::hex
+					<< second_level << std::dec
+					<< " (second level entry)"
+					<< EndDebugInfo;
+			}
+			uint32_t second_tag = tlb.GetTag(coarse_addr);
+			uint32_t second_set = tlb.GetSet(coarse_addr);
+			uint32_t second_way = tlb.GetNewWay(second_set);
+			tlb.SetEntry(second_tag, second_set, second_way, second_level, 1);
+		}
+
+		// check whether is a large, small or tiny page
+		if ( (second_level & 0x03UL) == 0 )
+		{
+			// fault page
+			assert("Translation fault (TODO: handle second level descriptor"
+					" fault)" == 0);
+		}
+
+		else if ( (second_level & 0x03UL) == 1 )
+		{
+			// large page
+			pa = (second_level & 0xffff0000UL) |
+				(mva & 0x0000ffffUL);
+			uint32_t ap[4];
+			assert("TODO: Large page descriptor" == 0);
+		}
+
+		else if ( (second_level & 0x03UL) == 2 )
+		{
+			// small page
+			pa = (second_level & 0xfffff000UL ) |
+				(mva & 0x00000fffUL);
+			uint32_t ap[4];
+			ap[0] = (second_level >> 4) & 0x03UL;
+			ap[1] = (second_level >> 6) & 0x03UL;
+			ap[2] = (second_level >> 8) & 0x03UL;
+			ap[3] = (second_level >> 10) & 0x03UL;
+			uint32_t ap_used = 0;
+			switch ( ((mva & 0x0c00UL) >> 10) & 0x03UL )
+			{
+				case 0x00UL: ap_used = ap[0]; break;
+				case 0x01UL: ap_used = ap[1]; break;
+				case 0x02UL: ap_used = ap[2]; break;
+				case 0x03UL: ap_used = ap[3]; break;
+			}
+			uint32_t domain = (first_level >> 5) & 0x0fUL;
+			uint32_t c = (second_level >> 3) & 0x01UL;
+			cacheable = c;
+			uint32_t b = (second_level >> 2) & 0x01UL;
+			bufferable = b;
+			if ( verbose & 0x010 )
+				logger << DebugInfo
+					<< "Address translated using a small page descriptor:"
+					<< std::endl
+					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< std::endl
+					<< " - va  = 0x" << va << std::endl
+					<< " - mva = 0x" << mva << std::endl
+					<< " - pa  = 0x" << pa << std::dec << std::endl
+					<< " - ap[0-3] = " << ap[0]
+					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+					<< " - ap  = " << ap_used << std::endl
+					<< " - domain = " << domain << std::endl
+					<< " - c   = " << c << std::endl
+					<< " - b   = " << b
+					<< EndDebugInfo;
+
+			// check access permissions
+			if ( unlikely(!CheckAccessPermission(is_read,
+							ap_used, domain)) )
+			{
+				logger << DebugError
+					<< "Check access permission and domain"
+					<< std::endl
+					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - va  = 0x" << va << std::endl
+					<< " - mva = 0x" << mva << std::endl
+					<< " - pa  = 0x" << pa << std::dec << std::endl
+					<< " - ap[0-3] = " << ap[0]
+					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+					<< " - ap  = " << ap_used << std::endl
+					<< " - domain = " << domain << std::endl
+					<< " - c   = " << c << std::endl
+					<< " - b   = " << b
+					<< EndDebugError;
+				assert("TODO: check access permission and domain" == 0);
+			}
+
+//			if ( ap_used == 0x00UL )
+//			{
+//				logger << DebugError
+//					<< "Check access permission and domain"
+//					<< std::endl
+//					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+//					<< " - va  = 0x" << va << std::endl
+//					<< " - mva = 0x" << mva << std::endl
+//					<< " - pa  = 0x" << pa << std::dec << std::endl
+//					<< " - ap[0-3] = " << ap[0]
+//					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+//					<< " - ap  = " << ap_used << std::endl
+//					<< " - domain = " << domain << std::endl
+//					<< " - c   = " << c << std::endl
+//					<< " - b   = " << b
+//					<< EndDebugError;
+//				assert("TODO: check access permission and domain" == 0);
+//			}
+//
+//			else if ( ap_used == 0x01UL )
+//			{
+//				uint32_t mode = GetCPSR_Mode();
+//				if ( mode == USER_MODE )
+//				{
+//					logger << DebugError
+//						<< "Check access permission and domain"
+//						<< std::endl
+//						<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+//						<< std::endl
+//						<< " - va  = 0x" << va << std::endl
+//						<< " - mva = 0x" << mva << std::endl
+//						<< " - pa  = 0x" << pa << std::dec << std::endl
+//						<< " - ap[0-3] = " << ap[0]
+//						<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+//						<< " - ap  = " << ap_used << std::endl
+//						<< " - domain = " << domain << std::endl
+//						<< " - c   = " << c << std::endl
+//						<< " - b   = " << b
+//						<< EndDebugError;
+//					assert("TODO: raise an error because accessing privileged"
+//							" data under USER mode" == 0);
+//				}
+//				else
+//				{
+//					if ( verbose & 0x010 )
+//					{
+//						logger << DebugInfo
+//							<< "Accessing privileged data under privileged mode."
+//							<< EndDebugInfo;
+//					}
+//				}
+//			}
+//
+//			else if ( ap_used == 0x02UL )
+//			{
+//				uint32_t mode = GetCPSR_Mode();
+//				if ( mode == USER_MODE )
+//				{
+//					if ( !is_read )
+//					{
+//						logger << DebugError
+//							<< "Check access permission and domain"
+//							<< std::endl
+//							<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+//							<< std::endl
+//							<< " - va  = 0x" << va << std::endl
+//							<< " - mva = 0x" << mva << std::endl
+//							<< " - pa  = 0x" << pa << std::dec << std::endl
+//							<< " - ap[0-3] = " << ap[0]
+//							<< " " << ap[1] << " " << ap[2] 
+//							<< " " << ap[3] << std::endl
+//							<< " - ap  = " << ap_used << std::endl
+//							<< " - domain = " << domain << std::endl
+//							<< " - c   = " << c << std::endl
+//							<< " - b   = " << b
+//							<< EndDebugError;
+//						assert("TODO: raise an error because accessing"
+//								" privileged data under USER mode" == 0);
+//					}
+//					else 
+//					{
+//						if ( verbose & 0x010 )
+//							logger << DebugInfo
+//								<< "Accessing privileged data under user mode"
+//								<< " (read-only)"
+//								<< EndDebugInfo;
+//					}
+//				}
+//				else
+//				{
+//					if ( verbose & 0x010 )
+//					{
+//						logger << DebugInfo
+//							<< "Accessing privileged data under privileged mode."
+//							<< EndDebugInfo;
+//					}
+//				}
+//			}
+//
+//			else if ( ap_used == 0x03UL )
+//			{
+//				if ( verbose & 0x010 )
+//				{
+//					logger << DebugInfo
+//						<< "Accessing non protected data."
+//						<< EndDebugInfo;
+//				}
+//			}
+		}
+
+		else // 3 tiny page
+		{
+			// tiny page
+			assert("TODO: Tiny page descriptor" == 0);
+		}
+	}
+	
+	else if ( (first_level & 0x03UL) == 0x02UL ) // Section page
 	{
 		// the descriptor is a section descriptor
 		pa = (first_level & 0xfff00000UL) |
@@ -2278,54 +2611,127 @@ TranslateVA(bool is_read,
 		// check the access permissions - domain couple
 		//  if ap == 3 then no need to check anything else,
 		//    read/write access are allowed
-		if ( ap == 0x01UL )
+		if ( unlikely(!CheckAccessPermission(is_read,
+						ap, domain)) )
 		{
-			uint32_t mode = GetCPSR_Mode();
-			if ( mode == USER_MODE )
-			{
-				logger << DebugError
-					<< "Accessing privileged data under USER mode: "
-					<< std::endl
-					<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
-					<< std::dec << std::endl
-					<< "- va  = 0x" << std::hex << va << std::endl
-					<< "- mva = 0x" << mva << std::endl
-					<< "- pa  = 0x" << pa << std::dec << std::endl
-					<< "- ap  = " << ap << std::endl
-					<< "- domain = " << domain << std::endl
-					<< "- c   = " << c << std::endl
-					<< "- b   = " << b
-					<< EndDebugError;
-				assert("TODO: raise an error because accessing privileged"
-						" data under USER mode" == 0);
-			}
-			else
-			{
-				if ( verbose & 0x010 )
-				{
-					logger << DebugInfo
-						<< "Accessing privileged data under privileged mode."
-						<< EndDebugInfo;
-				}
-			}
-		}
-		else if ( ap != 0x03UL )
-		{
-			logger << DebugInfo
+			logger << DebugError
 				<< "Check access permission and domain"
 				<< std::endl
-				<< " - ap = 0x" << std::hex << ap << std::dec
-				<< std::endl
 				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
-				<< std::dec
-				<< EndDebugInfo;
+				<< " - va  = 0x" << va << std::endl
+				<< " - mva = 0x" << mva << std::endl
+				<< " - pa  = 0x" << pa << std::dec << std::endl
+				<< " - ap  = " << ap << std::endl
+				<< " - domain = " << domain << std::endl
+				<< " - c   = " << c << std::endl
+				<< " - b   = " << b
+				<< EndDebugError;
 			assert("TODO: check access permission and domain" == 0);
 		}
+//		if ( ap == 0x00UL )
+//		{
+//			logger << DebugError
+//				<< "Check access permission and domain"
+//				<< std::endl
+//				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+//				<< " - va  = 0x" << va << std::endl
+//				<< " - mva = 0x" << mva << std::endl
+//				<< " - pa  = 0x" << pa << std::dec << std::endl
+//				<< " - ap  = " << ap << std::endl
+//				<< " - domain = " << domain << std::endl
+//				<< " - c   = " << c << std::endl
+//				<< " - b   = " << b
+//				<< EndDebugError;
+//			assert("TODO: check access permission and domain" == 0);
+//		}
+//
+//		else if ( ap == 0x01UL )
+//		{
+//			uint32_t mode = GetCPSR_Mode();
+//			if ( mode == USER_MODE )
+//			{
+//				logger << DebugError
+//					<< "Accessing privileged data under USER mode: "
+//					<< std::endl
+//					<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+//					<< std::dec << std::endl
+//					<< "- va  = 0x" << std::hex << va << std::endl
+//					<< "- mva = 0x" << mva << std::endl
+//					<< "- pa  = 0x" << pa << std::dec << std::endl
+//					<< "- ap  = " << ap << std::endl
+//					<< "- domain = " << domain << std::endl
+//					<< "- c   = " << c << std::endl
+//					<< "- b   = " << b
+//					<< EndDebugError;
+//				assert("TODO: raise an error because accessing privileged"
+//						" data under USER mode" == 0);
+//			}
+//			else
+//			{
+//				if ( verbose & 0x010 )
+//				{
+//					logger << DebugInfo
+//						<< "Accessing privileged data under privileged mode."
+//						<< EndDebugInfo;
+//				}
+//			}
+//		}
+//
+//		else if ( ap == 0x02UL )
+//		{
+//			uint32_t mode = GetCPSR_Mode();
+//			if ( mode == USER_MODE )
+//			{
+//				if ( !is_read )
+//				{
+//					logger << DebugError
+//						<< "Accessing privileged data under USER mode: "
+//						<< std::endl
+//						<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+//						<< std::dec << std::endl
+//						<< "- va  = 0x" << std::hex << va << std::endl
+//						<< "- mva = 0x" << mva << std::endl
+//						<< "- pa  = 0x" << pa << std::dec << std::endl
+//						<< "- ap  = " << ap << std::endl
+//						<< "- domain = " << domain << std::endl
+//						<< "- c   = " << c << std::endl
+//						<< "- b   = " << b
+//						<< EndDebugError;
+//					assert("TODO: raise an error because accessing privileged"
+//							" data under USER mode" == 0);
+//				}
+//				else
+//				{
+//					if ( verbose & 0x010 )
+//						logger << DebugInfo
+//							<< "Accessing privileged data under user mode"
+//							<< " (read-only)"
+//							<< EndDebugInfo;
+//				}
+//			}
+//			else
+//			{
+//				if ( verbose & 0x010 )
+//				{
+//					logger << DebugInfo
+//						<< "Accessing privileged data under privileged mode."
+//						<< EndDebugInfo;
+//				}
+//			}
+//		}
+//
+//		else if ( ap == 0x03UL )
+//		{
+//			if ( verbose & 0x010 )
+//				logger << DebugInfo
+//					<< "Accessing non protected data."
+//					<< EndDebugInfo;
+//		}
 	}
-	else
+
+	else // 0x03UL fine page table
 	{
-		// the page is not a section a second access to the tlb is required
-		assert("Translation fault (TODO: second level access)" == 0);
+		assert("Translation fault (TODO: fine page table)" == 0);
 	}
 
 	return true;
