@@ -101,6 +101,20 @@ private:
 	SocketServerThread *socketfd;
 //	SocketClientThread *socketfd;
 
+	GenericThread *target;
+
+};
+
+class TargetThread : public GenericThread {
+public:
+	TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
+
+	virtual void Run();
+
+private:
+	char* name;
+	vector<VariableBase*> *fVariables;
+	SocketThread *socketfd;
 };
 
 

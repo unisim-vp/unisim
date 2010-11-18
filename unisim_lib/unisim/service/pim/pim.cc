@@ -42,6 +42,8 @@ PIM::PIM(const char *name, Simulator *simulator, uint16_t port, char* host, Obje
 
 PIM::~PIM() {
 
+	if (target) { delete target; target = NULL; }
+
 	if (socketfd) { delete socketfd; socketfd = NULL; }
 
 	for (int i=0; i < pim_model.size(); i++) {
@@ -112,6 +114,28 @@ void PIM::Run() {
 
 	cerr << "PIM connection success " << std::endl;
 
+	// Start Simulation <-> ToolBox communication
+//	target = new TargetThread("Target", &simulator_variables, socketfd);
+	target = new TargetThread("Target", &simulator_variables, socketfd);
+
+	target->start();
+
+	target->join();
+
+}
+
+TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
+		socketfd(fd),
+		name(_name),
+		fVariables(variables)
+{
+
+}
+
+void TargetThread::Run(){
+
+	cerr << "PIM::TargetThread start RUN " << std::endl;
+
 	while (!isTerminated()) {
 
 		char *buffer = socketfd->receive();
@@ -136,13 +160,13 @@ void PIM::Run() {
 				string name = buf_str.substr(0, index);
 				buf_str = buf_str.substr(index+1);
 
-				for (int i=0; i < simulator_variables.size(); i++) {
-					if (name.compare(simulator_variables[i]->GetName()) == 0) {
+				for (int i=0; i < fVariables->size(); i++) {
+					if (name.compare((*fVariables)[i]->GetName()) == 0) {
 
 						std::ostringstream os;
-						os << simulator_variables[i]->GetName() << ":";
+						os << (*fVariables)[i]->GetName() << ":";
 
-						double val = *(simulator_variables[i]);
+						double val = *((*fVariables)[i]);
 						os << stringify(val);
 
 						std::string str = os.str();
@@ -166,10 +190,10 @@ void PIM::Run() {
 
 				string value = buf_str.substr(index+1);
 
-				for (int i=0; i < simulator_variables.size(); i++) {
-					if (name.compare(simulator_variables[i]->GetName()) == 0) {
+				for (int i=0; i < fVariables->size(); i++) {
+					if (name.compare((*fVariables)[i]->GetName()) == 0) {
 
-						*(simulator_variables[i]) = convertTo<double>(value);
+						*((*fVariables)[i]) = convertTo<double>(value);
 						break;
 					}
 				}
