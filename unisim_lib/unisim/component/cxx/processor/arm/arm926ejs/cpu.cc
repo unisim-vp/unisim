@@ -2028,17 +2028,18 @@ TranslateVA(bool is_read,
 		mva = cp15.GetFCSE_PID() + va;
 	else
 		mva = va;
+	// Build first the address of the Translation Table Base
+	uint32_t ttb_addr = 
+		cp15.GetTTB() | ((mva & 0xfff00000UL) >> 18);
 	if ( verbose & 0x010 )
 	{
 		logger << DebugWarning
 			<< "va = 0x" << std::hex << va 
 			<< std::endl
-			<< " - mva = 0x" << mva << std::dec
+			<< " - mva = 0x" << mva << std::endl
+			<< " - ttb = 0x" << cp15.GetTTB() << std::dec
 			<< EndDebugWarning;
 	}
-	// Build first the address of the Translation Table Base
-	uint32_t ttb_addr = 
-		cp15.GetTTB() | ((mva & 0xfff00000UL) >> 18);
 	// Get the first level descriptor
 	// Two TLB are available, the lockdown TLB and the regular TLB
 	// If the address is not found on the TLBs then perform a page walk
@@ -2172,8 +2173,47 @@ TranslateVA(bool is_read,
 		// check the access permissions - domain couple
 		//  if ap == 3 then no need to check anything else,
 		//    read/write access are allowed
-		if ( ap != 0x03UL )
+		if ( ap == 0x01UL )
 		{
+			uint32_t mode = GetCPSR_Mode();
+			if ( mode == USER_MODE )
+			{
+				logger << DebugError
+					<< "Accessing privileged data under USER mode: "
+					<< std::endl
+					<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< std::dec << std::endl
+					<< "- va  = 0x" << std::hex << va << std::endl
+					<< "- mva = 0x" << mva << std::endl
+					<< "- pa  = 0x" << pa << std::dec << std::endl
+					<< "- ap  = " << ap << std::endl
+					<< "- domain = " << domain << std::endl
+					<< "- c   = " << c << std::endl
+					<< "- b   = " << b
+					<< EndDebugError;
+				assert("TODO: raise an error because accessing privileged"
+						" data under USER mode" == 0);
+			}
+			else
+			{
+				if ( verbose & 0x010 )
+				{
+					logger << DebugInfo
+						<< "Accessing privileged data under privileged mode."
+						<< EndDebugInfo;
+				}
+			}
+		}
+		else if ( ap != 0x03UL )
+		{
+			logger << DebugInfo
+				<< "Check access permission and domain"
+				<< std::endl
+				<< " - ap = 0x" << std::hex << ap << std::dec
+				<< std::endl
+				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< std::dec
+				<< EndDebugInfo;
 			assert("TODO: check access permission and domain" == 0);
 		}
 	}
