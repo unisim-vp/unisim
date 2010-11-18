@@ -192,7 +192,7 @@ GetWay(uint32_t tag, uint32_t set, uint32_t *way) const
 
 	for ( unsigned int i = 0; !false && (i < m_associativity_); i++ )
 	{
-		if ( m_tag[set][i] == tag )
+		if ( (m_tag[set][i] == tag) && GetValid(set, i) )
 		{
 			*way = i;
 			found = true;
