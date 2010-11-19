@@ -409,7 +409,13 @@ void
 Simulator ::
 Stop(unisim::kernel::service::Object *object, int exit_status)
 {
+	std::cerr
+		<< "Calling sc_stop" << std::endl
+		<< " - object = " << object->GetName() << std::endl
+		<< " - exit status = " << exit_status 
+		<< std::endl;
 	sc_stop();
+	wait();
 }
 
 void
