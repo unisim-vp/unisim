@@ -110,7 +110,7 @@ public:
 	TargetThread(char* _name, vector<VariableBase*> *variables);
 
 	virtual void Run();
-	virtual TPROTOCOL getProtocol() { return PIM; }
+	virtual string getProtocol() { return "PIM"; }
 
 private:
 	char* name;

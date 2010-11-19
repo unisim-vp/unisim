@@ -42,7 +42,10 @@ SocketReader::SocketReader(const int sock) {
 	buffer_queue = new BlockingQueue<char *>();
 };
 
-SocketReader::~SocketReader() { };
+SocketReader::~SocketReader() {
+
+	if (buffer_queue) { delete buffer_queue; buffer_queue = NULL; }
+};
 
 /*
  * FD_ZERO(sockfd, &write_flags)	sets all associated flags in the socket to 0

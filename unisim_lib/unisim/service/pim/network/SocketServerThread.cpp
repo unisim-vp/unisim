@@ -109,13 +109,47 @@ void SocketServerThread::Run() {
     do {
         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
         if (newsockfd >= 0) {
-
-        	SocketThread *target = protocolHandlers->at(connected++);
-        	target->Start(newsockfd);
+        	if (bindHandler(newsockfd)) {
+        		connected++;
+        	}
         }
     } while (connected < nbHandlers);
 
 }
+
+bool SocketServerThread::bindHandler(int newsockfd) {
+
+	reader = new SocketReader(newsockfd);
+	reader->start();
+
+	writer = new SocketWriter(newsockfd);
+	writer->start();
+
+	char* protocol = reader->receive();
+
+	SocketThread *target = protocolHandlers->at(0);
+	bool found = false;
+	if (target->getProtocol().compare(protocol) == 0) {
+		writer->send("ACK");
+		found = true;
+	} else {
+		writer->send("NACK");
+	}
+
+	char* ack = reader->receive();
+
+	reader->stop();
+	writer->stop();
+
+	delete reader; reader = NULL;
+	delete writer; writer = NULL;
+
+	if (found) {
+		target->Start(newsockfd);
+	}
+
+}
+
 
 } // network 
 } // end pim 

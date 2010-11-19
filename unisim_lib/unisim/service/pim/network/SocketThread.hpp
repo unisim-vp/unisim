@@ -22,7 +22,7 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
-	enum TPROTOCOL {NONE, GDB, PIM};
+	// Protocol list "NONE", "GDB", "PIM"
 
 	SocketThread(char* host, uint16_t port);
 	SocketThread();
@@ -34,7 +34,7 @@ public:
 	virtual void Run() { };
 	virtual void send(const char* data);
 	virtual char* receive();
-	virtual TPROTOCOL getProtocol() { return NONE; }
+	virtual string getProtocol() { return "NONE"; }
 
 protected:
 

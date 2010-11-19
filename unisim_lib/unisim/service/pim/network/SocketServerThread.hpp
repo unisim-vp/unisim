@@ -28,6 +28,8 @@ public:
 private:
 	uint8_t request_nbre;
 	vector<SocketThread*> *protocolHandlers;
+
+	bool bindHandler(int newsockfd);
 };
 
 } // network 

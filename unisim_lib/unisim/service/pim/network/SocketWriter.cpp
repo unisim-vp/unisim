@@ -43,7 +43,10 @@ SocketWriter::SocketWriter(const int sock) {
 	buffer_queue = new BlockingQueue<char *>();
 };
 
-SocketWriter::~SocketWriter() { };
+SocketWriter::~SocketWriter() {
+
+	if (buffer_queue) { delete buffer_queue; buffer_queue = NULL; }
+};
 
 /*
  * FD_ZERO(sockfd, &write_flags)	sets all associated flags in the socket to 0

@@ -50,6 +50,7 @@ PIM::~PIM() {
 		if (pim_model[i]) { delete pim_model[i]; pim_model[i] = NULL;}
 	}
 	pim_model.clear();
+
 }
 
 void PIM::GetExportedVariables(vector<component_t*> &pim) {
@@ -143,7 +144,7 @@ void TargetThread::Run(){
 
 		char *buffer = receive();
 
-		cerr << "PIM-Target receive " << buffer << std::endl;
+//		cerr << "PIM-Target receive " << buffer << std::endl;
 
 		if (!isTerminated()) {
 			string buf_str(buffer);
@@ -178,7 +179,7 @@ void TargetThread::Run(){
 
 						send(buffer);
 
-						cout << name << " send: " << buffer << endl;
+//						cout << name << " send: " << buffer << endl;
 
 						os.str(std::string());
 						break;
