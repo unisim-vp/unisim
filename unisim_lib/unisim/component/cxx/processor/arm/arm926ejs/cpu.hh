@@ -575,6 +575,14 @@ public:
 	 * Perform a memory barrier by draining the write buffer.
 	 */
 	void DrainWriteBuffer();
+	/** Invalidate ICache single entry using MVA
+	 *
+	 * Perform an invalidation of a single entry in the ICache using the
+	 *   given address in MVA format.
+	 *
+	 * @param mva the address to invalidate
+	 */
+	void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
 	/** Clean DCache single entry using MVA
 	 *
 	 * Perform a clean of a single entry in the DCache using the given

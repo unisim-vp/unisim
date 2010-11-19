@@ -1602,6 +1602,60 @@ DrainWriteBuffer()
 		<< EndDebugWarning;
 }
 
+/** Invalidate ICache single entry using MVA
+ *
+ * Perform an invalidation of a single entry in the ICache using the
+ *   given address in MVA format.
+ *
+ * @param mva the address to invalidate
+ */
+void 
+CPU::
+InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
+{
+	uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
+	uint32_t pa = mva;
+
+	if ( unlikely(verbose & 0x02) )
+	{
+		logger << DebugInfo
+			<< "Invalidating ICache single entry with MVA:" << std::endl
+			<< " - mva               = 0x" << std::hex << init_mva << std::endl
+			<< " - cache aligned mva = 0x" << mva << std::dec
+			<< EndDebugInfo;
+	}
+
+	if ( likely(cp15.IsICacheEnabled() && icache.GetSize()) )
+	{
+		uint32_t cache_tag = icache.GetTag(mva);
+		uint32_t cache_set = icache.GetSet(mva);
+		uint32_t cache_way = 0;
+		bool cache_hit = false;
+		if ( likely(icache.GetWay(cache_tag, cache_set, &cache_way)) )
+			cache_hit = true;
+
+		if ( likely(cache_hit) )
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "ICache hit (set = "
+					<< cache_set << ", way = "
+					<< cache_way << "), invalidating it"
+					<< EndDebugInfo;
+			icache.SetValid(cache_set, cache_way, 0);
+		}
+		else
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "ICache miss (set = "
+					<< cache_set
+					<< ")"
+					<< EndDebugInfo;
+		}
+	}
+}
+
 /** Clean DCache single entry using MVA
  *
  * Perform a clean of a single entry in the DCache using the given
@@ -1632,19 +1686,8 @@ CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
 		uint32_t cache_set = dcache.GetSet(mva);
 		uint32_t cache_way;
 		bool cache_hit = false;
-		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( dcache.GetValid(cache_set, cache_way) )
-			{
-				cache_hit = true;
-			}
-			else
-				if ( unlikely(verbose & 0x02) )
-					logger << DebugInfo
-						<< "Way found but not valid (way = "
-						<< cache_way << ")"
-						<< EndDebugInfo;
-		}
+		if ( likely(dcache.GetWay(cache_tag, cache_set, &cache_way)) )
+			cache_hit = true;
 
 		if ( likely(cache_hit) )
 		{

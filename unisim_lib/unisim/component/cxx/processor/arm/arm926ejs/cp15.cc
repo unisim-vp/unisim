@@ -529,6 +529,16 @@ WriteRegister(uint8_t opcode1,
 					cpu->InvalidateCache(true, false);
 					handled = true;
 				}
+
+				else if ( opcode2 == 1 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Invalidating ICache single entry (MVA)"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->InvalidateICacheSingleEntryWithMVA(value);
+					handled = true;
+				}
 			}
 		
 			else if ( crm == 7 )
