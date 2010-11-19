@@ -30,6 +30,8 @@ set ( tlm2_pxp_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.cc
 	)
 
 add_library ( unisim__component__tlm2__chipset__arm926ejs_pxp
@@ -43,6 +45,7 @@ set_source_files_properties (
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.cc
 	PROPERTIES
 		COMPILE_FLAGS "-I${OSCI_SYSTEMC_INCLUDE_DIR} -I${OSCI_TLM2_INCLUDE_DIR}"
 	)

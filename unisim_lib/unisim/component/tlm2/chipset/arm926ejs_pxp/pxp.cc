@@ -35,6 +35,8 @@
 #define SC_INCLUDE_DYNAMIC_PROCESSES
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/endian/endian.hh"
 #include <inttypes.h>
 #include <assert.h>
 
@@ -44,6 +46,9 @@ namespace tlm2 {
 namespace chipset {
 namespace arm926ejs_pxp {
 
+using unisim::util::endian::Host2LittleEndian;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
@@ -57,17 +62,20 @@ PXP(const sc_module_name &name, Object *parent)
 	, eth_init_socket("eth-init-socket")
 	, sc_init_socket("sc-init-socket")
 	, wd_init_socket("wd-init-socket")
+	, pic_init_socket("pic-init-socket")
 	, eth("ethernet", this)
 	, sc("system-controller", this)
 	, uart0("uart0", this)
 	, dt1("timer1-2", this)
 	, wd("watchdog", this)
+	, pic("pic", this)
 	, logger(*this)
 {
 	eth["base-addr"]       = 0x10010000UL;
+	pic["base-addr"]       = 0x10140000UL;
 	sc["base-addr"]        = 0x101e0000UL;
-	uart0["base-addr"]     = 0x101f1000UL;
 	dt1["base-addr"]       = 0x101e2000UL;
+	uart0["base-addr"]     = 0x101f1000UL;
 	cpu_target_socket.register_nb_transport_fw(this,
 			&PXP::cpu_target_nb_transport_fw);
 	cpu_target_socket.register_b_transport(this,
@@ -112,6 +120,11 @@ PXP(const sc_module_name &name, Object *parent)
 	dt1_init_socket.register_invalidate_direct_mem_ptr(this,
 			&PXP::dt1_init_invalidate_direct_mem_ptr);
 
+	pic_init_socket.register_nb_transport_bw(this,
+			&PXP::pic_init_nb_transport_bw);
+	pic_init_socket.register_invalidate_direct_mem_ptr(this,
+			&PXP::pic_init_invalidate_direct_mem_ptr);
+
 	dt1.timclk_in_port(sc_to_dt1_signal[0]);
 	sc.refclk_out_port(sc_to_dt1_signal[0]);
 	dt1.timclken1_in_port(sc_to_dt1_signal[1]);
@@ -130,6 +143,7 @@ PXP(const sc_module_name &name, Object *parent)
 	uart0_init_socket(uart0.bus_target_socket);
 	wd_init_socket(wd.bus_target_socket);
 	dt1_init_socket(dt1.bus_target_socket);
+	pic_init_socket(pic.bus_target_socket);
 }
 
 PXP ::
@@ -142,6 +156,84 @@ PXP ::
 Setup()
 {
 	return true;
+}
+
+/** Blocking access to the system registers.
+ *
+ * @param trans the transaction
+ * @param delay current delta time
+ */
+void 
+PXP ::
+AccessSystemRegisters(transaction_type &trans,
+		sc_core::sc_time &delay)
+{
+	bool handled = false;
+
+	switch ( trans.get_address() & 0x00000fffUL )
+	{
+		case 0x005c:
+			Access24MHzCounter(trans, delay);
+			handled = true;
+			break;
+	}
+
+	if ( unlikely(!handled) )
+	{
+		logger << DebugError
+			<< "Trying to access System Register at 0x" << std::hex
+			<< (trans.get_address() & 0x00000fffUL) 
+			<< " (0x" << trans.get_address() << ")" << std::dec
+			<< EndDebugError;
+		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+}
+
+/** Access to the 24MHz counter register.
+ *
+ * @param trans the transaction
+ * @param delay current delta time
+ */
+void
+PXP ::
+Access24MHzCounter(transaction_type & trans,
+		sc_core::sc_time &delay)
+{
+	uint8_t *data = trans.get_data_ptr();
+	uint32_t size = trans.get_data_length();
+	bool is_read = trans.is_read();
+
+	if ( unlikely(!is_read) )
+	{
+		trans.set_response_status(tlm::TLM_COMMAND_ERROR_RESPONSE);
+		return;
+	}
+
+	if ( unlikely(size != 4) )
+	{
+		trans.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
+		return;
+	}
+
+	static const sc_time clock(41666.66667, SC_PS);
+	sc_time time = sc_time_stamp() + delay;
+
+	uint64_t ticks = time/clock;
+	uint32_t reg = ticks & 0x00000000ffffffffULL;
+	
+	logger << DebugInfo
+		<< "Reading 24MHz counter:" << std::endl
+		<< " - current time = " << sc_time_stamp() << std::endl
+		<< " - delay = " << delay << std::endl
+		<< " - computed time = " << clock << std::endl
+		<< " - ticks = " << ticks << std::endl
+		<< " - reg = 0x" << std::hex << reg << std::dec
+		<< " (" << reg << ")"
+		<< EndDebugInfo;
+
+	reg = Host2LittleEndian(reg);
+	memcpy(data, &reg, 4);
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
 }
 
 /**************************************************************************/
@@ -169,10 +261,22 @@ cpu_target_b_transport(transaction_type &trans,
 		mpmc0_init_socket->b_transport(trans, delay);
 		handled = true;
 	}
+	else if ( trans.get_address() >= 0x10000000UL &&
+			trans.get_address()   <  0x10001000UL )
+	{
+		AccessSystemRegisters(trans, delay);
+		handled = true;
+	}
 	else if ( trans.get_address() >= 0x10010000UL &&
 			trans.get_address()   <  0x10020000UL )
 	{
 		eth_init_socket->b_transport(trans, delay);
+		handled = true;
+	}
+	else if ( trans.get_address() >= 0x10140000UL &&
+			trans.get_address()   <  0x10150000UL )
+	{
+		pic_init_socket->b_transport(trans, delay);
 		handled = true;
 	}
 	else if ( trans.get_address() >= 0x101e0000UL &&
@@ -211,7 +315,8 @@ cpu_target_b_transport(transaction_type &trans,
 			<< "Unhandled address 0x" 
 			<< std::hex << trans.get_address() << std::dec
 			<< EndDebugError;
-		assert("TODO" == 0);
+		unisim::kernel::service::Simulator::simulator->Stop(this, 2);
+		// assert("TODO" == 0);
 	}
 }
 
@@ -233,6 +338,9 @@ cpu_target_transport_dbg(transaction_type &trans)
 	else if ( trans.get_address()   >= 0x10010000UL &&
 			trans.get_address()     <  0x10020000UL )
 		return eth_init_socket->transport_dbg(trans);
+	else if ( trans.get_address()   >= 0x10140000UL &&
+			trans.get_address()     <  0x10150000UL )
+		return pic_init_socket->transport_dbg(trans);
 	else if ( trans.get_address()   >= 0x101e0000UL &&
 			trans.get_address()     <  0x101e1000UL )
 		return sc_init_socket->transport_dbg(trans);
@@ -452,6 +560,34 @@ wd_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                           */
 /*   the Watchdog                                                     END */
+/**************************************************************************/
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                     START */
+/*   the PIC                                                              */
+/**************************************************************************/
+
+tlm::tlm_sync_enum
+PXP ::
+pic_init_nb_transport_bw(transaction_type &trans,
+		phase_type &phase,
+		sc_core::sc_time &time)
+{
+	assert("TODO" == 0);
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+PXP ::
+pic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+		sc_dt::uint64)
+{
+	assert("TODO" == 0);
+}
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                           */
+/*   the PIC                                                          END */
 /**************************************************************************/
 
 } // end of namespace arm926ejs_pxp

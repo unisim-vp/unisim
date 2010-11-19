@@ -47,6 +47,7 @@
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh"
 
 namespace unisim {
@@ -91,6 +92,9 @@ public:
 	/** Initiator socket for the Watchdog */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		wd_init_socket;
+	/** Initiator socket for the PIC (VIC, Vectored Interrupt Controller) */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		pic_init_socket;
 
 	/** The Ethernet Controller */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::ethernet::SMSC_LAN91C111 eth;
@@ -102,6 +106,8 @@ public:
 	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt1;
 	/** Watchdog module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::watchdog::Watchdog wd;
+	/** VIC (Vectored Interrupt Controller) module */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::vic::VIC pic;
 
 	sc_signal<uint64_t> sc_to_dt1_signal[3];
 
@@ -118,6 +124,22 @@ public:
 	virtual bool Setup();
 
 private:
+
+	/** Blocking access to the system registers.
+	 *
+	 * @param trans the transaction
+	 * @param delay current delta time
+	 */
+	void AccessSystemRegisters(transaction_type &trans,
+			sc_core::sc_time &delay);
+	/** Access to the 24MHz counter register.
+	 *
+	 * @param trans the transaction
+	 * @param delay current delta time
+	 */
+	void Access24MHzCounter(transaction_type & trans,
+			sc_core::sc_time &delay);
+
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the cpu connection     START */
 	/**************************************************************************/
@@ -245,6 +267,22 @@ private:
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                           */
 	/*   the Watchdog                                                     END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the PIC                                                              */
+	/**************************************************************************/
+
+	sync_enum_type pic_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void pic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the PIC                                                          END */
 	/**************************************************************************/
 
 	/** Interface to the UNISIM logger */
