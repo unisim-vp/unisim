@@ -99,20 +99,21 @@ void SocketServerThread::Run() {
 		socklen_t cli_addr_len;
 #endif
 
+	int nbHandlers = protocolHandlers->size();
+	int connected = 0;
 	struct sockaddr_in cli_addr;
 
     cli_addr_len = sizeof(cli_addr);
+
+	int newsockfd;
     do {
         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
-    } while (newsockfd < 0);
+        if (newsockfd >= 0) {
 
-//#ifdef WIN32
-//	closesocket(sockfd);
-//#else
-//	close(sockfd);
-//#endif
-//
-//	sockfd = newsockfd;
+        	SocketThread *target = protocolHandlers->at(connected++);
+        	target->Start(newsockfd);
+        }
+    } while (connected < nbHandlers);
 
 }
 

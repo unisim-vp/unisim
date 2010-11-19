@@ -22,11 +22,12 @@ public:
 	SocketServerThread(char* host, uint16_t port, uint8_t connection_req_nb = 1);
 
 	virtual void Run();
-	int getLastSockfd() { return newsockfd; }
+
+	void setProtocolHandlers(vector<SocketThread*> *protocolHandlers) { this->protocolHandlers = protocolHandlers; }
 
 private:
 	uint8_t request_nbre;
-	int newsockfd;
+	vector<SocketThread*> *protocolHandlers;
 };
 
 } // network 

@@ -22,16 +22,19 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
+	enum TPROTOCOL {NONE, GDB, PIM};
+
 	SocketThread(char* host, uint16_t port);
-	SocketThread(int sockfd);
+	SocketThread();
 
 	~SocketThread();
 
-	void startReadWriteThreads(int sockfd);
+	void Start(int sockfd);
 
 	virtual void Run() { };
 	virtual void send(const char* data);
 	virtual char* receive();
+	virtual TPROTOCOL getProtocol() { return NONE; }
 
 protected:
 

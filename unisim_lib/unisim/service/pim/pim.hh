@@ -101,20 +101,21 @@ private:
 	SocketServerThread *socketfd;
 //	SocketClientThread *socketfd;
 
-	GenericThread *target;
+	SocketThread *target;
 
 };
 
-class TargetThread : public GenericThread {
+class TargetThread : public SocketThread {
 public:
-	TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd);
+	TargetThread(char* _name, vector<VariableBase*> *variables);
 
 	virtual void Run();
+	virtual TPROTOCOL getProtocol() { return PIM; }
 
 private:
 	char* name;
 	vector<VariableBase*> *fVariables;
-	SocketThread *socketfd;
+
 };
 
 

@@ -56,9 +56,8 @@ SocketThread::SocketThread(char* host, uint16_t port) {
 	hostport = port;
 }
 
-SocketThread::SocketThread(int sockfd) {
+SocketThread::SocketThread() {
 
-	startReadWriteThreads(sockfd);
 }
 
 SocketThread::~SocketThread() {
@@ -76,7 +75,9 @@ SocketThread::~SocketThread() {
 
 }
 
-void SocketThread::startReadWriteThreads(int sockfd) {
+void SocketThread::Start(int sockfd) {
+
+	this->sockfd = sockfd;
 
 	writer = new SocketWriter(sockfd);
 	writer->start();
@@ -84,6 +85,7 @@ void SocketThread::startReadWriteThreads(int sockfd) {
 	reader = new SocketReader(sockfd);
 	reader->start();
 
+	this->start();
 }
 
 void SocketThread::send(const char* data) {

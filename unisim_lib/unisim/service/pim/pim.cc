@@ -104,9 +104,18 @@ bool PIM::Setup() {
 
 void PIM::Run() {
 
+	vector<SocketThread*> protocolHandlers;
+
+	// Start Simulation <-> ToolBox communication
+//	target = new TargetThread("Target", &simulator_variables, read_write_threads);
+	target = new TargetThread("Target", &simulator_variables);
+	protocolHandlers.push_back(target);
+
 	// Open Socket Stream
-	socketfd = new SocketServerThread(fHost, fPort);
+	socketfd = new SocketServerThread(fHost, fPort, 1);
 //	socketfd = new SocketClientThread(fHost, fPort);
+
+	socketfd->setProtocolHandlers(&protocolHandlers);
 
 	socketfd->start();
 
@@ -114,20 +123,12 @@ void PIM::Run() {
 
 	cerr << "PIM connection success " << std::endl;
 
-	SocketThread *read_write_threads = new SocketThread(socketfd->getLastSockfd());
-
-	// Start Simulation <-> ToolBox communication
-//	target = new TargetThread("Target", &simulator_variables, read_write_threads);
-	target = new TargetThread("Target", &simulator_variables, read_write_threads);
-
-	target->start();
-
 	target->join();
 
 }
 
-TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables, SocketThread *fd) :
-		socketfd(fd),
+TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables) :
+		SocketThread(),
 		name(_name),
 		fVariables(variables)
 {
@@ -140,7 +141,7 @@ void TargetThread::Run(){
 
 	while (!isTerminated()) {
 
-		char *buffer = socketfd->receive();
+		char *buffer = receive();
 
 		cerr << "PIM-Target receive " << buffer << std::endl;
 
@@ -175,7 +176,7 @@ void TargetThread::Run(){
 
 						const char *buffer = str.c_str();
 
-						socketfd->send(buffer);
+						send(buffer);
 
 						cout << name << " send: " << buffer << endl;
 
