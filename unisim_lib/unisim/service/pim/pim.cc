@@ -144,7 +144,7 @@ void TargetThread::Run(){
 
 		char *buffer = receive();
 
-//		cerr << "PIM-Target receive " << buffer << std::endl;
+		cerr << "PIM-Target receive " << buffer << std::endl;
 
 		if (!isTerminated()) {
 			string buf_str(buffer);
@@ -192,7 +192,7 @@ void TargetThread::Run(){
 				string name = buf_str.substr(0, index);
 				buf_str = buf_str.substr(index+1);
 
-				string value = buf_str.substr(index+1);
+				string value = buf_str;
 
 				for (int i=0; i < fVariables->size(); i++) {
 					if (name.compare((*fVariables)[i]->GetName()) == 0) {
