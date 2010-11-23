@@ -144,7 +144,9 @@ void TargetThread::Run(){
 
 		char *buffer = receive();
 
-		cerr << "PIM-Target receive " << buffer << std::endl;
+		if (buffer == NULL) continue;
+
+//		cerr << "PIM-Target receive " << buffer << std::endl;
 
 		if (!isTerminated()) {
 			string buf_str(buffer);
