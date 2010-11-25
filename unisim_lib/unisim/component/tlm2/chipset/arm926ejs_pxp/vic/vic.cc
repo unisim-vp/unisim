@@ -38,6 +38,7 @@
 #include "unisim/util/endian/endian.hh"
 #include <inttypes.h>
 #include <assert.h>
+#include <sstream>
 
 namespace unisim {
 namespace component {
@@ -59,7 +60,14 @@ VIC ::
 VIC(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
+	, VICIntSourceIdentifierInterface()
+	, nvicfiqin()
+	, nvicirqin()
+	, vicvectaddrin() 
 	, bus_target_socket("bus_target_socket")
+	, int_source(0)
+	, nvicfiq_value(false)
+	, nvicirq_value(false)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
@@ -84,6 +92,16 @@ VIC(const sc_module_name &name, Object *parent)
 	regs[0x0ff4UL] = 0x0f0;
 	regs[0x0ff8UL] = 0x05;
 	regs[0x0ffcUL] = 0x0b1;
+
+	for ( int i = 0; i < NUM_SOURCE_INT; i++ )
+	{
+		std::stringstream id_name;
+
+		id_name << "VICIntSourceIdentifier[" << i << "]";
+		source_identifier_method[i] =
+			new VICIntSourceIdentifier(id_name.str().c_str(),
+					i, this);
+	}
 }
 
 VIC ::
@@ -96,6 +114,126 @@ VIC ::
 Setup()
 {
 	return true;
+}
+
+/** Update the status of the VIC depending on all the possible entries
+ */
+void
+VIC ::
+UpdateStatus()
+{
+	// apply software interrupt register and the values of 
+	//   interrupt sources to the raw interrupt register
+	uint32_t softint = GetVICSOFTINT();
+	uint32_t rawintr = 0;
+	for ( unsigned int i =0; i < NUM_SOURCE_INT; i++ )
+	{
+		rawintr |= (softint & int_source) & (0x01UL << i);
+	}
+	SetVICRAWINTR(rawintr);
+
+	// compute the new fiq and irq status
+	uint32_t intselect = GetVICINTSELECT();
+	uint32_t intenable = GetVICINTENABLE();
+	uint32_t fiqstatus = 0;
+	uint32_t irqstatus = 0;
+	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
+	{
+		if ( intselect & (0x01UL << i) )
+			fiqstatus |= (rawintr & (0x01UL << i));
+		else
+			irqstatus |= (rawintr & (0x01UL << i));
+	}
+	SetVICFIQSTATUS(fiqstatus);
+	SetVICIRQSTATUS(irqstatus);
+
+	// compute the new nVICFIQ and VICITOP1
+	uint32_t itop1 = GetVICITOP1();
+	itop1 &= ~(0x01UL << 6); // clean bit 6
+	if ( !nvicfiqin || fiqstatus )
+	{
+		nvicfiq_value = false;
+		itop1 |= (0x01UL << 6); // set bit 6
+	}
+	else
+		nvicfiq_value = true;
+
+	// compute the VECTIRQn signals
+	//   and set the VICVECTADDR if required
+	bool vectirq[15];
+	bool priority = false;
+	uint32_t nonvect_irqs = 0;
+	for ( unsigned int i = 0; i < NUM_VECT_INT; i++ )
+	{
+		uint32_t vectcntl = GetVICVECTCNTL(i);
+		uint32_t src = VECTCNTLSource(vectcntl);
+
+		if ( VECTCNTLEnable(vectcntl) )
+		{
+			// prepare the nonvectored irqs
+			nonvect_irqs |= (0x01UL << src);
+			if ( priority )
+				vectirq[i] = false;
+			else
+			{
+				if ( irqstatus & (0x01UL << src) )
+				{
+					vectirq[i] = true;
+					priority = true;
+					SetVICVECTADDR(GetVICVECTADDR(i));
+				}
+			}
+		}
+	}
+
+	// if there is no vectored irq generated then
+	//   a nonvectored irq can be raised
+	// also set the default vector addr if none was detected
+	bool nonvectored_irq = false;
+	if ( !priority )
+	{
+		SetVICVECTADDR(GetVICDEFVECTADDR());
+		if ( irqstatus & ~nonvect_irqs )
+		{
+			nonvectored_irq = true;
+			priority = true;
+		}
+	}
+
+	// if a vectored or nonvectored irq was generated
+	//   then set the nVICIRQ signal, otherwise set it 
+	//   if an external IRQ was generated
+	// NOTE: the nvicirq_value is inverted
+	nvicirq_value = true;
+	if ( priority )
+		nvicirq_value = false;
+	else
+	{
+		if ( nvicfiqin )
+		{
+			nvicirq_value = false;
+			SetVICVECTADDR(vicvectaddrin);
+		}
+	}
+	// update itop1
+	itop1 &= ~(0x01UL << 7);
+	if ( !nvicirq_value )
+		itop1 |= (0x01UL << 7);
+	SetVICITOP1(itop1);
+}
+
+/** Source interrupt handling */
+void 
+VIC ::
+VICIntSourceReceived(int id, bool value)
+{
+	uint32_t orig = int_source;
+	if ( value )
+		int_source |= (0x01UL << id);
+	else
+		int_source &= ~(0x01UL << id);
+	UpdateStatus();
+
 }
 
 /**************************************************************************/
@@ -125,6 +263,14 @@ bus_target_b_transport(transaction_type &trans,
 
 	if ( is_read )
 	{
+		if ( (0x01000UL - size) >= addr )
+		{
+			memcpy(data, &(regs[addr]), size);
+			if ( addr >= 0x0fe0UL )
+			{
+				handled = true;
+			}
+		}
 	}
 	else // writing
 	{
@@ -136,7 +282,7 @@ bus_target_b_transport(transaction_type &trans,
 			<< " - read = " << is_read << std::endl
 			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
 			<< " - size = " << size;
-		if ( is_read )
+		if ( !is_read )
 		{
 			logger << std::endl
 				<< " - data =" << std::hex;
@@ -168,6 +314,319 @@ bus_target_transport_dbg(transaction_type &trans)
 
 /**************************************************************************/
 /* Virtual methods for the target socket for the bus connection       END */
+/**************************************************************************/
+
+/**************************************************************************/
+/* Methods to get and set the registers                             START */
+/**************************************************************************/
+
+/** Returns the enable field of the VICVECTCNTL register.
+ *
+ * @param value the register value
+ * @return true if enable is set, false otherwise
+ */
+bool 
+VIC ::
+VECTCNTLEnable(uint32_t value)
+{
+	if ( value & (0x01UL << 5) )
+		return true;
+	return false;
+}
+
+/** Returns the source field of the VICVECTCNTL register
+ *
+ * @param value the register value
+ * @return the value of the source field
+ */
+uint32_t 
+VIC ::
+VECTCNTLSource(uint32_t value)
+{
+	return value & 0x01fUL;
+}
+
+/** Returns the register pointed by the given address
+ *
+ * @param addr the address to consider
+ * @return the value of the register pointed by the address
+ */
+uint32_t
+VIC ::
+GetRegister(uint32_t addr) const
+{
+	const uint8_t *data = &(regs[addr]);
+	uint32_t value = 0;
+
+	memcpy(&value, data, 4);
+	value = LittleEndian2Host(value);
+	return value;
+}
+
+/** Sets the register pointed by the given address
+ *
+ * @param addr the address to consider
+ * @param value the value to set the register
+ */
+void
+VIC ::
+SetRegister(uint32_t addr, uint32_t value)
+{
+	uint8_t *data = &(regs[addr]);
+
+	value = Host2LittleEndian(value);
+	memcpy(data, &value, 4);
+}
+
+/** Returns the IRQ status register
+ *
+ * @return the value of the IRQ status register
+ */
+uint32_t 
+VIC ::
+GetVICIRQSTATUS() const
+{
+	return GetRegister(VICIRQSTATUSAddr);
+}
+
+/** Sets the IRQ status register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICIRQSTATUS(uint32_t value)
+{
+	SetRegister(VICIRQSTATUSAddr, value);
+}
+
+/** Returns the FIQ status register
+ *
+ * @return the value of the FIQ status register
+ */
+uint32_t 
+VIC :: 
+GetVICFIQSTATUS() const
+{
+	return GetRegister(VICFIQSTATUSAddr);
+}
+
+/** Sets the FIQ status register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICFIQSTATUS(uint32_t value)
+{
+	SetRegister(VICFIQSTATUSAddr, value);
+}
+
+/** Returns the raw interrupt register
+ *
+ * @return the value of the raw interrupt register
+ */
+uint32_t 
+VIC ::
+GetVICRAWINTR() const
+{
+	return GetRegister(VICRAWINTRAddr);
+}
+
+/** Sets the raw interrupt register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICRAWINTR(uint32_t value)
+{
+	SetRegister(VICRAWINTRAddr, value);
+}
+
+/** Returns the interrupt select register
+ *
+ * @return the value of the interrupt select register
+ */
+uint32_t 
+VIC ::
+GetVICINTSELECT() const
+{
+	return GetRegister(VICINTSELECTAddr);
+}
+
+/** Sets the interrupt select register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICINTSELECT(uint32_t value)
+{
+	SetRegister(VICINTSELECTAddr, value);
+}
+
+/** Returns the interrupt enable register
+ *
+ * @return the value of the interrupt enable register
+ */
+uint32_t 
+VIC ::
+GetVICINTENABLE() const
+{
+	return GetRegister(VICINTENABLEAddr);
+}
+
+/** Sets the interrupt enable register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICINTENABLE(uint32_t value)
+{
+	SetRegister(VICINTENABLEAddr, value);
+}
+
+/** Returns the software interrupt register
+ *
+ * @return the value of the software interrupt register
+ */
+uint32_t 
+VIC ::
+GetVICSOFTINT() const
+{
+	return GetRegister(VICSOFTINTAddr);
+}
+
+/** Sets the software interrupt register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICSOFTINT(uint32_t value)
+{
+	SetRegister(VICSOFTINTAddr, value);
+}
+
+/** Returns the vector address register
+ *
+ * @return the value of the vector address register
+ */
+uint32_t 
+VIC ::
+GetVICVECTADDR() const
+{
+	return GetRegister(VICVECTADDRAddr);
+}
+
+/** Set the vector address register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICVECTADDR(uint32_t value)
+{
+	SetRegister(VICVECTADDRAddr, value);
+}
+
+/** Returns the default vector address register
+ *
+ * @return the value of the default vector address register
+ */
+uint32_t 
+VIC ::
+GetVICDEFVECTADDR() const
+{
+	return GetRegister(VICDEFVECTADDRAddr);
+}
+
+/** Sets the default vector address register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICDEFVECTADDR(uint32_t value)
+{
+	SetRegister(VICDEFVECTADDRAddr, value);
+}
+
+/** Returns one of the vector address registers
+ *
+ * @param index the index to look for
+ * @return the value of the indexed vector address register
+ */
+uint32_t 
+VIC ::
+GetVICVECTADDR(uint32_t index) const
+{
+	return GetRegister(VICVECTADDRBaseAddr + (4 * index));
+}
+
+/** Sets the value of one of the vector address registers
+ *
+ * @param index the index to look for
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICVECTADDR(uint32_t index, uint32_t value)
+{
+	SetRegister(VICVECTADDRBaseAddr + (4 * index),
+			value);
+}
+
+/** Returns one of the vector control registers
+ *
+ * @param index the index to look for
+ * @return the value of the indexed vector control register
+ */
+uint32_t 
+VIC ::
+GetVICVECTCNTL(uint32_t index) const
+{
+	return GetRegister(VICVECTCNTLBaseAddr + (4 * index));
+}
+
+/** Sets the value of one of the vector controll registers
+ *
+ * @param index the index to look for
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICVECTCNTL(uint32_t index, uint32_t value)
+{
+	SetRegister(VICVECTCNTLBaseAddr + (4 * index), value);
+}
+
+/** Returns the test output register (nVICIRQ/nVICFIQ)
+ *
+ * @return the value of the test output register (nVICIRQ/nVICFIQ)
+ */
+uint32_t 
+VIC ::
+GetVICITOP1() const
+{
+	return GetRegister(VICITOP1Addr);
+}
+
+/** Set the test output register (nVICIRQ/nVICFIQ)
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICITOP1(uint32_t value)
+{
+	SetRegister(VICITOP1Addr, value);
+}
+
+/**************************************************************************/
+/* Methods to get and set the registers                               END */
 /**************************************************************************/
 
 } // end of namespace vic
