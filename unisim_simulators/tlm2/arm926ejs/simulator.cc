@@ -268,6 +268,7 @@ int
 Simulator ::
 Run()
 {
+	/* TODO: remove this code and add it to a loader (raw loader???) */
 	static uint32_t bootloader[] = {
 		0xe3a00000,
 		0xe3a01083,
@@ -279,6 +280,8 @@ Run()
 	};
 
 	memory->WriteMemory(0, bootloader, sizeof(bootloader));
+	/* END TODO */
+
 	if ( unlikely(SimulationFinished()) ) return 0;
 
 #ifndef SIM_LIBRARY
