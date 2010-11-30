@@ -37,7 +37,7 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketWriter::SocketWriter(const int sock) {
+SocketWriter::SocketWriter(const int sock) : GenericThread() {
 	assert(sock >= 0);
 	sockfd = sock;
 	buffer_queue = new BlockingQueue<char *>();
@@ -63,9 +63,9 @@ void SocketWriter::Run() {
 	int err;
 	int n;
 
-	terminated = false;
+	super::setTerminated(false);
 
-	while (!terminated) {
+	while (!super::isTerminated()) {
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
 
@@ -93,7 +93,7 @@ void SocketWriter::Run() {
 		if (FD_ISSET(sockfd, &write_flags)) {
 			FD_CLR(sockfd, &write_flags);
 
-			while (!buffer_queue->isEmpty() && !terminated) {
+			while (!buffer_queue->isEmpty() && !super::isTerminated()) {
 
 				char *output_buffer = NULL;
 				buffer_queue->next(output_buffer);

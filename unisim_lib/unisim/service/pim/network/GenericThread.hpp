@@ -40,19 +40,22 @@ class GenericThread : public TObject
 {
 public:
 
+	GenericThread() : terminated(false) {}
 	~GenericThread() { if (!isTerminated()) stop(); }
 	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; }
 	virtual void join() { pthread_join(thid,NULL); }
 	virtual void stop() { terminated = true; }
 	virtual bool isTerminated() { return terminated; }
+	virtual bool setTerminated(bool b) { terminated = b; }
 
 protected:
-	bool terminated;
 	typedef GenericThread super;
 
 private:
 	pthread_t thid;
 	int ret;
+	bool terminated;
+
 };
 
 } // network 

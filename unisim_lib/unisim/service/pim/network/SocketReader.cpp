@@ -36,7 +36,7 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketReader::SocketReader(const int sock) {
+SocketReader::SocketReader(const int sock) : GenericThread() {
 	assert(sock >= 0);
 	sockfd = sock;
 	buffer_queue = new BlockingQueue<char *>();
@@ -63,9 +63,9 @@ void SocketReader::Run() {
 	int n;
 	stringstream receive_buffer;
 
-	terminated = false;
+	super::setTerminated(false);
 
-	while (!terminated) {
+	while (!super::isTerminated()) {
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
 

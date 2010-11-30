@@ -31,6 +31,7 @@ using unisim::kernel::service::VariableBase;
 
 PIM::PIM(const char *name, Simulator *simulator, uint16_t port, char* host, Object *parent) : 
 	Object(name,parent),
+	GenericThread(),
 	filename("pim.xml"),
 	param_filename("filename", this, filename),
 	fSimulator(simulator),
@@ -140,7 +141,7 @@ void TargetThread::Run(){
 
 	cerr << "PIM::TargetThread start RUN " << std::endl;
 
-	while (!isTerminated()) {
+	while (!super::isTerminated()) {
 
 		char *buffer = receive();
 
@@ -148,7 +149,8 @@ void TargetThread::Run(){
 
 //		cerr << "PIM-Target receive " << buffer << std::endl;
 
-		if (!isTerminated()) {
+		if (!super::isTerminated()) {
+
 			string buf_str(buffer);
 
 // qRcmd,cmd:var_name:value

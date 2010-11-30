@@ -51,12 +51,12 @@ uint32_t SocketThread::name_resolve(char *host_name)
 	return (addr.s_addr);
 }
 
-SocketThread::SocketThread(char* host, uint16_t port) {
+SocketThread::SocketThread(char* host, uint16_t port) : GenericThread() {
 	hostname = name_resolve(host);
 	hostport = port;
 }
 
-SocketThread::SocketThread() {
+SocketThread::SocketThread() : GenericThread() {
 
 }
 
