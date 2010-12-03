@@ -37,7 +37,10 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketWriter::SocketWriter(const int sock) : GenericThread() {
+SocketWriter::SocketWriter(const int sock, bool _blocking) :
+		GenericThread(),
+		blocking(_blocking)
+{
 	assert(sock >= 0);
 	sockfd = sock;
 	buffer_queue = new BlockingQueue<char *>();
@@ -136,16 +139,39 @@ void SocketWriter::send(const char* data) {
 	dd[pos+2] = Nibble2HexChar(checksum >> 4);
 	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
 
-	buffer_queue->add(dd);
+	if (blocking) {
+		int n = write(sockfd, dd, strlen(dd));
+
+		free(dd);
+		if (n < 0) {
+			int array[] = {sockfd};
+			error(array, "ERROR writing to socket");
+		}
+
+	} else {
+		buffer_queue->add(dd);
+	}
 }
 
 void SocketWriter::stop() {
-	super::stop();
 
 	if (buffer_queue) {
+		buffer_queue->lock();
+		std::queue<char*> myqueue = buffer_queue->getQueue();
+		while (!myqueue.empty())
+		{
+			char* data = myqueue.front();
+			free(data);
+			myqueue.pop();
+		}
+
+		buffer_queue->unlock();
+
 		delete buffer_queue;
 		buffer_queue = NULL;
 	}
+
+	super::stop();
 
 }
 

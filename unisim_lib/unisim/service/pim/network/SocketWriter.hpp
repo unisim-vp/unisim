@@ -23,7 +23,7 @@ namespace network {
 class SocketWriter: public GenericThread {
 public:
 
-	SocketWriter(const int sock);
+	SocketWriter(const int sock, bool _blocking);
 	~SocketWriter();
 
 	virtual void Run();
@@ -35,6 +35,7 @@ protected:
 private:
 	int sockfd;
 	BlockingQueue<char *> *buffer_queue;
+	bool blocking;
 };
 
 } // network 

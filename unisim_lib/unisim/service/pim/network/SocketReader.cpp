@@ -30,13 +30,19 @@
 #endif
 
 #include "SocketReader.hpp"
+#include "../convert.hh"
 
 namespace unisim {
 namespace service {
 namespace pim {
 namespace network {
 
-SocketReader::SocketReader(const int sock) : GenericThread() {
+SocketReader::SocketReader(const int sock, bool _blocking) :
+		GenericThread(),
+		blocking(_blocking),
+		input_buffer_size(0),
+		input_buffer_index(0)
+{
 	assert(sock >= 0);
 	sockfd = sock;
 	buffer_queue = new BlockingQueue<char *>();
@@ -58,10 +64,10 @@ void SocketReader::Run() {
 
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
+	stringstream receive_buffer;
 
 	int err;
 	int n;
-	stringstream receive_buffer;
 
 	super::setTerminated(false);
 
@@ -90,7 +96,6 @@ void SocketReader::Run() {
 		if (FD_ISSET(sockfd, &read_flags)) {
 			FD_CLR(sockfd, &read_flags);
 
-			char *input_buffer = new char[MAXDATASIZE+1];
 			memset(input_buffer, 0, MAXDATASIZE+1);
 
 		    n = read(sockfd, input_buffer, MAXDATASIZE);
@@ -103,6 +108,7 @@ void SocketReader::Run() {
 		    }
 
 		} else {
+			receive_buffer.flush();
 			string bstr = receive_buffer.str();
 			receive_buffer.str("");
 			while (bstr.size() > 0) {
@@ -128,31 +134,126 @@ void SocketReader::Run() {
 				} else {
 					bstr = "";
 				}
-
 			}
+
+			bstr.clear();
 		}
 
 	}
 
 }
 
+char SocketReader::getChar() {
+
+	if (input_buffer_size == 0) {
+		memset(input_buffer, 0, MAXDATASIZE+1);
+	    int n = read(sockfd, input_buffer, MAXDATASIZE);
+	    if (n < 0) {
+	    	int array[] = {sockfd};
+	    	error(array, "ERROR reading from socket");
+	    } else {
+	    	input_buffer_size = n;
+	    	input_buffer_index = 0;
+	    }
+	}
+
+	input_buffer_size--;
+	return input_buffer[input_buffer_index++];
+}
+
 char* SocketReader::receive() {
 
 	char* str = NULL;
+	string s;
+	uint8_t checkSum = 0;
+	int packe_size = 0;
+	uint8_t pchk;
 
-	buffer_queue->next(str);
+	if (blocking) {
+
+    	while (true) {
+    		char c = getChar();
+    		if (c == 0) break;
+        	switch(c)
+        	{
+        		case '+':
+        			str = receive();
+        			return str;
+        		case '-':
+        				// error response => e.g. retransmission of the last packet
+        				str = "-";
+        				return str;
+
+        		case 3: // '\003'
+        			break;
+        		case '$':
+
+        			c = getChar();
+        			while (true) {
+            			s = s + c;
+            			packe_size++;
+        				checkSum = checkSum + c;
+        				c = getChar();
+
+        				if (c == '#') break;
+        			}
+
+        			c = getChar();
+        			pchk = HexChar2Nibble(c) << 4;
+        			c = getChar();
+        			pchk = pchk + HexChar2Nibble(c);
+
+        			if (checkSum != pchk) {
+        				cerr << "wrong checksum" << endl;
+        				return NULL;
+        			} else
+        			{
+
+						str = (char *) malloc(packe_size+1);
+						memset(str, 0, packe_size+1);
+						memcpy(str, s.c_str(), packe_size);
+
+						s.clear();
+
+        				return str;
+        			}
+
+        			break;
+        		default:
+        			cerr << "packetParser: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+        	}
+
+    	}
+
+    	return str;
+
+	} else {
+		buffer_queue->next(str);
+	}
 
 	return str;
 }
 
 
 void SocketReader::stop() {
-	super::stop();
 
 	if (buffer_queue) {
+		buffer_queue->lock();
+		std::queue<char*> myqueue = buffer_queue->getQueue();
+		while (!myqueue.empty())
+		{
+			char* data = myqueue.front();
+			free(data);
+			myqueue.pop();
+		}
+
+		buffer_queue->unlock();
+
 		delete buffer_queue;
 		buffer_queue = NULL;
 	}
+
+	super::stop();
 
 }
 

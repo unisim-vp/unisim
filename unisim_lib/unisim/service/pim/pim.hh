@@ -55,9 +55,6 @@ class component_t { // VirtualComponent Hierarchical (getChldren() != null)
 public:
 	~component_t() {
 
-		for (int i=0; i < pins.size(); i++) {
-			if (pins[i]) { delete pins[i]; pins[i] = NULL; }
-		}
 		pins.clear();
 	}
 

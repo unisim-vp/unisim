@@ -57,28 +57,31 @@ void SocketClientThread::Run() {
 	} while (err < 0);
 
 
+	if (!blocking) {
+
 #ifdef WIN32
 
-	u_long NonBlock = 1;
-	if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-		int array[] = {sockfd};
-		error(array, "ioctlsocket failed");
-	}
+		u_long NonBlock = 1;
+		if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
+			int array[] = {sockfd};
+			error(array, "ioctlsocket failed");
+		}
 
 #else
 
-	int flags = fcntl(sockfd, F_GETFL, 0);
-	if (flags < 0)	{
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
+		int flags = fcntl(sockfd, F_GETFL, 0);
+		if (flags < 0)	{
+			int array[] = {sockfd};
+			error(array, "fcntl failed");
+		}
 
-	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
+		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+			int array[] = {sockfd};
+			error(array, "fcntl failed");
+		}
 
 #endif
+	}
 
 }
 

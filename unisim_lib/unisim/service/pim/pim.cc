@@ -32,11 +32,13 @@ using unisim::kernel::service::VariableBase;
 PIM::PIM(const char *name, Simulator *simulator, uint16_t port, char* host, Object *parent) : 
 	Object(name,parent),
 	GenericThread(),
-	filename("pim.xml"),
-	param_filename("filename", this, filename),
 	fSimulator(simulator),
 	fPort(port),
-	fHost(host)
+	fHost(host),
+	filename("pim.xml"),
+	param_filename("filename", this, filename),
+	socketfd(0),
+	target(0)
 { 
 
 }
@@ -84,6 +86,8 @@ void PIM::GetExportedVariables(vector<component_t*> &pim) {
 		component->pins.push_back((VariableBase *) *it);
 
 	}
+
+	lst.clear();
 }
 
 component_t* PIM::FindComponent(const string name) {
@@ -114,7 +118,7 @@ void PIM::Run() {
 	protocolHandlers.push_back(target);
 
 	// Open Socket Stream
-	socketfd = new SocketServerThread(fHost, fPort, 1);
+	socketfd = new SocketServerThread(fHost, fPort, false, 1);
 //	socketfd = new SocketClientThread(fHost, fPort);
 
 	socketfd->setProtocolHandlers(&protocolHandlers);
@@ -154,19 +158,24 @@ void TargetThread::Run(){
 			string buf_str(buffer);
 
 // qRcmd,cmd:var_name:value
-			int index = buf_str.find(',');
-			string qRcmd = buf_str.substr(0, index);
-			buf_str = buf_str.substr(index+1);
+			int start_index = 0;
+			int end_index = buf_str.find(',');
+			string qRcmd = buf_str.substr(start_index, end_index-start_index);
 
-			index = buf_str.find(':');
-			string cmd = buf_str.substr(0, index);
-			buf_str = buf_str.substr(index+1);
+//			buf_str = buf_str.substr(index+1);
+			start_index = end_index+1;
+
+			end_index = buf_str.find(':', start_index);
+			string cmd = buf_str.substr(start_index, end_index-start_index);
+//			buf_str = buf_str.substr(index+1);
+			start_index = end_index+1;
 
 			if (cmd.compare("read") == 0) {
 
-				index = buf_str.find(':');
-				string name = buf_str.substr(0, index);
-				buf_str = buf_str.substr(index+1);
+				end_index = buf_str.find(':', start_index);
+				string name = buf_str.substr(start_index, end_index-start_index);
+//				buf_str = buf_str.substr(index+1);
+				start_index = end_index+1;
 
 				for (int i=0; i < fVariables->size(); i++) {
 					if (name.compare((*fVariables)[i]->GetName()) == 0) {
@@ -179,24 +188,28 @@ void TargetThread::Run(){
 
 						std::string str = os.str();
 
-						const char *buffer = str.c_str();
+						const char *bstr = str.c_str();
 
-						send(buffer);
+						send(bstr);
 
-//						cout << name << " send: " << buffer << endl;
+//						cout << name << " send: " << bstr << endl;
 
 						os.str(std::string());
+						str.clear();
 						break;
 					}
 				}
 
+				name.clear();
+
 			} else if (cmd.compare("write") == 0) {
 
-				index = buf_str.find(':');
-				string name = buf_str.substr(0, index);
-				buf_str = buf_str.substr(index+1);
+				end_index = buf_str.find(':');
+				string name = buf_str.substr(start_index, end_index-start_index);
+//				buf_str = buf_str.substr(index+1);
+				start_index = end_index+1;
 
-				string value = buf_str;
+				string value = buf_str.substr(start_index);
 
 				for (int i=0; i < fVariables->size(); i++) {
 					if (name.compare((*fVariables)[i]->GetName()) == 0) {
@@ -206,11 +219,16 @@ void TargetThread::Run(){
 					}
 				}
 
+				name.clear();
+				value.clear();
 			} else {
 				cerr << "PIM-Target UNKNOWN command => " << buffer << std::endl;
 			}
-		}
 
+			qRcmd.clear();
+			cmd.clear();
+			buf_str.clear();
+		}
 
 		if (buffer != NULL) {
 			free(buffer);

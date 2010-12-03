@@ -51,12 +51,29 @@ uint32_t SocketThread::name_resolve(char *host_name)
 	return (addr.s_addr);
 }
 
-SocketThread::SocketThread(char* host, uint16_t port) : GenericThread() {
+SocketThread::SocketThread(char* host, uint16_t port, bool _blocking) :
+		GenericThread(),
+		hostname(0),
+		hostport(0),
+		sockfd(0),
+		blocking(_blocking),
+		reader(0),
+		writer(0)
+
+{
 	hostname = name_resolve(host);
 	hostport = port;
 }
 
-SocketThread::SocketThread() : GenericThread() {
+SocketThread::SocketThread() :
+				GenericThread(),
+				hostname(0),
+				hostport(0),
+				sockfd(0),
+				blocking(true),
+				reader(0),
+				writer(0)
+{
 
 }
 
@@ -75,14 +92,15 @@ SocketThread::~SocketThread() {
 
 }
 
-void SocketThread::Start(int sockfd) {
+void SocketThread::Start(int sockfd, bool _blocking) {
 
 	this->sockfd = sockfd;
+	this->blocking = _blocking;
 
-	writer = new SocketWriter(sockfd);
+	writer = new SocketWriter(sockfd, blocking);
 	writer->start();
 
-	reader = new SocketReader(sockfd);
+	reader = new SocketReader(sockfd, blocking);
 	reader->start();
 
 	this->start();

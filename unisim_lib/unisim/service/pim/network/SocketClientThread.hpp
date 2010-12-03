@@ -19,8 +19,8 @@ namespace network {
 class SocketClientThread: public SocketThread {
 public:
 
-	SocketClientThread(char* host, uint16_t port) :
-			SocketThread(host, port) { };
+	SocketClientThread(char* host, uint16_t port, bool _blocking) :
+			SocketThread(host, port, _blocking) { };
 
 	virtual void Run();
 

@@ -22,7 +22,7 @@ namespace network {
 class SocketReader: public GenericThread {
 public:
 
-	SocketReader(const int sock);
+	SocketReader(const int sock, bool _blocking);
 	~SocketReader();
 
 	virtual void Run();
@@ -34,6 +34,13 @@ protected:
 private:
 	int sockfd;
 	BlockingQueue<char *> *buffer_queue;
+	bool blocking;
+	int input_buffer_size;
+	int input_buffer_index;
+	char input_buffer[MAXDATASIZE+1];
+
+	char getChar();
+
 };
 
 } // network 

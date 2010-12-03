@@ -24,12 +24,12 @@ public:
 
 	// Protocol list "NONE", "GDB", "PIM"
 
-	SocketThread(char* host, uint16_t port);
+	SocketThread(char* host, uint16_t port, bool _blocking);
 	SocketThread();
 
 	~SocketThread();
 
-	void Start(int sockfd);
+	void Start(int sockfd, bool _blocking);
 
 	virtual void Run() { };
 	virtual void send(const char* data);
@@ -41,6 +41,7 @@ protected:
 	uint32_t hostname;
 	uint16_t hostport;
 	int sockfd;
+	bool blocking;
 
 	SocketReader *reader;
 	SocketWriter *writer;

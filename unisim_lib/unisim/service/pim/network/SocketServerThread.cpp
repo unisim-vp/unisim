@@ -35,8 +35,8 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketServerThread::SocketServerThread(char* host, uint16_t port, uint8_t connection_req_nb) :
-	SocketThread(host, port)
+SocketServerThread::SocketServerThread(char* host, uint16_t port, bool _blocking, uint8_t connection_req_nb) :
+	SocketThread(host, port, _blocking)
 {
 	request_nbre = connection_req_nb;
 
@@ -66,28 +66,31 @@ SocketServerThread::SocketServerThread(char* host, uint16_t port, uint8_t connec
 		error(array, "listen failed");
 	}
 
+	if (!blocking) {
+
 #ifdef WIN32
 
-	u_long NonBlock = 1;
-	if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-		int array[] = {sockfd};
-		error(array, "ioctlsocket failed");
-	}
+		u_long NonBlock = 1;
+		if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
+			int array[] = {sockfd};
+			error(array, "ioctlsocket failed");
+		}
 
 #else
 
-	int flags = fcntl(sockfd, F_GETFL, 0);
-	if (flags < 0)	{
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
+		int flags = fcntl(sockfd, F_GETFL, 0);
+		if (flags < 0)	{
+			int array[] = {sockfd};
+			error(array, "fcntl failed");
+		}
 
-	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
+		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+			int array[] = {sockfd};
+			error(array, "fcntl failed");
+		}
 
 #endif
+	}
 
 }
 
@@ -119,11 +122,14 @@ void SocketServerThread::Run() {
 
 bool SocketServerThread::bindHandler(int newsockfd) {
 
-	reader = new SocketReader(newsockfd);
-	reader->start();
+	reader = new SocketReader(newsockfd, blocking);
 
-	writer = new SocketWriter(newsockfd);
-	writer->start();
+	writer = new SocketWriter(newsockfd, blocking);
+
+	if (!blocking) {
+		reader->start();
+		writer->start();
+	}
 
 	char* protocol = reader->receive();
 
@@ -131,6 +137,7 @@ bool SocketServerThread::bindHandler(int newsockfd) {
 	bool found = false;
 	if (target->getProtocol().compare(protocol) == 0) {
 		writer->send("ACK");
+
 		found = true;
 	} else {
 		writer->send("NACK");
@@ -138,14 +145,16 @@ bool SocketServerThread::bindHandler(int newsockfd) {
 
 	char* ack = reader->receive();
 
-	reader->stop();
-	writer->stop();
+	if (!blocking) {
+		reader->stop();
+		writer->stop();
+	}
 
 	delete reader; reader = NULL;
 	delete writer; writer = NULL;
 
 	if (found) {
-		target->Start(newsockfd);
+		target->Start(newsockfd, blocking);
 	}
 
 }
