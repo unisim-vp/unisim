@@ -164,9 +164,9 @@ char SocketReader::getChar() {
 char* SocketReader::receive() {
 
 	char* str = NULL;
-	string s;
+	string s = "";
 	uint8_t checkSum = 0;
-	int packe_size = 0;
+	int packet_size = 0;
 	uint8_t pchk;
 
 	if (blocking) {
@@ -191,7 +191,7 @@ char* SocketReader::receive() {
         			c = getChar();
         			while (true) {
             			s = s + c;
-            			packe_size++;
+            			packet_size++;
         				checkSum = checkSum + c;
         				c = getChar();
 
@@ -209,9 +209,9 @@ char* SocketReader::receive() {
         			} else
         			{
 
-						str = (char *) malloc(packe_size+1);
-						memset(str, 0, packe_size+1);
-						memcpy(str, s.c_str(), packe_size);
+						str = (char *) malloc(packet_size+1);
+						memset(str, 0, packet_size+1);
+						memcpy(str, s.c_str(), packet_size);
 
 						s.clear();
 

@@ -118,7 +118,7 @@ void PIM::Run() {
 	protocolHandlers.push_back(target);
 
 	// Open Socket Stream
-	socketfd = new SocketServerThread(fHost, fPort, false, 1);
+	socketfd = new SocketServerThread(fHost, fPort, true, 1);
 //	socketfd = new SocketClientThread(fHost, fPort);
 
 	socketfd->setProtocolHandlers(&protocolHandlers);
