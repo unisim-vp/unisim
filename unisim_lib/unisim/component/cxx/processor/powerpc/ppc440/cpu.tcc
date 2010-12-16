@@ -59,7 +59,7 @@ using namespace std;
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
-	: Object(name, parent, "PowerPC PPC440 CPU")
+	: Object(name, parent, "this module implements a PPC440 CPU core")
 	, unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>()
 	, Client<Loader<typename CONFIG::address_t> >(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
@@ -122,8 +122,10 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_write_memory(false)
 	, verbose_exception(false)
 	, verbose_set_msr(false)
+	, verbose_tlbwe(false)
 	, enable_linux_printk_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
+	, enable_trap_on_exception(false)
 	, max_inst(0xffffffffffffffffULL)
 	, registers_registry()
 	, instruction_counter(0)
@@ -139,6 +141,12 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, itlb()
 	, dtlb()
 	, utlb()
+	, num_itlb_accesses(0)
+	, num_itlb_misses(0)
+	, num_dtlb_accesses(0)
+	, num_dtlb_misses(0)
+	, num_utlb_accesses(0)
+	, num_utlb_misses(0)
 	, num_insn_in_prefetch_buffer(0)
 	, cur_insn_in_prefetch_buffer(0)
 	, prefetch_buffer()
@@ -162,31 +170,33 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_write_memory("verbose-write-memory",  this,  verbose_write_memory, "enable/disable verbosity when writing memory for a debug purpose")
 	, param_verbose_exception("verbose-exception",  this,  verbose_exception, "enable/disable verbosity when handling exceptions")
 	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr, "enable/disable verbosity when setting MSR")
+	, param_verbose_tlbwe("verbose-tlbwe",  this,  verbose_tlbwe, "enable/disable verbosity when executing a tlbwe instruction")
 	, param_enable_linux_printk_snooping("enable-linux-printk-snooping", this, enable_linux_printk_snooping, "enable/disable linux printk buffer snooping")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
+	, param_enable_trap_on_exception("enable-trap-on-exception", this, enable_trap_on_exception, "enable/disable trap reporting on exception")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 	, stat_timer_cycle("timer-cycle",  this,  timer_cycle, "number of simulated timer cycles")
 	, stat_num_il1_accesses("num-il1-accesses", this, num_il1_accesses, "number of accesses to L1 instruction cache")
 	, stat_num_il1_misses("num-il1-misses", this, num_il1_misses, "number of misses to L1 instruction cache")
-	, formula_il1_miss_rate("il1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_il1_misses, &stat_num_il1_accesses)
+	, formula_il1_miss_rate("il1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_il1_misses, &stat_num_il1_accesses, "L1 instruction cache miss rate")
 	, stat_num_dl1_accesses("num-dl1-accesses", this, num_dl1_accesses, "number of accesses to L1 data cache")
 	, stat_num_dl1_misses("num-dl1-misses", this, num_dl1_misses, "number of misses to L1 data cache")
-	, formula_dl1_miss_rate("dl1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dl1_misses, &stat_num_dl1_accesses)
+	, formula_dl1_miss_rate("dl1-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dl1_misses, &stat_num_dl1_accesses, "L1 data cache miss rate")
+	, stat_num_itlb_accesses("num-itlb-accesses", this, num_itlb_accesses, "number of accesses to shadow instruction translation look-aside buffer")
+	, stat_num_itlb_misses("num-itlb-misses", this, num_itlb_misses, "number of misses to shadow instruction translation look-aside buffer")
+	, formula_itlb_miss_rate("itlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_itlb_misses, &stat_num_itlb_accesses, "shadow instruction translation look-aside buffer miss rate")
+	, stat_num_dtlb_accesses("num-dtlb-accesses", this, num_dtlb_accesses, "number of accesses to shadow data translation look-aside buffer")
+	, stat_num_dtlb_misses("num-dtlb-misses", this, num_dtlb_misses, "number of misses to shadow data translation look-aside buffer")
+	, formula_dtlb_miss_rate("dtlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_dtlb_misses, &stat_num_dtlb_accesses, "shadow data translation look-aside buffer miss rate")
+	, stat_num_utlb_accesses("num-utlb-accesses", this, num_utlb_accesses, "number of accesses to unified data translation look-aside buffer")
+	, stat_num_utlb_misses("num-utlb-misses", this, num_utlb_misses, "number of misses to unified data translation look-aside buffer")
+	, formula_utlb_miss_rate("utlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_utlb_misses, &stat_num_utlb_accesses, "unified data translation look-aside buffer miss rate")
 {
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_voltage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	/*
-	stat_bus_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_cpu_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_num_il1_accesses.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_num_il1_misses.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_num_dl1_accesses.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_num_dl1_misses.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	*/
 
 	unsigned int i;
 
@@ -329,6 +339,38 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	registers_registry["tsr"] = new unisim::util::debug::SimpleRegister<uint32_t>("tsr", &tsr);
 
 	Reset();
+	
+	std::stringstream sstr_description;
+	sstr_description << "This module implements a PPC440 CPU core. It has the following characteristics:" << std::endl;
+	sstr_description << "Processor version (PVR value): 0x" << std::hex << CONFIG::PROCESSOR_VERSION << std::dec << std::endl;
+	sstr_description << "Reset configuration (RSTCFG): U0=" << GetRSTCFG_U0()  << ", U1=" << GetRSTCFG_U1() << ", U2=" << GetRSTCFG_U2() << ", U3=" << GetRSTCFG_U3() << ", E=" << GetRSTCFG_E() << ", ERPN=0x" << std::hex << GetRSTCFG_ERPN() << std::dec << std::endl;
+	sstr_description << "Start address: 0x" << std::hex << CONFIG::START_ADDR << std::dec << std::endl;
+	if(CONFIG::DL1_CONFIG::ENABLE)
+	{
+		sstr_description << "L1 data cache: size=" << CONFIG::DL1_CONFIG::CACHE_SIZE << " bytes, block size=" << CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE << " bytes, associativity=" << CONFIG::DL1_CONFIG::CACHE_ASSOCIATIVITY << std::endl;
+	}
+	if(CONFIG::IL1_CONFIG::ENABLE)
+	{
+		sstr_description << "L1 instruction cache: size=" << CONFIG::IL1_CONFIG::CACHE_SIZE << " bytes, block size=" << CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE << " bytes, associativity=" << CONFIG::IL1_CONFIG::CACHE_ASSOCIATIVITY << std::endl;
+	}
+	if(CONFIG::ITLB_CONFIG::ENABLE)
+	{
+		sstr_description << "shadow instruction TLB: size=" << CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES << " entries, associativity=" << CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY << std::endl;
+	}
+	if(CONFIG::DTLB_CONFIG::ENABLE)
+	{
+		sstr_description << "shadow data TLB: size=" << CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES << " entries, associativity=" << CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY << std::endl;
+	}
+	if(CONFIG::UTLB_CONFIG::ENABLE)
+	{
+		sstr_description << "unified TLB: size=" << CONFIG::UTLB_CONFIG::TLB_NUM_ENTRIES << " entries, associativity=" << CONFIG::UTLB_CONFIG::TLB_ASSOCIATIVITY << std::endl;
+	}
+	sstr_description << "FSB/PLB burst size:" << (8 * CONFIG::FSB_BURST_SIZE) << " bits" << std::endl;
+	sstr_description << "FSB/PLB width:" << (8 * CONFIG::FSB_WIDTH) << " bits" << std::endl;
+	sstr_description << "MMU: " << (CONFIG::HAS_MMU ? "yes" : "no") << std::endl;
+	sstr_description << "FPU APU: " << (CONFIG::HAS_FPU ? "yes" : "no") << std::endl;
+	
+	Object::SetDescription(sstr_description.str().c_str());
 }
 
 template <class CONFIG>
@@ -340,16 +382,6 @@ CPU<CONFIG>::~CPU()
 	{
 		delete reg_iter->second;
 	}
-
-/*	cerr << "num_il1_accesses = " << num_il1_accesses << endl;
-	cerr << "num_il1_misses = " << num_il1_misses << endl;
-	cerr << "il1 miss rate = " << (double) num_il1_misses / num_il1_accesses << endl;
-	cerr << "num_dl1_accesses = " << num_dl1_accesses << endl;
-	cerr << "num_dl1_misses = " << num_dl1_misses << endl;
-	cerr << "dl1 miss rate = " << (double) num_dl1_misses / num_dl1_accesses << endl;
-	cerr << "num_l2_accesses = " << num_l2_accesses << endl;
-	cerr << "num_l2_misses = " << num_l2_misses << endl;
-	cerr << "l2 miss rate = " << (double) num_l2_misses / num_l2_accesses << endl;*/
 }
 
 template <class CONFIG>
@@ -390,7 +422,7 @@ bool CPU<CONFIG>::FloatingPointSelfTest()
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::Setup()
+bool CPU<CONFIG>::BeginSetup()
 {
 	if(Cache<typename CONFIG::IL1_CONFIG>::NUM_SETS > 16)
 	{
@@ -413,6 +445,27 @@ bool CPU<CONFIG>::Setup()
 		return false;
 	}
 	
+	if(!memory_access_reporting_import) {
+		requires_memory_access_reporting = false;
+		requires_finished_instruction_reporting = false;
+	}
+
+	if(!FloatingPointSelfTest())
+	{
+		logger << DebugError;
+		logger << "Floating-point self test failed !" << endl;
+		logger << EndDebugError;
+		return false;
+	}
+	
+	Reset();
+
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::EndSetup()
+{
 	unsigned int min_cycle_time = 0;
 
 	if(CONFIG::ITLB_CONFIG::ENABLE && itlb_power_mode_import)
@@ -535,50 +588,38 @@ bool CPU<CONFIG>::Setup()
 
 	if(linux_os_import)
 	{
-		EnableFPU();
+		if(CONFIG::HAS_FPU) EnableFPU();
 		SetUserPrivilegeLevel();
-	}
-	
-	if(loader_import)
-	{
-		SetCIA(loader_import->GetEntryPoint());
-	}
-
-	if(!memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
 	}
 	
 	num_il1_accesses = 0;
 	num_il1_misses = 0;
 	num_dl1_accesses = 0;
 	num_dl1_misses = 0;
-	
-	if(!FloatingPointSelfTest())
-	{
-		logger << DebugError;
-		logger << "Floating-point self test failed !" << endl;
-		logger << EndDebugError;
-		return false;
-	}
+	num_itlb_accesses = 0;
+	num_itlb_misses = 0;
+	num_dtlb_accesses = 0;
+	num_dtlb_misses = 0;
+	num_utlb_accesses = 0;
+	num_utlb_misses = 0;
 
-	if(CONFIG::DEBUG_ENABLE)
+	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
 	{
-		if(enable_linux_printk_snooping)
+		if(!linux_printk_buf_addr)
 		{
-			if(!linux_printk_buf_addr)
+			if(symbol_table_lookup_import)
 			{
-				if(symbol_table_lookup_import)
-				{
-					const Symbol<typename CONFIG::address_t> *symbol;
+				const Symbol<typename CONFIG::address_t> *symbol;
 
-					symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf", Symbol<typename CONFIG::address_t>::SYM_OBJECT);
-					
-					if(symbol)
+				symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf", Symbol<typename CONFIG::address_t>::SYM_OBJECT);
+				
+				if(symbol)
+				{
+					linux_printk_buf_addr = symbol->GetAddress();
+					linux_printk_buf_size = symbol->GetSize();
+					if(IsVerboseSetup())
 					{
-						linux_printk_buf_addr = symbol->GetAddress();
-						linux_printk_buf_size = symbol->GetSize();
-						cerr << "Found Linux printk buffer at 0x" << hex << linux_printk_buf_addr << std::dec << "(" << linux_printk_buf_size << " bytes)" << endl;
+						logger << DebugInfo << "Found Linux printk buffer at 0x" << std::hex << linux_printk_buf_addr << std::dec << "(" << linux_printk_buf_size << " bytes)" << EndDebugInfo;
 					}
 				}
 			}
@@ -1085,7 +1126,7 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			return;
 		case 0x130:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			SetDBSR(value);
+			SetDBSR(GetDBSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
 			return;
 		case 0x134:
 		case 0x135:
@@ -1140,7 +1181,17 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 		}
 		case 0x150:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			SetTSR(value);
+/*			{
+				std::stringstream sstr;
+				sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+				const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+				if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+				sstr << ", mttsr 0x" << std::hex << value << std::dec;
+				std::string msg = sstr.str();
+				
+				if(trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+			}*/
+			SetTSR(GetTSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
 			return;
 		case 0x154:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
@@ -1182,7 +1233,7 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 			return;
 		case 0x23c:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-			SetMCSR(value);
+			SetMCSR(GetMCSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
 			return;
 		case 0x370:
 		case 0x371:
@@ -1295,7 +1346,7 @@ void CPU<CONFIG>::StepOneInstruction()
 			{
 				if(loader_import)
 				{
-					loader_import->Reset();
+					loader_import->Load();
 				}
 			}
 		} while(1);
@@ -1356,7 +1407,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		if(unlikely(HasIRQ()))
 		{
 			if(GetMSR_CE() && HasCriticalInputInterrupt()) throw CriticalInputInterruptException<CONFIG>();
-			if(GetMSR_CE() && HasWatchDogTimerInterrupt()) throw WatchDogTimerInterruptException<CONFIG>();
+			if(GetTCR_WIE() && GetMSR_CE() && HasWatchDogTimerInterrupt()) throw WatchDogTimerInterruptException<CONFIG>();
 			if(GetMSR_EE() && HasExternalInputInterrupt()) throw ExternalInputInterruptException<CONFIG>();
 			if(GetTCR_FIE() && GetMSR_EE() && HasFixedIntervalTimerInterrupt()) throw FixedIntervalTimerInterruptException<CONFIG>();
 			if(GetTCR_DIE() && GetMSR_EE() && HasDecrementerInterrupt()) throw DecrementerInterruptException<CONFIG>();
@@ -1428,7 +1479,7 @@ template <class CONFIG>
 void CPU<CONFIG>::OnTimerClock()
 {
 	/* update the time base */
-	tb++;
+	IncrementTB();
 
 	/* decrement the decrementer each timer cycle */
 	DecrementDEC();
@@ -1634,23 +1685,6 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::DecrementDEC()
-{
-	if(GetDEC() > 0)
-	{
-		SetDEC(GetDEC() - 1);
-		if(unlikely(GetDEC() == 0))
-		{
-			SetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
-			if(GetTCR_ARE())
-			{
-				SetDEC(GetDECAR());
-			}
-		}
-	}
-}
-
-template <class CONFIG>
 string CPU<CONFIG>::GetObjectFriendlyName(typename CONFIG::address_t addr)
 {
 	stringstream sstr;
@@ -1777,13 +1811,14 @@ void CPU<CONFIG>::Isync()
 template <class CONFIG>
 void CPU<CONFIG>::Rfi()
 {
-
 	FlushSubsequentInstructions();
+	InvalidateITLB();
+	InvalidateDTLB();
 
 	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
 
-	SetNIA(GetSRR0() & 0xfffffffcUL);
-	SetMSR((GetMSR() & 0xffff008cUL) | (GetSRR1() & 0x0000ff73UL));
+	SetNIA(GetSRR0());
+	SetMSR(GetSRR1());
 }
 
 template <class CONFIG>

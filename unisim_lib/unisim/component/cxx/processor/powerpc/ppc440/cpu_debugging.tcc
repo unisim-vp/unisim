@@ -104,7 +104,7 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 						CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 					
 						l1_access.addr = physical_addr;
-						LookupDL1(l1_access);
+						LookupDL1<true>(l1_access);
 		
 						if(l1_access.block)
 						{
@@ -126,7 +126,7 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 						CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
 					
 						l1_access.addr = physical_addr;
-						LookupIL1(l1_access);
+						LookupIL1<true>(l1_access);
 		
 						if(l1_access.block)
 						{
@@ -235,7 +235,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 						CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 					
 						l1_access.addr = physical_addr;
-						LookupDL1(l1_access);
+						LookupDL1<true>(l1_access);
 		
 						if(l1_access.block)
 						{
@@ -257,7 +257,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 						CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
 					
 						l1_access.addr = physical_addr;
-						LookupIL1(l1_access);
+						LookupIL1<true>(l1_access);
 		
 						if(l1_access.block)
 						{
@@ -347,8 +347,8 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 		// IL1 Access
 		CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
 	
-		l1_access.addr = mmu_access.physical_addr;
-		LookupIL1(l1_access);
+		l1_access.addr = mmu_access.virtual_addr;
+		LookupIL1<true>(l1_access);
 
 		if(l1_access.block)
 		{

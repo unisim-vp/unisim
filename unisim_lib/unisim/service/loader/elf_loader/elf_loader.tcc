@@ -52,28 +52,28 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent)
-	: Object(name, parent, "ELF Loader")
+	: Object(name, parent, "this service implements an ELF Loader")
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
 	, Client<Registers>(name, parent)
 	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
 	, registers_import("registers-import", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
+	, blob_export("blob-export", this)
 	, stmt_lookup_export("stmt-lookup-export", this)
 	, filename()
-	, entry_point(0)
-	, top_addr(0)
 	, base_addr(0)
 	, force_base_addr(0)
 	, force_use_virtual_address(false)
 	, dump_headers(false)
-	, symbol_table()
+	, blob(0)
+	, symbol_table(0)
 	, dw_handler(0)
 	, logger(*this)
 	, verbose(false)
@@ -99,7 +99,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_parse_dwarf("parse-dwarf", this, parse_dwarf,
 			"Enable/Disable parsing of DWARF debugging informations")
 {
-	Object::SetupDependsOn(memory_import);
+	loader_export.SetupDependsOn(memory_import);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -109,6 +109,16 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~E
 	{
 		delete dw_handler;
 	}
+	
+	if(blob)
+	{
+		blob->Release();
+	}
+	
+	if(symbol_table)
+	{
+		delete symbol_table;
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -117,66 +127,105 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetEntryPoint() const
-{
-	return (MEMORY_ADDR) entry_point;
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetTopAddr() const
-{
-	return (MEMORY_ADDR) top_addr;
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStackBase() const
-{
-  return 0;
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load(const char *_filename)
-{
-	if(memory_import) memory_import->Reset();
-	filename = _filename;
-	return Load();
-}
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load()
 {
-	symbol_table.Reset();
+	if(!blob) return false;
+	
+	bool success = true;
+	const typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
+	typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
+	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
+	{
+		const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
+		
+		if((section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL) && (section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A))
+		{
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Writing section " << section->GetName() << " (" << section->GetSize() << " bytes) at @0x" << std::hex << section->GetAddr() << " - @0x" << (section->GetAddr() +  section->GetSize() - 1) << std::dec << EndDebugInfo;
+			}
+			if(!memory_import->WriteMemory(section->GetAddr(), section->GetData(), section->GetSize()))
+			{
+				logger << DebugError << "Can't write into memory (@0x" << std::hex << section->GetAddr() << " - @0x" << (section->GetAddr() +  section->GetSize() - 1) << std::dec << ")" << EndDebugError;
+				success = false;
+			}
+		}
+	}
+	return success;
+}
 
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BeginSetup()
+{
+	if(dw_handler)
+	{
+		delete dw_handler;
+		dw_handler = 0;
+	}
+
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
+	
+	if(symbol_table)
+	{
+		delete symbol_table;
+		symbol_table = 0;
+	}
+	
+	return SetupBlob(); // SetupBlob is independent from other clients/services
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupLoad()
+{
+	return SetupBlob();
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupStatementLookup()
+{
+	return SetupDWARF();
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupBlob()
+{
+	if(blob) return true;
+	
 	Elf_Ehdr *hdr = 0;
 	Elf_Phdr *phdr = 0;
+	Elf_Phdr *phdr_table = 0;
 	const Elf_Shdr *shdr = 0;
 	Elf_Shdr *shdr_table = 0;
 	char *sh_string_table = 0;
-	MEMORY_ADDR section_size, section_type, section_flags, section_vaddr;
-	void *section;
-	const char *section_name;
-	int i, j;
+	int i;
 	bool success = true;
 
 	if(filename.empty()) return true;
 	
-	ifstream is(Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str(), ifstream::in | ifstream::binary);
-	if(is.fail())
-	{
-		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
-		return false;
-	}
+	std::string location = Object::GetSimulator()->SearchSharedDataFile(filename.c_str());
 	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
+		logger << DebugInfo << "Opening \"" << location << "\"" << EndDebugInfo;
 	}
 
+	ifstream is(location.c_str(), ifstream::in | ifstream::binary);
+	
+	if(is.fail())
+	{
+		logger << DebugError << "Can't open executable \"" << location << "\"" << EndDebugError;
+		return false;
+	}
+	
 	hdr = ReadElfHeader(is);
 
 	if(!hdr)
 	{
-		logger << DebugError << "Could not read ELF header or \"" << filename << "\" is not an ELF file." << EndDebugError;
+		logger << DebugError << "Could not read ELF header or \"" << location << "\" is not an ELF file." << EndDebugError;
 		return false;
 	}
 
@@ -195,15 +244,15 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		logger << DebugInfo << "Reading ELF header" << EndDebugInfo;
 	}
 
-	phdr = ReadProgramHeaders(hdr, is);
-	if(!phdr)
+	phdr_table = ReadProgramHeaders(hdr, is);
+	if(!phdr_table)
 	{
 		logger << DebugError << "Can't read program headers" << EndDebugError;
 		free(hdr);
 		return false;
 	}
 	
-	entry_point = hdr->e_entry;
+	MEMORY_ADDR entry_point = hdr->e_entry;
 
 	shdr_table = ReadSectionHeaders(hdr, is);
 	if(!shdr_table)
@@ -228,10 +277,10 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		stringstream hdr_sstr;
 		DumpElfHeader(hdr, hdr_sstr);
 		logger << DebugInfo << hdr_sstr.str() << EndDebugInfo;
-		for(i = 0; i < hdr->e_phnum; i++)
+		for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
 		{
 			stringstream phdr_sstr;
-			DumpProgramHeader(&phdr[i], phdr_sstr);
+			DumpProgramHeader(phdr, phdr_sstr);
 			logger << DebugInfo << phdr_sstr.str() << EndDebugInfo;
 		}
 		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
@@ -242,116 +291,29 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		}
 	}
 
-	top_addr = 0;
-					
-	if(memory_import)
+	// Check that forcing base address is possible
+	MEMORY_ADDR unique_segment_addr = 0;
+	if(force_base_addr)
 	{
-		if(force_base_addr)
+		unsigned int num_loadable_segment = 0;
+		
+		for(i = 0, phdr = phdr_table; i < hdr->e_phnum; phdr++, i++)
 		{
-			unsigned int num_loadable_segment = 0;
-			
-			for(i = 0; i < hdr->e_phnum; i++)
+			if(GetSegmentType(phdr) == PT_LOAD) /* Loadable Program Segment */
 			{
-				if(phdr[i].p_type == PT_LOAD) /* Loadable Program Segment */
-				{
-					num_loadable_segment++;
-				}
-			}
-			if(num_loadable_segment > 1)
-			{
-				logger << DebugWarning 
-					<< "More than one loadable segments..."
-					<< "ignoring specified base address"
-					<< " and setting force-base-addr to false" 
-					<< EndDebugWarning;
-				// base_addr = 0;
-				force_base_addr = false;
-			}
-			else
-			{
-				entry_point = base_addr;
+				num_loadable_segment++;
+				unique_segment_addr = GetSegmentAddr(phdr);
 			}
 		}
-
-		for(i = 0; i < hdr->e_phnum; i++)
+		
+		if(num_loadable_segment > 1)
 		{
-			if(phdr[i].p_type == PT_LOAD) /* Loadable Program Segment */
-			{
-				MEMORY_ADDR segment_addr = 0;
-				MEMORY_ADDR segment_size = 0;
-				
-				if(force_base_addr)
-				{
-					segment_addr = base_addr;
-				}
-				else
-				{
-					segment_addr = force_use_virtual_address ? phdr[i].p_vaddr : phdr[i].p_paddr;
-				}
-				
-				segment_size = phdr[i].p_memsz;
-				
-				if(unlikely(verbose))
-				{
-					logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << phdr[i].p_filesz << " bytes) " << EndDebugInfo;
-				}
-				
-				if(segment_addr + segment_size > top_addr)
-				{
-					top_addr = segment_addr + segment_size;
-				}
-
-				char *segment = (char *) calloc(phdr[i].p_memsz, 1);
-				
-				if(!LoadSegment(hdr, &phdr[i], segment, is))
-				{
-					logger << DebugError << "Can't load segment" << EndDebugError;
-					success = false;
-				}
-				else
-				{
-					if(segment_size > 0) 
-					{
-						if(!memory_import->WriteMemory(segment_addr, segment, segment_size))
-						{
-							logger << DebugError << "Can't write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << EndDebugError;
-							success = false;
-						}
-						else 
-						{
-							if(unlikely(verbose))
-							{
-								logger << DebugInfo << "Write into memory (@0x" << hex << segment_addr << " - @0x" << (segment_addr +  segment_size - 1) << dec << ")" << EndDebugInfo;
-							}
-						}
-					}
-				}
-
-				free(segment);
-
-				if(unlikely(verbose))
-				{
-					if(shdr_table && sh_string_table)
-					{
-						for(j = 0, shdr = shdr_table; j < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),j++)
-						{
-							section_type = GetSectionType(shdr);
-							section_size = GetSectionSize(shdr);
-							section_vaddr = GetSectionAddr(shdr);
-							section_flags = GetSectionFlags(shdr);
-
-							if((section_flags & SHF_ALLOC))
-							{
-								if(section_vaddr >= phdr[i].p_vaddr && section_vaddr + section_size <= phdr[i].p_vaddr + segment_size)
-								{
-									logger << DebugInfo << "Section " << GetSectionName(shdr, sh_string_table) << " loaded (" << section_size << " bytes) at 0x" << hex << (section_vaddr - phdr[i].p_vaddr + segment_addr) << dec << EndDebugInfo;
-								}
-							}
-						}
-					}
-				}
-
-			}
+			logger << DebugWarning 
+				<< "More than one loadable segments..."
+				<< "ignoring specified base address"
+				<< " and setting force-base-addr to false" 
+				<< EndDebugWarning;
+			force_base_addr = false;
 		}
 	}
 	
@@ -359,107 +321,234 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	{
 		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;
 	}
+
+	blob = new typename unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+	blob->Catch();
 	
+	blob->SetEntryPoint(entry_point);
+	blob->SetFilename(location.c_str());
+	blob->SetArchitecture(GetArchitecture(hdr));
+	blob->SetEndian(endianness);
+	blob->SetAddressSize(GetAddressSize(hdr));
+
 	if(shdr_table && sh_string_table)
 	{
 		for(i = 0, shdr = shdr_table; i < hdr->e_shnum; shdr = GetNextSectionHeader(hdr, shdr),i++)
 		{
 			//DumpSectionHeader(shdr, sh_string_table, cerr);
 
-			section_type = GetSectionType(shdr);
-			section_size = GetSectionSize(shdr);
-			section_vaddr = GetSectionAddr(shdr);
-			section_flags = GetSectionFlags(shdr);
-			section_name = GetSectionName(shdr, sh_string_table);
-
-			if((section_type != SHT_NULL) && (section_type != SHT_STRTAB) && !(section_flags & SHF_ALLOC))
+			MEMORY_ADDR sh_type = GetSectionType(shdr);
+			
+			MEMORY_ADDR sh_size = GetSectionSize(shdr);
+			MEMORY_ADDR sh_addr = force_base_addr ? base_addr + (GetSectionAddr(shdr) - unique_segment_addr) : GetSectionAddr(shdr);
+			MEMORY_ADDR sh_flags = GetSectionFlags(shdr);
+			MEMORY_ADDR sh_alignment = GetSectionAlignment(shdr);
+			MEMORY_ADDR sh_link = GetSectionLink(shdr);
+			
+			const char *sh_name = GetSectionName(shdr, sh_string_table);
+			
+			typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
+			switch(sh_type)
 			{
-				if(section_type == SHT_SYMTAB)
+				case SHT_NULL:
+					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL;
+					sh_size = 0;
+					sh_addr = 0;
+					sh_flags = 0;
+					sh_alignment = 0;
+					sh_link = 0;
+					break;
+				case SHT_PROGBITS:
+					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
+					break;
+				case SHT_SYMTAB:
+					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STAB;
+					break;
+				case SHT_STRTAB:
+					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB;
+					break;
+				case SHT_NOBITS:
+					section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS;
+					break;
+			}
+			
+			typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_NULL;
+			if(sh_flags & SHF_WRITE) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_W);
+			if(sh_flags & SHF_ALLOC) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A);
+			if(sh_flags & SHF_EXECINSTR) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_X);
+			
+			if((sh_type != SHT_NULL) && verbose)
+			{
+				logger << DebugInfo << "Loading section " << sh_name;
+				if(sh_flags & SHF_ALLOC) logger << " at 0x" << hex << sh_addr << dec;
+				logger << " (" << sh_size << " bytes) ";
+				logger << EndDebugInfo;
+			}
+
+			void *sh_data = sh_size ? calloc(sh_size + 1, 1) : 0; // Allocate one additional byte for zero-terminated strings
+			
+			if((sh_type != SHT_NULL) && (sh_type != SHT_NOBITS))
+			{
+				if(!LoadSection(hdr, shdr, sh_data, is))
 				{
-					Elf_Shdr *sh_strtab;
-					section = malloc(section_size + 1);
-					*((char *) section + section_size) = 0;
-					if(!LoadSection(hdr, shdr, section, is))
-					{
-						logger << DebugWarning << "Can't load section " << section_name << EndDebugWarning;
-					}
-					else
-					{
-						int strtab_size;
-						const char *strtab_section_name;
-						char *string_table;
-						if(unlikely(verbose))
-						{
-							logger << DebugInfo << "Loading section " << section_name << " (" << section_size << " bytes)" << EndDebugInfo;
-						}
-						sh_strtab = (Elf_Shdr *)((char *) shdr_table + shdr->sh_link * hdr->e_shentsize);
-						strtab_size = GetSectionSize(sh_strtab);
-						strtab_section_name = GetSectionName(sh_strtab, sh_string_table);
-						string_table = (char *) malloc(strtab_size + 1);
-						*(string_table + strtab_size) = 0;
-						if(!LoadSection(hdr, sh_strtab, string_table, is))
-						{
-							logger << DebugWarning << "Can't load section " << strtab_section_name << EndDebugWarning;
-						}
-						else
-						{
-							if(unlikely(verbose))
-							{
-								logger << DebugInfo << "Building symbol table from sections " << section_name << " and " << strtab_section_name << EndDebugInfo;
-							}
-							BuildSymbolTable(shdr, section, string_table);
-						}
-						free(string_table);
-					}
-					free(section);
+					logger << DebugWarning << "Can't load section " << sh_name << EndDebugWarning;
+					success = false;
 				}
-				else if(parse_dwarf
-				     && (strcmp(section_name, ".debug_line") == 0 || strcmp(section_name, ".debug_info") == 0 || strcmp(section_name, ".debug_abbrev") == 0
-				     || strcmp(section_name, ".debug_aranges") == 0 || strcmp(section_name, ".debug_pubnames") == 0 || strcmp(section_name, ".debug_pubtypes") == 0
-				     || strcmp(section_name, ".debug_macinfo") == 0 || strcmp(section_name, ".debug_str") == 0 || strcmp(section_name, ".debug_loc") == 0
-				     || strcmp(section_name, ".debug_ranges") == 0 || strcmp(section_name, ".debug_frame") == 0))
+			}
+			
+			unisim::util::debug::blob::Section<MEMORY_ADDR> *section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+				section_type,
+				section_attr,
+				sh_name,
+				sh_alignment,
+				sh_link,
+				sh_addr,
+				sh_size,
+				sh_data
+			);
+			
+			blob->AddSection(section);
+		}
+	}
+	else
+	{
+		// There's no section headers (optional)
+
+		for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
+		{
+			if(GetSegmentType(phdr) == PT_LOAD) /* Loadable Program Segment */
+			{
+				MEMORY_ADDR segment_addr = force_base_addr ? base_addr : GetSegmentAddr(phdr);
+				MEMORY_ADDR segment_mem_size = GetSegmentMemSize(phdr);
+				//MEMORY_ADDR segment_file_size = GetSegmentFileSize(phdr);
+				MEMORY_ADDR segment_flags = GetSegmentFlags(phdr);
+				MEMORY_ADDR segment_alignment = GetSegmentAlignment(phdr);
+				
+				const char *section_name = "";
+				
+				typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
+				typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A;
+				if(segment_flags & PF_W) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_W);
+				if(segment_flags & PF_X) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_X);
+
+				if(unlikely(verbose))
 				{
-					if(unlikely(verbose))
-					{
-						logger << DebugInfo << "Loading section " << section_name << " (" << section_size << " bytes)" << EndDebugInfo;
-					}
-					section = malloc(section_size + 1);
-					*((char *) section + section_size) = 0;
-					if(!LoadSection(hdr, shdr, section, is))
-					{
-						logger << DebugWarning << "Can't load section " << section_name << EndDebugWarning;
-						free(section);
-					}
-					else
-					{
-/*						if(strcmp(section_name, ".debug_line") == 0)
-						{
-							DumpRawData(section, section_size);
-						}*/
-						if(!dw_handler) dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(endianness, GetAddressSize(hdr));
-						dw_handler->Handle(section_name, (uint8_t *) section, section_size);
-					}
+					logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << segment_mem_size << " bytes) " << EndDebugInfo;
 				}
-				else
+				
+				void *segment_data = calloc(segment_mem_size + 1, 1); // Allocate one additional byte for zero-terminated strings
+				
+				if(!LoadSegment(hdr, phdr, segment_data, is))
 				{
-					logger << DebugWarning << "Ignoring section " << section_name << " (" << section_size << " bytes)" << EndDebugWarning;
+					logger << DebugError << "Can't load segment" << EndDebugError;
+					success = false;
 				}
+
+				unisim::util::debug::blob::Section<MEMORY_ADDR> *section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+					section_type,
+					section_attr,
+					section_name,
+					segment_alignment,
+					0,
+					segment_addr,
+					segment_mem_size,
+					segment_data
+				);
+				
+				blob->AddSection(section);
 			}
 		}
 	}
 
 	if(sh_string_table) free(sh_string_table);
 	if(shdr_table) free(shdr_table);
-	if(phdr) free(phdr);
+	if(phdr_table) free(phdr_table);
 	if(hdr) free(hdr);
 	
+	return success;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupSymbolTableLookup()
+{
+	if(symbol_table) return true;
+	if(!SetupBlob()) return false;
+	if(!blob) return true; // there's no blob, so no symbol table
+	
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Building symbol table" << EndDebugInfo;
+	}
+	
+	symbol_table = new SymbolTable<MEMORY_ADDR>();
+	const typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
+	typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
+	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
+	{
+		const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
+		
+		if(section->GetType() == unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STAB)
+		{
+			const typename unisim::util::debug::blob::Section<MEMORY_ADDR> *string_table_section = blob->GetSection(section->GetLink());
+			
+			if(!string_table_section || (string_table_section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB))
+			{
+				logger << DebugWarning << "Found a symbol table section but no string table section. Cannot build symbol table." << EndDebugWarning;
+				return true;
+			}
+			const char *string_table = (const char *) string_table_section->GetData();
+			
+			int nsymbols = section->GetSize() / sizeof(Elf_Sym);
+			int i;
+			Elf_Sym *sym;
+
+			for(sym = (Elf_Sym *) section->GetData(), i = 0; i < nsymbols; sym++, i++)
+			{
+				typename Symbol<MEMORY_ADDR>::Type type;
+
+				switch(ELF32_ST_TYPE(sym->st_info))
+				{
+					case STT_NOTYPE: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
+					case STT_OBJECT: type = Symbol<MEMORY_ADDR>::SYM_OBJECT; break;
+					case STT_FUNC: type = Symbol<MEMORY_ADDR>::SYM_FUNC; break;
+					case STT_SECTION: type = Symbol<MEMORY_ADDR>::SYM_SECTION; break;
+					case STT_FILE: type = Symbol<MEMORY_ADDR>::SYM_FILE; break;
+					case STT_COMMON: type = Symbol<MEMORY_ADDR>::SYM_COMMON; break;
+					case STT_TLS: type = Symbol<MEMORY_ADDR>::SYM_TLS; break;
+					case STT_NUM: type = Symbol<MEMORY_ADDR>::SYM_NUM; break;
+					case STT_LOOS: type = Symbol<MEMORY_ADDR>::SYM_LOOS; break;
+					case STT_HIOS: type = Symbol<MEMORY_ADDR>::SYM_HIOS; break;
+					case STT_LOPROC: type = Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
+					case STT_HIPROC: type = Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
+					default: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE;
+				}
+
+				string symbol_name(string_table + sym->st_name);
+
+				symbol_table->AddSymbol(symbol_name.c_str(), (MEMORY_ADDR) sym->st_value, (MEMORY_ADDR) sym->st_size, type);
+			}
+		}
+	}
+	//symbol_table->Dump(cerr);
+	return true;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupDWARF()
+{
+	if(!parse_dwarf) return true;
+	if(dw_handler) return true;
+	if(!SetupBlob()) return false;
+	if(!blob) return true; // there's no blob, so no DWARF too
+	dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(blob);
+
 	if(dw_handler)
 	{
 		if(verbose)
 		{
 			logger << DebugInfo << "Parsing DWARF debugging informations" << EndDebugInfo;
 		}
-		dw_handler->Initialize();
+		dw_handler->Parse();
 		if(!dwarf_to_html_output_directory.empty())
 		{
 			if(unlikely(verbose))
@@ -469,12 +558,24 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			dw_handler->to_HTML(dwarf_to_html_output_directory.c_str());
 		}
 	}
-
-	return success;
+	
+	return true;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup()
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &symbol_table_lookup_export) return SetupSymbolTableLookup();
+	if(srv_export == &loader_export) return SetupLoad();
+	if(srv_export == &blob_export) return SetupBlob();
+	if(srv_export == &stmt_lookup_export) return SetupStatementLookup();
+
+	logger << DebugError << "Internal Error" << EndDebugError;
+	return false;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::EndSetup()
 {
 	return Load();
 }
@@ -488,38 +589,44 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
+{
+	return blob;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols() const {
-	return symbol_table.GetSymbols();
+	return symbol_table ? symbol_table->GetSymbols() : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
 {
-	return symbol_table.FindSymbol(name, addr, type);
+	return symbol_table ? symbol_table->FindSymbol(name, addr, type) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr) const
 {
-	return symbol_table.FindSymbolByAddr(addr);
+	return symbol_table ? symbol_table->FindSymbolByAddr(addr) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name) const
 {
-	return symbol_table.FindSymbolByName(name);
+	return symbol_table ? symbol_table->FindSymbolByName(name) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
 {
-	return symbol_table.FindSymbolByName(name, type);
+	return symbol_table ? symbol_table->FindSymbolByName(name, type) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
 {
-	return symbol_table.FindSymbolByAddr(addr, type);
+	return symbol_table ? symbol_table->FindSymbolByAddr(addr, type) : 0;
 }
 
 
@@ -1109,6 +1216,18 @@ MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionAlignment(const Elf_Shdr *shdr)
+{
+	return shdr->sh_addralign;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSectionLink(const Elf_Shdr *shdr)
+{
+	return shdr->sh_link;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is)
 {
 	if(is.seekg(shdr->sh_offset, ios::beg).fail()) return false;
@@ -1118,6 +1237,42 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		AdjustSymbolTable(hdr, shdr, (Elf_Sym *) buffer);
 	}
 	return true;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSegmentType(const Elf_Phdr *phdr)
+{
+	return phdr->p_type;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSegmentFlags(const Elf_Phdr *phdr)
+{
+	return phdr->p_flags;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSegmentMemSize(const Elf_Phdr *phdr)
+{
+	return phdr->p_memsz;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSegmentFileSize(const Elf_Phdr *phdr)
+{
+	return phdr->p_filesz;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSegmentAddr(const Elf_Phdr *phdr)
+{
+	return force_use_virtual_address ? phdr->p_vaddr : phdr->p_paddr;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+MEMORY_ADDR ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSegmentAlignment(const Elf_Phdr *phdr)
+{
+	return phdr->p_align;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -1139,42 +1294,6 @@ const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, 
 {
 	return string_table ? string_table + shdr->sh_name : "unknown";
 }
-
-template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table)
-{
-	int nsymbols = shdr->sh_size / sizeof(Elf_Sym);
-	int i;
-	Elf_Sym *sym;
-
-	for(sym = (Elf_Sym *) content, i = 0; i < nsymbols; sym++, i++)
-	{
-		typename Symbol<MEMORY_ADDR>::Type type;
-
-		switch(ELF32_ST_TYPE(sym->st_info))
-		{
-			case STT_NOTYPE: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
-			case STT_OBJECT: type = Symbol<MEMORY_ADDR>::SYM_OBJECT; break;
-			case STT_FUNC: type = Symbol<MEMORY_ADDR>::SYM_FUNC; break;
-			case STT_SECTION: type = Symbol<MEMORY_ADDR>::SYM_SECTION; break;
-			case STT_FILE: type = Symbol<MEMORY_ADDR>::SYM_FILE; break;
-			case STT_COMMON: type = Symbol<MEMORY_ADDR>::SYM_COMMON; break;
-			case STT_TLS: type = Symbol<MEMORY_ADDR>::SYM_TLS; break;
-			case STT_NUM: type = Symbol<MEMORY_ADDR>::SYM_NUM; break;
-			case STT_LOOS: type = Symbol<MEMORY_ADDR>::SYM_LOOS; break;
-			case STT_HIOS: type = Symbol<MEMORY_ADDR>::SYM_HIOS; break;
-			case STT_LOPROC: type = Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
-			case STT_HIPROC: type = Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
-			default: type = Symbol<MEMORY_ADDR>::SYM_NOTYPE;
-		}
-
-		string symbol_name(string_table + sym->st_name);
-
-		symbol_table.AddSymbol(symbol_name.c_str(), (MEMORY_ADDR) sym->st_value, (MEMORY_ADDR) sym->st_size, type);
-	}
-	//symbol_table.Dump(cerr);
-}
-
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::DumpRawData(const void *content, MEMORY_ADDR size)
@@ -1239,6 +1358,93 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
 {
 	return dw_handler ? dw_handler->FindStatement(filename, lineno, colno) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const char *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetArchitecture(const Elf_Ehdr *hdr) const
+{
+	switch(hdr->e_machine)
+	{
+		case EM_NONE: return "";
+		case EM_M32: return "m32";
+		case EM_SPARC: return "sparc";
+		case EM_386: return "i386";
+		case EM_68K: return "68k";
+		case EM_88K: return "88k";
+		case EM_860: return "860";
+		case EM_MIPS: return "mips";
+		case EM_S370: return "s370";
+		case EM_MIPS_RS4_BE: return "mips_rs4_be";
+	
+		case EM_PARISC: return "parisc";
+		case EM_VPP500: return "vpp500";
+		case EM_SPARC32PLUS: return "sparc32+";
+		case EM_960: return "960";
+		case EM_PPC: return "powerpc";
+		case EM_PPC64: return "powerpc64";
+		case EM_S390: return "s390";
+	
+		case EM_V800: return "v800";
+		case EM_FR20: return "fr20";
+		case EM_RH32: return "rh32";
+		case EM_RCE: return "rce";
+		case EM_ARM: return "arm";
+		case EM_FAKE_ALPHA: return "fake_alpha";
+		case EM_SH: return "sh";
+		case EM_SPARCV9: return "sparcv9";
+		case EM_TRICORE: return "tricore";
+		case EM_ARC: return "arc";
+		case EM_H8_300: return "h8_300";
+		case EM_H8_300H: return "h8_300h";
+		case EM_H8S: return "h8s";
+		case EM_H8_500: return "h8_500";
+		case EM_IA_64: return "ia64";
+		case EM_MIPS_X: return "mips_x";
+		case EM_COLDFIRE: return "coldfire";
+		case EM_68HC12: return "68hc12";
+		case EM_MMA: return "mma";
+		case EM_PCP: return "pcp";
+		case EM_NCPU: return "ncpu";
+		case EM_NDR1: return "ndr1";
+		case EM_STARCORE: return "starcore";
+		case EM_ME16: return "me16";
+		case EM_ST100: return "st100";
+		case EM_TINYJ: return "tinyj";
+		case EM_X86_64: return "x86_64";
+		case EM_PDSP: return "pdsp";
+
+		case EM_FX66: return "fx66";
+		case EM_ST9PLUS: return "st9+";
+		case EM_ST7: return "st7";
+		case EM_68HC16: return "68hc16";
+		case EM_68HC11: return "68hc11";
+		case EM_68HC08: return "68hc08";
+		case EM_68HC05: return "68hc05";
+		case EM_SVX: return "svx";
+		case EM_ST19: return "st19";
+		case EM_VAX: return "vax";
+		case EM_CRIS: return "cris";
+		case EM_JAVELIN: return "javelin";
+		case EM_FIREPATH: return "firepath";
+		case EM_ZSP: return "zsp";
+		case EM_MMIX: return "mmix";
+		case EM_HUANY: return "huany";
+		case EM_PRISM: return "prism";
+		case EM_AVR: return "avr";
+		case EM_FR30: return "fr30";
+		case EM_D10V: return "d10v";
+		case EM_D30V: return "d30v";
+		case EM_V850: return "v850";
+		case EM_M32R: return "m32r";
+		case EM_MN10300: return "mn10300";
+		case EM_MN10200: return "mn101200";
+		case EM_PJ: return "pj";
+		case EM_OPENRISC: return "openrisc";
+		case EM_ARC_A5: return "arc_a5";
+		case EM_XTENSA: return "xtensa";
+		case EM_ALPHA: return "alpha";
+	}
+	return "";
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

@@ -56,6 +56,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::TLMInterruptPayload;
@@ -79,7 +80,7 @@ public:
 	CPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
-	virtual bool Setup();
+	virtual bool EndSetup();
 	
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 

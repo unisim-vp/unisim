@@ -197,6 +197,7 @@ void CPU<CONFIG>::ClearAccessIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_ac
 }
 
 template <class CONFIG>
+template <bool DEBUG>
 inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access)
 {
 	typename CONFIG::DL1_CONFIG::ADDRESS addr = l1_access.addr;
@@ -211,12 +212,12 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 	CacheLine<typename CONFIG::DL1_CONFIG> *line;
 	CacheBlock<typename CONFIG::DL1_CONFIG> *block;
 	
-	num_dl1_accesses++;
+	if(!DEBUG) num_dl1_accesses++;
 	// Decode the address
 	dl1.DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
 	if(unlikely(IsVerboseDL1()))
 	{
-		logger << DebugInfo << "DL1 Lookup at 0x";
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DL1 Lookup at 0x";
 		logger << std::hex << addr << std::dec << " : ";
 		logger << "line_base_addr=0x" << std::hex << line_base_addr << std::dec << ",";
 		logger << "index=0x" << std::hex << index << std::dec << ",";
@@ -243,7 +244,7 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 			{
 				if(unlikely(IsVerboseDL1()))
 				{
-					logger << DebugInfo << "DL1 Line hit: index=" << l1_access.index << ", way=" << line->status.way << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DL1 Line hit: index=" << l1_access.index << ", way=" << line->status.way << endl << EndDebugInfo;
 				}
 				// line hit: block may need a fill if not yet present in the line
 				l1_access.line = line;
@@ -253,10 +254,10 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 				l1_access.block = block->status.valid ? block : 0;
 				if(unlikely(IsVerboseDL1()))
 				{
-					logger << DebugInfo << "DL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 				}
 
-				if(unlikely(l1_access.line->status.prev != 0))
+				if(unlikely(!DEBUG && (l1_access.line->status.prev != 0)))
 				{
 					if(l1_access.line->status.next)
 					{
@@ -286,7 +287,7 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 			{
 				if(unlikely(IsVerboseDL1()))
 				{
-					logger << DebugInfo << "DL1 Line hit: way=" << way << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DL1 Line hit: way=" << way << endl << EndDebugInfo;
 				}
 				// line hit: block may need a fill if not yet present in the line
 				l1_access.line = line;
@@ -296,7 +297,7 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 				l1_access.block = block->status.valid ? block : 0;
 				if(unlikely(IsVerboseDL1()))
 				{
-					logger << DebugInfo << "DL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 				}
 				return;
 			}
@@ -305,10 +306,11 @@ inline void CPU<CONFIG>::LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_
 	// line miss
 	l1_access.line = 0;
 	l1_access.block = 0;
-	num_dl1_misses++;
+	if(!DEBUG) num_dl1_misses++;
 }
 
 template <class CONFIG>
+template <bool DEBUG>
 inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access)
 {
 	typename CONFIG::IL1_CONFIG::ADDRESS addr = l1_access.addr;
@@ -323,12 +325,12 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 	CacheLine<typename CONFIG::IL1_CONFIG> *line;
 	CacheBlock<typename CONFIG::IL1_CONFIG> *block;
 	
-	num_il1_accesses++;
+	if(!DEBUG) num_il1_accesses++;
 	// Decode the address
 	il1.DecodeAddress(addr, line_base_addr, block_base_addr, index, sector, offset, size_to_block_boundary);
 	if(unlikely(IsVerboseIL1()))
 	{
-		logger << DebugInfo << "IL1 Lookup at 0x";
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "IL1 Lookup at 0x";
 		logger << std::hex << addr << std::dec << " : ";
 		logger << "line_base_addr=0x" << std::hex << line_base_addr << std::dec << ",";
 		logger << "index=0x" << std::hex << index << std::dec << ",";
@@ -355,7 +357,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 			{
 				if(unlikely(IsVerboseIL1()))
 				{
-					logger << DebugInfo << "IL1 Line hit: " << l1_access.index << ", way=" << line->status.way << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "IL1 Line hit: " << l1_access.index << ", way=" << line->status.way << endl << EndDebugInfo;
 				}
 				// line hit: block may need a fill if not yet present in the line
 				l1_access.line = line;
@@ -365,10 +367,10 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 				l1_access.block = block->status.valid ? block : 0;
 				if(unlikely(IsVerboseIL1()))
 				{
-					logger << DebugInfo << "IL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "IL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 				}
 
-				if(unlikely(l1_access.line->status.prev != 0))
+				if(unlikely(!DEBUG && (l1_access.line->status.prev != 0)))
 				{
 					if(l1_access.line->status.next)
 					{
@@ -398,7 +400,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 			{
 				if(unlikely(IsVerboseIL1()))
 				{
-					logger << DebugInfo << "IL1 Line hit: way=" << way << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "IL1 Line hit: way=" << way << endl << EndDebugInfo;
 				}
 				// line hit: block may need a fill if not yet present in the line
 				l1_access.line = line;
@@ -408,7 +410,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 				l1_access.block = block->status.valid ? block : 0;
 				if(unlikely(IsVerboseIL1()))
 				{
-					logger << DebugInfo << "IL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "IL1 block " << (block->status.valid ? "hit" : "miss") << endl << EndDebugInfo;
 				}
 				return;
 			}
@@ -418,7 +420,7 @@ inline void CPU<CONFIG>::LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_
 	// line miss
 	l1_access.line = 0;
 	l1_access.block = 0;
-	num_il1_misses++;
+	if(!DEBUG) num_il1_misses++;
 }
 
 template <class CONFIG>
@@ -641,7 +643,7 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 }
 
 template <class CONFIG>
-inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access)
+inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access)
 {
 	l1_access.block = &(*l1_access.line)[l1_access.sector];
 	if(unlikely(IsVerboseIL1()))
@@ -649,8 +651,11 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 		logger << DebugInfo << "IL1: filling block at 0x" << std::hex << l1_access.block_base_addr << std::dec << endl << EndDebugInfo;
 	}
 
+	// As instruction cache is virtually indexed and tagged, we compute block base physical address from MMU informations to access memory
+	typename CONFIG::physical_address_t block_physical_base_addr = mmu_access.physical_addr & (~(CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1));
+	
 	// DL1 block fill from memory
-	if(unlikely(!BusRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
+	if(unlikely(!BusRead(block_physical_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
 	{
 		throw InstructionAsynchronousMachineCheckException<CONFIG>();
 	}
@@ -686,8 +691,9 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 	// DL1 Access
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
+	l1_access.storage_attr = mmu_access.storage_attr;
 
-	LookupDL1(l1_access);
+	LookupDL1<false>(l1_access);
 
 	if(l1_access.line)
 	{
@@ -759,7 +765,7 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
-	LookupDL1(l1_access);
+	LookupDL1<false>(l1_access);
 
 	if(l1_access.line)
 	{
@@ -795,7 +801,7 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
-	LookupDL1(l1_access);
+	LookupDL1<false>(l1_access);
 
 	if(l1_access.line)
 	{
@@ -865,7 +871,8 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	
 		l1_access.addr = mmu_access.physical_addr;
-		LookupDL1(l1_access);
+		l1_access.storage_attr = mmu_access.storage_attr;
+		LookupDL1<false>(l1_access);
 	
 		if(!l1_access.line)
 		{
@@ -970,7 +977,7 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 
 	l1_access.addr = mmu_access.virtual_addr;
 	l1_access.storage_attr = mmu_access.storage_attr;
-	LookupIL1(l1_access);
+	LookupIL1<false>(l1_access);
 	
 	InvalidateIL1Set(l1_access.index);
 

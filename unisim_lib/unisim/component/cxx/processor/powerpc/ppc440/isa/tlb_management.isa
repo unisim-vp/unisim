@@ -65,7 +65,11 @@ tlbsx.disasm = {
 
 op tlbwe(31[6]:rs[5]:ra[5]:ws[5]:978[10]:0[1])
 tlbwe.execute = {
-	cpu->Tlbwe(rs, ra, ws);
+	// Read the input operands
+	uint32_t s = cpu->GetGPR(rs);
+	uint32_t a = cpu->GetGPR(ra);
+	
+	cpu->Tlbwe(s, a, ws);
 }
 tlbwe.disasm = {
 	os << "tlbwe r" << (unsigned int) rs << ", r" << (unsigned int) ra << ", " << (unsigned int) ws;

@@ -54,7 +54,7 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 	
 		l1_access.addr = mmu_access.physical_addr;
 		l1_access.storage_attr = mmu_access.storage_attr;
-		LookupDL1(l1_access);
+		LookupDL1<false>(l1_access);
 
 		if(unlikely(!l1_access.line))
 		{
@@ -111,7 +111,7 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 template <class CONFIG>
 void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size)
 {
-	if(CONFIG::DEBUG_ENABLE)
+	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
 	{
 		if(unlikely(enable_linux_printk_snooping))
 		{
@@ -153,7 +153,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 	
 		l1_access.addr = mmu_access.physical_addr;
 		l1_access.storage_attr = mmu_access.storage_attr;
-		LookupDL1(l1_access);
+		LookupDL1<false>(l1_access);
 
 		if(unlikely(!l1_access.line))
 		{
@@ -213,8 +213,9 @@ template <class T, bool REVERSE, bool FORCE_BIG_ENDIAN>
 inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
-	MMUAccess<CONFIG> mmu_access;
 
+	MMUAccess<CONFIG> mmu_access;
+	
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
@@ -236,7 +237,6 @@ inline void CPU<CONFIG>::EmuLoad(T& value, typename CONFIG::address_t ea)
 	{
 		// Memory load crosses a FSB boundary
 		// Address translation
-		MMUAccess<CONFIG> mmu_access;
 		
 		mmu_access.addr = ea;
 		mmu_access.pid = GetProcessID();
@@ -270,12 +270,13 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 {
 	uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (ea & (CONFIG::FSB_WIDTH - 1));
 
+	MMUAccess<CONFIG> mmu_access;
+
 	// Ensure that memory access does not cross a FSB boundary
 	if(likely(size_to_fsb_boundary >= sizeof(T)))
 	{
 		// Memory store does not cross a FSB boundary
 		// Address translation
-		MMUAccess<CONFIG> mmu_access;
 		
 		mmu_access.addr = ea;
 		mmu_access.pid = GetProcessID();
@@ -300,8 +301,6 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 	{
 		// Memory store crosses a FSB boundary
 		// Address translation for the first memory access
-		MMUAccess<CONFIG> mmu_access;
-		
 		mmu_access.addr = ea;
 		mmu_access.pid = GetProcessID();
 		mmu_access.as = GetDataAddressSpace();

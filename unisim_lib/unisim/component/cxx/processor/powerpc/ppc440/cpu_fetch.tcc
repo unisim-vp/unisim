@@ -84,7 +84,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	
 		l1_access.addr = mmu_access.virtual_addr;
 		l1_access.storage_attr = mmu_access.storage_attr;
-		LookupIL1(l1_access);
+		LookupIL1<false>(l1_access);
 
 		if(unlikely(!l1_access.line))
 		{
@@ -110,7 +110,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 			{
 				logger << DebugInfo << "IL1: block miss at 0x" << std::hex << l1_access.addr << std::dec << endl << EndDebugInfo;
 			}
-			EmuFillIL1(l1_access);
+			EmuFillIL1(l1_access, mmu_access);
 		}
 	
 		memcpy(buffer, &(*l1_access.block)[l1_access.offset], size);

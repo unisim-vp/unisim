@@ -84,7 +84,7 @@ public:
 	
 	/* service methods */
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	
 	/* unisim::service::interfaces::Memory methods */
 	virtual void Reset();

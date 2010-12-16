@@ -83,7 +83,7 @@ public:
 	CPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
-	virtual bool Setup();
+	virtual bool EndSetup();
 	
 	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 

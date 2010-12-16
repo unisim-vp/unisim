@@ -289,7 +289,8 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 	
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool EndSetup();
 	virtual void OnDisconnect();
 	
 	//=====================================================================
@@ -445,6 +446,7 @@ public:
 	inline uint32_t GetTCR_ARE() const { return (GetTCR() & CONFIG::TCR_ARE_MASK) >> CONFIG::TCR_ARE_OFFSET; }
 	inline uint32_t GetTCR_DIE() const { return (GetTCR() & CONFIG::TCR_DIE_MASK) >> CONFIG::TCR_DIE_OFFSET; }
 	inline uint32_t GetTCR_FIE() const { return (GetTCR() & CONFIG::TCR_FIE_MASK) >> CONFIG::TCR_FIE_OFFSET; }
+	inline uint32_t GetTCR_WIE() const { return (GetTCR() & CONFIG::TCR_WIE_MASK) >> CONFIG::TCR_WIE_OFFSET; }
 	inline uint32_t GetTCR_FP() const { return (GetTCR() & CONFIG::TCR_FP_MASK) >> CONFIG::TCR_FP_OFFSET; }
 	inline uint32_t GetTCR_WP() const { return (GetTCR() & CONFIG::TCR_WP_MASK) >> CONFIG::TCR_WP_OFFSET; }
 	inline uint32_t GetTCR_WRC() const { return (GetTCR() & CONFIG::TCR_WRC_MASK) >> CONFIG::TCR_WRC_OFFSET; }
@@ -504,8 +506,23 @@ public:
 	inline void SetDECAR(uint32_t value) { decar = value; }
 	inline uint32_t GetDECAR() const { return decar; }
 	inline void SetDEC(uint32_t value) { dec = value; }
-	void DecrementDEC();
+	inline void DecrementDEC()
+	{
+		if(GetDEC() > 0)
+		{
+			SetDEC(GetDEC() - 1);
+			if(unlikely(GetDEC() == 0))
+			{
+				SetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
+				if(GetTCR_ARE())
+				{
+					SetDEC(GetDECAR());
+				}
+			}
+		}
+	}
 	inline uint32_t GetDEC() const { return dec; }
+	inline void IncrementTB() { SetTB(GetTB() + 1); }
 	inline uint64_t GetTB() const { return tb; }
 	inline void SetTB(uint64_t value)
 	{
@@ -513,12 +530,14 @@ public:
 		uint32_t tb_fit_mask = 4096 << (4 * tcr_fp);
 		if(!(tb & tb_fit_mask) && (value & tb_fit_mask)) // selected bit toggle from 0 to 1
 		{
+			//std::cerr << "tb_fit_mask=0x" << std::hex << tb_fit_mask << std::dec << std::endl;
 			SetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
 		}
 		uint32_t tcr_wp = GetTCR_WP();
 		uint32_t tb_watchdog_mask = 1048576 << (4 * tcr_wp);
 		if(!(tb & tb_watchdog_mask) && (value & tb_watchdog_mask)) // selected bit toggle from 0 to 1
 		{
+			//std::cerr << "cnt=" << cnt << ", tb_watchdog_mask=0x" << std::hex << tb_watchdog_mask << std::dec << std::endl;
 			SetIRQ(CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT);
 		}
 		tb = value;
@@ -788,7 +807,7 @@ protected:
 	inline bool IsVerboseWriteMemory() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_WRITE_MEMORY_ENABLE && (verbose_all || verbose_write_memory); }
 	inline bool IsVerboseException() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception); }
 	inline bool IsVerboseSetMSR() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SET_MSR_ENABLE && (verbose_all || verbose_set_msr); }
-
+	inline bool IsVerboseTlbwe() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_TLBWE_ENABLE && (verbose_all || verbose_tlbwe); }
 	//=====================================================================
 	//=                      Bus access methods                           =
 	//=====================================================================
@@ -817,9 +836,9 @@ private:
 	void ResetDTLB();
 	void InvalidateUTLB();
 	void ResetUTLB();
-	void LookupITLB(MMUAccess<CONFIG>& mmu_access);
-	void LookupDTLB(MMUAccess<CONFIG>& mmu_access);
-	void LookupUTLB(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void LookupITLB(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void LookupDTLB(MMUAccess<CONFIG>& mmu_access);
+	template <bool DEBUG> void LookupUTLB(MMUAccess<CONFIG>& mmu_access);
 	void UpdateITLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
 	void UpdateDTLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
 	void UpdateUTLBReplacementPolicy(MMUAccess<CONFIG>& mmu_access);
@@ -827,6 +846,9 @@ private:
 	void ChooseEntryToEvictDTLB(MMUAccess<CONFIG>& mmu_access);
 	void ChooseEntryToEvictUTLB(MMUAccess<CONFIG>& mmu_access);
 	template <bool DEBUG> void EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access);
+	void DumpITLB(std::ostream& os);
+	void DumpDTLB(std::ostream& os);
+	void DumpUTLB(std::ostream& os);
 	
 	void InvalidateDL1Set(uint32_t index);
 	void InvalidateDL1();
@@ -834,8 +856,8 @@ private:
 	void InvalidateIL1();
 	void ClearAccessDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void ClearAccessIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
-	void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	template <bool DEBUG> void LookupDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
+	template <bool DEBUG> void LookupIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
 	void EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void EmuEvictIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
 	void ChooseLineToEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
@@ -843,7 +865,7 @@ private:
 	void UpdateReplacementPolicyDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
 	void UpdateReplacementPolicyIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
 	void EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1_access);
-	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access);
+	void EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1_access, MMUAccess<CONFIG>& mmu_access);
 	void EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32_t size);
 	void EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t size);
 	void EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, uint32_t size);
@@ -894,8 +916,10 @@ private:
 	bool verbose_write_memory;
 	bool verbose_exception;
 	bool verbose_set_msr;
+	bool verbose_tlbwe;
 	bool enable_linux_printk_snooping;
 	uint64_t trap_on_instruction_counter;
+	bool enable_trap_on_exception;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
@@ -1015,6 +1039,12 @@ private:
 	TLB<class CONFIG::ITLB_CONFIG> itlb;
 	TLB<class CONFIG::DTLB_CONFIG> dtlb;
 	TLB<class CONFIG::UTLB_CONFIG> utlb;
+	uint64_t num_itlb_accesses;
+	uint64_t num_itlb_misses;
+	uint64_t num_dtlb_accesses;
+	uint64_t num_dtlb_misses;
+	uint64_t num_utlb_accesses;
+	uint64_t num_utlb_misses;
 
 	//=====================================================================
 	//=               Instruction prefetch buffer                         =
@@ -1063,8 +1093,10 @@ private:
 	Parameter<bool> param_verbose_write_memory;
 	Parameter<bool> param_verbose_exception;
 	Parameter<bool> param_verbose_set_msr;
+	Parameter<bool> param_verbose_tlbwe;
 	Parameter<bool> param_enable_linux_printk_snooping;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
+	Parameter<bool> param_enable_trap_on_exception;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
@@ -1078,6 +1110,15 @@ private:
 	Statistic<uint64_t> stat_num_dl1_accesses;
 	Statistic<uint64_t> stat_num_dl1_misses;
 	Formula<double> formula_dl1_miss_rate;
+	Statistic<uint64_t> stat_num_itlb_accesses;
+	Statistic<uint64_t> stat_num_itlb_misses;
+	Formula<double> formula_itlb_miss_rate;
+	Statistic<uint64_t> stat_num_dtlb_accesses;
+	Statistic<uint64_t> stat_num_dtlb_misses;
+	Formula<double> formula_dtlb_miss_rate;
+	Statistic<uint64_t> stat_num_utlb_accesses;
+	Statistic<uint64_t> stat_num_utlb_misses;
+	Formula<double> formula_utlb_miss_rate;
 };
 
 } // end of namespace ppc440

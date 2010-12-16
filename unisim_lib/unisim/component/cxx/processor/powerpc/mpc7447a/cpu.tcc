@@ -406,7 +406,28 @@ bool CPU<CONFIG>::FloatingPointSelfTest()
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::Setup()
+bool CPU<CONFIG>::BeginSetup()
+{
+	if(!memory_access_reporting_import) {
+		requires_memory_access_reporting = false;
+		requires_finished_instruction_reporting = false;
+	}
+	
+	if(!FloatingPointSelfTest())
+	{
+		logger << DebugError;
+		logger << "Floating-point self test failed !" << endl;
+		logger << EndDebugError;
+		return false;
+	}
+	
+	Reset();
+
+	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::EndSetup()
 {
 	unsigned int min_cycle_time = 0;
 
@@ -521,7 +542,7 @@ bool CPU<CONFIG>::Setup()
 	
 	if(l2_power_mode_import)
 		l2_power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
-	
+
 	if(linux_os_import)
 	{
 		EnableFPU();
@@ -531,7 +552,7 @@ bool CPU<CONFIG>::Setup()
 		EnableAddressBroadcast();
 		EnableL2Cache();
 	}
-	
+
 	if(kernel_loader_import)
 	{
 		EnableFPU();
@@ -541,11 +562,6 @@ bool CPU<CONFIG>::Setup()
 		EnableL2Cache();
 	}
 
-	if(!memory_access_reporting_import) {
-		requires_memory_access_reporting = false;
-		requires_finished_instruction_reporting = false;
-	}
-	
 	num_il1_accesses = 0;
 	num_il1_misses = 0;
 	num_dl1_accesses = 0;
@@ -553,14 +569,6 @@ bool CPU<CONFIG>::Setup()
 	num_l2_accesses = 0;
 	num_l2_misses = 0;
 	
-	if(!FloatingPointSelfTest())
-	{
-		logger << DebugError;
-		logger << "Floating-point self test failed !" << endl;
-		logger << EndDebugError;
-		return false;
-	}
-
 	return true;
 }
 
@@ -1210,7 +1218,7 @@ void CPU<CONFIG>::StepOneInstruction()
 			{
 				if(kernel_loader_import)
 				{
-					kernel_loader_import->Reset();
+					kernel_loader_import->Load();
 				}
 			}
 		} while(1);
@@ -1950,13 +1958,11 @@ template <class CONFIG>
 void CPU<CONFIG>::Rfi()
 {
 	FlushSubsequentInstructions();
-	InvalidateITLB();
-	InvalidateDTLB();
 
 	if(unlikely(GetMSR_PR())) throw PrivilegeViolationException<CONFIG>();
 
-	SetNIA(GetSRR0());
-	SetMSR(GetSRR1());
+	SetNIA(GetSRR0() & 0xfffffffcUL);
+	SetMSR((GetMSR() & 0xffff008cUL) | (GetSRR1() & 0x0000ff73UL));
 }
 
 template <class CONFIG>

@@ -624,7 +624,8 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 	
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool EndSetup();
 	virtual void OnDisconnect();
 	
 	//=====================================================================

@@ -46,11 +46,7 @@ public:
 	Loader() {}
 	virtual ~Loader() {}
 	
-	virtual void Reset() = 0;
-	virtual T GetEntryPoint() const = 0;
-	virtual T GetTopAddr() const = 0;
-	virtual T GetStackBase() const = 0;
-	virtual bool Load(const char *filename) = 0;
+	virtual bool Load() = 0;
 };
 
 	

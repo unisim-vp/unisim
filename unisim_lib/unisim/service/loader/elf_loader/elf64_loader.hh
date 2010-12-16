@@ -53,7 +53,7 @@ public:
 
 template <class MEMORY_ADDR>
 Elf64Loader<MEMORY_ADDR>::Elf64Loader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "this service implements an ELF64 Loader")
 	, ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(name, parent)
 {
 }

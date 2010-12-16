@@ -40,7 +40,7 @@ namespace memory {
 
 template <class FROM_ADDRESS, class TO_ADDRESS>
 Translator<FROM_ADDRESS, TO_ADDRESS>::Translator(const char* name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "this service translates memory addresses when playing with different address sizes")
 	, Service<Memory<FROM_ADDRESS> >(name, parent)
 	, Client<Memory<TO_ADDRESS> >(name, parent)
 	, memory_export("memory-export", this)

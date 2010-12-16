@@ -37,6 +37,7 @@
 
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <inttypes.h>
+#include <iostream>
 
 namespace unisim {
 namespace component {
@@ -327,6 +328,8 @@ public:
 	static const uint32_t DCDBTRH_TERA_MASK = ((1UL << DCDBTRH_TERA_BITSIZE) - 1) << DCDBTRH_TERA_OFFSET;
 	
 	static const uint32_t DCDBTRH_MASK = DCDBTRH_TRA_MASK | DCDBTRH_V_MASK | DCDBTRH_TERA_MASK;
+	
+	static const unsigned int DCDBTRH_BITSIZE = DCDBTRH_TRA_BITSIZE + DCDBTRH_V_BITSIZE + DCDBTRH_TERA_BITSIZE;
 };
 
 class DCDBTRLLayout
@@ -351,6 +354,8 @@ public:
 	static const uint32_t DCDBTRL_U3_MASK = ((1UL << DCDBTRL_U3_BITSIZE) - 1) << DCDBTRL_U3_OFFSET;
 	
 	static const uint32_t DCDBTRL_MASK = DCDBTRL_D_MASK | DCDBTRL_U0_MASK | DCDBTRL_U1_MASK | DCDBTRL_U2_MASK | DCDBTRL_U3_MASK;
+	
+	static const unsigned int DCDBTRL_BITSIZE = DCDBTRL_D_BITSIZE + DCDBTRL_U0_BITSIZE + DCDBTRL_U1_BITSIZE + DCDBTRL_U2_BITSIZE + DCDBTRL_U3_BITSIZE;
 };
 
 class ICDBTRHLayout
@@ -366,6 +371,8 @@ public:
 	static const uint32_t ICDBTRH_V_MASK = ((1UL << ICDBTRH_V_BITSIZE) - 1) << ICDBTRH_V_OFFSET;
 	
 	static const uint32_t ICDBTRH_MASK = ICDBTRH_TEA_MASK | ICDBTRH_V_MASK;
+	
+	static const unsigned int ICDBTRH_BITSIZE = ICDBTRH_TEA_BITSIZE + ICDBTRH_V_BITSIZE;
 };
 
 class ICDBTRLLayout
@@ -384,6 +391,8 @@ public:
 	static const uint32_t ICDBTRL_TID_MASK = ((1UL << ICDBTRL_TID_BITSIZE) - 1) << ICDBTRL_TID_OFFSET;
 	
 	static const uint32_t ICDBTRL_MASK = ICDBTRL_TS_MASK | ICDBTRL_TD_MASK | ICDBTRL_TID_MASK;
+	
+	static const unsigned int ICDBTRL_BITSIZE = ICDBTRL_TS_BITSIZE + ICDBTRL_TD_BITSIZE + ICDBTRL_TID_BITSIZE;
 };
 
 class ESRLayout
@@ -480,10 +489,12 @@ public:
 	static const unsigned int TLBE0_TS_BITSIZE = 1;
 	static const unsigned int TLBE0_SIZE_BITSIZE = 4;
 	static const unsigned int TLBE0_TPAR_BITSIZE = 4;
+	static const unsigned int TLBE0_TAG_BITSIZE = TLBE0_EPN_BITSIZE + TLBE0_V_BITSIZE + TLBE0_TS_BITSIZE + TLBE0_SIZE_BITSIZE + TLBE0_TPAR_BITSIZE;
 
 	static const unsigned int TLBE1_RPN_BITSIZE = 22;
 	static const unsigned int TLBE1_PAR1_BITSIZE = 2;
 	static const unsigned int TLBE1_ERPN_BITSIZE = 4;
+	static const unsigned int TLBE1_DATA_BITSIZE = TLBE1_RPN_BITSIZE + TLBE1_PAR1_BITSIZE + TLBE1_ERPN_BITSIZE;
 	
 	static const unsigned int TLBE2_PAR2_BITSIZE = 2;
 	static const unsigned int TLBE2_U0_BITSIZE = 1;
@@ -501,6 +512,9 @@ public:
 	static const unsigned int TLBE2_SX_BITSIZE = 1;
 	static const unsigned int TLBE2_SW_BITSIZE = 1;
 	static const unsigned int TLBE2_SR_BITSIZE = 1;
+	static const unsigned int TLBE2_DATA_BITSIZE = TLBE2_PAR2_BITSIZE + TLBE2_U0_BITSIZE + TLBE2_U1_BITSIZE + TLBE2_U2_BITSIZE + TLBE2_U3_BITSIZE +
+	                                               TLBE2_W_BITSIZE + TLBE2_I_BITSIZE + TLBE2_M_BITSIZE + TLBE2_G_BITSIZE + TLBE2_E_BITSIZE +
+	                                               TLBE2_UX_BITSIZE + TLBE2_UW_BITSIZE + TLBE2_UR_BITSIZE + TLBE2_SX_BITSIZE + TLBE2_SW_BITSIZE + TLBE2_SR_BITSIZE;
 
 	static const uint32_t TLBE0_EPN_MASK = ((1UL << TLBE0_EPN_BITSIZE) - 1) << TLBE0_EPN_OFFSET;
 	static const uint32_t TLBE0_V_MASK = ((1UL << TLBE0_V_BITSIZE) - 1) << TLBE0_V_OFFSET;
@@ -547,6 +561,9 @@ public:
 	                                        TLBE2_SX_MASK | TLBE2_SW_MASK | TLBE2_SR_MASK;
 
 	static const uint32_t TLBE2_MASK = TLBE2_DATA_MASK | TLBE2_PAR2_MASK;
+	
+	static const uint32_t TLBE_TAG_BITSIZE = TLBE0_TAG_BITSIZE;
+	static const uint32_t TLBE_DATA_BITSIZE = TLBE1_DATA_BITSIZE + TLBE2_DATA_BITSIZE + 8; // account also for the 8-bit PID
 };
 
 class VirtualAddressLayout
@@ -719,6 +736,8 @@ public:
 	static const bool DEBUG_WRITE_MEMORY_ENABLE = false;
 	static const bool DEBUG_EXCEPTION_ENABLE = false;
 	static const bool DEBUG_SET_MSR_ENABLE = false;
+	static const bool DEBUG_TLBWE_ENABLE = false;
+	static const bool DEBUG_PRINTK_ENABLE = false;
 
 	// MMU storage attribute
 	typedef enum
@@ -844,8 +863,8 @@ public:
 			tid = 0;
 		}
 		void Invalidate() { w[0] = w[0] & ~TLBE0_V_MASK; }
-		uint32_t Get(unsigned int ws) { return w[ws]; }
-		process_id_t GetTID() { return tid; }
+		uint32_t Get(unsigned int ws) const { return w[ws]; }
+		process_id_t GetTID() const { return tid; }
 		
 		void Set(unsigned int ws, uint32_t value, process_id_t _tid = 0)
 		{
@@ -889,6 +908,7 @@ public:
 		uint32_t GetSW() const { return (w[2] & TLBELayout::TLBE2_SW_MASK) >> TLBELayout::TLBE2_SW_OFFSET; }
 		uint32_t GetSR() const { return (w[2] & TLBELayout::TLBE2_SR_MASK) >> TLBELayout::TLBE2_SR_OFFSET; }
 		ACCESS_CTRL GetAccessCtrl() const { return (ACCESS_CTRL)((w[2] & TLBELayout::TLBE2_ACCESS_CTRL_MASK) >> TLBELayout::TLBE2_ACCESS_CTRL_OFFSET); }
+		friend std::ostream& operator << (std::ostream& os, const TLB_ENTRY& tlbe);
 	//private:
 		uint32_t w[3];
 		process_id_t tid;                       // transaction ID (TID)
@@ -988,7 +1008,7 @@ public:
 	static const uint32_t FSB_WIDTH = 16; // 128-bit front side bus
 
 	// Simulation performance speed-up features
-	static const bool PREFETCH_BUFFER_ENABLE = false;//true; // enable faster fetch
+	static const bool PREFETCH_BUFFER_ENABLE = true; // enable faster fetch
 	static const unsigned int NUM_PREFETCH_BUFFER_ENTRIES = 8; //!< Maximum number of instruction in the prefetch buffer
 	static const bool FAST_DL1_LOOKUP_ENABLE = true;
 	static const bool FAST_IL1_LOOKUP_ENABLE = true;
@@ -1045,6 +1065,45 @@ public:
 	static const bool HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS = false;
 };
 
+inline std::ostream& operator << (std::ostream& os, const Config::TLB_ENTRY& tlbe)
+{
+	os << std::hex << "EPN=0x" << tlbe.GetEPN()
+	   << " V=" << tlbe.GetV()
+	   << " TS=" << tlbe.GetTS()
+	   << " SIZE=0x" << tlbe.GetSIZE()
+	   << " TPAR=0x" << tlbe.GetTPAR()
+	   << " RPN=0x" << tlbe.GetRPN()
+	   << " PAR1=0x" << tlbe.GetPAR1()
+	   << " TID=0x" << (unsigned int) tlbe.GetTID()
+	   << " ERPN=0x" << tlbe.GetERPN()
+	   << " PAR2=0x" << tlbe.GetPAR2()
+	   << " U0=" << tlbe.GetU0()
+	   << " U1=" << tlbe.GetU1()
+	   << " U2=" << tlbe.GetU2()
+	   << " U3=" << tlbe.GetU3()
+	   << " W=" << tlbe.GetW()
+	   << " I=" << tlbe.GetI()
+	   << " M=" << tlbe.GetM()
+	   << " G=" << tlbe.GetG()
+	   << " E=" << tlbe.GetE()
+	   << " UX=" << tlbe.GetUX()
+	   << " UW=" << tlbe.GetUW()
+	   << " UR=" << tlbe.GetUR()
+	   << " SX=" << tlbe.GetSX()
+	   << " SW=" << tlbe.GetSW()
+	   << " SR=" << tlbe.GetSR();
+	return os;
+}
+
+class Config_wFPU : public Config
+{
+public:
+	typedef CPU<Config_wFPU> STATE;
+
+	// Floating point
+	static const bool HAS_FPU = true;
+};
+
 class Config_woMMU_wFPU : public Config
 {
 public:
@@ -1077,6 +1136,31 @@ public:
 	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
 	static const bool DEBUG_EXCEPTION_ENABLE = true;
 	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_wFPU : public Config_wFPU
+{
+public:
+	typedef CPU<DebugConfig_wFPU> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_SETUP_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
 };
 
 class DebugConfig_woMMU_wFPU : public Config_woMMU_wFPU
@@ -1099,6 +1183,8 @@ public:
 	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
 	static const bool DEBUG_EXCEPTION_ENABLE = true;
 	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
 };
 
 } // end of namespace ppc440

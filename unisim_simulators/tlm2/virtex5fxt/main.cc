@@ -62,12 +62,22 @@
 
 #endif
 
+#ifdef WITH_FPU
+#ifdef DEBUG_VIRTEX5FXT
+static const bool DEBUG_INFORMATION = true;
+typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU CPU_CONFIG;
+#else
+static const bool DEBUG_INFORMATION = false;
+typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU CPU_CONFIG;
+#endif
+#else
 #ifdef DEBUG_VIRTEX5FXT
 static const bool DEBUG_INFORMATION = true;
 typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig CPU_CONFIG;
 #else
 static const bool DEBUG_INFORMATION = false;
 typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
+#endif
 #endif
 
 void SigIntHandler(int signum)
@@ -162,6 +172,8 @@ private:
 	//=========================================================================
 	//  - ELF32 loader
 	Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader;
+	//  - ROM loader (ELF32)
+	Elf32Loader<CPU_ADDRESS_TYPE> *rom_loader;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -232,6 +244,8 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//  - ELF32 loader
 	elf32_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("elf32-loader");
+	//  - ROM Loader
+	rom_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("rom-loader");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -314,6 +328,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	effective_to_physical_address_translator->memory_import >> memory->memory_export;
 	elf32_loader->memory_import >> effective_to_physical_address_translator->memory_export;
+	rom_loader->memory_import >> effective_to_physical_address_translator->memory_export;
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 }
 
@@ -332,6 +347,7 @@ Simulator::~Simulator()
 	if(utlb_power_estimator) delete utlb_power_estimator;
 	if(sim_time) delete sim_time;
 	if(elf32_loader) delete elf32_loader;
+	if(rom_loader) delete rom_loader;
 	if(effective_to_physical_address_translator) delete effective_to_physical_address_translator;
 }
 
@@ -346,6 +362,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440 simulator with support of ELF32 binaries");
 
 	const char *filename = "";
+	const char *rom_filename = "boot.elf";
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
@@ -389,24 +406,26 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 	//  - ELF32 Loader run-time configuration
 	simulator->SetVariable("elf32-loader.filename", filename);
+	//  - ROM Loader run-time configuration
+	simulator->SetVariable("rom-loader.filename", rom_filename);
 
 	//  - Cache/TLB power estimators run-time configuration
-	simulator->SetVariable("il1-power-estimator.cache-size", 32 * 1024);
-	simulator->SetVariable("il1-power-estimator.line-size", 32);
-	simulator->SetVariable("il1-power-estimator.associativity", 8);
+	simulator->SetVariable("il1-power-estimator.cache-size", CPU_CONFIG::DL1_CONFIG::CACHE_SIZE);
+	simulator->SetVariable("il1-power-estimator.line-size", CPU_CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE);
+	simulator->SetVariable("il1-power-estimator.associativity", CPU_CONFIG::DL1_CONFIG::CACHE_ASSOCIATIVITY);
 	simulator->SetVariable("il1-power-estimator.rw-ports", 0);
 	simulator->SetVariable("il1-power-estimator.excl-read-ports", 1);
 	simulator->SetVariable("il1-power-estimator.excl-write-ports", 0);
 	simulator->SetVariable("il1-power-estimator.single-ended-read-ports", 0);
 	simulator->SetVariable("il1-power-estimator.banks", 4);
 	simulator->SetVariable("il1-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("il1-power-estimator.output-width", 128);
-	simulator->SetVariable("il1-power-estimator.tag-width", 64);
+	simulator->SetVariable("il1-power-estimator.output-width", 64);
+	simulator->SetVariable("il1-power-estimator.tag-width", CPU_CONFIG::ICDBTRL_BITSIZE + CPU_CONFIG::ICDBTRH_BITSIZE);
 	simulator->SetVariable("il1-power-estimator.access-mode", "fast");
 
-	simulator->SetVariable("dl1-power-estimator.cache-size", 32 * 1024);
-	simulator->SetVariable("dl1-power-estimator.line-size", 32);
-	simulator->SetVariable("dl1-power-estimator.associativity", 8);
+	simulator->SetVariable("dl1-power-estimator.cache-size", CPU_CONFIG::IL1_CONFIG::CACHE_SIZE);
+	simulator->SetVariable("dl1-power-estimator.line-size", CPU_CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE);
+	simulator->SetVariable("dl1-power-estimator.associativity", CPU_CONFIG::IL1_CONFIG::CACHE_ASSOCIATIVITY);
 	simulator->SetVariable("dl1-power-estimator.rw-ports", 1);
 	simulator->SetVariable("dl1-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("dl1-power-estimator.excl-write-ports", 0);
@@ -414,46 +433,46 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dl1-power-estimator.banks", 4);
 	simulator->SetVariable("dl1-power-estimator.tech-node", tech_node);
 	simulator->SetVariable("dl1-power-estimator.output-width", 64);
-	simulator->SetVariable("dl1-power-estimator.tag-width", 64);
+	simulator->SetVariable("dl1-power-estimator.tag-width", CPU_CONFIG::DCDBTRL_BITSIZE + CPU_CONFIG::DCDBTRH_BITSIZE);
 	simulator->SetVariable("dl1-power-estimator.access-mode", "fast");
 
-	simulator->SetVariable("itlb-power-estimator.cache-size", 4 * 2 * 4);
-	simulator->SetVariable("itlb-power-estimator.line-size", 4);
-	simulator->SetVariable("itlb-power-estimator.associativity", 4);
+	simulator->SetVariable("itlb-power-estimator.cache-size", CPU_CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES * (CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
+	simulator->SetVariable("itlb-power-estimator.line-size", (CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
+	simulator->SetVariable("itlb-power-estimator.associativity", CPU_CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY);
 	simulator->SetVariable("itlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("itlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("itlb-power-estimator.excl-write-ports", 0);
 	simulator->SetVariable("itlb-power-estimator.single-ended-read-ports", 0);
 	simulator->SetVariable("itlb-power-estimator.banks", 4);
 	simulator->SetVariable("itlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("itlb-power-estimator.output-width", 32);
-	simulator->SetVariable("itlb-power-estimator.tag-width", 64);
+	simulator->SetVariable("itlb-power-estimator.output-width", CPU_CONFIG::TLBE_DATA_BITSIZE);
+	simulator->SetVariable("itlb-power-estimator.tag-width", CPU_CONFIG::TLBE_TAG_BITSIZE);
 	simulator->SetVariable("itlb-power-estimator.access-mode", "fast");
 
-	simulator->SetVariable("dtlb-power-estimator.cache-size", 8 * 2 * 4);
-	simulator->SetVariable("dtlb-power-estimator.line-size", 4);
-	simulator->SetVariable("dtlb-power-estimator.associativity", 4);
+	simulator->SetVariable("dtlb-power-estimator.cache-size", CPU_CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES * (CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
+	simulator->SetVariable("dtlb-power-estimator.line-size", (CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
+	simulator->SetVariable("dtlb-power-estimator.associativity", CPU_CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY);
 	simulator->SetVariable("dtlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("dtlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("dtlb-power-estimator.excl-write-ports", 0);
 	simulator->SetVariable("dtlb-power-estimator.single-ended-read-ports", 0);
 	simulator->SetVariable("dtlb-power-estimator.banks", 4);
 	simulator->SetVariable("dtlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("dtlb-power-estimator.output-width", 32);
-	simulator->SetVariable("dtlb-power-estimator.tag-width", 64);
+	simulator->SetVariable("dtlb-power-estimator.output-width", CPU_CONFIG::TLBE_DATA_BITSIZE);
+	simulator->SetVariable("dtlb-power-estimator.tag-width", CPU_CONFIG::TLBE_TAG_BITSIZE);
 	simulator->SetVariable("dtlb-power-estimator.access-mode", "fast");
 
-	simulator->SetVariable("utlb-power-estimator.cache-size", 64 * 2 * 4);
-	simulator->SetVariable("utlb-power-estimator.line-size", 4);
-	simulator->SetVariable("utlb-power-estimator.associativity", 64);
+	simulator->SetVariable("utlb-power-estimator.cache-size", CPU_CONFIG::UTLB_CONFIG::TLB_NUM_ENTRIES * (CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
+	simulator->SetVariable("utlb-power-estimator.line-size", (CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
+	simulator->SetVariable("utlb-power-estimator.associativity", CPU_CONFIG::UTLB_CONFIG::TLB_ASSOCIATIVITY);
 	simulator->SetVariable("utlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("utlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("utlb-power-estimator.excl-write-ports", 0);
 	simulator->SetVariable("utlb-power-estimator.single-ended-read-ports", 0);
 	simulator->SetVariable("utlb-power-estimator.banks", 4);
 	simulator->SetVariable("utlb-power-estimator.tech-node", tech_node);
-	simulator->SetVariable("utlb-power-estimator.output-width", 32);
-	simulator->SetVariable("utlb-power-estimator.tag-width", 64);
+	simulator->SetVariable("utlb-power-estimator.output-width", CPU_CONFIG::TLBE_DATA_BITSIZE);
+	simulator->SetVariable("utlb-power-estimator.tag-width", CPU_CONFIG::TLBE_TAG_BITSIZE);
 	simulator->SetVariable("utlb-power-estimator.access-mode", "fast");
 
 	// Inline debugger
@@ -509,6 +528,12 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "WARNING! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " should not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+	}
+	
 	// Build the Linux OS arguments from the command line arguments
 	
 	VariableBase *cmd_args = FindVariable("cmd-args");

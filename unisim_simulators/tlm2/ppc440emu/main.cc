@@ -75,7 +75,7 @@ typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU_wFPU CP
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
+	sc_stop();
 }
 
 using namespace std;
@@ -327,11 +327,13 @@ Simulator::Simulator(int argc, char **argv)
 	elf32_loader->memory_import >> effective_to_physical_address_translator->memory_export;
 	linux_loader->memory_import >> effective_to_physical_address_translator->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
+	linux_loader->blob_import >> elf32_loader->blob_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
+	linux_os->blob_import >> linux_loader->blob_export;
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 }
 
@@ -358,12 +360,12 @@ Simulator::~Simulator()
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
-	simulator->SetVariable("program-name", "UNISIM ppcemu");
+	simulator->SetVariable("program-name", "UNISIM ppc440emu");
 	simulator->SetVariable("copyright", "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation");
+	simulator->SetVariable("description", "UNISIM ppc440emu, user level PowerPC 440 simulator with support of ELF32 binaries and Linux system call translation");
 
 	const char *filename = "";
 	int gdb_server_tcp_port = 0;

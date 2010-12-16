@@ -63,6 +63,9 @@ namespace service {
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::Variable(const char *_name, Object *_object, unisim::service::power::CachePowerEstimator::AccessMode& _storage, Type type, const char *_description) :
 VariableBase(_name, _object, type, _description), storage(&_storage)
 {
+	AddEnumeratedValue("normal");
+	AddEnumeratedValue("sequential");
+	AddEnumeratedValue("fast");
 	Simulator::simulator->Initialize(this);
 }
 
@@ -154,7 +157,7 @@ using std::endl;
 using std::string;
 
 CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)"),
 	Service<unisim::service::interfaces::CachePowerEstimator>(name, parent),
 	Service<unisim::service::interfaces::PowerMode>(name, parent),
 	Client<unisim::service::interfaces::Time>(name, parent),

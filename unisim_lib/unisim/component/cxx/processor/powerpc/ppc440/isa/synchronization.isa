@@ -45,7 +45,7 @@ mbar.disasm = {
 }
 
 op msync(31[6]:?[15]:598[10]:?[1])
-msync.execute = { cpu->Synchronize(); }
+msync.execute = { /*cpu->Synchronize();*/ }
 msync.disasm = {
 	os << "msync";
 }

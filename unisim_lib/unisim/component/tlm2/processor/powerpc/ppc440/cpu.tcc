@@ -44,7 +44,7 @@ namespace ppc440 {
 
 template <class CONFIG>
 CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "this module implements a PPC440 CPU core")
 	, sc_module(name)
 	, unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>(name, parent)
 	, bus_master_sock("bus-master-sock")
@@ -84,9 +84,9 @@ CPU<CONFIG>::~CPU()
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::Setup()
+bool CPU<CONFIG>::EndSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::EndSetup()) return false;
 	cpu_cycle_time = sc_time((double) inherited::cpu_cycle_time, SC_PS);
 	return true;
 }
@@ -111,6 +111,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
+	//std::cerr << "sc_time_stamp() = " << sc_time_stamp() << ":" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
 	timer_time -= cpu_time;
 	cpu_time = SC_ZERO_TIME;
 }
@@ -123,6 +124,7 @@ inline void CPU<CONFIG>::UpdateTime()
 		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 		do
 		{
+			//std::cerr << "timer_time=" << timer_time << std::endl;
 			inherited::OnTimerClock();
 			timer_time += timer_cycle_time;
 		}

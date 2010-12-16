@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_DWARF_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/endian/endian.hh>
 #include <inttypes.h>
@@ -54,10 +55,9 @@ template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(endian_type endianness, uint8_t address_size);
+	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
 	~DWARF_Handler();
-	void Handle(const char *section_name, uint8_t *section, uint64_t section_size);
-	void Initialize();
+	void Parse();
 	void to_XML(std::ostream& os);
 	void to_HTML(const char *output_dir);
 	
@@ -88,28 +88,17 @@ private:
 	uint8_t address_size;
 	
 	// Raw data
-	uint8_t *debug_line_section;     // .debug_line section (raw data)
-	uint64_t debug_line_section_size;
-	uint8_t *debug_info_section;     // .debug_info section (raw data)
-	uint64_t debug_info_section_size;
-	uint8_t *debug_abbrev_section;   // .debug_abbrev section (raw data)
-	uint64_t debug_abbrev_section_size;
-	uint8_t *debug_aranges_section;  // .debug_aranges section (raw data)
-	uint64_t debug_aranges_section_size;
-	uint8_t *debug_pubnames_section; // .debug_pubnames section (raw data)
-	uint64_t debug_pubnames_section_size;
-	uint8_t *debug_pubtypes_section; // .debug_pubtypes section (raw data)
-	uint64_t debug_pubtypes_section_size;
-	uint8_t *debug_macinfo_section;  // .debug_macinfo section (raw data)
-	uint64_t debug_macinfo_section_size;
-	uint8_t *debug_frame_section;    // .debug_frame section (raw data)
-	uint64_t debug_frame_section_size;
-	uint8_t *debug_str_section;      // .debug_str section (raw data)
-	uint64_t debug_str_section_size;
-	uint8_t *debug_loc_section;      // .debug_loc section (raw data)
-	uint64_t debug_loc_section_size;
-	uint8_t *debug_ranges_section;   // .debug_ranges section (raw data)
-	uint64_t debug_ranges_section_size;
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_info_section;     // .debug_info section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_abbrev_section;   // .debug_abbrev section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_aranges_section;  // .debug_aranges section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubnames_section; // .debug_pubnames section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubtypes_section; // .debug_pubtypes section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_macinfo_section;  // .debug_macinfo section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_frame_section;    // .debug_frame section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
 	std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms

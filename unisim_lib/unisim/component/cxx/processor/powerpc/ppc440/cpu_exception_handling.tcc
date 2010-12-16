@@ -68,14 +68,17 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim
 		
 		SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_SYSTEM_CALL));
 
-		if(unlikely(IsVerboseException()))
+		if(unlikely(IsVerboseException() || enable_trap_on_exception))
 		{
-			logger << DebugInfo;
-			logger << "At 0x" << std::hex << GetCIA() << std::dec;
+			std::stringstream sstr;
+			sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 			const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-			if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-			logger << ":" << exc.what() << " (syscall #" << GetGPR(0) << ")" << endl;
-			logger << EndDebugInfo;
+			if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+			sstr << ", got a " << exc.what() << " (syscall #" << GetGPR(0) << ")";
+			std::string msg = sstr.str();
+
+			if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+			if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
 		}
 	}
 }
@@ -95,7 +98,7 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 		case MachineCheckException<CONFIG>::MCP_INSTRUCTION_ASYNCHRONOUS:
 		case MachineCheckException<CONFIG>::MCP_DATA_ASYNCHRONOUS:
 		case MachineCheckException<CONFIG>::MCP_TLB_ASYNCHRONOUS:
-			SetMCSRR0(GetCIA()); // effective address of the next instruction to be executed
+			SetMCSRR0(GetNIA()); // effective address of the next instruction to be executed
 			break;
 	}
 	
@@ -105,8 +108,22 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_MACHINE_CHECK));
 
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -116,17 +133,32 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 	InvalidateITLB();
 	InvalidateDTLB();
 
-	SetCSRR0(GetNIA()); // effective address of the next instruction to be executed
+	SetSRR0(GetNIA()); // effective address of the next instruction to be executed
 	
-	SetCSRR1(GetMSR()); // content of MSR
+	SetSRR1(GetMSR()); // content of MSR
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DECREMENTER));
 	
 	//ResetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -136,17 +168,32 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 	InvalidateITLB();
 	InvalidateDTLB();
 
-	SetCSRR0(GetNIA()); // effective address of the next instruction to be executed
+	SetSRR0(GetNIA()); // effective address of the next instruction to be executed
 	
-	SetCSRR1(GetMSR()); // content of MSR
+	SetSRR1(GetMSR()); // content of MSR
 	
 	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_EXTERNAL_INPUT));
 
 	ResetIRQ(CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT);
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -156,17 +203,32 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 	InvalidateITLB();
 	InvalidateDTLB();
 
-	SetSRR0(GetNIA()); // effective address of the next instruction to be executed
+	SetCSRR0(GetNIA()); // effective address of the next instruction to be executed
 	
-	SetSRR1(GetMSR()); // content of MSR
+	SetCSRR1(GetMSR()); // content of MSR
 	
 	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_CRITICAL_INPUT));
 
 	ResetIRQ(CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT);
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -188,17 +250,23 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
+		if(func_symbol) sstr << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
+		if(obj_symbol) sstr << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -219,14 +287,21 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::compo
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_STORAGE));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -250,17 +325,23 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_TLB_ERROR));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *func_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(func_symbol) logger << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
+		if(func_symbol) sstr << " (" << func_symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what() << " while accessing data at 0x" << std::hex << exc.GetAddress() << std::dec;
 		const Symbol<typename CONFIG::address_t> *obj_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
-		if(obj_symbol) logger << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
-		logger << endl;
-		logger << EndDebugInfo;
+		if(obj_symbol) sstr << " (" << obj_symbol->GetFriendlyName(exc.GetAddress()) << ")";
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -279,14 +360,21 @@ void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& ex
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_INSTRUCTION_TLB_ERROR));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -310,14 +398,21 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim:
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_ALIGNMENT));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -359,14 +454,21 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::c
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_PROGRAM));
 	
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -385,14 +487,21 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_FLOATING_POINT_UNAVAILABLE));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -411,14 +520,21 @@ void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<C
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_AUXILIARY_PROCESSOR_UNAVAILABLE));
 
-	if(unlikely(IsVerboseException()))
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
-		logger << DebugInfo;
-		logger << "At 0x" << std::hex << GetCIA() << std::dec;
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-		if(symbol) logger << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-		logger << ":" << exc.what() << endl;
-		logger << EndDebugInfo;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
 	}
 }
 
@@ -439,8 +555,22 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 
 	//ResetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
 
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -450,18 +580,32 @@ void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>&
 	InvalidateITLB();
 	InvalidateDTLB();
 
-	SetSRR0(GetNIA()); // effective address of the next instruction to be executed
+	SetCSRR0(GetNIA()); // effective address of the next instruction to be executed
 	
-	SetSRR1(GetMSR()); // content of MSR
+	SetCSRR1(GetMSR()); // content of MSR
 	
-	SetMSR(GetMSR() & (CONFIG::MSR_CE_MASK | CONFIG::MSR_DE_MASK | CONFIG::MSR_ME_MASK)); // MSR[CE], MSR[DE] and MSR[ME] unchanged, all other MSR bits set to 0
+	SetMSR(GetMSR() & CONFIG::MSR_ME_MASK); // MSR[ME] unchanged, all other MSR bits set to 0
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_WATCHDOG_TIMER));
 
-	//ResetIRQ(CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT);
+	ResetIRQ(CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT);
 
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -479,8 +623,22 @@ void CPU<CONFIG>::HandleException(const DebugInterruptException<CONFIG>& exc, un
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DEBUG));
 
-	if(unlikely(IsVerboseException()))
-		logger << DebugInfo << exc.what() << endl << EndDebugInfo;
+	if(unlikely(IsVerboseException() || enable_trap_on_exception))
+	{
+		std::stringstream sstr;
+		sstr << "At 0x" << std::hex << GetCIA() << std::dec;
+		const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
+		sstr << ", got a " << exc.what();
+		std::string msg = sstr.str();
+
+		if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
+		if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
+	}
+	if(linux_os_import)
+	{
+		Object::Stop(-1);
+	}
 }
 
 } // end of namespace ppc440

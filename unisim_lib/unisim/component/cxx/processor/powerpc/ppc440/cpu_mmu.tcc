@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_MMU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_MMU_TCC__
 
+#include <unisim/kernel/debug/debug.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -45,6 +47,12 @@ namespace ppc440 {
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateITLB()
 {
+	if(IsVerboseITLB())
+	{
+		logger << DebugInfo << "Invalidating ITLB" << EndDebugInfo;
+		logger << DebugInfo << unisim::kernel::debug::BackTrace() << EndDebugInfo;
+	}
+	
 	uint32_t way;
 
 	TLBSet<typename CONFIG::ITLB_CONFIG>& itlb_set = itlb[0];
@@ -60,6 +68,10 @@ void CPU<CONFIG>::InvalidateITLB()
 template <class CONFIG>
 void CPU<CONFIG>::ResetITLB()
 {
+	if(IsVerboseITLB())
+	{
+		logger << DebugInfo << "Resetting ITLB" << EndDebugInfo;
+	}
 	uint32_t way;
 
 	TLBSet<typename CONFIG::ITLB_CONFIG>& itlb_set = itlb[0];
@@ -100,6 +112,10 @@ void CPU<CONFIG>::ResetITLB()
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateDTLB()
 {
+	if(IsVerboseDTLB())
+	{
+		logger << DebugInfo << "Invalidating DTLB" << EndDebugInfo;
+	}
 	uint32_t way;
 
 	TLBSet<typename CONFIG::DTLB_CONFIG>& dtlb_set = dtlb[0];
@@ -115,6 +131,10 @@ void CPU<CONFIG>::InvalidateDTLB()
 template <class CONFIG>
 void CPU<CONFIG>::ResetDTLB()
 {
+	if(IsVerboseDTLB())
+	{
+		logger << DebugInfo << "Resetting DTLB" << EndDebugInfo;
+	}
 	uint32_t way;
 
 	TLBSet<typename CONFIG::DTLB_CONFIG>& dtlb_set = dtlb[0];
@@ -155,6 +175,10 @@ void CPU<CONFIG>::ResetDTLB()
 template <class CONFIG>
 void CPU<CONFIG>::InvalidateUTLB()
 {
+	if(IsVerboseUTLB())
+	{
+		logger << DebugInfo << "Invalidating UTLB" << EndDebugInfo;
+	}
 	uint32_t way;
 
 	TLBSet<typename CONFIG::UTLB_CONFIG>& utlb_set = utlb[0];
@@ -170,6 +194,10 @@ void CPU<CONFIG>::InvalidateUTLB()
 template <class CONFIG>
 void CPU<CONFIG>::ResetUTLB()
 {
+	if(IsVerboseUTLB())
+	{
+		logger << DebugInfo << "Resetting UTLB" << EndDebugInfo;
+	}
 	uint32_t way;
 
 	TLBSet<typename CONFIG::UTLB_CONFIG>& utlb_set = utlb[0];
@@ -191,44 +219,23 @@ void CPU<CONFIG>::ResetUTLB()
 		utlb_set.status.mru_entry = &utlb_set[0];
 		utlb_set.status.lru_entry = &utlb_set[TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY - 1];
 	}
-	
-#if 1
-	for(way = 0; way < TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY && way < 16; way++)
-	{
-		TLBEntry<typename CONFIG::UTLB_CONFIG>& utlb_entry = utlb_set[way];
-	
-		uint32_t epn = (way & 15) << 18; // 22-bit: way || 0...0
-		uint32_t rpn = epn;
-		uint32_t erpn = 0;
-		
-		utlb_entry.pte.Set(
-		/* EPN */ epn,
-		/*  V  */ 1,
-		/* TS  */ CONFIG::AS_SYSTEM,
-		/* SIZE */ 9, // 256 MB page
-		/* TID */ 0,
-		/* RPN */ rpn,
-		/* ERPN */ erpn,
-		/* STORAGE ATTR */ (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_I | CONFIG::SA_G | (GetRSTCFG_U0() ? CONFIG::SA_U0 : 0) | (GetRSTCFG_U1() ? CONFIG::SA_U1 : 0) | (GetRSTCFG_U2() ? CONFIG::SA_U2 : 0) | (GetRSTCFG_U3() ? CONFIG::SA_U3 : 0) | (GetRSTCFG_E() ? CONFIG::SA_E : 0)),
-		/* ACCESS CTRL */ (typename CONFIG::ACCESS_CTRL)(CONFIG::AC_SX | CONFIG::AC_SW | CONFIG::AC_SR)
-		);
-	}
-#endif
 }
 
 template <class CONFIG>
+template <bool DEBUG>
 void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 {
 	uint32_t tlb_index = 0;
 	TLBSet<typename CONFIG::ITLB_CONFIG> *tlb_set;
 	TLBEntry<typename CONFIG::ITLB_CONFIG> *tlb_entry;
 
+	if(!DEBUG) num_itlb_accesses++;
 	mmu_access.tlb_index = tlb_index;
 	mmu_access.itlb_set = tlb_set = &itlb[tlb_index];
 	
 	if(unlikely(IsVerboseITLB()))
 	{
-		logger << DebugInfo << "ITLB Lookup at 0x" << std::hex << mmu_access.virtual_addr << "(as=" << mmu_access.as << ", pid=0x" << (unsigned int) mmu_access.pid << ", ea=0x" << mmu_access.addr << ")" << std::dec << EndDebugInfo;
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "ITLB Lookup at 0x" << std::hex << mmu_access.virtual_addr << "(as=" << mmu_access.as << ", pid=0x" << (unsigned int) mmu_access.pid << ", ea=0x" << mmu_access.addr << ")" << std::dec << EndDebugInfo;
 	}
 	if(CONFIG::FAST_ITLB_LOOKUP_ENABLE)
 	{
@@ -236,28 +243,28 @@ void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 		{
 			if(unlikely(IsVerboseITLB()))
 			{
-				logger << DebugInfo << "Looking at way #" << tlb_entry->status.way << ": V=" << tlb_entry->pte.GetV() << ", TS=" << tlb_entry->pte.GetTS() << ", TID=0x" << std::hex << (unsigned int) tlb_entry->pte.GetTID() << std::dec << EndDebugInfo;
+				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "Looking at way #" << tlb_entry->status.way << ": V=" << tlb_entry->pte.GetV() << ", TS=" << tlb_entry->pte.GetTS() << ", TID=0x" << std::hex << (unsigned int) tlb_entry->pte.GetTID() << std::dec << EndDebugInfo;
 			}
 			if(tlb_entry->pte.GetV() && (tlb_entry->pte.GetTS() == mmu_access.as) && (!tlb_entry->pte.GetTID() || (tlb_entry->pte.GetTID() == mmu_access.pid)))
 			{
 				typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
 				if(unlikely(!((1 << tlb_entry->pte.GetSIZE()) & CONFIG::PS_CAP)))
 				{
-					logger << DebugWarning << "Unsupported page size " << page_size << EndDebugWarning;
+					logger << DebugWarning << (DEBUG ? "(DEBUG) " : "") << "Unsupported page size " << page_size << EndDebugWarning;
 					continue;
 				}
 				typename CONFIG::address_t addr_mask = ~(page_size - 1); // keep only upper bits for the tag comparison
 				if(unlikely(IsVerboseITLB()))
 				{
-					logger << DebugInfo << "page size=" << page_size << ", addr mask=0x" << std::hex << addr_mask << std::dec << ", EPN=0x" << std::hex << tlb_entry->pte.GetEPN() << std::dec << EndDebugInfo;
-					logger << DebugInfo << "Comparing 0x" << std::hex << ((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) << " and 0x" << (mmu_access.addr & addr_mask) << std::dec << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "page size=" << page_size << ", addr mask=0x" << std::hex << addr_mask << std::dec << ", EPN=0x" << std::hex << tlb_entry->pte.GetEPN() << std::dec << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "Comparing 0x" << std::hex << ((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) << " and 0x" << (mmu_access.addr & addr_mask) << std::dec << EndDebugInfo;
 				}
 				if(((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) == (mmu_access.addr & addr_mask))
 				{
 					// ITLB Hit
 					if(unlikely(IsVerboseITLB()))
 					{
-						logger << DebugInfo << "ITLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_entry->status.way << EndDebugInfo;
+						logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "ITLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_entry->status.way << EndDebugInfo;
 					}
 					mmu_access.tlb_way = tlb_entry->status.way;
 					mmu_access.itlb_entry = tlb_entry;
@@ -265,7 +272,7 @@ void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 					mmu_access.page_size = page_size;
 					mmu_access.tlb_hit = true;
 
-					if(unlikely(tlb_entry->status.prev != 0))
+					if(unlikely(!DEBUG && (tlb_entry->status.prev != 0)))
 					{
 						if(tlb_entry->status.next)
 						{
@@ -300,7 +307,7 @@ void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 				typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
 				if(unlikely(!((1 << tlb_entry->pte.GetSIZE()) & CONFIG::PS_CAP)))
 				{
-					logger << DebugWarning << "Unsupported page size " << page_size << EndDebugWarning;
+					logger << DebugWarning << (DEBUG ? "(DEBUG) " : "") << "Unsupported page size " << page_size << EndDebugWarning;
 					continue;
 				}
 				typename CONFIG::address_t addr_mask = ~(page_size - 1); // keep only upper bits for the tag comparison
@@ -310,7 +317,7 @@ void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 					// ITLB Hit
 					if(unlikely(IsVerboseITLB()))
 					{
-						logger << DebugInfo << "ITLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_way << EndDebugInfo;
+						logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "ITLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_way << EndDebugInfo;
 					}
 					mmu_access.tlb_way = tlb_way;
 					mmu_access.itlb_entry = tlb_entry;
@@ -329,23 +336,27 @@ void CPU<CONFIG>::LookupITLB(MMUAccess<CONFIG>& mmu_access)
 	ChooseEntryToEvictITLB(mmu_access);
 	if(unlikely(IsVerboseITLB()))
 	{
-		logger << DebugInfo << "ITLB miss: choosen TLB way=" << mmu_access.tlb_way << endl << EndDebugInfo;
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "ITLB miss: choosen TLB way=" << mmu_access.tlb_way << endl << EndDebugInfo;
 	}
+	if(!DEBUG) num_itlb_misses++;
 }
 
 template <class CONFIG>
+template <bool DEBUG>
 void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 {
 	uint32_t tlb_index = 0;
 	TLBSet<typename CONFIG::DTLB_CONFIG> *tlb_set;
 	TLBEntry<typename CONFIG::DTLB_CONFIG> *tlb_entry;
 
+	if(!DEBUG) num_dtlb_accesses++;
+
 	mmu_access.tlb_index = tlb_index;
 	mmu_access.dtlb_set = tlb_set = &dtlb[tlb_index];
 	
 	if(unlikely(IsVerboseDTLB()))
 	{
-		logger << DebugInfo << "DTLB Lookup at 0x" << std::hex << mmu_access.virtual_addr << "(as=" << mmu_access.as << ", pid=0x" << (unsigned int) mmu_access.pid << ", ea=0x" << mmu_access.addr << ")" << std::dec << EndDebugInfo;
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DTLB Lookup at 0x" << std::hex << mmu_access.virtual_addr << "(as=" << mmu_access.as << ", pid=0x" << (unsigned int) mmu_access.pid << ", ea=0x" << mmu_access.addr << ")" << std::dec << EndDebugInfo;
 	}
 	if(CONFIG::FAST_DTLB_LOOKUP_ENABLE)
 	{
@@ -353,29 +364,29 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 		{
 			if(unlikely(IsVerboseDTLB()))
 			{
-				logger << DebugInfo << "Looking at way #" << tlb_entry->status.way << ": V=" << tlb_entry->pte.GetV() << ", TS=" << tlb_entry->pte.GetTS() << ", TID=0x" << std::hex << (unsigned int) tlb_entry->pte.GetTID() << std::dec << EndDebugInfo;
+				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "Looking at way #" << tlb_entry->status.way << ": V=" << tlb_entry->pte.GetV() << ", TS=" << tlb_entry->pte.GetTS() << ", TID=0x" << std::hex << (unsigned int) tlb_entry->pte.GetTID() << std::dec << EndDebugInfo;
 			}
 			if(tlb_entry->pte.GetV() && (tlb_entry->pte.GetTS() == mmu_access.as) && (!tlb_entry->pte.GetTID() || (tlb_entry->pte.GetTID() == mmu_access.pid)))
 			{
 				typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
 				if(unlikely(!((1 << tlb_entry->pte.GetSIZE()) & CONFIG::PS_CAP)))
 				{
-					logger << DebugWarning << "Unsupported page size " << page_size << EndDebugWarning;
+					logger << DebugWarning << (DEBUG ? "(DEBUG) " : "") << "Unsupported page size " << page_size << EndDebugWarning;
 					continue;
 				}
 				typename CONFIG::address_t addr_mask = ~(page_size - 1); // keep only upper bits for the tag comparison
 
 				if(unlikely(IsVerboseDTLB()))
 				{
-					logger << DebugInfo << "page size=" << page_size << ", addr mask=0x" << std::hex << addr_mask << std::dec << ", EPN=0x" << std::hex << tlb_entry->pte.GetEPN() << std::dec << EndDebugInfo;
-					logger << DebugInfo << "Comparing 0x" << std::hex << ((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) << " and 0x" << (mmu_access.addr & addr_mask) << std::dec << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "page size=" << page_size << ", addr mask=0x" << std::hex << addr_mask << std::dec << ", EPN=0x" << std::hex << tlb_entry->pte.GetEPN() << std::dec << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "Comparing 0x" << std::hex << ((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) << " and 0x" << (mmu_access.addr & addr_mask) << std::dec << EndDebugInfo;
 				}
 				if(((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) == (mmu_access.addr & addr_mask))
 				{
 					// DTLB Hit
 					if(unlikely(IsVerboseDTLB()))
 					{
-						logger << DebugInfo << "DTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_entry->status.way << EndDebugInfo;
+						logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_entry->status.way << EndDebugInfo;
 					}
 					mmu_access.tlb_way = tlb_entry->status.way;
 					mmu_access.dtlb_entry = tlb_entry;
@@ -383,8 +394,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 					mmu_access.page_size = page_size;
 					mmu_access.tlb_hit = true;
 
-
-					if(unlikely(tlb_entry->status.prev != 0))
+					if(unlikely(!DEBUG && (tlb_entry->status.prev != 0)))
 					{
 						if(tlb_entry->status.next)
 						{
@@ -419,7 +429,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 				typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
 				if(unlikely(!((1 << tlb_entry->pte.GetSIZE()) & CONFIG::PS_CAP)))
 				{
-					logger << DebugWarning << "Unsupported page size " << page_size << EndDebugWarning;
+					logger << DebugWarning << (DEBUG ? "(DEBUG) " : "") << "Unsupported page size " << page_size << EndDebugWarning;
 					continue;
 				}
 				typename CONFIG::address_t addr_mask = ~(page_size - 1); // keep only upper bits for the tag comparison
@@ -429,7 +439,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 					// DTLB Hit
 					if(unlikely(IsVerboseDTLB()))
 					{
-						logger << DebugInfo << "DTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_way << EndDebugInfo;
+						logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_way << EndDebugInfo;
 					}
 					mmu_access.tlb_way = tlb_way;
 					mmu_access.dtlb_entry = tlb_entry;
@@ -448,23 +458,27 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 	ChooseEntryToEvictDTLB(mmu_access);
 	if(unlikely(IsVerboseDTLB()))
 	{
-		logger << DebugInfo << "DTLB miss: choosen TLB way=" << mmu_access.tlb_way << endl << EndDebugInfo;
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "DTLB miss: choosen TLB way=" << mmu_access.tlb_way << endl << EndDebugInfo;
 	}
+	if(!DEBUG) num_dtlb_misses++;
 }
 
 template <class CONFIG>
+template <bool DEBUG>
 void CPU<CONFIG>::LookupUTLB(MMUAccess<CONFIG>& mmu_access)
 {
 	uint32_t tlb_index = 0;
 	TLBSet<typename CONFIG::UTLB_CONFIG> *tlb_set;
 	TLBEntry<typename CONFIG::UTLB_CONFIG> *tlb_entry;
 
+	if(!DEBUG) num_utlb_accesses++;
+
 	mmu_access.utlb_index = tlb_index;
 	mmu_access.utlb_set = tlb_set = &utlb[tlb_index];
 	
 	if(unlikely(IsVerboseUTLB()))
 	{
-		logger << DebugInfo << "ITLB Lookup at 0x" << std::hex << mmu_access.virtual_addr << "(as=" << mmu_access.as << ", pid=0x" << (unsigned int) mmu_access.pid << ", ea=0x" << mmu_access.addr << ")" << std::dec << EndDebugInfo;
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "UTLB Lookup at 0x" << std::hex << mmu_access.virtual_addr << "(as=" << mmu_access.as << ", pid=0x" << (unsigned int) mmu_access.pid << ", ea=0x" << mmu_access.addr << ")" << std::dec << EndDebugInfo;
 	}
 	if(CONFIG::FAST_UTLB_LOOKUP_ENABLE)
 	{
@@ -472,29 +486,29 @@ void CPU<CONFIG>::LookupUTLB(MMUAccess<CONFIG>& mmu_access)
 		{
 			if(unlikely(IsVerboseUTLB()))
 			{
-				logger << DebugInfo << "Looking at way #" << tlb_entry->status.way << ": V=" << tlb_entry->pte.GetV() << ", TS=" << tlb_entry->pte.GetTS() << ", TID=0x" << std::hex << (unsigned int) tlb_entry->pte.GetTID() << std::dec << EndDebugInfo;
+				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "Looking at way #" << tlb_entry->status.way << ": V=" << tlb_entry->pte.GetV() << ", TS=" << tlb_entry->pte.GetTS() << ", TID=0x" << std::hex << (unsigned int) tlb_entry->pte.GetTID() << std::dec << EndDebugInfo;
 			}
 			if(tlb_entry->pte.GetV() && (tlb_entry->pte.GetTS() == mmu_access.as) && (!tlb_entry->pte.GetTID() || (tlb_entry->pte.GetTID() == mmu_access.pid)))
 			{
 				typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
 				if(unlikely(!((1 << tlb_entry->pte.GetSIZE()) & CONFIG::PS_CAP)))
 				{
-					logger << DebugWarning << "Unsupported page size " << page_size << EndDebugWarning;
+					logger << DebugWarning << (DEBUG ? "(DEBUG) " : "") << "Unsupported page size " << page_size << EndDebugWarning;
 					continue;
 				}
 				typename CONFIG::address_t addr_mask = ~(page_size - 1); // keep only upper bits for the tag comparison
 
 				if(unlikely(IsVerboseUTLB()))
 				{
-					logger << DebugInfo << "page size=" << page_size << ", addr mask=0x" << std::hex << addr_mask << std::dec << ", EPN=0x" << std::hex << tlb_entry->pte.GetEPN() << std::dec << EndDebugInfo;
-					logger << DebugInfo << "Comparing 0x" << std::hex << ((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) << " and 0x" << (mmu_access.addr & addr_mask) << std::dec << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "page size=" << page_size << ", addr mask=0x" << std::hex << addr_mask << std::dec << ", EPN=0x" << std::hex << tlb_entry->pte.GetEPN() << std::dec << EndDebugInfo;
+					logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "Comparing 0x" << std::hex << ((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) << " and 0x" << (mmu_access.addr & addr_mask) << std::dec << EndDebugInfo;
 				}
 				if(((tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE)) & addr_mask) == (mmu_access.addr & addr_mask))
 				{
 					// UTLB Hit
 					if(unlikely(IsVerboseUTLB()))
 					{
-						logger << DebugInfo << "UTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_entry->status.way << EndDebugInfo;
+						logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "UTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_entry->status.way << EndDebugInfo;
 					}
 					mmu_access.utlb_way = tlb_entry->status.way;
 					mmu_access.utlb_entry = tlb_entry;
@@ -502,7 +516,7 @@ void CPU<CONFIG>::LookupUTLB(MMUAccess<CONFIG>& mmu_access)
 					mmu_access.page_size = page_size;
 					mmu_access.utlb_hit = true;
 
-					if(unlikely(tlb_entry->status.prev != 0))
+					if(unlikely(!DEBUG && (tlb_entry->status.prev != 0)))
 					{
 						if(tlb_entry->status.next)
 						{
@@ -537,7 +551,7 @@ void CPU<CONFIG>::LookupUTLB(MMUAccess<CONFIG>& mmu_access)
 				typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
 				if(unlikely(!((1 << tlb_entry->pte.GetSIZE()) & CONFIG::PS_CAP)))
 				{
-					logger << DebugWarning << "Unsupported page size " << page_size << EndDebugWarning;
+					logger << DebugWarning << (DEBUG ? "(DEBUG) " : "") << "Unsupported page size " << page_size << EndDebugWarning;
 					continue;
 				}
 				typename CONFIG::address_t addr_mask = ~(page_size - 1); // keep only upper bits for the tag comparison
@@ -547,7 +561,7 @@ void CPU<CONFIG>::LookupUTLB(MMUAccess<CONFIG>& mmu_access)
 					// UTLB Hit
 					if(unlikely(IsVerboseUTLB()))
 					{
-						logger << DebugInfo << "UTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_way << EndDebugInfo;
+						logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "UTLB hit: tlb_index=" << tlb_index << ", tlb_way=" << tlb_way << EndDebugInfo;
 					}
 					mmu_access.utlb_way = tlb_way;
 					mmu_access.utlb_entry = tlb_entry;
@@ -563,8 +577,9 @@ void CPU<CONFIG>::LookupUTLB(MMUAccess<CONFIG>& mmu_access)
 	mmu_access.utlb_hit = false;
 	if(unlikely(IsVerboseUTLB()))
 	{
-		logger << DebugInfo << "UTLB miss" << EndDebugInfo;
+		logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "UTLB miss" << EndDebugInfo;
 	}
+	if(!DEBUG) num_utlb_misses++;
 }
 
 template <class CONFIG>
@@ -608,11 +623,11 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 		
 		if(mmu_access.memory_type == CONFIG::MT_INSN)
 		{
-			LookupITLB(mmu_access);
+			LookupITLB<DEBUG>(mmu_access);
 			
 			if(unlikely(!mmu_access.tlb_hit))
 			{
-				LookupUTLB(mmu_access);
+				LookupUTLB<DEBUG>(mmu_access);
 				if(unlikely(!mmu_access.utlb_hit))
 				{
 					throw InstructionTLBErrorException<CONFIG>(mmu_access.addr);
@@ -620,6 +635,10 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 				
 				if(!DEBUG)
 				{
+					if(unlikely(IsVerboseITLB()))
+					{
+						logger << DebugInfo << "Refilling ITLB way #" << mmu_access.itlb_entry->status.way << EndDebugInfo;
+					}
 					mmu_access.itlb_entry->pte = mmu_access.utlb_entry->pte;
 					mmu_access.pte = &mmu_access.itlb_entry->pte;
 				}
@@ -648,16 +667,16 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 			
 			if(IsVerboseITLB())
 			{
-				logger << DebugInfo << "physical addr=0x" << std::hex << mmu_access.physical_addr << std::dec << EndDebugInfo;
+				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "physical addr=0x" << std::hex << mmu_access.physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			LookupDTLB(mmu_access);
+			LookupDTLB<DEBUG>(mmu_access);
 			
 			if(unlikely(!mmu_access.tlb_hit))
 			{
-				LookupUTLB(mmu_access);
+				LookupUTLB<DEBUG>(mmu_access);
 				if(unlikely(!mmu_access.utlb_hit))
 				{
 					throw DataTLBErrorException<CONFIG>(mmu_access.addr, mmu_access.memory_access_type);
@@ -665,6 +684,10 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 				
 				if(!DEBUG)
 				{
+					if(unlikely(IsVerboseDTLB()))
+					{
+						logger << DebugInfo << "Refilling DTLB way #" << mmu_access.itlb_entry->status.way << EndDebugInfo;
+					}
 					mmu_access.dtlb_entry->pte = mmu_access.utlb_entry->pte;
 					mmu_access.pte = &mmu_access.dtlb_entry->pte;
 				}
@@ -680,7 +703,6 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 				{
 					logger << DebugInfo << "Comparing access ctrl 0x" << std::hex << (unsigned int) access_ctrl << " and 0x" << (unsigned int) mmu_access.pte->GetAccessCtrl() << EndDebugInfo;
 				}
-
 				if(unlikely(!(mmu_access.pte->GetAccessCtrl() & access_ctrl)))
 				{
 					if(mmu_access.memory_access_type == CONFIG::MAT_WRITE)
@@ -703,7 +725,7 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 
 			if(IsVerboseDTLB())
 			{
-				logger << DebugInfo << "physical addr=0x" << std::hex << mmu_access.physical_addr << std::dec << EndDebugInfo;
+				logger << DebugInfo << (DEBUG ? "(DEBUG) " : "") << "physical addr=0x" << std::hex << mmu_access.physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 
@@ -715,6 +737,57 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 		mmu_access.virtual_addr = mmu_access.addr;
 		mmu_access.storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
 		mmu_access.protection_boundary = 0xffffffffUL;
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpITLB(std::ostream& os)
+{
+	uint32_t tlb_index = 0;
+	uint32_t tlb_way;
+	TLBSet<typename CONFIG::ITLB_CONFIG> *tlb_set = &itlb[tlb_index];
+	TLBEntry<typename CONFIG::ITLB_CONFIG> *tlb_entry;
+
+	os << "ITLB:" << std::endl;
+	for(tlb_way = 0; tlb_way < TLBSet<typename CONFIG::ITLB_CONFIG>::ASSOCIATIVITY; tlb_way++)
+	{
+		tlb_entry = &(*tlb_set)[tlb_way];
+		
+		os << " way #" << tlb_way << ":" << tlb_entry->pte << std::endl;
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpDTLB(std::ostream& os)
+{
+	uint32_t tlb_index = 0;
+	uint32_t tlb_way;
+	TLBSet<typename CONFIG::DTLB_CONFIG> *tlb_set = &dtlb[tlb_index];
+	TLBEntry<typename CONFIG::DTLB_CONFIG> *tlb_entry;
+
+	os << "DTLB:" << std::endl;
+	for(tlb_way = 0; tlb_way < TLBSet<typename CONFIG::DTLB_CONFIG>::ASSOCIATIVITY; tlb_way++)
+	{
+		tlb_entry = &(*tlb_set)[tlb_way];
+		
+		os << " way #" << tlb_way << ":" << tlb_entry->pte << std::endl;
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DumpUTLB(std::ostream& os)
+{
+	uint32_t tlb_index = 0;
+	uint32_t tlb_way;
+	TLBSet<typename CONFIG::UTLB_CONFIG> *tlb_set = &utlb[tlb_index];
+	TLBEntry<typename CONFIG::UTLB_CONFIG> *tlb_entry;
+
+	os << "UTLB:" << std::endl;
+	for(tlb_way = 0; tlb_way < TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY; tlb_way++)
+	{
+		tlb_entry = &(*tlb_set)[tlb_way];
+		
+		os << " way #" << tlb_way << ":" << tlb_entry->pte << std::endl;
 	}
 }
 
@@ -762,7 +835,7 @@ void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsign
 	// Compute the 41-bit virtual address
 	mmu_access.virtual_addr = ((typename CONFIG::virtual_address_t) mmu_access.as << CONFIG::VADDR_AS_OFFSET) | ((typename CONFIG::virtual_address_t) mmu_access.pid << CONFIG::VADDR_PID_OFFSET) | ((typename CONFIG::virtual_address_t) mmu_access.addr);
 
-	LookupUTLB(mmu_access);
+	LookupUTLB<false>(mmu_access);
 	if(likely(mmu_access.utlb_hit))
 	{
 		SetGPR(rd, mmu_access.utlb_way);
@@ -789,6 +862,11 @@ void CPU<CONFIG>::Tlbsx(unsigned int rd, typename CONFIG::address_t addr, unsign
 template <class CONFIG>
 void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 {
+	if(IsVerboseTlbwe())
+	{
+		logger << DebugInfo << "At 0x" << std::hex << GetCIA() << ", Tlbwe s=0x" << s << ", way=0x" << way << ", ws=0x" << (unsigned int) ws << std::dec << EndDebugInfo;
+	}
+
 	if(GetMSR_PR())
 	{
 		throw PrivilegeViolationException<CONFIG>();
@@ -799,7 +877,7 @@ void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 		logger << DebugWarning << "At 0x" << std::hex << GetCIA() << std::dec << ", operand \'ws\' of instruction tlbwe is > 2" << EndDebugWarning;
 		return;
 	}
-	
+
 	way = way & (TLBSet<typename CONFIG::UTLB_CONFIG>::ASSOCIATIVITY - 1);
 	TLBEntry<typename CONFIG::UTLB_CONFIG>& tlb_entry = utlb[0][way];
 

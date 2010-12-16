@@ -67,7 +67,7 @@ MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::~MemoryPage()
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
-	: Object(name, parent, "memory")
+	: Object(name, parent, "this module implements a memory")
 	, Service<unisim::service::interfaces::Memory<PHYSICAL_ADDR> >(name, parent)
 	, memory_export("memory-export", this)
 	, org(0)
@@ -95,7 +95,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::OnDisconnect()
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::Setup()
+bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::BeginSetup()
 {
 	lo_addr = org;
 	hi_addr = org + (bytesize - 1);
@@ -113,6 +113,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size)
 {
+	if(!size) return true;
 	uint32_t copied;
 	PHYSICAL_ADDR addr;
 
@@ -158,6 +159,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size)
 {
+	if(!size) return true;
 	uint32_t copied;
 	PHYSICAL_ADDR addr;
 
@@ -203,6 +205,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, const void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width)
 {
+	if(!size) return true;
 	uint32_t offset;
 	PHYSICAL_ADDR addr;
 	uint32_t byte_enable_offset;
@@ -297,6 +300,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width)
 {
+	if(!size) return true;
 	uint32_t offset;
 	PHYSICAL_ADDR addr;
 	uint32_t byte_enable_offset;

@@ -308,7 +308,7 @@ typename CONFIG::address_t InstructionTLBErrorException<CONFIG>::GetAddress() co
 template <class CONFIG>
 const char * InstructionTLBErrorException<CONFIG>::what () const throw ()
 {
-	return "Instruction TLB exception";
+	return "Instruction TLB error exception";
 }
 
 template <class CONFIG>
