@@ -66,32 +66,6 @@ SocketServerThread::SocketServerThread(char* host, uint16_t port, bool _blocking
 		error(array, "listen failed");
 	}
 
-	if (!blocking) {
-
-#ifdef WIN32
-
-		u_long NonBlock = 1;
-		if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-			int array[] = {sockfd};
-			error(array, "ioctlsocket failed");
-		}
-
-#else
-
-		int flags = fcntl(sockfd, F_GETFL, 0);
-		if (flags < 0)	{
-			int array[] = {sockfd};
-			error(array, "fcntl failed");
-		}
-
-		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-			int array[] = {sockfd};
-			error(array, "fcntl failed");
-		}
-
-#endif
-	}
-
 }
 
 void SocketServerThread::Run() {
@@ -112,7 +86,42 @@ void SocketServerThread::Run() {
     do {
         newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
         if (newsockfd >= 0) {
-        	if (bindHandler(newsockfd)) {
+
+// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
+			int opt = 1;
+			if (setsockopt(newsockfd, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
+				int array[] = {newsockfd};
+				error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
+			}
+
+			if (!blocking) {
+
+#ifdef WIN32
+
+				u_long NonBlock = 1;
+				if(ioctlsocket(newsockfd, FIONBIO, &NonBlock) != 0) {
+					int array[] = {newsockfd};
+					error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
+				}
+
+#else
+
+				int flags = fcntl(newsockfd, F_GETFL, 0);
+				if (flags < 0)	{
+					int array[] = {newsockfd};
+					error(array, "fcntl <F_GETFL> failed");
+				}
+
+				if (fcntl(newsockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+					int array[] = {newsockfd};
+					error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
+				}
+
+#endif
+			}
+
+
+			if (bindHandler(newsockfd)) {
         		connected++;
         	}
         }

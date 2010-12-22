@@ -46,11 +46,14 @@ SocketReader::SocketReader(const int sock, bool _blocking) :
 	assert(sock >= 0);
 	sockfd = sock;
 	buffer_queue = new BlockingQueue<char *>();
+	input_buffer = (char*) malloc(MAXDATASIZE+1);
+
 };
 
 SocketReader::~SocketReader() {
 
 	if (buffer_queue) { delete buffer_queue; buffer_queue = NULL; }
+	if (input_buffer) { free (input_buffer); input_buffer = NULL; }
 };
 
 /*
@@ -98,9 +101,14 @@ void SocketReader::Run() {
 
 			memset(input_buffer, 0, MAXDATASIZE+1);
 
-		    n = read(sockfd, input_buffer, MAXDATASIZE);
-
-		    if (n < 0) {
+#ifdef WIN32
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
+			if (n == 0 || n == SOCKET_ERROR)
+#else
+			n = read(sockfd, input_buffer, MAXDATASIZE);
+			if (n <= 0)
+#endif
+			{
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");
 		    } else if (n > 0) {
@@ -143,12 +151,27 @@ void SocketReader::Run() {
 
 }
 
-char SocketReader::getChar() {
+void SocketReader::getChar(char& c) {
+
+	fd_set read_flags, write_flags;
+	struct timeval waitd;
+
+	int err;
+
+	int n;
 
 	if (input_buffer_size == 0) {
-		memset(input_buffer, 0, MAXDATASIZE+1);
-	    int n = read(sockfd, input_buffer, MAXDATASIZE);
-	    if (n < 0) {
+
+		memset(input_buffer, 0, sizeof(input_buffer));
+
+#ifdef WIN32
+		n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
+		if (n == 0 || n == SOCKET_ERROR)
+#else
+		n = read(sockfd, input_buffer, MAXDATASIZE);
+		if (n <= 0)
+#endif
+	    {
 	    	int array[] = {sockfd};
 	    	error(array, "ERROR reading from socket");
 	    } else {
@@ -157,8 +180,14 @@ char SocketReader::getChar() {
 	    }
 	}
 
-	input_buffer_size--;
-	return input_buffer[input_buffer_index++];
+	if (input_buffer_size > 0) {
+		c = input_buffer[input_buffer_index];
+		input_buffer_size--;
+		input_buffer_index++;
+	} else {
+		c = 0;
+	}
+
 }
 
 char* SocketReader::receive() {
@@ -168,43 +197,44 @@ char* SocketReader::receive() {
 	uint8_t checkSum = 0;
 	int packet_size = 0;
 	uint8_t pchk;
+	char c;
 
 	if (blocking) {
 
     	while (true) {
-    		char c = getChar();
-    		if (c == 0) break;
+    		getChar(c);
+    		if (c == 0) {
+    			cerr << "receive EOF " << endl;
+    			break;
+    		}
         	switch(c)
         	{
         		case '+':
-        			str = receive();
-        			return str;
+        			break;
         		case '-':
-        				// error response => e.g. retransmission of the last packet
-        				str = "-";
-        				return str;
-
+       				// error response => e.g. retransmission of the last packet
+        			break;
         		case 3: // '\003'
         			break;
         		case '$':
 
-        			c = getChar();
+        			getChar(c);
         			while (true) {
             			s = s + c;
             			packet_size++;
         				checkSum = checkSum + c;
-        				c = getChar();
+        				getChar(c);
 
         				if (c == '#') break;
         			}
 
-        			c = getChar();
+        			getChar(c);
         			pchk = HexChar2Nibble(c) << 4;
-        			c = getChar();
+        			getChar(c);
         			pchk = pchk + HexChar2Nibble(c);
 
         			if (checkSum != pchk) {
-        				cerr << "wrong checksum" << endl;
+        				cerr << "wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
         				return NULL;
         			} else
         			{

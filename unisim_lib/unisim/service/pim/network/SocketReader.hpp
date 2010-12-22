@@ -37,9 +37,10 @@ private:
 	bool blocking;
 	int input_buffer_size;
 	int input_buffer_index;
-	char input_buffer[MAXDATASIZE+1];
 
-	char getChar();
+	char *input_buffer;
+
+	void getChar(char& c);
 
 };
 

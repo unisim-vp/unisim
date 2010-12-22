@@ -149,7 +149,14 @@ void TargetThread::Run(){
 
 		char *buffer = receive();
 
-		if (buffer == NULL) continue;
+		if (buffer == NULL) {
+			if (blocking) {
+				cerr << "PIM-Target receive **NULL**" << endl;
+				break;
+			} else {
+				continue;
+			}
+		}
 
 //		cerr << "PIM-Target receive " << buffer << std::endl;
 
@@ -162,19 +169,16 @@ void TargetThread::Run(){
 			int end_index = buf_str.find(',');
 			string qRcmd = buf_str.substr(start_index, end_index-start_index);
 
-//			buf_str = buf_str.substr(index+1);
 			start_index = end_index+1;
 
 			end_index = buf_str.find(':', start_index);
 			string cmd = buf_str.substr(start_index, end_index-start_index);
-//			buf_str = buf_str.substr(index+1);
 			start_index = end_index+1;
 
 			if (cmd.compare("read") == 0) {
 
 				end_index = buf_str.find(':', start_index);
 				string name = buf_str.substr(start_index, end_index-start_index);
-//				buf_str = buf_str.substr(index+1);
 				start_index = end_index+1;
 
 				for (int i=0; i < fVariables->size(); i++) {
@@ -190,23 +194,20 @@ void TargetThread::Run(){
 
 						const char *bstr = str.c_str();
 
+//						cerr << name << " send: " << bstr << endl;
+
 						send(bstr);
 
-//						cout << name << " send: " << bstr << endl;
-
 						os.str(std::string());
-						str.clear();
+
 						break;
 					}
 				}
-
-				name.clear();
 
 			} else if (cmd.compare("write") == 0) {
 
 				end_index = buf_str.find(':');
 				string name = buf_str.substr(start_index, end_index-start_index);
-//				buf_str = buf_str.substr(index+1);
 				start_index = end_index+1;
 
 				string value = buf_str.substr(start_index);
@@ -219,15 +220,10 @@ void TargetThread::Run(){
 					}
 				}
 
-				name.clear();
-				value.clear();
 			} else {
 				cerr << "PIM-Target UNKNOWN command => " << buffer << std::endl;
 			}
 
-			qRcmd.clear();
-			cmd.clear();
-			buf_str.clear();
 		}
 
 		if (buffer != NULL) {

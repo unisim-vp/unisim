@@ -98,10 +98,13 @@ void SocketThread::Start(int sockfd, bool _blocking) {
 	this->blocking = _blocking;
 
 	writer = new SocketWriter(sockfd, blocking);
-	writer->start();
 
 	reader = new SocketReader(sockfd, blocking);
-	reader->start();
+
+	if (!blocking) {
+		writer->start();
+		reader->start();
+	}
 
 	this->start();
 }

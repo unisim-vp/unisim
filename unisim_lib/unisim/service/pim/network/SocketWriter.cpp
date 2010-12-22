@@ -140,13 +140,22 @@ void SocketWriter::send(const char* data) {
 	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
 
 	if (blocking) {
-		int n = write(sockfd, dd, strlen(dd));
+		int dd_size = strlen(dd);
+		int index = 0;
+		do {
+
+			int n = write(sockfd, dd+index, dd_size);
+
+			if (n < 0) {
+				int array[] = {sockfd};
+				error(array, "ERROR writing to socket");
+			} else {
+				index += n;
+				dd_size -= n;
+			}
+		} while (dd_size > 0);
 
 		free(dd);
-		if (n < 0) {
-			int array[] = {sockfd};
-			error(array, "ERROR writing to socket");
-		}
 
 	} else {
 		buffer_queue->add(dd);
