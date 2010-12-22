@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#define CP15__DEBUG
+// #define CP15__DEBUG
 
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
 #include <assert.h>

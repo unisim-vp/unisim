@@ -654,6 +654,8 @@ protected:
 
 	/** Instruction counter */
 	uint64_t instruction_counter;
+	/** Current instruction address */
+	uint32_t cur_instruction_address;
 	
 	/** CPU cycle time in picoseconds.
 	 */
@@ -701,6 +703,9 @@ protected:
 	/** UNISIM Statistic of the number of instructions executed.
 	 */
 	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+	/** UNISIM Statistic with the address of the current instruction.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_cur_instruction_address;
 
 	/** UNISIM registers for the physical registers.
 	 */

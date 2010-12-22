@@ -32,7 +32,6 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#define SC_INCLUDE_DYNAMIC_PROCESSES
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/util/endian/endian.hh"
@@ -61,18 +60,35 @@ VIC(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
 	, VICIntSourceIdentifierInterface()
-	, nvicfiqin()
-	, nvicirqin()
-	, vicvectaddrin() 
+	, nvicfiqin("nvicfiqin")
+	, nvicirqin("nvicirqin")
+	, vicvectaddrin("vicvectaddrin")
+	, nvicfiq("nvicfiq")
+	, nvicirq("nvicirq")
+	, vicvectaddrout("vicvectaddrout")
 	, bus_target_socket("bus_target_socket")
+	, vect_int_serviced(0)
+	, vect_int_for_service(false)
+	, max_vect_int_for_service(0)
 	, int_source(0)
 	, nvicfiq_value(false)
 	, nvicirq_value(false)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
+	, verbose(0)
+	, param_verbose("verbose", this, verbose,
+			"Verbose level (0 = no verbose).")
 	, logger(*this)
 {
+	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
+	{
+		std::stringstream vicintsource_name;
+		vicintsource_name << "vicintsource[" << i << "]";
+		vicintsource[i] = 
+			new sc_core::sc_in<bool>(vicintsource_name.str().c_str());
+	}
+
 	bus_target_socket.register_nb_transport_fw(this,
 			&VIC::bus_target_nb_transport_fw);
 	bus_target_socket.register_b_transport(this,
@@ -93,7 +109,7 @@ VIC(const sc_module_name &name, Object *parent)
 	regs[0x0ff8UL] = 0x05;
 	regs[0x0ffcUL] = 0x0b1;
 
-	for ( int i = 0; i < NUM_SOURCE_INT; i++ )
+	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
 	{
 		std::stringstream id_name;
 
@@ -101,12 +117,20 @@ VIC(const sc_module_name &name, Object *parent)
 		source_identifier_method[i] =
 			new VICIntSourceIdentifier(id_name.str().c_str(),
 					i, this);
+		source_identifier_method[i]->vicinttarget(*vicintsource[i]);
+//		vicintsource[i](vicintsource_signal[i]);
+//		source_identifier_method[i]->vicinttarget(vicintsource_signal);
 	}
 }
 
 VIC ::
 ~VIC()
 {
+	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
+	{
+		delete source_identifier_method[i];
+		delete vicintsource[i];
+	}
 }
 
 bool 
@@ -126,7 +150,7 @@ UpdateStatus()
 	//   interrupt sources to the raw interrupt register
 	uint32_t softint = GetVICSOFTINT();
 	uint32_t rawintr = 0;
-	for ( unsigned int i =0; i < NUM_SOURCE_INT; i++ )
+	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
 	{
 		rawintr |= (softint & int_source) & (0x01UL << i);
 	}
@@ -139,10 +163,11 @@ UpdateStatus()
 	uint32_t irqstatus = 0;
 	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
 	{
+		uint32_t current = (rawintr & intenable) & (0x01UL << i);
 		if ( intselect & (0x01UL << i) )
-			fiqstatus |= (rawintr & (0x01UL << i));
+			fiqstatus |= current;
 		else
-			irqstatus |= (rawintr & (0x01UL << i));
+			irqstatus |= current;
 	}
 	SetVICFIQSTATUS(fiqstatus);
 	SetVICIRQSTATUS(irqstatus);
@@ -163,38 +188,52 @@ UpdateStatus()
 	bool vectirq[15];
 	bool priority = false;
 	uint32_t nonvect_irqs = 0;
+	vect_int_for_service = false;
 	for ( unsigned int i = 0; i < NUM_VECT_INT; i++ )
 	{
 		uint32_t vectcntl = GetVICVECTCNTL(i);
 		uint32_t src = VECTCNTLSource(vectcntl);
 
-		if ( VECTCNTLEnable(vectcntl) )
+		vectirq[i] = false;
+
+		if ( (vect_int_serviced == 0) ||
+				(vect_int_serviced && 
+				 (vect_int_serviced_level[vect_int_serviced - 1] > i))
+			)
 		{
-			// prepare the nonvectored irqs
-			nonvect_irqs |= (0x01UL << src);
-			if ( priority )
-				vectirq[i] = false;
-			else
+			if ( VECTCNTLEnable(vectcntl) )
 			{
-				if ( irqstatus & (0x01UL << src) )
+				// prepare the nonvectored irqs
+				nonvect_irqs |= (0x01UL << src);
+				if ( priority )
+					vectirq[i] = false;
+				else
 				{
-					vectirq[i] = true;
-					priority = true;
-					SetVICVECTADDR(GetVICVECTADDR(i));
+					if ( irqstatus & (0x01UL << src) )
+					{
+						vect_int_for_service = true;
+						max_vect_int_for_service = i;
+						vectirq[i] = true;
+						priority = true;
+						SetVICVECTADDR(GetVICVECTADDR(i));
+					}
 				}
 			}
 		}
 	}
 
-	// if there is no vectored irq generated then
+	// if there is no interrupt being serviced and no 
+	//   vectored irq generated then
 	//   a nonvectored irq can be raised
 	// also set the default vector addr if none was detected
 	bool nonvectored_irq = false;
-	if ( !priority )
+	if ( (vect_int_serviced == 0) && !priority )
 	{
 		SetVICVECTADDR(GetVICDEFVECTADDR());
 		if ( irqstatus & ~nonvect_irqs )
 		{
+			vect_int_for_service = true;
+			max_vect_int_for_service = NUM_VECT_INT;
 			nonvectored_irq = true;
 			priority = true;
 		}
@@ -209,12 +248,15 @@ UpdateStatus()
 		nvicirq_value = false;
 	else
 	{
-		if ( nvicfiqin )
+		if ( nvicirqin )
 		{
+			vect_int_for_service = true;
+			max_vect_int_for_service = NUM_VECT_INT;
 			nvicirq_value = false;
 			SetVICVECTADDR(vicvectaddrin);
 		}
 	}
+
 	// update itop1
 	itop1 &= ~(0x01UL << 7);
 	if ( !nvicirq_value )
@@ -232,6 +274,17 @@ VICIntSourceReceived(int id, bool value)
 		int_source |= (0x01UL << id);
 	else
 		int_source &= ~(0x01UL << id);
+	if ( VERBOSE(V0, V_INIRQ) )
+	{
+		logger << DebugInfo
+			<< "Received VICIntSource[" << id << "]"
+			<< " signal change:" << std::endl
+			<< " - old VICIntSource = 0x"
+			<< std::hex << orig << std::endl
+			<< " - new VICIntSource = 0x"
+			<< int_source << std::dec
+			<< EndDebugInfo;
+	}
 	UpdateStatus();
 
 }
@@ -255,6 +308,9 @@ VIC ::
 bus_target_b_transport(transaction_type &trans, 
 		sc_core::sc_time &delay)
 {
+	wait(delay);
+	delay = SC_ZERO_TIME;
+
 	uint32_t addr = trans.get_address() - base_addr;
 	uint8_t *data = trans.get_data_ptr();
 	uint32_t size = trans.get_data_length();
@@ -263,18 +319,164 @@ bus_target_b_transport(transaction_type &trans,
 
 	if ( is_read )
 	{
-		if ( (0x01000UL - size) >= addr )
+		if ( (0x01000L - size) >= addr )
 		{
 			memcpy(data, &(regs[addr]), size);
-			if ( addr >= 0x0fe0UL )
+			for ( unsigned int i = 0; i < size; i += 4 )
 			{
-				handled = true;
+				uint32_t align_addr = (addr + i) & ~0x03UL;
+				if ( align_addr == VICVECTADDRAddr )
+				{
+					if ( vect_int_for_service )
+					{
+						vect_int_serviced_level[vect_int_serviced] =
+							max_vect_int_for_service;
+						vect_int_serviced++;
+						vect_int_for_service = false;
+					}
+					handled = true;
+				}
+
+				else if ( (align_addr == VICPERIPHIDBaseAddr) ||
+						(align_addr == (VICPERIPHIDBaseAddr + 4)) ||
+						(align_addr == (VICPERIPHIDBaseAddr + 8)) ||
+						(align_addr == (VICPERIPHIDBaseAddr + 12)) )
+				{
+					handled = true;
+				}
 			}
 		}
 	}
 	else // writing
 	{
+		if ( (0x01000L - size) >= addr )
+		{
+			uint32_t vicirqstatus = GetVICIRQSTATUS();
+			uint32_t vicfiqstatus = GetVICFIQSTATUS();
+			bool should_update_status = false;
+			memcpy(&(regs[addr]), data, size);
+			for ( unsigned int i = 0; i < size; i += 4 )
+			{
+				uint32_t align_addr = (addr + i) & ~0x03UL;
+				if ( align_addr == VICIRQSTATUSAddr )
+				{
+					SetVICIRQSTATUS(vicirqstatus);
+					logger << DebugWarning
+						<< "Trying to modify read only register"
+						<< " VICIRQSTATUS."
+						<< EndDebugWarning;
+					handled = true;
+				}
+
+				else if ( align_addr == VICFIQSTATUSAddr )
+				{
+					SetVICFIQSTATUS(vicfiqstatus);
+					logger << DebugWarning
+						<< "Trying to modify read only register"
+						<< " VICFIQSTATUS."
+						<< EndDebugWarning;
+					handled = true;
+				}
+
+				else if ( align_addr == VICINTSELECTAddr )
+				{
+					should_update_status = true;
+					handled = true;
+				}
+
+				else if ( align_addr == VICINTENABLEAddr )
+				{
+					should_update_status = true;
+					handled = true;
+				}
+				
+				else if ( align_addr == VICINTENCLEARAddr )
+				{
+					uint32_t vicintenclear = GetVICINTENCLEAR();
+					uint32_t vicintenable = GetVICINTENABLE();
+					for ( unsigned int index = 0;
+							index < NUM_SOURCE_INT;
+							index++ )
+					{
+						vicintenable = 
+							(vicintenable & ~(0x01UL << index)) ||
+							((vicintenable & ~vicintenclear) &
+							 (0x01UL << index));
+					}
+					// reset the value of VICINTENCLEAR
+					SetVICINTENCLEAR(0);
+					SetVICINTENABLE(vicintenable);
+					should_update_status = true;
+					handled = true;
+				}
+
+				else if ( align_addr == VICSOFTINTCLEARAddr )
+				{
+					uint32_t vicsoftintclear = GetVICSOFTINTCLEAR();
+					uint32_t vicsoftint = GetVICSOFTINT();
+					for ( unsigned int index = 0;
+							index < NUM_SOURCE_INT;
+							index++ )
+					{
+						vicsoftint =
+							(vicsoftint & ~(0x01UL << index)) ||
+							((vicsoftint & ~vicsoftintclear) &
+							 (0x01UL << index));
+					}
+					// reset the value of VICSOFTINTCLEAR
+					SetVICSOFTINTCLEAR(0);
+					SetVICSOFTINT(vicsoftint);
+					should_update_status = true;
+					handled = true;
+				}
+
+				else if ( align_addr == VICVECTADDRAddr )
+				{
+					if ( vect_int_serviced != 0 )
+					{
+						vect_int_serviced_level[vect_int_serviced - 1] = 0;
+						vect_int_serviced--;
+						should_update_status = true;
+					}
+					else
+					{
+						// should_update_status = false;
+					}
+					handled = true;
+				}
+
+				else if ( align_addr == VICDEFVECTADDRAddr )
+				{
+					handled = true;
+				}
+
+				else if ( (align_addr >= VICVECTCNTLBaseAddr) &&
+							(align_addr < 
+							 (VICVECTCNTLBaseAddr + (4 * NUM_VECT_INT))) )
+				{
+					should_update_status = true;
+					handled = true;
+				}
+
+				else if ( align_addr == VICITCRAddr )
+				{
+					uint32_t vicitcr = GetVICITCR();
+					if ( vicitcr & 0x01UL )
+					{
+						logger << DebugError
+							<< "TODO: handle activation of test mode"
+							<< EndDebugError;
+						unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+					}
+					SetVICITCR(vicitcr & 0x01UL);
+					handled = true;
+				}
+			}
+			if ( should_update_status )
+				UpdateStatus();
+		}
 	}
+
 	if ( !handled )
 	{
 		logger << DebugError
@@ -286,12 +488,26 @@ bus_target_b_transport(transaction_type &trans,
 		{
 			logger << std::endl
 				<< " - data =" << std::hex;
-			for ( int i = 0; i < size; i++ )
+			for ( unsigned int i = 0; i < size; i++ )
 				logger << " " << (unsigned int)data[i];
 			logger << std::dec;
 		}
 		logger << EndDebugError;
 		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+
+	if ( VERBOSE(V0, V_TRANS) )
+	{
+		logger << DebugInfo
+			<< "Access to VIC:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
+			<< " - data =" << std::hex;
+		for ( unsigned int i = 0; i < size; i++ )
+			logger << " " << (unsigned int)data[i];
+		logger << std::dec
+			<< EndDebugInfo;
 	}
 }
 
@@ -488,6 +704,35 @@ SetVICINTENABLE(uint32_t value)
 	SetRegister(VICINTENABLEAddr, value);
 }
 
+/** Returns the interrupt enable clear register
+ *
+ * This always returns 0 always as this register is write only
+ *   and never modified, however it returns the actual register
+ *   value that could have been modified. The value should be
+ *   set back to 0 by the user.
+ *
+ * @return the value of the interrupt enable clear register
+ */
+uint32_t 
+VIC ::
+GetVICINTENCLEAR() const
+{
+	return GetRegister(VICINTENCLEARAddr);
+}
+
+/** Sets the interrupt enable cler register
+ *
+ * The value to use should be always 0 to respect the VIC specs.
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICINTENCLEAR(uint32_t value)
+{
+	SetRegister(VICINTENCLEARAddr, value);
+}
+
 /** Returns the software interrupt register
  *
  * @return the value of the software interrupt register
@@ -508,6 +753,35 @@ VIC ::
 SetVICSOFTINT(uint32_t value)
 {
 	SetRegister(VICSOFTINTAddr, value);
+}
+
+/** Returns the software interrupt clear register
+ *
+ * This always returns 0 always as this register is write only
+ *   and never modified, however it returns the actual register
+ *   value that could have been modified. The value should be
+ *   set back to 0 by the user.
+ *
+ * @return the value of the software interrupt clear register
+ */
+uint32_t 
+VIC ::
+GetVICSOFTINTCLEAR() const
+{
+	return GetRegister(VICSOFTINTCLEARAddr);
+}
+
+/** Sets the software interrupt cler register
+ *
+ * The value to use should be always 0 to respect the VIC specs.
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICSOFTINTCLEAR(uint32_t value)
+{
+	SetRegister(VICSOFTINTCLEARAddr, value);
 }
 
 /** Returns the vector address register
@@ -603,6 +877,72 @@ SetVICVECTCNTL(uint32_t index, uint32_t value)
 	SetRegister(VICVECTCNTLBaseAddr + (4 * index), value);
 }
 
+/** Returns the test control register
+ *
+ * @return the value of the test control register
+ */
+uint32_t 
+VIC ::
+GetVICITCR() const
+{
+	return GetRegister(VICITCRAddr);
+}
+
+/** Set the test control register
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICITCR(uint32_t value)
+{
+	SetRegister(VICITCRAddr, value);
+}
+
+/** Returns the test input register (nVICIRQIN/nVICFIQIN)
+ *
+ * @return the value of the test input register (nVICIRQIN/nVICFIQIN)
+ */
+uint32_t 
+VIC ::
+GetVICITIP1() const
+{
+	return GetRegister(VICITIP1Addr);
+}
+
+/** Set the test input register (nVICIRQIN/nVICFIQIN)
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICITIP1(uint32_t value)
+{
+	SetRegister(VICITIP1Addr, value);
+}
+
+/** Returns the test input register (VICVECTADDRIN)
+ *
+ * @return the value of the test input register (VICVECTADDRIN)
+ */
+uint32_t 
+VIC ::
+GetVICITIP2() const
+{
+	return GetRegister(VICITIP2Addr);
+}
+
+/** Set the test input register (VICVECTADDRIN)
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICITIP2(uint32_t value)
+{
+	SetRegister(VICITIP2Addr, value);
+}
+
 /** Returns the test output register (nVICIRQ/nVICFIQ)
  *
  * @return the value of the test output register (nVICIRQ/nVICFIQ)
@@ -623,6 +963,28 @@ VIC ::
 SetVICITOP1(uint32_t value)
 {
 	SetRegister(VICITOP1Addr, value);
+}
+
+/** Returns the test output register (VICVECTADDROUT)
+ *
+ * @return the value of the test output register (VICVECTADDROUT)
+ */
+uint32_t 
+VIC ::
+GetVICITOP2() const
+{
+	return GetRegister(VICITOP2Addr);
+}
+
+/** Set the test output register (VICVECTADDROUT)
+ *
+ * @param value the value to set
+ */
+void 
+VIC ::
+SetVICITOP2(uint32_t value)
+{
+	SetRegister(VICITOP2Addr, value);
 }
 
 /**************************************************************************/

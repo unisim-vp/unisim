@@ -48,6 +48,8 @@
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh"
 
 namespace unisim {
@@ -95,6 +97,9 @@ public:
 	/** Initiator socket for the PIC (VIC, Vectored Interrupt Controller) */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		pic_init_socket;
+	/** Initiator socket for the SIC (Secondry Interrupt Controller) */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		sic_init_socket;
 
 	/** The Ethernet Controller */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::ethernet::SMSC_LAN91C111 eth;
@@ -108,8 +113,36 @@ public:
 	unisim::component::tlm2::chipset::arm926ejs_pxp::watchdog::Watchdog wd;
 	/** VIC (Vectored Interrupt Controller) module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::vic::VIC pic;
+	/** SIC (Secondary Interrupt Controller) module */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::sic::SIC sic;
 
 	sc_signal<uint64_t> sc_to_dt1_signal[3];
+
+	/* PIC stubs  START */
+	vic::VICIntSourceStub *intsource_stub[21];
+	sc_signal<bool> intsource_signal[32];
+	vic::VICIntSourceStub nvicfiqin_stub;
+	sc_signal<bool> nvicfiqin_signal;
+	vic::VICIntSourceStub nvicirqin_stub;
+	sc_signal<bool> nvicirqin_signal;
+	vic::VICAddrSourceStub vicvectaddrin_stub;
+	sc_signal<uint32_t> vicvectaddrin_signal;
+	
+	sc_signal<bool> nvicfiq_signal;
+	sc_signal<bool> nvicirq_signal;
+	vic::VICAddrTargetStub vicvectaddrout_stub;
+	sc_signal<uint32_t> vicvectaddrout_signal;
+	/* PIC stubs    END */
+
+	/* SIC stubs  START */
+	vic::VICIntSourceStub *sic_intsource_stub[31];
+	sc_signal<bool> sic_intsource_signal[31];
+	vic::VICIntSourceStub *sic_ptintsource_stub[11];
+	sc_signal<bool> sic_ptintsource_signal[11];
+
+	vic::VICIntTargetStub *sic_inttarget_stub[11];
+	// sc_signal<bool> sic_inttarget_stub[11];
+	/* SIC stubs    END */
 
 	sc_in<bool> timint0_in_port;
 	sc_in<bool> timint1_in_port;
@@ -285,6 +318,21 @@ private:
 	/*   the PIC                                                          END */
 	/**************************************************************************/
 
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the SIC                                                              */
+	/**************************************************************************/
+
+	sync_enum_type sic_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void sic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the SIC                                                          END */
+	/**************************************************************************/
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;
 };

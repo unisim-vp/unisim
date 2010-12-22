@@ -55,18 +55,19 @@ class VICIntSourceIdentifier
 	: public sc_module
 {
 public:
-	sc_core::sc_in<bool> vciinttarget;
+	sc_core::sc_in<bool> vicinttarget;
 
 	SC_HAS_PROCESS(VICIntSourceIdentifier);
 	VICIntSourceIdentifier(const sc_module_name &name, 
 			int _id,
 			VICIntSourceIdentifierInterface *_master)
 		: sc_module(name)
+		, vicinttarget("vicinttarget")
 		, id(_id)
 		, master(_master)
 	{
 		SC_METHOD(Identify);
-		sensitive << vciinttarget;
+		sensitive << vicinttarget;
 	}
 
 	~VICIntSourceIdentifier()
@@ -79,7 +80,7 @@ private:
 	VICIntSourceIdentifierInterface *master;
 	void Identify() 
 	{
-		master->VICIntSourceReceived(id, vciinttarget);
+		master->VICIntSourceReceived(id, vicinttarget);
 	}
 };
 

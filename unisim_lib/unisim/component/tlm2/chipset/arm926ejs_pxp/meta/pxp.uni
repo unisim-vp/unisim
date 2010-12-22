@@ -18,6 +18,8 @@
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_int_source_identifier.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/CMakeLists.txt</file>

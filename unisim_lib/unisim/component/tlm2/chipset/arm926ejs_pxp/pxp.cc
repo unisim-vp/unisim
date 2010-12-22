@@ -63,14 +63,27 @@ PXP(const sc_module_name &name, Object *parent)
 	, sc_init_socket("sc-init-socket")
 	, wd_init_socket("wd-init-socket")
 	, pic_init_socket("pic-init-socket")
+	, sic_init_socket("sic-init-socket")
 	, eth("ethernet", this)
 	, sc("system-controller", this)
 	, uart0("uart0", this)
 	, dt1("timer1-2", this)
 	, wd("watchdog", this)
 	, pic("pic", this)
+	, sic("sic", this)
+	, nvicfiqin_stub("nvicfiqin_stub", this)
+	, nvicfiqin_signal()
+	, nvicirqin_stub("nvicirqin_stub", this)
+	, nvicirqin_signal()
+	, vicvectaddrin_stub("vicvectaddrin_stub", this)
+	, vicvectaddrin_signal()
+	, nvicfiq_signal()
+	, nvicirq_signal()
+	, vicvectaddrout_stub("vicvectaddrout_stub", this)
+	, vicvectaddrout_signal()
 	, logger(*this)
 {
+	sic["base-addr"]       = 0x10003000UL;
 	eth["base-addr"]       = 0x10010000UL;
 	pic["base-addr"]       = 0x10140000UL;
 	sc["base-addr"]        = 0x101e0000UL;
@@ -125,6 +138,11 @@ PXP(const sc_module_name &name, Object *parent)
 	pic_init_socket.register_invalidate_direct_mem_ptr(this,
 			&PXP::pic_init_invalidate_direct_mem_ptr);
 
+	sic_init_socket.register_nb_transport_bw(this,
+			&PXP::sic_init_nb_transport_bw);
+	sic_init_socket.register_invalidate_direct_mem_ptr(this,
+			&PXP::sic_init_invalidate_direct_mem_ptr);
+
 	dt1.timclk_in_port(sc_to_dt1_signal[0]);
 	sc.refclk_out_port(sc_to_dt1_signal[0]);
 	dt1.timclken1_in_port(sc_to_dt1_signal[1]);
@@ -138,12 +156,63 @@ PXP(const sc_module_name &name, Object *parent)
 	timintc01_in_port(timintc01_signal);
 	dt1.timintc_out_port(timintc01_signal);
 
+	/* PIC connections START */
+	for ( int i = 0; i < 21; i++ )
+	{
+		std::stringstream name;
+		name << "intsource_stub[" << i << "]";
+		intsource_stub[i] = new vic::VICIntSourceStub(name.str().c_str(),
+				this);
+		intsource_stub[i]->vicinttarget(intsource_signal[i]);
+		(*pic.vicintsource[i])(intsource_signal[i]);
+	}
+	/* SIC to PIC connections */
+	for ( int i = 0; i < 11; i++ )
+	{
+		(*sic.sicinttarget[i])(intsource_signal[i + 21]);
+		(*pic.vicintsource[i + 21])(intsource_signal[i + 21]);
+	}
+	nvicfiqin_stub.vicinttarget(nvicfiqin_signal);
+	pic.nvicfiqin(nvicfiqin_signal);
+	nvicirqin_stub.vicinttarget(nvicirqin_signal);
+	pic.nvicirqin(nvicirqin_signal);
+	vicvectaddrin_stub.vicaddrtarget(vicvectaddrin_signal);
+	pic.vicvectaddrin(vicvectaddrin_signal);
+
+	pic.nvicfiq(nvicfiq_signal);
+	pic.nvicirq(nvicirq_signal);
+	pic.vicvectaddrout(vicvectaddrout_signal);
+	vicvectaddrout_stub.vicaddrsource(vicvectaddrout_signal);
+	/* PIC connections   END */
+
+	/* SIC connections START */
+	for ( int i = 0; i < 31; i++ )
+	{
+		std::stringstream name;
+		name << "sicintsource_stub[" << (i + 1) << "]";
+		sic_intsource_stub[i] = new vic::VICIntSourceStub(name.str().c_str(),
+				this);
+		sic_intsource_stub[i]->vicinttarget(sic_intsource_signal[i]);
+		(*sic.sicintsource[i])(sic_intsource_signal[i]);
+	}
+	for ( int i = 0; i < 11; i++ )
+	{
+		std::stringstream name;
+		name << "sic_ptintsource_stub[" << (i + 21) << "]";
+		sic_ptintsource_stub[i] = new vic::VICIntSourceStub(name.str().c_str(),
+				this);
+		sic_ptintsource_stub[i]->vicinttarget(sic_ptintsource_signal[i]);
+		(*sic.sicptintsource[i])(sic_ptintsource_signal[i]);
+	}
+	/* SIC connections   END */
+
 	eth_init_socket(eth.bus_target_socket);
 	sc_init_socket(sc.bus_target_socket);
 	uart0_init_socket(uart0.bus_target_socket);
 	wd_init_socket(wd.bus_target_socket);
 	dt1_init_socket(dt1.bus_target_socket);
 	pic_init_socket(pic.bus_target_socket);
+	sic_init_socket(sic.bus_target_socket);
 }
 
 PXP ::
@@ -267,6 +336,12 @@ cpu_target_b_transport(transaction_type &trans,
 		AccessSystemRegisters(trans, delay);
 		handled = true;
 	}
+	else if ( trans.get_address() >= 0x10003000UL &&
+			trans.get_address()   <  0x10003030UL )
+	{
+		sic_init_socket->b_transport(trans,delay);
+		handled = true;
+	}
 	else if ( trans.get_address() >= 0x10010000UL &&
 			trans.get_address()   <  0x10020000UL )
 	{
@@ -335,6 +410,9 @@ cpu_target_transport_dbg(transaction_type &trans)
 {
 	if ( trans.get_address() < 0x08000000UL )
 		return mpmc0_init_socket->transport_dbg(trans);
+	else if ( trans.get_address()   >= 0x10003000UL &&
+			trans.get_address()     <  0x10003030UL )
+		return sic_init_socket->transport_dbg(trans);
 	else if ( trans.get_address()   >= 0x10010000UL &&
 			trans.get_address()     <  0x10020000UL )
 		return eth_init_socket->transport_dbg(trans);
@@ -588,6 +666,34 @@ pic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                           */
 /*   the PIC                                                          END */
+/**************************************************************************/
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                     START */
+/*   the SIC                                                              */
+/**************************************************************************/
+
+tlm::tlm_sync_enum
+PXP ::
+sic_init_nb_transport_bw(transaction_type &trans,
+		phase_type &phase,
+		sc_core::sc_time &time)
+{
+	assert("TODO" == 0);
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+PXP ::
+sic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+		sc_dt::uint64)
+{
+	assert("TODO" == 0);
+}
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                           */
+/*   the SIC                                                          END */
 /**************************************************************************/
 
 } // end of namespace arm926ejs_pxp

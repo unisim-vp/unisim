@@ -132,6 +132,7 @@ CPU(const char *name, Object *parent)
 	, thumb_decoder()
 	, cp15(this, "cp15", this)
 	, instruction_counter(0)
+	, cur_instruction_address(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
 	, requires_memory_access_reporting(true)
@@ -152,6 +153,9 @@ CPU(const char *name, Object *parent)
 	, stat_instruction_counter("instruction-counter", this,
 			instruction_counter,
 			"Number of instructions executed.")
+	, stat_cur_instruction_address("cur-instruction-address", this,
+			cur_instruction_address,
+			"Address of the instruction currently being executed.")
 	, reg_sp("SP", this, gpr[13],
 			"The stack pointer (SP) register (alias of GPR[13]).")
 	, reg_lr("LR", this, gpr[14],
@@ -411,6 +415,7 @@ StepInstruction()
 	uint32_t current_pc;
 
 	current_pc = GetGPR(PC_reg);
+	cur_instruction_address = current_pc;
 
 	if (debug_control_import) 
 	{

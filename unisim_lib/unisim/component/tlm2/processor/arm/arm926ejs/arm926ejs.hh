@@ -67,21 +67,60 @@ public:
 
 	// Master port to the bus port
 	tlm::tlm_initiator_socket<32> master_socket;
-	
+
 private:
-	// virtual method implementation to handle backward path of transactions 
-	//   sent through the master_port
+	/** Non blocking backward method
+	 *
+	 * Virtual method implementation to handle backward path of transactions 
+	 * sent through the master_port
+	 *
+	 * @param trans the transcation to handle
+	 * @param phase the state of the transaction to handle (should only be 
+	 *        END_REQ or BEGIN_RESP)
+	 * @param time  the relative time at which the call is being done
+	 *
+	 * @return      the synchronization status
+	 */
 	virtual sync_enum_type nb_transport_bw(transaction_type &trans, 
 			phase_type &phase, 
 			sc_core::sc_time &time);
-	// virtual method implementation to handle backward path of the dmi 
-	//   mechanism
+	/** Invalidate direct memory pointer
+	 *
+ 	 * Virtual method implementation to handle backward path of dmi requests 
+	 * sent through the master port.
+	 * We do not use the dmi option in our simulator, so this method is 
+	 * unnecessary. However, we have to declare it in order to be able to 
+	 * compile the simulator.
+	 *
+	 * @param start_range the start address of the memory range to remove
+	 * @param end_range   the end address of the memory range to remove
+	 */
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, 
 			sc_dt::uint64 end_range);
 
 	/**************************************************************************
 	 * Port to the bus and its virtual methods to handle                  END *
 	 *   incomming calls.                                                     *
+	 **************************************************************************/
+
+	/**************************************************************************
+	 * Interrupt ports and their handles                                START *
+	 **************************************************************************/
+
+public:
+	// Slave port for the IRQ signal
+	sc_core::sc_in<bool> nirq;
+	// Slave port for the FIQ signal
+	sc_core::sc_in<bool> nfiq;
+
+private:
+	/** nIRQ port handler */
+	void IRQHandler();
+	/** nFIQ port handler */
+	void FIQHandler();
+	
+	/**************************************************************************
+	 * Interrupt ports and their handles                                  END *
 	 **************************************************************************/
 
 public:

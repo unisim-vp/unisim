@@ -100,7 +100,7 @@ class VICAddrSourceStub
 	, public sc_module
 {
 public:
-	sc_core::sc_out<uint32_t> vicinttarget;
+	sc_core::sc_out<uint32_t> vicaddrtarget;
 
 	SC_HAS_PROCESS(VICAddrSourceStub);
 	VICAddrSourceStub(const sc_module_name &name, Object *parent = 0);
@@ -121,7 +121,7 @@ class VICAddrTargetStub
 	, public sc_module
 {
 public:
-	sc_core::sc_in<uint32_t> vicintsource;
+	sc_core::sc_in<uint32_t> vicaddrsource;
 
 	SC_HAS_PROCESS(VICAddrTargetStub);
 	VICAddrTargetStub(const sc_module_name &name, Object *parent = 0);

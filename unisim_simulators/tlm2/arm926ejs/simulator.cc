@@ -180,6 +180,8 @@ Simulator(int argc, char **argv)
 	devchip->ssmc0_init_socket(nor_flash_2->slave_sock);
 	devchip->ssmc1_init_socket(nor_flash_1->slave_sock);
 	devchip->mpmc0_init_socket(memory->slave_sock);
+	cpu->nirq(devchip->nvicirq_signal);
+	cpu->nfiq(devchip->nvicfiq_signal);
 	// cpu->master_socket(memory->slave_sock);
 	// irq_master_stub->out_interrupt(cpu->in_irq);
 	// fiq_master_stub->out_interrupt(cpu->in_fiq);

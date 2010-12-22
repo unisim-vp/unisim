@@ -55,12 +55,18 @@ class VIC
 	, public sc_module
 	, public VICIntSourceIdentifierInterface
 {
+private:
+	/** total number of incomming interrupts */
+	static const unsigned int NUM_SOURCE_INT = 32;
+	/** total number of vectored interrupts */
+	static const unsigned int NUM_VECT_INT = 16;
+
 public:
 	typedef tlm::tlm_base_protocol_types::tlm_payload_type transaction_type;
 	typedef tlm::tlm_base_protocol_types::tlm_phase_type   phase_type;
 	typedef tlm::tlm_sync_enum                             sync_enum_type;
 
-	sc_core::sc_in<bool> vicintsource[32];
+	sc_core::sc_in<bool> *vicintsource[NUM_SOURCE_INT];
 	sc_core::sc_in<bool> nvicfiqin;
 	sc_core::sc_in<bool> nvicirqin;
 	sc_core::sc_in<uint32_t> vicvectaddrin;
@@ -84,10 +90,19 @@ private:
 	 */
 	void UpdateStatus();
 
-	/** total number of incomming interrupts */
-	static const int NUM_SOURCE_INT = 32;
-	/** total number of vectored interrupts */
-	static const int NUM_VECT_INT = 16;
+	/** Indicates if a vectored interrupt is being serviced and if so the 
+	 *    nesting level
+	 */
+	unsigned int vect_int_serviced;
+	/** If vect_int_serviced is true then this indicates the priority level
+	 */
+	uint32_t vect_int_serviced_level[NUM_VECT_INT];
+	/** Indicates if an interrupt is ready for vectored service
+	 */
+	bool vect_int_for_service;
+	/** Level that would be serviced if requested
+	 */ 
+	unsigned int max_vect_int_for_service;
 
 	/** Registers storage */
 	uint8_t regs[0x01000UL];
@@ -228,6 +243,24 @@ private:
 	 */
 	void SetVICINTENABLE(uint32_t value);
 
+	/** Returns the interrupt enable clear register
+	 *
+	 * This always returns 0 always as this register is write only
+	 *   and never modified, however it returns the actual register
+	 *   value that could have been modified. The value should be
+	 *   set back to 0 by the user.
+	 *
+	 * @return the value of the interrupt enable clear register
+	 */
+	uint32_t GetVICINTENCLEAR() const;
+	/** Sets the interrupt enable cler register
+	 *
+	 * The value to use should be always 0 to respect the VIC specs.
+	 *
+	 * @param value the value to set
+	 */
+	void SetVICINTENCLEAR(uint32_t value);
+
 	/** Returns the software interrupt register
 	 *
 	 * @return the value of the software interrupt register
@@ -238,6 +271,24 @@ private:
 	 * @param value the value to set
 	 */
 	void SetVICSOFTINT(uint32_t value);
+
+	/** Returns the software interrupt clear register
+	 *
+	 * This always returns 0 always as this register is write only
+	 *   and never modified, however it returns the actual register
+	 *   value that could have been modified. The value should be
+	 *   set back to 0 by the user.
+	 *
+	 * @return the value of the software interrupt clear register
+	 */
+	uint32_t GetVICSOFTINTCLEAR() const;
+	/** Sets the software interrupt cler register
+	 *
+	 * The value to use should be always 0 to respect the VIC specs.
+	 *
+	 * @param value the value to set
+	 */
+	void SetVICSOFTINTCLEAR(uint32_t value);
 
 	/** Returns the vector address register
 	 *
@@ -287,6 +338,39 @@ private:
 	 */
 	void SetVICVECTCNTL(uint32_t index, uint32_t value);
 
+	/** Returns the test control register
+	 *
+	 * @return the value of the test control register
+	 */
+	uint32_t GetVICITCR() const;
+	/** Set the test control register
+	 *
+	 * @param value the value to set
+	 */
+	void SetVICITCR(uint32_t value);
+
+	/** Returns the test input register (nVICIRQIN/nVICFIQIN)
+	 *
+	 * @return the value of the test input register (nVICIRQIN/nVICFIQIN)
+	 */
+	uint32_t GetVICITIP1() const;
+	/** Set the test input register (nVICIRQIN/nVICFIQIN)
+	 *
+	 * @param value the value to set
+	 */
+	void SetVICITIP1(uint32_t value);
+
+	/** Returns the test input register (VICVECTADDRIN)
+	 *
+	 * @return the value of the test input register (VICVECTADDRIN)
+	 */
+	uint32_t GetVICITIP2() const;
+	/** Set the test input register (VICVECTADDRIN)
+	 *
+	 * @param value the value to set
+	 */
+	void SetVICITIP2(uint32_t value);
+
 	/** Returns the test output register (nVICIRQ/nVICFIQ)
 	 *
 	 * @return the value of the test output register (nVICIRQ/nVICFIQ)
@@ -297,6 +381,17 @@ private:
 	 * @param value the value to set
 	 */
 	void SetVICITOP1(uint32_t value);
+
+	/** Returns the test output register (VICVECTADDROUT)
+	 *
+	 * @return the value of the test output register (VICVECTADDROUT)
+	 */
+	uint32_t GetVICITOP2() const;
+	/** Set the test output register (VICVECTADDROUT)
+	 *
+	 * @param value the value to set
+	 */
+	void SetVICITOP2(uint32_t value);
 
 	/**************************************************************************/
 	/* Methods to get and set the registers                               END */
@@ -315,10 +410,36 @@ private:
 	 */
 	bool VECTCNTLEnable(uint32_t value) const;
 
-	/** Base address of the system controller */
+	/** Base address of the VIC */
 	uint32_t base_addr;
-	/** UNISIM Parameter for the base address of the system controller */
+	/** UNISIM Parameter for the base address of the VIC */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+
+	/** Verbose */
+	uint32_t verbose;
+	/** UNISIM Paramter for verbose */
+	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	/** Verbose levels */
+	static const uint32_t V0 = 0x01UL;
+	static const uint32_t V1 = 0x03UL;
+	static const uint32_t V2 = 0x07UL;
+	static const uint32_t V3 = 0x0fUL;
+	/** Verbose target mask */
+	static const uint32_t V_INIRQ     = 0x01UL <<  4;
+	static const uint32_t V_INFIQ     = 0x01UL <<  5;
+	static const uint32_t V_INVICIRQ  = 0x01UL <<  6;
+	static const uint32_t V_INVICFIQ  = 0x01UL <<  7;
+	static const uint32_t V_OUTIRQ    = 0x01UL <<  8;
+	static const uint32_t V_OUTFIQ    = 0x01UL <<  9;
+	static const uint32_t V_STATUS    = 0x01UL << 12;
+	static const uint32_t V_TRANS     = 0x01UL << 16;
+	/** Check if we should verbose */
+	bool VERBOSE(uint32_t level, uint32_t mask) const
+	{
+		uint32_t ok_level = level & verbose;
+		uint32_t ok_mask = (~verbose) & mask; 
+		return ok_level && ok_mask;
+	};
 
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;

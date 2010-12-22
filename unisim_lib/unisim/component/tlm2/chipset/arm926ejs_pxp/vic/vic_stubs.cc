@@ -131,7 +131,7 @@ VICAddrSourceStub ::
 VICAddrSourceStub(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
-	, vicinttarget()
+	, vicaddrtarget()
 	, value(0)
 	, param_value("value", this, value,
 			"Value to send by the interrupt address source stub.")
@@ -155,14 +155,14 @@ void
 VICAddrSourceStub ::
 Method()
 {
-	vicinttarget = value;
+	vicaddrtarget = value;
 }
 
 VICAddrTargetStub ::
 VICAddrTargetStub(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
-	, vicintsource()
+	, vicaddrsource()
 	, value(0)
 	, verbose(0)
 	, param_value("value", this, value,
@@ -173,7 +173,37 @@ VICAddrTargetStub(const sc_module_name &name, Object *parent)
 	, logger(*this)
 {
 	SC_METHOD(Method);
-	sensitive << vicintsource;
+	sensitive << vicaddrsource;
+}
+
+VICAddrTargetStub ::
+~VICAddrTargetStub()
+{
+}
+
+bool
+VICAddrTargetStub ::
+Setup()
+{
+	return true;
+}
+
+void
+VICAddrTargetStub ::
+Method()
+{
+	uint32_t old_value = value;
+
+	value = vicaddrsource;
+
+	if ( verbose )
+		logger << DebugInfo
+			<< "Received change on interrupt address:" << std::endl
+			<< " - old value = " << old_value 
+			<< " (0x" << std::hex << old_value << std::dec << ")" << std::endl
+			<< " - new value = " << value
+			<< " (0x" << std::hex << value << std::dec << ")"
+			<< EndDebugInfo;
 }
 
 } // end of namespace unisim
