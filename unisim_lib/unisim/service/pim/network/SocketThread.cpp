@@ -29,6 +29,7 @@
 #endif
 
 #include "SocketThread.hpp"
+#include "../convert.hh"
 
 namespace unisim {
 namespace service {
@@ -57,12 +58,17 @@ SocketThread::SocketThread(char* host, uint16_t port, bool _blocking) :
 		hostport(0),
 		sockfd(0),
 		blocking(_blocking),
-		reader(0),
-		writer(0)
+		input_buffer_size(0),
+		input_buffer_index(0),
+		input_buffer(NULL)
+
 
 {
 	hostname = name_resolve(host);
 	hostport = port;
+
+	input_buffer = (char*) malloc(MAXDATASIZE+1);
+
 }
 
 SocketThread::SocketThread() :
@@ -71,16 +77,16 @@ SocketThread::SocketThread() :
 				hostport(0),
 				sockfd(0),
 				blocking(true),
-				reader(0),
-				writer(0)
+				input_buffer_size(0),
+				input_buffer_index(0),
+				input_buffer(NULL)
+
 {
+	input_buffer = (char*) malloc(MAXDATASIZE+1);
 
 }
 
 SocketThread::~SocketThread() {
-
-	if (reader) { reader->stop(); reader->join(); delete reader; }
-	if (writer) { writer->stop(); writer->join(); delete writer; }
 
 	if (sockfd) {
 #ifdef WIN32
@@ -97,26 +103,257 @@ void SocketThread::Start(int sockfd, bool _blocking) {
 	this->sockfd = sockfd;
 	this->blocking = _blocking;
 
-	writer = new SocketWriter(sockfd, blocking);
-
-	reader = new SocketReader(sockfd, blocking);
-
-	if (!blocking) {
-		writer->start();
-		reader->start();
-	}
-
 	this->start();
 }
 
-void SocketThread::send(const char* data) {
+bool SocketThread::send(const char* data, bool blocking) {
 
-	writer->send(data);
+	fd_set read_flags, write_flags;
+	struct timeval waitd;
+
+	int err;
+
+	int data_size = strlen(data);
+	char* dd = (char *) malloc(data_size+5);
+	memset(dd, 0, data_size+5);
+
+	dd[0] = '$';
+	uint8_t checksum = 0;
+	unsigned int pos = 0;
+	char c;
+
+	while(pos < data_size)
+	{
+		c = data[pos];
+		dd[pos+1] = c;
+		checksum += (uint8_t) c;
+		pos++;
+	}
+	dd[pos+1] = '#';
+
+	dd[pos+2] = Nibble2HexChar(checksum >> 4);
+	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
+
+	int dd_size = strlen(dd);
+	int index = 0;
+	while (dd_size > 0) {
+
+		waitd.tv_sec = 0;
+		waitd.tv_usec = 1000;
+
+		FD_ZERO(&read_flags); // Zero the flags ready for using
+		FD_ZERO(&write_flags);
+
+		// Set the write flag to check the write status of the socket
+		FD_SET(sockfd, &write_flags);
+
+		// Now call select
+		err = select(sockfd+1, &read_flags,&write_flags, (fd_set*)0,&waitd);
+		if (err < 0) {
+			// If select breaks then pause for 1 milliseconds and then continue
+#ifdef WIN32
+			Sleep(1);
+#else
+			usleep(1000);
+#endif
+
+			continue;
+		}
+
+		// Now select will have modified the flag sets to tell us
+		// what actions can be performed
+
+		//Check if the socket is prepared to accept data
+		if (FD_ISSET(sockfd, &write_flags)) {
+			FD_CLR(sockfd, &write_flags);
+
+			int n = write(sockfd, dd+index, dd_size);
+
+			if (n < 0) {
+				int array[] = {sockfd};
+				error(array, "ERROR writing to socket");
+			} else {
+				index += n;
+				dd_size -= n;
+			}
+
+		} else {
+			cerr << dd << "  kfsdmfkljsdf" << endl;
+			if (blocking) {
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
+				continue;
+			} else {
+				break;
+			}
+
+		}
+
+	}
+
+	free(dd);
+
+	if (dd_size > 0) {
+		return false;
+	}
+
+	return true;
+
 }
 
-char* SocketThread::receive() {
+char* SocketThread::receive(bool blocking) {
 
-	return reader->receive();
+	char* str = NULL;
+	string s = "";
+	uint8_t checkSum = 0;
+	int packet_size = 0;
+	uint8_t pchk;
+	char c;
+
+	while (true) {
+		getChar(c, blocking);
+		if (c == 0) {
+			if (blocking) {
+				cerr << "receive EOF " << endl;
+			}
+			break;
+		}
+    	switch(c)
+    	{
+    		case '+':
+    			break;
+    		case '-':
+   				// error response => e.g. retransmission of the last packet
+    			break;
+    		case 3: // '\003'
+    			break;
+    		case '$':
+
+    			getChar(c, blocking);
+    			while (true) {
+        			s = s + c;
+        			packet_size++;
+    				checkSum = checkSum + c;
+    				getChar(c, blocking);
+
+    				if (c == '#') break;
+    			}
+
+    			getChar(c, blocking);
+    			pchk = HexChar2Nibble(c) << 4;
+    			getChar(c, blocking);
+    			pchk = pchk + HexChar2Nibble(c);
+
+    			if (checkSum != pchk) {
+    				cerr << "wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+    				return NULL;
+    			} else
+    			{
+
+					str = (char *) malloc(packet_size+1);
+					memset(str, 0, packet_size+1);
+					memcpy(str, s.c_str(), packet_size);
+
+					s.clear();
+
+    				return str;
+    			}
+
+    			break;
+    		default:
+    			cerr << "packetParser: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+    	}
+
+	}
+
+	return str;
+
+}
+
+void SocketThread::getChar(char& c, bool blocking) {
+
+	fd_set read_flags, write_flags;
+	struct timeval waitd;
+
+	int err;
+
+	int n;
+
+	while (input_buffer_size == 0) {
+		waitd.tv_sec = 0;
+		waitd.tv_usec = 1000;
+
+		FD_ZERO(&read_flags); // Zero the flags ready for using
+		FD_ZERO(&write_flags);
+
+		// Set the sockets read flag, so when select is called it examines
+		// the read status of available data.
+		FD_SET(sockfd, &read_flags);
+
+		// Now call select
+		err = select(sockfd+1, &read_flags, &write_flags, (fd_set*)0,&waitd);
+		if (err < 0) {
+			// If select breaks then pause for 1 milliseconds and then continue
+#ifdef WIN32
+			Sleep(1);
+#else
+			usleep(1000);
+#endif
+
+			continue;
+		}
+
+		// Now select will have modified the flag sets to tell us
+		// what actions can be performed
+
+		// Check if data is available to read
+		if (FD_ISSET(sockfd, &read_flags)) {
+			FD_CLR(sockfd, &read_flags);
+
+			memset(input_buffer, 0, sizeof(input_buffer));
+
+#ifdef WIN32
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
+			if (n == 0 || n == SOCKET_ERROR)
+#else
+			n = read(sockfd, input_buffer, MAXDATASIZE);
+			if (n <= 0)
+#endif
+		    {
+		    	int array[] = {sockfd};
+		    	error(array, "ERROR reading from socket");
+		    } else {
+		    	input_buffer_size = n;
+		    	input_buffer_index = 0;
+		    }
+
+		} else {
+			if (blocking) {
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
+				continue;
+			} else {
+				break;
+			}
+		}
+
+	}
+
+
+	if (input_buffer_size > 0) {
+		c = input_buffer[input_buffer_index];
+		input_buffer_size--;
+		input_buffer_index++;
+	} else {
+		c = 0;
+	}
+
 }
 
 } // network 

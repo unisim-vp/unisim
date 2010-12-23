@@ -11,8 +11,6 @@
 #include <stdint.h>
 
 #include "GenericThread.hpp"
-#include "SocketReader.hpp"
-#include "SocketWriter.hpp"
 
 namespace unisim {
 namespace service {
@@ -32,8 +30,8 @@ public:
 	void Start(int sockfd, bool _blocking);
 
 	virtual void Run() { };
-	virtual void send(const char* data);
-	virtual char* receive();
+	virtual bool send(const char* data, bool blocking);
+	virtual char* receive(bool blocking);
 	virtual string getProtocol() { return "NONE"; }
 
 protected:
@@ -43,15 +41,20 @@ protected:
 	int sockfd;
 	bool blocking;
 
-	SocketReader *reader;
-	SocketWriter *writer;
-
 	/*
 	 *  this routine converts the address into an internet ip
 	 *
 	 *  e.g. in_addr_t serv_addr = name_resolve("127.0.0.1");
 	 */
 	uint32_t name_resolve(char *host_name);
+
+	void getChar(char& c, bool blocking);
+
+private:
+	int input_buffer_size;
+	int input_buffer_index;
+
+	char *input_buffer;
 
 };
 

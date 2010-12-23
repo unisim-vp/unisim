@@ -41,7 +41,8 @@ SocketReader::SocketReader(const int sock, bool _blocking) :
 		GenericThread(),
 		blocking(_blocking),
 		input_buffer_size(0),
-		input_buffer_index(0)
+		input_buffer_index(0),
+		input_buffer(NULL)
 {
 	assert(sock >= 0);
 	sockfd = sock;
@@ -160,25 +161,59 @@ void SocketReader::getChar(char& c) {
 
 	int n;
 
-	if (input_buffer_size == 0) {
+	while (input_buffer_size == 0) {
+		waitd.tv_sec = 0;
+		waitd.tv_usec = 1000;
 
-		memset(input_buffer, 0, sizeof(input_buffer));
+		FD_ZERO(&read_flags); // Zero the flags ready for using
+		FD_ZERO(&write_flags);
+
+		// Set the sockets read flag, so when select is called it examines
+		// the read status of available data.
+		FD_SET(sockfd, &read_flags);
+
+		// Now call select
+		err = select(sockfd+1, &read_flags, &write_flags, (fd_set*)0,&waitd);
+		if (err < 0) { // If select breaks then pause for 1 seconds
+			sleep(1); // then continue
+			continue;
+		}
+
+		// Now select will have modified the flag sets to tell us
+		// what actions can be performed
+
+		// Check if data is available to read
+		if (FD_ISSET(sockfd, &read_flags)) {
+			FD_CLR(sockfd, &read_flags);
+
+			memset(input_buffer, 0, sizeof(input_buffer));
 
 #ifdef WIN32
-		n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
-		if (n == 0 || n == SOCKET_ERROR)
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
+			if (n == 0 || n == SOCKET_ERROR)
 #else
-		n = read(sockfd, input_buffer, MAXDATASIZE);
-		if (n <= 0)
+			n = read(sockfd, input_buffer, MAXDATASIZE);
+			if (n <= 0)
 #endif
-	    {
-	    	int array[] = {sockfd};
-	    	error(array, "ERROR reading from socket");
-	    } else {
-	    	input_buffer_size = n;
-	    	input_buffer_index = 0;
-	    }
+		    {
+		    	int array[] = {sockfd};
+		    	error(array, "ERROR reading from socket");
+		    } else {
+		    	input_buffer_size = n;
+		    	input_buffer_index = 0;
+		    }
+
+		} else {
+			if (blocking) {
+				sleep(1); // then continue
+				continue;
+			} else {
+				break;
+			}
+		}
+
 	}
+
 
 	if (input_buffer_size > 0) {
 		c = input_buffer[input_buffer_index];

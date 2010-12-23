@@ -42,8 +42,8 @@ SocketServerThread::SocketServerThread(char* host, uint16_t port, bool _blocking
 
 	struct sockaddr_in serv_addr;
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
+	primary_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (primary_sockfd < 0) {
 		error("ERROR opening socket");
 	}
 
@@ -51,8 +51,8 @@ SocketServerThread::SocketServerThread(char* host, uint16_t port, bool _blocking
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(hostport);
 	serv_addr.sin_addr.s_addr = hostname;
-	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-		int array[] = {sockfd};
+	if (bind(primary_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+		int array[] = {primary_sockfd};
         error(array, "ERROR on binding");
 	}
 
@@ -61,8 +61,8 @@ SocketServerThread::SocketServerThread(char* host, uint16_t port, bool _blocking
 	 * N connection requests will be queued before further requests are refused.
 	 * Returns 0 on success, -1 for errors.  */
 
-	if (listen(sockfd,request_nbre) < 0) {
-		int array[] = {sockfd};
+	if (listen(primary_sockfd,request_nbre) < 0) {
+		int array[] = {primary_sockfd};
 		error(array, "listen failed");
 	}
 
@@ -82,46 +82,41 @@ void SocketServerThread::Run() {
 
     cli_addr_len = sizeof(cli_addr);
 
-	int newsockfd;
     do {
-        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
-        if (newsockfd >= 0) {
+        sockfd = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
+        if (sockfd >= 0) {
 
 // *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
 			int opt = 1;
-			if (setsockopt(newsockfd, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
-				int array[] = {newsockfd};
+			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
+				int array[] = {sockfd};
 				error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
 			}
 
-			if (!blocking) {
-
 #ifdef WIN32
 
-				u_long NonBlock = 1;
-				if(ioctlsocket(newsockfd, FIONBIO, &NonBlock) != 0) {
-					int array[] = {newsockfd};
-					error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
-				}
+			u_long NonBlock = 1;
+			if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
+				int array[] = {sockfd};
+				error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
+			}
 
 #else
 
-				int flags = fcntl(newsockfd, F_GETFL, 0);
-				if (flags < 0)	{
-					int array[] = {newsockfd};
-					error(array, "fcntl <F_GETFL> failed");
-				}
-
-				if (fcntl(newsockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-					int array[] = {newsockfd};
-					error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
-				}
-
-#endif
+			int flags = fcntl(sockfd, F_GETFL, 0);
+			if (flags < 0)	{
+				int array[] = {sockfd};
+				error(array, "fcntl <F_GETFL> failed");
 			}
 
+			if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+				int array[] = {sockfd};
+				error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
+			}
 
-			if (bindHandler(newsockfd)) {
+#endif
+
+			if (bindHandler(sockfd)) {
         		connected++;
         	}
         }
@@ -129,41 +124,35 @@ void SocketServerThread::Run() {
 
 }
 
-bool SocketServerThread::bindHandler(int newsockfd) {
+bool SocketServerThread::bindHandler(int sockfd) {
 
-	reader = new SocketReader(newsockfd, blocking);
-
-	writer = new SocketWriter(newsockfd, blocking);
-
-	if (!blocking) {
-		reader->start();
-		writer->start();
+	if (!send("WHO", true)) {
+		cerr << "SocketServerThread:: unable to send <WHO>" << endl;
+		return false;
 	}
 
-	char* protocol = reader->receive();
+	char* protocol = receive(true);
 
 	SocketThread *target = protocolHandlers->at(0);
 	bool found = false;
 	if (target->getProtocol().compare(protocol) == 0) {
-		writer->send("ACK");
+		if (!send("ACK", true)) {
+			cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
+			return false;
+		}
 
 		found = true;
 	} else {
-		writer->send("NACK");
+		if (!send("NACK", true)) {
+			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
+			return false;
+		}
 	}
 
-	char* ack = reader->receive();
-
-	if (!blocking) {
-		reader->stop();
-		writer->stop();
-	}
-
-	delete reader; reader = NULL;
-	delete writer; writer = NULL;
+	char* ack = receive(true);
 
 	if (found) {
-		target->Start(newsockfd, blocking);
+		target->Start(sockfd, blocking);
 	}
 
 }

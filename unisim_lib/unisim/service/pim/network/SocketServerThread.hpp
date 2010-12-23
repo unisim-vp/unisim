@@ -10,6 +10,7 @@
 
 
 #include "SocketThread.hpp"
+#include <vector>
 
 namespace unisim {
 namespace service {
@@ -26,6 +27,8 @@ public:
 	void setProtocolHandlers(vector<SocketThread*> *protocolHandlers) { this->protocolHandlers = protocolHandlers; }
 
 private:
+	int primary_sockfd;
+
 	uint8_t request_nbre;
 	vector<SocketThread*> *protocolHandlers;
 

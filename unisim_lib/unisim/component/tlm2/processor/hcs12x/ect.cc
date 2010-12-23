@@ -189,9 +189,9 @@ bool ECT::read(uint8_t offset, uint8_t &value) {
 
 	switch (offset) {
 		default: {
-			char buff[30];
-			sprintf(buff,"%d",offset);
-			std::cerr << "Warning: ECT => Read Request not supported for register at offset = " << buff << std::endl;
+//			char buff[30];
+//			sprintf(buff,"%d",offset);
+//			std::cerr << "Warning: ECT => Read Request not supported for register at offset = " << buff << std::endl;
 		}
 	}
 
@@ -202,9 +202,9 @@ bool ECT::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
 		default: {
-			char buff[30];
-			sprintf(buff,"%d",offset);
-			std::cerr << "Warning: ECT => Write Request not supported for register at offset = " << buff << std::endl;
+//			char buff[30];
+//			sprintf(buff,"%d",offset);
+//			std::cerr << "Warning: ECT => Write Request not supported for register at offset = " << buff << std::endl;
 		}
 	}
 

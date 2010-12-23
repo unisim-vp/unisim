@@ -116,7 +116,12 @@ void SocketWriter::Run() {
 
 }
 
-void SocketWriter::send(const char* data) {
+bool SocketWriter::send(const char* data, bool blocking) {
+
+	fd_set read_flags, write_flags;
+	struct timeval waitd;
+
+	int err;
 
 	int data_size = strlen(data);
 	char* dd = (char *) malloc(data_size+5);
@@ -142,24 +147,66 @@ void SocketWriter::send(const char* data) {
 	if (blocking) {
 		int dd_size = strlen(dd);
 		int index = 0;
-		do {
+		while (dd_size > 0) {
 
-			int n = write(sockfd, dd+index, dd_size);
+			waitd.tv_sec = 0;
+			waitd.tv_usec = 1000;
 
-			if (n < 0) {
-				int array[] = {sockfd};
-				error(array, "ERROR writing to socket");
-			} else {
-				index += n;
-				dd_size -= n;
+			FD_ZERO(&read_flags); // Zero the flags ready for using
+			FD_ZERO(&write_flags);
+
+			// Set the write flag to check the write status of the socket
+			FD_SET(sockfd, &write_flags);
+
+			// Now call select
+			err = select(sockfd+1, &read_flags,&write_flags, (fd_set*)0,&waitd);
+			if (err < 0) {
+				// If select breaks then pause for 1 milliseconds and then continue
+	#ifdef WIN32
+				Sleep(1);
+	#else
+				usleep(1000);
+	#endif
+
+				continue;
 			}
-		} while (dd_size > 0);
+
+			// Now select will have modified the flag sets to tell us
+			// what actions can be performed
+
+			//Check if the socket is prepared to accept data
+			if (FD_ISSET(sockfd, &write_flags)) {
+				FD_CLR(sockfd, &write_flags);
+
+				int n = write(sockfd, dd+index, dd_size);
+
+				if (n < 0) {
+					int array[] = {sockfd};
+					error(array, "ERROR writing to socket");
+				} else {
+					index += n;
+					dd_size -= n;
+				}
+
+			} else {
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
+				continue;
+
+			}
+
+		}
 
 		free(dd);
 
 	} else {
 		buffer_queue->add(dd);
 	}
+
+	return true;
 }
 
 void SocketWriter::stop() {

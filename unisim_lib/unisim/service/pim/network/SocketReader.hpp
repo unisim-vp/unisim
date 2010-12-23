@@ -12,8 +12,6 @@
 #include "BlockingQueue.tcc"
 #include "GenericThread.hpp"
 
-#define MAXDATASIZE		255
-
 namespace unisim {
 namespace service {
 namespace pim {

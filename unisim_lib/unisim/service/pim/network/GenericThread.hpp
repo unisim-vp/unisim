@@ -15,6 +15,8 @@
 #include <signal.h>
 #include <errno.h>
 
+#define MAXDATASIZE		255
+
 namespace unisim {
 namespace service {
 namespace pim {

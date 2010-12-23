@@ -147,13 +147,18 @@ void TargetThread::Run(){
 
 	while (!super::isTerminated()) {
 
-		char *buffer = receive();
+		char *buffer = receive(blocking);
 
 		if (buffer == NULL) {
 			if (blocking) {
 				cerr << "PIM-Target receive **NULL**" << endl;
 				break;
 			} else {
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
 				continue;
 			}
 		}
@@ -196,7 +201,22 @@ void TargetThread::Run(){
 
 //						cerr << name << " send: " << bstr << endl;
 
-						send(bstr);
+						while (true) {
+							if (!send(bstr, blocking)) {
+								if (blocking) {
+									cerr << "PIM-Target unable to send !" << endl;
+								} else {
+#ifdef WIN32
+									Sleep(1);
+#else
+									usleep(1000);
+#endif
+									continue;
+								}
+
+							}
+							break;
+						}
 
 						os.str(std::string());
 
