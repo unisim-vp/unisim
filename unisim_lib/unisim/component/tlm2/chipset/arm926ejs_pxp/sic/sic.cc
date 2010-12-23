@@ -400,7 +400,7 @@ bus_target_b_transport(transaction_type &trans,
 		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	}
 
-	if ( VERBOSE(V0, V_READ || V_WRITE) )
+	if ( VERBOSE(V0, V_READ | V_WRITE) )
 	{
 		if ( (is_read && VERBOSE(V0, V_READ)) ||
 				(!is_read && VERBOSE(V0, V_WRITE)) )
