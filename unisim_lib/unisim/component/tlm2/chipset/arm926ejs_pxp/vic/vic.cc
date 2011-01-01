@@ -496,6 +496,9 @@ bus_target_b_transport(transaction_type &trans,
 		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	}
 
+	// everything went fine, update the status of the tlm response
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+
 	if ( VERBOSE(V0, V_TRANS) )
 	{
 		logger << DebugInfo
