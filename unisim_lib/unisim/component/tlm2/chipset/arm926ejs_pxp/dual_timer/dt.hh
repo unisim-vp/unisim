@@ -107,15 +107,87 @@ private:
 	/* Virtual methods for the target socket for the bus connection       END */
 	/**************************************************************************/
 
+	/**************************************************************************/
+	/* Registers and accessors                                          START */
+	/**************************************************************************/
+
+	static const uint32_t TIMER1LOAD      = 0x0000UL;
+	static const uint32_t TIMER1VALUE     = 0x0004UL;
+	static const uint32_t TIMER1CONTROL   = 0x0008UL;
+	static const uint32_t TIMER1INTCLR    = 0x000cUL;
+	static const uint32_t TIMER1RIS       = 0x0010UL;
+	static const uint32_t TIMER1MIS       = 0x0014UL;
+	static const uint32_t TIMER1BGLOAD    = 0x0018UL;
+	static const uint32_t TIMER2LOAD      = 0x0020UL;
+	static const uint32_t TIMER2VALUE     = 0x0024UL;
+	static const uint32_t TIMER2CONTROL   = 0x0028UL;
+	static const uint32_t TIMER2INTCLR    = 0x002cUL;
+	static const uint32_t TIMER2RIS       = 0x0030UL;
+	static const uint32_t TIMER2MIS       = 0x0034UL;
+	static const uint32_t TIMER2BGLOAD    = 0x0038UL;
+	static const uint32_t TIMERITCR       = 0x0f00UL;
+	static const uint32_t TIMERITOP       = 0x0f04UL;
+	static const uint32_t TIMERPERIPHID0  = 0x0fe0UL;
+	static const uint32_t TIMERPERIPHID1  = 0x0fe4UL;
+	static const uint32_t TIMERPERIPHID2  = 0x0fe8UL;
+	static const uint32_t TIMERPERIPHID3  = 0x0fecUL;
+	static const uint32_t TIMERPCELLID0   = 0x0ff0UL;
+	static const uint32_t TIMERPCELLID1   = 0x0ff4UL;
+	static const uint32_t TIMERPCELLID2   = 0x0ff8UL;
+	static const uint32_t TIMERPCELLID3   = 0x0ffcUL;
+
+	/** Returns the register pointed by the given address
+	 *
+	 * @param addr the address to consider
+	 * @return the value of the register pointed by the address
+	 */
+	uint32_t GetRegister(uint32_t addr) const;
+	/** Sets the register pointed by the given address
+	 *
+	 * @param addr the address to consider
+	 * @param value the value to set the register
+	 */
+	void SetRegister(uint32_t addr, uint32_t value);
+
+	/**************************************************************************/
+	/* Registers and accessors                                            END */
+	/**************************************************************************/
+
+	/** Update the status of the timer at the given time
+	 *
+	 * @param delay the delta time 
+	 */
+	void UpdateStatus(sc_core::sc_time &delay);
+
 	/** Base address of the system controller */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the system controller */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
 
+	/** Verbose */
+	uint32_t verbose;
+	/** UNISIM Paramter for verbose */
+	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	/** Verbose levels */
+	static const uint32_t V0 = 0x01UL;
+	static const uint32_t V1 = 0x03UL;
+	static const uint32_t V2 = 0x07UL;
+	static const uint32_t V3 = 0x0fUL;
+	/** Verbose target mask */
+	static const uint32_t V_READ     = 0x01UL << 4;
+	static const uint32_t V_WRITE    = 0x01UL << 5;
+	static const uint32_t V_STATUS   = 0x01UL << 6;
+	/** Check if we should verbose */
+	bool VERBOSE(uint32_t level, uint32_t mask) const
+	{
+		uint32_t ok_level = level & verbose;
+		uint32_t ok_mask = (~verbose) & mask; 
+		return ok_level && ok_mask;
+	};
+
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;
 
-	void UpdateStatus(sc_core::sc_time &delay);
 };
 
 } // end of namespace dual_timer

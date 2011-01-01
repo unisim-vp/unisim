@@ -65,6 +65,9 @@ DualTimer(const sc_module_name &name, Object *parent)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
+	, verbose(0)
+	, param_verbose("verbose", this, verbose,
+			"Verbose level (0 = no verbose).")
 	, logger(*this)
 {
 	bus_target_socket.register_nb_transport_fw(this,
@@ -129,138 +132,161 @@ bus_target_b_transport(transaction_type &trans,
 	bool is_read = trans.is_read();
 	bool handled = false;
 
-	// logger << DebugInfo
-	//	<< (is_read ? "Reading" : "Writing") << " 0x" 
-	//	<< std::hex << addr
-	//	<< " (0x"
-	//	<< trans.get_address() << std::dec
-	//	<< ") of " << size << " bytes"
-	//	<< EndDebugInfo;
-
 	if ( is_read )
 	{
-		handled = true;
-		/* in some conditions the registers might need to be updated
-		 * for example:
-		 * - when reading Current Value Register, TimerXValue of t1 or t2 and
-		 *     the timer is enabled
-		 *
-		 * To make it simple we update the status of the timers each time
-		 *   a read operation is performed.
-		 */
-		UpdateStatus(delay);
-		memcpy(data, &regs[addr], size);
-		//logger << DebugInfo
-		//	<< "Read 0x"
-		//	<< std::hex;
-		//for ( int i = 0; i < size; i++ )
-		//{
-		//	logger << (unsigned int)regs[addr + 3 - i];
-		//}
-		//logger << std::dec
-		//	<< EndDebugInfo;
-		trans.set_response_status(tlm::TLM_OK_RESPONSE);
-	}
-	else // writing
-	{
-		/* Steps performed when writing:
-		 * 1 - make a copy of destination register before modifying it
-		 * 2 - update register with new data
-		 * 3 - get the value of the new register
-		 * 4 - verify new value of the register and perform required actions
-		 */
-		uint32_t prev_value, new_value;
-		/* 1 - make a copy of destination register before modifying it */
-		memcpy(&prev_value, &regs[addr & ~(uint32_t)0x03], 4);
-		/* 2 - update register with new data */
-		memcpy(&regs[addr], data, size);
-		/* 3 - get the value of the new register */
-		memcpy(&new_value, &regs[addr & ~(uint32_t)0x03], 4);
-		/* 4 - verify new value of the register and perform required actions */
-		prev_value = LittleEndian2Host(prev_value);
-		new_value = LittleEndian2Host(new_value);
-		if ( (addr & ~(uint32_t)0x03) == 0x08 )
+		if ( (0x01000L - size) >= addr )
 		{
-			// writing into Timer1Control
-			uint32_t unmod_value = new_value;
-			new_value = (new_value & ~0xffffff00UL) | 
-				(prev_value & 0xffffff00UL);
-			logger << DebugInfo
-				<< "Writing 0x"
-				<< std::hex << new_value
-				<< " (previous value 0x"
-				<< prev_value
-				<< ", received 0x"
-				<< unmod_value << std::dec
-				<< ")"
-				<< EndDebugInfo;
-			/* if the new value needed to be fixed rewrite it to the register */
-			if ( unmod_value != new_value )
+			/* in some conditions the registers might need to be updated
+			 * for example:
+			 * - when reading Current Value Register, TimerXValue of t1 or t2 and
+			 *     the timer is enabled
+			 *
+			 * To make it simple we update the status of the timers each time
+			 *   a read operation is performed.
+			 */
+			UpdateStatus(delay);
+			memcpy(data, &regs[addr], size);
+			handled = true;
+		}
+	}
+
+	else // it is write
+	{
+		if ( ( 0x01000L - size) >= addr )
+		{
+			uint32_t cur_align = addr % 4;
+			uint32_t index = 0;
+			while ( index < size )
 			{
-				uint32_t final_value = Host2LittleEndian(new_value);
-				memcpy(&regs[addr & ~(uint32_t)0x03], &final_value, 4);
-			}
-			/* if the value did not change no further action is required */
-			if ( prev_value == new_value )
-			{
-				handled = true;
-			}
-			else 
-			{
-				handled = true;
-				/* if the TimerEn did change from 0 to 1 then set the
-				 *   update time for t1 */
-				if ( ((prev_value & (uint32_t)0x080) == 0) &&
-						((new_value & (uint32_t)0x080) != 0) )
+				/* Steps performed when writing:
+				 * 1 - make a copy of destination register before modifying it
+		 		 * 2 - update register with new data
+				 * 3 - get the value of the new register
+				 * 4 - verify new value of the register and perform required
+				 *     actions
+				 */
+				uint32_t cur_addr = (addr + index) & ~(uint32_t)0x03UL;
+				uint32_t cur_size = (size - index);
+				if ( cur_size > 4 ) cur_size = 4;
+				cur_size -= cur_align;
+				uint32_t prev_value, new_value;
+				
+				/* 1 - make a copy of destination register before modifying it
+				 */
+				prev_value = GetRegister(cur_addr);
+				
+				/* 2 - update register with new data */
+				memcpy(&regs[addr + index], &data[index], cur_size);
+				
+				/* 3 - get the value of the new register */
+				new_value = GetRegister(cur_addr);
+				
+				/* 4 - verify new value of the register and perform required 
+				 *     actions */
+				if ( ( cur_addr == TIMER1CONTROL ) )
 				{
-					logger << DebugInfo
-						<< "Timer enabled"
-						<< EndDebugInfo;
-					handled &= true;
-					t1_update_time = sc_time_stamp();
-				}
-				else
-				{
-					/* update the value of the Timer1Value if the timer was 
-					 * activated before the access */
-					if ( (prev_value & (uint32_t)0x080) != 0 )
+					uint32_t unmod_value = new_value;
+					new_value = (new_value & ~0xffffff00UL) | 
+						(prev_value & 0xffffff00UL);
+					/* if the new value needed to be fixed rewrite it to the 
+					 *   register */
+					if ( unmod_value != new_value )
 					{
-						logger << DebugError
-							<< "Update timer 1"
-							<< EndDebugError;
-						handled &= false;
+						SetRegister(TIMER1CONTROL, new_value);
+					}
+					/* if the value did not change no further action is 
+					 *   required */
+					if ( prev_value == new_value )
+					{
+						handled = true;
+					}
+					else 
+					{
+						handled = true;
+						/* if the TimerEn did change from 0 to 1 then set the
+						 *   update time for t1 */
+						if ( ((prev_value & (uint32_t)0x080) == 0) &&
+								((new_value & (uint32_t)0x080) != 0) )
+						{
+							handled &= true;
+							t1_update_time = sc_time_stamp();
+							if ( VERBOSE(V0, V_STATUS) )
+								logger << DebugInfo
+									<< "Timer enabled at "
+									<< t1_update_time
+									<< EndDebugInfo;
+						}
+						else
+						{
+							/* update the value of the Timer1Value if the timer 
+							 *   was activated before the access */
+							if ( (prev_value & (uint32_t)0x080) != 0 )
+							{
+								logger << DebugError
+									<< "Update timer 1"
+									<< EndDebugError;
+								handled &= false;
+							}
+						}
+						/* if the IntEnable entry is not active no further 
+						 *   action is needed */
+						if ( (new_value & (uint32_t)0x020) == 0 )
+						{
+							handled &= true;
+						}
+						else
+						{
+							logger << DebugError
+								<< "IntEnable activated"
+								<< EndDebugError;
+							handled &= false;
+						}
 					}
 				}
-				/* if the IntEnable entry is not active no further action is
-				 * needed */
-				if ( (new_value & (uint32_t)0x020) == 0 )
-				{
-					handled &= true;
-				}
-				else
-				{
-					logger << DebugError
-						<< "IntEnable activated"
-						<< EndDebugError;
-					handled &= false;
-				}
+				index += cur_size;
 			}
-			trans.set_response_status(tlm::TLM_OK_RESPONSE);
-		}
-		else
-		{
-			logger << DebugError
-				<< "Writing 0x"
-				<< std::hex << new_value
-				<< " (previous value 0x"
-				<< prev_value << std::dec
-				<< ")"
-				<< EndDebugError;
 		}
 	}
-		
+
 	if ( !handled )
-		assert("TODO" == 0);
+	{
+		// display error
+		logger << DebugError
+			<< "Access to dual timer:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size;
+		if ( !is_read )
+		{
+			logger << std::endl
+				<< " - data =" << std::hex;
+			for ( unsigned int i = 0; i < size; i++ )
+				logger << " " << (unsigned int)data[i];
+			logger << std::dec;
+		}
+		logger << std::endl
+			<< "Stopping simulation because of unhandled behavior"
+			<< EndDebugError;
+		// stop simulation
+		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+
+	// everything went fine, update the status of the tlm response
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+
+	if ( VERBOSE(V0, V_READ | V_WRITE) )
+	{
+		logger << DebugInfo
+			<< "Access to dual timer:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
+			<< " - data =" << std::hex;
+		for ( unsigned int i = 0; i < size; i++ )
+			logger << " " << (unsigned int)data[i];
+		logger << std::dec
+			<< EndDebugInfo;
+	}
 }
 
 bool 
@@ -284,6 +310,42 @@ bus_target_transport_dbg(transaction_type &trans)
 /* Virtual methods for the target socket for the bus connection       END */
 /**************************************************************************/
 
+/** Returns the register pointed by the given address
+ *
+ * @param addr the address to consider
+ * @return the value of the register pointed by the address
+ */
+uint32_t 
+DualTimer ::
+GetRegister(uint32_t addr) const
+{
+	const uint8_t *data = &(regs[addr]);
+	uint32_t value = 0;
+
+	memcpy(&value, data, 4);
+	value = LittleEndian2Host(value);
+	return value;
+}
+
+/** Sets the register pointed by the given address
+ *
+ * @param addr the address to consider
+ * @param value the value to set the register
+ */
+void 
+DualTimer ::
+SetRegister(uint32_t addr, uint32_t value)
+{
+	uint8_t *data = &(regs[addr]);
+
+	value = Host2LittleEndian(value);
+	memcpy(data, &value, 4);
+}
+
+/** Update the status of the timer at the given time
+ *
+ * @param delay the delta time 
+ */
 void 
 DualTimer ::
 UpdateStatus(sc_core::sc_time &delay)
