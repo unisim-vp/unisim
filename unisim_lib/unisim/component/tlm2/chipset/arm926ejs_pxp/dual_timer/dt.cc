@@ -183,7 +183,8 @@ bus_target_b_transport(transaction_type &trans,
 				
 				/* 4 - verify new value of the register and perform required 
 				 *     actions */
-				if ( ( cur_addr == TIMER1CONTROL ) )
+				if ( ( cur_addr == TIMER1CONTROL ) ||
+						( cur_addr == TIMER2CONTROL ) )
 				{
 					uint32_t unmod_value = new_value;
 					new_value = (new_value & ~0xffffff00UL) | 
@@ -192,7 +193,7 @@ bus_target_b_transport(transaction_type &trans,
 					 *   register */
 					if ( unmod_value != new_value )
 					{
-						SetRegister(TIMER1CONTROL, new_value);
+						SetRegister(cur_addr, new_value);
 					}
 					/* if the value did not change no further action is 
 					 *   required */
@@ -203,43 +204,79 @@ bus_target_b_transport(transaction_type &trans,
 					else 
 					{
 						handled = true;
-						/* if the TimerEn did change from 0 to 1 then set the
-						 *   update time for t1 */
-						if ( ((prev_value & (uint32_t)0x080) == 0) &&
-								((new_value & (uint32_t)0x080) != 0) )
+						/* if the new value is deactivating the timer nothing
+						 *   needs to be done */
+						if ( (new_value & (uint32_t)0x080UL) == 0 )
 						{
-							handled &= true;
-							t1_update_time = sc_time_stamp();
-							if ( VERBOSE(V0, V_STATUS) )
-								logger << DebugInfo
-									<< "Timer enabled at "
-									<< t1_update_time
-									<< EndDebugInfo;
+							if ( (prev_value & (uint32_t)0x080UL) != 0 )
+							{
+								if ( VERBOSE(V0, V_STATUS) )
+									logger << DebugInfo
+										<< "Timer "
+										<< ((cur_addr == TIMER1CONTROL) ?
+												"1" : "2")
+										<< " disabled at "
+										<< (sc_time_stamp() + delay)
+										<< EndDebugInfo;
+							}
 						}
+
 						else
 						{
-							/* update the value of the Timer1Value if the timer 
-							 *   was activated before the access */
-							if ( (prev_value & (uint32_t)0x080) != 0 )
+							/* if the TimerEn did change from 0 to 1 then set 
+							 *   the update time for t1 */
+							if ( ((prev_value & (uint32_t)0x080) == 0) &&
+									((new_value & (uint32_t)0x080) != 0) )
+							{
+								handled &= true;
+								if ( cur_addr == TIMER1CONTROL )
+									t1_update_time = sc_time_stamp() + delay;
+								else
+									t2_update_time = sc_time_stamp() + delay;
+
+								if ( VERBOSE(V0, V_STATUS) )
+									logger << DebugInfo
+										<< "Timer "
+										<< ((cur_addr == TIMER1CONTROL) ?
+												"1" : "2")
+										<< " enabled at "
+										<< ((cur_addr == TIMER1CONTROL) ?
+												t1_update_time :
+												t2_update_time)
+										<< EndDebugInfo;
+							}
+							else
+							{
+								/* update the value of the TimerXValue if the
+								 *   timer was activated before the access */
+								if ( (prev_value & (uint32_t)0x080) != 0 )
+								{
+									logger << DebugError
+										<< "Update timer " 
+										<< ((cur_addr == TIMER1CONTROL) ?
+												"1" : "2") 
+										<< std::endl
+										<< " - prev value = 0x" << std::hex
+										<< prev_value << std::endl
+										<< " - new value = 0x" 
+										<< new_value << std::dec
+										<< EndDebugError;
+									handled &= false;
+								}
+							}
+							/* if the IntEnable entry is not active no further 
+							 *   action is needed */
+							if ( (new_value & (uint32_t)0x020) == 0 )
+							{
+								handled &= true;
+							}
+							else
 							{
 								logger << DebugError
-									<< "Update timer 1"
+									<< "IntEnable activated"
 									<< EndDebugError;
 								handled &= false;
 							}
-						}
-						/* if the IntEnable entry is not active no further 
-						 *   action is needed */
-						if ( (new_value & (uint32_t)0x020) == 0 )
-						{
-							handled &= true;
-						}
-						else
-						{
-							logger << DebugError
-								<< "IntEnable activated"
-								<< EndDebugError;
-							handled &= false;
 						}
 					}
 				}
