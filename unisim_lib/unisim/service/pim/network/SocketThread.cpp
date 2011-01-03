@@ -167,9 +167,15 @@ bool SocketThread::send(const char* data, bool blocking) {
 		if (FD_ISSET(sockfd, &write_flags)) {
 			FD_CLR(sockfd, &write_flags);
 
-			int n = write(sockfd, dd+index, dd_size);
-
-			if (n < 0) {
+			int n;
+#ifdef WIN32
+			n = send(sockfd, dd+index, dd_size, 0);
+			if (n == 0 || n == SOCKET_ERROR)
+#else
+			n = write(sockfd, dd+index, dd_size);
+			if(n <= 0)
+#endif
+			{
 				int array[] = {sockfd};
 				error(array, "ERROR writing to socket");
 			} else {
