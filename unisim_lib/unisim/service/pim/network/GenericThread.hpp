@@ -40,15 +40,19 @@ public:
 
 };
 
+#ifdef _WIN32
+  typedef ptw32_handle_t pthread_t;
+#endif
+
 class GenericThread : public TObject
 {
 public:
 
-	GenericThread() :
-		thid(0), ret(0), terminated(false), started(false) {}
+	GenericThread() : ret(0), terminated(false), started(false) {}
+
 	~GenericThread() {
 		if (!isTerminated()) stop();
-		if (thid) {	pthread_detach(thid);}
+		pthread_detach(thid);
 	}
 
 	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; started = true; }
@@ -58,13 +62,6 @@ public:
 	virtual bool setTerminated(bool b) { terminated = b; }
 	virtual bool isStarted() { return started; }
 	virtual bool setStarted(bool b) { started = b; }
-	virtual int kill() {
-		if (thid) {
-			int err = pthread_kill(thid, SIGKILL);
-			thid = NULL;
-			return err;
-		}
-	}
 
 protected:
 	typedef GenericThread super;

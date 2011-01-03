@@ -17,6 +17,11 @@ namespace service {
 namespace pim {
 namespace network {
 
+#ifdef _WIN32
+#	define write(fd, buf, len)	send(fd, buf, len, 0)
+#	define read(fd, buf, len)	recv(fd, buf, len, 0)
+#endif /* _WIN32 */
+
 class SocketThread: public GenericThread {
 public:
 
@@ -30,8 +35,8 @@ public:
 	void Start(int sockfd, bool _blocking);
 
 	virtual void Run() { };
-	virtual bool send(const char* data, bool blocking);
-	virtual char* receive(bool blocking);
+	virtual bool send_packet(const char* data, bool blocking);
+	virtual char* receive_packet(bool blocking);
 	virtual string getProtocol() { return "NONE"; }
 
 protected:

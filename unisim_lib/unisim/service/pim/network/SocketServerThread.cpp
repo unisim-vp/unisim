@@ -126,30 +126,30 @@ void SocketServerThread::Run() {
 
 bool SocketServerThread::bindHandler(int sockfd) {
 
-	if (!send("WHO", true)) {
+	if (!send_packet("WHO", true)) {
 		cerr << "SocketServerThread:: unable to send <WHO>" << endl;
 		return false;
 	}
 
-	char* protocol = receive(true);
+	char* protocol = receive_packet(true);
 
 	SocketThread *target = protocolHandlers->at(0);
 	bool found = false;
 	if (target->getProtocol().compare(protocol) == 0) {
-		if (!send("ACK", true)) {
+		if (!send_packet("ACK", true)) {
 			cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
 			return false;
 		}
 
 		found = true;
 	} else {
-		if (!send("NACK", true)) {
+		if (!send_packet("NACK", true)) {
 			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
 			return false;
 		}
 	}
 
-	char* ack = receive(true);
+	char* ack = receive_packet(true);
 
 	if (found) {
 		target->Start(sockfd, blocking);

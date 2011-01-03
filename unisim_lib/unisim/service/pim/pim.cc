@@ -147,7 +147,7 @@ void TargetThread::Run(){
 
 	while (!super::isTerminated()) {
 
-		char *buffer = receive(blocking);
+		char *buffer = receive_packet(blocking);
 
 		if (buffer == NULL) {
 			if (blocking) {
@@ -202,7 +202,7 @@ void TargetThread::Run(){
 //						cerr << name << " send: " << bstr << endl;
 
 						while (true) {
-							if (!send(bstr, blocking)) {
+							if (!send_packet(bstr, blocking)) {
 								if (blocking) {
 									cerr << "PIM-Target unable to send !" << endl;
 								} else {

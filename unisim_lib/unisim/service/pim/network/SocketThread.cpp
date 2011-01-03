@@ -106,7 +106,7 @@ void SocketThread::Start(int sockfd, bool _blocking) {
 	this->start();
 }
 
-bool SocketThread::send(const char* data, bool blocking) {
+bool SocketThread::send_packet(const char* data, bool blocking) {
 
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
@@ -168,14 +168,9 @@ bool SocketThread::send(const char* data, bool blocking) {
 			FD_CLR(sockfd, &write_flags);
 
 			int n;
-#ifdef WIN32
-			n = send(sockfd, dd+index, dd_size, 0);
-			if (n == 0 || n == SOCKET_ERROR)
-#else
+
 			n = write(sockfd, dd+index, dd_size);
-			if(n <= 0)
-#endif
-			{
+			if (n <= 0) {
 				int array[] = {sockfd};
 				error(array, "ERROR writing to socket");
 			} else {
@@ -210,7 +205,7 @@ bool SocketThread::send(const char* data, bool blocking) {
 
 }
 
-char* SocketThread::receive(bool blocking) {
+char* SocketThread::receive_packet(bool blocking) {
 
 	char* str = NULL;
 	string s = "";
@@ -321,14 +316,8 @@ void SocketThread::getChar(char& c, bool blocking) {
 
 			memset(input_buffer, 0, sizeof(input_buffer));
 
-#ifdef WIN32
-			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
-			if (n == 0 || n == SOCKET_ERROR)
-#else
 			n = read(sockfd, input_buffer, MAXDATASIZE);
-			if (n <= 0)
-#endif
-		    {
+			if (n <= 0)	{
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");
 		    } else {

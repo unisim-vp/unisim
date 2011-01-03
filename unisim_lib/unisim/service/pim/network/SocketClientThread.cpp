@@ -52,7 +52,11 @@ void SocketClientThread::Run() {
 	do {
 		err = connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 		if (err < 0) {
-			sleep(1);
+#ifdef WIN32
+			Sleep(1);
+#else
+			usleep(1000);
+#endif
 		}
 	} while (err < 0);
 
