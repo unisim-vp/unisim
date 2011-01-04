@@ -86,7 +86,7 @@ PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::~PCIDev() {
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
+bool PCIDev<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup () {
 	pciDev->SetPCIMaster(this);
 	pciDev->SetEventManager(this);
 	Reset ();

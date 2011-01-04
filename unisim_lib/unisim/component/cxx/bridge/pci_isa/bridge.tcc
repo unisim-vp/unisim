@@ -321,7 +321,7 @@ bool Bridge<ADDRESS>::TranslatePCItoISA(unisim::component::cxx::pci::PCISpace pc
 }
 
 template <class ADDRESS>
-bool Bridge<ADDRESS>::Setup()
+bool Bridge<ADDRESS>::BeginSetup()
 {
 	// PCI configuration registers initialization	
 	pci_conf_base_addr[IO_SPACE_BAR_NUM].Initialize("pci_conf_base_addr[IO_SPACE_BAR_NUM]", "PCI Config Base Address (I/O)", 0, 0); // ISA I/O space is not configurable

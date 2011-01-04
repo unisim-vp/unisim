@@ -56,20 +56,18 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent)
 	: Object(name, parent, "this service implements an ELF Loader")
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
-	, Client<Registers>(name, parent)
 	, Service<Loader<MEMORY_ADDR> >(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
-	, registers_import("registers-import", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
 	, stmt_lookup_export("stmt-lookup-export", this)
 	, filename()
 	, base_addr(0)
-	, force_base_addr(0)
+	, force_base_addr(false)
 	, force_use_virtual_address(false)
 	, dump_headers(false)
 	, blob(0)
@@ -252,8 +250,6 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		return false;
 	}
 	
-	MEMORY_ADDR entry_point = hdr->e_entry;
-
 	shdr_table = ReadSectionHeaders(hdr, is);
 	if(!shdr_table)
 	{
@@ -315,8 +311,17 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				<< EndDebugWarning;
 			force_base_addr = false;
 		}
+		else
+		{
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Forcing base address to 0x" << std::hex << base_addr << std::dec << EndDebugInfo;
+			}
+		}
 	}
 	
+	MEMORY_ADDR entry_point = force_base_addr ? base_addr + hdr->e_entry - unique_segment_addr : hdr->e_entry;
+
 	if(unlikely(verbose))
 	{
 		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;

@@ -479,8 +479,8 @@ public:
 		OP_NOT
 	} Operator;
 	
-	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0, const char *description = 0);
-	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2 = 0, const char *description = 0);
+	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
+	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child, const char *description = 0);
 	
 #if 0

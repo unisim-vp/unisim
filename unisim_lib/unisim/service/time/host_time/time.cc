@@ -60,7 +60,7 @@ HostTime::~HostTime()
 {
 }
 
-bool HostTime::Setup()
+bool HostTime::BeginSetup()
 {
 	return true;
 }

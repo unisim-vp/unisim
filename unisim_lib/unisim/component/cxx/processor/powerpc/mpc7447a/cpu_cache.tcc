@@ -64,6 +64,7 @@ void CPU<CONFIG>::InvalidateDL1Set(uint32_t index)
 			l1_block.status.dirty = false;
 		}
 		l1_line.status.valid = false;
+		l1_line.status.way = way;
 		l1_line.SetBaseAddr(0);
 
 		if(CONFIG::FAST_DL1_LOOKUP_ENABLE)
@@ -115,6 +116,7 @@ void CPU<CONFIG>::InvalidateIL1Set(uint32_t index)
 			l1_block.status.valid = false;
 		}
 		l1_line.status.valid = false;
+		l1_line.status.way = way;
 		l1_line.SetBaseAddr(0);
 
 		if(CONFIG::FAST_IL1_LOOKUP_ENABLE)
@@ -167,6 +169,7 @@ void CPU<CONFIG>::InvalidateL2Set(uint32_t index)
 			l2_block.status.dirty = false;
 		}
 		l2_line.status.valid = false;
+		l2_line.status.way = way;
 		l2_line.SetBaseAddr(0);
 
 		if(CONFIG::FAST_L2_LOOKUP_ENABLE)

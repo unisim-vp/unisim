@@ -86,9 +86,9 @@ I8042<MAX_DATA_SIZE>::~I8042()
 }
 
 template <uint32_t MAX_DATA_SIZE>
-bool I8042<MAX_DATA_SIZE>::Setup()
+bool I8042<MAX_DATA_SIZE>::EndSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::EndSetup()) return false;
 	isa_bus_cycle_time = sc_time(1.0 / (double) (*this)["isa-bus-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["fsb-frequency"], SC_US);
 	kbd_irq_level = false;

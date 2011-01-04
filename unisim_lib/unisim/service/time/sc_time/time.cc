@@ -51,7 +51,7 @@ ScTime::~ScTime()
 {
 }
 
-bool ScTime::Setup()
+bool ScTime::BeginSetup()
 {
 	return true;
 }

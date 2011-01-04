@@ -90,7 +90,7 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::~AM29LV()
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Setup()
+bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::BeginSetup()
 {
 	if(inherited::verbose)
 	{
@@ -101,7 +101,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Setup()
 	if(!cycle_time) return false;
 	cycle_sctime = sc_time(cycle_time, SC_PS);
 
-	return inherited::Setup();
+	return inherited::BeginSetup();
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>

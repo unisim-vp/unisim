@@ -90,7 +90,7 @@ public:
 	void AuxIrqMaster();
 	void CaptureKey();
 	void CaptureMouse();
-	virtual bool Setup();
+	virtual bool EndSetup();
 	virtual bool Send(const Pointer<TlmMessage<ISAReq, ISARsp> > &message);
 	virtual void TriggerKbdInterrupt(bool level);
 	virtual void TriggerAuxInterrupt(bool level);

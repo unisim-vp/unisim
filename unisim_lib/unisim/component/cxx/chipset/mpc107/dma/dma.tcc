@@ -75,7 +75,7 @@ template <class PHYSICAL_ADDR,
 		 bool DEBUG>
 bool
 DMA<PHYSICAL_ADDR, DEBUG> ::
-Setup() {
+BeginSetup() {
 	return true;
 }
 

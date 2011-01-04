@@ -247,7 +247,10 @@ CachePowerEstimator::~CachePowerEstimator()
 	}
 	
 #if defined(HAVE_CACTI4_2)
-	delete cacti;
+	if(cacti)
+	{
+		delete cacti;
+	}
 #endif
 }
 
@@ -392,8 +395,29 @@ double CachePowerEstimator::GetLeakagePower()
 	return leakage_power;
 }
 
-bool CachePowerEstimator::Setup()
+bool CachePowerEstimator::BeginSetup()
 {
+	map<CacheProfileKey, CacheProfile *>::iterator prof_iter;
+
+	for(prof_iter = profiles.begin(); prof_iter != profiles.end(); prof_iter++)
+	{
+		CacheProfile *prof = (*prof_iter).second;
+		delete prof;
+	}
+	
+#if defined(HAVE_CACTI4_2)
+	if(cacti)
+	{
+		delete cacti;
+		cacti = 0;
+	}
+#endif
+	return true;
+}
+
+bool CachePowerEstimator::SetupCacti()
+{
+	if(!profiles.empty()) return true;
 #if defined(HAVE_CACTI4_2)
 	if(!time_import)
 	{
@@ -463,12 +487,22 @@ bool CachePowerEstimator::Setup()
 				<< ", Nspd=" << Nspd << ", min cycle time=" << min_cycle_time << " ps, default VddPow=" << VddPow << " V" << EndDebugInfo;
 	}
 	
-	SetPowerMode(min_cycle_time, default_voltage);
+	SetPowerMode(min_cycle_time, default_voltage); // this create and select the default power profile
 	return true;
 #else
 	logger << DebugError << "Cacti 4.2 is not available." << EndDebugError;
 	return false;
 #endif
+}
+
+bool CachePowerEstimator::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &power_estimator_export) return SetupCacti();
+	if(srv_export == &power_mode_export) return SetupCacti();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	
+	return false;
 }
 
 } // end of namespace power

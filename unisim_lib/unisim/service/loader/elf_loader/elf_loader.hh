@@ -80,7 +80,6 @@ using unisim::service::interfaces::Registers;
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Client<Registers>,
 	public Service<Loader<MEMORY_ADDR> >,
 	public Service<Blob<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
@@ -88,7 +87,6 @@ class ElfLoaderImpl :
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceImport<Registers> registers_import;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
