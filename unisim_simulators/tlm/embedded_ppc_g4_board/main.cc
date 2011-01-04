@@ -314,6 +314,7 @@ Simulator::Simulator(int argc, char **argv)
 #ifdef WITH_PCI_STUB
 	unsigned int pci_stub_irq = 0;
 #endif
+	param_num_programs.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	SetVariable("inline-debugger.num-loaders", num_programs);
 
