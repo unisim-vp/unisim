@@ -64,6 +64,10 @@ public:
 	sc_out<uint64_t> timclken0_out_port;
 	/** Source Timer Module Clock Enable 1 port */
 	sc_out<uint64_t> timclken1_out_port;
+	/** Source Timer Module Clock Enable 2 port */
+	sc_out<uint64_t> timclken2_out_port;
+	/** Source Timer Module Clock Enable 3 port */
+	sc_out<uint64_t> timclken3_out_port;
 
 	/** Target socket for the bus connection */
 	tlm_utils::passthrough_target_socket<SystemController, 32>

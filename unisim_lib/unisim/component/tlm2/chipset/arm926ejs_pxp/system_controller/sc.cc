@@ -59,6 +59,11 @@ SystemController ::
 SystemController(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
+	, refclk_out_port("refclk_out_port")
+	, timclken0_out_port("timclken0_out_port")
+	, timclken1_out_port("timclken1_out_port")
+	, timclken2_out_port("timclken2_out_port")
+	, timclken3_out_port("timclken3_out_port")
 	, bus_target_socket("bus_target_socket")
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
@@ -100,6 +105,9 @@ Setup()
 {
 	refclk_out_port = refclk;
 	timclken0_out_port = refclk;
+	timclken1_out_port = refclk;
+	timclken2_out_port = refclk;
+	timclken3_out_port = refclk;
 	return true;
 }
 
@@ -180,12 +188,10 @@ bus_target_b_transport(transaction_type &trans,
 					<< " (" << (timeren3sel ? timclk : refclk) << ")" 
 					<< EndDebugInfo;
 			}
-			// TODO:
-			// if ( timeren3sel ) timclken3_out_port = timclk;
-			// else timclken3_out_port = refclk;
-			// if ( timeren2sel ) timclken2_out_port = timclk;
-			// else timclken2_out_port = refclk;
-			// END TODO
+			if ( timeren3sel ) timclken3_out_port = timclk;
+			else timclken3_out_port = refclk;
+			if ( timeren2sel ) timclken2_out_port = timclk;
+			else timclken2_out_port = refclk;
 			if ( timeren1sel ) timclken1_out_port = timclk;
 			else timclken1_out_port = refclk;
 			if ( timeren0sel ) timclken0_out_port = timclk;

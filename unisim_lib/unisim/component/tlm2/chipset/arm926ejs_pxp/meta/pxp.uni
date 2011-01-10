@@ -22,6 +22,8 @@
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/CMakeLists.txt</file>
 		</files>
 		<depends>

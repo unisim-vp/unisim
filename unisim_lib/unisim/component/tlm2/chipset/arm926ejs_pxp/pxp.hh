@@ -51,6 +51,7 @@
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.hh"
 
 namespace unisim {
 namespace component {
@@ -91,6 +92,9 @@ public:
 	/** Initiator socket for the Timer 1-2 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		dt1_init_socket;
+	/** Initiator socket for the Timer 3-4 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		dt2_init_socket;
 	/** Initiator socket for the Watchdog */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		wd_init_socket;
@@ -107,8 +111,10 @@ public:
 	unisim::component::tlm2::chipset::arm926ejs_pxp::system_controller::SystemController sc;
 	/** The UART 0 */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::UART uart0;
-	/** Dual Timer for Timer 0 and 1 */
+	/** Dual Timer for Timer 1 and 2 */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt1;
+	/** Dual Timer for Timer 3 and 4 */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt2;
 	/** Watchdog module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::watchdog::Watchdog wd;
 	/** VIC (Vectored Interrupt Controller) module */
@@ -116,7 +122,11 @@ public:
 	/** SIC (Secondary Interrupt Controller) module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::sic::SIC sic;
 
+	/** Tims signal splitter */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::util::TSS tss;
+	sc_signal<uint64_t> sc_to_dt_signal;
 	sc_signal<uint64_t> sc_to_dt1_signal[3];
+	sc_signal<uint64_t> sc_to_dt2_signal[3];
 
 	/* PIC stubs  START */
 	vic::VICIntSourceStub *intsource_stub[21];
@@ -144,10 +154,14 @@ public:
 	// sc_signal<bool> sic_inttarget_stub[11];
 	/* SIC stubs    END */
 
-	sc_in<bool> timint0_in_port;
 	sc_in<bool> timint1_in_port;
-	sc_in<bool> timintc01_in_port;
-	sc_signal<bool> timint0_signal, timint1_signal, timintc01_signal;
+	sc_in<bool> timint2_in_port;
+	sc_in<bool> timintc12_in_port;
+	sc_signal<bool> timint1_signal, timint2_signal, timintc12_signal;
+	sc_in<bool> timint3_in_port;
+	sc_in<bool> timint4_in_port;
+	sc_in<bool> timintc34_in_port;
+	sc_signal<bool> timint3_signal, timint4_signal, timintc34_signal;
 
 
 	SC_HAS_PROCESS(PXP);
@@ -272,7 +286,7 @@ private:
 
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                     START */
-	/*   the Dual Timer                                                       */
+	/*   the Dual Timers                                                      */
 	/**************************************************************************/
 
 	sync_enum_type dt1_init_nb_transport_bw(transaction_type &trans,
@@ -280,10 +294,15 @@ private:
 			sc_core::sc_time &time);
 	void dt1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 			sc_dt::uint64);
+	sync_enum_type dt2_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void dt2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
 
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                           */
-	/*   the Dual Timer                                                   END */
+	/*   the Dual Timers                                                  END */
 	/**************************************************************************/
 
 	/**************************************************************************/

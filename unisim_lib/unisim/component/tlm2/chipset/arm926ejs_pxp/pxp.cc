@@ -68,9 +68,12 @@ PXP(const sc_module_name &name, Object *parent)
 	, sc("system-controller", this)
 	, uart0("uart0", this)
 	, dt1("timer1-2", this)
+	, dt2("timer3-4", this)
 	, wd("watchdog", this)
 	, pic("pic", this)
 	, sic("sic", this)
+	, tss("time-signal-splitter")
+	, sc_to_dt_signal()
 	, nvicfiqin_stub("nvicfiqin_stub", this)
 	, nvicfiqin_signal()
 	, nvicirqin_stub("nvicirqin_stub", this)
@@ -88,7 +91,9 @@ PXP(const sc_module_name &name, Object *parent)
 	pic["base-addr"]       = 0x10140000UL;
 	sc["base-addr"]        = 0x101e0000UL;
 	dt1["base-addr"]       = 0x101e2000UL;
+	dt2["base-addr"]       = 0x101e3000UL;
 	uart0["base-addr"]     = 0x101f1000UL;
+
 	cpu_target_socket.register_nb_transport_fw(this,
 			&PXP::cpu_target_nb_transport_fw);
 	cpu_target_socket.register_b_transport(this,
@@ -133,6 +138,11 @@ PXP(const sc_module_name &name, Object *parent)
 	dt1_init_socket.register_invalidate_direct_mem_ptr(this,
 			&PXP::dt1_init_invalidate_direct_mem_ptr);
 
+	dt2_init_socket.register_nb_transport_bw(this,
+			&PXP::dt2_init_nb_transport_bw);
+	dt2_init_socket.register_invalidate_direct_mem_ptr(this,
+			&PXP::dt2_init_invalidate_direct_mem_ptr);
+
 	pic_init_socket.register_nb_transport_bw(this,
 			&PXP::pic_init_nb_transport_bw);
 	pic_init_socket.register_invalidate_direct_mem_ptr(this,
@@ -143,18 +153,34 @@ PXP(const sc_module_name &name, Object *parent)
 	sic_init_socket.register_invalidate_direct_mem_ptr(this,
 			&PXP::sic_init_invalidate_direct_mem_ptr);
 
+	sc.refclk_out_port(sc_to_dt_signal);
+	tss.sc_ref_in_port(sc_to_dt_signal);
+	
+	tss.dt1_timclk_out_port(sc_to_dt1_signal[0]);
 	dt1.timclk_in_port(sc_to_dt1_signal[0]);
-	sc.refclk_out_port(sc_to_dt1_signal[0]);
-	dt1.timclken1_in_port(sc_to_dt1_signal[1]);
 	sc.timclken0_out_port(sc_to_dt1_signal[1]);
-	dt1.timclken2_in_port(sc_to_dt1_signal[2]);
+	dt1.timclken1_in_port(sc_to_dt1_signal[1]);
 	sc.timclken1_out_port(sc_to_dt1_signal[2]);
-	timint0_in_port(timint0_signal);
-	dt1.timint1_out_port(timint0_signal);
+	dt1.timclken2_in_port(sc_to_dt1_signal[2]);
+	dt1.timint1_out_port(timint1_signal);
 	timint1_in_port(timint1_signal);
-	dt1.timint2_out_port(timint1_signal);
-	timintc01_in_port(timintc01_signal);
-	dt1.timintc_out_port(timintc01_signal);
+	dt1.timint2_out_port(timint2_signal);
+	timint2_in_port(timint2_signal);
+	dt1.timintc_out_port(timintc12_signal);
+	timintc12_in_port(timintc12_signal);
+
+	tss.dt2_timclk_out_port(sc_to_dt2_signal[0]);
+	dt2.timclk_in_port(sc_to_dt2_signal[0]);
+	sc.timclken2_out_port(sc_to_dt2_signal[1]);
+	dt2.timclken1_in_port(sc_to_dt2_signal[1]);
+	sc.timclken3_out_port(sc_to_dt2_signal[2]);
+	dt2.timclken2_in_port(sc_to_dt2_signal[2]);
+	dt2.timint1_out_port(timint3_signal);
+	timint3_in_port(timint3_signal);
+	dt2.timint2_out_port(timint4_signal);
+	timint4_in_port(timint4_signal);
+	dt2.timintc_out_port(timintc34_signal);
+	timintc34_in_port(timintc34_signal);
 
 	/* PIC connections START */
 	for ( int i = 0; i < 21; i++ )
@@ -211,6 +237,7 @@ PXP(const sc_module_name &name, Object *parent)
 	uart0_init_socket(uart0.bus_target_socket);
 	wd_init_socket(wd.bus_target_socket);
 	dt1_init_socket(dt1.bus_target_socket);
+	dt2_init_socket(dt2.bus_target_socket);
 	pic_init_socket(pic.bus_target_socket);
 	sic_init_socket(sic.bus_target_socket);
 }
@@ -372,6 +399,12 @@ cpu_target_b_transport(transaction_type &trans,
 		dt1_init_socket->b_transport(trans, delay);
 		handled = true;
 	}
+	else if ( trans.get_address() >= 0x101e3000UL &&
+			trans.get_address()   <  0x101e4000UL )
+	{
+		dt2_init_socket->b_transport(trans, delay);
+		handled = true;
+	}
 	else if ( trans.get_address() >= 0x101f1000UL &&
 			trans.get_address()   <  0x101f2000UL )
 	{
@@ -428,6 +461,9 @@ cpu_target_transport_dbg(transaction_type &trans)
 	else if ( trans.get_address()   >= 0x101e2000UL &&
 			trans.get_address()     <  0x101e3000UL )
 		return dt1_init_socket->transport_dbg(trans);
+	else if ( trans.get_address()   >= 0x101e3000UL &&
+			trans.get_address()		<  0x101e4000UL )
+		return dt2_init_socket->transport_dbg(trans);
 	else if ( trans.get_address()   >= 0x101f1000UL &&
 			trans.get_address()     <  0x101f2000UL )
 		return uart0_init_socket->transport_dbg(trans);
@@ -586,7 +622,7 @@ uart0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                     START */
-/*   the Timer 1-2                                                        */
+/*   the Dual Timers                                                      */
 /**************************************************************************/
 
 tlm::tlm_sync_enum
@@ -607,9 +643,27 @@ dt1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 	assert("TODO" == 0);
 }
 
+tlm::tlm_sync_enum
+PXP ::
+dt2_init_nb_transport_bw(transaction_type &trans,
+		phase_type &phase,
+		sc_core::sc_time &time)
+{
+	assert("TODO" == 0);
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+PXP ::
+dt2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+		sc_dt::uint64)
+{
+	assert("TODO" == 0);
+}
+
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                           */
-/*   the Timer 1-2                                                    END */
+/*   the Dual Timers                                                  END */
 /**************************************************************************/
 
 /**************************************************************************/
