@@ -502,9 +502,6 @@ ABSI_imm.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Compute the result
 	uint32_t result;      // the 32-bit result
 	uint8_t overflow;     // the overflow (0 or 1)
@@ -4537,9 +4534,6 @@ NEGI_imm.execute = {
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
 
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
-
 	// Compute the result
 	uint32_t result;      // the 32-bit result
 	uint8_t borrow_out;   // the borrow out (0 or 1)
@@ -4965,9 +4959,6 @@ NOT_imm.execute = {
 	{
 		throw BogusOpcodeException<CONFIG, DEBUG>(this);
 	}
-
-	// Read destination operand
-	uint32_t dst_value = cpu.GetReg(dst);
 
 	// Compute the result
 	uint32_t result = ~imm;
