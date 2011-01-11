@@ -170,17 +170,17 @@ bus_target_b_transport(transaction_type &trans,
 				if ( cur_size > 4 ) cur_size = 4;
 				cur_size -= cur_align;
 				uint32_t prev_value, new_value;
-				
+
 				/* 1 - make a copy of destination register before modifying it
 				 */
 				prev_value = GetRegister(cur_addr);
-				
+
 				/* 2 - update register with new data */
 				memcpy(&regs[addr + index], &data[index], cur_size);
-				
+
 				/* 3 - get the value of the new register */
 				new_value = GetRegister(cur_addr);
-				
+
 				/* 4 - verify new value of the register and perform required 
 				 *     actions */
 				if ( ( cur_addr == TIMER1CONTROL ) ||
@@ -224,7 +224,7 @@ bus_target_b_transport(transaction_type &trans,
 						else
 						{
 							/* if the TimerEn did change from 0 to 1 then set 
-							 *   the update time for t1 */
+							 *   the update time for t1/t2 */
 							if ( ((prev_value & (uint32_t)0x080) == 0) &&
 									((new_value & (uint32_t)0x080) != 0) )
 							{
@@ -280,6 +280,57 @@ bus_target_b_transport(transaction_type &trans,
 						}
 					}
 				}
+
+				else if ( cur_addr == TIMER1LOAD ||
+						cur_addr == TIMER2LOAD )
+				{
+					handled = true;
+					if ( new_value == 0 )
+						logger << DebugWarning
+							<< "Setting "
+							<< ((cur_addr == TIMER1LOAD) ?
+									"TIMER1LOAD" :
+									"TIMER2LOAD")
+							<< " to 0, this might cause continuous interrupts"
+							<< " under certain circumstances"
+							<< EndDebugWarning;
+
+					// update the timer 1/2 value to the new value
+					wait(delay);
+					delay = SC_ZERO_TIME;
+					if ( cur_addr == TIMER1LOAD )
+					{
+						t1_update_time = sc_time_stamp();
+						SetRegister(TIMER1VALUE, new_value);
+					}
+					else
+					{
+						t2_update_time = sc_time_stamp();
+						SetRegister(TIMER2VALUE, new_value);
+					}
+
+				}
+
+				else if ( cur_addr == TIMER1VALUE ||
+						cur_addr == TIMER2VALUE )
+				{
+					handled = true;
+					logger << DebugWarning
+						<< "Trying to write into "
+						<< ((cur_addr == TIMER1LOAD) ?
+									"TIMER1LOAD" :
+									"TIMER2LOAD")
+						<< " which is read-only, ignoring new value (0x"
+						<< std::hex << new_value << std::dec << ") and keeping"
+						<< " the old value (0x"
+						<< std::hex << prev_value << std::dec << ")"
+						<< EndDebugWarning;
+					if ( cur_addr == TIMER1VALUE )
+						SetRegister(TIMER1VALUE, prev_value);
+					else
+						SetRegister(TIMER2VALUE, prev_value);
+				}
+
 				index += cur_size;
 			}
 		}
@@ -434,35 +485,8 @@ UpdateStatus(sc_core::sc_time &delay)
 				t1_new_val = t1_current_val - diff;
 				t1_new_val = Host2LittleEndian(t1_new_val);
 				memcpy(&regs[0x4], &t1_new_val, sizeof(t1_new_val));
-	//			logger << DebugInfo
-	//				<< "cur_time = " << sc_time_stamp() << std::endl
-	//				<< "t1_update_time = " << t1_update_time << std::endl
-	//				<< "diff_time = " << diff_time << std::endl
-	//				<< "timclk = " << timclk << std::endl
-	//				<< "timclken1 = " << timclken1 << std::endl
-	//				<< "prescale = " << prescale << std::endl
-	//				<< "tick = " << tick << std::endl
-	//				<< "diff = " << diff
-	//				<< "t1_current_val = 0x" << std::hex
-	//				<< t1_current_val << std::endl
-	//				<< "t1_new_val = 0x" << t1_new_val
-	//				<< std::dec
-	//				<< EndDebugInfo;
 				t1_update_time = cur_time;
 			} 
-			else
-			{
-				// logger << DebugInfo
-				//	<< "cur_time = " << sc_time_stamp() << std::endl
-				//	<< "t1_update_time = " << t1_update_time << std::endl
-				//	<< "diff_time = " << diff_time << std::endl
-				//	<< "timclk = " << timclk << std::endl
-				//	<< "timclken1 = " << timclken1 << std::endl
-				//	<< "prescale = " << prescale << std::endl
-				//	<< "tick = " << tick << std::endl
-				//	<< "diff = " << diff
-				//	<< EndDebugInfo;
-			}
 		}
 	}
 }
