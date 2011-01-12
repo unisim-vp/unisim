@@ -219,6 +219,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		return false;
 	}
 	
+	if(unlikely(verbose))
+	{
+		logger << DebugInfo << "Reading ELF header" << EndDebugInfo;
+	}
+
 	hdr = ReadElfHeader(is);
 
 	if(!hdr)
@@ -237,9 +242,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 	}
 
+	const char *architecture_name = GetArchitecture(hdr);
+	
 	if(unlikely(verbose))
 	{
-		logger << DebugInfo << "Reading ELF header" << EndDebugInfo;
+		logger << DebugInfo << "File \"" << location << "\" is for \"" << architecture_name << "\"" << EndDebugInfo;
 	}
 
 	phdr_table = ReadProgramHeaders(hdr, is);
@@ -332,7 +339,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	blob->SetEntryPoint(entry_point);
 	blob->SetFilename(location.c_str());
-	blob->SetArchitecture(GetArchitecture(hdr));
+	blob->SetArchitecture(architecture_name);
 	blob->SetEndian(endianness);
 	blob->SetAddressSize(GetAddressSize(hdr));
 
@@ -545,7 +552,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(dw_handler) return true;
 	if(!SetupBlob()) return false;
 	if(!blob) return true; // there's no blob, so no DWARF too
-	dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(blob);
+	dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(blob, logger);
 
 	if(dw_handler)
 	{

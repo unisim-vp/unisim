@@ -39,6 +39,7 @@
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <inttypes.h>
 #include <map>
 #include <vector>
@@ -55,7 +56,7 @@ template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& logger);
 	~DWARF_Handler();
 	void Parse();
 	void to_XML(std::ostream& os);
@@ -114,6 +115,7 @@ private:
 	std::vector<DWARF_Pubs<MEMORY_ADDR> *> dw_pubtypes;                        // from section .debug_pubtypes
 	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
 
+	unisim::kernel::logger::Logger& logger;
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
 
