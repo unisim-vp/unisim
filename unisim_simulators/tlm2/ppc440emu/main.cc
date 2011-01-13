@@ -566,6 +566,10 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
 		}
 	}
+	else
+	{
+		cerr << "WARNING! command line is empty: it may result in an error unless you provide a value for elf32-loader.filename, linux-loader.argc and linux-loader.argv" << endl;
+	}
 
 	return unisim::kernel::service::Simulator::Setup();
 }
