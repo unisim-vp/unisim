@@ -122,15 +122,98 @@ public:
 	/** SIC (Secondary Interrupt Controller) module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::sic::SIC sic;
 
-	/** Tims signal splitter */
+	/** Timers signal splitter */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::util::TSS tss;
+	/** System controller to dual timers signals */
 	sc_signal<uint64_t> sc_to_dt_signal;
 	sc_signal<uint64_t> sc_to_dt1_signal[3];
 	sc_signal<uint64_t> sc_to_dt2_signal[3];
+	/** Watchdog to pic signal */
+	sc_signal<bool> wdog_to_pic0_signal;
+	/** Software to pic signal */
+	sc_signal<bool> software_to_pic1_signal;
+	/** commrx to pic signal */
+	sc_signal<bool> commrx_to_pic2_signal;
+	/** commtx to pic signal */
+	sc_signal<bool> commtx_to_pic3_signal;
+	/** Dual Timer 1 to pic signal */
+	sc_signal<bool> timint12_to_pic4_signal;
+	/** Dual Timer 2 to pic signal */
+	sc_signal<bool> timint34_to_pic5_signal;
+	/** GPIO 0 to pic signal */
+	sc_signal<bool> gpio0_to_pic6_signal;
+	/** GPIO 1 to pic signal */
+	sc_signal<bool> gpio1_to_pic7_signal;
+	/** GPIO 2 to pic signal */
+	sc_signal<bool> gpio2_to_pic8_signal;
+	/** GPIO 3 to pic signal */
+	sc_signal<bool> gpio3_to_pic9_signal;
+	/** RTC to pic signal */
+	sc_signal<bool> rtc_to_pic10_signal;
+	/** SSP to pic signal */
+	sc_signal<bool> ssp_to_pic11_signal;
+	/** UART0 to pic signal */
+	sc_signal<bool> uart0_to_pic12_signal;
+	/** UART1 to pic signal */
+	sc_signal<bool> uart1_to_pic13_signal;
+	/** UART2 to pic signal */
+	sc_signal<bool> uart2_to_pic14_signal;
+	/** SCI0 to pic signal */
+	sc_signal<bool> sci0_to_pic15_signal;
+	/** CLCD to pic signal */
+	sc_signal<bool> clcd_to_pic16_signal;
+	/** DMA to pic signal */
+	sc_signal<bool> dma_to_pic17_signal;
+	/** Power Fail to pic signal */
+	sc_signal<bool> pwrfail_to_pic18_signal;
+	/** MBX to pic signal */
+	sc_signal<bool> mbx_to_pic19_signal;
+	/** GND to pic signal */
+	sc_signal<bool> gnd_to_pic20_signal;
+	/** SIC 0 to pic signal */
+	sc_signal<bool> sic0_to_pic21_signal;
+	/** SIC 1 to pic signal */
+	sc_signal<bool> sic1_to_pic22_signal;
+	/** SIC 2 to pic signal */
+	sc_signal<bool> sic2_to_pic23_signal;
+	/** SIC 3 to pic signal */
+	sc_signal<bool> sic3_to_pic24_signal;
+	/** SIC 4 to pic signal */
+	sc_signal<bool> sic4_to_pic25_signal;
+	/** SIC 5 to pic signal */
+	sc_signal<bool> sic5_to_pic26_signal;
+	/** SIC 6 to pic signal */
+	sc_signal<bool> sic6_to_pic27_signal;
+	/** SIC 7 to pic signal */
+	sc_signal<bool> sic7_to_pic28_signal;
+	/** SIC 8 to pic signal */
+	sc_signal<bool> sic8_to_pic29_signal;
+	/** SIC 9 to pic signal */
+	sc_signal<bool> sic9_to_pic30_signal;
+	/** SIC 10 to pic signal */
+	sc_signal<bool> sic10_to_pic31_signal;
 
 	/* PIC stubs  START */
-	vic::VICIntSourceStub *intsource_stub[21];
-	sc_signal<bool> intsource_signal[32];
+	vic::VICIntSourceStub
+		wdog_int_stub, // pic0
+		software_int_stub, // pic1
+		commrx_int_stub, // pic2
+		commtx_int_stub, // pic3
+		gpio0_int_stub, // pic6
+		gpio1_int_stub, // pic7
+		gpio2_int_stub, // pic8
+		gpio3_int_stub, // pic9
+		rtc_int_stub, // pic10
+		ssp_int_stub, // pic11
+		uart0_int_stub, // pic12
+		uart1_int_stub, // pic13
+		uart2_int_stub, // pic14
+		sci0_int_stub, // pic15
+		clcd_int_stub, // pic16
+		dma_int_stub, // pic17
+		pwrfail_int_stub, // pic18
+		mbx_int_stub, // pic19
+		gnd_int_stub; // pic20
 	vic::VICIntSourceStub nvicfiqin_stub;
 	sc_signal<bool> nvicfiqin_signal;
 	vic::VICIntSourceStub nvicirqin_stub;
@@ -144,23 +227,144 @@ public:
 	sc_signal<uint32_t> vicvectaddrout_signal;
 	/* PIC stubs    END */
 
-	/* SIC stubs  START */
-	vic::VICIntSourceStub *sic_intsource_stub[31];
-	sc_signal<bool> sic_intsource_signal[31];
-	vic::VICIntSourceStub *sic_ptintsource_stub[11];
-	sc_signal<bool> sic_ptintsource_signal[11];
+	/** software stub to sic signal */
+	sc_signal<bool> sic_software_to_sic0_signal;
+	/** MMCI0B to sic signal */
+	sc_signal<bool> mmci0b_to_sic1_signal;
+	/** MMCI1B to sic signal */
+	sc_signal<bool> mmci1b_to_sic2_signal;
+	/** KMI0 to sic signal */
+	sc_signal<bool> kmi0_to_sic3_signal;
+	/** KMI1 to sic signal */
+	sc_signal<bool> kmi1_to_sic4_signal;
+	/** SCI1 to sic signal */
+	sc_signal<bool> sci1_to_sic5_signal;
+	/** UART3 to sic signal */
+	sc_signal<bool> uart3_to_sic6_signal;
+	/** CharLCD to sic signal */
+	sc_signal<bool> charlcd_to_sic7_signal;
+	/** Touchscreen pen to sic signal */
+	sc_signal<bool> tspen_to_sic8_signal;
+	/** Touchscreen keypad to sic signal */
+	sc_signal<bool> tskeypad_to_sic9_signal;
+	/** Reserved 0 stub to sic signal */
+	sc_signal<bool> reserved0_to_sic10_signal;
+	/** Reserved 1 stub to sic signal */
+	sc_signal<bool> reserved1_to_sic11_signal;
+	/** Reserved 2_stub to sic signal */
+	sc_signal<bool> reserved2_to_sic12_signal;
+	/** Reserved 3 stub to sic signal */
+	sc_signal<bool> reserved3_to_sic13_signal;
+	/** Reserved 4 stub to sic signal */
+	sc_signal<bool> reserved4_to_sic14_signal;
+	/** Reserved 5 stub to sic signal */
+	sc_signal<bool> reserved5_to_sic15_signal;
+	/** Reserved 6 stub to sic signal */
+	sc_signal<bool> reserved6_to_sic16_signal;
+	/** Reserved 7 stub to sic signal */
+	sc_signal<bool> reserved7_to_sic17_signal;
+	/** Reserved 8 stub to sic signal */
+	sc_signal<bool> reserved8_to_sic18_signal;
+	/** Reserved 9 stub to sic signal */
+	sc_signal<bool> reserved9_to_sic19_signal;
+	/** Reserved 10 stub to sic signal */
+	sc_signal<bool> reserved10_to_sic20_signal;
+	/** DiskOnChip to sic signal */
+	sc_signal<bool> diskonchip_to_sic21_signal;
+	/** MMCI0A to sic signal */
+	sc_signal<bool> mmci0a_to_sic22_signal;
+	/** MMCI1A to sic signal */
+	sc_signal<bool> mmci1a_to_sic23_signal;
+	/** AACI to sic signal */
+	sc_signal<bool> aaci_to_sic24_signal;
+	/** Ethernet to sic signal */
+	sc_signal<bool> ethernet_to_sic25_signal;
+	/** USB to sic signal */
+	sc_signal<bool> usb_to_sic26_signal;
+	/** PCI0 to sic signal */
+	sc_signal<bool> pci0_to_sic27_signal;
+	/** PCI1 to sic signal */
+	sc_signal<bool> pci1_to_sic28_signal;
+	/** PCI2 to sic signal */
+	sc_signal<bool> pci2_to_sic29_signal;
+	/** PCI3 to sic signal */
+	sc_signal<bool> pci3_to_sic30_signal;
+	/** RealViewLogicTile ZU206 to sic signal */
+	sc_signal<bool> zu206_to_sic21_signal;
+	/** RealViewLogicTile ZU207 to sic signal */
+	sc_signal<bool> zu207_to_sic22_signal;
+	/** RealViewLogicTile ZU208 to sic signal */
+	sc_signal<bool> zu208_to_sic23_signal;
+	/** RealViewLogicTile ZU209 to sic signal */
+	sc_signal<bool> zu209_to_sic24_signal;
+	/** RealViewLogicTile ZU210 to sic signal */
+	sc_signal<bool> zu210_to_sic25_signal;
+	/** RealViewLogicTile ZU211 to sic signal */
+	sc_signal<bool> zu211_to_sic26_signal;
+	/** RealViewLogicTile ZU212 to sic signal */
+	sc_signal<bool> zu212_to_sic27_signal;
+	/** RealViewLogicTile ZU213 to sic signal */
+	sc_signal<bool> zu213_to_sic28_signal;
+	/** RealViewLogicTile ZU214 to sic signal */
+	sc_signal<bool> zu214_to_sic29_signal;
+	/** RealViewLogicTile ZU215 to sic signal */
+	sc_signal<bool> zu215_to_sic30_signal;
+	/** RealViewLogicTile ZU216 to sic signal */
+	sc_signal<bool> zu216_to_sic31_signal;
 
-	vic::VICIntTargetStub *sic_inttarget_stub[11];
-	// sc_signal<bool> sic_inttarget_stub[11];
+	/* SIC stubs  START */
+	vic::VICIntSourceStub
+		sic_software_int_stub, // sic0
+		mmci0b_int_stub, // sic1
+		mmci1b_int_stub, // sic2
+		kmi0_int_stub, // sic3
+		kmi1_int_stub, // sic4
+		sci1_int_stub, // sic5
+		uart3_int_stub, // sic6
+		charlcd_int_stub, // sic7
+		tspen_int_stub, // sic8
+		tskeypad_int_stub, // sic9
+		reserved0_int_stub, // sic10
+		reserved1_int_stub, // sic11
+		reserved2_int_stub, // sic12
+		reserved3_int_stub, // sic13
+		reserved4_int_stub, // sic14
+		reserved5_int_stub, // sic15
+		reserved6_int_stub, // sic16
+		reserved7_int_stub, // sic17
+		reserved8_int_stub, // sic18
+		reserved9_int_stub, // sic19
+		reserved10_int_stub, // sic20
+		diskonchip_int_stub, // sic21
+		mmci0a_int_stub, // sic22
+		mmci1a_int_stub, // sic23
+		aaci_int_stub, // sic24
+		ethernet_int_stub, // sic25
+		usb_int_stub, // sic26
+		pci0_int_stub, // sic27
+		pci1_int_stub, // sic28
+		pci2_int_stub, // sic29
+		pci3_int_stub; // sic30
+	// RealView Logic Tile interrupts passthrough stubs
+	vic:: VICIntSourceStub
+		zu206_int_stub, // sic21
+		zu207_int_stub, // sic22
+		zu208_int_stub, // sic23
+		zu209_int_stub, // sic24
+		zu210_int_stub, // sic25
+		zu211_int_stub, // sic26
+		zu212_int_stub, // sic27
+		zu213_int_stub, // sic28
+		zu214_int_stub, // sic29
+		zu215_int_stub, // sic30
+		zu216_int_stub; // sic31
 	/* SIC stubs    END */
 
 	sc_in<bool> timint1_in_port;
 	sc_in<bool> timint2_in_port;
-	sc_in<bool> timintc12_in_port;
 	sc_signal<bool> timint1_signal, timint2_signal, timintc12_signal;
 	sc_in<bool> timint3_in_port;
 	sc_in<bool> timint4_in_port;
-	sc_in<bool> timintc34_in_port;
 	sc_signal<bool> timint3_signal, timint4_signal, timintc34_signal;
 
 

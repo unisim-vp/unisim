@@ -74,6 +74,57 @@ PXP(const sc_module_name &name, Object *parent)
 	, sic("sic", this)
 	, tss("time-signal-splitter")
 	, sc_to_dt_signal()
+	, wdog_to_pic0_signal()
+	, software_to_pic1_signal()
+	, commrx_to_pic2_signal()
+	, commtx_to_pic3_signal()
+	, timint12_to_pic4_signal()
+	, timint34_to_pic5_signal()
+	, gpio0_to_pic6_signal()
+	, gpio1_to_pic7_signal()
+	, gpio2_to_pic8_signal()
+	, gpio3_to_pic9_signal()
+	, rtc_to_pic10_signal()
+	, ssp_to_pic11_signal()
+	, uart0_to_pic12_signal()
+	, uart1_to_pic13_signal()
+	, uart2_to_pic14_signal()
+	, sci0_to_pic15_signal()
+	, clcd_to_pic16_signal()
+	, dma_to_pic17_signal()
+	, pwrfail_to_pic18_signal()
+	, mbx_to_pic19_signal()
+	, gnd_to_pic20_signal()
+	, sic0_to_pic21_signal()
+	, sic1_to_pic22_signal()
+	, sic2_to_pic23_signal()
+	, sic3_to_pic24_signal()
+	, sic4_to_pic25_signal()
+	, sic5_to_pic26_signal()
+	, sic6_to_pic27_signal()
+	, sic7_to_pic28_signal()
+	, sic8_to_pic29_signal()
+	, sic9_to_pic30_signal()
+	, sic10_to_pic31_signal()
+	, wdog_int_stub("wdog_int_stub", this)
+	, software_int_stub("software_int_stub", this)
+	, commrx_int_stub("commrx_int_stub", this)
+	, commtx_int_stub("commtx_int_stub", this)
+	, gpio0_int_stub("gpio0_int_stub", this)
+	, gpio1_int_stub("gpio1_int_stub", this)
+	, gpio2_int_stub("gpio2_int_stub", this)
+	, gpio3_int_stub("gpio3_int_stub", this)
+	, rtc_int_stub("rtc_int_stub", this)
+	, ssp_int_stub("ssp_int_stub", this)
+	, uart0_int_stub("uart0_int_stub", this)
+	, uart1_int_stub("uart1_int_stub", this)
+	, uart2_int_stub("uart2_int_stub", this)
+	, sci0_int_stub("sci0_int_stub", this)
+	, clcd_int_stub("clcd_int_stub", this)
+	, dma_int_stub("dma_int_stub", this)
+	, pwrfail_int_stub("pwrfail_int_stub", this)
+	, mbx_int_stub("mbx_int_stub", this)
+	, gnd_int_stub("gnd_int_stub", this)
 	, nvicfiqin_stub("nvicfiqin_stub", this)
 	, nvicfiqin_signal()
 	, nvicirqin_stub("nvicirqin_stub", this)
@@ -84,8 +135,93 @@ PXP(const sc_module_name &name, Object *parent)
 	, nvicirq_signal()
 	, vicvectaddrout_stub("vicvectaddrout_stub", this)
 	, vicvectaddrout_signal()
+	, sic_software_to_sic0_signal()
+	, mmci0b_to_sic1_signal()
+	, mmci1b_to_sic2_signal()
+	, kmi0_to_sic3_signal()
+	, kmi1_to_sic4_signal()
+	, sci1_to_sic5_signal()
+	, uart3_to_sic6_signal()
+	, charlcd_to_sic7_signal()
+	, tspen_to_sic8_signal()
+	, tskeypad_to_sic9_signal()
+	, reserved0_to_sic10_signal()
+	, reserved1_to_sic11_signal()
+	, reserved2_to_sic12_signal()
+	, reserved3_to_sic13_signal()
+	, reserved4_to_sic14_signal()
+	, reserved5_to_sic15_signal()
+	, reserved6_to_sic16_signal()
+	, reserved7_to_sic17_signal()
+	, reserved8_to_sic18_signal()
+	, reserved9_to_sic19_signal()
+	, reserved10_to_sic20_signal()
+	, diskonchip_to_sic21_signal()
+	, mmci0a_to_sic22_signal()
+	, mmci1a_to_sic23_signal()
+	, aaci_to_sic24_signal()
+	, ethernet_to_sic25_signal()
+	, usb_to_sic26_signal()
+	, pci0_to_sic27_signal()
+	, pci1_to_sic28_signal()
+	, pci2_to_sic29_signal()
+	, pci3_to_sic30_signal()
+	, zu206_to_sic21_signal()
+	, zu207_to_sic22_signal()
+	, zu208_to_sic23_signal()
+	, zu209_to_sic24_signal()
+	, zu210_to_sic25_signal()
+	, zu211_to_sic26_signal()
+	, zu212_to_sic27_signal()
+	, zu213_to_sic28_signal()
+	, zu214_to_sic29_signal()
+	, zu215_to_sic30_signal()
+	, zu216_to_sic31_signal()
+	, sic_software_int_stub("sic_software_int_stub", this)
+	, mmci0b_int_stub("mmci0b_int_stub", this)
+	, mmci1b_int_stub("mmci1b_int_stub", this)
+	, kmi0_int_stub("kmi0_int_stub", this)
+	, kmi1_int_stub("kmi1_int_stub", this)
+	, sci1_int_stub("sci1_int_stub", this)
+	, uart3_int_stub("uart3_int_stub", this)
+	, charlcd_int_stub("charlcd_int_stub", this)
+	, tspen_int_stub("tspen_int_stub", this)
+	, tskeypad_int_stub("tskeypad_int_stub", this)
+	, reserved0_int_stub("reserved0_int_stub", this)
+	, reserved1_int_stub("reserved1_int_stub", this)
+	, reserved2_int_stub("reserved2_int_stub", this)
+	, reserved3_int_stub("reserved3_int_stub", this)
+	, reserved4_int_stub("reserved4_int_stub", this)
+	, reserved5_int_stub("reserved5_int_stub", this)
+	, reserved6_int_stub("reserved6_int_stub", this)
+	, reserved7_int_stub("reserved7_int_stub", this)
+	, reserved8_int_stub("reserved8_int_stub", this)
+	, reserved9_int_stub("reserved9_int_stub", this)
+	, reserved10_int_stub("reserved10_int_stub", this)
+	, diskonchip_int_stub("diskonchip_int_stub", this)
+	, mmci0a_int_stub("mmci0a_int_stub", this)
+	, mmci1a_int_stub("mmci1a_int_stub", this)
+	, aaci_int_stub("aaci_int_stub", this)
+	, ethernet_int_stub("ethernet_int_stub", this)
+	, usb_int_stub("usb_int_stub", this)
+	, pci0_int_stub("pci0_int_stub", this)
+	, pci1_int_stub("pci1_int_stub", this)
+	, pci2_int_stub("pci2_int_stub", this)
+	, pci3_int_stub("pci3_int_stub", this)
+	, zu206_int_stub("zu206_int_stub", this)
+	, zu207_int_stub("zu207_int_stub", this)
+	, zu208_int_stub("zu208_int_stub", this)
+	, zu209_int_stub("zu209_int_stub", this)
+	, zu210_int_stub("zu210_int_stub", this)
+	, zu211_int_stub("zu211_int_stub", this)
+	, zu212_int_stub("zu212_int_stub", this)
+	, zu213_int_stub("zu213_int_stub", this)
+	, zu214_int_stub("zu214_int_stub", this)
+	, zu215_int_stub("zu215_int_stub", this)
+	, zu216_int_stub("zu216_int_stub", this)
 	, logger(*this)
 {
+
 	sic["base-addr"]       = 0x10003000UL;
 	eth["base-addr"]       = 0x10010000UL;
 	pic["base-addr"]       = 0x10140000UL;
@@ -162,12 +298,16 @@ PXP(const sc_module_name &name, Object *parent)
 	dt1.timclken1_in_port(sc_to_dt1_signal[1]);
 	sc.timclken1_out_port(sc_to_dt1_signal[2]);
 	dt1.timclken2_in_port(sc_to_dt1_signal[2]);
+	// dt1 interruptions usage:
+	// - timint1 (unused) -> attached to stub timint1_stub_in_port
+	// - timint2 (unused) -> attached to stub timint2_stub_in_port
+	// - timintc -> attached to pic.vicintsource[4]
 	dt1.timint1_out_port(timint1_signal);
 	timint1_in_port(timint1_signal);
 	dt1.timint2_out_port(timint2_signal);
 	timint2_in_port(timint2_signal);
-	dt1.timintc_out_port(timintc12_signal);
-	timintc12_in_port(timintc12_signal);
+	dt1.timintc_out_port(timint12_to_pic4_signal);
+	// timintc12_in_port(timintc12_signal);
 
 	tss.dt2_timclk_out_port(sc_to_dt2_signal[0]);
 	dt2.timclk_in_port(sc_to_dt2_signal[0]);
@@ -175,30 +315,87 @@ PXP(const sc_module_name &name, Object *parent)
 	dt2.timclken1_in_port(sc_to_dt2_signal[1]);
 	sc.timclken3_out_port(sc_to_dt2_signal[2]);
 	dt2.timclken2_in_port(sc_to_dt2_signal[2]);
+	// dt1 interruptions usage:
+	// - timint1 (unused) -> attached to stub timint3_stub_in_port
+	// - timint2 (unused) -> attached to stub timint4_stub_in_port
+	// - timintc -> attached to pic.vicintsource[5]
 	dt2.timint1_out_port(timint3_signal);
 	timint3_in_port(timint3_signal);
 	dt2.timint2_out_port(timint4_signal);
 	timint4_in_port(timint4_signal);
-	dt2.timintc_out_port(timintc34_signal);
-	timintc34_in_port(timintc34_signal);
+	dt2.timintc_out_port(timint34_to_pic5_signal);
+	// timintc34_in_port(timintc34_signal);
 
 	/* PIC connections START */
-	for ( int i = 0; i < 21; i++ )
-	{
-		std::stringstream name;
-		name << "intsource_stub[" << i << "]";
-		intsource_stub[i] = new vic::VICIntSourceStub(name.str().c_str(),
-				this);
-		intsource_stub[i]->vicinttarget(intsource_signal[i]);
-		(*pic.vicintsource[i])(intsource_signal[i]);
-	}
-	/* SIC to PIC connections */
-	for ( int i = 0; i < 11; i++ )
-	{
-		(*sic.sicinttarget[i])(intsource_signal[i + 21]);
-		(*pic.vicintsource[i + 21])(intsource_signal[i + 21]);
-	}
+	// connection list (so do not need stubs)
+	// - 4 (dt1.timintc through timint12_to_pic4_signal)
+	// - 5 (dt2.timintc through timint34_to_pic5_signal)
+	// - 21 (sic.sicinttarget[0] through sic0_to_pic21_signal)
+	// - 22 (sic.sicinttarget[1] through sic1_to_pic22_signal)
+	// - 23 (sic.sicinttarget[2] through sic2_to_pic23_signal)
+	// - 24 (sic.sicinttarget[3] through sic3_to_pic24_signal)
+	// - 25 (sic.sicinttarget[4] through sic4_to_pic25_signal)
+	// - 26 (sic.sicinttarget[5] through sic5_to_pic26_signal)
+	// - 27 (sic.sicinttarget[6] through sic6_to_pic27_signal)
+	// - 28 (sic.sicinttarget[7] through sic7_to_pic28_signal)
+	// - 29 (sic.sicinttarget[8] through sic8_to_pic29_signal)
+	// - 30 (sic.sicinttarget[9] through sic9_to_pic30_signal)
+	// - 31 (sic.sicinttarget[10] through sic10_to_pic31_signal)
+	(*pic.vicintsource[4])(timint12_to_pic4_signal);
+	(*pic.vicintsource[5])(timint34_to_pic5_signal);
+	(*pic.vicintsource[21])(sic0_to_pic21_signal);
+	(*pic.vicintsource[22])(sic1_to_pic22_signal);
+	(*pic.vicintsource[23])(sic2_to_pic23_signal);
+	(*pic.vicintsource[24])(sic3_to_pic24_signal);
+	(*pic.vicintsource[25])(sic4_to_pic25_signal);
+	(*pic.vicintsource[26])(sic5_to_pic26_signal);
+	(*pic.vicintsource[27])(sic6_to_pic27_signal);
+	(*pic.vicintsource[28])(sic7_to_pic28_signal);
+	(*pic.vicintsource[29])(sic8_to_pic29_signal);
+	(*pic.vicintsource[30])(sic9_to_pic30_signal);
+	(*pic.vicintsource[31])(sic10_to_pic31_signal);
+	// and those that need a stub
+	(*pic.vicintsource[0])(wdog_to_pic0_signal);
+	(*pic.vicintsource[1])(software_to_pic1_signal);
+	(*pic.vicintsource[2])(commrx_to_pic2_signal);
+	(*pic.vicintsource[3])(commtx_to_pic3_signal);
+	(*pic.vicintsource[6])(gpio0_to_pic6_signal);
+	(*pic.vicintsource[7])(gpio1_to_pic7_signal);
+	(*pic.vicintsource[8])(gpio2_to_pic8_signal);
+	(*pic.vicintsource[9])(gpio3_to_pic9_signal);
+	(*pic.vicintsource[10])(rtc_to_pic10_signal);
+	(*pic.vicintsource[11])(ssp_to_pic11_signal);
+	(*pic.vicintsource[12])(uart0_to_pic12_signal);
+	(*pic.vicintsource[13])(uart1_to_pic13_signal);
+	(*pic.vicintsource[14])(uart2_to_pic14_signal);
+	(*pic.vicintsource[15])(sci0_to_pic15_signal);
+	(*pic.vicintsource[16])(clcd_to_pic16_signal);
+	(*pic.vicintsource[17])(dma_to_pic17_signal);
+	(*pic.vicintsource[18])(pwrfail_to_pic18_signal);
+	(*pic.vicintsource[19])(mbx_to_pic19_signal);
+	(*pic.vicintsource[20])(gnd_to_pic20_signal);
+	// and the required stubs
+	wdog_int_stub.vicinttarget(wdog_to_pic0_signal);
+	software_int_stub.vicinttarget(software_to_pic1_signal);
+	commrx_int_stub.vicinttarget(commrx_to_pic2_signal);
+	commtx_int_stub.vicinttarget(commtx_to_pic3_signal);
+	gpio0_int_stub.vicinttarget(gpio0_to_pic6_signal);
+	gpio1_int_stub.vicinttarget(gpio1_to_pic7_signal);
+	gpio2_int_stub.vicinttarget(gpio2_to_pic8_signal);
+	gpio3_int_stub.vicinttarget(gpio3_to_pic9_signal);
+	rtc_int_stub.vicinttarget(rtc_to_pic10_signal);
+	ssp_int_stub.vicinttarget(ssp_to_pic11_signal);
+	uart0_int_stub.vicinttarget(uart0_to_pic12_signal);
+	uart1_int_stub.vicinttarget(uart1_to_pic13_signal);
+	uart2_int_stub.vicinttarget(uart2_to_pic14_signal);
+	sci0_int_stub.vicinttarget(sci0_to_pic15_signal);
+	clcd_int_stub.vicinttarget(clcd_to_pic16_signal);
+	dma_int_stub.vicinttarget(dma_to_pic17_signal);
+	pwrfail_int_stub.vicinttarget(pwrfail_to_pic18_signal);
+	mbx_int_stub.vicinttarget(mbx_to_pic19_signal);
+	gnd_int_stub.vicinttarget(gnd_to_pic20_signal);
 	nvicfiqin_stub.vicinttarget(nvicfiqin_signal);
+
 	pic.nvicfiqin(nvicfiqin_signal);
 	nvicirqin_stub.vicinttarget(nvicirqin_signal);
 	pic.nvicirqin(nvicirqin_signal);
@@ -212,24 +409,109 @@ PXP(const sc_module_name &name, Object *parent)
 	/* PIC connections   END */
 
 	/* SIC connections START */
-	for ( int i = 0; i < 31; i++ )
-	{
-		std::stringstream name;
-		name << "sicintsource_stub[" << (i + 1) << "]";
-		sic_intsource_stub[i] = new vic::VICIntSourceStub(name.str().c_str(),
-				this);
-		sic_intsource_stub[i]->vicinttarget(sic_intsource_signal[i]);
-		(*sic.sicintsource[i])(sic_intsource_signal[i]);
-	}
-	for ( int i = 0; i < 11; i++ )
-	{
-		std::stringstream name;
-		name << "sic_ptintsource_stub[" << (i + 21) << "]";
-		sic_ptintsource_stub[i] = new vic::VICIntSourceStub(name.str().c_str(),
-				this);
-		sic_ptintsource_stub[i]->vicinttarget(sic_ptintsource_signal[i]);
-		(*sic.sicptintsource[i])(sic_ptintsource_signal[i]);
-	}
+	// connections to the PIC
+	(*sic.sicinttarget[0])(sic0_to_pic21_signal);
+	(*sic.sicinttarget[1])(sic1_to_pic22_signal);
+	(*sic.sicinttarget[2])(sic2_to_pic23_signal);
+	(*sic.sicinttarget[3])(sic3_to_pic24_signal);
+	(*sic.sicinttarget[4])(sic4_to_pic25_signal);
+	(*sic.sicinttarget[5])(sic5_to_pic26_signal);
+	(*sic.sicinttarget[6])(sic6_to_pic27_signal);
+	(*sic.sicinttarget[7])(sic7_to_pic28_signal);
+	(*sic.sicinttarget[8])(sic8_to_pic29_signal);
+	(*sic.sicinttarget[9])(sic9_to_pic30_signal);
+	(*sic.sicinttarget[10])(sic10_to_pic31_signal);
+
+	// connections to the peripherals
+	(*sic.sicintsource[0])(sic_software_to_sic0_signal);
+	(*sic.sicintsource[1])(mmci0b_to_sic1_signal);
+	(*sic.sicintsource[2])(mmci1b_to_sic2_signal);
+	(*sic.sicintsource[3])(kmi0_to_sic3_signal);
+	(*sic.sicintsource[4])(kmi1_to_sic4_signal);
+	(*sic.sicintsource[5])(sci1_to_sic5_signal);
+	(*sic.sicintsource[6])(uart3_to_sic6_signal);
+	(*sic.sicintsource[7])(charlcd_to_sic7_signal);
+	(*sic.sicintsource[8])(tspen_to_sic8_signal);
+	(*sic.sicintsource[9])(tskeypad_to_sic9_signal);
+	(*sic.sicintsource[10])(reserved0_to_sic10_signal);
+	(*sic.sicintsource[11])(reserved1_to_sic11_signal);
+	(*sic.sicintsource[12])(reserved2_to_sic12_signal);
+	(*sic.sicintsource[13])(reserved3_to_sic13_signal);
+	(*sic.sicintsource[14])(reserved4_to_sic14_signal);
+	(*sic.sicintsource[15])(reserved5_to_sic15_signal);
+	(*sic.sicintsource[16])(reserved6_to_sic16_signal);
+	(*sic.sicintsource[17])(reserved7_to_sic17_signal);
+	(*sic.sicintsource[18])(reserved8_to_sic18_signal);
+	(*sic.sicintsource[19])(reserved9_to_sic19_signal);
+	(*sic.sicintsource[20])(reserved10_to_sic20_signal);
+	(*sic.sicintsource[21])(diskonchip_to_sic21_signal);
+	(*sic.sicintsource[22])(mmci0a_to_sic22_signal);
+	(*sic.sicintsource[23])(mmci1a_to_sic23_signal);
+	(*sic.sicintsource[24])(aaci_to_sic24_signal);
+	(*sic.sicintsource[25])(ethernet_to_sic25_signal);
+	(*sic.sicintsource[26])(usb_to_sic26_signal);
+	(*sic.sicintsource[27])(pci0_to_sic27_signal);
+	(*sic.sicintsource[28])(pci1_to_sic28_signal);
+	(*sic.sicintsource[29])(pci2_to_sic29_signal);
+	(*sic.sicintsource[30])(pci3_to_sic30_signal);
+	// and the required stub connections
+	sic_software_int_stub(sic_software_to_sic0_signal);
+	mmci0b_int_stub(mmci0b_to_sic1_signal);
+	mmci1b_int_stub(mmci1b_to_sic2_signal);
+	kmi0_int_stub(kmi0_to_sic3_signal);
+	kmi1_int_stub(kmi1_to_sic4_signal);
+	sci1_int_stub(sci1_to_sic5_signal);
+	uart3_int_stub(uart3_to_sic6_signal);
+	charlcd_int_stub(charlcd_to_sic7_signal);
+	tspen_int_stub(tspen_to_sic8_signal);
+	tskeypad_int_stub(tskeypad_to_sic9_signal);
+	reserved0_int_stub(reserved0_to_sic10_signal);
+	reserved1_int_stub(reserved1_to_sic11_signal);
+	reserved2_int_stub(reserved2_to_sic12_signal);
+	reserved3_int_stub(reserved3_to_sic13_signal);
+	reserved4_int_stub(reserved4_to_sic14_signal);
+	reserved5_int_stub(reserved5_to_sic15_signal);
+	reserved6_int_stub(reserved6_to_sic16_signal);
+	reserved7_int_stub(reserved7_to_sic17_signal);
+	reserved8_int_stub(reserved8_to_sic18_signal);
+	reserved9_int_stub(reserved9_to_sic19_signal);
+	reserved10_int_stub(reserved10_to_sic20_signal);
+	diskonchip_int_stub(diskonchip_to_sic21_signal);
+	mmci0a_int_stub(mmci0a_to_sic22_signal);
+	mmci1a_int_stub(mmci1a_to_sic23_signal);
+	aaci_int_stub(aaci_to_sic24_signal);
+	ethernet_int_stub(ethernet_to_sic25_signal);
+	usb_int_stub(usb_to_sic26_signal);
+	pci0_int_stub(pci0_to_sic27_signal);
+	pci1_int_stub(pci1_to_sic28_signal);
+	pci2_int_stub(pci2_to_sic29_signal);
+	pci3_int_stub(pci3_to_sic30_signal);
+
+	// connections to the RealView Logic Tile
+	(*sic.sicptintsource[0])(zu206_to_sic21_signal);
+	(*sic.sicptintsource[1])(zu207_to_sic22_signal);
+	(*sic.sicptintsource[2])(zu208_to_sic23_signal);
+	(*sic.sicptintsource[3])(zu209_to_sic24_signal);
+	(*sic.sicptintsource[4])(zu210_to_sic25_signal);
+	(*sic.sicptintsource[5])(zu211_to_sic26_signal);
+	(*sic.sicptintsource[6])(zu212_to_sic27_signal);
+	(*sic.sicptintsource[7])(zu213_to_sic28_signal);
+	(*sic.sicptintsource[8])(zu214_to_sic29_signal);
+	(*sic.sicptintsource[9])(zu215_to_sic30_signal);
+	(*sic.sicptintsource[10])(zu216_to_sic31_signal);
+	// and the required stub connections
+	zu206_int_stub(zu206_to_sic21_signal);
+	zu207_int_stub(zu207_to_sic22_signal);
+	zu208_int_stub(zu208_to_sic23_signal);
+	zu209_int_stub(zu209_to_sic24_signal);
+	zu210_int_stub(zu210_to_sic25_signal);
+	zu211_int_stub(zu211_to_sic26_signal);
+	zu212_int_stub(zu212_to_sic27_signal);
+	zu213_int_stub(zu213_to_sic28_signal);
+	zu214_int_stub(zu214_to_sic29_signal);
+	zu215_int_stub(zu215_to_sic30_signal);
+	zu216_int_stub(zu216_to_sic31_signal);
+	
 	/* SIC connections   END */
 
 	eth_init_socket(eth.bus_target_socket);
