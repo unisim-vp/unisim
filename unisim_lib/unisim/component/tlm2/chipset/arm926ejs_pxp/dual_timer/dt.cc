@@ -132,207 +132,241 @@ bus_target_b_transport(transaction_type &trans,
 	bool is_read = trans.is_read();
 	bool handled = false;
 
+	// check the address range
+	if ( (addr >= 0x01000UL) ||
+			((0x01000L - size) < addr) )
+	{
+		logger << DebugWarning
+			<< "Incorrect access address range:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size;
+		if ( !is_read )
+		{
+			logger << std::endl
+				<< " - data =" << std::hex;
+			for ( unsigned int i = 0; i < size; i++ )
+				logger << " " << (unsigned int)data[i];
+			logger << std::dec;
+		}
+		logger << std::endl
+			<< "Ending transaction with address error."
+			<< EndDebugWarning;
+		// set the tlm error status
+		trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+	}
+
+	// do not accept request that access more than one register, neither accept
+	//   streaming requests
+	// NOTE: this maybe something that might be supported in future versions
+	//       of the module implementation
+	if ( (((addr & 0x03) + size) > 4) || trans.get_streaming_width() ) 
+	{
+		logger << DebugWarning
+			<< "Multiple register access and/or streamed accesses"
+			<< " are not supported:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size;
+		if ( !is_read )
+		{
+			logger << std::endl
+				<< " - data =" << std::hex;
+			for ( unsigned int i = 0; i < size; i++ )
+				logger << " " << (unsigned int)data[i];
+			logger << std::dec;
+		}
+		logger << std::endl
+			<< "Ending transaction with burst error."
+			<< EndDebugWarning;
+		// set the tlm error status
+		trans.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
+	}
+
 	if ( is_read )
 	{
-		if ( (0x01000L - size) >= addr )
-		{
-			/* in some conditions the registers might need to be updated
-			 * for example:
-			 * - when reading Current Value Register, TimerXValue of t1 or t2 and
-			 *     the timer is enabled
-			 *
-			 * To make it simple we update the status of the timers each time
-			 *   a read operation is performed.
-			 */
-			UpdateStatus(delay);
-			memcpy(data, &regs[addr], size);
-			handled = true;
-		}
+		/* in some conditions the registers might need to be updated
+		 * for example:
+		 * - when reading Current Value Register, TimerXValue of t1 or t2 and
+		 *     the timer is enabled
+		 *
+		 * To make it simple we update the status of the timers each time
+		 *   a read operation is performed.
+		 */
+		UpdateStatus(delay);
+		memcpy(data, &regs[addr], size);
+		handled = true;
 	}
 
 	else // it is write
 	{
-		if ( ( 0x01000L - size) >= addr )
+		/* Steps performed when writing:
+		 * 1 - make a copy of destination register before modifying it
+		 * 2 - update register with new data
+		 * 3 - get the value of the new register
+		 * 4 - verify new value of the register and perform required
+		 *     actions
+		 */
+		uint32_t cur_addr = addr & ~(uint32_t)0x03UL;
+		uint32_t prev_value, new_value;
+
+		/* 1 - make a copy of destination register before modifying it
+		 */
+		prev_value = GetRegister(cur_addr);
+
+		/* 2 - update register with new data */
+		memcpy(&regs[addr], data, size);
+
+		/* 3 - get the value of the new register */
+		new_value = GetRegister(cur_addr);
+
+		/* 4 - verify new value of the register and perform required 
+		 *     actions */
+		if ( ( cur_addr == TIMER1CONTROL ) ||
+				( cur_addr == TIMER2CONTROL ) )
 		{
-			uint32_t cur_align = addr % 4;
-			uint32_t index = 0;
-			while ( index < size )
+			uint32_t unmod_value = new_value;
+			new_value = (new_value & ~0xffffff00UL) | 
+				(prev_value & 0xffffff00UL);
+			/* if the new value needed to be fixed rewrite it to the 
+			 *   register */
+			if ( unmod_value != new_value )
 			{
-				/* Steps performed when writing:
-				 * 1 - make a copy of destination register before modifying it
-		 		 * 2 - update register with new data
-				 * 3 - get the value of the new register
-				 * 4 - verify new value of the register and perform required
-				 *     actions
-				 */
-				uint32_t cur_addr = (addr + index) & ~(uint32_t)0x03UL;
-				uint32_t cur_size = (size - index);
-				if ( cur_size > 4 ) cur_size = 4;
-				cur_size -= cur_align;
-				uint32_t prev_value, new_value;
-
-				/* 1 - make a copy of destination register before modifying it
-				 */
-				prev_value = GetRegister(cur_addr);
-
-				/* 2 - update register with new data */
-				memcpy(&regs[addr + index], &data[index], cur_size);
-
-				/* 3 - get the value of the new register */
-				new_value = GetRegister(cur_addr);
-
-				/* 4 - verify new value of the register and perform required 
-				 *     actions */
-				if ( ( cur_addr == TIMER1CONTROL ) ||
-						( cur_addr == TIMER2CONTROL ) )
-				{
-					uint32_t unmod_value = new_value;
-					new_value = (new_value & ~0xffffff00UL) | 
-						(prev_value & 0xffffff00UL);
-					/* if the new value needed to be fixed rewrite it to the 
-					 *   register */
-					if ( unmod_value != new_value )
-					{
-						SetRegister(cur_addr, new_value);
-					}
-					/* if the value did not change no further action is 
-					 *   required */
-					if ( prev_value == new_value )
-					{
-						handled = true;
-					}
-					else 
-					{
-						handled = true;
-						/* if the new value is deactivating the timer nothing
-						 *   needs to be done */
-						if ( (new_value & (uint32_t)0x080UL) == 0 )
-						{
-							if ( (prev_value & (uint32_t)0x080UL) != 0 )
-							{
-								if ( VERBOSE(V0, V_STATUS) )
-									logger << DebugInfo
-										<< "Timer "
-										<< ((cur_addr == TIMER1CONTROL) ?
-												"1" : "2")
-										<< " disabled at "
-										<< (sc_time_stamp() + delay)
-										<< EndDebugInfo;
-							}
-						}
-
-						else
-						{
-							/* if the TimerEn did change from 0 to 1 then set 
-							 *   the update time for t1/t2 */
-							if ( ((prev_value & (uint32_t)0x080) == 0) &&
-									((new_value & (uint32_t)0x080) != 0) )
-							{
-								handled &= true;
-								if ( cur_addr == TIMER1CONTROL )
-									t1_update_time = sc_time_stamp() + delay;
-								else
-									t2_update_time = sc_time_stamp() + delay;
-
-								if ( VERBOSE(V0, V_STATUS) )
-									logger << DebugInfo
-										<< "Timer "
-										<< ((cur_addr == TIMER1CONTROL) ?
-												"1" : "2")
-										<< " enabled at "
-										<< ((cur_addr == TIMER1CONTROL) ?
-												t1_update_time :
-												t2_update_time)
-										<< EndDebugInfo;
-							}
-							else
-							{
-								/* update the value of the TimerXValue if the
-								 *   timer was activated before the access */
-								if ( (prev_value & (uint32_t)0x080) != 0 )
-								{
-									logger << DebugError
-										<< "Update timer " 
-										<< ((cur_addr == TIMER1CONTROL) ?
-												"1" : "2") 
-										<< std::endl
-										<< " - prev value = 0x" << std::hex
-										<< prev_value << std::endl
-										<< " - new value = 0x" 
-										<< new_value << std::dec
-										<< EndDebugError;
-									handled &= false;
-								}
-							}
-							/* if the IntEnable entry is not active no further 
-							 *   action is needed */
-							if ( (new_value & (uint32_t)0x020) == 0 )
-							{
-								handled &= true;
-							}
-							else
-							{
-								logger << DebugError
-									<< "IntEnable activated"
-									<< EndDebugError;
-								handled &= false;
-							}
-						}
-					}
-				}
-
-				else if ( cur_addr == TIMER1LOAD ||
-						cur_addr == TIMER2LOAD )
-				{
-					handled = true;
-					if ( new_value == 0 )
-						logger << DebugWarning
-							<< "Setting "
-							<< ((cur_addr == TIMER1LOAD) ?
-									"TIMER1LOAD" :
-									"TIMER2LOAD")
-							<< " to 0, this might cause continuous interrupts"
-							<< " under certain circumstances"
-							<< EndDebugWarning;
-
-					// update the timer 1/2 value to the new value
-					wait(delay);
-					delay = SC_ZERO_TIME;
-					if ( cur_addr == TIMER1LOAD )
-					{
-						t1_update_time = sc_time_stamp();
-						SetRegister(TIMER1VALUE, new_value);
-					}
-					else
-					{
-						t2_update_time = sc_time_stamp();
-						SetRegister(TIMER2VALUE, new_value);
-					}
-
-				}
-
-				else if ( cur_addr == TIMER1VALUE ||
-						cur_addr == TIMER2VALUE )
-				{
-					handled = true;
-					logger << DebugWarning
-						<< "Trying to write into "
-						<< ((cur_addr == TIMER1LOAD) ?
-									"TIMER1LOAD" :
-									"TIMER2LOAD")
-						<< " which is read-only, ignoring new value (0x"
-						<< std::hex << new_value << std::dec << ") and keeping"
-						<< " the old value (0x"
-						<< std::hex << prev_value << std::dec << ")"
-						<< EndDebugWarning;
-					if ( cur_addr == TIMER1VALUE )
-						SetRegister(TIMER1VALUE, prev_value);
-					else
-						SetRegister(TIMER2VALUE, prev_value);
-				}
-
-				index += cur_size;
+				SetRegister(cur_addr, new_value);
 			}
+			/* if the value did not change no further action is 
+			 *   required */
+			if ( prev_value == new_value )
+			{
+				handled = true;
+			}
+			else 
+			{
+				handled = true;
+				/* if the new value is deactivating the timer nothing
+				 *   needs to be done */
+				if ( (new_value & (uint32_t)0x080UL) == 0 )
+				{
+					if ( (prev_value & (uint32_t)0x080UL) != 0 )
+					{
+						if ( VERBOSE(V0, V_STATUS) )
+							logger << DebugInfo
+								<< "Timer "
+								<< ((cur_addr == TIMER1CONTROL) ?
+										"1" : "2")
+								<< " disabled at "
+								<< (sc_time_stamp() + delay)
+								<< EndDebugInfo;
+					}
+				}
+
+				else
+				{
+					/* if the TimerEn did change from 0 to 1 then set 
+					 *   the update time for t1/t2 */
+					if ( ((prev_value & (uint32_t)0x080) == 0) &&
+							((new_value & (uint32_t)0x080) != 0) )
+					{
+						handled &= true;
+						if ( cur_addr == TIMER1CONTROL )
+							t1_update_time = sc_time_stamp() + delay;
+						else
+							t2_update_time = sc_time_stamp() + delay;
+
+						if ( VERBOSE(V0, V_STATUS) )
+							logger << DebugInfo
+								<< "Timer "
+								<< ((cur_addr == TIMER1CONTROL) ?
+										"1" : "2")
+								<< " enabled at "
+								<< ((cur_addr == TIMER1CONTROL) ?
+										t1_update_time :
+										t2_update_time)
+								<< EndDebugInfo;
+					}
+					else
+					{
+						/* update the value of the TimerXValue if the
+						 *   timer was activated before the access */
+						if ( (prev_value & (uint32_t)0x080) != 0 )
+						{
+							logger << DebugError
+								<< "Update timer " 
+								<< ((cur_addr == TIMER1CONTROL) ?
+										"1" : "2") 
+								<< std::endl
+								<< " - prev value = 0x" << std::hex
+								<< prev_value << std::endl
+								<< " - new value = 0x" 
+								<< new_value << std::dec
+								<< EndDebugError;
+							handled &= false;
+						}
+					}
+					/* if the IntEnable entry is not active no further 
+					 *   action is needed */
+					if ( (new_value & (uint32_t)0x020) == 0 )
+					{
+						handled &= true;
+					}
+					else
+					{
+						logger << DebugError
+							<< "IntEnable activated"
+							<< EndDebugError;
+						handled &= false;
+					}
+				}
+			}
+		}
+
+		else if ( cur_addr == TIMER1LOAD ||
+				cur_addr == TIMER2LOAD )
+		{
+			handled = true;
+			if ( new_value == 0 )
+				logger << DebugWarning
+					<< "Setting "
+					<< ((cur_addr == TIMER1LOAD) ?
+							"TIMER1LOAD" :
+							"TIMER2LOAD")
+					<< " to 0, this might cause continuous interrupts"
+					<< " under certain circumstances"
+					<< EndDebugWarning;
+
+			// update the timer 1/2 value to the new value
+			wait(delay);
+			delay = SC_ZERO_TIME;
+			if ( cur_addr == TIMER1LOAD )
+			{
+				t1_update_time = sc_time_stamp();
+				SetRegister(TIMER1VALUE, new_value);
+			}
+			else
+			{
+				t2_update_time = sc_time_stamp();
+				SetRegister(TIMER2VALUE, new_value);
+			}
+		}
+
+		else if ( cur_addr == TIMER1VALUE ||
+				cur_addr == TIMER2VALUE )
+		{
+			handled = true;
+			logger << DebugWarning
+				<< "Trying to write into "
+				<< ((cur_addr == TIMER1LOAD) ?
+							"TIMER1LOAD" :
+							"TIMER2LOAD")
+				<< " which is read-only, ignoring new value (0x"
+				<< std::hex << new_value << std::dec << ") and keeping"
+				<< " the old value (0x"
+				<< std::hex << prev_value << std::dec << ")"
+				<< EndDebugWarning;
+			if ( cur_addr == TIMER1VALUE )
+				SetRegister(TIMER1VALUE, prev_value);
+			else
+				SetRegister(TIMER2VALUE, prev_value);
 		}
 	}
 
