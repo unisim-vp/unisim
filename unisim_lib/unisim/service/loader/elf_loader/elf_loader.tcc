@@ -202,7 +202,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	int i;
 	bool success = true;
 
-	if(filename.empty()) return true;
+	if(filename.empty())
+	{
+		logger << DebugError << "Don't know which executable file to load. Please specify file to load in parameter " << param_filename.GetName() << EndDebugError;
+		return false;
+	}
 	
 	std::string location = Object::GetSimulator()->SearchSharedDataFile(filename.c_str());
 	
@@ -314,7 +318,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			logger << DebugWarning 
 				<< "More than one loadable segments..."
 				<< "ignoring specified base address"
-				<< " and setting force-base-addr to false" 
+				<< " and setting " << param_force_base_addr.GetName() << " to false" 
 				<< EndDebugWarning;
 			force_base_addr = false;
 		}
