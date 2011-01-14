@@ -62,6 +62,8 @@ DualTimer(const sc_module_name &name, Object *parent)
 	, bus_target_socket("bus_target_socket")
 	, t1_update_time()
 	, t2_update_time()
+	, t1_event()
+	, t2_event()
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
@@ -244,11 +246,17 @@ bus_target_b_transport(transaction_type &trans,
 			{
 				handled = true;
 				/* if the new value is deactivating the timer nothing
-				 *   needs to be done */
+				 *   needs to be done if the interrupts were not enabled,
+				 *   however if the interrupts were enabled the interrupt
+				 *   event should be deactivated */
 				if ( (new_value & (uint32_t)0x080UL) == 0 )
 				{
 					if ( (prev_value & (uint32_t)0x080UL) != 0 )
 					{
+						if ( cur_addr == TIMER1CONTROL )
+							t1_event.cancel();
+						else
+							t2_event.cancel();
 						if ( VERBOSE(V0, V_STATUS) )
 							logger << DebugInfo
 								<< "Timer "
@@ -264,8 +272,7 @@ bus_target_b_transport(transaction_type &trans,
 				{
 					/* if the TimerEn did change from 0 to 1 then set 
 					 *   the update time for t1/t2 */
-					if ( ((prev_value & (uint32_t)0x080) == 0) &&
-							((new_value & (uint32_t)0x080) != 0) )
+					if ( ((prev_value & (uint32_t)0x080) == 0) )
 					{
 						handled &= true;
 						if ( cur_addr == TIMER1CONTROL )
@@ -304,13 +311,25 @@ bus_target_b_transport(transaction_type &trans,
 						}
 					}
 					/* if the IntEnable entry is not active no further 
-					 *   action is needed */
+					 *   action is needed, just deactivate the interrupt
+					 *   events */
 					if ( (new_value & (uint32_t)0x020) == 0 )
 					{
+						if ( cur_addr == TIMER1CONTROL )
+							t1_event.cancel();
+						else
+							t2_event.cancel();
 						handled &= true;
 					}
 					else
 					{
+						// first deactivate any possible interrupt event
+						if ( cur_addr == TIMER1CONTROL )
+							t1_event.cancel();
+						else
+							t2_event.cancel();
+						// set a new event depending on the counter value
+
 						logger << DebugError
 							<< "IntEnable activated"
 							<< EndDebugError;
@@ -492,30 +511,15 @@ void
 DualTimer ::
 UpdateStatus(sc_core::sc_time &delay)
 {
+	// to make things easier synchronize with the engine
 	wait(delay);
 	delay = SC_ZERO_TIME;
-	
-	uint32_t t1_control = 0;
-	memcpy(&t1_control, &regs[0x8], sizeof(t1_control));
-	t1_control = LittleEndian2Host(t1_control);
+
+	// update timer 1
+	uint32_t t1_control = GetRegister(TIMER1CONTROL);
 	if ( t1_control & (uint32_t)0x080 )
 	{
-		uint32_t prescale = (t1_control & (uint32_t)0x0c) >> 2;
-		switch ( prescale )
-		{
-			case 0:
-				prescale = 1; break;
-			case 1: 
-				prescale = 16; break;
-			case 2:
-				prescale = 256; break;
-			default: 
-				logger << DebugWarning
-					<< "Undefined prescale, using 1"
-					<< EndDebugWarning;
-				prescale = 1;
-				break;
-		}
+		uint32_t prescale = GetPrescale(t1_control); 
 		const sc_core::sc_time &cur_time = sc_time_stamp();
 		if ( t1_update_time < cur_time )
 		{
@@ -533,16 +537,72 @@ UpdateStatus(sc_core::sc_time &delay)
 			if ( diff != 0 )
 			{
 				uint32_t t1_current_val = 0;
-				uint32_t t1_new_val = 0;
-				memcpy(&t1_current_val, &regs[0x4], sizeof(t1_current_val));
-				t1_current_val = LittleEndian2Host(t1_current_val);
+				uint32_t t1_new_val = GetRegister(TIMER1VALUE);
 				t1_new_val = t1_current_val - diff;
-				t1_new_val = Host2LittleEndian(t1_new_val);
-				memcpy(&regs[0x4], &t1_new_val, sizeof(t1_new_val));
+				SetRegister(TIMER1VALUE, t1_new_val);
 				t1_update_time = cur_time;
 			} 
 		}
 	}
+
+	// update timer 2
+	uint32_t t2_control = GetRegister(TIMER2CONTROL);
+	if ( t2_control & (uint32_t)0x080 )
+	{
+		uint32_t prescale = GetPrescale(t2_control); 
+		const sc_core::sc_time &cur_time = sc_time_stamp();
+		if ( t2_update_time < cur_time )
+		{
+			sc_core::sc_time diff_time = cur_time - t2_update_time;
+			sc_core::sc_time timclk = 
+				sc_core::sc_time((double)timclk_in_port, SC_PS);
+			sc_core::sc_time timclken2 = 
+				sc_core::sc_time((double)timclken2_in_port, SC_PS);
+			uint64_t tick_time =
+				((double)timclken2_in_port / (double)timclk_in_port) 
+				* prescale * timclk_in_port;
+			sc_core::sc_time tick = 
+				sc_core::sc_time((double)tick_time, SC_PS);
+			uint64_t diff = diff_time / tick;
+			if ( diff != 0 )
+			{
+				uint32_t t2_current_val = 0;
+				uint32_t t2_new_val = GetRegister(TIMER2VALUE);
+				t2_new_val = t2_current_val - diff;
+				SetRegister(TIMER2VALUE, t2_new_val);
+				t2_update_time = cur_time;
+			} 
+		}
+	}
+	
+}
+
+/** Extract prescale from the given control value
+ *
+ * @param value the value of the control register
+ * @return the prescaling value
+ */
+uint32_t
+DualTimer ::
+GetPrescale(uint32_t value)
+{
+	uint32_t prescale = (value & (uint32_t)0x0c) >> 2;
+	switch ( prescale )
+	{
+		case 0:
+			prescale = 1; break;
+		case 1: 
+			prescale = 16; break;
+		case 2:
+			prescale = 256; break;
+		default: 
+			logger << DebugWarning
+				<< "Undefined prescale, using 1"
+				<< EndDebugWarning;
+			prescale = 1;
+			break;
+	}
+	return prescale;
 }
 
 } // end of namespace dual_timer 

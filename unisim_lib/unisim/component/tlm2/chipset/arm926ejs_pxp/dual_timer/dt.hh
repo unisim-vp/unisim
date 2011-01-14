@@ -89,6 +89,12 @@ private:
 	sc_time t1_update_time;
 	/** Timer 2 last update time */
 	sc_time t2_update_time;
+	/** Timer 1 event produced when timer reaches threshold
+	 *  The event only takes place if the interrupts are enabled */
+	sc_event t1_event;
+	/** Timer 2 event produced when timer reaches threshold
+	 *  The event only takes place if the interrupts are enabled */
+	sc_event t2_event;
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the bus connection     START */
@@ -158,6 +164,13 @@ private:
 	 * @param delay the delta time 
 	 */
 	void UpdateStatus(sc_core::sc_time &delay);
+
+	/** Extract prescale from the given control value
+	 *
+	 * @param value the value of the control register
+	 * @return the prescaling value
+	 */
+	uint32_t GetPrescale(uint32_t value);
 
 	/** Base address of the system controller */
 	uint32_t base_addr;
