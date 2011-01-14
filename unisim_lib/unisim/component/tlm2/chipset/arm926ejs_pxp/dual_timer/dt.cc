@@ -516,65 +516,54 @@ UpdateStatus(sc_core::sc_time &delay)
 	delay = SC_ZERO_TIME;
 
 	// update timer 1
-	uint32_t t1_control = GetRegister(TIMER1CONTROL);
-	if ( t1_control & (uint32_t)0x080 )
-	{
-		uint32_t prescale = GetPrescale(t1_control); 
-		const sc_core::sc_time &cur_time = sc_time_stamp();
-		if ( t1_update_time < cur_time )
-		{
-			sc_core::sc_time diff_time = cur_time - t1_update_time;
-			sc_core::sc_time timclk = 
-				sc_core::sc_time((double)timclk_in_port, SC_PS);
-			sc_core::sc_time timclken1 = 
-				sc_core::sc_time((double)timclken1_in_port, SC_PS);
-			uint64_t tick_time =
-				((double)timclken1_in_port / (double)timclk_in_port) 
-				* prescale * timclk_in_port;
-			sc_core::sc_time tick = 
-				sc_core::sc_time((double)tick_time, SC_PS);
-			uint64_t diff = diff_time / tick;
-			if ( diff != 0 )
-			{
-				uint32_t t1_current_val = 0;
-				uint32_t t1_new_val = GetRegister(TIMER1VALUE);
-				t1_new_val = t1_current_val - diff;
-				SetRegister(TIMER1VALUE, t1_new_val);
-				t1_update_time = cur_time;
-			} 
-		}
-	}
+	UpdateTime(TIMER1CONTROL, TIMER1VALUE, timclken1_in_port, t1_update_time);
 
 	// update timer 2
-	uint32_t t2_control = GetRegister(TIMER2CONTROL);
-	if ( t2_control & (uint32_t)0x080 )
+	UpdateTime(TIMER2CONTROL, TIMER2VALUE, timclken1_in_port, t2_update_time);
+	
+}
+
+/** Update the counter
+ *
+ * @param control_addr the timer control register address
+ * @param value_addr the timer counter register address
+ * @param clken the clock enable of the given timer (in picoseconds)
+ * @param update_time when was the timer counter last updated and the new time
+ */
+void
+DualTimer ::
+UpdateTime(uint32_t control_addr, uint32_t value_addr,
+		uint64_t clken,
+		sc_time &update_time)
+{
+	uint32_t control = GetRegister(control_addr);
+	if ( control & (uint32_t)0x080 )
 	{
-		uint32_t prescale = GetPrescale(t2_control); 
+		uint32_t prescale = GetPrescale(control); 
 		const sc_core::sc_time &cur_time = sc_time_stamp();
-		if ( t2_update_time < cur_time )
+		if ( update_time < cur_time )
 		{
-			sc_core::sc_time diff_time = cur_time - t2_update_time;
+			sc_core::sc_time diff_time = cur_time - update_time;
 			sc_core::sc_time timclk = 
 				sc_core::sc_time((double)timclk_in_port, SC_PS);
-			sc_core::sc_time timclken2 = 
-				sc_core::sc_time((double)timclken2_in_port, SC_PS);
-			uint64_t tick_time =
-				((double)timclken2_in_port / (double)timclk_in_port) 
+			sc_core::sc_time timclken = 
+				sc_core::sc_time((double)clken, SC_PS);
+			double tick_time =
+				((double)clken / (double)timclk_in_port) 
 				* prescale * timclk_in_port;
 			sc_core::sc_time tick = 
-				sc_core::sc_time((double)tick_time, SC_PS);
+				sc_core::sc_time(tick_time, SC_PS);
 			uint64_t diff = diff_time / tick;
 			if ( diff != 0 )
 			{
-				uint32_t t2_current_val = 0;
-				uint32_t t2_new_val = GetRegister(TIMER2VALUE);
-				t2_new_val = t2_current_val - diff;
-				SetRegister(TIMER2VALUE, t2_new_val);
-				t2_update_time = cur_time;
+				uint32_t new_val = 0;
+				uint32_t current_val = GetRegister(value_addr);
+				new_val = current_val - diff;
+				SetRegister(value_addr, new_val);
+				update_time = cur_time;
 			} 
 		}
 	}
-	
 }
 
 /** Extract prescale from the given control value

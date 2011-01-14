@@ -165,6 +165,16 @@ private:
 	 */
 	void UpdateStatus(sc_core::sc_time &delay);
 
+	/** Update the counter
+	 *
+	 * @param control_addr the timer control register address
+	 * @param value_addr the timer counter register address
+	 * @param clken the clock enable of the given timer (in picoseconds)
+	 * @param update_time when was the timer counter last updated and the new time
+	 */
+	void UpdateTime(uint32_t control_addr, uint32_t value_addr,
+			uint64_t clken, sc_time &update_time);
+
 	/** Extract prescale from the given control value
 	 *
 	 * @param value the value of the control register
