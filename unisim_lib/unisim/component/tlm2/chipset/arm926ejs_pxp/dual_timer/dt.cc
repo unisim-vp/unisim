@@ -368,6 +368,26 @@ bus_target_b_transport(transaction_type &trans,
 			else
 				SetRegister(TIMER2VALUE, prev_value);
 		}
+
+		else if ( cur_addr == TIMER1BGLOAD ||
+				cur_addr == TIMER2BGLOAD )
+		{
+			handled = true;
+			if ( new_value == 0 )
+				logger << DebugWarning
+					<< "Setting "
+					<< ((cur_addr == TIMER1LOAD) ?
+							"TIMER1BGLOAD" :
+							"TIMER2BGLOAD")
+					<< " to 0, this might cause continuous interrupts"
+					<< " under certain circumstances"
+					<< EndDebugWarning;
+
+			if ( cur_addr == TIMER1BGLOAD )
+				SetRegister(TIMER1LOAD, new_value);
+			else
+				SetRegister(TIMER2LOAD, new_value);
+		}
 	}
 
 	if ( !handled )
