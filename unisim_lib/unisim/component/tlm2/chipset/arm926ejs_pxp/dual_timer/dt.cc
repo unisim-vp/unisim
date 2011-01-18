@@ -38,6 +38,8 @@
 #include "unisim/util/endian/endian.hh"
 #include <inttypes.h>
 #include <assert.h>
+#include <iostream>
+#include <sstream>
 
 namespace unisim {
 namespace component {
@@ -55,10 +57,67 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
+const uint32_t DualTimer::REGS_ADDR_ARRAY[DualTimer::NUMREGS] =
+{
+	TIMER1LOAD, // 1
+	TIMER1VALUE, // 2
+	TIMER1CONTROL, // 3
+	TIMER1INTCLR, // 4
+	TIMER1RIS, // 5
+	TIMER1MIS, // 6
+	TIMER1BGLOAD, // 7
+	TIMER2LOAD, // 8
+	TIMER2VALUE, // 9
+	TIMER2CONTROL, // 10
+	TIMER2INTCLR, // 11
+	TIMER2RIS, // 12
+	TIMER2MIS, // 13
+	TIMER2BGLOAD, // 14
+	TIMERITCR, // 15
+	TIMERITOP, // 16
+	TIMERPERIPHID0, // 17
+	TIMERPERIPHID1, // 18
+	TIMERPERIPHID2, // 19
+	TIMERPERIPHID3, // 20
+	TIMERPCELLID0, // 21
+	TIMERPCELLID1, // 22
+	TIMERPCELLID2, // 23
+	TIMERPCELLID3, // 24
+};
+
+const char *DualTimer::REGS_NAME_ARRAY[DualTimer::NUMREGS] =
+{
+	"timer1load",
+	"timer1value",
+	"timer1control",
+	"timer1intclr",
+	"timer1ris",
+	"timer1mis",
+	"timer1bgload",
+	"timer2load",
+	"timer2value",
+	"timer2control",
+	"timer2intclr",
+	"timer2ris",
+	"timer2mis",
+	"timer2bgload",
+	"timeritcr",
+	"timeritop",
+	"timerperiphid0",
+	"timerperiphid1",
+	"timerperiphid2",
+	"timerperiphid3",
+	"timerpcellid0",
+	"timerpcellid1",
+	"timerpcellid2",
+	"timerpcellid3"
+};
+
 DualTimer ::
 DualTimer(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
+	, unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>()
 	, bus_target_socket("bus_target_socket")
 	, t1_update_time()
 	, t2_update_time()
@@ -67,6 +126,12 @@ DualTimer(const sc_module_name &name, Object *parent)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
+//	, timer1value(this, TIMER1VALUE)
+//	, reg_timer1value("timer1value", this, timer1value,
+//			"TIMER1VALUE register.")
+//	, timer2value(this, TIMER2VALUE)
+//	, reg_timer2value("timer2value", this, timer2value,
+//			"TIMER2VALUE register.")
 	, verbose(0)
 	, param_verbose("verbose", this, verbose,
 			"Verbose level (0 = no verbose).")
@@ -95,11 +160,31 @@ DualTimer(const sc_module_name &name, Object *parent)
 	regs[0xff4] = (uint8_t)0xf0;
 	regs[0xff8] = (uint8_t)0x05;
 	regs[0xffc] = (uint8_t)0xb1;
+	
+	for ( unsigned int i = 0; i < NUMREGS; i++ )
+	{
+		regs_accessor[i] = new
+			unisim::util::generic_peripheral_register::GenericPeripheralWordRegister(
+					this, REGS_ADDR_ARRAY[i]);
+		std::stringstream desc;
+		desc << REGS_NAME_ARRAY[i] << " register.";
+		regs_service[i] = new
+			unisim::kernel::service::Register<unisim::util::generic_peripheral_register::GenericPeripheralWordRegister>(
+					REGS_NAME_ARRAY[i], this, *regs_accessor[i], 
+					desc.str().c_str());
+	}
 }
 
 DualTimer ::
 ~DualTimer()
 {
+	for ( unsigned int i = 0; i < NUMREGS; i++ )
+	{
+		delete regs_service[i];
+		regs_service[i] = 0;
+		delete regs_accessor[i];
+		regs_accessor[i] = 0;
+	}
 }
 
 bool 
@@ -185,17 +270,19 @@ bus_target_b_transport(transaction_type &trans,
 		trans.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
 	}
 
+	/* in some conditions the registers might need to be updated
+	 * for example:
+	 * - when reading Current Value Register, TimerXValue of t1 or t2 and
+	 *     the timer is enabled
+	 *
+	 * To make it simple we update the status of the timers each time
+	 *   a read/write operation is performed.
+	 */
+	UpdateStatus(delay);
+
+	// handle reads
 	if ( is_read )
 	{
-		/* in some conditions the registers might need to be updated
-		 * for example:
-		 * - when reading Current Value Register, TimerXValue of t1 or t2 and
-		 *     the timer is enabled
-		 *
-		 * To make it simple we update the status of the timers each time
-		 *   a read operation is performed.
-		 */
-		UpdateStatus(delay);
 		memcpy(data, &regs[addr], size);
 		handled = true;
 	}
@@ -230,18 +317,21 @@ bus_target_b_transport(transaction_type &trans,
 			uint32_t unmod_value = new_value;
 			new_value = (new_value & ~0xffffff00UL) | 
 				(prev_value & 0xffffff00UL);
+
 			/* if the new value needed to be fixed rewrite it to the 
 			 *   register */
 			if ( unmod_value != new_value )
 			{
 				SetRegister(cur_addr, new_value);
 			}
+
 			/* if the value did not change no further action is 
 			 *   required */
 			if ( prev_value == new_value )
 			{
 				handled = true;
 			}
+
 			else 
 			{
 				handled = true;
@@ -263,7 +353,7 @@ bus_target_b_transport(transaction_type &trans,
 								<< ((cur_addr == TIMER1CONTROL) ?
 										"1" : "2")
 								<< " disabled at "
-								<< (sc_time_stamp() + delay)
+								<< sc_time_stamp()
 								<< EndDebugInfo;
 					}
 				}
@@ -276,9 +366,9 @@ bus_target_b_transport(transaction_type &trans,
 					{
 						handled &= true;
 						if ( cur_addr == TIMER1CONTROL )
-							t1_update_time = sc_time_stamp() + delay;
+							t1_update_time = sc_time_stamp();
 						else
-							t2_update_time = sc_time_stamp() + delay;
+							t2_update_time = sc_time_stamp();
 
 						if ( VERBOSE(V0, V_STATUS) )
 							logger << DebugInfo
@@ -310,30 +400,57 @@ bus_target_b_transport(transaction_type &trans,
 							handled &= false;
 						}
 					}
+
 					/* if the IntEnable entry is not active no further 
 					 *   action is needed, just deactivate the interrupt
 					 *   events */
 					if ( (new_value & (uint32_t)0x020) == 0 )
 					{
-						if ( cur_addr == TIMER1CONTROL )
-							t1_event.cancel();
-						else
-							t2_event.cancel();
+						if ( (prev_value & (uint32_t)0x020) )
+						{
+							if ( VERBOSE(V0, V_STATUS) )
+								logger << DebugInfo
+									<< "Timer "
+									<< ((cur_addr == TIMER1CONTROL) ?
+											"1" : "2")
+									<< " interrupts disabled"
+									<< EndDebugInfo;
+							if ( cur_addr == TIMER1CONTROL )
+								t1_event.cancel();
+							else
+								t2_event.cancel();
+						}
 						handled &= true;
 					}
+
 					else
 					{
-						// first deactivate any possible interrupt event
-						if ( cur_addr == TIMER1CONTROL )
-							t1_event.cancel();
-						else
-							t2_event.cancel();
-						// set a new event depending on the counter value
 
-						logger << DebugError
-							<< "IntEnable activated"
-							<< EndDebugError;
-						handled &= false;
+						if ( (prev_value & (uint32_t)0x020) == 0 )
+						{
+							if ( VERBOSE(V0, V_STATUS) )
+								logger << DebugInfo
+									<< "Timer "
+									<< ((cur_addr == TIMER1CONTROL) ?
+											"1" : "2")
+									<< " interrupts enabled"
+									<< EndDebugInfo;
+							// set a new event depending on the counter value
+							if ( cur_addr == TIMER1CONTROL )
+							{
+								// first deactivate any possible interrupt event
+								t1_event.cancel();
+								uint32_t counter =
+									GetRegister(TIMER1VALUE);
+								// TODO
+							}
+							else
+							{
+								// first deactivate any possible interrupt event
+								t2_event.cancel();
+							}
+						}
+						handled &= true;
 					}
 				}
 			}
@@ -503,6 +620,30 @@ SetRegister(uint32_t addr, uint32_t value)
 	memcpy(data, &value, 4);
 }
 
+/** Get interface for the generic peripheral register interface
+ *
+ * @param addr the address to consider
+ * @return the value of the register pointed by the address
+ */
+uint32_t
+DualTimer ::
+GetPeripheralRegister(uint64_t addr)
+{
+	return GetRegister(addr);
+}
+
+/** Set interface for the generic peripheral register interface
+ *
+ * @param addr the address to consider
+ * @param value the value to set the register to
+ */
+void
+DualTimer ::
+SetPeripheralRegister(uint64_t addr, uint32_t value)
+{
+	SetRegister(addr, value);
+}
+
 /** Update the status of the timer at the given time
  *
  * @param delay the delta time 
@@ -516,10 +657,37 @@ UpdateStatus(sc_core::sc_time &delay)
 	delay = SC_ZERO_TIME;
 
 	// update timer 1
+	uint32_t old_timer;
+	if ( VERBOSE(V0, V_STATUS) )
+		old_timer = GetRegister(TIMER1VALUE);
 	UpdateTime(TIMER1CONTROL, TIMER1VALUE, timclken1_in_port, t1_update_time);
+	if ( VERBOSE(V0, V_STATUS) )
+	{
+		uint32_t new_timer = GetRegister(TIMER1VALUE);
+		if ( old_timer != new_timer)
+			logger << DebugInfo
+				<< "Updated timer 1 value from " << old_timer
+				<< " (0x" << std::hex << old_timer << std::dec << ")"
+				<< " to " << new_timer << " (0x" << std::hex
+				<< new_timer << std::dec << ")"
+				<< EndDebugInfo;
+	}
 
 	// update timer 2
+	if ( VERBOSE(V0, V_STATUS) )
+		old_timer = GetRegister(TIMER2VALUE);
 	UpdateTime(TIMER2CONTROL, TIMER2VALUE, timclken1_in_port, t2_update_time);
+	if ( VERBOSE(V0, V_STATUS) )
+	{
+		uint32_t new_timer = GetRegister(TIMER2VALUE);
+		if ( old_timer != new_timer)
+			logger << DebugInfo
+				<< "Updated timer 1 value from " << old_timer
+				<< " (0x" << std::hex << old_timer << std::dec << ")"
+				<< " to " << new_timer << " (0x" << std::hex
+				<< new_timer << std::dec << ")"
+				<< EndDebugInfo;
+	}
 	
 }
 
@@ -544,13 +712,11 @@ UpdateTime(uint32_t control_addr, uint32_t value_addr,
 		if ( update_time < cur_time )
 		{
 			sc_core::sc_time diff_time = cur_time - update_time;
-			sc_core::sc_time timclk = 
-				sc_core::sc_time((double)timclk_in_port, SC_PS);
-			sc_core::sc_time timclken = 
-				sc_core::sc_time((double)clken, SC_PS);
+			// double tick_time =
+			// 	(((double)clken / (double)timclk_in_port) * prescale) *
+			// 	(double)timclk_in_port;
 			double tick_time =
-				((double)clken / (double)timclk_in_port) 
-				* prescale * timclk_in_port;
+				((double)clken * prescale);
 			sc_core::sc_time tick = 
 				sc_core::sc_time(tick_time, SC_PS);
 			uint64_t diff = diff_time / tick;
@@ -558,12 +724,39 @@ UpdateTime(uint32_t control_addr, uint32_t value_addr,
 			{
 				uint32_t new_val = 0;
 				uint32_t current_val = GetRegister(value_addr);
-				new_val = current_val - diff;
+				if ( diff < current_val )
+				{
+					new_val = current_val - diff;
+				}
+				else
+				{
+					if ( TimerIs16b(control) )
+						new_val = (diff - (uint64_t)current_val) 
+							& 0x0ffffULL;
+					else 
+						new_val = (diff - (uint64_t)current_val) 
+							& 0x0ffffffffULL;
+				}
 				SetRegister(value_addr, new_val);
 				update_time = cur_time;
-			} 
+			}
 		}
 	}
+}
+
+/** Is the timer is 16 bits mode
+ *
+ * Returns true if the timer is in 16 bits mode, false otherwise
+ *
+ * @param control the control register value to use
+ * @retturn true if the timer is in 16 bits mode, false otherwise
+ */
+bool
+DualTimer ::
+TimerIs16b(uint32_t control) const
+{
+	if ( control & 0x02UL ) return false;
+	return true;
 }
 
 /** Extract prescale from the given control value

@@ -33,6 +33,7 @@
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::kernel::logger</dep>
 			<dep>unisim::util::endian</dep>
+			<dep>unisim::util::generic_peripheral_register</dep>
 		</depends>
 	</unit>
 </package>

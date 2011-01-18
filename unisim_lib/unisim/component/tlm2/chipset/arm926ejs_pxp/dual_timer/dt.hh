@@ -35,12 +35,13 @@
 #ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 #define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 
+#include <inttypes.h>
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/passthrough_target_socket.h>
+#include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include <inttypes.h>
 
 namespace unisim {
 namespace component {
@@ -52,6 +53,7 @@ namespace dual_timer {
 class DualTimer
 	: public unisim::kernel::service::Object
 	, public sc_module
+	, public unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>
 {
 public:
 	typedef tlm::tlm_base_protocol_types::tlm_payload_type transaction_type;
@@ -142,6 +144,10 @@ private:
 	static const uint32_t TIMERPCELLID2   = 0x0ff8UL;
 	static const uint32_t TIMERPCELLID3   = 0x0ffcUL;
 
+	static const uint32_t NUMREGS = 24;
+	static const uint32_t REGS_ADDR_ARRAY[NUMREGS];
+	static const char *REGS_NAME_ARRAY[NUMREGS];
+
 	/** Returns the register pointed by the given address
 	 *
 	 * @param addr the address to consider
@@ -154,6 +160,19 @@ private:
 	 * @param value the value to set the register
 	 */
 	void SetRegister(uint32_t addr, uint32_t value);
+
+	/** Get interface for the generic peripheral register interface
+	 *
+	 * @param addr the address to consider
+	 * @return the value of the register pointed by the address
+	 */
+	virtual uint32_t GetPeripheralRegister(uint64_t addr);
+	/** Set interface for the generic peripheral register interface
+	 *
+	 * @param addr the address to consider
+	 * @param value the value to set the register to
+	 */
+	virtual void SetPeripheralRegister(uint64_t addr, uint32_t value);
 
 	/**************************************************************************/
 	/* Registers and accessors                                            END */
@@ -175,6 +194,15 @@ private:
 	void UpdateTime(uint32_t control_addr, uint32_t value_addr,
 			uint64_t clken, sc_time &update_time);
 
+	/** Is the timer is 16 bits mode
+	 *
+	 * Returns true if the timer is in 16 bits mode, false otherwise
+	 *
+	 * @param control the control register value to use
+	 * @retturn true if the timer is in 16 bits mode, false otherwise
+	 */
+	bool TimerIs16b(uint32_t control) const;
+
 	/** Extract prescale from the given control value
 	 *
 	 * @param value the value of the control register
@@ -186,6 +214,15 @@ private:
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the system controller */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+
+	/** Register helpers to use the UNISIM Register service */
+	unisim::util::generic_peripheral_register::GenericPeripheralWordRegister *
+		regs_accessor[NUMREGS];
+	/** UNISIM Registers for the timer registers */
+	unisim::kernel::service::Register<
+		unisim::util::generic_peripheral_register::GenericPeripheralWordRegister
+		> *
+		regs_service[NUMREGS];
 
 	/** Verbose */
 	uint32_t verbose;

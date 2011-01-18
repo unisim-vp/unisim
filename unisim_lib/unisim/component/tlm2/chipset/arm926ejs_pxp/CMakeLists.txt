@@ -6,7 +6,25 @@ include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
 set ( tlm2_pxp_subdirs
 	unisim/kernel
+	unisim/util/endian
+	unisim/util/generic_peripheral_register
 	)
+
+set ( C_INCLUDES inttypes )
+foreach ( C_INCLUDE ${C_INCLUDES} )
+	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
+	if ( NOT HAVE_${C_INCLUDE}_H )
+		message ( SEND_ERROR "Could not find C standard library header \"${C_INCLUDE}.h\"." )
+	endif ( NOT HAVE_${C_INCLUDE}_H )
+endforeach ( C_INCLUDE )
+
+set ( CXX_INCLUDES iostream sstream )
+foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
+	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
+	if ( NOT HAVE_${CXX_INCLUDE} )
+		message ( SEND_ERROR "Could not find C++ STL library \"${CXX_INCLUDE}\"." )
+	endif ( NOT HAVE_${CXX_INCLUDE} )
+endforeach ( CXX_INCLUDE )
 
 foreach ( dir ${tlm2_pxp_subdirs} )
 	unisim_include ( ${dir} )
@@ -63,10 +81,14 @@ set_source_files_properties (
 target_link_libraries ( unisim__component__tlm2__chipset__arm926ejs_pxp
 	${OSCI_SYSTEMC_LIBRARIES} 
 	unisim__kernel
+	unisim__util__endian
+	unisim__util__generic_peripheral_register
 	)
 
 add_dependencies ( unisim__component__tlm2__chipset__arm926ejs_pxp
 	unisim__kernel
+	unisim__util__endian
+	unisim__util__generic_peripheral_register
 	)
 
 message ( STATUS "Checking unisim::component::tlm2::chipset::arm926ejs_pxp - done" )
