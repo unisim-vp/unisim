@@ -126,12 +126,6 @@ DualTimer(const sc_module_name &name, Object *parent)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
-//	, timer1value(this, TIMER1VALUE)
-//	, reg_timer1value("timer1value", this, timer1value,
-//			"TIMER1VALUE register.")
-//	, timer2value(this, TIMER2VALUE)
-//	, reg_timer2value("timer2value", this, timer2value,
-//			"TIMER2VALUE register.")
 	, verbose(0)
 	, param_verbose("verbose", this, verbose,
 			"Verbose level (0 = no verbose).")
