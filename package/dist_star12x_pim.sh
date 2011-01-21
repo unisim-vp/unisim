@@ -130,9 +130,6 @@ unisim/util/endian/endian.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
-unisim/service/debug/gdb_server/gdb_server_32.cc \
-unisim/service/debug/gdb_server/gdb_server_64.cc \
-unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
@@ -158,6 +155,10 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/service/pim/pim.cc \
+unisim/service/pim/pim_server_32.cc \
+unisim/service/pim/pim_server_64.cc \
+unisim/service/pim/pim_server.cc \
+unisim/service/pim/pim_thread.cc \
 unisim/service/pim/network/BlockingQueue.cpp \
 unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
@@ -247,7 +248,6 @@ unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
-unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
@@ -278,6 +278,8 @@ unisim/component/tlm2/processor/hcs12x/atd10b.hh \
 unisim/component/tlm2/processor/hcs12x/crg.hh \
 unisim/component/tlm2/processor/hcs12x/ect.hh \
 unisim/service/pim/pim.hh \
+unisim/service/pim/pim_server.hh \
+unisim/service/pim/pim_thread.hh \
 unisim/service/pim/convert.hh \
 unisim/service/pim/network/BlockingQueue.hpp \
 unisim/service/pim/network/BlockingQueue.tcc \
@@ -310,7 +312,6 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
-unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
@@ -318,7 +319,8 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
-unisim/component/tlm2/processor/hcs12x/atd10b.tcc"
+unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
+unisim/service/pim/pim_server.tcc "
 
 UNISIM_LIB_STAR12X_M4_FILES="\
 m4/cxxabi.m4 \

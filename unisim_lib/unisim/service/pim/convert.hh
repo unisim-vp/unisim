@@ -8,6 +8,8 @@
 #ifndef CONVERT_HH_
 #define CONVERT_HH_
 
+#include <stdint.h>
+
  #include <iostream>
  #include <sstream>
  #include <string>

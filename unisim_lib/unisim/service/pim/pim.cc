@@ -27,16 +27,19 @@ namespace service {
 namespace pim {
 
 using namespace std;
+
 using unisim::kernel::service::VariableBase;
 
-PIM::PIM(const char *name, Simulator *simulator, uint16_t port, char* host, Object *parent) : 
+using unisim::service::pim::PIMThread;
+
+PIM::PIM(const char *name, Object *parent) :
 	Object(name,parent),
 	GenericThread(),
-	fSimulator(simulator),
-	fPort(port),
-	fHost(host),
+	fPort(0),
 	filename("pim.xml"),
 	param_filename("filename", this, filename),
+	param_tcp_port("tcp-port", this, fPort, "TCP/IP port to listen waiting for clients (GDB/PIM) connections"),
+	param_host("host", this, fHost),
 	socketfd(0),
 	target(0)
 { 
@@ -56,18 +59,60 @@ PIM::~PIM() {
 
 }
 
-void PIM::GetExportedVariables(vector<component_t*> &pim) {
+bool PIM::Setup() {
 
-	// Explore Simulator Variables to Generate PIM XML File
+}
+
+void PIM::Run() {
+
+	vector<SocketThread*> protocolHandlers;
+
+	// Start Simulation <-> ToolBox communication
+	target = new PIMThread("pim-thread");
+	protocolHandlers.push_back(target);
+
+	// Open Socket Stream
+	socketfd = new SocketServerThread(fHost, fPort, true, 1);
+//	socketfd = new SocketClientThread(fHost, fPort);
+
+	socketfd->setProtocolHandlers(&protocolHandlers);
+
+	socketfd->start();
+
+	socketfd->join();
+
+	cerr << "PIM connection success " << std::endl;
+
+	target->join();
+
+}
+
+
+// *************************************************************
+
+component_t* PIM::FindComponent(const string name) {
+
+	for (int i=0; i < pim_model.size(); i++) {
+		if (pim_model[i]->name.compare(name) == 0) {
+			return pim_model[i];
+		}
+	}
+
+	return NULL;
+}
+
+void PIM::GeneratePimFile() {
+
+	vector<component_t*> pim;
+
 	std::list<VariableBase *> lst;
 
-	fSimulator->GetRegisters(lst);
+	Simulator::simulator->GetRegisters(lst);
 
 	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
 
 		if (!((VariableBase *) *it)->IsVisible()) continue;
 
-		simulator_variables.push_back((VariableBase *) *it);
 		string var_name(((VariableBase *) *it)->GetName());
 		size_t pos = var_name.find_first_of('.');
 		string component_name = var_name.substr(0, pos);
@@ -88,184 +133,169 @@ void PIM::GetExportedVariables(vector<component_t*> &pim) {
 	}
 
 	lst.clear();
-}
-
-component_t* PIM::FindComponent(const string name) {
-
-	for (int i=0; i < pim_model.size(); i++) {
-		if (pim_model[i]->name.compare(name) == 0) {
-			return pim_model[i];
-		}
-	}
-
-	return NULL;
-}
 
 
-bool PIM::Setup() {
+    int rc;
+    xmlTextWriterPtr writer;
+    xmlChar *tmp;
+    xmlDocPtr doc;
 
-	GetExportedVariables(pim_model);
+    /* Create a new XmlWriter for DOM, with no compression. */
+    writer = xmlNewTextWriterDoc(&doc, 0);
+    if (writer == NULL) {
+        printf("SavePimToXml: Error creating the xml writer\n");
+        return;
+    }
 
-}
+    xmlTextWriterSetIndent(writer, true);
 
-void PIM::Run() {
+    tmp = ConvertInput("    ", DEFAULT_XML_ENCODING);
+    xmlTextWriterSetIndentString(writer, tmp);
 
-	vector<SocketThread*> protocolHandlers;
+    /* Start the document with the xml default for the version,
+     * encoding ISO 8859-1 and the default for the standalone
+     * declaration. */
+    rc = xmlTextWriterStartDocument(writer, NULL, DEFAULT_XML_ENCODING, NULL);
+    if (rc < 0) {
+        printf("SavePimToXml: Error at xmlTextWriterStartDocument\n");
+        return;
+    }
 
-	// Start Simulation <-> ToolBox communication
-//	target = new TargetThread("Target", &simulator_variables, read_write_threads);
-	target = new TargetThread("Target", &simulator_variables);
-	protocolHandlers.push_back(target);
+    /* Start an element named "pim". Since thist is the first
+     * element, this will be the root element of the document. */
+    rc = xmlTextWriterStartElement(writer, BAD_CAST "pim");
+    if (rc < 0) {
+        printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
+        return;
+    }
 
-	// Open Socket Stream
-	socketfd = new SocketServerThread(fHost, fPort, true, 1);
-//	socketfd = new SocketClientThread(fHost, fPort);
+    /* Write a comment as child of "object".
+     * Please observe, that the input to the xmlTextWriter functions
+     * HAS to be in UTF-8, even if the output XML is encoded
+     * in iso-8859-1 */
+    tmp = ConvertInput("This is the PIM of xyz architecture", DEFAULT_XML_ENCODING);
+    rc = xmlTextWriterWriteComment(writer, tmp);
+    if (rc < 0) {
+        printf("SavePimToXml: Error at xmlTextWriterWriteComment\n");
+        return;
+    }
+    if (tmp != NULL) xmlFree(tmp);
 
-	socketfd->setProtocolHandlers(&protocolHandlers);
+	for (int i=0; i < pim.size(); i++) {
 
-	socketfd->start();
+	    /* Start an element named "component" as child of "pim". */
+	    rc = xmlTextWriterStartElement(writer, BAD_CAST "component");
+	    if (rc < 0) {
+	        printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
+	        return;
+	    }
 
-	socketfd->join();
+	    /* Add an attribute with name "name" and value "component_t::name" to "component". */
+	    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST pim[i]->name.c_str());
+	    if (rc < 0) {
+	        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
+	        return;
+	    }
 
-	cerr << "PIM connection success " << std::endl;
+	    /* Write a comment as child of "component" */
+	    tmp = ConvertInput(pim[i]->name.c_str(), DEFAULT_XML_ENCODING);
+	    rc = xmlTextWriterWriteFormatComment(writer, "%s exported interface", tmp);
+	    if (rc < 0) {
+	        printf
+	            ("SavePimToXml: Error at xmlTextWriterWriteFormatComment\n");
+	        return;
+	    }
+	    if (tmp != NULL) xmlFree(tmp);
 
-	target->join();
+	    /* Write an element named "description" as child of "component". */
+	    tmp = ConvertInput(pim[i]->description.c_str(), DEFAULT_XML_ENCODING);
+	    rc = xmlTextWriterWriteFormatElement(writer, BAD_CAST "description", "%s", tmp);
+	    if (rc < 0) {
+	        printf
+	            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
+	        return;
+	    }
+	    if (tmp != NULL) xmlFree(tmp);
 
-}
+		for (int j=0; j < pim[i]->pins.size(); j++) {
 
-TargetThread::TargetThread(char* _name, vector<VariableBase*> *variables) :
-		SocketThread(),
-		name(_name),
-		fVariables(variables)
-{
+		    rc = xmlTextWriterStartElement(writer, BAD_CAST "pin");
+		    if (rc < 0) {
+		        printf
+		            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
+		        return;
+		    }
 
-}
+		    if (pim[i]->pins[j]->IsMutable()) {
+		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "true");
+		    } else {
+		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "false");
+		    }
 
-void TargetThread::Run(){
+		    if (rc < 0) {
+		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
+		        return;
+		    }
 
-	cerr << "PIM::TargetThread start RUN " << std::endl;
+		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "dataType", BAD_CAST pim[i]->pins[j]->GetDataTypeName());
+		    if (rc < 0) {
+		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
+		        return;
+		    }
 
-	while (!super::isTerminated()) {
+			string var_name(pim[i]->pins[j]->GetName());
+			size_t pos = var_name.find_first_of('.');
+			string component_name = var_name.substr(0, pos);
+			string short_var_name = var_name.substr(pos+1);
 
-		char *buffer = receive_packet(blocking);
+		    tmp = ConvertInput(short_var_name.c_str(), DEFAULT_XML_ENCODING);
+		    rc = xmlTextWriterWriteString(writer, tmp);
+		    if (rc < 0) {
+		        printf
+		            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
+		        return;
+		    }
+		    if (tmp != NULL) xmlFree(tmp);
 
-		if (buffer == NULL) {
-			if (blocking) {
-				cerr << "PIM-Target receive **NULL**" << endl;
-				break;
-			} else {
-#ifdef WIN32
-				Sleep(1);
-#else
-				usleep(1000);
-#endif
-				continue;
-			}
-		}
-
-//		cerr << "PIM-Target receive " << buffer << std::endl;
-
-		if (!super::isTerminated()) {
-
-			string buf_str(buffer);
-
-// qRcmd,cmd:var_name:value
-			int start_index = 0;
-			int end_index = buf_str.find(',');
-			string qRcmd = buf_str.substr(start_index, end_index-start_index);
-
-			start_index = end_index+1;
-
-			end_index = buf_str.find(':', start_index);
-			string cmd = buf_str.substr(start_index, end_index-start_index);
-			start_index = end_index+1;
-
-			if (cmd.compare("read") == 0) {
-
-				end_index = buf_str.find(':', start_index);
-				string name = buf_str.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
-
-				for (int i=0; i < fVariables->size(); i++) {
-					if (name.compare((*fVariables)[i]->GetName()) == 0) {
-
-						std::ostringstream os;
-						os << (*fVariables)[i]->GetName() << ":";
-
-						double val = *((*fVariables)[i]);
-						os << stringify(val);
-
-						std::string str = os.str();
-
-						const char *bstr = str.c_str();
-
-//						cerr << name << " send: " << bstr << endl;
-
-						while (true) {
-							if (!send_packet(bstr, blocking)) {
-								if (blocking) {
-									cerr << "PIM-Target unable to send !" << endl;
-								} else {
-#ifdef WIN32
-									Sleep(1);
-#else
-									usleep(1000);
-#endif
-									continue;
-								}
-
-							}
-							break;
-						}
-
-						os.str(std::string());
-
-						break;
-					}
-				}
-
-			} else if (cmd.compare("write") == 0) {
-
-				end_index = buf_str.find(':');
-				string name = buf_str.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
-
-				string value = buf_str.substr(start_index);
-
-				for (int i=0; i < fVariables->size(); i++) {
-					if (name.compare((*fVariables)[i]->GetName()) == 0) {
-
-						*((*fVariables)[i]) = convertTo<double>(value);
-						break;
-					}
-				}
-
-			} else {
-				cerr << "PIM-Target UNKNOWN command => " << buffer << std::endl;
-			}
+		    /* Close the element named "pin". */
+		    rc = xmlTextWriterEndElement(writer);
+		    if (rc < 0) {
+		        printf("SavePimToXml: Error at xmlTextWriterEndElement\n");
+		        return;
+		    }
 
 		}
 
-		if (buffer != NULL) {
-			free(buffer);
-			buffer = NULL;
-		}
+	    /* Close the element named "component". */
+	    rc = xmlTextWriterEndElement(writer);
+	    if (rc < 0) {
+	        printf("SavePimToXml: Error at xmlTextWriterEndElement\n");
+	        return;
+	    }
 
 	}
 
-}
 
-// *************************************************************
+    /* Here we could close the elements "component" and "pim" using the
+     * function xmlTextWriterEndElement, but since we do not want to
+     * write any other elements, we simply call xmlTextWriterEndDocument,
+     * which will do all the work. */
 
-void PIM::GeneratePimFile() {
+    /* Close the element named "pim".
+     * we simply call xmlTextWriterEndDocument, which close all elements and the document
+     */
 
-	stringstream pimfile;
+    rc = xmlTextWriterEndDocument(writer);
+    if (rc < 0) {
+        printf("SavePimToXml: Error at xmlTextWriterEndDocument\n");
+        return;
+    }
 
-	pimfile << filename;
+    xmlFreeTextWriter(writer);
 
-	GetExportedVariables(pim_model);
+    xmlSaveFileEnc(filename.c_str(), doc, DEFAULT_XML_ENCODING);
 
-	SavePimToXml(pim_model, pimfile.str());
+    xmlFreeDoc(doc);
 
 }
 
@@ -328,232 +358,9 @@ PIM::ConvertInput(const char *in, const char *encoding)
     return out;
 }
 
-/**
- * testXmlwriterDoc:
- * @file: the output file
- *
- * test the xmlWriter interface when creating a new document
- */
-void PIM::SavePimToXml(vector<component_t*> &pim, const string file)
-{
-    int rc;
-    xmlTextWriterPtr writer;
-    xmlChar *tmp;
-    xmlDocPtr doc;
-
-
-    /* Create a new XmlWriter for DOM, with no compression. */
-    writer = xmlNewTextWriterDoc(&doc, 0);
-    if (writer == NULL) {
-        printf("SavePimToXml: Error creating the xml writer\n");
-        return;
-    }
-
-    xmlTextWriterSetIndent(writer, true);
-
-    tmp = ConvertInput("    ", DEFAULT_XML_ENCODING);
-    xmlTextWriterSetIndentString(writer, tmp);
-
-    /* Start the document with the xml default for the version,
-     * encoding ISO 8859-1 and the default for the standalone
-     * declaration. */
-    rc = xmlTextWriterStartDocument(writer, NULL, DEFAULT_XML_ENCODING, NULL);
-    if (rc < 0) {
-        printf("SavePimToXml: Error at xmlTextWriterStartDocument\n");
-        return;
-    }
-
-    /* Start an element named "pim". Since thist is the first
-     * element, this will be the root element of the document. */
-    rc = xmlTextWriterStartElement(writer, BAD_CAST "pim");
-    if (rc < 0) {
-        printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
-        return;
-    }
-
-    /* Write a comment as child of "object".
-     * Please observe, that the input to the xmlTextWriter functions
-     * HAS to be in UTF-8, even if the output XML is encoded
-     * in iso-8859-1 */
-    tmp = ConvertInput("This is the PIM of xyz architecture", DEFAULT_XML_ENCODING);
-    rc = xmlTextWriterWriteComment(writer, tmp);
-    if (rc < 0) {
-        printf("SavePimToXml: Error at xmlTextWriterWriteComment\n");
-        return;
-    }
-    if (tmp != NULL) xmlFree(tmp);
-
-	for (int i=0; i < pim_model.size(); i++) {
-
-	    /* Start an element named "component" as child of "pim". */
-	    rc = xmlTextWriterStartElement(writer, BAD_CAST "component");
-	    if (rc < 0) {
-	        printf("SavePimToXml: Error at xmlTextWriterStartElement\n");
-	        return;
-	    }
-
-	    /* Add an attribute with name "name" and value "component_t::name" to "component". */
-	    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "name", BAD_CAST pim_model[i]->name.c_str());
-	    if (rc < 0) {
-	        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
-	        return;
-	    }
-
-	    /* Write a comment as child of "component" */
-	    tmp = ConvertInput(pim_model[i]->name.c_str(), DEFAULT_XML_ENCODING);
-	    rc = xmlTextWriterWriteFormatComment(writer, "%s exported interface", tmp);
-	    if (rc < 0) {
-	        printf
-	            ("SavePimToXml: Error at xmlTextWriterWriteFormatComment\n");
-	        return;
-	    }
-	    if (tmp != NULL) xmlFree(tmp);
-
-	    /* Write an element named "description" as child of "component". */
-	    tmp = ConvertInput(pim_model[i]->description.c_str(), DEFAULT_XML_ENCODING);
-	    rc = xmlTextWriterWriteFormatElement(writer, BAD_CAST "description", "%s", tmp);
-	    if (rc < 0) {
-	        printf
-	            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
-	        return;
-	    }
-	    if (tmp != NULL) xmlFree(tmp);
-
-		for (int j=0; j < pim_model[i]->pins.size(); j++) {
-
-		    rc = xmlTextWriterStartElement(writer, BAD_CAST "pin");
-		    if (rc < 0) {
-		        printf
-		            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
-		        return;
-		    }
-
-		    if (pim_model[i]->pins[j]->IsMutable()) {
-		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "true");
-		    } else {
-		    	rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "isMutable", BAD_CAST "false");
-		    }
-
-		    if (rc < 0) {
-		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
-		        return;
-		    }
-
-		    rc = xmlTextWriterWriteAttribute(writer, BAD_CAST "dataType", BAD_CAST pim_model[i]->pins[j]->GetDataTypeName());
-		    if (rc < 0) {
-		        printf("SavePimToXml: Error at xmlTextWriterWriteAttribute\n");
-		        return;
-		    }
-
-			string var_name(pim_model[i]->pins[j]->GetName());
-			size_t pos = var_name.find_first_of('.');
-			string component_name = var_name.substr(0, pos);
-			string short_var_name = var_name.substr(pos+1);
-
-		    tmp = ConvertInput(short_var_name.c_str(), DEFAULT_XML_ENCODING);
-		    rc = xmlTextWriterWriteString(writer, tmp);
-		    if (rc < 0) {
-		        printf
-		            ("SavePimToXml: Error at xmlTextWriterWriteFormatElement\n");
-		        return;
-		    }
-		    if (tmp != NULL) xmlFree(tmp);
-
-		    /* Close the element named "pin". */
-		    rc = xmlTextWriterEndElement(writer);
-		    if (rc < 0) {
-		        printf("SavePimToXml: Error at xmlTextWriterEndElement\n");
-		        return;
-		    }
-
-		}
-
-	    /* Close the element named "component". */
-	    rc = xmlTextWriterEndElement(writer);
-	    if (rc < 0) {
-	        printf("SavePimToXml: Error at xmlTextWriterEndElement\n");
-	        return;
-	    }
-
-	}
-
-
-    /* Here we could close the elements "component" and "pim" using the
-     * function xmlTextWriterEndElement, but since we do not want to
-     * write any other elements, we simply call xmlTextWriterEndDocument,
-     * which will do all the work. */
-
-    /* Close the element named "pim".
-     * we simply call xmlTextWriterEndDocument, which close all elements and the document
-     */
-
-    rc = xmlTextWriterEndDocument(writer);
-    if (rc < 0) {
-        printf("SavePimToXml: Error at xmlTextWriterEndDocument\n");
-        return;
-    }
-
-    xmlFreeTextWriter(writer);
-
-    xmlSaveFileEnc(file.c_str(), doc, DEFAULT_XML_ENCODING);
-
-    xmlFreeDoc(doc);
-}
-
-
 // **************************************************************
 
-void PIM::LoadPimFile() {
-
-	stringstream pimfile;
-
-	pimfile << filename;
-
-	LoadPimFromXml(pim_model, filename);
-
-}
-
-void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
-
-	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
-		cerr << "Error: Can't parse " << componentNode->name << endl;
-		return;
-	}
-
-	std::list<VariableBase *> lst;
-
-	fSimulator->GetRegisters(lst);
-
-	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
-
-	xmlNodePtr 	componentChild = componentNode->xmlChildrenNode;
-	while (componentChild != NULL) {
-		if (!xmlStrcmp(componentChild->name, (const xmlChar *)"pin")) {
-
-			string onePinName = string((char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1));
-
-			onePinName = component->name + "." + onePinName;
-
-			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
-				if (strcmp(((VariableBase *) *it)->GetName(), onePinName.c_str()) == 0) {
-					component->pins.push_back((VariableBase *) *it);
-
-					break;
-				}
-			}
-
-
-		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"description"))) {
-			component->description = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
-		}
-
-		componentChild = componentChild->next;
-	}
-
-	return;
-}
-
-int PIM::LoadPimFromXml(vector<component_t*> &pim, const string filename) {
+int PIM::LoadPimFile() {
 
 	const char *path = "//component";
 
@@ -595,6 +402,47 @@ int PIM::LoadPimFromXml(vector<component_t*> &pim, const string filename) {
 	xmlFreeDoc(doc);
 
 	return (result);
+
+}
+
+void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
+
+	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
+		cerr << "Error: Can't parse " << componentNode->name << endl;
+		return;
+	}
+
+	std::list<VariableBase *> lst;
+
+	Simulator::simulator->GetRegisters(lst);
+
+	component->name = string((char*) xmlGetProp(componentNode, (const xmlChar *)"name"));
+
+	xmlNodePtr 	componentChild = componentNode->xmlChildrenNode;
+	while (componentChild != NULL) {
+		if (!xmlStrcmp(componentChild->name, (const xmlChar *)"pin")) {
+
+			string onePinName = string((char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1));
+
+			onePinName = component->name + "." + onePinName;
+
+			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+				if (strcmp(((VariableBase *) *it)->GetName(), onePinName.c_str()) == 0) {
+					component->pins.push_back((VariableBase *) *it);
+
+					break;
+				}
+			}
+
+
+		} else if ((!xmlStrcmp(componentChild->name, (const xmlChar *)"description"))) {
+			component->description = (char*) xmlNodeListGetString(doc, componentChild->xmlChildrenNode, 1);
+		}
+
+		componentChild = componentChild->next;
+	}
+
+	return;
 }
 
 

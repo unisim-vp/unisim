@@ -27,12 +27,11 @@
 #include <unisim/service/pim/convert.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
+#include <unisim/service/pim/network/SocketThread.hpp>
 #include <unisim/service/pim/network/SocketServerThread.hpp>
 #include <unisim/service/pim/network/SocketClientThread.hpp>
+#include <unisim/service/pim/pim_thread.hh>
 
-
-// 127.0.0.1 is the default localhost-name
-#define DEFAULT_HOST	"127.0.0.1"
 #define DEFAULT_XML_ENCODING "ISO-8859-1"	// UTF-8 , ISO-8859-1
 
 namespace unisim {
@@ -67,33 +66,32 @@ class PIM : public Object, public GenericThread
 {
 public:
 
-	PIM(const char *name, Simulator *simulator, uint16_t port, char* host = DEFAULT_HOST, Object *parent = 0);
+	PIM(const char *name, Object *parent = 0);
 
 	~PIM();
 	virtual bool Setup();
 	virtual void Run();
 	void GeneratePimFile();
-	void LoadPimFile();
+	int LoadPimFile();
 	void getAllVariables(vector<VariableBase*> *variables);
 
 private:
-	Simulator *fSimulator;
+
 	uint16_t fPort;
-	char* fHost;
+	string fHost;
 
 	vector<component_t*> pim_model;
-	vector<VariableBase*> simulator_variables;
+
+	Parameter<uint16_t> param_tcp_port;
+	Parameter<string> param_host;
 
 	string				filename;
 	Parameter<string>	param_filename;
 
 	void ParseComponent (xmlDocPtr doc, xmlNodePtr cur, component_t *component);
-	int LoadPimFromXml(vector<component_t*> &pim, const string filename);
 	component_t* FindComponent(const string name);
 
-	void GetExportedVariables(vector<component_t*> &pim);
 	xmlChar *ConvertInput(const char *in, const char *encoding);
-	void SavePimToXml(vector<component_t*> &pim, const string filename);
 
 	SocketServerThread *socketfd;
 //	SocketClientThread *socketfd;
@@ -101,20 +99,6 @@ private:
 	SocketThread *target;
 
 };
-
-class TargetThread : public SocketThread {
-public:
-	TargetThread(char* _name, vector<VariableBase*> *variables);
-
-	virtual void Run();
-	virtual string getProtocol() { return "PIM"; }
-
-private:
-	char* name;
-	vector<VariableBase*> *fVariables;
-
-};
-
 
 } // end pim
 } // end service

@@ -27,7 +27,7 @@ public:
 
 	// Protocol list "NONE", "GDB", "PIM"
 
-	SocketThread(char* host, uint16_t port, bool _blocking);
+	SocketThread(string host, uint16_t port, bool _blocking);
 	SocketThread();
 
 	~SocketThread();
@@ -38,6 +38,9 @@ public:
 	virtual bool send_packet(const char* data, bool blocking);
 	virtual char* receive_packet(bool blocking);
 	virtual string getProtocol() { return "NONE"; }
+
+	void SetSockfd(int sockfd);
+	void waitConnection();
 
 protected:
 
@@ -51,9 +54,13 @@ protected:
 	 *
 	 *  e.g. in_addr_t serv_addr = name_resolve("127.0.0.1");
 	 */
-	uint32_t name_resolve(char *host_name);
+	uint32_t name_resolve(const char *host_name);
 
 	void getChar(char& c, bool blocking);
+
+	pthread_mutex_t sockfd_mutex;
+	pthread_mutex_t sockfd_condition_mutex;
+	pthread_cond_t  sockfd_condition_cond;
 
 private:
 	int input_buffer_size;

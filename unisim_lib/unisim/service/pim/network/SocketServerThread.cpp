@@ -35,7 +35,7 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketServerThread::SocketServerThread(char* host, uint16_t port, bool _blocking, uint8_t connection_req_nb) :
+SocketServerThread::SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb) :
 	SocketThread(host, port, _blocking)
 {
 	request_nbre = connection_req_nb;
@@ -133,15 +133,33 @@ bool SocketServerThread::bindHandler(int sockfd) {
 
 	char* protocol = receive_packet(true);
 
-	SocketThread *target = protocolHandlers->at(0);
+
+	SocketThread *target1 = protocolHandlers->at(0);
+	SocketThread *target2 = protocolHandlers->at(1);
+
 	bool found = false;
-	if (target->getProtocol().compare(protocol) == 0) {
+	if (target1->getProtocol().compare(protocol) == 0) {
 		if (!send_packet("ACK", true)) {
 			cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
 			return false;
 		}
 
 		found = true;
+		char* ack = receive_packet(true);
+
+		target1->Start(sockfd, blocking);
+
+	} else if (target2->getProtocol().compare(protocol) == 0) {
+		if (!send_packet("ACK", true)) {
+			cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
+			return false;
+		}
+
+		found = true;
+		char* ack = receive_packet(true);
+
+		target2->Start(sockfd, blocking);
+
 	} else {
 		if (!send_packet("NACK", true)) {
 			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
@@ -149,11 +167,6 @@ bool SocketServerThread::bindHandler(int sockfd) {
 		}
 	}
 
-	char* ack = receive_packet(true);
-
-	if (found) {
-		target->Start(sockfd, blocking);
-	}
 
 }
 

@@ -43,7 +43,7 @@
 
 #include <unisim/kernel/service/service.hh>
 
-#include <unisim/service/debug/gdb_server/gdb_server.hh>
+#include <unisim/service/pim/pim_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <unisim/service/interfaces/loader.hh>
@@ -75,6 +75,10 @@
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 
 #include <unisim/service/pim/pim.hh>
+#include <unisim/service/pim/pim_thread.hh>
+#include <unisim/service/pim/network/GenericThread.hpp>
+#include <unisim/service/pim/network/SocketThread.hpp>
+#include <unisim/service/pim/network/SocketServerThread.hpp>
 
 #include "xml_atd_pwm_stub.hh"
 
@@ -120,7 +124,7 @@ using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::service::loader::s19_loader::S19_Loader;
-using unisim::service::debug::gdb_server::GDBServer;
+using unisim::service::pim::PIMGDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -129,9 +133,22 @@ using unisim::kernel::service::VariableBase;
 using unisim::service::interfaces::Loader;
 
 using unisim::service::pim::PIM;
+using unisim::service::pim::PIMThread;
+using unisim::service::pim::network::GenericThread;
+using unisim::service::pim::network::SocketThread;
+using unisim::service::pim::network::SocketServerThread;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
+private:
+	//=========================================================================
+	//===                       Constants definitions                       ===
+	//=========================================================================
+
+	typedef unisim::component::cxx::processor::hcs12x::physical_address_t CPU_ADDRESS_TYPE;
+	typedef uint64_t MEMORY_ADDRESS_TYPE;
+	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
+
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
@@ -142,14 +159,57 @@ public:
 	void GeneratePim() { pim->GeneratePimFile(); };
 
 protected:
-private:
-	//=========================================================================
-	//===                       Constants definitions                       ===
-	//=========================================================================
 
-	typedef unisim::component::cxx::processor::hcs12x::physical_address_t CPU_ADDRESS_TYPE;
-	typedef uint64_t MEMORY_ADDRESS_TYPE;
-	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
+	class SimulatorThread : public GenericThread {
+	public:
+
+		SimulatorThread(Simulator *pp) : GenericThread(), parentSimulator(pp) {}
+		virtual void Run() {
+
+			vector<SocketThread*> protocolHandlers;
+
+			// Start Simulation <-> ToolBox communication
+			parentSimulator->target = new PIMThread("pim-thread");
+			protocolHandlers.push_back(parentSimulator->target);
+
+			protocolHandlers.push_back(parentSimulator->gdb_server);
+
+			// Open Socket Stream
+			parentSimulator->socketfd = new SocketServerThread(parentSimulator->gdb_server->GetHost(), parentSimulator->gdb_server->GetTCPPort(), true, 2);
+
+			parentSimulator->socketfd->setProtocolHandlers(&protocolHandlers);
+
+			parentSimulator->socketfd->start();
+
+			parentSimulator->gdb_server->waitConnection();
+			parentSimulator->InternalRun();
+
+			parentSimulator->socketfd->join();
+
+			cerr << "PIM connection success " << std::endl;
+
+			parentSimulator->gdb_server->join();
+			parentSimulator->target->join();
+
+		}
+
+	private:
+		Simulator *parentSimulator;
+
+	};
+
+	PIMGDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+
+	SimulatorThread *sim;
+
+	SocketServerThread *socketfd;
+
+	SocketThread *target;
+	SocketThread *pimServerThread;
+
+	void InternalRun();
+
+private:
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -239,7 +299,7 @@ private:
 	PIM *pim;
 
 	//  - GDB server
-	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+//	PIMGDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
 	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger;
 	//  - SystemC Time
@@ -303,6 +363,8 @@ Simulator::Simulator(int argc, char **argv)
 		std::cerr << "filename=\"" << filename << "\"" << std::endl;
 	}
 
+	sim = new SimulatorThread(this);
+
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -355,10 +417,10 @@ Simulator::Simulator(int argc, char **argv)
 		loaderELF = new Elf32Loader("elf32-loader");
 	}
 
-	pim = new PIM("PIM", this, 1234);
+	pim = new PIM("pim");
 
 	//  - GDB server
-	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new PIMGDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
@@ -587,9 +649,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//===                      Service run-time configuration               ===
 	//=========================================================================
 
+	simulator->SetVariable("pim.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+	simulator->SetVariable("pim.tcp-port", 1234);
+	simulator->SetVariable("pim.filename", "pim.xml");
+
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("gdb-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	simulator->SetVariable("S19_Loader.filename", filename);
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
@@ -709,8 +776,8 @@ void Simulator::Stop(Object *object, int _exit_status)
 	wait();
 }
 
-void Simulator::Run()
-{
+void Simulator::InternalRun() {
+
 	// If no filename has been specified, abort simulation
 	if(filename.empty())
 	{
@@ -751,8 +818,6 @@ void Simulator::Run()
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 	}
 
-	pim->start();
-
 	try
 	{
 		sc_start();
@@ -787,6 +852,14 @@ void Simulator::Run()
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+
+}
+
+void Simulator::Run()
+{
+	sim->start();
+	sim->join();
+
 }
 
 int sc_main(int argc, char *argv[])

@@ -36,7 +36,7 @@ namespace service {
 namespace pim {
 namespace network {
 
-uint32_t SocketThread::name_resolve(char *host_name)
+uint32_t SocketThread::name_resolve(const char *host_name)
 {
 	struct in_addr addr;
 	struct hostent *host_ent;
@@ -52,11 +52,11 @@ uint32_t SocketThread::name_resolve(char *host_name)
 	return (addr.s_addr);
 }
 
-SocketThread::SocketThread(char* host, uint16_t port, bool _blocking) :
+SocketThread::SocketThread(string host, uint16_t port, bool _blocking) :
 		GenericThread(),
 		hostname(0),
 		hostport(0),
-		sockfd(0),
+		sockfd(-1),
 		blocking(_blocking),
 		input_buffer_size(0),
 		input_buffer_index(0),
@@ -64,7 +64,7 @@ SocketThread::SocketThread(char* host, uint16_t port, bool _blocking) :
 
 
 {
-	hostname = name_resolve(host);
+	hostname = name_resolve(host.c_str());
 	hostport = port;
 
 	input_buffer = (char*) malloc(MAXDATASIZE+1);
@@ -75,13 +75,17 @@ SocketThread::SocketThread() :
 				GenericThread(),
 				hostname(0),
 				hostport(0),
-				sockfd(0),
+				sockfd(-1),
 				blocking(true),
 				input_buffer_size(0),
 				input_buffer_index(0),
 				input_buffer(NULL)
 
 {
+	pthread_mutex_init (&sockfd_mutex, NULL);
+	pthread_mutex_init (&sockfd_condition_mutex, NULL);
+	pthread_cond_init (&sockfd_condition_cond, NULL);
+
 	input_buffer = (char*) malloc(MAXDATASIZE+1);
 
 }
@@ -100,10 +104,38 @@ SocketThread::~SocketThread() {
 
 void SocketThread::Start(int sockfd, bool _blocking) {
 
-	this->sockfd = sockfd;
 	this->blocking = _blocking;
+	SetSockfd(sockfd);
 
 	this->start();
+}
+
+void SocketThread::SetSockfd(int sockfd) {
+
+    pthread_mutex_lock( &sockfd_condition_mutex );
+
+    pthread_mutex_lock( &sockfd_mutex );
+
+	this->sockfd = sockfd;
+
+    pthread_mutex_unlock( &sockfd_mutex );
+
+    pthread_cond_signal( &sockfd_condition_cond );
+
+    pthread_mutex_unlock( &sockfd_condition_mutex );
+
+}
+
+void SocketThread::waitConnection() {
+
+	pthread_mutex_lock( &sockfd_condition_mutex );
+
+	if (sockfd == -1) {
+		pthread_cond_wait( &sockfd_condition_cond, &sockfd_condition_mutex );
+	}
+
+	pthread_mutex_unlock( &sockfd_condition_mutex );
+
 }
 
 bool SocketThread::send_packet(const char* data, bool blocking) {
@@ -133,6 +165,8 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 
 	dd[pos+2] = Nibble2HexChar(checksum >> 4);
 	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
+
+	waitConnection();
 
 	int dd_size = strlen(dd);
 	int index = 0;
@@ -282,6 +316,8 @@ void SocketThread::getChar(char& c, bool blocking) {
 	int err;
 
 	int n;
+
+	waitConnection();
 
 	while (input_buffer_size == 0) {
 		waitd.tv_sec = 0;
