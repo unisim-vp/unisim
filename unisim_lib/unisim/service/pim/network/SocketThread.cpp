@@ -203,7 +203,11 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 
 			int n;
 
+#ifdef WIN32
+			n = send(sockfd, dd+index, dd_size, 0)
+#else
 			n = write(sockfd, dd+index, dd_size);
+#endif
 			if (n <= 0) {
 				int array[] = {sockfd};
 				error(array, "ERROR writing to socket");
@@ -213,7 +217,7 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 			}
 
 		} else {
-			cerr << dd << "  kfsdmfkljsdf" << endl;
+
 			if (blocking) {
 #ifdef WIN32
 				Sleep(1);
@@ -352,7 +356,11 @@ void SocketThread::getChar(char& c, bool blocking) {
 
 			memset(input_buffer, 0, sizeof(input_buffer));
 
+#ifdef WIN32
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0)
+#else
 			n = read(sockfd, input_buffer, MAXDATASIZE);
+#endif
 			if (n <= 0)	{
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");

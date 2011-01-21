@@ -58,6 +58,12 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
+#include <unisim/service/pim/pim.hh>
+#include <unisim/service/pim/pim_thread.hh>
+#include <unisim/service/pim/network/GenericThread.hpp>
+#include <unisim/service/pim/network/SocketThread.hpp>
+#include <unisim/service/pim/network/SocketServerThread.hpp>
+
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
@@ -73,12 +79,6 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
-
-#include <unisim/service/pim/pim.hh>
-#include <unisim/service/pim/pim_thread.hh>
-#include <unisim/service/pim/network/GenericThread.hpp>
-#include <unisim/service/pim/network/SocketThread.hpp>
-#include <unisim/service/pim/network/SocketServerThread.hpp>
 
 #include "xml_atd_pwm_stub.hh"
 
@@ -787,13 +787,16 @@ void Simulator::InternalRun() {
 
 	physical_address_t entry_point;
 
-	if (isS19) {
-		entry_point = loaderS19->GetEntryPoint();
-		std::cerr << "entry_point=0x" << std::hex << entry_point << std::dec << std::endl;
-	}
-	else{
-		entry_point = loaderELF->GetEntryPoint();
-	}
+//	if (isS19) {
+//		entry_point = loaderS19->GetEntryPoint();
+//		std::cerr << "entry_point=0x" << std::hex << entry_point << std::dec << std::endl;
+//	}
+//	else{
+//		entry_point = loaderELF->GetEntryPoint();
+//	}
+
+	entry_point = loaderELF->GetEntryPoint();
+
 
 	address_t cpu_address;
 	uint8_t page = 0;

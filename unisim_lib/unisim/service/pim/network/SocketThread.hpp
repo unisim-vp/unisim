@@ -17,10 +17,10 @@ namespace service {
 namespace pim {
 namespace network {
 
-#ifdef _WIN32
-#	define write(fd, buf, len)	send(fd, buf, len, 0)
-#	define read(fd, buf, len)	recv(fd, buf, len, 0)
-#endif /* _WIN32 */
+//#ifdef WIN32
+//#define write(fd, buf, len)	send(fd, buf, len, 0)
+//#define read(fd, buf, len)	recv(fd, buf, len, 0)
+//#endif /* _WIN32 */
 
 class SocketThread: public GenericThread {
 public:
