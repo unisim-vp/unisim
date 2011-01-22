@@ -450,8 +450,8 @@ bus_target_b_transport(transaction_type &trans,
 			}
 		}
 
-		else if ( cur_addr == TIMER1LOAD ||
-				cur_addr == TIMER2LOAD )
+		else if ( (cur_addr == TIMER1LOAD) ||
+				(cur_addr == TIMER2LOAD) )
 		{
 			handled = true;
 			if ( new_value == 0 )
@@ -485,9 +485,9 @@ bus_target_b_transport(transaction_type &trans,
 			handled = true;
 			logger << DebugWarning
 				<< "Trying to write into "
-				<< ((cur_addr == TIMER1LOAD) ?
-							"TIMER1LOAD" :
-							"TIMER2LOAD")
+				<< ((cur_addr == TIMER1VALUE) ?
+							"TIMER1VALUE" :
+							"TIMER2VALUE")
 				<< " which is read-only, ignoring new value (0x"
 				<< std::hex << new_value << std::dec << ") and keeping"
 				<< " the old value (0x"
@@ -718,19 +718,10 @@ UpdateTime(uint32_t control_addr, uint32_t value_addr,
 			{
 				uint32_t new_val = 0;
 				uint32_t current_val = GetRegister(value_addr);
-				if ( diff < current_val )
-				{
-					new_val = current_val - diff;
-				}
-				else
-				{
-					if ( TimerIs16b(control) )
-						new_val = (diff - (uint64_t)current_val) 
-							& 0x0ffffULL;
-					else 
-						new_val = (diff - (uint64_t)current_val) 
-							& 0x0ffffffffULL;
-				}
+				new_val = current_val - diff; // fix ???
+				if ( !GetTimerSize(control) )
+					new_val = (GetRegister(value_addr) & 0xffff0000UL) |
+						(new_val & 0x0ffffUL);
 				SetRegister(value_addr, new_val);
 				update_time = cur_time;
 			}
