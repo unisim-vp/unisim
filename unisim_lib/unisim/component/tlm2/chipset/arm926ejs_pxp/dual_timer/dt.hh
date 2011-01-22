@@ -194,21 +194,53 @@ private:
 	void UpdateTime(uint32_t control_addr, uint32_t value_addr,
 			uint64_t clken, sc_time &update_time);
 
-	/** Is the timer is 16 bits mode
-	 *
-	 * Returns true if the timer is in 16 bits mode, false otherwise
+	/** Extracts the Enable bit from the given control register value
 	 *
 	 * @param control the control register value to use
-	 * @retturn true if the timer is in 16 bits mode, false otherwise
+	 * @return true if the enable bit is enable, false otherwise
 	 */
-	bool TimerIs16b(uint32_t control) const;
+	bool GetEnable(uint32_t control) const;
+
+	/** Extracts the interrupt enable bit from the given control register value
+	 *
+	 * @param control the control register value to use
+	 * @return true if the interrupt enable bit is enable, false otherwise
+	 */
+	bool GetIntEnable(uint32_t control) const;
+
+	/** Return timer size from the given control value
+	 *
+	 * Returns true if the timer is in 32b mode, false otherwise
+	 *
+	 * @param control the control register value to use
+	 * @return true if the timer is in 32b mode, false otherwise
+	 */
+	bool GetTimerSize(uint32_t control) const;
 
 	/** Extract prescale from the given control value
 	 *
 	 * @param value the value of the control register
 	 * @return the prescaling value
 	 */
-	uint32_t GetPrescale(uint32_t value);
+	uint32_t GetPrescale(uint32_t control);
+
+	/** Return timer mode from the givel control value
+	 *
+	 * Returns true if the timer is in periodic mode, false otherwise
+	 *
+	 * @param control the value of the control register
+	 * @return true if timer is in periodic mode, false otherwise
+	 */
+	bool GetTimerMode(uint32_t control) const;
+
+	/** Return one shot mode from the given control value
+	 *
+	 * Returns true if the timer is in one shot mode, false otherwise
+	 *
+	 * @param control the value of the control register
+	 * @return true if the timer is in one shot mode, false otherwise
+	 */
+	bool GetOneShot(uint32_t control) const;
 
 	/** Base address of the system controller */
 	uint32_t base_addr;

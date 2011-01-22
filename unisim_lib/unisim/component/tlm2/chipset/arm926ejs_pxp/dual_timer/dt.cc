@@ -738,19 +738,42 @@ UpdateTime(uint32_t control_addr, uint32_t value_addr,
 	}
 }
 
-/** Is the timer is 16 bits mode
- *
- * Returns true if the timer is in 16 bits mode, false otherwise
+/** Extracts the Enable bit from the given control register value
  *
  * @param control the control register value to use
- * @retturn true if the timer is in 16 bits mode, false otherwise
+ * @return true if the enable bit is enable, false otherwise
+ */
+bool 
+DualTimer ::
+GetEnable(uint32_t control) const
+{
+	return (control & 0x080UL);
+}
+
+/** Extracts the interrupt enable bit from the given control register value
+ *
+ * @param control the control register value to use
+ * @return true if the interrupt enable bit is enable, false otherwise
+ */
+bool 
+DualTimer ::
+GetIntEnable(uint32_t control) const
+{
+	return (control & 0x020UL);
+}
+
+/** Return timer size from the given control value
+ *
+ * Returns true if the timer is in 32b mode, false otherwise
+ *
+ * @param control the control register value to use
+ * @return true if the timer is in 32b mode, false otherwise
  */
 bool
 DualTimer ::
-TimerIs16b(uint32_t control) const
+GetTimerSize(uint32_t control) const
 {
-	if ( control & 0x02UL ) return false;
-	return true;
+	return (control & 0x02UL);
 }
 
 /** Extract prescale from the given control value
@@ -779,6 +802,34 @@ GetPrescale(uint32_t value)
 			break;
 	}
 	return prescale;
+}
+
+/** Return timer mode from the givel control value
+ *
+ * Returns true if the timer is in periodic mode, false otherwise
+ *
+ * @param control the value of the control register
+ * @return true if timer is in periodic mode, false otherwise
+ */
+bool 
+DualTimer ::
+GetTimerMode(uint32_t control) const
+{
+	return (control & 0x040UL);
+}
+
+/** Return one shot mode from the given control value
+ *
+ * Returns true if the timer is in one shot mode, false otherwise
+ *
+ * @param control the value of the control register
+ * @return true if the timer is in one shot mode, false otherwise
+ */
+bool
+DualTimer ::
+GetOneShot(uint32_t control) const
+{
+	return (control & 0x01UL);
 }
 
 } // end of namespace dual_timer 
