@@ -39,6 +39,12 @@
 #include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
 #include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
+#include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
+#include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
+#include <unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
@@ -99,6 +105,32 @@ using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Object;
 
+#ifdef DEBUG_PPC440EMU_SYSTEM
+class RouterDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
+{
+public:
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 2;
+	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int BUSWIDTH = 128;
+};
+
+typedef RouterDebugConfig ROUTER_CONFIG;
+#else
+class RouterConfig : public unisim::component::tlm2::interconnect::generic_router::Config
+{
+public:
+	static const unsigned int INPUT_SOCKETS = 1;
+	static const unsigned int OUTPUT_SOCKETS = 2;
+	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int BUSWIDTH = 128;
+};
+
+typedef RouterConfig ROUTER_CONFIG;
+#endif
+
+typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
+
 class IRQStub
 	: public sc_module
 	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
@@ -157,6 +189,8 @@ private:
 
 	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<CPU_CONFIG> CPU;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<ROUTER_CONFIG> ROUTER;
+	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -166,8 +200,13 @@ private:
 	//  - RAM
 	MEMORY *memory;
 	// - IRQ stubs
-	IRQStub *external_input_interrupt_stub;
+	IRQStub *input_interrupt_stub[INTC_CONFIG::C_NUM_INTR_INPUTS];
+	//IRQStub *external_input_interrupt_stub;
 	IRQStub *critical_input_interrupt_stub;
+	// - Router
+	ROUTER *router;
+	// - Interrupt controller
+	INTC *intc;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -210,8 +249,10 @@ Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, memory(0)
-	, external_input_interrupt_stub(0)
+	//, external_input_interrupt_stub(0)
 	, critical_input_interrupt_stub(0)
+	, router(0)
+	, intc(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -230,6 +271,8 @@ Simulator::Simulator(int argc, char **argv)
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, exit_status(0)
 {
+	unsigned int irq;
+	
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
@@ -238,8 +281,18 @@ Simulator::Simulator(int argc, char **argv)
 	//  - RAM
 	memory = new MEMORY("memory");
 	//  - IRQ Stubs
-	external_input_interrupt_stub = new IRQStub("external-input-interrupt-stub");
+	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
+	{
+		std::stringstream input_interrupt_stub_name_sstr;
+		input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
+		input_interrupt_stub[irq] = new IRQStub(input_interrupt_stub_name_sstr.str().c_str());
+	}
+	//external_input_interrupt_stub = new IRQStub("external-input-interrupt-stub");
 	critical_input_interrupt_stub = new IRQStub("critical-input-interrupt-stub");
+	// - Router
+	router = new ROUTER("router");
+	// - Interrupt controller
+	intc = new INTC("intc");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -269,9 +322,17 @@ Simulator::Simulator(int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->bus_master_sock(memory->slave_sock); // CPU <-> RAM
-	external_input_interrupt_stub->irq_master_sock(cpu->external_input_interrupt_slave_sock);
-	critical_input_interrupt_stub->irq_master_sock(cpu->critical_input_interrupt_slave_sock);
+	cpu->bus_master_sock(*router->targ_socket[0]); // CPU <-> PLB
+	(*router->init_socket[0])(memory->slave_sock); // PLB <-> RAM
+	//cpu->bus_master_sock(memory->slave_sock); // CPU <-> RAM
+	(*router->init_socket[1])(intc->slave_sock); // PLB <-> INTC
+	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
+	{
+		(input_interrupt_stub[irq]->irq_master_sock)(*intc->irq_slave_sock[irq]); // INTC <-> IRQ stub
+	}
+	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC <-> CPU
+	//external_input_interrupt_stub->irq_master_sock(cpu->external_input_interrupt_slave_sock);
+	critical_input_interrupt_stub->irq_master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -337,12 +398,19 @@ Simulator::Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
-	if(external_input_interrupt_stub) delete external_input_interrupt_stub;
+	unsigned int irq;
+	//if(external_input_interrupt_stub) delete external_input_interrupt_stub;
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
+	if(router) delete router;
+	if(intc) delete intc;
+	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
+	{
+		if(input_interrupt_stub[irq]) delete input_interrupt_stub[irq];
+	}
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
@@ -394,6 +462,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
+
+	//  - Router
+	simulator->SetVariable("router.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("router.mapping_0", "\"0x0\", \"0x000000003fffffff\", \"0\"");
+	simulator->SetVariable("router.mapping_1", "\"0x0000000041200000\", \"0x000000004120ffff\", \"1\"");
+	simulator->SetVariable("router.mapping_2", "\"0x0000000041210000\", \"0x00000000ffffffff\", \"0\"");
 
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
@@ -605,7 +679,7 @@ int sc_main(int argc, char *argv[])
 		case unisim::kernel::service::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at user privilege level (Linux system call translation mode)" << endl;
+			cerr << "Starting simulation at supervisor privilege level" << endl;
 			simulator->Run();
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:

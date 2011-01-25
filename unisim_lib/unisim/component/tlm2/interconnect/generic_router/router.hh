@@ -146,7 +146,7 @@ public:
 	 *
 	 * @return true if setup is performed with success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	typedef typename TYPES::tlm_payload_type transaction_type;
@@ -346,8 +346,7 @@ private:
 	 *************************************************************************/
 
 	sc_core::sc_time cycle_time;
-	double cycle_time_double;
-	unisim::kernel::service::Parameter<double> param_cycle_time_double;
+	unisim::kernel::service::Parameter<sc_time> param_cycle_time;
 //	unsigned int num_input_sockets;
 //	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
 //	unsigned int num_output_sockets;

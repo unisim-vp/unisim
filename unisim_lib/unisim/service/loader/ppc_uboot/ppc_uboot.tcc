@@ -79,8 +79,10 @@ PPCUBoot<MEMORY_ADDR>::PPCUBoot(const char *name, Object *parent)
 	, ppc_r7(0)
 	, kernel_cmd_line("")
 	, kernel_cmd_line_addr(0x0)
+	, verbose(false)
 	, param_kernel_cmd_line("kernel-cmd-line", this, kernel_cmd_line, "Linux kernel command line (Note: Linux, at least 2.6.31, does not use this value. Instead you should fill in device tree: choosen / bootargs = "";)")
 	, param_kernel_cmd_line_addr("kernel-cmd-line-addr", this, kernel_cmd_line_addr, "Address location of Linux kernel command line")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, logger(*this)
 {
 	loader_export.SetupDependsOn(kernel_loader_import);
@@ -274,8 +276,11 @@ bool PPCUBoot<MEMORY_ADDR>::LoadKernelCmdLine()
 
 		kernel_cmd_line_blob->GetAddrRange(kernel_cmd_line_start, kernel_cmd_line_end);
 
-		logger << DebugInfo << "Writing Linux kernel command line at @0x" << std::hex << kernel_cmd_line_start << " - @0x" << kernel_cmd_line_end << std::dec << EndDebugInfo;
-
+		if(verbose)
+		{
+			logger << DebugInfo << "Writing Linux kernel command line at @0x" << std::hex << kernel_cmd_line_start << " - @0x" << kernel_cmd_line_end << std::dec << EndDebugInfo;
+		}
+		
 		if(!memory_import->WriteMemory(kernel_cmd_line_section->GetAddr(), kernel_cmd_line_section->GetData(), kernel_cmd_line_section->GetSize())) return false;
 
 		ppc_r6->SetValue(&kernel_cmd_line_start);

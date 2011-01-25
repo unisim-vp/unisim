@@ -605,6 +605,10 @@ bool CPU<CONFIG>::EndSetup()
 
 	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
 	{
+		if(IsVerboseSetup())
+		{
+			logger << DebugInfo << "Linux printk snooping enabled" << EndDebugInfo;
+		}
 		if(!linux_printk_buf_addr)
 		{
 			if(symbol_table_lookup_import)
@@ -623,6 +627,10 @@ bool CPU<CONFIG>::EndSetup()
 					}
 				}
 			}
+		}
+		else
+		{
+			logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
 		}
 	}
 
