@@ -183,6 +183,8 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 	{
 		case tlm::BEGIN_REQ:
 			{
+				payload.set_dmi_allowed(false);
+
 				tlm::tlm_command cmd = payload.get_command();
 				unsigned int data_length = payload.get_data_length();
 				unsigned int byte_enable_length = payload.get_byte_enable_ptr() ? payload.get_byte_enable_length() : 0;
@@ -224,22 +226,18 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 				
 				phase = tlm::END_REQ;
 
+				payload.acquire();
 				unified_payload->SetPayload(&payload);
-				unified_payload->SetNonBlocking(phase);
+				unified_payload->SetNonBlocking();
 				unified_payload_queue.notify(*unified_payload, t);
 				
 				return tlm::TLM_UPDATED;
 			}
 			break;
-		case tlm::END_REQ:
-			return tlm::TLM_ACCEPTED;
-		case tlm::BEGIN_RESP:
-		case tlm::END_RESP:
-			return tlm::TLM_COMPLETED;
 		default:
 			inherited::logger << DebugError << LOCATION
 				<< ":" << (sc_time_stamp() + t).to_string()
-				<< ": unexpected phase"
+				<< ": unexpected phase " << (unsigned int) phase
 				<< EndDebugError;
 			Object::Stop(-1);
 			break;
@@ -293,6 +291,7 @@ void XPS_IntC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::s
 	UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
 	sc_event ev_completed;
 
+	payload.acquire();
 	unified_payload->SetPayload(&payload);
 	unified_payload->SetBlocking(&ev_completed);
 	unified_payload_queue.notify(*unified_payload, t);
@@ -302,7 +301,7 @@ void XPS_IntC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::s
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_bw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_bw(TLMInterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	return tlm::TLM_COMPLETED;
 }
@@ -319,6 +318,7 @@ void XPS_IntC<CONFIG>::b_transport(unsigned int irq, TLMInterruptPayload& payloa
 	UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
 	sc_event ev_completed;
 
+	payload.acquire();
 	unified_payload->SetPayload(&payload);
 	unified_payload->SetBlocking(&ev_completed);
 	unified_payload_queue.notify(*unified_payload, t);
@@ -337,23 +337,19 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(unsigned int irq, TLMInterr
 				UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
 				sc_event ev_completed;
 
+				payload.acquire();
 				unified_payload->SetPayload(&payload);
-				unified_payload->SetBlocking(&ev_completed);
+				unified_payload->SetNonBlocking();
 				unified_payload_queue.notify(*unified_payload, t);
 				
 				phase = tlm::END_REQ;
 				return tlm::TLM_UPDATED;
 			}
 			break;
-		case tlm::END_REQ:
-			return tlm::TLM_ACCEPTED;
-		case tlm::BEGIN_RESP:
-		case tlm::END_RESP:
-			return tlm::TLM_COMPLETED;
 		default:
 			inherited::logger << DebugError << LOCATION
 				<< ":" << (sc_time_stamp() + t).to_string()
-				<< ": unexpected phase"
+				<< ": unexpected phase" << (unsigned int) phase
 				<< EndDebugError;
 			Object::Stop(-1);
 			break;
@@ -395,8 +391,8 @@ void XPS_IntC<CONFIG>::ProcessCPUPayload(UnifiedPayload *unified_payload)
 				}
 				else
 				{
-					unified_payload->phase = tlm::BEGIN_RESP;
-					tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, unified_payload->phase, local_time);
+					tlm::tlm_phase phase = tlm::BEGIN_RESP;
+					tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, local_time);
 					
 					switch(sync)
 					{
@@ -404,8 +400,10 @@ void XPS_IntC<CONFIG>::ProcessCPUPayload(UnifiedPayload *unified_payload)
 						case tlm::TLM_UPDATED:
 							wait(local_time);
 							local_time = SC_ZERO_TIME;
+							payload->release();
 							break;
 						case tlm::TLM_COMPLETED:
+							payload->release();
 							break;
 					}
 				}
@@ -434,8 +432,8 @@ void XPS_IntC<CONFIG>::ProcessCPUPayload(UnifiedPayload *unified_payload)
 				}
 				else
 				{
-					unified_payload->phase = tlm::BEGIN_RESP;
-					tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, unified_payload->phase, local_time);
+					tlm::tlm_phase phase = tlm::BEGIN_RESP;
+					tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, local_time);
 					
 					switch(sync)
 					{
@@ -443,8 +441,10 @@ void XPS_IntC<CONFIG>::ProcessCPUPayload(UnifiedPayload *unified_payload)
 						case tlm::TLM_UPDATED:
 							wait(local_time);
 							local_time = SC_ZERO_TIME;
+							payload->release();
 							break;
 						case tlm::TLM_COMPLETED:
+							payload->release();
 							break;
 					}
 				}
@@ -475,8 +475,8 @@ void XPS_IntC<CONFIG>::ProcessIntrPayload(UnifiedPayload *unified_payload)
 	}
 	else
 	{
-		unified_payload->phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = (*irq_slave_sock[unified_payload->irq])->nb_transport_bw(*payload, unified_payload->phase, local_time);
+		tlm::tlm_phase phase = tlm::BEGIN_RESP;
+		tlm::tlm_sync_enum sync = (*irq_slave_sock[unified_payload->irq])->nb_transport_bw(*payload, phase, local_time);
 		
 		switch(sync)
 		{
@@ -484,8 +484,10 @@ void XPS_IntC<CONFIG>::ProcessIntrPayload(UnifiedPayload *unified_payload)
 			case tlm::TLM_UPDATED:
 				wait(local_time);
 				local_time = SC_ZERO_TIME;
+				payload->release();
 				break;
 			case tlm::TLM_COMPLETED:
+				payload->release();
 				break;
 		}
 	}
@@ -611,7 +613,6 @@ XPS_IntC<CONFIG>::UnifiedPayload::UnifiedPayload()
 	, cpu_payload(0)
 	, intr_payload(0)
 	, irq(0)
-	, phase(tlm::BEGIN_REQ)
 	, ev_completed(0)
 {
 }
@@ -636,10 +637,9 @@ void XPS_IntC<CONFIG>::UnifiedPayload::SetPayload(TLMInterruptPayload *_intr_pay
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::UnifiedPayload::SetNonBlocking(tlm::tlm_phase& _phase)
+void XPS_IntC<CONFIG>::UnifiedPayload::SetNonBlocking()
 {
 	blocking = false;
-	phase = _phase;
 }
 
 template <class CONFIG>

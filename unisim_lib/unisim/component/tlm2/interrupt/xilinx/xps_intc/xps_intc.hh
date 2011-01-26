@@ -151,7 +151,7 @@ private:
 		UnifiedPayload();
 		void SetPayload(tlm::tlm_generic_payload *cpu_payload);
 		void SetPayload(TLMInterruptPayload *intr_payload);
-		void SetNonBlocking(tlm::tlm_phase& phase);
+		void SetNonBlocking();
 		void SetBlocking(sc_event *ev_completed);
 		virtual ~UnifiedPayload();
 		
@@ -160,7 +160,6 @@ private:
 		tlm::tlm_generic_payload *cpu_payload;
 		TLMInterruptPayload *intr_payload;
 		unsigned int irq;
-		tlm::tlm_phase phase;
 		sc_event *ev_completed;
 	};
 	

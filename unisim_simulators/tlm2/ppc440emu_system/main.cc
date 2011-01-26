@@ -465,9 +465,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - Router
 	simulator->SetVariable("router.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("router.mapping_0", "\"0x0\", \"0x000000003fffffff\", \"0\"");
-	simulator->SetVariable("router.mapping_1", "\"0x0000000041200000\", \"0x000000004120ffff\", \"1\"");
-	simulator->SetVariable("router.mapping_2", "\"0x0000000041210000\", \"0x00000000ffffffff\", \"0\"");
+	simulator->SetVariable("router.mapping_0", "range_start=\"0x0\" range_end=\"0x3fffffff\" output_port=\"0\" translation=\"0x0\"");
+	simulator->SetVariable("router.mapping_1", "range_start=\"0x41200000\" range_end=\"0x4120ffff\" output_port=\"1\" translation=\"0x41200000\"");
+	simulator->SetVariable("router.mapping_2", "range_start=\"0x41210000\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x41210000\"");
 
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
