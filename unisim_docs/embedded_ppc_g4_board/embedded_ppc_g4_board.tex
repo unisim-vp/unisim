@@ -23,7 +23,6 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \item \textbf{erom}: Memory
 \item \textbf{flash}: AM29LVxxx flash memory
 \item \textbf{host-time}: this service is an abstraction layer for the host machine time
-\item \textbf{inline-debugger}: this service implements a built-in debugger in the terminal console
 \item \textbf{memory}: Memory
 \item \textbf{mpc107}: MPC107 chipset
 \item \textbf{mpc107.DMA}: MPC107 integrated Direct Memory Access (DMA) controller
@@ -32,23 +31,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \item \textbf{mpc107.epic}: MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)
 \item \textbf{mpc107.pci\_controller}: MPC107 integrated PCI bus controller
 \item \textbf{pci-bus}: PCI bus
-\item \textbf{tee-memory-access-reporting}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[0]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[10]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[11]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[12]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[13]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[14]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[15]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[1]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[2]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[3]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[4]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[5]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[6]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[7]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[8]}
-\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[9]}
+\item \textbf{pci-stub}: A module that implements a PCI target and acts as a co-simulation stub controlled over a TCP/IP or pipe connection.
 \item \textbf{tee-symbol-table-lookup}: This service/client implements a tee ('T'). It unifies the symbol table lookup capability of several services that individually provides their own symbol table lookup capability
 \item \textbf{time}: this service is an abstraction layer for the SystemC kernel time
 \end{itemize}
@@ -56,7 +39,7 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \label{UNISIM embedded-ppc-g4-board_using}
 The UNISIM embedded-ppc-g4-board simulator has the following command line options:\\
 ~\\
-\noindent Usage: \texttt{unisim-embedded-ppc-g4-board-no-pci-stub-debug-1.1beta1 [<options>] [...]}
+\noindent Usage: \texttt{unisim-embedded-ppc-g4-board-debug-1.1beta1 [<options>] [...]}
 
 \noindent Options:
 \begin{itemize}
@@ -86,7 +69,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable GDB server instantiation.}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-inline-debugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable inline debugger instantiation.}\\
@@ -341,7 +324,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{\textbf{\Large elf32-loader[0]}}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader[0].filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{boot.elf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{program0.elf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline the ELF filename to load into memory.}\\
@@ -561,27 +544,6 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline flash memory cycle time.}\\
-\hline
-\hline
-\multicolumn{2}{|l|}{\textbf{\Large inline-debugger}}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.memory-atom-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the smallest addressable element in memory.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.num-loaders}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of loaders.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.search-path}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Search path for source (separated by ';').}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large memory}}\\
@@ -978,6 +940,117 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline frequency in Mhz.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large pci-stub}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.is-server}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.protocol}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.pipe-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{pipe}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.server-name}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{localhost}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x3039}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.initial-base-addr[} \newline$\hookrightarrow$\texttt{0]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.initial-base-addr[} \newline$\hookrightarrow$\texttt{1]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.initial-base-addr[} \newline$\hookrightarrow$\texttt{2]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.initial-base-addr[} \newline$\hookrightarrow$\texttt{3]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.initial-base-addr[} \newline$\hookrightarrow$\texttt{4]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.initial-base-addr[} \newline$\hookrightarrow$\texttt{5]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.address-space[0]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mem}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{pci space}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{mem},~\texttt{i/o},~\texttt{cfg}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.address-space[1]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mem}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{pci space}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{mem},~\texttt{i/o},~\texttt{cfg}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.address-space[2]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mem}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{pci space}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{mem},~\texttt{i/o},~\texttt{cfg}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.address-space[3]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mem}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{pci space}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{mem},~\texttt{i/o},~\texttt{cfg}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.address-space[4]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mem}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{pci space}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{mem},~\texttt{i/o},~\texttt{cfg}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.address-space[5]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{mem}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{pci space}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{mem},~\texttt{i/o},~\texttt{cfg}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.region-size[0]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.region-size[1]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.region-size[2]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.region-size[3]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.region-size[4]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.region-size[5]}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.pci-device-number}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.pci-bus-frequency}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x21}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pci-stub.bus-frequency}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x4b}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
 \hline
 \hline
 \end{supertabular}
