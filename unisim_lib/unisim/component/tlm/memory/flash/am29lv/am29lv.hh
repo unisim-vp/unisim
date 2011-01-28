@@ -84,9 +84,8 @@ public:
 	void Process();
 private:
 	sc_fifo<Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > > input_queue;
-	unsigned int cycle_time;
-	sc_time cycle_sctime;
-	Parameter<unsigned int> param_cycle_time;
+	sc_time cycle_time;
+	Parameter<sc_time> param_cycle_time;
 };
 
 } // end of namespace am29lv

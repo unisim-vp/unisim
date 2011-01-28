@@ -50,7 +50,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIStub(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "A module that implements a PCI target and acts as a co-simulation stub controlled over a TCP/IP or pipe connection."),
 	sc_module(name),
 	unisim::component::cxx::pci::debug::PCIStub<ADDRESS_TYPE>(name, parent),
 	bus_port("bus-port"),

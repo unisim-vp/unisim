@@ -309,7 +309,7 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
-	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory")
+	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory, i.e. the number of ELF32 loaders")
 {
 #ifdef WITH_PCI_STUB
 	unsigned int pci_stub_irq = 0;
@@ -703,7 +703,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM embedded-ppc-g4-board, a MPC7447A/MPC107 board simulator with support of ELF32 binaries and targeted for industrial applications");
+	simulator->SetVariable("description", "UNISIM embedded-ppc-g4-board simulator is a MPC7447A/MPC107 board simulator with support of ELF32 binaries and targeted for industrial applications");
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
@@ -744,7 +744,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", mem_cycle_time);
+	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", memory_size);
 
@@ -760,12 +760,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - EROM run-time configuration
 	simulator->SetVariable("erom.org", 0x78000000UL);
 	simulator->SetVariable("erom.bytesize", 2 * 8 * 1024 * 1024);
-	simulator->SetVariable("erom.cycle-time", mem_cycle_time);
+	simulator->SetVariable("erom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	
 	//  - Flash memory run-time configuration
 	simulator->SetVariable("flash.org", 0xff800000UL); //0xff000000UL;
 	simulator->SetVariable("flash.bytesize", 8 * 1024 * 1024);
-	simulator->SetVariable("flash.cycle-time", mem_cycle_time);
+	simulator->SetVariable("flash.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("flash.endian", "big-endian");
 
 	// PCI Bus run-time configuration
