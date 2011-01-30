@@ -38,10 +38,11 @@
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/passthrough_target_socket.h>
+#include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_int_source_identifier.hh"
-#include <inttypes.h>
+#include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
 
 namespace unisim {
 namespace component {
@@ -54,6 +55,7 @@ class VIC
 	: public unisim::kernel::service::Object
 	, public sc_module
 	, public VICIntSourceIdentifierInterface
+	, public unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>
 {
 private:
 	/** total number of incomming interrupts */
@@ -89,6 +91,18 @@ private:
 	/** Update the status of the VIC depending on all the possible entries
 	 */
 	void UpdateStatus();
+	/** Is the VIC forwarding the nvicirqin?
+	 *
+	 * This variable inform just of the VIC status, it is only used for verbose
+	 *   requirements.
+	 */
+	bool forwarding_nvicirqin;
+	/** Previous nvicirqin value
+	 *
+	 * This variable informs just of the VIC status, it is only used for verbose
+	 *   requirements.
+	 */
+	bool nvicirqin_value;
 
 	/** Indicates if a vectored interrupt is being serviced and if so the 
 	 *    nesting level
@@ -161,6 +175,23 @@ private:
 	static const uint32_t VICITIP2Addr          = 0x0308UL;
 	static const uint32_t VICITOP1Addr          = 0x030cUL;
 	static const uint32_t VICITOP2Addr          = 0x0310UL;
+
+	static const uint32_t NUMREGS = 55; // Note: Test registers are not available
+	static const uint32_t REGS_ADDR_ARRAY[NUMREGS];
+	static const char *REGS_NAME_ARRAY[NUMREGS];
+
+	/** Get interface for the generic peripheral register interface
+	 *
+	 * @param addr the address to consider
+	 * @return the value of the register pointed by the address
+	 */
+	virtual uint32_t GetPeripheralRegister(uint64_t addr);
+	/** Set interface for the generic peripheral register interface
+	 *
+	 * @param addr the address to consider
+	 * @param value the value to set the register to
+	 */
+	virtual void SetPeripheralRegister(uint64_t addr, uint32_t value);
 
 	/** Returns the enable field of the VICVECTCNTL register.
 	 *
@@ -414,6 +445,15 @@ private:
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the VIC */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
+
+	/** Register helpers to use the UNISIM Register service */
+	unisim::util::generic_peripheral_register::GenericPeripheralWordRegister *
+		regs_accessor[NUMREGS];
+	/** UNISIM Registers for the timer registers */
+	unisim::kernel::service::Register<
+		unisim::util::generic_peripheral_register::GenericPeripheralWordRegister
+		> *
+		regs_service[NUMREGS];
 
 	/** Verbose */
 	uint32_t verbose;

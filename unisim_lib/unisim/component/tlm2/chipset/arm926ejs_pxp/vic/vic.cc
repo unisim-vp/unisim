@@ -55,11 +55,130 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
+const uint32_t VIC::REGS_ADDR_ARRAY[VIC::NUMREGS] =
+{
+	VICIRQSTATUSAddr, // 1
+	VICFIQSTATUSAddr, // 2
+	VICRAWINTRAddr, // 3
+	VICINTSELECTAddr, // 4
+	VICINTENABLEAddr, // 5
+	VICINTENCLEARAddr, // 6
+	VICSOFTINTAddr, // 7
+	VICPROTECTIONAddr, // 8
+	VICVECTADDRAddr, // 9
+	VICDEFVECTADDRAddr, // 10
+	VICVECTADDRBaseAddr, // 11 0
+	VICVECTADDRBaseAddr + 4, // 12 1
+	VICVECTADDRBaseAddr + 8, // 13 2
+	VICVECTADDRBaseAddr + 12, // 14 3
+	VICVECTADDRBaseAddr + 16, // 15 4
+	VICVECTADDRBaseAddr + 20, // 16 5
+	VICVECTADDRBaseAddr + 24, // 17 6
+	VICVECTADDRBaseAddr + 28, // 18 7
+	VICVECTADDRBaseAddr + 32, // 19 8
+	VICVECTADDRBaseAddr + 36, // 20 9
+	VICVECTADDRBaseAddr + 40, // 21 10
+	VICVECTADDRBaseAddr + 44, // 22 11
+	VICVECTADDRBaseAddr + 48, // 23 12
+	VICVECTADDRBaseAddr + 52, // 24 13
+	VICVECTADDRBaseAddr + 56, // 25 14
+	VICVECTADDRBaseAddr + 60, // 26 15
+	VICVECTCNTLBaseAddr, // 27 0
+	VICVECTCNTLBaseAddr + 4, // 28 1
+	VICVECTCNTLBaseAddr + 8, // 29 2
+	VICVECTCNTLBaseAddr + 12, // 30 3
+	VICVECTCNTLBaseAddr + 16, // 31 4
+	VICVECTCNTLBaseAddr + 20, // 32 5
+	VICVECTCNTLBaseAddr + 24, // 33 6
+	VICVECTCNTLBaseAddr + 28, // 34 7
+	VICVECTCNTLBaseAddr + 32, // 35 8
+	VICVECTCNTLBaseAddr + 36, // 36 9
+	VICVECTCNTLBaseAddr + 40, // 37 10
+	VICVECTCNTLBaseAddr + 44, // 38 11
+	VICVECTCNTLBaseAddr + 48, // 39 12
+	VICVECTCNTLBaseAddr + 52, // 40 13
+	VICVECTCNTLBaseAddr + 56, // 41 14
+	VICVECTCNTLBaseAddr + 60, // 42 15
+	VICPERIPHIDBaseAddr, // 43 0
+	VICPERIPHIDBaseAddr + 4, // 44 1
+	VICPERIPHIDBaseAddr + 8, // 45 2
+	VICPERIPHIDBaseAddr + 12, // 46 3
+	VICPCELLIDBaseAddr, // 47 0
+	VICPCELLIDBaseAddr + 4, // 48 1
+	VICPCELLIDBaseAddr + 8, // 49 2
+	VICPCELLIDBaseAddr + 12, // 50 3
+	VICITCRAddr, // 51
+	VICITIP1Addr, // 52
+	VICITIP2Addr, // 53
+	VICITOP1Addr, // 54
+	VICITOP2Addr // 55
+};
+
+const char *VIC::REGS_NAME_ARRAY[VIC::NUMREGS] =
+{
+	"VICIRQSTATUS", // 1
+	"VICFIQSTATUS", // 2
+	"VICRAWINTR", // 3
+	"VICINTSELECT", // 4
+	"VICINTENABLE", // 5
+	"VICINTENCLEAR", // 6
+	"VICSOFTINT", // 7
+	"VICPROTECTION", // 8
+	"VICVECTADDR", // 9
+	"VICDEFVECTADDR", // 10
+	"VICVECTADDR[0]", // 11 0
+	"VICVECTADDR[1]", // 12 1
+	"VICVECTADDR[2]", // 13 2
+	"VICVECTADDR[3]", // 14 3
+	"VICVECTADDR[4]", // 15 4
+	"VICVECTADDR[5]", // 16 5
+	"VICVECTADDR[6]", // 17 6
+	"VICVECTADDR[7]", // 18 7
+	"VICVECTADDR[8]", // 19 8
+	"VICVECTADDR[9]", // 20 9
+	"VICVECTADDR[10]", // 21 10
+	"VICVECTADDR[11]", // 22 11
+	"VICVECTADDR[12]", // 23 12
+	"VICVECTADDR[13]", // 24 13
+	"VICVECTADDR[14]", // 25 14
+	"VICVECTADDR[15]", // 26 15
+	"VICVECTCNTL[0]", // 27 0
+	"VICVECTCNTL[1]", // 28 1
+	"VICVECTCNTL[2]", // 29 2
+	"VICVECTCNTL[3]", // 30 3
+	"VICVECTCNTL[4]", // 31 4
+	"VICVECTCNTL[5]", // 32 5
+	"VICVECTCNTL[6]", // 33 6
+	"VICVECTCNTL[7]", // 34 7
+	"VICVECTCNTL[8]", // 35 8
+	"VICVECTCNTL[9]", // 36 9
+	"VICVECTCNTL[10]", // 37 10
+	"VICVECTCNTL[11]", // 38 11
+	"VICVECTCNTL[12]", // 39 12
+	"VICVECTCNTL[13]", // 40 13
+	"VICVECTCNTL[14]", // 41 14
+	"VICVECTCNTL[15]", // 42 15
+	"VICPERIPHID[0]", // 43 0
+	"VICPERIPHID[1]", // 44 1
+	"VICPERIPHID[2]", // 45 2
+	"VICPERIPHID[3]", // 46 3
+	"VICPCELLID[0]", // 47 0
+	"VICPCELLID[1]", // 48 1
+	"VICPCELLID[2]", // 49 2
+	"VICPCELLID[3]", // 50 3
+	"VICITCR", // 51
+	"VICITIP1", // 52
+	"VICITIP2", // 53
+	"VICITOP1", // 54
+	"VICITOP2" // 55
+};
+
 VIC ::
 VIC(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
 	, VICIntSourceIdentifierInterface()
+	, unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>()
 	, nvicfiqin("nvicfiqin")
 	, nvicirqin("nvicirqin")
 	, vicvectaddrin("vicvectaddrin")
@@ -67,6 +186,8 @@ VIC(const sc_module_name &name, Object *parent)
 	, nvicirq("nvicirq")
 	, vicvectaddrout("vicvectaddrout")
 	, bus_target_socket("bus_target_socket")
+	, forwarding_nvicirqin(true)
+	, nvicirqin_value(false)
 	, vect_int_serviced(0)
 	, vect_int_for_service(false)
 	, max_vect_int_for_service(0)
@@ -118,8 +239,19 @@ VIC(const sc_module_name &name, Object *parent)
 			new VICIntSourceIdentifier(id_name.str().c_str(),
 					i, this);
 		source_identifier_method[i]->vicinttarget(*vicintsource[i]);
-//		vicintsource[i](vicintsource_signal[i]);
-//		source_identifier_method[i]->vicinttarget(vicintsource_signal);
+	}
+	
+	for ( unsigned int i = 0; i < NUMREGS; i++ )
+	{
+		regs_accessor[i] = new
+			unisim::util::generic_peripheral_register::GenericPeripheralWordRegister(
+					this, REGS_ADDR_ARRAY[i]);
+		std::stringstream desc;
+		desc << REGS_NAME_ARRAY[i] << " register.";
+		regs_service[i] = new
+			unisim::kernel::service::Register<unisim::util::generic_peripheral_register::GenericPeripheralWordRegister>(
+					REGS_NAME_ARRAY[i], this, *regs_accessor[i], 
+					desc.str().c_str());
 	}
 }
 
@@ -130,6 +262,14 @@ VIC ::
 	{
 		delete source_identifier_method[i];
 		delete vicintsource[i];
+	}
+	
+	for ( unsigned int i = 0; i < NUMREGS; i++ )
+	{
+		delete regs_service[i];
+		regs_service[i] = 0;
+		delete regs_accessor[i];
+		regs_accessor[i] = 0;
 	}
 }
 
@@ -148,17 +288,26 @@ UpdateStatus()
 {
 	// apply software interrupt register and the values of 
 	//   interrupt sources to the raw interrupt register
-	uint32_t softint = GetVICSOFTINT();
+	uint32_t softint = GetRegister(VICSOFTINTAddr);
+	uint32_t old_rawintr = GetRegister(VICRAWINTRAddr);
 	uint32_t rawintr = 0;
 	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
 	{
-		rawintr |= (softint & int_source) & (0x01UL << i);
+		rawintr |= (softint || int_source) & (0x01UL << i);
 	}
-	SetVICRAWINTR(rawintr);
+	SetRegister(VICRAWINTRAddr, rawintr);
+	if ( VERBOSE(V0, V_STATUS) && (old_rawintr != rawintr) )
+		logger << DebugInfo
+			<< "Updated raw interrupt status register:" << std::endl
+			<< " - old value = 0x" << std::hex << old_rawintr << std::endl
+			<< " - new value = 0x" << std::hex << rawintr << std::dec
+			<< EndDebugInfo;
 
 	// compute the new fiq and irq status
-	uint32_t intselect = GetVICINTSELECT();
-	uint32_t intenable = GetVICINTENABLE();
+	uint32_t intselect = GetRegister(VICINTSELECTAddr);
+	uint32_t intenable = GetRegister(VICINTENABLEAddr);
+	uint32_t old_fiqstatus = GetRegister(VICFIQSTATUSAddr);
+	uint32_t old_irqstatus = GetRegister(VICIRQSTATUSAddr);
 	uint32_t fiqstatus = 0;
 	uint32_t irqstatus = 0;
 	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
@@ -169,26 +318,57 @@ UpdateStatus()
 		else
 			irqstatus |= current;
 	}
-	SetVICFIQSTATUS(fiqstatus);
-	SetVICIRQSTATUS(irqstatus);
-
-	// compute the new nVICFIQ and VICITOP1
-	uint32_t itop1 = GetVICITOP1();
-	itop1 &= ~(0x01UL << 6); // clean bit 6
-	if ( !nvicfiqin || fiqstatus )
+	SetRegister(VICFIQSTATUSAddr, fiqstatus);
+	SetRegister(VICIRQSTATUSAddr, irqstatus);
+	if ( VERBOSE(V0, V_STATUS) )
 	{
-		nvicfiq_value = false;
-		itop1 |= (0x01UL << 6); // set bit 6
+		bool msg_fiq = (fiqstatus != old_fiqstatus);
+		bool msg_irq = (irqstatus != old_irqstatus);
+		if ( msg_fiq || msg_irq )
+			logger << DebugInfo
+				<< "Updated interrupt status:" << std::endl
+				<< " - FIQSTATUS = 0x" << std::hex << old_fiqstatus
+				<< " -> 0x" << fiqstatus << std::endl
+				<< " - IRQSTATUS = 0x" << old_irqstatus
+				<< " -> 0x" << irqstatus << std::endl
+				<< "Other related registers:" << std::endl
+				<< " - INTSELECT = 0x" << intselect << std::endl
+				<< " - INTENABLE = 0x" << intenable
+				<< std::dec
+				<< EndDebugInfo;
 	}
+
+	// compute the new nVICFIQ
+	bool old_nvicfiq_value = nvicfiq_value;
+	if ( !nvicfiqin || fiqstatus )
+		nvicfiq_value = false;
 	else
 		nvicfiq_value = true;
+	if ( VERBOSE(V0, V_STATUS) )
+	{
+		if ( old_nvicfiq_value != nvicfiq_value )
+			logger << DebugInfo
+				<< "Updated nvicfiq:" << std::endl
+				<< " - nvicfiq = " << old_nvicfiq_value
+				<< " -> " << nvicfiq_value << std::endl
+				<< "Related signals and registers:" << std::endl
+				<< " - nvicfiqin = " << nvicfiqin << std::endl
+				<< " - FIQSTATUS = 0x" << std::hex << fiqstatus
+				<< std::dec
+				<< EndDebugInfo;
+	}
 
 	// compute the VECTIRQn signals
 	//   and set the VICVECTADDR if required
 	bool vectirq[15];
 	bool priority = false;
 	uint32_t nonvect_irqs = 0;
+	bool old_vect_int_for_service = vect_int_for_service;
 	vect_int_for_service = false;
+	uint32_t old_vicvectaddr = GetRegister(VICVECTADDRAddr);
+	uint32_t new_vicvectaddr = 0;
+	unsigned int old_max_vect_int_for_service = max_vect_int_for_service;
+
 	for ( unsigned int i = 0; i < NUM_VECT_INT; i++ )
 	{
 		uint32_t vectcntl = GetVICVECTCNTL(i);
@@ -215,8 +395,63 @@ UpdateStatus()
 						max_vect_int_for_service = i;
 						vectirq[i] = true;
 						priority = true;
-						SetVICVECTADDR(GetVICVECTADDR(i));
+						new_vicvectaddr = GetVICVECTADDR(i);
+						SetRegister(VICVECTADDRAddr, new_vicvectaddr);
 					}
+				}
+			}
+		}
+	}
+
+	if ( VERBOSE(V0, V_STATUS) )
+	{
+		if ( vect_int_for_service != old_vect_int_for_service )
+		{
+			if ( vect_int_for_service )
+				logger << DebugInfo
+					<< "Set vector interrupt for service:" << std::endl
+					<< " - vector interrupt for service = " 
+					<< max_vect_int_for_service << std::endl
+					<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
+					<< " -> 0x" << new_vicvectaddr << std::dec
+					<< EndDebugInfo;
+			else // !vect_int_serviced
+				logger << DebugInfo
+					<< "Removed vector interrupt for service:" << std::endl
+					<< " - old vector interrupt for service = "
+					<< max_vect_int_for_service
+					<< EndDebugInfo;
+		}
+		else
+		{
+			// Note: even if we don't know if a vector interrupt for service
+			//   is ready or not the below checked variables only change if one
+			//   vector interrupt is ready for service
+			// maybe the max vector interrupt for serviced changed
+			if ( old_max_vect_int_for_service != max_vect_int_for_service )
+			{
+				logger << DebugInfo
+					<< "Changed the vector interrupt for service:" << std::endl
+					<< " - vector interrupt for service = "
+					<< old_max_vect_int_for_service
+					<< " -> " << max_vect_int_for_service << std::endl
+					<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
+					<< " -> 0x" << new_vicvectaddr << std::dec
+					<< EndDebugInfo;
+			}
+			else
+			{
+				// or the VECTORADDR did change
+				if ( old_vicvectaddr != new_vicvectaddr )
+				{
+					logger << DebugInfo
+						<< "Changed current vector address register, but not"
+						<< " the vector interrupt for service:" << std::endl
+						<< " - vector interrupt for service = "
+						<< max_vect_int_for_service << std::endl
+						<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
+						<< " -> 0x" << new_vicvectaddr << std::dec
+						<< EndDebugInfo;
 				}
 			}
 		}
@@ -229,7 +464,8 @@ UpdateStatus()
 	bool nonvectored_irq = false;
 	if ( (vect_int_serviced == 0) && !priority )
 	{
-		SetVICVECTADDR(GetVICDEFVECTADDR());
+		new_vicvectaddr = GetRegister(VICDEFVECTADDRAddr);
+		SetRegister(VICVECTADDRAddr, new_vicvectaddr);
 		if ( irqstatus & ~nonvect_irqs )
 		{
 			vect_int_for_service = true;
@@ -238,30 +474,74 @@ UpdateStatus()
 			priority = true;
 		}
 	}
+	
+	if ( VERBOSE(V0, V_STATUS) )
+	{
+		if ( (old_max_vect_int_for_service != max_vect_int_for_service) &&
+				nonvectored_irq )
+		{
+			logger << DebugInfo 
+				<< "A non vectored interrupt is being generated:"
+				<< " - non vectored interrupt mask = 0x" << std::hex
+				<< nonvect_irqs << std::endl
+				<< " - VICVECTADDR = 0x" << old_vicvectaddr
+				<< " -> 0x" << new_vicvectaddr << std::dec
+				<< EndDebugInfo;
+		}
+		else
+		{
+			// maybe we just set the default vector address
+			logger << DebugInfo
+				<< "Setting vector address register:" << std::endl
+				<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
+				<< " -> 0x" << new_vicvectaddr << std::dec
+				<< EndDebugInfo;
+		}
+	}
 
 	// if a vectored or nonvectored irq was generated
 	//   then set the nVICIRQ signal, otherwise set it 
 	//   if an external IRQ was generated
 	// NOTE: the nvicirq_value is inverted
+	bool old_nvicirq_value = nvicirq_value;
+	bool old_forwarding_nvicirqin = forwarding_nvicirqin;
+	bool old_nvicirqin_value = nvicirqin_value;
+	forwarding_nvicirqin = false;
 	nvicirq_value = true;
+	old_vicvectaddr = GetRegister(VICVECTADDRAddr);
+	new_vicvectaddr = old_vicvectaddr;
 	if ( priority )
 		nvicirq_value = false;
 	else
 	{
+		// no interrupts in the VIC, just forward the nvicirqin
+		forwarding_nvicirqin = true;
 		if ( nvicirqin )
 		{
+			nvicirqin_value = true;
+			vect_int_for_service = false;
+		}
+		else
+		{
+			nvicirqin_value = false;
 			vect_int_for_service = true;
 			max_vect_int_for_service = NUM_VECT_INT;
 			nvicirq_value = false;
-			SetVICVECTADDR(vicvectaddrin);
+			new_vicvectaddr = vicvectaddrin;
+			SetRegister(VICVECTADDRAddr, new_vicvectaddr);
 		}
 	}
 
-	// update itop1
-	itop1 &= ~(0x01UL << 7);
-	if ( !nvicirq_value )
-		itop1 |= (0x01UL << 7);
-	SetVICITOP1(itop1);
+	if ( forwarding_nvicirqin != old_forwarding_nvicirqin )
+	{
+		logger << DebugInfo
+			<< "Forwarding nvicirq signal:" << std::endl
+			<< " - nvicirqin = " << old_nvicirqin_value
+			<< " -> " << nvicirqin_value << std::endl
+			<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
+			<< " -> 0x" << new_vicvectaddr << std::dec
+			<< EndDebugInfo;
+	}
 }
 
 /** Source interrupt handling */
@@ -563,6 +843,30 @@ VIC ::
 VECTCNTLSource(uint32_t value)
 {
 	return value & 0x01fUL;
+}
+
+/** Get interface for the generic peripheral register interface
+ *
+ * @param addr the address to consider
+ * @return the value of the register pointed by the address
+ */
+uint32_t
+VIC ::
+GetPeripheralRegister(uint64_t addr)
+{
+	return GetRegister(addr);
+}
+
+/** Set interface for the generic peripheral register interface
+ *
+ * @param addr the address to consider
+ * @param value the value to set the register to
+ */
+void
+VIC ::
+SetPeripheralRegister(uint64_t addr, uint32_t value)
+{
+	SetRegister(addr, value);
 }
 
 /** Returns the register pointed by the given address
