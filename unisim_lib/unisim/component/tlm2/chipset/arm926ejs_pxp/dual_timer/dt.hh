@@ -39,9 +39,9 @@
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/passthrough_target_socket.h>
-#include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
 
 namespace unisim {
 namespace component {
@@ -84,7 +84,11 @@ public:
 
 	virtual bool Setup();
 
+
 private:
+	void Timer1Handler();
+	void Timer2Handler();
+
 	/** Registers storage */
 	uint8_t regs[256];
 	/** Timer 1 last update time */
@@ -269,6 +273,7 @@ private:
 	static const uint32_t V_READ     = 0x01UL << 4;
 	static const uint32_t V_WRITE    = 0x01UL << 5;
 	static const uint32_t V_STATUS   = 0x01UL << 6;
+	static const uint32_t V_INT      = 0x01UL << 7;
 	/** Check if we should verbose */
 	bool VERBOSE(uint32_t level, uint32_t mask) const
 	{

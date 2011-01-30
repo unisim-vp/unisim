@@ -131,6 +131,9 @@ DualTimer(const sc_module_name &name, Object *parent)
 			"Verbose level (0 = no verbose).")
 	, logger(*this)
 {
+	SC_THREAD(Timer1Handler);
+	SC_THREAD(Timer2Handler);
+
 	bus_target_socket.register_nb_transport_fw(this,
 			&DualTimer::bus_target_nb_transport_fw);
 	bus_target_socket.register_b_transport(this,
@@ -178,6 +181,162 @@ DualTimer ::
 		regs_service[i] = 0;
 		delete regs_accessor[i];
 		regs_accessor[i] = 0;
+	}
+}
+
+void
+DualTimer ::
+Timer1Handler()
+{
+	while ( 1 )
+	{
+		wait(t1_event);
+		// first of all signal an interrupt if necessary:
+		// 1 - check control enable (not sure is required if we 
+		//     are here)
+		// 2 - check that an interrupt is not already signaled
+		// 3 - check that interrupts are enabled
+		// 3 - signal the interrupt (and update RIS and MISregisters status)
+		uint32_t control = GetRegister(TIMER1CONTROL);
+		if ( GetEnable(control) )
+		{
+			if ( GetRegister(TIMER1RIS) == 0 )
+			{
+				SetRegister(TIMER1RIS, 1);
+				if ( GetIntEnable(control) )
+				{
+					SetRegister(TIMER1MIS, 1);
+					timint1_out_port = true;
+					timintc_out_port = true;
+					if ( VERBOSE(V0, V_INT) )
+						logger << DebugInfo
+							<< "Generating interrupt on output 1 and combined"
+							<< " output (" << sc_time_stamp() << ")"
+							<< EndDebugInfo;
+				}
+			}
+		}
+
+		// update the counter, depending on the mode
+		t1_update_time = sc_time_stamp();
+		if ( GetEnable(control) )
+		{
+			// if the timer is in one shot mode then set the timer value simply
+			//   to zero
+			if ( GetOneShot(control) )
+			{
+				SetRegister(TIMER1VALUE, 0);
+			}
+			// if the timer is in free mode we can set it to 0xffffffff
+			else if ( GetTimerMode(control) == false )
+			{
+				SetRegister(TIMER1VALUE, 0xffffffffUL);
+			}
+			else // the timer is periodic mdoe
+			{
+				SetRegister(TIMER1VALUE, GetRegister(TIMER1LOAD));
+			}
+		}
+
+		// check if a new interrupt event is required
+		if ( GetEnable(control) && GetIntEnable(control) )
+		{
+			// only free-running mode and periodic modes cause new
+			//   interrupts, if in one shot mode do nothing
+			if ( !GetOneShot(control) )
+			{
+				uint32_t prescale = GetPrescale(control);
+				uint32_t counter = GetRegister(TIMER1VALUE);
+				// modify the counter to be 16 or 32 bits
+				if ( !GetTimerSize(control) )
+					counter = counter & 0x0ffffUL;
+				sc_core::sc_time delay =
+					sc_core::sc_time(
+							(double)counter * (double)timclken1_in_port 
+							* prescale, 
+							SC_PS);
+				t1_event.notify(delay);
+			}
+		}
+
+	}
+}
+
+void
+DualTimer ::
+Timer2Handler()
+{
+	while ( 1 )
+	{
+		wait(t2_event);
+		// first of all signal an interrupt if necessary:
+		// 1 - check control enable (not sure is required if we 
+		//     are here)
+		// 2 - check that an interrupt is not already signaled
+		// 3 - check that interrupts are enabled
+		// 3 - signal the interrupt (and update RIS and MISregisters status)
+		uint32_t control = GetRegister(TIMER2CONTROL);
+		if ( GetEnable(control) )
+		{
+			if ( GetRegister(TIMER2RIS) == 0 )
+			{
+				SetRegister(TIMER2RIS, 1);
+				if ( GetIntEnable(control) )
+				{
+					SetRegister(TIMER2MIS, 1);
+					timint2_out_port = true;
+					timintc_out_port = true;
+					if ( VERBOSE(V0, V_INT) )
+						logger << DebugInfo
+							<< "Generating interrupt on output 1 and combined"
+							<< " output (" << sc_time_stamp() << ")"
+							<< EndDebugInfo;
+				}
+			}
+		}
+
+		// update the counter, depending on the mode
+		t2_update_time = sc_time_stamp();
+		if ( GetEnable(control) )
+		{
+			// if the timer is in one shot mode then set the timer value simply
+			//   to zero
+			if ( GetOneShot(control) )
+			{
+				SetRegister(TIMER2VALUE, 0);
+			}
+			// if the timer is in free mode we can set it to 0xffffffff
+			else if ( GetTimerMode(control) == false )
+			{
+				SetRegister(TIMER2VALUE, 0xffffffffUL);
+			}
+			else // the timer is periodic mdoe
+			{
+				SetRegister(TIMER2VALUE, GetRegister(TIMER2LOAD));
+			}
+		}
+
+		// check if a new interrupt event is required
+		if ( GetEnable(control) && GetIntEnable(control) )
+		{
+			// only free-running mode and periodic modes cause new
+			//   interrupts, if in one shot mode do nothing
+			if ( !GetOneShot(control) )
+			{
+				uint32_t prescale = GetPrescale(control);
+				uint32_t counter = GetRegister(TIMER2VALUE);
+				// modify the counter to be 16 or 32 bits
+				if ( !GetTimerSize(control) )
+					counter = counter & 0x0ffffUL;
+				sc_core::sc_time delay =
+					sc_core::sc_time(
+							(double)counter * (double)timclken2_in_port *
+							prescale,
+							SC_PS);
+				t2_event.notify(delay);
+			}
+		}
+
 	}
 }
 
@@ -422,27 +581,49 @@ bus_target_b_transport(transaction_type &trans,
 
 						if ( (prev_value & (uint32_t)0x020) == 0 )
 						{
+							sc_core::sc_time inttime;
+							uint32_t control = GetRegister(cur_addr);
+							uint32_t prescale = GetPrescale(control);
+							// set a new event depending on the counter value
+							if ( cur_addr == TIMER1CONTROL )
+							{
+								// first deactivate any possible interrupt event
+								t1_event.cancel();
+								uint32_t counter = GetRegister(TIMER1VALUE);
+								if ( !GetTimerSize(control) )
+									counter &= 0x0ffffUL;
+								// compute the time it will require to generate
+								//   the interrupt
+								double tick_time = ((double)timclken1_in_port 
+										* prescale * counter);
+								inttime = sc_core::sc_time(tick_time, SC_PS);
+								// notify when the interrupt should arrive
+								t1_event.notify(inttime);
+							}
+							else
+							{
+								// first deactivate any possible interrupt event
+								t2_event.cancel();
+								uint32_t counter = GetRegister(TIMER2VALUE);
+								if ( !GetTimerSize(control) )
+									counter &= 0x0ffffUL;
+								// compute the time it will require to generate
+								//   the interrupt
+								double tick_time = ((double)timclken2_in_port
+										* prescale * counter);
+								inttime = sc_core::sc_time(tick_time, SC_PS);
+								// notify when the interrupt should arrive
+								t2_event.notify(inttime);
+							}
 							if ( VERBOSE(V0, V_STATUS) )
 								logger << DebugInfo
 									<< "Timer "
 									<< ((cur_addr == TIMER1CONTROL) ?
 											"1" : "2")
 									<< " interrupts enabled"
+									<< " (interrupt in "
+									<< inttime << ")"
 									<< EndDebugInfo;
-							// set a new event depending on the counter value
-							if ( cur_addr == TIMER1CONTROL )
-							{
-								// first deactivate any possible interrupt event
-								t1_event.cancel();
-								uint32_t counter =
-									GetRegister(TIMER1VALUE);
-								// TODO
-							}
-							else
-							{
-								// first deactivate any possible interrupt event
-								t2_event.cancel();
-							}
 						}
 						handled &= true;
 					}
@@ -465,8 +646,6 @@ bus_target_b_transport(transaction_type &trans,
 					<< EndDebugWarning;
 
 			// update the timer 1/2 value to the new value
-			wait(delay);
-			delay = SC_ZERO_TIME;
 			if ( cur_addr == TIMER1LOAD )
 			{
 				t1_update_time = sc_time_stamp();
@@ -476,6 +655,53 @@ bus_target_b_transport(transaction_type &trans,
 			{
 				t2_update_time = sc_time_stamp();
 				SetRegister(TIMER2VALUE, new_value);
+			}
+
+			// if the timer is interrupt enabled and enable then cancel the 
+			//   previous interrupt and set a new one
+			uint32_t control = 0;
+			if ( cur_addr == TIMER1LOAD )
+				control = GetRegister(TIMER1CONTROL);
+			else
+				control = GetRegister(TIMER2CONTROL);
+			if ( GetEnable(control) && 
+					GetIntEnable(control) )
+			{
+				uint32_t prescale = GetPrescale(control);
+				sc_core::sc_time inttime;
+				if ( cur_addr == TIMER1LOAD )
+				{
+					// first deactivate any possible interrupt event
+					t1_event.cancel();
+					// compute the time it will require to generate
+					//   the interrupt
+					double tick_time = 
+						((double)timclken1_in_port * new_value * prescale);
+					inttime = sc_core::sc_time(tick_time, SC_PS);
+					// notify when the interrupt should arrive
+					t1_event.notify(inttime);
+				}
+				else
+				{
+					// first deactivate any possible interrupt event
+					t2_event.cancel();
+					// compute the time it will require to generate
+					//   the interrupt
+					double tick_time = 
+						((double)timclken2_in_port * new_value * prescale);
+					inttime = sc_core::sc_time(tick_time, SC_PS);
+					// notify when the interrupt should arrive
+					t2_event.notify(inttime);
+				}
+				if ( VERBOSE(V0, V_STATUS) )
+						logger << DebugInfo
+							<< "Timer "
+							<< ((cur_addr == TIMER1LOAD) ?
+									"1" : "2")
+							<< " interrupts enabled"
+							<< " (interrupt in "
+							<< inttime << ")"
+							<< EndDebugInfo;
 			}
 		}
 
