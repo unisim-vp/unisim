@@ -71,12 +71,9 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_m
 	sc_module(name),
 	unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>(name, parent),
 	slave_port("slave-port"),
-	cycle_time(0),
-	cycle_sctime(),
-	param_cycle_time("cycle-time", this, cycle_time, "flash memory cycle time in picoseconds")
+	cycle_time(SC_ZERO_TIME),
+	param_cycle_time("cycle-time", this, cycle_time, "flash memory cycle time")
 {
-	param_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	
 	SC_HAS_PROCESS(AM29LV);
 
 	slave_port(*this);
@@ -95,11 +92,10 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::BeginSetup()
 	if(inherited::verbose)
 	{
 		inherited::logger << DebugInfo;
-		inherited::logger << "cycle time of " << cycle_time << " ps" << std::endl;
+		inherited::logger << "cycle time of " << cycle_time << std::endl;
 		inherited::logger << EndDebugInfo;
 	}
-	if(!cycle_time) return false;
-	cycle_sctime = sc_time(cycle_time, SC_PS);
+	if(cycle_time == SC_ZERO_TIME) return false;
 
 	return inherited::BeginSetup();
 }
@@ -135,7 +131,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 						memset(rsp->read_data, 0, req->size);
 					}
 					sc_event *rsp_ev = message->GetResponseEvent();
-					if(rsp_ev) rsp_ev->notify(cycle_sctime);
+					if(rsp_ev) rsp_ev->notify(cycle_time);
 				}
 				break;
 				
@@ -151,7 +147,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 				}
 				break;
 		}
-		wait(cycle_sctime);
+		wait(cycle_time);
 	}
 }
 

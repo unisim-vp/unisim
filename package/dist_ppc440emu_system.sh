@@ -157,12 +157,16 @@ unisim/component/cxx/processor/powerpc/ppc440/config.cc \
 unisim/component/cxx/processor/powerpc/ppc440/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
+unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
-unisim/component/tlm2/memory/ram/memory_debug.cc"
+unisim/component/tlm2/memory/ram/memory_debug.cc \
+unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/isa/altivec.isa \
@@ -289,7 +293,14 @@ unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
 unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
-unisim/component/tlm2/memory/ram/memory.hh"
+unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh \
+unisim/component/tlm2/interconnect/generic_router/router.hh \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
+unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh \
+unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh \
+"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
@@ -340,7 +351,12 @@ unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
-unisim/component/tlm2/memory/ram/memory.tcc"
+unisim/component/tlm2/memory/ram/memory.tcc \
+unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
+unisim/component/tlm2/interconnect/generic_router/router.tcc \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.tcc \
+"
 
 UNISIM_LIB_PPC440EMU_SYSTEM_M4_FILES="\
 m4/times.m4 \

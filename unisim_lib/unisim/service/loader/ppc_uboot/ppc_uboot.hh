@@ -109,9 +109,11 @@ private:
 	unisim::util::debug::Register *ppc_r7;
 	std::string kernel_cmd_line;
 	MEMORY_ADDR kernel_cmd_line_addr;
+	bool verbose;
 	
 	Parameter<std::string> param_kernel_cmd_line;
 	Parameter<MEMORY_ADDR> param_kernel_cmd_line_addr;
+	Parameter<bool> param_verbose;
 
 	unisim::kernel::logger::Logger logger;
 };

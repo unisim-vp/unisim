@@ -1160,6 +1160,7 @@ public:
 	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
 	static const bool DEBUG_EXCEPTION_ENABLE = true;
 	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
 	static const bool DEBUG_TLBWE_ENABLE = true;
 };
 

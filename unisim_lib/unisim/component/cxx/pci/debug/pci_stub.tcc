@@ -585,6 +585,9 @@ void PCIStub<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS
 			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
 				trap.watchpoint.wtype = inherited::WATCHPOINT_WRITE;
 				break;
+			default:
+				// Ignore report
+				return;
 		}
 		trap.watchpoint.addr = addr;
 		trap.watchpoint.size = size;
