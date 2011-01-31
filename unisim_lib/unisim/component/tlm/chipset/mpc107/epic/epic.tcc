@@ -60,12 +60,12 @@ template <class PHYSICAL_ADDR,
 		bool DEBUG>
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 EPIC(const sc_module_name &name, Object *parent) :
-	sc_module(name),
 	Object(name, parent, "MPC107 integrated Embedded Programmable Interrupt Controller (EPIC)"),
+	sc_module(name),
 	unisim::component::cxx::chipset::mpc107::epic::EPIC<PHYSICAL_ADDR, DEBUG>("epic_impl", parent),
+	slave_port("slave_port"),
 	irq_master_port("irq_master_port"),
 	soft_reset_master_port("soft_reset_master_port"),
-	slave_port("slave_port"),
 	sdram_slave_port("sdram_slave_port"),
 	sdram_clock_activated_mutex("sdram_clock_activated_mutex"),
 	sdram_clock_activated(false) {
@@ -103,7 +103,6 @@ bool
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 Send(const PMsgType &message) {
 	const PReqType& req = message->GetRequest();
-	PHYSICAL_ADDR addr = req->addr & (PHYSICAL_ADDR)0x0fffff;
 	uint32_t data = 0;
 
 	switch(req->type) {
@@ -179,8 +178,7 @@ SetINT() {
 				<< "handle interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -210,8 +208,7 @@ UnsetINT() {
 				<< "handle interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -241,8 +238,7 @@ SetSoftReset() {
 				<< "handle soft reset interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -272,8 +268,7 @@ UnsetSoftReset() {
 				<< "handle soft reset interrupt requests that could not be handled"
 				<< endl;
 		
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 }
 
@@ -339,8 +334,7 @@ template <class PHYSICAL_ADDR,
 void
 EPIC<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE, DEBUG> ::
 StopSimulation() {
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 }
 
 template <class PHYSICAL_ADDR,

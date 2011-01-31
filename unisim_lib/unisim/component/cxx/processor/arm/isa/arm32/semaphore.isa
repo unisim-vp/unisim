@@ -59,11 +59,11 @@ swp.disasm = {
 }
 
 swp.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -93,11 +93,11 @@ swpb.disasm = {
 }
 
 swpb.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 

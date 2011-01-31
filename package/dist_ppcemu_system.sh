@@ -2,19 +2,25 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim repository>"
+	echo "  $0 <destination directory>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
+MY_DIR=`dirname $0`
+if test ${MY_DIR} = "."; then
+	MY_DIR=${HERE}
+elif test ${MY_DIR} = ".."; then
+	MY_DIR=${HERE}/..
+fi
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2/unisim_tools
-UNISIM_LIB_DIR=$2/unisim_lib
-UNISIM_SIMULATORS_DIR=$2/unisim_simulators/tlm/ppcemu_system
+UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm/ppcemu_system
 
 PPCEMU_SYSTEM_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-ppcemu_system-${PPCEMU_SYSTEM_VERSION}
@@ -120,6 +126,8 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/section32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
@@ -138,11 +146,11 @@ unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.cc \
 unisim/service/loader/pmac_bootx/pmac_bootx.cc \
 unisim/service/sdl/sdl.cc \
-unisim/component/cxx/processor/powerpc/cpu.cc \
-unisim/component/cxx/processor/powerpc/exception.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
+unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a.cc \
-unisim/component/cxx/processor/powerpc/mpc7447a_debug.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/pci/video/display_32.cc \
 unisim/component/cxx/pci/macio/heathrow_32.cc \
@@ -173,8 +181,8 @@ unisim/component/cxx/pci/ide/ide_ctrl.cc \
 unisim/component/cxx/pci/ide/ide_disk.cc \
 unisim/component/cxx/pci/types.cc \
 unisim/component/tlm/isa/i8042/i8042.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a.cc \
-unisim/component/tlm/processor/powerpc/mpc7447a_debug.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.cc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/tlm/bridge/pci_isa/bridge_32.cc \
 unisim/component/tlm/pci/ide/pci_dev_32.cc \
 unisim/component/tlm/pci/ide/pci_ide_module_32.cc \
@@ -192,21 +200,29 @@ unisim/component/tlm/memory/ram/memory_32_debug.cc \
 unisim/component/tlm/memory/flash/am29lv/am29lv.cc"
 
 UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES="\
-unisim/component/cxx/processor/powerpc/altivec.isa \
-unisim/component/cxx/processor/powerpc/condition.isa \
-unisim/component/cxx/processor/powerpc/integer.isa \
-unisim/component/cxx/processor/powerpc/misc.isa \
-unisim/component/cxx/processor/powerpc/ppc.isa \
-unisim/component/cxx/processor/powerpc/branch.isa \
-unisim/component/cxx/processor/powerpc/floating.isa \
-unisim/component/cxx/processor/powerpc/loadstore.isa \
-unisim/component/cxx/processor/powerpc/perf.isa \
-unisim/component/cxx/processor/powerpc/sim_dependencies.isa \
-unisim/component/cxx/processor/powerpc/sim_latencies.isa \
-unisim/component/cxx/processor/powerpc/sim_load.isa \
-unisim/component/cxx/processor/powerpc/sim_branch.isa \
-unisim/component/cxx/processor/powerpc/sim_ppc.isa \
-unisim/component/cxx/processor/powerpc/sim_latencies.isa"
+unisim/component/cxx/processor/powerpc/isa/altivec.isa \
+unisim/component/cxx/processor/powerpc/isa/condition.isa \
+unisim/component/cxx/processor/powerpc/isa/integer.isa \
+unisim/component/cxx/processor/powerpc/isa/misc.isa \
+unisim/component/cxx/processor/powerpc/isa/ppc.isa \
+unisim/component/cxx/processor/powerpc/isa/branch.isa \
+unisim/component/cxx/processor/powerpc/isa/floating.isa \
+unisim/component/cxx/processor/powerpc/isa/optional_floating.isa \
+unisim/component/cxx/processor/powerpc/isa/int_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/byte_reverse_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/string_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/multiple_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/fp_load_store.isa \
+unisim/component/cxx/processor/powerpc/isa/external_control.isa \
+unisim/component/cxx/processor/powerpc/isa/synchronization.isa \
+unisim/component/cxx/processor/powerpc/isa/cache_management.isa \
+unisim/component/cxx/processor/powerpc/isa/tlb_management.isa \
+unisim/component/cxx/processor/powerpc/isa/specialization.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/synchronization.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/tlb_management.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/misc.isa \
+unisim/component/cxx/processor/powerpc/mpc7447a/isa/perf.isa"
 
 UNISIM_LIB_PPCEMU_SYSTEM_HEADER_FILES="${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -250,6 +266,8 @@ unisim/util/debug/dwarf/fwd.hh \
 unisim/util/debug/dwarf/macinfo.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/blob/blob.hh \
+unisim/util/debug/blob/section.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -269,14 +287,13 @@ unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
-unisim/service/interfaces/cpu_linux_os.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/os.hh \
-unisim/service/interfaces/cpu_os.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
 unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
+unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/video.hh \
 unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/mouse.hh \
@@ -298,10 +315,12 @@ unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/sdl/sdl.hh \
 unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/cxx/processor/powerpc/cpu.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
 unisim/component/cxx/processor/powerpc/config.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
+unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
 unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
@@ -336,7 +355,7 @@ unisim/component/cxx/isa/types.hh \
 unisim/component/cxx/isa/i8042/i8042.hh \
 unisim/component/cxx/memory/flash/am29lv/types.hh \
 unisim/component/cxx/memory/flash/am29lv/config.hh \
-unisim/component/tlm/processor/powerpc/powerpc.hh \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm/message/snooping_fsb.hh \
 unisim/component/tlm/message/interrupt.hh \
 unisim/component/tlm/debug/transaction_spy.hh \
@@ -380,6 +399,8 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/blob/blob.tcc \
+unisim/util/debug/blob/section.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
@@ -388,12 +409,20 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/sdl/sdl.tcc \
-unisim/component/cxx/processor/powerpc/cpu.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_cache.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debugging.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_exception_handling.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_fetch.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_load_store.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc \
+unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
-unisim/component/tlm/processor/powerpc/powerpc.tcc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
 unisim/component/tlm/memory/ram/memory.tcc \
 unisim/component/tlm/bridge/pci_isa/bridge.tcc \
 unisim/component/tlm/isa/i8042/i8042.tcc \
@@ -739,12 +768,12 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -819,8 +848,8 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 
 	AM_PPCEMU_SYSTEM_VERSION=`printf ${PPCEMU_SYSTEM_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating ppcemu_system Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libppcemu-system-${PPCEMU_SYSTEM_VERSION}.a" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "libppcemu_system_${AM_PPCEMU_SYSTEM_VERSION}_a_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION} unisim-ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
@@ -834,35 +863,36 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_PPCEMU_SYSTEM_DATA_FILES} ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_DATA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.tcc: \$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/powerpc/powerpc.hh: ${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.tcc: \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa.hh: ${UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/powerpc; \$(GENISSLIB_PATH) -o powerpc -w 32 -I . ppc.isa" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa -w 8 -I \$(abs_top_srcdir) \$(abs_top_srcdir)/unisim/component/cxx/processor/powerpc/mpc7447a/isa/mpc7447a.isa" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+
 	echo "all-local: all-local-bin all-local-share" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\trm -f \"\$(abs_top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(abs_top_builddir)/bin'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\t(cd '\$(abs_top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\trm -rf '\$(abs_top_builddir)/bin'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "all-local-share: \$(dist_share_DATA)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\trm -f \"\$(top_builddir)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(top_builddir)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\trm -f \"\$(abs_top_builddir)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(abs_top_builddir)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\t(cd '\$(abs_top_builddir)/share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}' && cp -f \"\$(abs_top_srcdir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	printf "\trm -rf '\$(abs_top_builddir)/share'; \\\\\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 
 	echo "Building powerpc configure"

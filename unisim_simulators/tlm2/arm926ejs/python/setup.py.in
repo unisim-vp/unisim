@@ -1,0 +1,81 @@
+from distutils.core import setup, Extension
+from distutils import sysconfig, ccompiler
+import distutils
+import os.path
+
+# print ( distutils.util.get_platform() )
+# print ( sysconfig.get_config_vars() )
+
+module_simulator = Extension('@SIM_PYTHON_IMPORT_NAME@.simulator',
+	sources=[
+		'@CMAKE_SOURCE_DIR@/python/py_simulator.cc'
+		],
+	depends=[
+		'@CMAKE_SOURCE_DIR@/python/py_simulator.hh',
+		'@CMAKE_SOURCE_DIR@/python/py_variable.hh',
+		'@CMAKE_SOURCE_DIR@/python/py_debugger.hh'
+		],
+	include_dirs=[@PYTHON__ARMEMU__INCLUDE_DIRS@],
+#		'@CMAKE_SOURCE_DIR@',
+#		'@CMAKE_BINARY_DIR@',
+#		'@OSCI_SYSTEMC_INCLUDE_DIR@',
+#		'@OSCI_TLM2_INCLUDE_DIR@'],
+	library_dirs=[@PYTHON__ARMEMU__LIB_DIRS@],
+#		'@CMAKE_ARCHIVE_OUTPUT_DIRECTORY@',
+#		os.path.dirname('@OSCI_SYSTEMC_LIBRARIES@')],
+	libraries=[@PYTHON__ARMEMU__LIBS@],
+	extra_compile_args=['-DSIM_LIBRARY -fPIC'],
+	extra_link_args=['-fPIC'],
+	)
+	
+module_variable = Extension('@SIM_PYTHON_IMPORT_NAME@.variable',
+	sources=[
+		'@CMAKE_SOURCE_DIR@/python/py_variable.cc'
+		],
+	depends=[
+		'@CMAKE_SOURCE_DIR@/python/py_variable.hh',
+		'@CMAKE_SOURCE_DIR@/python/py_simulator.hh'
+		],
+	include_dirs=[@PYTHON__ARMEMU__INCLUDE_DIRS@],
+#		'@CMAKE_SOURCE_DIR@',
+#		'@CMAKE_BINARY_DIR@',
+#		'@OSCI_SYSTEMC_INCLUDE_DIR@',
+#		'@OSCI_TLM2_INCLUDE_DIR@'],
+	library_dirs=[@PYTHON__ARMEMU__LIB_DIRS@],
+#		'@CMAKE_ARCHIVE_OUTPUT_DIRECTORY@',
+#		os.path.dirname('@OSCI_SYSTEMC_LIBRARIES@')],
+	libraries=[@PYTHON__ARMEMU__LIBS@],
+	extra_compile_args=['-DSIM_LIBRARY -fPIC'],
+	extra_link_args=['-fPIC'],
+	)
+	
+module_debugger = Extension('@SIM_PYTHON_IMPORT_NAME@.debugger',
+	sources=[
+		'@CMAKE_SOURCE_DIR@/python/py_debugger.cc'
+		],
+	depends=[
+		'@CMAKE_SOURCE_DIR@/python/py_debugger.hh',
+		'@CMAKE_SOURCE_DIR@/python/py_simulator.hh'
+		],
+	include_dirs=[@PYTHON__ARMEMU__INCLUDE_DIRS@],
+#		'@CMAKE_SOURCE_DIR@',
+#		'@CMAKE_BINARY_DIR@',
+#		'@OSCI_SYSTEMC_INCLUDE_DIR@',
+#		'@OSCI_TLM2_INCLUDE_DIR@'],
+	library_dirs=[@PYTHON__ARMEMU__LIB_DIRS@],
+#		'@CMAKE_ARCHIVE_OUTPUT_DIRECTORY@',
+#		os.path.dirname('@OSCI_SYSTEMC_LIBRARIES@')],
+	libraries=[@PYTHON__ARMEMU__LIBS@],
+	extra_compile_args=['-DSIM_LIBRARY -fPIC'],
+	extra_link_args=['-fPIC'],
+	)
+	
+setup(name="@SIM_PYTHON_IMPORT_NAME@", version="@SIM_VERSION@",
+	# ext_package='@SIM_PYTHON_IMPORT_NAME@',
+	ext_modules=[module_simulator,
+		module_variable,
+		module_debugger],
+	packages=['@SIM_PYTHON_IMPORT_NAME@'],
+	package_dir={'@SIM_PYTHON_IMPORT_NAME@':'@CMAKE_SOURCE_DIR@/python'}
+ 	)
+

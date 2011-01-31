@@ -169,7 +169,7 @@ public:
 							const std::string &str);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
 							const char *c_str);
-	virtual bool Setup();
+	virtual bool EndSetup();
 	virtual void OnDisconnect();
 
 private:
@@ -196,6 +196,8 @@ private:
 	void HandleQRcmd(string command);
 
 	void Disasm(ADDRESS addr, unsigned int size);
+	
+	void Kill();
 
 	unisim::kernel::logger::Logger logger;
 

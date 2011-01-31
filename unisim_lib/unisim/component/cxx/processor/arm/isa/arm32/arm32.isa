@@ -40,13 +40,10 @@
 
 namespace unisim::component::cxx::processor::arm::isa::arm32
 set endianness big
-set addressclass {typename CONFIG::address_t}
-template <{class} {CONFIG}>
+set addressclass {uint32_t}
+template <{class} {STATE}>
 
 decl {
-#ifndef __STDC_CONSTANT_MACROS
-#define __STDC_CONSTANT_MACROS
-#endif // __STDC_CONSTANT_MACROS
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -62,10 +59,6 @@ using std::cerr;
 using std::endl;
 using std::hex;
 using std::dec;
-using std::exception;
-
-template<class CONFIG>
-class CPU;
 
 } // end of namespace arm 
 } // end of namespace processor
@@ -76,6 +69,8 @@ class CPU;
 } // end of decl
 
 impl {
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/component/cxx/processor/arm/models.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/component/cxx/processor/arm/decode_data_processing.hh"
@@ -83,19 +78,15 @@ impl {
 #include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
 #include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
 #include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
+#include "unisim/component/cxx/processor/arm/carry_overflow.hh"
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
-#include "unisim/kernel/logger/logger.hh"
+#include <stdexcept>
 #include <stdint.h>
 	
-using unisim::component::cxx::processor::arm::UndefinedInstructionException;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
 using unisim::util::arithmetic::Add32;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
 }
 
 include "constructors_dec.isa"

@@ -50,7 +50,7 @@ namespace time {
 namespace host_time {
 
 HostTime::HostTime(const char *name, Object *parent) :
-	Object(name, parent, "Host time"),
+	Object(name, parent, "this service is an abstraction layer for the host machine time"),
 	Service<Time>(name, parent),
 	time_export("time-export", this)
 {
@@ -60,7 +60,7 @@ HostTime::~HostTime()
 {
 }
 
-bool HostTime::Setup()
+bool HostTime::BeginSetup()
 {
 	return true;
 }

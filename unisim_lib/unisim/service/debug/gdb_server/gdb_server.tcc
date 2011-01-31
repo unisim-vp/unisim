@@ -84,7 +84,10 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
 GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
-	: Object(_name, _parent, "GDB Server")
+	: Object(_name, _parent,
+		"this service implements the GDB server remote serial protocol over TCP/IP. "
+		"Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application "
+		"that runs within the simulator.")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
@@ -127,8 +130,6 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
-	Object::SetupDependsOn(registers_import);
-	Object::SetupDependsOn(memory_access_reporting_control_import);
 	counter = period;
 }
 
@@ -149,7 +150,7 @@ GDBServer<ADDRESS>::~GDBServer()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::Setup()
+bool GDBServer<ADDRESS>::EndSetup()
 {
 	if(memory_atom_size != 1 &&
 	   memory_atom_size != 2 &&
@@ -413,7 +414,7 @@ bool GDBServer<ADDRESS>::Setup()
 	addr.sin_addr.s_addr = INADDR_ANY;
 	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
 	{
-		logger << DebugError << "bind failed" << EndDebugError;
+		logger << DebugError << "Bind failed. TCP Port #" << tcp_port << " may be already in use. Please specify another port in " << param_tcp_port.GetName() << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 #else
@@ -424,7 +425,7 @@ bool GDBServer<ADDRESS>::Setup()
 
 	if(listen(server_sock, 1))
 	{
-		logger << DebugError << "listen failed" << EndDebugError;
+		logger << DebugError << "Listen failed" << EndDebugError;
 #ifdef WIN32
 		closesocket(server_sock);
 #else
@@ -687,19 +688,21 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'G':
-				if(WriteRegisters(packet.substr(1)))
-					PutPacket("OK");
-				else
-					PutPacket("E00");
+				if(!WriteRegisters(packet.substr(1)))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'P':
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
-				if(WriteRegister(reg_num, packet.substr(pos)))
-					PutPacket("OK");
-				else
-					PutPacket("E00");
+				if(!WriteRegister(reg_num, packet.substr(pos)))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'm':
@@ -719,10 +722,11 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
-				if(WriteMemory(addr, packet.substr(pos), size))
-					PutPacket("OK");
-				else
-					PutPacket("E00");
+				if(!WriteMemory(addr, packet.substr(pos), size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 's':
@@ -772,6 +776,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 			case 'k':
 				if(!extended_mode)
 				{
+					Kill();
 					killed = true;
 				}
 				break;
@@ -795,10 +800,11 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, addr)) break;
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
-				if(SetBreakpointWatchpoint(type, addr, size))
-					PutPacket("OK");
-				else
-					PutPacket("E00");
+				if(!SetBreakpointWatchpoint(type, addr, size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			case 'z':
@@ -807,10 +813,11 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, addr)) break;
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
-				if(RemoveBreakpointWatchpoint(type, addr, size))
-					PutPacket("OK");
-				else
-					PutPacket("E00");
+				if(!RemoveBreakpointWatchpoint(type, addr, size))
+				{
+					Object::Stop(0);
+					return DebugControl<ADDRESS>::DBG_KILL;
+				}
 				break;
 
 			default:
@@ -1151,15 +1158,20 @@ bool GDBServer<ADDRESS>::ReadRegisters()
 template <class ADDRESS>
 bool GDBServer<ADDRESS>::WriteRegisters(const string& hex)
 {
+	bool write_error = false;
 	vector<GDBRegister>::iterator gdb_reg;
 	unsigned int pos = 0;
 
 	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); pos += gdb_reg->GetHexLength(), gdb_reg++)
 	{
-		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength()))) return false;
+		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength())))
+		{
+			write_error = true;
+			break;
+		}
 	}
 
-	return true;
+	return write_error ? PutPacket("E00") : PutPacket("OK");
 }
 
 template <class ADDRESS>
@@ -1177,7 +1189,7 @@ bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 {
 	if(regnum >= gdb_registers.size()) return false;
 	GDBRegister& gdb_reg = gdb_registers[regnum];
-	return gdb_reg.SetValue(hex);
+	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
 }
 
 template <class ADDRESS>
@@ -1218,7 +1230,7 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return PutPacket(packet);
+	return read_error ? PutPacket("E00") : PutPacket(packet); //PutPacket(packet);
 }
 
 template <class ADDRESS>
@@ -1254,7 +1266,21 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		}
 	}
 
-	return true;
+	return write_error ? PutPacket("E00") :  PutPacket("OK");
+}
+
+template <class ADDRESS>
+void GDBServer<ADDRESS>::Kill()
+{
+	if(sock >= 0)
+	{
+#ifdef WIN32
+		closesocket(sock);
+#else
+		close(sock);
+#endif
+		sock = -1;
+	}
 }
 
 template <class ADDRESS>
@@ -1309,32 +1335,32 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.SetBreakpoint(addr + i)) return false;
+				if(!breakpoint_registry.SetBreakpoint(addr + i)) return PutPacket("E00");
 			}
 			if(memory_access_reporting_control_import)
 				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 						breakpoint_registry.HasBreakpoints());
-			return true;
+			return PutPacket("OK");
 		case 2:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return true;
+				return PutPacket("OK");
 			}
 			else
-				return false;
+				return PutPacket("E00");
 		case 3:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return true;
+				return PutPacket("OK");
 			}
 			else
-				return false;
+				return PutPacket("E00");
 
 		case 4:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1344,18 +1370,18 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 							watchpoint_registry.HasWatchpoints());
 			}
 			else
-				return false;
+				return PutPacket("E00");
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return true;
+				return PutPacket("OK");
 			}
 			else
-				return false;
+				return PutPacket("E00");
 	}
-	return false;
+	return PutPacket("E00");
 }
 
 template <class ADDRESS>
@@ -1374,12 +1400,12 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return false;
+				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return PutPacket("E00");
 			}
 			if(memory_access_reporting_control_import)
 				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 						breakpoint_registry.HasBreakpoints());
-			return true;
+			return PutPacket("OK");
 
 		case 2:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1387,20 +1413,20 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return true;
+				return PutPacket("OK");
 			}
 			else
-				return false;
+				return PutPacket("E00");
 		case 3:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return true;
+				return PutPacket("OK");
 			}
 			else
-				return false;
+				return PutPacket("E00");
 		case 4:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
@@ -1409,18 +1435,18 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 							breakpoint_registry.HasBreakpoints());
 			}
 			else
-				return false;
+				return PutPacket("E00");
 			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return true;
+				return PutPacket("OK");
 			}
 			else
-				return false;
+				return PutPacket("E00");
 	}
-	return false;
+	return PutPacket("E00");
 }
 
 // *** Start ************ REDA ADDED CODE ****************

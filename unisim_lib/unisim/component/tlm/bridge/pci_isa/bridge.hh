@@ -96,7 +96,7 @@ public:
 	virtual ~Bridge();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	//void Run();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	void ISAMaster();
 private:
 	sc_time pci_bus_cycle_time;

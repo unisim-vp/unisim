@@ -62,11 +62,18 @@ using namespace std;
 template <class ADDRESS_TYPE>
 IdeDisk<ADDRESS_TYPE>::IdeDisk(const string &name, DiskImage *img,
                  int id, int delay, uint8_t _uid)
-    : ctrl(NULL), image(img), _name(name), diskDelay(delay), uniqueDiskIdentifier(_uid), 
-      dmaTransferEvent(this), dmaReadWaitEvent(this), 
-      dmaWriteWaitEvent(this), dmaPrdReadEvent(this),
-      dmaReadEvent(this), dmaWriteEvent(this),
-	  pciMaster(0)
+    : ctrl(NULL)
+    , image(img)
+    , _name(name)
+    , diskDelay(delay)
+    , uniqueDiskIdentifier(_uid)
+    , pciMaster(0)
+    , dmaTransferEvent(this)
+    , dmaReadWaitEvent(this)
+    , dmaWriteWaitEvent(this)
+    , dmaPrdReadEvent(this)
+    , dmaReadEvent(this)
+    , dmaWriteEvent(this)
 {
 	
     // Reset the device state
@@ -1066,6 +1073,7 @@ IdeDisk<ADDRESS_TYPE>::updateState(DevAction_t action)
       default:
         panic2("Unknown IDE device state: %#x\n", devState);
     }
+    return false;
 }
 
 } // end of namespace ide

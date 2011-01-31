@@ -149,29 +149,6 @@
 		</autotools>
 	</unit>
 	<unit>
-		<name>unisim::service::interfaces::cpu_os</name>
-		<files>
-			<file>unisim/service/interfaces/cpu_os.hh</file>
-			<file>unisim/service/interfaces/cpu_os/CMakeLists.txt</file>
-		</files>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/cpu_os.am</automake>
-		</autotools>
-	</unit>
-	<unit>
-		<name>unisim::service::interfaces::cpu_linux_os</name>
-		<files>
-			<file>unisim/service/interfaces/cpu_linux_os.hh</file>
-			<file>unisim/service/interfaces/cpu_linux_os/CMakeLists.txt</file>
-		</files>
-		<depends>
-			<dep>unisim::service::interfaces::cpu_os</dep>
-		</depends>
-		<autotools>
-			<automake>unisim/service/interfaces/meta/cpu_linux_os.am</automake>
-		</autotools>
-	</unit>
-	<unit>
 		<name>unisim::service::interfaces::time</name>
 		<files>
 			<file>unisim/service/interfaces/time.hh</file>

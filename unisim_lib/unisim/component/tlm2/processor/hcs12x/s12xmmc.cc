@@ -43,16 +43,12 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-
-
 S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	MMC(name, parent),
 	Client<TrapReporting>(name, parent),
-	trap_reporting_import("trap_reproting_import", this)
-
-
+	trap_reporting_import("trap_reporting_import", this)
 {
 
 	cpu_socket.register_b_transport(this, &S12XMMC::b_transport);

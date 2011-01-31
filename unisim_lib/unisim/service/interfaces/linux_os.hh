@@ -36,7 +36,7 @@
 #define __UNISIM_SERVICE_INTERFACES_LINUX_OS_HH__
 
 #include <string>
-#include "unisim/service/interfaces/os.hh"
+//#include "unisim/service/interfaces/os.hh"
 
 namespace unisim {
 namespace service {

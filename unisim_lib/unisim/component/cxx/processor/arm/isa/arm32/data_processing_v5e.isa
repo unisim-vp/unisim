@@ -50,8 +50,11 @@ using unisim::util::arithmetic::SignedSatSub32;
  * qadd instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_QADD }:\
-op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qadd.disasm = {
 	buffer << "qadd";
@@ -87,8 +90,11 @@ qadd.execute = {
  * qsub instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_QSUB }:\
-op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qsub.disasm = {
 	buffer << "qsub";
@@ -124,8 +130,11 @@ qsub.execute = {
  * qdadd instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_QDADD }:\
-op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdadd.disasm = {
 	buffer << "qdadd";
@@ -162,8 +171,11 @@ qdadd.execute = {
  * qdsub instruction
  */
 
-{ CONFIG::HAS_INSN_ARITH_QDSUB }:\
-op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
+}:op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdsub.disasm = {
 	buffer << "qdsub";

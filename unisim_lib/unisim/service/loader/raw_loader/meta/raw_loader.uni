@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::service::loader::raw_loader</name>
+		<files>
+			<file>unisim/service/loader/raw_loader/raw_loader.hh</file>
+			<file>unisim/service/loader/raw_loader/raw_loader.cc</file>
+			<file>unisim/service/loader/raw_loader/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::service::interfaces::memory</dep>
+		</depends>
+	</unit>
+</package>
+

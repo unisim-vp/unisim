@@ -50,8 +50,8 @@ adc.disasm = {
 }
 
 adc.execute = {
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t s1, s2;
+	uint32_t res;
+	uint32_t s1, s2;
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -63,7 +63,7 @@ adc.execute = {
 			s1, s2, carry_in);
 	cpu.SetGPR(rd, res);
 
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 	cpu.SetCPSR_C(carry_out); // to check
 	cpu.SetCPSR_V(overflow_out); // to check
@@ -85,8 +85,8 @@ add_1.disasm = {
 }
 
 add_1.execute = {
-		typename CONFIG::reg_t res;
-		typename CONFIG::reg_t s1;
+		uint32_t res;
+		uint32_t s1;
 		uint8_t carry_in, carry_out, overflow_out, sign;
 		
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -97,7 +97,7 @@ add_1.execute = {
 				s1, imm, carry_in);
 		cpu.SetGPR(rd, res);
 
-		cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+		cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 		cpu.SetCPSR_Z(res == 0);
 		cpu.SetCPSR_C(carry_out); // to check
 		cpu.SetCPSR_V(overflow_out); // to check
@@ -118,8 +118,8 @@ add_2.disasm = {
 }
 
 add_2.execute = {
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t s1;
+	uint32_t res;
+	uint32_t s1;
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -130,7 +130,7 @@ add_2.execute = {
 			s1, imm, carry_in);
 
 	cpu.SetGPR(rd, res);
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 	cpu.SetCPSR_C(carry_out); // to check
 	cpu.SetCPSR_V(overflow_out); // to check
@@ -151,8 +151,8 @@ add_3.disasm = {
 }
 
 add_3.execute = {
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t s1, s2;
+	uint32_t res;
+	uint32_t s1, s2;
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
@@ -165,7 +165,7 @@ add_3.execute = {
 			s1, s2, carry_in);
 
 	cpu.SetGPR(rd, res);
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 	cpu.SetCPSR_C(carry_out); // to check
 	cpu.SetCPSR_V(overflow_out); // to check
@@ -182,41 +182,41 @@ add_3.execute = {
 op add_4(0b01000100[8]:h1[1]:h2[1]:rm[3]:rd[3])
 
 add_4.initialize_rm_index = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::rm_index = (h2 << 3) + rm;
 }
 
 add_4.initialize_rd_index = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::rd_index = (h1 << 3) + rd;
 }
 
 add_4.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
+	if((h2 << 3) + rm == STATE::PC_reg)
 		inherited::rm_init = 4;
 }
 
 add_4.initialize_rd_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if((h1 << 3) + rd == CPU<CONFIG>::PC_reg)
+	if((h1 << 3) + rd == STATE::PC_reg)
 		inherited::rd_init = 4;
 }
 
 add_4.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	buffer << "add r" << inherited::rd_index << ", r" << inherited::rm_index;
 }
 
 add_4.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2, res;
+	uint32_t s1, s2, res;
 	s1 = cpu.GetGPR(inherited::rd_index) + inherited::rd_init;
 	s2 = cpu.GetGPR(inherited::rm_index) + inherited::rm_init;
 	
@@ -241,14 +241,14 @@ add_5.disasm = {
 }
 
 add_5.execute = {
-	typename CONFIG::reg_t s1, s2, res;
-	typename CONFIG::reg_t pc;
+	uint32_t s1, s2, res;
+	uint32_t pc;
 	
 	pc = cpu.GetGPR(cpu.PC_reg);
 	cpu.SetGPR(cpu.PC_reg, pc + 2);
 	
-	s1 = pc & (typename CONFIG::reg_t)0xfffffffc;
-	s2 = ((typename CONFIG::reg_t)imm) << 2;
+	s1 = pc & (uint32_t)0xfffffffc;
+	s2 = ((uint32_t)imm) << 2;
 	res = s1 + s2;
 	
 	cpu.SetGPR(rd, res);
@@ -269,12 +269,12 @@ add_6.disasm = {
 }
 
 add_6.execute = {
-	typename CONFIG::reg_t s1, s2, res;
+	uint32_t s1, s2, res;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
-	s1 = cpu.GetGPR(cpu.SP_reg) & (typename CONFIG::reg_t)0xfffffffc;
-	s2 = ((typename CONFIG::reg_t)imm) << 2;
+	s1 = cpu.GetGPR(cpu.SP_reg) & (uint32_t)0xfffffffc;
+	s2 = ((uint32_t)imm) << 2;
 	res = s1 + s2;
 	
 	cpu.SetGPR(rd, res);
@@ -297,7 +297,7 @@ add_7.disasm = {
 add_7.execute = {
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
-	cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((typename CONFIG::reg_t)imm * 4));
+	cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((uint32_t)imm * 4));
 }
 
 /*
@@ -315,14 +315,14 @@ and.disasm = {
 }
 
 and.execute = {
-	typename CONFIG::reg_t res;
+	uint32_t res;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	res = cpu.GetGPR(rd) & cpu.GetGPR(rm);
 	cpu.SetGPR(rd,res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -341,27 +341,27 @@ asr_1.disasm = {
 }
 
 asr_1.execute = {
-	typename CONFIG::reg_t res, s1;
+	uint32_t res, s1;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(rm);
 	if(imm == 0) {
-		if(s1 & (typename CONFIG::reg_t)0x80000000) {
+		if(s1 & (uint32_t)0x80000000) {
 			cpu.SetCPSR_C(true);
-			res = (typename CONFIG::reg_t)0xffffffff;
+			res = (uint32_t)0xffffffff;
 		} else {
 			cpu.SetCPSR_C(false);
 			res = 0;
 		}
 	} else {
-		cpu.SetCPSR_C((s1 >> (imm - 1)) & (typename CONFIG::reg_t)0x01);
-		res = ((typename CONFIG::sreg_t)s1) >> imm;
+		cpu.SetCPSR_C((s1 >> (imm - 1)) & (uint32_t)0x01);
+		res = ((int32_t)s1) >> imm;
 	}
 	
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -380,31 +380,31 @@ asr_2.disasm = {
 }
 
 asr_2.execute = {
-	typename CONFIG::reg_t res, s1;
+	uint32_t res, s1;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
-	s1 = cpu.GetGPR(rs) & (typename CONFIG::reg_t)0x0ff;
+	s1 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
 	
 	res = cpu.GetGPR(rd);
 	if(s1 == 0) {
 	} else if(s1 < 32) {
-		cpu.SetCPSR_C((res >> (s1 - 1)) & (typename CONFIG::reg_t)0x01);
-		res = ((typename CONFIG::sreg_t)res) >> s1;
+		cpu.SetCPSR_C((res >> (s1 - 1)) & (uint32_t)0x01);
+		res = ((int32_t)res) >> s1;
 		cpu.SetGPR(rd,res);
 	} else {
 		bool res31;
 		
-		res31 = (res & (typename CONFIG::reg_t)0x80000000) != 0;
+		res31 = (res & (uint32_t)0x80000000) != 0;
 		cpu.SetCPSR_C(res31);
 		if(res31)
-			res = (typename CONFIG::reg_t)0xffffffff;
+			res = (uint32_t)0xffffffff;
 		else
 			res = 0;
 		cpu.SetGPR(rd,res);
 	}
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -423,7 +423,7 @@ bic.disasm = {
 }
 
 bic.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
@@ -431,7 +431,7 @@ bic.execute = {
 	
 	res = s1 & ~s2;
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -450,7 +450,7 @@ cmn.disasm = {
 }
 
 cmn.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
@@ -461,7 +461,7 @@ cmn.execute = {
 	Add32(res, carry_out, overflow_out, sign,
 			s1, s2, carry_in);
 
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 	cpu.SetCPSR_C(carry_out); // to check
 	cpu.SetCPSR_V(overflow_out); // to check
@@ -481,7 +481,7 @@ cmp_1.disasm = {
 }
 
 cmp_1.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rn);
@@ -489,10 +489,10 @@ cmp_1.execute = {
 	
 	res = s1 - s2;
 
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 /*
  * end of cmp(1) (compare immediate) instruction
@@ -509,7 +509,7 @@ cmp_2.disasm = {
 }
 
 cmp_2.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rn);
@@ -517,10 +517,10 @@ cmp_2.execute = {
 	
 	res = s1 - s2;
 
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 
 /*
@@ -534,44 +534,44 @@ cmp_2.execute = {
 op cmp_3(0b01000101[8]:h1[1]:h2[1]:rm[3]:rn[3])
 
 cmp_3.initialize_rm_index = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::rm_index = (h2 << 3) + rm;
 }
 
 cmp_3.initialize_rn_index = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::rn_index = (h1 << 3) + rn;
 }
 
 cmp_3.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
+	if((h2 << 3) + rm == STATE::PC_reg)
 		inherited::rm_init = 4;
 	else
 		inherited::rm_init = 0;
 }
 
 cmp_3.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if((h1 << 3) + rn == CPU<CONFIG>::PC_reg)
+	if((h1 << 3) + rn == STATE::PC_reg)
 		inherited::rn_init = 4;
 	else
 		inherited::rn_init = 0;
 }
 
 cmp_3.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "cmp r" << inherited::rn_index << ", r" << inherited::rm_index;
 }
 
 cmp_3.execute = {
-	typedef Operation<CONFIG> inherited;
-	typename CONFIG::reg_t res, s1, s2;
+	typedef Operation<STATE> inherited;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(inherited::rn_index) + inherited::rn_init;
@@ -579,10 +579,10 @@ cmp_3.execute = {
 	
 	res = s1 - s2;
 
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 
 /*
@@ -600,7 +600,7 @@ eor.disasm = {
 }
 
 eor.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
@@ -608,7 +608,7 @@ eor.execute = {
 	
 	res = s1 ^ s2;
 
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 /*
@@ -626,7 +626,7 @@ lsl_1.disasm = {
 }
 
 lsl_1.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rm);
@@ -635,10 +635,10 @@ lsl_1.execute = {
 	if(imm == 0) {
 		res = s1;
 	} else {
-		cpu.SetCPSR_C((s1 >> (32 - imm)) & (typename CONFIG::reg_t)0x01);
+		cpu.SetCPSR_C((s1 >> (32 - imm)) & (uint32_t)0x01);
 		res = s1 << imm;
 	}
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -657,11 +657,11 @@ lsl_2.disasm = {
 }
 
 lsl_2.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
-	s2 = cpu.GetGPR(rs) & (typename CONFIG::reg_t)0x0ff;
+	s2 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
 	
 	if(rs == 0) {
 		res = s1;
@@ -675,7 +675,7 @@ lsl_2.execute = {
 		cpu.SetCPSR_C(false);
 		res = 0;
 	}
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -694,14 +694,14 @@ lsr_1.disasm = {
 }
 
 lsr_1.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rm);
 	s2 = imm;
 	
 	if(s2 == 0) {
-		cpu.SetCPSR_C(s1 & (typename CONFIG::reg_t)0x80000000);
+		cpu.SetCPSR_C(s1 & (uint32_t)0x80000000);
 		res = 0;
 	} else {
 		cpu.SetCPSR_C((s1 >> (imm - 1)) & 0x01);
@@ -726,7 +726,7 @@ lsr_2.disasm = {
 }
 
 lsr_2.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
@@ -746,7 +746,7 @@ lsr_2.execute = {
 	}
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -765,7 +765,7 @@ mov_1.disasm = {
 }
 
 mov_1.execute = {
-	typename CONFIG::reg_t res;
+	uint32_t res;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	res = imm;
@@ -797,35 +797,35 @@ mov_1.execute = {
 op mov_3(0b01000110[8]:h1[1]:h2[1]:rm[3]:rd[3])
 
 mov_3.initialize_rm_index = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::rm_index = (h2 << 3) + rm;
 }
 
 mov_3.initialize_rd_index = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	inherited::rd_index = (h1 << 3) + rd;
 }
 
 mov_3.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	if((h2 << 3) + rm == CPU<CONFIG>::PC_reg)
+	if((h2 << 3) + rm == STATE::PC_reg)
 		inherited::rm_init = 4;
 	else
 		inherited::rm_init = 0;
 }
 
 mov_3.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "mov r" << inherited::rd_index << ", r" << inherited::rm_index;
 }
 
 mov_3.execute = {
-	typedef Operation<CONFIG> inherited;
-	typename CONFIG::reg_t res;
+	typedef Operation<STATE> inherited;
+	uint32_t res;
 	
 	res = inherited::rm_init + cpu.GetGPR(inherited::rm_index);
 	
@@ -848,13 +848,13 @@ mul.disasm = {
 }
 
 mul.execute = {
-	typename CONFIG::reg_t res;
+	uint32_t res;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -873,13 +873,13 @@ mvn.disasm = {
 }
 
 mvn.execute = {
-	typename CONFIG::reg_t res;
+	uint32_t res;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	res = ~(cpu.GetGPR(rm));
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -898,7 +898,7 @@ neg.disasm = {
 }
 
 neg.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = 0;
@@ -906,10 +906,10 @@ neg.execute = {
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 
 /*
@@ -927,7 +927,7 @@ orr.disasm = {
 }
 
 orr.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
@@ -935,7 +935,7 @@ orr.execute = {
 	res = s1 | s2;
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -954,7 +954,7 @@ ror.disasm = {
 }
 
 ror.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
@@ -963,7 +963,7 @@ ror.execute = {
 	if(s2 == 0) {
 		res = s1;
 	} else if((s2 & 0x01f) == 0) {
-		cpu.SetCPSR_C(s1 & (typename CONFIG::reg_t)0x80000000);
+		cpu.SetCPSR_C(s1 & (uint32_t)0x80000000);
 		res = s1;
 	} else {
 		cpu.SetCPSR_C((s1 >> ((s2 & 0x01f) - 1)) & 0x01);
@@ -971,7 +971,7 @@ ror.execute = {
 	}
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 
@@ -990,9 +990,9 @@ sbc.disasm = {
 }
 
 sbc.execute = {
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t in_neg_carry;
+	uint32_t s1, s2;
+	uint32_t res;
+	uint32_t in_neg_carry;
 	  
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
@@ -1002,10 +1002,10 @@ sbc.execute = {
 	res = s1 - s2 - in_neg_carry;
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2, in_neg_carry));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2, in_neg_carry));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry));
 }
 
 /*
@@ -1023,8 +1023,8 @@ sub_1.disasm = {
 }
 
 sub_1.execute = {
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	  
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
@@ -1033,10 +1033,10 @@ sub_1.execute = {
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 
 /*
@@ -1054,10 +1054,10 @@ sub_2.disasm = {
 }
 
 sub_2.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	  
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
@@ -1066,10 +1066,10 @@ sub_2.execute = {
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 
 /*
@@ -1087,8 +1087,8 @@ sub_3.disasm = {
 }
 
 sub_3.execute = {
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	  
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
@@ -1097,10 +1097,10 @@ sub_3.execute = {
 	res = s1 - s2;
 	cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!cpu.BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(cpu.SubtractionOverflowFrom(res, s1, s2));
+	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
 }
 
 /*
@@ -1118,8 +1118,8 @@ sub_4.disasm = {
 }
 
 sub_4.execute = {
-	typename CONFIG::reg_t s1, s2;
-	typename CONFIG::reg_t res;
+	uint32_t s1, s2;
+	uint32_t res;
 	  
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
@@ -1144,7 +1144,7 @@ tst.disasm = {
 }
 
 tst.execute = {
-	typename CONFIG::reg_t res, s1, s2;
+	uint32_t res, s1, s2;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
@@ -1152,7 +1152,7 @@ tst.execute = {
 	s2 = cpu.GetGPR(rm);
 	res = s1 & s2;
 	
-	cpu.SetCPSR_N(res & (typename CONFIG::reg_t)0x80000000);
+	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
 	cpu.SetCPSR_Z(res == 0);
 }
 /*

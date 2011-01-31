@@ -252,8 +252,7 @@ Stop(int ret)
 	// Call BusSynchronize to account for the remaining time spent in the cpu 
 	// core
 	BusSynchronize();
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 }
 
 /** Synchronization demanded from the CPU implementation.
@@ -378,8 +377,7 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 				<< PHASE(phase) << endl;
 			TRANS(inherited::logger, trans);
 			inherited::logger << EndDebug;
-			sc_stop();
-			wait();
+			Object::Stop(-1);
 			break;
 		case tlm::END_REQ:
 			/* The request phase is finished.
@@ -412,8 +410,7 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 					<< PHASE(phase) << endl;
 				TRANS(inherited::logger, trans);
 				inherited::logger << EndDebug;
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 				break;
 			}
 			tmp_time = sc_time_stamp() + time;
@@ -432,8 +429,7 @@ nb_transport_bw (transaction_type &trans, phase_type &phase, sc_core::sc_time &t
 		<< PHASE(phase) << endl;
 	TRANS(inherited::logger, trans);
 	inherited::logger << EndDebug;
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 	// useless return to avoid compiler warnings/errors
 	return ret;
 }
@@ -914,8 +910,7 @@ PrRead(address_t addr,
 					<< PHASE(phase) << endl;
 				TRANS(inherited::logger, *trans);
 				inherited::logger << EndDebug;
-				sc_stop();
-				wait();
+				Object::Stop(-1);
 				break;
 			case tlm::END_REQ:
 				if (CONFIG::DEBUG_ENABLE) {
@@ -1002,7 +997,7 @@ SetLock(uint32_t lock, uint32_t set) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command SetLock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1014,7 +1009,7 @@ PrInvalidateBlock(uint32_t set, uint32_t way) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalidateBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1026,7 +1021,7 @@ PrFlushBlock(uint32_t set, uint32_t way) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrFlushBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1037,7 +1032,7 @@ PrCleanBlock(uint32_t set, uint32_t way) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrCleanBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1049,7 +1044,7 @@ GetCacheSize() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command GetCacheSize"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 	
 	return 0;
@@ -1063,7 +1058,7 @@ GetCacheAssociativity() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command GetCacheAssociativity"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 	
 	return 0;
@@ -1077,7 +1072,7 @@ GetCacheBlockSize() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command GetCacheBlockSize"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 	
 	return 0;
@@ -1091,7 +1086,7 @@ Enable() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command Enable"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1103,7 +1098,7 @@ Disable() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command Disable"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1115,7 +1110,7 @@ IsEnabled() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command IsEnabled"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 	
 	return false;
@@ -1129,7 +1124,7 @@ PrReset() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrReset"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1141,7 +1136,7 @@ PrInvalidate() {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalidate"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1153,7 +1148,7 @@ PrInvalidateSet(uint32_t set) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalideSet"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1165,7 +1160,7 @@ PrInvalidateBlock(address_t addr) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrInvalidateBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1177,7 +1172,7 @@ PrFlushBlock(address_t addr) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrFlushBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1189,7 +1184,7 @@ PrCleanBlock(address_t addr) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrCleanBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 
@@ -1201,7 +1196,7 @@ PrZeroBlock(address_t addr) {
 //		inherited::logger << DebugError << LOCATION
 //			<< "Unsupported command PrZeroBlock"
 //			<< EndDebugError;
-//	sc_stop();
+//	Object::Stop(-1);
 //	wait();
 }
 

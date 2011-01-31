@@ -132,7 +132,7 @@ rev.execute = {
 	 * The final state for the others CCR flags is not defined.
 	 */
 	 
-	 uint8_t aVal, ccrV, memX, memYX;
+	 uint8_t aVal = 0xFF, ccrV = 0, memX, memYX;
 	 address_t  xVal, yVal;
 	 
 	 xVal = cpu->getRegX();
@@ -209,7 +209,7 @@ revw.execute = {
 	 * The final state for the others CCR flags is not defined.
 	 */
 
-	 uint8_t aVal, ccrV, ccrC, memOfMemX, memY;
+	 uint8_t aVal = 0xFF, ccrV = 0, ccrC, memOfMemX, memY;
 	 address_t memX, xVal, yVal;
 	 
 	 xVal = cpu->getRegX();

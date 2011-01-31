@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::component::tlm2::chipset::arm926ejs_pxp</name>
+		<files>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>osci_systemc</dep>
+			<dep>osci_tlm2</dep>
+			<dep>unisim::kernel::tlm2</dep>
+			<dep>unisim::kernel::service</dep>
+			<dep>unisim::kernel::logger</dep>
+			<dep>unisim::util::endian</dep>
+		</depends>
+	</unit>
+</package>
+

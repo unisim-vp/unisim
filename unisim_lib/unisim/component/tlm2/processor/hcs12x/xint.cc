@@ -50,21 +50,23 @@ address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
 uint8_t XINT::XINT_REGS_RESET_VALUES[XINT::XINT_MEMMAP_SIZE];
 
 XINT::XINT(const sc_module_name& name, Object *parent) :
-	sc_module(name),
 	Object(name, parent),
+	sc_module(name),
 	Service<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+
+	interrupt_request("interrupt_request"),
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
 
-	interrupt_request("interrupt_request"),
 	input_payload_queue("input_payload_queue"),
+
+	isHardwareInterrupt(false),
 	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-	isHardwareInterrupt(false)
+	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
 	interrupt_request(*this);
@@ -164,26 +166,22 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 

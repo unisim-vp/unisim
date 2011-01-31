@@ -141,7 +141,7 @@ public:
     void refresh_channel(uint8_t channel_number);
 
     void	start();
-    bool	pwm7in_ChangeStatus(bool pwm7in_status);
+    void	pwm7in_ChangeStatus(bool pwm7in_status);
     bool	isEmergencyShutdownEnable();
     void	setPWMInterruptFlag();
 

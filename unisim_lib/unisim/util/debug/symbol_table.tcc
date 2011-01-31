@@ -174,7 +174,7 @@ template <class T>
 void SymbolTable<T>::Dump(ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const
 {
 	typename list<Symbol<T> *>::const_iterator symbol_iter;
-	const char *type_name;
+	const char *type_name = "";
 
 	switch(type)
 	{

@@ -47,7 +47,7 @@
 #include <stdexcept>
 #include <signal.h>
 #include "unisim/kernel/service/service.hh"
-#include "unisim/component/tlm/processor/powerpc/powerpc.hh"
+#include "unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh"
 #include "unisim/component/tlm/memory/ram/memory.hh"
 #include "unisim/component/tlm/memory/flash/am29lv/am29lv.hh"
 #include "unisim/component/tlm/fsb/snooping_bus/bus.hh"
@@ -131,14 +131,13 @@ private:
 
 	// CPU parameters
 #ifdef DEBUG_EMBEDDED_PPC_G4_BOARD
-	typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
+	typedef unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig CPU_CONFIG;
 #else
-	typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
+	typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
 #endif
 	// Front Side Bus template parameters
 	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-	typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
 	static const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 	static const uint32_t FSB_NUM_PROCS = 1;
 
@@ -191,7 +190,7 @@ private:
 #ifdef WITH_PCI_STUB
 	typedef unisim::component::tlm::pci::debug::PCIStub<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_STUB;
 #endif
-	typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
+	typedef unisim::component::tlm::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
 
 	//=========================================================================
 	//===               Aliases for transaction Spies classes               ===
@@ -243,7 +242,7 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - one elf32 loader for each of the binaries
-	vector<unisim::service::loader::elf_loader::Elf32Loader *> *elf32_loaders;
+	vector<unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE> *> *elf32_loaders;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -282,14 +281,20 @@ Simulator::Simulator(int argc, char **argv)
 	, cpu(0)
 	, bus(0)
 	, mpc107(0)
-	, memory(0)
 	, erom(0)
 	, flash(0)
+	, memory(0)
 	, pci_bus(0)
-	, gdb_server(0)
-	, inline_debugger(0)
+#ifdef WITH_PCI_STUB
+	, pci_stub(0)
+#endif
+	, elf32_loaders(0)
 	, sim_time(0)
 	, host_time(0)
+	, tee_symbol_table_lookup(0)
+	, tee_memory_access_reporting(0)
+	, gdb_server(0)
+	, inline_debugger(0)
 	, il1_power_estimator(0)
 	, dl1_power_estimator(0)
 	, l2_power_estimator(0)
@@ -304,9 +309,12 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
-	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory")
+	, param_num_programs("num-programs", 0, num_programs, "Number of programs to load into memory, i.e. the number of ELF32 loaders")
 {
+#ifdef WITH_PCI_STUB
 	unsigned int pci_stub_irq = 0;
+#endif
+	param_num_programs.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	SetVariable("inline-debugger.num-loaders", num_programs);
 
@@ -379,12 +387,12 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - one elf32 loader for each of the binaries
-	elf32_loaders = new vector<unisim::service::loader::elf_loader::Elf32Loader *>();
+	elf32_loaders = new vector<unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE> *>();
 	for(unsigned int i = 0; i < num_programs; i++)
 	{
     	stringstream str;
     	str << "elf32-loader[" << i << "]";
-	    elf32_loaders->push_back(new unisim::service::loader::elf_loader::Elf32Loader(str.str().c_str()));
+	    elf32_loaders->push_back(new unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE>(str.str().c_str()));
     }
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
@@ -660,7 +668,7 @@ Simulator::~Simulator()
 	if(inline_debugger) delete inline_debugger;
 	while(!elf32_loaders->empty())
 	{
-		unisim::service::loader::elf_loader::Elf32Loader *elf32_loader = elf32_loaders->back();
+		unisim::service::loader::elf_loader::Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader = elf32_loaders->back();
 		if(elf32_loader)
 		{
 			delete elf32_loader;
@@ -695,15 +703,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM embedded-ppc-g4-board, a MPC7447A/MPC107 board simulator with support of ELF32 binaries and targeted for industrial applications");
+	simulator->SetVariable("description", "UNISIM embedded-ppc-g4-board simulator is a MPC7447A/MPC107 board simulator with support of ELF32 binaries and targeted for industrial applications");
 
-	int c;
-	bool enable_gdb_server = false;
-	bool enable_inline_debugger = false;
-	bool estimate_power = false;
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
-	const char *ramdisk_filename = "";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	uint32_t pci_bus_frequency = 33; // in Mhz
 	double cpu_frequency = 300.0; // in Mhz
@@ -712,7 +715,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	uint32_t tech_node = 130; // in nm
 	uint32_t memory_size = 256 * 1024 * 1024; // 256 MB
 #ifdef WITH_PCI_STUB
-	const char *pci_stub_regions = "";
 	bool pci_stub_use_pipe = false;
 	unsigned int pci_stub_tcp_port = 12345;
 	const char *pci_stub_server_name = "localhost";
@@ -720,7 +722,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *pci_stub_pipe_name = "pipe";
 #endif
 	double cpu_ipc = 1.0; // in instructions per cycle
-	bool force_use_virtual_address = false;
 	double cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
 	double mem_cycle_time = fsb_cycle_time;
@@ -743,7 +744,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", mem_cycle_time);
+	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", memory_size);
 
@@ -759,12 +760,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - EROM run-time configuration
 	simulator->SetVariable("erom.org", 0x78000000UL);
 	simulator->SetVariable("erom.bytesize", 2 * 8 * 1024 * 1024);
-	simulator->SetVariable("erom.cycle-time", mem_cycle_time);
+	simulator->SetVariable("erom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	
 	//  - Flash memory run-time configuration
 	simulator->SetVariable("flash.org", 0xff800000UL); //0xff000000UL;
 	simulator->SetVariable("flash.bytesize", 8 * 1024 * 1024);
-	simulator->SetVariable("flash.cycle-time", mem_cycle_time);
+	simulator->SetVariable("flash.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("flash.endian", "big-endian");
 
 	// PCI Bus run-time configuration
@@ -913,7 +914,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{

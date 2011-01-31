@@ -700,7 +700,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									uint64_t debug_info_offset64;
 								
 									if(expr_length < sizeof(debug_info_offset64)) return -1;
-									memcpy(&debug_info_offset, expr, sizeof(debug_info_offset64));
+									memcpy(&debug_info_offset64, expr, sizeof(debug_info_offset64));
 									debug_info_offset64 = Target2Host(endianness, debug_info_offset64);
 									expr += sizeof(debug_info_offset64);
 									expr_length -= sizeof(debug_info_offset64);

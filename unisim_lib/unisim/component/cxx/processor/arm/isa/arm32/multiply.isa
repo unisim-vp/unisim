@@ -63,12 +63,12 @@ mla.disasm = {
 }
 
 mla.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -104,11 +104,11 @@ mul.disasm = {
 }
 
 mul.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t res;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t res;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -135,7 +135,10 @@ mul.execute = {
  *    ARMV5TXM
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMLAL
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6
 }:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4])
 
 smlal.disasm = {
@@ -149,14 +152,14 @@ smlal.disasm = {
 }
 
 smlal.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	typename CONFIG::reg_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
-	typename CONFIG::reg_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
+	uint32_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -166,8 +169,8 @@ smlal.execute = {
 	res = (int64_t)res + ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
 	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
-	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+	cpu.SetGPR(rdhi, (uint32_t)res_hi);
+	cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
 	if(s) {
 		cpu.SetCPSR_N(res_hi & 0x80000000);
@@ -187,8 +190,7 @@ smlal.execute = {
  *    ARMV5TXM
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_SMULL
-}:op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 smull.disasm = {
 	buffer << "smull";
@@ -201,12 +203,12 @@ smull.disasm = {
 }
 
 smull.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -215,8 +217,8 @@ smull.execute = {
 	res = ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
 	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
-	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+	cpu.SetGPR(rdhi, (uint32_t)res_hi);
+	cpu.SetGPR(rdlo, (uint32_t)res_lo);
 	
 	if(s) {
 		cpu.SetCPSR_N(res_hi & 0x80000000);
@@ -236,8 +238,7 @@ smull.execute = {
  *    ARMV5TXM
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_UMLAL
-}:op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 umlal.disasm = {
 	buffer << "umlal";
@@ -250,14 +251,14 @@ umlal.disasm = {
 }
 
 umlal.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	typename CONFIG::reg_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
-	typename CONFIG::reg_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
+	uint32_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -267,8 +268,8 @@ umlal.execute = {
 	res += ((int64_t)rm_value) * ((int64_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
 	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
-	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+	cpu.SetGPR(rdhi, (uint32_t)res_hi);
+	cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
 	if(s) {
 		cpu.SetCPSR_N(res_hi & 0x80000000);
@@ -288,8 +289,7 @@ umlal.execute = {
  *    ARMV5TXM
  */
 
-{ CONFIG::HAS_INSN_ARITH_MULT_UMULL
-}:op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 umull.disasm = {
 	buffer << "umull";
@@ -302,12 +302,12 @@ umull.disasm = {
 }
 
 umull.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -316,8 +316,8 @@ umull.execute = {
 	res = ((int64_t)rm_value) * ((int64_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
 	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (typename CONFIG::reg_t)res_hi);
-	cpu.SetGPR(rdlo, (typename CONFIG::reg_t)res_lo);
+	cpu.SetGPR(rdhi, (uint32_t)res_hi);
+	cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
 	if(s) {
 		cpu.SetCPSR_N(res_hi & 0x80000000);
@@ -331,7 +331,7 @@ umull.execute = {
 
 group multiply_rn_init(mla)
 multiply_rn_init.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rn == 15) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
@@ -339,7 +339,7 @@ multiply_rn_init.initialize_rn_init = {
 
 group multiply_rm_init(mla, mul, smlal, smull, umlal, umull)
 multiply_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rm == 15) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
@@ -347,7 +347,7 @@ multiply_rm_init.initialize_rm_init = {
 
 group multiply_rs_init(mla, mul, smlal, smull, umlal, umull)
 multiply_rs_init.initialize_rs_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	if(rs == 15) inherited::rs_init = 8;
 	else inherited::rs_init = 0;
@@ -355,7 +355,7 @@ multiply_rs_init.initialize_rs_init = {
 
 group multiply_rdhi_init(smlal, umlal)
 multiply_rdhi_init.initialize_rdhi_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	if(rdhi == 15) inherited::rdhi_init = 8;
 	else inherited::rdhi_init = 0;
@@ -363,7 +363,7 @@ multiply_rdhi_init.initialize_rdhi_init = {
 
 group multiply_rdlo_init(smlal, umlal)
 multiply_rdlo_init.initialize_rdlo_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rdlo == 15) inherited::rdlo_init = 8;
 	else inherited::rdlo_init = 0;

@@ -242,11 +242,11 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
-	bool use_gdb_server;
-	bool use_inline_debugger;
+	bool enable_gdb_server;
+	bool enable_inline_debugger;
 	string filename;
-	Parameter<bool> param_use_gdb_server;
-	Parameter<bool> param_use_inline_debugger;
+	Parameter<bool> param_enable_gdb_server;
+	Parameter<bool> param_enable_inline_debugger;
 	
 	bool isS19;
 
@@ -280,11 +280,11 @@ Simulator::Simulator(int argc, char **argv)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
-	, use_gdb_server(false)
-	, use_inline_debugger(false)
+	, enable_gdb_server(false)
+	, enable_inline_debugger(false)
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, isS19(false)
-	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
-	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
 {
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -331,9 +331,9 @@ Simulator::Simulator(int argc, char **argv)
 	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
 #ifdef HAVE_RTBCOB
-	rtbStub = new RTBStub("RTBStub"/*, fsb_cycle_time*/);
+	rtbStub = new RTBStub("atd-pwm-stub"/*, fsb_cycle_time*/);
 #else
-	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("xml-atd-pwm-stub"/*, fsb_cycle_time*/);
+	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("atd-pwm-stub"/*, fsb_cycle_time*/);
 #endif
 	
 	//=========================================================================
@@ -353,9 +353,9 @@ Simulator::Simulator(int argc, char **argv)
 	pim = new PIM("PIM", this, 1234);
 
 	//  - GDB server
-	gdb_server = use_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = use_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = enable_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -445,7 +445,7 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[6]) >> pwm->registers_export;
 	*(registersTee->registers_import[7]) >> ect->registers_export;
 
-	if(use_inline_debugger)
+	if(enable_inline_debugger)
 	{
 		// Connect inline-debugger to CPU
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
@@ -465,7 +465,7 @@ Simulator::Simulator(int argc, char **argv)
 
 		inline_debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
-	else if(use_gdb_server)
+	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
@@ -560,17 +560,17 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *filename = "";
 	const char *symbol_filename = "";
 
-	double cpu_frequency = 4.0; // in Mhz
+//	double cpu_frequency = 4.0; // in Mhz
 
-	uint8_t cpu_clock_multiplier = 1;
-	uint8_t xgate_clock_multiplier = 2;
+//	uint8_t cpu_clock_multiplier = 1;
+//	uint8_t xgate_clock_multiplier = 2;
 //	double cpu_ipc = 1.0; // in instructions per cycle
-	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-	uint32_t mem_cycle_time = fsb_cycle_time;
+//	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
+//	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
+//	uint32_t mem_cycle_time = fsb_cycle_time;
 	bool force_use_virtual_address = true;
 
-	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
+//	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -590,25 +590,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
 	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
 
-#ifdef HAVE_RTBCOB
-	simulator->SetVariable("RTBStub.anx-stimulus-period", 80000000);
-	simulator->SetVariable("RTBStub.atd0-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("RTBStub.atd0-anx-start-channel", 0);
-	simulator->SetVariable("RTBStub.atd0-anx-wrap-around-channel", 0);
-	simulator->SetVariable("RTBStub.atd1-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("RTBStub.atd1-anx-start-channel", 0);
-	simulator->SetVariable("RTBStub.atd1-anx-wrap-around-channel", 0);
-	simulator->SetVariable("RTBStub.trace-enable", false);
-#else
-	simulator->SetVariable("xml-atd-pwm-stub.anx-stimulus-period", 80000000);
-	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-start-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-start-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
-	simulator->SetVariable("xml-atd-pwm-stub.trace-enable", false);
-#endif
+	simulator->SetVariable("atd-pwm-stub.anx-stimulus-period", 80000000); // 80 us
+	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-start-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd0-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
+	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
+
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
 	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
@@ -638,7 +629,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.requires-finished-instruction-reporting", false);
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
-	simulator->SetVariable("CPU.nice-time", 0xffffffffffULL);
+	simulator->SetVariable("CPU.nice-time", "1 ms");
 	simulator->SetVariable("CPU.cpu-cycle-time", 250000);
 	simulator->SetVariable("CPU.bus-cycle-time", 250000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
@@ -733,7 +724,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{

@@ -108,6 +108,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SnoopingFSBRequest;
@@ -213,7 +214,8 @@ public:
 	virtual ~MPC107();
 	
 	/* Initialization methods of the service */
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
 		
 	/* Methods to implement for Service<MemoryInterface<PHYSICAL_ADDR> > */
 	virtual void Reset();
@@ -484,6 +486,12 @@ private:
 	 * @param req  the pci message to visualize
 	 */
 	void DEBUG_PCI_REQ(const PPCIReqType &req);
+	
+	/**
+	 * Setup Memory export.
+	 * @return true on success.
+	 */
+	bool SetupMemory();
 };
 
 } // end of namespace unisim

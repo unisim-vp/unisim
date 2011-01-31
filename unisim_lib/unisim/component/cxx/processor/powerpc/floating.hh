@@ -36,8 +36,10 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_FLOATING_HH__
 
 #include <unisim/util/simfloat/floating.hh>
+#include <unisim/util/debug/register.hh>
 
 #include <inttypes.h>
+#include <string>
 
 static const unsigned int RN_NEAREST = 0;
 static const unsigned int RN_ZERO = 1;
@@ -111,6 +113,7 @@ namespace powerpc {
       bool isConvertNaNNegative() const { return true; }
       bool acceptMinusZero() const { return true; }
 
+      void setRoundToEven() { fRoundToEven = true; }
       void clearRoundToEven() { fRoundToEven = false; }
       void setUpApproximateInfty() { fUpApproximateInfty = true; }
       void clearUpApproximateInfty() { fUpApproximateInfty = false; }
@@ -293,6 +296,20 @@ SoftFloat::assign(const SoftDouble& sdDouble, Flags& rpParams) {
 inline
 SoftFloat::SoftFloat(const SoftDouble& sdDouble, Flags& rpParams)
    { assign(sdDouble, rpParams); }
+
+class FloatingPointRegisterInterface : public unisim::util::debug::Register
+{
+public:
+	FloatingPointRegisterInterface(const char *name, SoftDouble *value);
+	virtual ~FloatingPointRegisterInterface();
+	virtual const char *GetName() const;
+	virtual void GetValue(void *buffer) const;
+	virtual void SetValue(const void *buffer);
+	virtual int GetSize() const;
+private:
+	std::string name;
+	SoftDouble *value;
+};
 
 } // end of namespace powerpc
 } // end of namespace processor

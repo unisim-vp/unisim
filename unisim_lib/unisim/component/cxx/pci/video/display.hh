@@ -59,6 +59,7 @@ using unisim::service::interfaces::Video;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
@@ -81,7 +82,9 @@ public:
 	virtual ~Display();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 	virtual void Reset();
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
@@ -103,7 +106,6 @@ protected:
 	// debug stuff
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
-	Parameter<bool> param_verbose;
 	
 	// PCI configuration registers
 	reg16_t pci_conf_device_id;
@@ -126,6 +128,7 @@ protected:
 	ADDRESS initial_base_addr;
 	unsigned int pci_bus_frequency; // in Mhz
 private:
+	Parameter<bool> param_verbose;
 	Parameter<uint32_t> param_width;
 	Parameter<uint32_t> param_height;
 	Parameter<uint32_t> param_depth;
@@ -133,6 +136,8 @@ private:
 	Parameter<ADDRESS> param_initial_base_addr;
 	Parameter<uint32_t> param_pci_device_number;
 	Parameter<unsigned int> param_pci_bus_frequency;
+	
+	bool SetupFrameBuffer();
 };
 
 } // end of namespace video

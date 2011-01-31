@@ -47,23 +47,25 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 
+	Client<TrapReporting>(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
 
-	slave_socket("slave_socket"),
+	trap_reporting_import("trap_reporting_import", this),
+
 	bus_clock_socket("Bus-Clock"),
+	slave_socket("slave_socket"),
 
-	trap_reporting_import("trap_reproting_import", this),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
 
+	oscillator_clock_int(0),
+	param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_int),
+
 	baseAddress(0x0034), // MC9S12XDP512V2 - CRG baseAddress
 	param_baseAddress("base-address", this, baseAddress),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	interrupt_offset_rti(0xF0),
 	param_interrupt_offset_rti("interrupt-offset-rti", this, interrupt_offset_rti),
@@ -71,10 +73,9 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	param_interrupt_offset_pll_lock("interrupt-offset-pll-lock", this, interrupt_offset_pll_lock),
 	interrupt_offset_self_clock_mode(0xC4),
 	param_interrupt_offset_self_clock_mode("interrupt-offset-self-clock-mode", this, interrupt_offset_self_clock_mode),
-
-	oscillator_clock_int(0),
-	param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_int)
-
+	
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
 	interrupt_request(*this);

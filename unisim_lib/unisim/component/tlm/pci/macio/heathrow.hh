@@ -94,7 +94,7 @@ public:
 	virtual ~Heathrow();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
 	void Run();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	void SetIRQ(unsigned int int_num, bool level);
 	virtual void TriggerInterrupt(bool in_level);
 private:

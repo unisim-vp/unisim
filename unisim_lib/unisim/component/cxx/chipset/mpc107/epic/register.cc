@@ -182,10 +182,13 @@ Registers() {
 			| ((uint32_t)0x0 << 16) /* PRIORITY */
 			| (uint32_t)0x0; /* VECTOR */
 	}
-	for(unsigned int i = 0; i < 16; i++) {
+	for(unsigned int i = 0; i < 5; i++) {
 		idr[i] = (uint32_t)0x0
 			| (uint32_t)0x01; /* P0 */
-		sdr[i] = idr[i];
+	}
+	for(unsigned int i = 0; i < 16; i++) {
+		sdr[i] = (uint32_t)0x0
+			| (uint32_t)0x01; /* P0 */
 	}
 	for(unsigned int i = 0; i < 4; i++) {
 		iivpr[i] = (uint32_t)0x0

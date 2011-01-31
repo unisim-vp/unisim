@@ -51,166 +51,6 @@ using std::string;
 class Exception : public std::exception {};
 
 template <class CONFIG>
-class SystemResetException : public Exception
-{
-public:
-	SystemResetException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class MachineCheckException : public Exception
-{
-public:
-	MachineCheckException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class DecrementerException : public Exception
-{
-public:
-	DecrementerException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class ExternalInterruptException : public Exception
-{
-public:
-	ExternalInterruptException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class ISIException : public Exception
-{
-public:
-	typedef typename CONFIG::address_t address_t;
-	ISIException(const char *name, address_t addr);
-	virtual ~ISIException() throw();
-	virtual const char * what () const throw ();
-	address_t GetAddr() const;
-private:
-	address_t addr;
-	string what_str;
-};
-
-template <class CONFIG>
-class ISIProtectionViolationException : public ISIException<CONFIG>
-{
-public:
-	typedef typename ISIException<CONFIG>::address_t address_t;
-	ISIProtectionViolationException(address_t addr);
-};
-
-template <class CONFIG>
-class ISINoExecuteException : public ISIException<CONFIG>
-{
-public:
-	typedef typename ISIException<CONFIG>::address_t address_t;
-	ISINoExecuteException(address_t addr);
-};
-
-template <class CONFIG>
-class ISIDirectStoreException : public ISIException<CONFIG>
-{
-public:
-	typedef typename ISIException<CONFIG>::address_t address_t;
-	ISIDirectStoreException(address_t addr);
-};
-
-template <class CONFIG>
-class ISIPageFaultException : public ISIException<CONFIG>
-{
-public:
-	typedef typename ISIException<CONFIG>::address_t address_t;
-	ISIPageFaultException(address_t addr);
-};
-
-template <class CONFIG>
-class ISIGuardedMemoryException : public ISIException<CONFIG>
-{
-public:
-	typedef typename ISIException<CONFIG>::address_t address_t;
-	ISIGuardedMemoryException(address_t addr);
-};
-
-template <class CONFIG>
-class DSIException : public Exception
-{
-public:
-	typedef typename CONFIG::address_t address_t;
-	DSIException(const char *name, address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-	virtual ~DSIException() throw();
-	address_t GetAddress() const;
-	typename CONFIG::MemoryAccessType GetAccessType() const;
-	virtual const char * what () const throw ();
-private:
-	address_t addr;
-	typename CONFIG::MemoryAccessType memory_access_type;
-	string what_str;
-};
-
-template <class CONFIG>
-class DSIDirectStoreException : public DSIException<CONFIG>
-{
-public:
-	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIDirectStoreException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-};
-
-template <class CONFIG>
-class DSIProtectionViolationException : public DSIException<CONFIG>
-{
-public:
-	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIProtectionViolationException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-};
-
-template <class CONFIG>
-class DSIPageFaultException : public DSIException<CONFIG>
-{
-public:
-	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIPageFaultException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-};
-
-template <class CONFIG>
-class DSIDataAddressBreakpointException : public DSIException<CONFIG>
-{
-public:
-	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIDataAddressBreakpointException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-};
-
-template <class CONFIG>
-class DSIExternalAccessDisabledException : public DSIException<CONFIG>
-{
-public:
-	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIExternalAccessDisabledException(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-};
-
-template <class CONFIG>
-class DSIWriteThroughLinkedLoadStore : public DSIException<CONFIG>
-{
-public:
-	typedef typename DSIException<CONFIG>::address_t address_t;
-	DSIWriteThroughLinkedLoadStore(address_t addr, typename CONFIG::MemoryAccessType memory_access_type);
-};
-
-
-template <class CONFIG>
-class FloatingPointAssistException : public Exception
-{
-public:
-	FloatingPointAssistException();
-	virtual const char * what () const throw ();
-};
-
-
-template <class CONFIG>
 class AlignmentException : public Exception
 {
 public:
@@ -226,10 +66,20 @@ template <class CONFIG>
 class ProgramException : public Exception
 {
 public:
-	ProgramException(const char *name);
+	typedef enum
+	{
+		PX_ILLEGAL_INSTRUCTION,
+		PX_PRIVILEGE_VIOLATION,
+		PX_TRAP,
+		PX_FLOATING_POINT,
+		PX_UNIMPLEMENTED_INSTRUCTION
+	} Type;
+	ProgramException(Type type);
 	virtual ~ProgramException() throw();
+	Type GetType() const;
 	virtual const char * what () const throw ();
 private:
+	Type type;
 	string what_str;
 };
 
@@ -262,6 +112,13 @@ public:
 };
 
 template <class CONFIG>
+class UnimplementedInstructionException : public ProgramException<CONFIG>
+{
+public:
+	UnimplementedInstructionException();
+};
+
+template <class CONFIG>
 class SystemCallException : public Exception
 {
 public:
@@ -274,83 +131,6 @@ class FloatingPointUnavailableException : public Exception
 {
 public:
 	FloatingPointUnavailableException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class TraceException : public Exception
-{
-public:
-	TraceException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class InstructionAddressBreakpointException : Exception
-{
-public:
-	InstructionAddressBreakpointException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class TLBMissException : public Exception
-{
-public:
-	typedef typename CONFIG::address_t address_t;
-	typedef typename CONFIG::physical_address_t physical_address_t;
-	TLBMissException(typename CONFIG::MemoryAccessType memory_access_type, typename CONFIG::MemoryType memory_type, address_t addr, uint32_t key, uint32_t way, uint32_t vsid, uint32_t api, physical_address_t primary_pteg, physical_address_t secondary_pteg);
-	virtual const char * what () const throw ();
-	typename CONFIG::MemoryAccessType GetMemoryAccessType() const;
-	typename CONFIG::MemoryType GetMemoryType() const;
-	address_t GetAddress() const;
-	uint32_t GetVSID() const;
-	uint32_t GetAPI() const;
-	uint32_t GetWay() const;
-	uint32_t GetKey() const;
-	uint32_t GetPrimaryPTEG() const;
-	uint32_t GetSecondaryPTEG() const;
-private:
-	typename CONFIG::MemoryAccessType memory_access_type;
-	typename CONFIG::MemoryType memory_type;
-	address_t addr;
-	uint32_t vsid;
-	uint32_t api;
-	uint32_t way;
-	uint32_t key;
-	physical_address_t primary_pteg;
-	physical_address_t secondary_pteg;
-};
-
-template <class CONFIG>
-class PerformanceMonitorInterruptException : Exception
-{
-public:
-	PerformanceMonitorInterruptException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class SystemManagementInterruptException : Exception
-{
-public:
-	SystemManagementInterruptException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class ThermalManagementInterruptException : Exception
-{
-public:
-	ThermalManagementInterruptException();
-	virtual const char * what () const throw ();
-};
-
-template <class CONFIG>
-class AltivecUnavailableException : Exception
-{
-public:
-	AltivecUnavailableException();
 	virtual const char * what () const throw ();
 };
 

@@ -55,44 +55,45 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS>
-Bridge<ADDRESS>::Bridge(const char *name, Object *parent) :
-	Object(name, parent, "PCI-to-ISA bridge"),
-	pci_device_number(0),
-	isa_bus_frequency(0),
-	pci_bus_frequency(33),
-	initial_base_addr(0),
-	initial_io_base_addr(0),
-	
+Bridge<ADDRESS>::Bridge(const char *name, Object *parent)
+	: Object(name, parent, "PCI-to-ISA bridge")
+
 	// PCI configuration registers initialization
-	pci_conf_device_id("pci_conf_device_id", "PCI config Device ID", 0x0, 0x10ad), // Winbond Systems Labs
-	pci_conf_vendor_id("pci_conf_vendor_id", "PCI config Vendor ID", 0x0, 0x0565), // W83C553F PCI-ISA Bridge
-	pci_conf_status("pci_conf_status", "PCI Config Status", 0x0, 0x0),
-	pci_conf_command("pci_conf_command", "PCI Config Command", 0x007f, 0x0),
-	pci_conf_class_code("pci_conf_class_code", "PCI Config Class Code", 0x0, 0x060100), // ISA Bridge
-	pci_conf_revision_id("pci_conf_revision_id", "PCI Config Revision ID", 0x0, 0x0),
-	pci_conf_bist("pci_conf_bist", "PCI Config BIST", 0x0, 0x0),
-	pci_conf_header_type("pci_conf_header_type", "PCI Config Header Type", 0x0, 0x0),
-	pci_conf_latency_timer("pci_conf_latency_timer", "PCI Config Latency Timer", 0x0, 0x0),
-	pci_conf_cache_line_size("pci_conf_cache_line_size", "PCI Config Cache Line Size", 0x0, 0x0),
+	, pci_conf_device_id("pci_conf_device_id", "PCI config Device ID", 0x0, 0x10ad) // Winbond Systems Labs
+	, pci_conf_vendor_id("pci_conf_vendor_id", "PCI config Vendor ID", 0x0, 0x0565) // W83C553F PCI-ISA Bridge
+	, pci_conf_status("pci_conf_status", "PCI Config Status", 0x0, 0x0)
+	, pci_conf_command("pci_conf_command", "PCI Config Command", 0x007f, 0x0)
+	, pci_conf_class_code("pci_conf_class_code", "PCI Config Class Code", 0x0, 0x060100) // ISA Bridge
+	, pci_conf_revision_id("pci_conf_revision_id", "PCI Config Revision ID", 0x0, 0x0)
+	, pci_conf_bist("pci_conf_bist", "PCI Config BIST", 0x0, 0x0)
+	, pci_conf_header_type("pci_conf_header_type", "PCI Config Header Type", 0x0, 0x0)
+	, pci_conf_latency_timer("pci_conf_latency_timer", "PCI Config Latency Timer", 0x0, 0x0)
+	, pci_conf_cache_line_size("pci_conf_cache_line_size", "PCI Config Cache Line Size", 0x0, 0x0)
 
-	pci_conf_carbus_cis_pointer("pci_conf_carbus_cis_pointer", "PCI Config Carbus CIS Pointer", 0x0, 0x0),
-	pci_conf_subsystem_id("pci_conf_subsystem_id", "PCI Config Subsystem ID", 0x0, 0x0),
-	pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0),
+	, pci_conf_carbus_cis_pointer("pci_conf_carbus_cis_pointer", "PCI Config Carbus CIS Pointer", 0x0, 0x0)
+	, pci_conf_subsystem_id("pci_conf_subsystem_id", "PCI Config Subsystem ID", 0x0, 0x0)
+	, pci_conf_subsystem_vendor_id("pci_conf_subsystem_vendor_id", "PCI Config Subsystem Vendor ID", 0x0, 0x0)
 
-	pci_conf_interrupt_line("pci_conf_interrupt_line", "PCI Config Interrupt Line", 0xff, 0),
-	pci_conf_interrupt_pin("pci_conf_interrupt_pin", "PCI Config Interrupt Pin", 0x0, 0x0),
-	
+	, pci_conf_interrupt_line("pci_conf_interrupt_line", "PCI Config Interrupt Line", 0xff, 0)
+	, pci_conf_interrupt_pin("pci_conf_interrupt_pin", "PCI Config Interrupt Pin", 0x0, 0x0)
+
+	, pci_device_number(0)
+	, initial_base_addr(0)
+	, initial_io_base_addr(0)
+	, isa_bus_frequency(0)
+	, pci_bus_frequency(33)
+
 	// debug stuff
-	logger(*this),
-	verbose(false),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+	, logger(*this)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 
 	// Parameters initialization
-	param_initial_base_addr("initial-base-addr", this, initial_base_addr, "intial base address of memory space"),
-	param_initial_io_base_addr("initial-io-base-addr", this, initial_io_base_addr, "initial base address of I/O space"),
-	param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number"),
-	param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz"),
-	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency in Mhz")
+	, param_initial_base_addr("initial-base-addr", this, initial_base_addr, "intial base address of memory space")
+	, param_initial_io_base_addr("initial-io-base-addr", this, initial_io_base_addr, "initial base address of I/O space")
+	, param_pci_device_number("pci-device-number", this, pci_device_number, "PCI device number")
+	, param_isa_bus_frequency("isa-bus-frequency", this, isa_bus_frequency, "ISA bus frequency in Mhz")
+	, param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency, "PCI bus frequency in Mhz")
 {
 	param_isa_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_pci_bus_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -312,12 +313,15 @@ bool Bridge<ADDRESS>::TranslatePCItoISA(unisim::component::cxx::pci::PCISpace pc
 			isa_addr = pci_addr - pci_base_addr;
 			return pci_addr >= pci_base_addr && pci_addr + size < pci_base_addr + MEMORY_SPACE_SIZE;
 		}
+		
+		default:
+			break;
 	}
 	return false;
 }
 
 template <class ADDRESS>
-bool Bridge<ADDRESS>::Setup()
+bool Bridge<ADDRESS>::BeginSetup()
 {
 	// PCI configuration registers initialization	
 	pci_conf_base_addr[IO_SPACE_BAR_NUM].Initialize("pci_conf_base_addr[IO_SPACE_BAR_NUM]", "PCI Config Base Address (I/O)", 0, 0); // ISA I/O space is not configurable

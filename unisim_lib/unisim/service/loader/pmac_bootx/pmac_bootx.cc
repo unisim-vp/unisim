@@ -55,11 +55,6 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-static char Nibble2HexChar(uint8_t v)
-{
-	return v < 10 ? '0' + v : 'a' + v - 10;
-}
-
 static uint8_t HexChar2Nibble(char ch)
 {
 	if(ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
@@ -168,7 +163,6 @@ DeviceProperty *DeviceTree::CreateDeviceProperty(const unisim::util::xml::Node *
 			}
 		}
 
-		unsigned int i, n;
 		char buffer[value.length() + 1];
 		unsigned int len = ExpandEscapeSequences(value, buffer);
 		
@@ -463,12 +457,12 @@ void DeviceTree::DumpDeviceNode(DeviceNode *reloc_node)
 
 DeviceTree::DeviceTree(BootInfos *_boot_infos, unisim::kernel::logger::Logger& _logger, bool _verbose)
 	: logger(_logger)
-	, verbose(_verbose)
+	, boot_infos(_boot_infos)
 	, root_node(0)
 	, last_reloc_node(0)
-	, boot_infos(_boot_infos)
-	, size(0)
 	, base(0)
+	, size(0)
+	, verbose(_verbose)
 {
 }
 
@@ -572,17 +566,29 @@ BootInfos::BootInfos(unisim::kernel::logger::Logger& _logger, bool _verbose)
 	, size(0)
 	, max_size(MAX_BOOT_INFOS_IMAGE_SIZE)
 	, image(0)
+	, blob(0)
 {
-	image = (uint8_t *) malloc(max_size);
 }
 
 BootInfos::~BootInfos()
 {
-	free(image);
+	if(image)
+	{
+		free(image);
+	}
+	
+	if(blob)
+	{
+		blob->Release();
+	}
 }
 
 uint32_t BootInfos::Malloc(uint32_t size)
 {
+	if(!image)
+	{
+		image = (uint8_t *) malloc(max_size);
+	}
 	uint32_t ret;
 	
 	if(size > 0)
@@ -620,9 +626,20 @@ uint32_t BootInfos::UnRelocate(void *p)
 	return p ? ((uint8_t *) p) - image : 0;
 }
 
-bool BootInfos::Load(const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height)
+bool BootInfos::Load(uint32_t boot_infos_addr, const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height)
 {
-	int i;
+	if(image)
+	{
+		free(image);
+		image = 0;
+	}
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
+	
+	unsigned int i;
 	DeviceTree device_tree(this, logger, verbose);
 	BootInfosImage *boot_infos;
 	//char *kernel_parms = "";
@@ -664,7 +681,7 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 		ramdisk_offset = Malloc(ramdisk_size);
 		if(verbose)
 		{
-			logger << DebugInfo << "Loading ramdisk at offset " << hex << ramdisk_offset << dec << EndDebugInfo;
+			logger << DebugInfo << "Loading ramdisk at offset " << hex << ramdisk_offset << " of boot infos" << dec << EndDebugInfo;
 		}
 		
 		char *ramdisk = (char *) Relocate(ramdisk_offset);
@@ -798,69 +815,143 @@ bool BootInfos::Load(const string& device_tree_filename, const string& kernel_pa
 	boot_infos->physMemoryMapSize = 0;
 	boot_infos->frameBufferSize = 0;
 	boot_infos->totalParamsSize = Host2BigEndian(size);
+	
+	blob = new unisim::util::debug::blob::Blob<uint32_t>();
+	blob->Catch();
+	
+	unisim::util::debug::blob::Section<uint32_t> *section = new unisim::util::debug::blob::Section<uint32_t>(
+		unisim::util::debug::blob::Section<uint32_t>::TY_UNKNOWN,
+		unisim::util::debug::blob::Section<uint32_t>::SA_A,
+		"boot_infos",
+		0,
+		0,
+		boot_infos_addr,
+		size,
+		image
+	);
+	
+	blob->AddSection(section);
+	image = 0; // allocated memory is now managed by the section, and section is managed by the blob
 
 	return true;
 }
 
-const uint8_t *BootInfos::GetImage()
+const unisim::util::debug::blob::Blob<uint32_t> *BootInfos::GetBlob() const
 {
-	return image;
-}
-
-uint32_t BootInfos::GetImageSize()
-{
-	return size;
+	return blob;
 }
 
 PMACBootX::PMACBootX(const char *name, Object *parent) :
-	Object(name, parent, "PowerMac BootX loader emulator"),
+	Object(name, parent, "This service is a PowerMac BootX loader emulator. It allows bootloading a PowerMac Linux kernel with its initial ramdisk and device tree"),
 	Service<Loader<uint32_t> >(name, parent),
+	Service<Blob<uint32_t> >(name, parent),
 	Client<Loader<uint32_t> >(name, parent),
+	Client<Blob<uint32_t> >(name, parent),
 	Client<Memory<uint32_t> >(name, parent),
 	Client<Registers>(name, parent),
-	logger(*this),
 	loader_export("loader-export", this),
+	blob_export("blob-export", this),
 	loader_import("loader-import", this),
+	blob_import("blob-import", this),
 	memory_import("memory-import", this),
 	registers_import("cpu-registers-import", this),
+	logger(*this),
 	device_tree_filename(),
 	kernel_parms(),
-	r1_value(0),
-	r3_value(0),
-	r4_value(0),
-	r5_value(0),
+	ramdisk_filename(),
 	screen_width(0),
 	screen_height(0),
 	verbose(false),
+	blob(0),
 	param_device_tree_filename("device-tree-filename", this, device_tree_filename, "device tree file name of simulated PowerMac machine"),
 	param_kernel_parms("kernel-params", this, kernel_parms, "Linux kernel parameters"),
 	param_ramdisk_filename("ramdisk-filename", this, ramdisk_filename, "initial ramdisk filename (either compressed with gzip or uncompressed)"),
 	param_screen_width("screen-width", this, screen_width, "screen width in pixels"),
 	param_screen_height("screen-height", this, screen_height, "screen height in pixels"),
-	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	stack_base(0)
+	param_verbose("verbose", this, verbose, "enable/disable verbosity")
 {
-	SetupDependsOn(loader_import);
-	SetupDependsOn(memory_import);
-	SetupDependsOn(registers_import);
+	loader_export.SetupDependsOn(blob_import);
+	loader_export.SetupDependsOn(loader_import);
+	loader_export.SetupDependsOn(memory_import);
+	loader_export.SetupDependsOn(registers_import);
+	
+	blob_export.SetupDependsOn(blob_import);
 }
 
 void PMACBootX::OnDisconnect()
 {
 }
 
-bool PMACBootX::Load(const char *filename)
+bool PMACBootX::BeginSetup()
 {
-	return loader_import->Load(filename);
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
+	
+	return true;
 }
 
-bool PMACBootX::Setup()
+bool PMACBootX::SetupBlob()
 {
-	return Load();
+	if(blob) return true;
+	if(!blob_import)
+	{
+		logger << DebugError << "no kernel loader connected" << EndDebugError;
+		return false;
+	}
+	
+	const unisim::util::debug::blob::Blob<uint32_t> *kernel_blob = blob_import->GetBlob();
+	
+	if(!kernel_blob)
+	{
+		logger << DebugError << "Can't get kernel blob" << EndDebugError;
+		return false;
+	}
+
+	uint32_t kernel_start_addr;
+	uint32_t kernet_end_addr;
+	
+	kernel_blob->GetAddrRange(kernel_start_addr, kernet_end_addr);
+	
+	uint32_t boot_infos_addr = (kernet_end_addr + 4095) & 0xfffff000; // align boot info to a page boundary
+	uint32_t stack_base = 0x400000; // under first 512 KB
+
+	BootInfos boot_infos(logger, verbose);
+
+	if(verbose)
+	{
+		logger << DebugInfo << "Using device tree from file \"" << device_tree_filename << "\"" << EndDebugInfo;
+		logger << DebugInfo << "Linux kernel parameters are \"" << kernel_parms << "\"" << EndDebugInfo;
+		logger << DebugInfo << "Using ramdisk from image \"" << ramdisk_filename << "\"" << EndDebugInfo;
+	}
+	
+	const unisim::util::debug::blob::Blob<uint32_t> *boot_infos_blob = 0;
+
+	if(!boot_infos.Load(boot_infos_addr, GetSimulator()->SearchSharedDataFile(device_tree_filename.c_str()).c_str(), kernel_parms, GetSimulator()->SearchSharedDataFile(ramdisk_filename.c_str()).c_str(), screen_width, screen_height) || !(boot_infos_blob = boot_infos.GetBlob()))
+	{
+		logger << DebugError << "Error while bootloading kernel, initial ramdisk and device tree" << EndDebugError;
+		return false;
+	}
+
+	blob = new unisim::util::debug::blob::Blob<uint32_t>();
+	blob->Catch();
+	
+	blob->SetArchitecture("powerpc");
+	blob->SetStackBase(stack_base);
+	
+	blob->AddBlob(boot_infos_blob);
+	blob->AddBlob(kernel_blob);
+	
+	return true;
 }
 
-bool PMACBootX::Load()
+bool PMACBootX::SetupLoad()
 {
+	if(!SetupBlob()) return false;
+	if(!blob) return false;
+	
 	if(!loader_import)
 	{
 		logger << DebugError << "No loader connected" << EndDebugError;
@@ -878,60 +969,64 @@ bool PMACBootX::Load()
 		logger << DebugError << "No CPU connected" << EndDebugError;
 		return false;
 	}
-		
-	BootInfos boot_infos(logger, verbose);
-	uint32_t kernel_top_addr, boot_infos_addr;
-
-	kernel_top_addr = loader_import->GetTopAddr();
-
-	stack_base = 0x400000; // under first 512 KB
-
-	boot_infos_addr = (kernel_top_addr + 4095) & 0xfffff000; // align boot info to a page boundary
-
 	
-	r1_value = stack_base - 4;
-	r3_value = 0x426f6f58UL; /* 'BooX' */
-	r4_value = boot_infos_addr;
-	r5_value = 0; /* NULL */
+	return true;
+}
 
+bool PMACBootX::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &blob_export) return SetupBlob();
+	if(srv_export == &loader_export) return SetupLoad();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	return false;
+}
+
+bool PMACBootX::EndSetup()
+{
+	return LoadBootInfosAndRegisters();
+}
+
+bool PMACBootX::LoadBootInfosAndRegisters()
+{
+	if(!blob) return false;
+	
+	const unisim::util::debug::blob::Section<uint32_t> *boot_infos_section = blob->FindSection("boot_infos");
+	if(!boot_infos_section)
+	{
+		logger << DebugError << "No boot_infos section found" << EndDebugError;
+		return false;
+	}
+
+	uint32_t entry_point = blob->GetEntryPoint();
+	uint32_t r1_value = blob->GetStackBase() - 4;
+	uint32_t r3_value = 0x426f6f58UL; /* 'BooX' */
+	uint32_t r4_value = boot_infos_section->GetAddr();
+	uint32_t r5_value = 0; /* NULL */
+	
 	if(verbose)
 	{
-		logger << DebugInfo << "Using device tree from file \"" << device_tree_filename << "\"" << EndDebugInfo;
-		logger << DebugInfo << "Linux kernel parameters are \"" << kernel_parms << "\"" << EndDebugInfo;
-		logger << DebugInfo << "Using ramdisk from image \"" << ramdisk_filename << "\"" << EndDebugInfo;
-	}
-
-	if(!boot_infos.Load(GetSimulator()->SearchSharedDataFile(device_tree_filename.c_str()).c_str(), kernel_parms, GetSimulator()->SearchSharedDataFile(ramdisk_filename.c_str()).c_str(), screen_width, screen_height))
-	{
-		logger << DebugError << "Error while bootloading kernel, initial ramdisk and device tree" << EndDebugError;
-		return false;
-	}
-
-	const uint8_t *boot_infos_image = boot_infos.GetImage();
-	uint32_t boot_infos_image_size = boot_infos.GetImageSize();
-
-	if(verbose)
-	{
-		logger << DebugInfo << "Writing boot infos at 0x" << hex << boot_infos_addr << dec << EndDebugInfo;
+		logger << DebugInfo << "Writing boot infos (" << boot_infos_section->GetSize() << " bytes) at 0x" << hex << boot_infos_section->GetAddr() << dec << EndDebugInfo;
 	}
 	
-	if(!memory_import->WriteMemory(boot_infos_addr, boot_infos_image, boot_infos_image_size))
+	if(boot_infos_section->GetSize())
 	{
-		logger << DebugError << "Can't write into memory (@0x" << hex << boot_infos_addr << " - @0x" << (boot_infos_addr +  boot_infos_image_size - 1) << dec << ")" << EndDebugError;
-		return false;
+		if(!memory_import || !memory_import->WriteMemory(boot_infos_section->GetAddr(), boot_infos_section->GetData(), boot_infos_section->GetSize()))
+		{
+			logger << DebugError << "Can't write into memory (@0x" << hex << boot_infos_section->GetAddr() << " - @0x" << (boot_infos_section->GetAddr() +  boot_infos_section->GetSize() - 1) << dec << ")" << EndDebugError;
+			return false;
+		}
 	}
 
-	uint32_t entry_point = loader_import->GetEntryPoint();
-		
-	Register *pc = registers_import->GetRegister("cia");
-	if(!pc)
+	unisim::util::debug::Register *cia = registers_import->GetRegister("cia");
+	if(!cia)
 	{
-		logger << DebugError << "Register \"pc\" does not exist" << EndDebugError;
+		logger << DebugError << "Register \"cia\" does not exist" << EndDebugError;
 		return false;
 	}
-	pc->SetValue(&entry_point);
+	cia->SetValue(&entry_point);
 	
-	Register *r1 = registers_import->GetRegister("r1");
+	unisim::util::debug::Register *r1 = registers_import->GetRegister("r1");
 	if(!r1)
 	{
 		logger << DebugError << "Register \"r1\" does not exist" << EndDebugError;
@@ -939,7 +1034,7 @@ bool PMACBootX::Load()
 	}
 	r1->SetValue(&r1_value);
 	
-	Register *r3 = registers_import->GetRegister("r3");
+	unisim::util::debug::Register *r3 = registers_import->GetRegister("r3");
 	if(!r3)
 	{
 		logger << DebugError << "Register \"r3\" does not exist" << EndDebugError;
@@ -947,7 +1042,7 @@ bool PMACBootX::Load()
 	}
 	r3->SetValue(&r3_value);
 	
-	Register *r4 = registers_import->GetRegister("r4");
+	unisim::util::debug::Register *r4 = registers_import->GetRegister("r4");
 	if(!r4)
 	{
 		logger << DebugError << "Register \"r4\" does not exist" << EndDebugError;
@@ -955,7 +1050,7 @@ bool PMACBootX::Load()
 	}
 	r4->SetValue(&r4_value);
 	
-	Register *r5 = registers_import->GetRegister("r5");
+	unisim::util::debug::Register *r5 = registers_import->GetRegister("r5");
 	if(!r5)
 	{
 		logger << DebugError << "Register \"r5\" does not exist" << EndDebugError;
@@ -966,26 +1061,15 @@ bool PMACBootX::Load()
 	return true;
 }
 
-void PMACBootX::Reset()
+bool PMACBootX::Load()
 {
-	loader_import->Reset();
-/*	ClientIndependentSetup();
-	ClientDependentSetup();*/
+	if(!loader_import) return false;
+	return loader_import->Load() && LoadBootInfosAndRegisters();
 }
 
-uint32_t PMACBootX::GetEntryPoint() const
+const unisim::util::debug::blob::Blob<uint32_t> *PMACBootX::GetBlob() const
 {
-	return loader_import->GetEntryPoint();
-}
-
-uint32_t PMACBootX::GetTopAddr() const
-{
-	return loader_import->GetTopAddr();
-}
-
-uint32_t PMACBootX::GetStackBase() const
-{
-	return stack_base;
+	return blob;
 }
 
 } // end of namespace pmac_bootx

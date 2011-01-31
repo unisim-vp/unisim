@@ -49,7 +49,7 @@ using std::string;
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
 Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent, "This service/client implements a tee ('T'). It unifies the symbol table lookup capability of several services that individually provides their own symbol table lookup capability" ),
 	Client<SymbolTableLookup<ADDRESS> >(name, parent),
 	Service<SymbolTableLookup<ADDRESS> >(name, parent),
 	in("in", this)

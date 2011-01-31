@@ -57,41 +57,45 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
 
-	input_anx_payload_queue("input_anx_payload_queue"),
-
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
-	trap_reporting_import("trap_reproting_import", this),
+	trap_reporting_import("trap_reporting_import", this),
+
+	input_anx_payload_queue("input_anx_payload_queue"),
+
+	bus_cycle_time_int(0),
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+
+	conversionStop(false),
+	abortSequence(false),
+	resultIndex(0),
+
+	isTriggerModeRunning(false),
+	isATDON(false),
 
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
-	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	vrl(0),
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
 	param_vrh("vrh", this, vrh),
-	vil(1.75),
-	vih(3.25),
-	param_vih("vih", this, vih),
-	param_vil("vil", this, vil),
-	hasExternalTrigger(false),
-	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger),
-	conversionStop(false),
-	abortSequence(false),
-	isTriggerModeRunning(false),
-	isATDON(false),
+	
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
-	resultIndex(0)
-
+	vih(3.25),
+	vil(1.75),
+	param_vih("vih", this, vih),
+	param_vil("vil", this, vil),
+	
+	hasExternalTrigger(false),
+	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 {
 	
 	for (uint8_t i=0; i<ATD_SIZE; i++) {
@@ -174,23 +178,19 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 			return TLM_UPDATED;
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 
@@ -202,14 +202,22 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	while(1)
 	{
-		quantumkeeper.sync();
+		if (atd_clock.to_seconds() == 0) {
+			wait(scan_event);
+		}
+
+		if ((atdctl2_register & 0x80) == 0) // is ATD power ON (enabled)
+		{
+			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		}
+
 		wait(input_anx_payload_queue.get_event());
 
 		InputANx(analog_signal);
 
-		// TODO: see in details how to use quantumkeeper in the case of ATD
+		RunScanMode();
 
-		quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
+		quantumkeeper.inc(atd_clock + bus_cycle_time); // Processing the input takes one cycle
 		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 	}
@@ -227,6 +235,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 	ATD_Payload<ATD_SIZE> *last_payload = NULL;
 	ATD_Payload<ATD_SIZE> *payload = NULL;
 
+
 	do
 	{
 		last_payload = payload;
@@ -240,20 +249,14 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 	payload = last_payload;
 
-	if (debug_enabled) {
+	if (debug_enabled && payload) {
 		cout << name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
 	}
 
-	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
-	{
+	if (payload) {
 		for (int i=0; i<ATD_SIZE; i++) {
 			anValue[i] = payload->anPort[i];
 		}
-
-		RunScanMode();
-
-	} else {
-		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 	}
 
 }
@@ -369,6 +372,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 						if (debug_enabled) {
 							cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
 						}
+						anSignal = vrl;
 				}
 			} else {
 				anSignal = analog_signal[currentChannel];
@@ -550,6 +554,7 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	atd_clock = bus_cycle_time / (prsValue + 1) * 0.5;
 	first_phase_clock = atd_clock * 2;
 	second_phase_clock = atd_clock * 2 * (1 << smpValue);
+
 }
 
 /*	===========================
@@ -747,6 +752,7 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			abortConversion();
 
 			setATDClock();
+			scan_event.notify();
 
 		} break;
 		case ATDCTL5: {

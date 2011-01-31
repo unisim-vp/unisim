@@ -52,16 +52,16 @@ typedef struct operand_t {
 
 #define INPUT(_type, _value) \
 (\
-        Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type,\
-        Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = INPUT_T,\
-        Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value\
+        Operation<STATE>::operands[Operation<STATE>::noperands].type = _type,\
+        Operation<STATE>::operands[Operation<STATE>::noperands].dir = INPUT_T,\
+        Operation<STATE>::operands[Operation<STATE>::noperands++].value = _value\
 )
 
 #define OUTPUT(_type, _value) \
 (\
-        Operation<CONFIG>::operands[Operation<CONFIG>::noperands].type = _type,\
-        Operation<CONFIG>::operands[Operation<CONFIG>::noperands].dir = OUTPUT_T,\
-        Operation<CONFIG>::operands[Operation<CONFIG>::noperands++].value = _value\
+        Operation<STATE>::operands[Operation<STATE>::noperands].type = _type,\
+        Operation<STATE>::operands[Operation<STATE>::noperands].dir = OUTPUT_T,\
+        Operation<STATE>::operands[Operation<STATE>::noperands++].value = _value\
 )
 
 typedef operand_t operands_t[8];

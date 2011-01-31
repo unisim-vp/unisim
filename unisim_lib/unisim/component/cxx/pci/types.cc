@@ -71,7 +71,8 @@ template <> Variable<PCISpace>::operator long long () const {
 		return 2;
 	case SP_CONFIG:
 		return 3;
-	} 
+	}
+	return 0;
 }
     
 template <> Variable<PCISpace>::operator unsigned long long () const {   	
@@ -82,7 +83,8 @@ template <> Variable<PCISpace>::operator unsigned long long () const {
 		return 2;
 	case SP_CONFIG:
 		return 3;
-	} 
+	}
+	return 0;
 }
 
 template <> Variable<PCISpace>::operator double () const { 	
@@ -93,7 +95,9 @@ template <> Variable<PCISpace>::operator double () const {
 		return (double)2;
 	case SP_CONFIG:
 		return (double)3;
-	} 
+	}
+	
+	return 0.0;
 }
 
 template <> Variable<PCISpace>::operator string () const {
@@ -104,7 +108,9 @@ template <> Variable<PCISpace>::operator string () const {
 		return "i/o";
 	case SP_CONFIG:
 		return "cfg";
-	} 
+	}
+	
+	return std::string();
 }
   
 template <> VariableBase& Variable<PCISpace>::operator = (bool value) { return *this;}

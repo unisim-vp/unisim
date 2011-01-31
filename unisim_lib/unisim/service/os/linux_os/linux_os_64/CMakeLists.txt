@@ -30,7 +30,6 @@ set ( linux_os_64_subdirs
 	unisim/kernel/service
 	unisim/kernel/logger
 	unisim/service/interfaces/linux_os
-	unisim/service/interfaces/cpu_linux_os
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/memory_injection
@@ -61,7 +60,6 @@ target_link_libraries ( unisim__service__os__linux_os__linux_os_64
 
 add_dependencies ( unisim__service__os__linux_os__linux_os_64
 	unisim__service__interfaces__linux_os
-	unisim__service__interfaces__cpu_linux_os
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__memory_injection

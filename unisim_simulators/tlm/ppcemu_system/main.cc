@@ -36,7 +36,7 @@
 #include "config.h"
 #endif
 
-#include <unisim/component/tlm/processor/powerpc/powerpc.hh>
+#include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh>
@@ -58,7 +58,7 @@
 #include <unisim/component/tlm/pci/ide/pci_ide_module.hh>
 #include <unisim/component/tlm/pci/macio/heathrow.hh>
 #include <unisim/component/cxx/pci/types.hh>
-#include <unisim/component/cxx/processor/powerpc/config.hh>
+#include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
 #include <stdexcept>
 #include <unisim/service/sdl/sdl.hh>
 #include <unisim/component/tlm/bridge/pci_isa/bridge.hh>
@@ -74,10 +74,10 @@
 #endif
 
 #ifdef DEBUG_PPCEMU_SYSTEM
-typedef unisim::component::cxx::processor::powerpc::MPC7447ADebugConfig CPU_CONFIG;
+typedef unisim::component::cxx::processor::powerpc::mpc7447a::DebugConfig CPU_CONFIG;
 static const bool DEBUG_INFORMATION = true;
 #else
-typedef unisim::component::cxx::processor::powerpc::MPC7447AConfig CPU_CONFIG;
+typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
 static const bool DEBUG_INFORMATION = false;
 #endif
 
@@ -130,7 +130,7 @@ private:
 	// Front Side Bus template parameters
 	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
-	typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
+	//typedef CPU_CONFIG::reg_t CPU_REG_TYPE;
 	static const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 	static const uint32_t FSB_NUM_PROCS = 1;
 
@@ -186,7 +186,7 @@ private:
 	typedef unisim::component::tlm::memory::ram::Memory<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE> MEMORY;
 	typedef unisim::component::tlm::memory::flash::am29lv::AM29LV<FLASH_CONFIG, FLASH_BYTESIZE, FLASH_IO_WIDTH, FSB_MAX_DATA_SIZE> FLASH;
 	typedef unisim::component::tlm::pci::bus::Bus<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, PCI_NUM_MASTERS, PCI_NUM_TARGETS, PCI_NUM_MAPPINGS, DEBUG_INFORMATION> PCI_BUS;
-	typedef unisim::component::tlm::processor::powerpc::PowerPC<CPU_CONFIG> CPU;
+	typedef unisim::component::tlm::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
 	typedef unisim::component::tlm::chipset::mpc107::MPC107<FSB_ADDRESS_TYPE, FSB_MAX_DATA_SIZE, PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE, DEBUG_INFORMATION> MPC107;
 	typedef unisim::component::tlm::pci::ide::PCIDevIde<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> PCI_IDE;
 	typedef unisim::component::tlm::pci::macio::Heathrow<PCI_ADDRESS_TYPE, PCI_MAX_DATA_SIZE> HEATHROW;
@@ -968,6 +968,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("pmac-linux-kernel-loader.pmac-bootx.screen-height", display_height);
 	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.filename", filename);
 	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.base-addr", 0x00400000UL);
+	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.force-base-addr", true);
+	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.force-use-virtual-address", true);
 	
 	// - kernel logger
 	simulator->SetVariable("kernel_logger.std_err", true);
@@ -989,7 +991,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{
