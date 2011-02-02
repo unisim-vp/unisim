@@ -857,55 +857,55 @@ typename DebugControl<ADDRESS>::DebugCommand PIMGDBServer<ADDRESS>::FetchDebugCo
 	return DebugControl<ADDRESS>::DBG_KILL;
 }
 
-template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::GetChar(char& c, bool blocking)
-{
-	if(input_buffer_size == 0)
-	{
-		do
-		{
-#ifdef WIN32
-			int r = recv(sockfd, input_buffer, sizeof(input_buffer), 0);
-			if(r == 0 || r == SOCKET_ERROR)
-#else
-			ssize_t r = read(sockfd, input_buffer, sizeof(input_buffer));
-			if(r <= 0)
-#endif
-			{
-#ifdef WIN32
-				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-#else
-				if(r < 0 && errno == EAGAIN)
-#endif
-				{
-					if(blocking)
-					{
-#ifdef WIN32
-						Sleep(1); // sleep for 10ms
-#else
-						usleep(1000); // sleep for 10ms
-#endif
-						continue;
-					}
-					else
-					{
-						return false;
-					}
-				}
-
-				logger << DebugError << "can't read from socket" << EndDebugError;
-				return false;
-			}
-			input_buffer_index = 0;
-			input_buffer_size = r;
-			break;
-		} while(1);
-	}
-
-	c = input_buffer[input_buffer_index++];
-	input_buffer_size--;
-	return true;
-}
+//template <class ADDRESS>
+//bool PIMGDBServer<ADDRESS>::GetChar(char& c, bool blocking)
+//{
+//	if(input_buffer_size == 0)
+//	{
+//		do
+//		{
+//#ifdef WIN32
+//			int r = recv(sockfd, input_buffer, sizeof(input_buffer), 0);
+//			if(r == 0 || r == SOCKET_ERROR)
+//#else
+//			ssize_t r = read(sockfd, input_buffer, sizeof(input_buffer));
+//			if(r <= 0)
+//#endif
+//			{
+//#ifdef WIN32
+//				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
+//#else
+//				if(r < 0 && errno == EAGAIN)
+//#endif
+//				{
+//					if(blocking)
+//					{
+//#ifdef WIN32
+//						Sleep(1); // sleep for 10ms
+//#else
+//						usleep(1000); // sleep for 10ms
+//#endif
+//						continue;
+//					}
+//					else
+//					{
+//						return false;
+//					}
+//				}
+//
+//				logger << DebugError << "can't read from socket" << EndDebugError;
+//				return false;
+//			}
+//			input_buffer_index = 0;
+//			input_buffer_size = r;
+//			break;
+//		} while(1);
+//	}
+//
+//	c = input_buffer[input_buffer_index++];
+//	input_buffer_size--;
+//	return true;
+//}
 
 template <class ADDRESS>
 bool PIMGDBServer<ADDRESS>::FlushOutput()

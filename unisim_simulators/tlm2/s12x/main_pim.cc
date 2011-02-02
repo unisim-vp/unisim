@@ -184,12 +184,11 @@ protected:
 			parentSimulator->gdb_server->waitConnection();
 			parentSimulator->InternalRun();
 
-			parentSimulator->socketfd->join();
-
-			cerr << "PIM connection success " << std::endl;
-
 			parentSimulator->gdb_server->join();
+
 			parentSimulator->target->join();
+
+			parentSimulator->socketfd->join();
 
 		}
 
@@ -787,14 +786,6 @@ void Simulator::InternalRun() {
 
 	physical_address_t entry_point;
 
-//	if (isS19) {
-//		entry_point = loaderS19->GetEntryPoint();
-//		std::cerr << "entry_point=0x" << std::hex << entry_point << std::dec << std::endl;
-//	}
-//	else{
-//		entry_point = loaderELF->GetEntryPoint();
-//	}
-
 	entry_point = loaderELF->GetEntryPoint();
 
 
@@ -860,8 +851,13 @@ void Simulator::InternalRun() {
 
 void Simulator::Run()
 {
-	sim->start();
-	sim->join();
+
+	if (enable_gdb_server) {
+		sim->start();
+		sim->join();
+	} else if (enable_inline_debugger) {
+		InternalRun();
+	}
 
 }
 

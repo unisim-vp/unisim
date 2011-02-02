@@ -36,8 +36,13 @@ public:
 
 	virtual void Run() { };
 	virtual bool send_packet(const char* data, bool blocking);
-	virtual char* receive_packet(bool blocking);
 	virtual string getProtocol() { return "NONE"; }
+
+	virtual bool receive_packet(string& s, bool blocking);
+//	virtual bool GetPacket(string& s, bool blocking);
+	bool GetChar(char& c, bool blocking);
+//	bool GetChar(char& c, bool blocking);
+
 
 	void SetSockfd(int sockfd);
 	void waitConnection();
@@ -55,8 +60,6 @@ protected:
 	 *  e.g. in_addr_t serv_addr = name_resolve("127.0.0.1");
 	 */
 	uint32_t name_resolve(const char *host_name);
-
-	void getChar(char& c, bool blocking);
 
 	pthread_mutex_t sockfd_mutex;
 	pthread_mutex_t sockfd_condition_mutex;

@@ -83,6 +83,7 @@ void SocketServerThread::Run() {
     cli_addr_len = sizeof(cli_addr);
 
     do {
+
         sockfd = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
         if (sockfd >= 0) {
 
@@ -131,43 +132,37 @@ bool SocketServerThread::bindHandler(int sockfd) {
 		return false;
 	}
 
-	char* protocol = receive_packet(true);
-
-
-	SocketThread *target1 = protocolHandlers->at(0);
-	SocketThread *target2 = protocolHandlers->at(1);
+	string protocol;
+	receive_packet(protocol, true);
 
 	bool found = false;
-	if (target1->getProtocol().compare(protocol) == 0) {
-		if (!send_packet("ACK", true)) {
-			cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
-			return false;
+	for (int i=0; i < protocolHandlers->size(); i++) {
+
+		if ((*protocolHandlers)[i]->getProtocol().compare(protocol) == 0) {
+			if (!send_packet("ACK", true)) {
+				cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
+				return false;
+			}
+
+			string ack;
+			receive_packet(ack, true);
+
+			(*protocolHandlers)[i]->Start(sockfd, blocking);
+
+			found = true;
+			break;
 		}
 
-		found = true;
-		char* ack = receive_packet(true);
+	}
 
-		target1->Start(sockfd, blocking);
-
-	} else if (target2->getProtocol().compare(protocol) == 0) {
-		if (!send_packet("ACK", true)) {
-			cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
-			return false;
-		}
-
-		found = true;
-		char* ack = receive_packet(true);
-
-		target2->Start(sockfd, blocking);
-
-	} else {
+	if (!found) {
 		if (!send_packet("NACK", true)) {
 			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
 			return false;
 		}
 	}
 
-
+	return true;
 }
 
 

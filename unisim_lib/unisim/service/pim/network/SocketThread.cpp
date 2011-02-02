@@ -204,7 +204,7 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 			int n;
 
 #ifdef WIN32
-			n = send(sockfd, dd+index, dd_size, 0)
+			n = send(sockfd, dd+index, dd_size, 0);
 #else
 			n = write(sockfd, dd+index, dd_size);
 #endif
@@ -243,17 +243,17 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 
 }
 
-char* SocketThread::receive_packet(bool blocking) {
+bool SocketThread::receive_packet(string& str, bool blocking) {
 
-	char* str = NULL;
-	string s = "";
+	str.clear();
+
 	uint8_t checkSum = 0;
 	int packet_size = 0;
 	uint8_t pchk;
 	char c;
 
 	while (true) {
-		getChar(c, blocking);
+		GetChar(c, blocking);
 		if (c == 0) {
 			if (blocking) {
 				cerr << "receive EOF " << endl;
@@ -271,48 +271,41 @@ char* SocketThread::receive_packet(bool blocking) {
     			break;
     		case '$':
 
-    			getChar(c, blocking);
+    			GetChar(c, blocking);
     			while (true) {
-        			s = s + c;
+    				str = str + c;
         			packet_size++;
     				checkSum = checkSum + c;
-    				getChar(c, blocking);
+    				GetChar(c, blocking);
 
     				if (c == '#') break;
     			}
 
-    			getChar(c, blocking);
+    			GetChar(c, blocking);
     			pchk = HexChar2Nibble(c) << 4;
-    			getChar(c, blocking);
+    			GetChar(c, blocking);
     			pchk = pchk + HexChar2Nibble(c);
 
     			if (checkSum != pchk) {
-    				cerr << "wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
-    				return NULL;
-    			} else
-    			{
+    				cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+    				return false;
+    			} else {
 
-					str = (char *) malloc(packet_size+1);
-					memset(str, 0, packet_size+1);
-					memcpy(str, s.c_str(), packet_size);
-
-					s.clear();
-
-    				return str;
+    				return true;
     			}
 
     			break;
     		default:
-    			cerr << "packetParser: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+    			cerr << "receive_packet: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
     	}
 
 	}
 
-	return str;
+	return false;
 
 }
 
-void SocketThread::getChar(char& c, bool blocking) {
+bool SocketThread::GetChar(char& c, bool blocking) {
 
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
@@ -357,7 +350,7 @@ void SocketThread::getChar(char& c, bool blocking) {
 			memset(input_buffer, 0, sizeof(input_buffer));
 
 #ifdef WIN32
-			n = recv(sockfd, input_buffer, MAXDATASIZE, 0)
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
 #else
 			n = read(sockfd, input_buffer, MAXDATASIZE);
 #endif
@@ -389,8 +382,10 @@ void SocketThread::getChar(char& c, bool blocking) {
 		c = input_buffer[input_buffer_index];
 		input_buffer_size--;
 		input_buffer_index++;
+		return true;
 	} else {
 		c = 0;
+		return false;
 	}
 
 }

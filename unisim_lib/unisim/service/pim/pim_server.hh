@@ -173,12 +173,13 @@ public:
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
 	bool ParseHex(const string& s, unsigned int& pos, ADDRESS& value);
-	bool GetChar(char& c, bool blocking);
+//	bool GetChar(char& c, bool blocking);
 	bool PutChar(char c);
 	bool GetPacket(string& s, bool blocking);
 	bool PutPacket(const string& s);
 	bool FlushOutput();
 	bool OutputText(const char *s, int count);
+
 	bool ReadRegisters();
 	bool WriteRegisters(const string& hex);
 	bool ReadRegister(unsigned int regnum);

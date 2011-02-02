@@ -47,9 +47,9 @@ void PIMThread::Run(){
 
 	while (!super::isTerminated()) {
 
-		char *buffer = receive_packet(blocking);
+		string buf_str;
 
-		if (buffer == NULL) {
+		if (!receive_packet(buf_str, blocking)) {
 			if (blocking) {
 				cerr << "PIM-Target receive **NULL**" << endl;
 				break;
@@ -65,9 +65,9 @@ void PIMThread::Run(){
 
 //		cerr << "PIM-Target receive " << buffer << std::endl;
 
-		if (!super::isTerminated()) {
-
-			string buf_str(buffer);
+		if ((buf_str.compare("EOS") == 0) || (super::isTerminated())) {
+			super::stop();
+		} else {
 
 // qRcmd,cmd:var_name:value
 			int start_index = 0;
@@ -141,17 +141,14 @@ void PIMThread::Run(){
 				}
 
 			} else {
-				cerr << "PIM-Target UNKNOWN command => " << buffer << std::endl;
+				cerr << "PIM-Target UNKNOWN command => " << buf_str << std::endl;
 			}
 
 		}
 
-		if (buffer != NULL) {
-			free(buffer);
-			buffer = NULL;
-		}
-
 	}
+
+	cerr << "********** PIM-Target EXIT THREAD ********* " << std::endl;
 
 }
 
