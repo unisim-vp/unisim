@@ -73,8 +73,8 @@ namespace armemu {
 Cache::
 Cache(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
+	, unisim::kernel::service::Client<CachePowerEstimator>(name,  parent)
+	, unisim::kernel::service::Client<PowerMode>(name,  parent)
 	, power_estimator_import("power-estimator-import", this)
 	, power_mode_import("power-mode-import", this)
 	, accesses(0)
