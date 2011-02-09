@@ -165,7 +165,7 @@ GetWay(uint32_t tag, uint32_t *way) const
 			!found && (i < m_associativity_); 
 			i++ )
 	{
-		if ( m_tag[i] == tag )
+		if ( (m_tag[i] == tag) && GetValid(i) )
 		{
 			found = true;
 			*way = i;

@@ -123,6 +123,8 @@ CPU(const char *name, Object *parent)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, instruction_counter_trap_reporting_import(
 			"instruction-counter-trap-reporting-import", this)
+	, exception_trap_reporting_import(
+			"exception-trap-reporting-import", this)
 	, logger(*this)
 	, icache("icache", this)
 	, dcache("dcache", this)
@@ -130,10 +132,13 @@ CPU(const char *name, Object *parent)
 	, tlb("tlb", this)
 	, arm32_decoder()
 	, thumb_decoder()
+	, exception(0)
 	, cp15(this, "cp15", this)
 	, instruction_counter(0)
+	, cur_instruction_address(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
+	, trap_on_exception(false)
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
 	, param_cpu_cycle_time("cpu-cycle-time", this,
@@ -149,9 +154,15 @@ CPU(const char *name, Object *parent)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter", this,
 			trap_on_instruction_counter,
 			"Produce a trap when the given instruction count is reached.")
+	, param_trap_on_exception("trap-on-exception", this,
+			trap_on_exception,
+			"Produce a trap when an exception occurs.")
 	, stat_instruction_counter("instruction-counter", this,
 			instruction_counter,
 			"Number of instructions executed.")
+	, stat_cur_instruction_address("cur-instruction-address", this,
+			cur_instruction_address,
+			"Address of the instruction currently being executed.")
 	, reg_sp("SP", this, gpr[13],
 			"The stack pointer (SP) register (alias of GPR[13]).")
 	, reg_lr("LR", this, gpr[14],
@@ -411,6 +422,7 @@ StepInstruction()
 	uint32_t current_pc;
 
 	current_pc = GetGPR(PC_reg);
+	cur_instruction_address = current_pc;
 
 	if (debug_control_import) 
 	{
@@ -484,12 +496,18 @@ StepInstruction()
 	/* perform the memory load/store operations */
 	PerformLoadStoreAccesses();
 
-	// check for possible exceptions
+	bool exception_occurred = false;
+	if ( unlikely(exception) )
+		exception_occurred = HandleException();
 	
 	instruction_counter++;
 	if ( unlikely((trap_on_instruction_counter == instruction_counter)
-			&& instruction_counter_trap_reporting_import) )
+				&& instruction_counter_trap_reporting_import) )
 		instruction_counter_trap_reporting_import->ReportTrap(*this);
+
+	if ( unlikely(trap_on_exception && exception_occurred
+				&& exception_trap_reporting_import) )
+		exception_trap_reporting_import->ReportTrap(*this);
 	
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
@@ -701,6 +719,8 @@ ReadMemory(uint64_t addr,
 		// non intrusive access with linux support
 		while (size != 0 && status)
 		{
+			mva = va + index;
+			pa = mva;
 			if ( likely(cp15.IsMMUEnabled()) )
 				status = NonIntrusiveTranslateVA(true, 
 						va + index, mva, pa, cacheable, bufferable);
@@ -721,10 +741,10 @@ ReadMemory(uint64_t addr,
 							dcache.GetIndex(mva);
 						uint32_t data_read_size =
 							dcache.GetDataCopy(cache_set,
-								cache_way, cache_index, 1,
+								cache_way, cache_index, size,
 								&(((uint8_t *)buffer)[index]));
-						index++;
-						size--;
+						index += data_read_size;
+						size -= data_read_size;
 						cache_hit = true;
 					}
 				}
@@ -732,7 +752,7 @@ ReadMemory(uint64_t addr,
 			if ( status && !cache_hit )
 			{
 				status = status &&
-					ExternalReadMemory(pa + index,
+					ExternalReadMemory(pa,
 									   &(((uint8_t *)buffer)[index]),
 									   1);
 				if ( status )
@@ -798,6 +818,8 @@ WriteMemory(uint64_t addr,
 		// non intrusive access with linux support
 		while ( size != 0 && status )
 		{
+			mva = va + index;
+			pa = mva;
 			if ( likely(cp15.IsMMUEnabled()) )
 				status = NonIntrusiveTranslateVA(false,
 						va + index, mva, pa, cacheable, bufferable);
@@ -813,11 +835,12 @@ WriteMemory(uint64_t addr,
 					if ( dcache.GetValid(cache_set, cache_way) )
 					{
 						uint32_t cache_index = dcache.GetIndex(mva);
-						dcache.SetData(cache_set, cache_way, cache_index, 
-									1, &(((uint8_t *)buffer)[index]));
+						uint32_t write_size =
+							dcache.SetData(cache_set, cache_way, cache_index, 
+									size, &(((uint8_t *)buffer)[index]));
 						dcache.SetDirty(cache_set, cache_way, 1);
-						index ++;
-						size --;
+						index += write_size;
+						size -= write_size;
 						cache_hit = true;
 					}
 				}
@@ -1597,6 +1620,154 @@ DrainWriteBuffer()
 		<< EndDebugWarning;
 }
 
+/** Invalidate ICache single entry using MVA
+ *
+ * Perform an invalidation of a single entry in the ICache using the
+ *   given address in MVA format.
+ *
+ * @param mva the address to invalidate
+ */
+void 
+CPU::
+InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
+{
+	uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
+	uint32_t pa = mva;
+
+	if ( unlikely(verbose & 0x02) )
+	{
+		logger << DebugInfo
+			<< "Invalidating ICache single entry with MVA:" << std::endl
+			<< " - mva               = 0x" << std::hex << init_mva << std::endl
+			<< " - cache aligned mva = 0x" << mva << std::dec
+			<< EndDebugInfo;
+	}
+
+	if ( likely(cp15.IsICacheEnabled() && icache.GetSize()) )
+	{
+		uint32_t cache_tag = icache.GetTag(mva);
+		uint32_t cache_set = icache.GetSet(mva);
+		uint32_t cache_way = 0;
+		bool cache_hit = false;
+		if ( likely(icache.GetWay(cache_tag, cache_set, &cache_way)) )
+			cache_hit = true;
+
+		if ( likely(cache_hit) )
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "ICache hit (set = "
+					<< cache_set << ", way = "
+					<< cache_way << "), invalidating it"
+					<< EndDebugInfo;
+			icache.SetValid(cache_set, cache_way, 0);
+		}
+		else
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "ICache miss (set = "
+					<< cache_set
+					<< ")"
+					<< EndDebugInfo;
+		}
+	}
+}
+
+/** Clean DCache single entry using MVA
+ *
+ * Perform a clean of a single entry in the DCache using the given
+ *   address in MVA format.
+ *
+ * @param mva the address to clean
+ * @param invalidate true if the line needs to be also invalidated
+ */
+void 
+CPU::
+CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
+{
+	uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
+	uint32_t pa = mva;
+
+	if ( unlikely(verbose & 0x02) )
+	{
+		logger << DebugInfo
+			<< "Cleaning DCache single entry with MVA:" << std::endl
+			<< " - mva               = 0x" << std::hex << init_mva << std::endl
+			<< " - cache aligned mva = 0x" << mva << std::dec
+			<< EndDebugInfo;
+	}
+
+	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
+	{
+		uint32_t cache_tag = dcache.GetTag(mva);
+		uint32_t cache_set = dcache.GetSet(mva);
+		uint32_t cache_way;
+		bool cache_hit = false;
+		if ( likely(dcache.GetWay(cache_tag, cache_set, &cache_way)) )
+			cache_hit = true;
+
+		if ( likely(cache_hit) )
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "Cache hit (set = "
+					<< cache_set << ", way = "
+					<< cache_way << ")"
+					<< EndDebugInfo;
+			uint8_t cache_dirty = dcache.GetDirty(cache_set, cache_way);
+
+			if ( cache_dirty != 0 )
+			{
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugInfo
+						<< "Line is dirty, performing a cleaning"
+						<< EndDebugInfo;
+				uint8_t *data = 0;
+				// translate the address
+				if ( likely(cp15.IsMMUEnabled()) )
+					TranslateMVA(mva, pa);
+				dcache.GetData(cache_set, cache_way, &data);
+				if ( unlikely(verbose & 0x02) )
+				{
+					logger << DebugInfo
+						<< "Cleaning cache line:" << std::endl
+						<< " - mva = 0x" << std::hex << mva << std::endl
+						<< " - pa  = 0x" << pa << std::endl
+						<< " - tag = 0x" << cache_tag << std::endl
+						<< " - set = " << std::dec << cache_set << std::endl
+						<< " - way = " << cache_way << std::endl
+						<< " - data =" << std::hex;
+					for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
+						logger << " " << (unsigned int)data[i];
+					logger << std::dec
+						<< EndDebugInfo;
+				}
+				PrWrite(pa, data, dcache.LINE_SIZE);
+				dcache.SetDirty(cache_set, cache_way, 0);
+				if ( invalidate )
+					dcache.SetValid(cache_set, cache_way, 0);
+			}
+			else
+			{
+				if ( unlikely(verbose & 0x02) )
+					logger << DebugInfo
+						<< "Line is already cleaned, doing nothing"
+						<< EndDebugInfo;
+			}
+		}
+		else
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "Cache miss (set = "
+					<< cache_set
+					<< ")"
+					<< EndDebugInfo;
+		}
+	}
+}
+
 /** Invalidate the caches.
  * Perform a complete invalidation of the instruction cache and/or the 
  *   data cache.
@@ -1736,6 +1907,96 @@ UnpredictableInsnBehaviour()
 		<< EndDebugWarning;
 }
 
+/** Check access permission and domain bits.
+ *
+ * @param is_read true if the access is a read
+ * @param ap the access permission bits
+ * @param domain the domain being used
+ * 
+ * @return true if correct, false otherwise
+ */
+bool 
+CPU::
+CheckAccessPermission(bool is_read,
+		uint32_t ap,
+		uint32_t domain)
+{
+	if ( ap == 0x00UL )
+	{
+		return false;
+	}
+
+	else if ( ap == 0x01UL )
+	{
+		uint32_t mode = GetCPSR_Mode();
+		if ( mode == USER_MODE )
+		{
+			logger << DebugError
+				<< "Accessing privileged data under USER mode: "
+				<< std::endl
+				<< "- is_read = " << is_read << std::endl
+				<< "- ap  = " << ap << std::endl
+				<< "- domain = " << domain << std::endl
+				<< EndDebugError;
+			return false;
+		}
+		else
+		{
+			if ( verbose & 0x010 )
+				logger << DebugInfo
+					<< "Accessing privileged data under privileged mode."
+					<< EndDebugInfo;
+		}
+	}
+
+	else if ( ap == 0x02UL )
+	{
+		uint32_t mode = GetCPSR_Mode();
+		if ( mode == USER_MODE )
+		{
+			if ( !is_read )
+			{
+				logger << DebugError
+					<< "Accessing privileged data under USER mode: "
+					<< std::endl
+					<< "- is_read = " << is_read << std::endl
+					<< "- ap  = " << ap << std::endl
+					<< "- domain = " << domain << std::endl
+					<< EndDebugError;
+				return false;
+			}
+			else
+			{
+				if ( verbose & 0x010 )
+					logger << DebugInfo
+						<< "Accessing privileged data under user mode"
+						<< " (read-only)"
+						<< EndDebugInfo;
+			}
+		}
+		else
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< "Accessing privileged data under privileged mode."
+					<< EndDebugInfo;
+			}
+		}
+	}	
+
+	else if ( ap == 0x03UL )
+	{
+		if ( verbose & 0x010 )
+			logger << DebugInfo
+				<< "Accessing non protected data."
+				<< EndDebugInfo;
+	}
+
+	// all the checks succeded
+	return true;
+}
+
 /** Translate address from MVA to physical address.
  *
  * @param mva the generated modified virtual address
@@ -1805,17 +2066,6 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 	}
 
 	// ok, we have a valid entry check if it needs to be added to the main tlb
-//	logger << DebugInfo
-//		<< "Correct address translation for mva 0x"
-//		<< std:: hex << mva << std::dec
-//		<< " was found on the first level" << std::endl
-//		<< "- on memory = " << !found_first_level << std::endl
-//		<< "- translation = 0x"
-//		<< std::hex << first_level << std::dec << std::endl
-//		<< "- ttb = 0x"
-//		<< std::hex << ttb_addr << " (0x"
-//		<< cp15.GetTTB() << std::dec << ")"
-//		<< EndDebugInfo;
 	if ( !found_first_level)
 	{
 		// this is a correct entry fill the main tlb with it
@@ -1844,16 +2094,6 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 		uint32_t domain = (first_level >> 5) & 0x0fUL;
 		uint32_t c = (first_level >> 3) & 0x01UL;
 		uint32_t b = (first_level >> 2) & 0x01UL;
-//		logger << DebugInfo
-//			<< "MVA address translated using a section descriptor:" << std::endl
-//			<< "- mva = 0x" << mva << std::endl
-//			<< "- pa  = 0x" << pa << std::dec << std::endl
-//			<< "- ap  = " << ap << std::endl
-//			<< "- domain = " << domain << std::endl
-//			<< "- c   = " << c << std::endl
-//			<< "- b   = " << b
-//			<< EndDebugInfo;
-		// no need to check the access permissions
 	}
 	else
 	{
@@ -1910,12 +2150,10 @@ NonIntrusiveTranslateVA(bool is_read,
 	uint32_t way = 0;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
-		if ( ltlb.GetValid(way) )
-		{
-			first_level = ltlb.GetData(way);
-			found_first_level = true;
-		}
+		first_level = ltlb.GetData(way);
+		found_first_level = true;
 	}
+
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x020 )
@@ -1930,13 +2168,11 @@ NonIntrusiveTranslateVA(bool is_read,
 		uint32_t set = tlb.GetSet(ttb_addr);
 		if ( tlb.GetWay(tag, set, &way) )
 		{
-			if ( tlb.GetValid(set, way) )
-			{
-				first_level = tlb.GetData(set, way);
-				found_first_level = true;
-			}
+			first_level = tlb.GetData(set, way);
+			found_first_level = true;
 		}
 	}
+
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x020 )
@@ -1953,6 +2189,7 @@ NonIntrusiveTranslateVA(bool is_read,
 		memcpy(&first_level, first_level_data, 4);
 		first_level = LittleEndian2Host(first_level);
 	}
+
 	// NOTE: we let the found_first_level to false to signal that the
 	//   entry was found in the memory table
 	// now we have to check that the first level entry obtained is valid
@@ -1962,7 +2199,11 @@ NonIntrusiveTranslateVA(bool is_read,
 		logger << DebugError
 			<< "Address translation for 0x"
 			<< std::hex << va << std::dec
-			<< " was not found (or returned a fault page)"
+			<< " was not found (or returned a fault page)" << std::endl
+			<< " - ttb address = 0x" << std::hex << ttb_addr << std::dec
+			<< std::endl
+			<< " - first level fetched = 0x" << std::hex
+			<< first_level << std::dec
 			<< EndDebugError;
 		return false;
 	}
@@ -2023,17 +2264,18 @@ TranslateVA(bool is_read,
 		mva = cp15.GetFCSE_PID() + va;
 	else
 		mva = va;
-	if ( verbose & 0x010 )
-	{
-		logger << DebugWarning
-			<< "va = 0x" << std::hex << va 
-			<< std::endl
-			<< " - mva = 0x" << mva << std::dec
-			<< EndDebugWarning;
-	}
 	// Build first the address of the Translation Table Base
 	uint32_t ttb_addr = 
 		cp15.GetTTB() | ((mva & 0xfff00000UL) >> 18);
+	if ( verbose & 0x010 )
+	{
+		logger << DebugInfo
+			<< "va = 0x" << std::hex << va 
+			<< std::endl
+			<< " - mva = 0x" << mva << std::endl
+			<< " - ttb = 0x" << cp15.GetTTB() << std::dec
+			<< EndDebugInfo;
+	}
 	// Get the first level descriptor
 	// Two TLB are available, the lockdown TLB and the regular TLB
 	// If the address is not found on the TLBs then perform a page walk
@@ -2045,19 +2287,16 @@ TranslateVA(bool is_read,
 	uint32_t way = 0;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
-		if ( ltlb.GetValid(way) )
-		{
-			first_level = ltlb.GetData(way);
-			found_first_level = true;
-		}
+		first_level = ltlb.GetData(way);
+		found_first_level = true;
 	}
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x010 )
 		{
-			logger << DebugWarning
-				<< " - not found in the lookdown TLB"
-				<< EndDebugWarning;
+			logger << DebugInfo
+				<< " - not found in the lockdown TLB"
+				<< EndDebugInfo;
 		}
 		// the entry was not found in the lockdown tlb
 		// check the main tlb
@@ -2065,20 +2304,17 @@ TranslateVA(bool is_read,
 		uint32_t set = tlb.GetSet(ttb_addr);
 		if ( tlb.GetWay(tag, set, &way) )
 		{
-			if ( tlb.GetValid(set, way) )
-			{
-				first_level = tlb.GetData(set, way);
-				found_first_level = true;
-			}
+			first_level = tlb.GetData(set, way);
+			found_first_level = true;
 		}
 	}
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x010 )
 		{
-			logger << DebugWarning
+			logger << DebugInfo
 				<< " - not found in the main TLB"
-				<< EndDebugWarning;
+				<< EndDebugInfo;
 		}
 		uint8_t first_level_data[4];
 		// oops, we are forced to perform a page walk
@@ -2089,57 +2325,227 @@ TranslateVA(bool is_read,
 	// NOTE: we let the found_first_level to false to signal that the
 	//   entry was found in the memory table
 	// now we have to check that the first level entry obtained is valid
-	if ( (first_level & 0x03) == 0 )
+	if ( (first_level & 0x03UL) == 0 )
 	{
 		// this is an invalid entry, provoke a data abort
 		logger << DebugError
 			<< "Address translation for 0x"
 			<< std::hex << va << std::dec
-			<< " was not found"
+			<< " was not found (or returned a fault page)" << std::endl
+			<< " - ttb address = 0x" << std::hex << ttb_addr << std::dec
+			<< std::endl
+			<< " - first level fetched = 0x" << std::hex
+			<< first_level << std::endl
+			<< " - pc = 0x" << GetGPR(PC_reg) << std::dec
 			<< EndDebugError;
 		assert("Translation fault" == 0);
 		return false;
 	}
 
 	// ok, we have a valid entry check if it needs to be added to the main tlb
-//	logger << DebugInfo
-//		<< "Correct address translation for 0x"
-//		<< std:: hex << va << std::dec
-//		<< " was found on the first level" << std::endl
-//		<< "- on memory = " << !found_first_level << std::endl
-//		<< "- translation = 0x"
-//		<< std::hex << first_level << std::dec << std::endl
-//		<< "- ttb = 0x"
-//		<< std::hex << ttb_addr << " (0x"
-//		<< cp15.GetTTB() << std::dec << ")"
-//		<< EndDebugInfo;
 	if ( !found_first_level)
 	{
 		if ( verbose & 0x010 )
 		{
-			logger << DebugWarning
+			logger << DebugInfo
 				<< " - filling main TLB with 0x" << std::hex
 				<< first_level << std::dec
-				<< EndDebugWarning;
+				<< EndDebugInfo;
 		}
-		// this is a correct entry fill the main tlb with it
 		uint32_t tag = tlb.GetTag(ttb_addr);
 		uint32_t set = tlb.GetSet(ttb_addr);
 		uint32_t way = tlb.GetNewWay(set);
 		tlb.SetEntry(tag, set, way, first_level, 1);
-//		logger << DebugInfo
-//			<< "New entry created with:" << std::endl
-//			<< "- tag = 0x"
-//			<< std::hex << tag << std::dec << std::endl
-//			<< "- set = " << set << std::endl
-//			<< "- way = " << way << std::endl
-//			<< "- data = 0x"
-//			<< std::hex << first_level << std::dec
-//			<< EndDebugInfo;
 	}
 
 	// check wether is a section page or a second access is required
-	if ( first_level & 0x02UL )
+	if ( (first_level & 0x03UL) == 0 )
+	{
+		// fault page
+		assert("Translation fault (TODO: handle first level descriptor fault)"
+				== 0);
+	}
+
+	else if ( (first_level & 0x03UL) == 0x01UL ) // Coarse page
+	{
+		// a second level descriptor fetch is initiated
+		// build the address of the 2nd level descriptor
+		uint32_t coarse_addr =
+			(first_level & 0xfffffc00UL) |
+			((mva & 0x000ff000UL) >> 10);
+		if ( verbose & 0x010)
+		{
+			logger << DebugInfo
+				<< " - first level entry   = 0x" << std::hex
+				<< first_level << std::endl
+				<< " - mva                 = 0x" << mva << std::endl
+				<< " - coarse page address = 0x"
+				<< coarse_addr << std::dec
+				<< EndDebugInfo;
+		}
+		uint32_t second_way = 0;
+		if ( ltlb.GetWay(coarse_addr, &second_way) )
+		{
+			second_level = ltlb.GetData(second_way);
+			found_second_level = true;
+		}
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< " - not found in the lockdown TLB"
+					<< EndDebugInfo;
+			}
+			// the entry was not found in the lockdown tlb
+			// check the main tlb
+			uint32_t second_tag = tlb.GetTag(coarse_addr);
+			uint32_t second_set = tlb.GetSet(coarse_addr);
+			if ( tlb.GetWay(second_tag, second_set, &second_way) )
+			{
+				second_level = tlb.GetData(second_set, second_way);
+				found_second_level = true;
+			}
+		}
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< " - not found in the main TLB"
+					<< EndDebugInfo;
+			}
+			uint8_t second_level_data[4];
+			// oops, we are forced to perform a page walk
+			PrRead(coarse_addr, second_level_data, 4);
+			memcpy(&second_level, second_level_data, 4);
+			second_level = LittleEndian2Host(second_level);
+		}
+		// NOTE: we let the found_second_level to false to signal that the
+		//   entry was found in the memory table
+		// now we can check that the second level entry obtained is valid
+		if ( (second_level & 0x03UL) == 0 )
+		{
+			// this is an invalid entry, provoke a data abort
+			logger << DebugError
+				<< "Address translation for 0x"
+				<< std::hex << va << std::dec
+				<< " was not found" << std::endl
+				<< " - mva = 0x" << std::hex << mva << std::endl
+				<< " - first_level = 0x" << first_level << std::endl
+				<< " - coarse page address = 0x" << coarse_addr << std::endl
+				<< " - second_level = 0x" << second_level
+				<< EndDebugError;
+			assert("Translation fault (TODO: data abort)" == 0);
+			return false;
+		}
+
+		// ok, we have a valid entry check if it needs to be added to 
+		//   the main tlb
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x010 )
+			{
+				logger << DebugInfo
+					<< " - filling main TLB with 0x" << std::hex
+					<< second_level << std::dec
+					<< " (second level entry)"
+					<< EndDebugInfo;
+			}
+			uint32_t second_tag = tlb.GetTag(coarse_addr);
+			uint32_t second_set = tlb.GetSet(coarse_addr);
+			uint32_t second_way = tlb.GetNewWay(second_set);
+			tlb.SetEntry(second_tag, second_set, second_way, second_level, 1);
+		}
+
+		// check whether is a large, small or tiny page
+		if ( (second_level & 0x03UL) == 0 )
+		{
+			// fault page
+			assert("Translation fault (TODO: handle second level descriptor"
+					" fault)" == 0);
+		}
+
+		else if ( (second_level & 0x03UL) == 1 )
+		{
+			// large page
+			pa = (second_level & 0xffff0000UL) |
+				(mva & 0x0000ffffUL);
+			uint32_t ap[4];
+			assert("TODO: Large page descriptor" == 0);
+		}
+
+		else if ( (second_level & 0x03UL) == 2 )
+		{
+			// small page
+			pa = (second_level & 0xfffff000UL ) |
+				(mva & 0x00000fffUL);
+			uint32_t ap[4];
+			ap[0] = (second_level >> 4) & 0x03UL;
+			ap[1] = (second_level >> 6) & 0x03UL;
+			ap[2] = (second_level >> 8) & 0x03UL;
+			ap[3] = (second_level >> 10) & 0x03UL;
+			uint32_t ap_used = 0;
+			switch ( ((mva & 0x0c00UL) >> 10) & 0x03UL )
+			{
+				case 0x00UL: ap_used = ap[0]; break;
+				case 0x01UL: ap_used = ap[1]; break;
+				case 0x02UL: ap_used = ap[2]; break;
+				case 0x03UL: ap_used = ap[3]; break;
+			}
+			uint32_t domain = (first_level >> 5) & 0x0fUL;
+			uint32_t c = (second_level >> 3) & 0x01UL;
+			cacheable = c;
+			uint32_t b = (second_level >> 2) & 0x01UL;
+			bufferable = b;
+			if ( verbose & 0x010 )
+				logger << DebugInfo
+					<< "Address translated using a small page descriptor:"
+					<< std::endl
+					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< std::endl
+					<< " - va  = 0x" << va << std::endl
+					<< " - mva = 0x" << mva << std::endl
+					<< " - pa  = 0x" << pa << std::dec << std::endl
+					<< " - ap[0-3] = " << ap[0]
+					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+					<< " - ap  = " << ap_used << std::endl
+					<< " - domain = " << domain << std::endl
+					<< " - c   = " << c << std::endl
+					<< " - b   = " << b
+					<< EndDebugInfo;
+
+			// check access permissions
+			if ( unlikely(!CheckAccessPermission(is_read,
+							ap_used, domain)) )
+			{
+				logger << DebugError
+					<< "Check access permission and domain"
+					<< std::endl
+					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - va  = 0x" << va << std::endl
+					<< " - mva = 0x" << mva << std::endl
+					<< " - pa  = 0x" << pa << std::dec << std::endl
+					<< " - ap[0-3] = " << ap[0]
+					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+					<< " - ap  = " << ap_used << std::endl
+					<< " - domain = " << domain << std::endl
+					<< " - c   = " << c << std::endl
+					<< " - b   = " << b
+					<< EndDebugError;
+				assert("TODO: check access permission and domain" == 0);
+			}
+
+		}
+
+		else // 3 tiny page
+		{
+			// tiny page
+			assert("TODO: Tiny page descriptor" == 0);
+		}
+	}
+	
+	else if ( (first_level & 0x03UL) == 0x02UL ) // Section page
 	{
 		// the descriptor is a section descriptor
 		pa = (first_level & 0xfff00000UL) |
@@ -2167,19 +2573,146 @@ TranslateVA(bool is_read,
 		// check the access permissions - domain couple
 		//  if ap == 3 then no need to check anything else,
 		//    read/write access are allowed
-		if ( ap != 0x03UL )
+		if ( unlikely(!CheckAccessPermission(is_read,
+						ap, domain)) )
 		{
+			logger << DebugError
+				<< "Check access permission and domain"
+				<< std::endl
+				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< " - va  = 0x" << va << std::endl
+				<< " - mva = 0x" << mva << std::endl
+				<< " - pa  = 0x" << pa << std::dec << std::endl
+				<< " - ap  = " << ap << std::endl
+				<< " - domain = " << domain << std::endl
+				<< " - c   = " << c << std::endl
+				<< " - b   = " << b
+				<< EndDebugError;
 			assert("TODO: check access permission and domain" == 0);
 		}
 	}
-	else
+
+	else // 0x03UL fine page table
 	{
-		// the page is not a section a second access to the tlb is required
-		assert("Translation fault (TODO: second level access)" == 0);
+		assert("Translation fault (TODO: fine page table)" == 0);
 	}
 
 	return true;
 }
+
+/************************************************************************/
+/* Exception handling                                             START */
+/************************************************************************/
+	
+/** Process exceptions
+ *
+ * Returns true if there is an exception to handle.
+ * @return true if an exception handling begins
+ */
+bool
+CPU::
+HandleException()
+{
+	bool handled = false;
+	bool report = false;
+
+	// Exception priorities (from higher to lower)
+	// - 1 Reset
+	// - 2 Data Abort (including data TLB miss)
+	// - 3 FIQ
+	// - 4 IRQ
+	// - 5 Imprecise Abort (external abort) - ARMv6 (so ignored here)
+	// - 6 Prefetch Abort (including prefetch TLB miss)
+	// - 7 Undefined instruction / SWI
+	
+	if ( exception & 
+			unisim::component::cxx::processor::arm::exception::RESET )
+	{
+	}
+
+	else if ( exception & 
+			unisim::component::cxx::processor::arm::exception::DATA_ABORT )
+	{
+	}
+
+	else if ( (exception &
+			unisim::component::cxx::processor::arm::exception::FIQ) &&
+			!GetCPSR_F() )
+	{
+		report = true;
+	}
+
+	else if ( (exception & 
+			unisim::component::cxx::processor::arm::exception::IRQ) &&
+			!GetCPSR_I() )
+	{
+		report = true;
+		logger << DebugInfo
+			<< "Received IRQ interrupt, handling it."
+			<< EndDebugInfo;
+		handled = true;
+		uint32_t cur_pc = GetGPR(15);
+		spsr[3] = cpsr;
+		SetGPRMapping(GetCPSR_Mode(), IRQ_MODE);
+		SetGPR(14, cur_pc + 4);
+		SetCPSR_Mode(IRQ_MODE);
+		SetCPSR_T(false);
+		SetCPSR_I(true);
+		if ( cp15.GetVINITHI() )
+			SetGPR(PC_reg, 0xffff0018UL);
+		else
+			SetGPR(PC_reg, 0x00000018UL);
+	}
+	
+	else if ( exception &
+			unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT )
+	{
+	}
+	
+	else if ( exception &
+			unisim::component::cxx::processor::arm::exception::SWI )
+	{
+	}
+
+	else if ( exception &
+			unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN )
+	{
+	}
+
+	if ( !handled )
+	{
+		if ( (exception &
+					unisim::component::cxx::processor::arm::exception::FIQ) &&
+				GetCPSR_F() )
+			handled = true;
+
+		if ( (exception & 
+					unisim::component::cxx::processor::arm::exception::IRQ) &&
+				GetCPSR_I() )
+			handled = true;
+	}
+
+	if ( !handled )
+	{
+		logger << DebugError
+			<< "Exception not handled (" << (unsigned int)exception << ")" 
+			<< std::endl
+			<< " - CPSR = 0x" << std::hex << cpsr << std::dec
+			<< " - irq? = " 
+			<< (exception & 
+					unisim::component::cxx::processor::arm::exception::IRQ)
+			<< std::endl
+			<< " - CPSR_I = " << GetCPSR_I()
+			<< EndDebugError;
+		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+
+	return report;
+}
+
+/************************************************************************/
+/* Exception handling                                               END */
+/************************************************************************/
 
 /** Performs the load/stores present in the queue of memory operations.
  */
@@ -2546,15 +3079,15 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 						<< " - index = " << cache_index << std::endl
 						<< " - size = " << size << std::endl
 						<< " - data =" << std::hex;
-					for ( int i = 0; i < size; i++ )
+					for ( unsigned int i = 0; i < size; i++ )
 						logger << " " << (unsigned int)data[i];
 					logger << std::endl
 						<< " - pre line =";
-					for ( int i = 0; i < cache_line_size; i++ )
+					for ( unsigned int i = 0; i < cache_line_size; i++ )
 						logger << " " << (unsigned int)prev_data[i];
 					logger << std::endl
 						<< " - new line =";
-					for ( int i = 0; i < cache_line_size; i++ )
+					for ( unsigned int i = 0; i < cache_line_size; i++ )
 						logger << " " << (unsigned int)cache_data[i];
 					logger << std::dec
 						<< EndDebugError;

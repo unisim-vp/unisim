@@ -32,7 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#define CP15__DEBUG
+// #define CP15__DEBUG
 
 #include "unisim/component/cxx/processor/arm/arm926ejs/cp15.hh"
 #include <assert.h>
@@ -84,11 +84,30 @@ CP15(CP15Interface *_cpu,
 			verbose,
 			"Enable verbose mode (0 = non verbose, anything else = verbose).")
 	, logger(*this)
+	, id_code_register_c0(ID_CODE_REGISTER_C0)
 	, control_register_c1(CONTROL_REGISTER_C1_SBO)
 	, translation_table_base_register_c2(0)
 	, domain_access_control_register_c3(0)
 	, fsce_pid_register_c13(0)
 	, context_id_register_c13(0)
+	, reg_id_code_register_c0("c0_0", this,
+			id_code_register_c0,
+			"ID Code register.")
+	, reg_control_register_c1("c1", this,
+			control_register_c1,
+			"Control register.")
+	, reg_translation_table_base_register_c2("c2", this,
+			translation_table_base_register_c2,
+			"Translation table base register.")
+	, reg_domain_access_control_register_c3("c3", this,
+			domain_access_control_register_c3,
+			"Domain access control register.")
+	, reg_fsce_pid_register_c13("c13_0", this,
+			fsce_pid_register_c13,
+			"Fast Context Switch Extension (FCSE) Process Identifier (PID) register.")
+	, reg_context_id_register_c13("c13_1", this,
+			context_id_register_c13,
+			"Context ID register.")
 {
 }
 
@@ -437,6 +456,7 @@ WriteRegister(uint8_t opcode1,
 #endif // CP15__DEBUG
 	if ( likely(opcode1 == 0) )
 	{
+		
 		// control registers
 		if ( crn == 1 )
 		{
@@ -468,6 +488,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		
 		// translation table base register
 		else if ( crn == 2 )
 		{
@@ -494,6 +515,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		
 		// domain access control
 		else if ( crn == 3 )
 		{
@@ -511,6 +533,7 @@ WriteRegister(uint8_t opcode1,
 				}
 			}
 		}
+		
 		// cache management functions
 		else if ( crn == 7 )
 		{
@@ -525,55 +548,113 @@ WriteRegister(uint8_t opcode1,
 					cpu->InvalidateCache(true, false);
 					handled = true;
 				}
-			}
-			if ( crm == 7 )
-			{
-				switch ( opcode2 )
+
+				else if ( opcode2 == 1 )
 				{
-					case 0:
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Invalidating ICache single entry (MVA)"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->InvalidateICacheSingleEntryWithMVA(value);
+					handled = true;
+				}
+			}
+		
+			else if ( crm == 7 )
+			{
+				if ( opcode2 == 0 )
+				{
 #ifdef CP15__DEBUG
 						std::cerr << "CP15: Invalidating instruction and data"
 							<< " caches" << std::endl;
 #endif // CP15__DEBUG
 						cpu->InvalidateCache(true, true);
 						handled = true;
-						break;
 				}
 			}
+			
 			else if ( crm == 10 )
 			{
-				switch ( opcode2 )
+				if ( opcode2 == 1 )
 				{
-					case 4:
 #ifdef CP15__DEBUG
-						std::cerr << "CP15: Draining write buffer"
-							<< std::endl;
+					std::cerr << "CP15: Clean DCache single entry (MVA)"
+						<< std::endl;
 #endif // CP15__DEBUG
-						cpu->DrainWriteBuffer();
-						handled = true;
-						break;
+					cpu->CleanDCacheSingleEntryWithMVA(value, false);
+					handled = true;
+				}
+
+				else if ( opcode2 == 4 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Draining write buffer"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->DrainWriteBuffer();
+					handled = true;
+				}
+			}
+
+			else if ( crm == 14 )
+			{
+				if ( opcode2 == 1 )
+				{
+#ifdef CP15__DEBUG
+					std::cerr << "CP15: Clean and invalidate DCache"
+						<< " single entry (MVA)"
+						<< std::endl;
+#endif // CP15__DEBUG
+					cpu->CleanDCacheSingleEntryWithMVA(value, true);
+					handled = true;
 				}
 			}
 		}
+
 		// TLB functions
 		else if ( crn == 8 )
 		{
 			if ( crm == 7 )
 			{
-				switch ( opcode2 )
+				if ( opcode2 == 0 )
 				{
-					case 0:
 #ifdef CP15__DEBUG
-						std::cerr << "CP15: Invalidating instruction and data"
-							<< " TLBs" << std::endl;
+					std::cerr << "CP15: Invalidating set-associative TLB"
+						<< std::endl;
 #endif // CP15__DEBUG
-						cpu->InvalidateTLB();
-						handled = true;
-						break;
+					cpu->InvalidateTLB();
+					handled = true;
+				}
+			}
+
+			else if ( crm == 5 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15_DEBUG
+					std::cerr << "CP15: Invalidating set-associative TLB"
+						<< std::endl;
+#endif // CP15_DEBUG
+					cpu->InvalidateTLB();
+					handled = true;
+				}
+			}
+
+			else if ( crm == 6 )
+			{
+				if ( opcode2 == 0 )
+				{
+#ifdef CP15_DEBUG
+					std::cerr << "CP15: Invalidating set-associative TLB"
+						<< std::endl;
+#endif // CP15_DEBUG
+					cpu->InvalidateTLB();
+					handled = true;
 				}
 			}
 		}
 	}
+
 	if ( unlikely(!handled) )
 	{
 		assert("CP15 write register not handled" == 0);

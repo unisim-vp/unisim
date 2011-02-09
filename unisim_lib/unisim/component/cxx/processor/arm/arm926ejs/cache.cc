@@ -49,7 +49,6 @@ using namespace std;
 
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
-using std::endl;
 
 #ifdef GCC_INLINE
 #undef GCC_INLINE
@@ -133,6 +132,7 @@ Cache(const char *name, unisim::kernel::service::Object *parent)
 			m_valid[set][way] = false;
 			m_dirty[set][way] = false;
 		}
+		m_last_accessed_way[set] = 0;
 		m_replacement_history[set] = 0;
 	}
 	parm_size.SetFormat(
@@ -231,15 +231,6 @@ SetSize(uint32_t size)
 				break;
 		}
 
-//#ifdef ARMEMU_CACHE_DEBUG
-		if ( m_is_ok )
-		{	
-			std::cerr << "m_set_mask   = 0x" << std::hex << m_set_mask << std::dec << std::endl;
-			std::cerr << "m_set_shift_ = " << m_set_shift_ << std::endl;
-			std::cerr << "m_tag_mask   = 0x" << std::hex << m_tag_mask << std::dec << std::endl;
-			std::cerr << "m_tag_shift  = " << m_tag_shift << std::endl;
-		}
-//#endif
 	}
 
 	return m_is_ok;
@@ -326,23 +317,31 @@ const
 bool
 Cache::
 GetWay(uint32_t tag, uint32_t set, uint32_t *way)
-const
 {
 	bool found = false;
 	uint32_t current_way = 0;
 
+	current_way = m_last_accessed_way[set];
+	if ( (m_tag[set][current_way] == tag) && m_valid[set][current_way] )
+	{
+		*way = current_way;
+		return true;
+	}
+
+	current_way = 0;
 	while (current_way < m_associativity_)
 	{
 		found = (m_tag[set][current_way] == tag) && m_valid[set][current_way];
 		if ( found )
 		{
 			*way = current_way;
-			return found;
+			m_last_accessed_way[set] = current_way;
+			return true;
 		}
 		current_way++;
 	}
 	*way = 0;
-	return found;
+	return false;
 }
 
 uint32_t

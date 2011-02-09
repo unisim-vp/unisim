@@ -39,11 +39,19 @@
 #include <inttypes.h>
 #include <assert.h>
 
+#ifdef WIN32
+
+#include <winsock2.h>
+
+#else
+
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#endif
 
 namespace unisim {
 namespace component {
@@ -159,6 +167,7 @@ Setup()
 {
 	struct sockaddr_in addr;
 	int server_sock;
+	int on = 1;
 
 	server_sock = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -172,6 +181,11 @@ Setup()
 	addr.sin_family = AF_INET;
 	addr.sin_port = htons(tcp_port);
 	addr.sin_addr.s_addr = INADDR_ANY;
+	if ( setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0 )
+	{
+		logger << DebugWarning << "Could not set socket reuse address option"
+			<< EndDebugWarning;
+	}
 	if ( bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0 )
 	{
 		logger << DebugError << "Bind failed" << EndDebugError;

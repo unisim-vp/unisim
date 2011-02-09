@@ -64,6 +64,10 @@ public:
 	sc_out<uint64_t> timclken0_out_port;
 	/** Source Timer Module Clock Enable 1 port */
 	sc_out<uint64_t> timclken1_out_port;
+	/** Source Timer Module Clock Enable 2 port */
+	sc_out<uint64_t> timclken2_out_port;
+	/** Source Timer Module Clock Enable 3 port */
+	sc_out<uint64_t> timclken3_out_port;
 
 	/** Target socket for the bus connection */
 	tlm_utils::passthrough_target_socket<SystemController, 32>
@@ -110,6 +114,27 @@ private:
 	uint64_t timclk;
 	/**UNISIM Parameter for the external timer module clock */
 	unisim::kernel::service::Parameter<uint64_t> param_timclk;
+
+	/** Verbose */
+	uint32_t verbose;
+	/** UNISIM Paramter for verbose */
+	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	/** Verbose levels */
+	static const uint32_t V0 = 0x01UL;
+	static const uint32_t V1 = 0x03UL;
+	static const uint32_t V2 = 0x07UL;
+	static const uint32_t V3 = 0x0fUL;
+	/** Verbose target mask */
+	static const uint32_t V_READ      = 0x01UL <<  4;
+	static const uint32_t V_WRITE     = 0x01UL <<  5;
+	static const uint32_t V_STATUS    = 0x01UL <<  6;
+	/** Check if we should verbose */
+	bool VERBOSE(uint32_t level, uint32_t mask) const
+	{
+		uint32_t ok_level = level & verbose;
+		uint32_t ok_mask = (~verbose) & mask; 
+		return ok_level && ok_mask;
+	};
 
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;

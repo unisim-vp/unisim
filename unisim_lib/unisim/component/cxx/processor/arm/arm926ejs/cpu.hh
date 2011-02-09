@@ -55,7 +55,7 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
-// #include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include <string>
@@ -140,10 +140,14 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::SymbolTableLookup<uint64_t> > 
 		symbol_table_lookup_import;
-	/** Trap reporting service import. */
+	/** Instruction counter trap reporting service import. */
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting> 
 		instruction_counter_trap_reporting_import;
+	/** Exception trap reporting service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::TrapReporting>
+		exception_trap_reporting_import;
 
 	//=====================================================================
 	//=                       Logger                                      =
@@ -575,6 +579,23 @@ public:
 	 * Perform a memory barrier by draining the write buffer.
 	 */
 	void DrainWriteBuffer();
+	/** Invalidate ICache single entry using MVA
+	 *
+	 * Perform an invalidation of a single entry in the ICache using the
+	 *   given address in MVA format.
+	 *
+	 * @param mva the address to invalidate
+	 */
+	void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
+	/** Clean DCache single entry using MVA
+	 *
+	 * Perform a clean of a single entry in the DCache using the given
+	 *   address in MVA format.
+	 *
+	 * @param mva the address to clean
+ 	 * @param invalidate true if the line needs to be also invalidated
+	 */
+	void CleanDCacheSingleEntryWithMVA(uint32_t mva, bool invalidate);
 	/** Invalidate the caches.
 	 * Perform a complete invalidation of the instruction cache and/or the 
 	 *   data cache.
@@ -632,11 +653,16 @@ protected:
 		unisim::component::cxx::processor::arm::arm926ejs::CPU>
 		thumb_decoder;
 
+	/** The exceptions that have occured */
+	uint32_t exception;
+
 	/** CP15 */
 	CP15 cp15;
 
 	/** Instruction counter */
 	uint64_t instruction_counter;
+	/** Current instruction address */
+	uint32_t cur_instruction_address;
 	
 	/** CPU cycle time in picoseconds.
 	 */
@@ -655,6 +681,9 @@ protected:
 	/** Trap when reaching the number of instructions indicated.
 	 */
 	uint64_t trap_on_instruction_counter;
+	/** Trap when handling an exception
+	 */
+	bool trap_on_exception;
 	
 	/** Indicates if the memory accesses require to be reported.
 	 */
@@ -662,7 +691,22 @@ protected:
 	/** Indicates if the finished instructions require to be reported.
 	 */
 	bool requires_finished_instruction_reporting;
-		
+
+	/************************************************************************/
+	/* Exception handling                                             START */
+	/************************************************************************/
+
+	/** Process exceptions
+	 *
+	 * Returns true if there is an exception to handle.
+	 * @return true if an exception handling begins
+	 */
+	bool HandleException();
+
+	/************************************************************************/
+	/* Exception handling                                               END */
+	/************************************************************************/
+
 	/************************************************************************/
 	/* UNISIM parameters, statistics and registers                    START */
 	/************************************************************************/
@@ -680,10 +724,18 @@ protected:
 	 */
 	unisim::kernel::service::Parameter<uint64_t> 
 		param_trap_on_instruction_counter;
+	/** UNISIM Parameter to set traps on exception.
+	 */
+	unisim::kernel::service::Parameter<bool> 
+		param_trap_on_exception;
+	
 	
 	/** UNISIM Statistic of the number of instructions executed.
 	 */
 	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+	/** UNISIM Statistic with the address of the current instruction.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_cur_instruction_address;
 
 	/** UNISIM registers for the physical registers.
 	 */
@@ -740,6 +792,17 @@ protected:
 	/** Performs the load/stores present in the queue of memory operations.
 	 */
 	void PerformLoadStoreAccesses();
+	/** Check access permission and domain bits.
+	 *
+	 * @param is_read true if the access is a read
+	 * @param ap the access permission bits
+	 * @param domain the domain being used
+	 * 
+	 * @return true if correct, false otherwise
+	 */
+	bool CheckAccessPermission(bool is_read,
+			uint32_t ap,
+			uint32_t domain);
 	/** Translate address from MVA to physical address.
 	 *
 	 * @param mva the generated modified virtual address
