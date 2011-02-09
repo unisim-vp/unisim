@@ -237,7 +237,8 @@ private:
 	unisim::kernel::logger::Logger logger;
 
 	/** CP15 ID code register */
-	static const uint32_t id_code_register_c0 =
+	uint32_t id_code_register_c0;
+	static const uint32_t ID_CODE_REGISTER_C0 =
 		((uint32_t)0x041  << 24) |
 		((uint32_t)0x0    << 20) |
 		((uint32_t)0x06   << 16) |
@@ -266,6 +267,14 @@ private:
 	/** CP15 Process ID register */
 	uint32_t fsce_pid_register_c13;
 	uint32_t context_id_register_c13;
+
+	/** UNISIM register access */
+	unisim::kernel::service::Register<uint32_t> reg_id_code_register_c0;
+	unisim::kernel::service::Register<uint32_t> reg_control_register_c1;
+	unisim::kernel::service::Register<uint32_t> reg_translation_table_base_register_c2;
+	unisim::kernel::service::Register<uint32_t> reg_domain_access_control_register_c3;
+	unisim::kernel::service::Register<uint32_t> reg_fsce_pid_register_c13;
+	unisim::kernel::service::Register<uint32_t> reg_context_id_register_c13;
 };
 
 } // end of namespace arm926ejs

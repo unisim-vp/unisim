@@ -84,11 +84,30 @@ CP15(CP15Interface *_cpu,
 			verbose,
 			"Enable verbose mode (0 = non verbose, anything else = verbose).")
 	, logger(*this)
+	, id_code_register_c0(ID_CODE_REGISTER_C0)
 	, control_register_c1(CONTROL_REGISTER_C1_SBO)
 	, translation_table_base_register_c2(0)
 	, domain_access_control_register_c3(0)
 	, fsce_pid_register_c13(0)
 	, context_id_register_c13(0)
+	, reg_id_code_register_c0("c0_0", this,
+			id_code_register_c0,
+			"ID Code register.")
+	, reg_control_register_c1("c1", this,
+			control_register_c1,
+			"Control register.")
+	, reg_translation_table_base_register_c2("c2", this,
+			translation_table_base_register_c2,
+			"Translation table base register.")
+	, reg_domain_access_control_register_c3("c3", this,
+			domain_access_control_register_c3,
+			"Domain access control register.")
+	, reg_fsce_pid_register_c13("c13_0", this,
+			fsce_pid_register_c13,
+			"Fast Context Switch Extension (FCSE) Process Identifier (PID) register.")
+	, reg_context_id_register_c13("c13_1", this,
+			context_id_register_c13,
+			"Context ID register.")
 {
 }
 
