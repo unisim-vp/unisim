@@ -94,6 +94,7 @@ SIC(const sc_module_name &name, Object *parent)
 		sicinttarget_name << "sicinttarget[" << i << "]";
 		sicinttarget[i] =
 			new sc_core::sc_out<bool>(sicinttarget_name.str().c_str());
+		sicinttarget[i]->initialize(true);
 	}
 
 	bus_target_socket.register_nb_transport_fw(this,
@@ -204,7 +205,7 @@ UpdateStatus()
 	{
 		mask = 0x01UL << (i + 21);
 		if ( (int_target_old & mask) != (int_target & mask) )
-			*sicinttarget[i] = (int_target & mask) ? true : false;
+			*sicinttarget[i] = (int_target & mask) ? false : true;
 	}
 }
 
