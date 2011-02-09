@@ -32,6 +32,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include <stdlib.h>
 #include <inttypes.h>
 #include <string>
 #include <cstring>

@@ -3,7 +3,7 @@ message ( STATUS "Checking unisim::util::generic_peripheral_register" )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
 
-set ( C_INCLUDES inttypes )
+set ( C_INCLUDES inttypes stdlib )
 foreach ( C_INCLUDE ${C_INCLUDES} )
 	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
 	if ( NOT HAVE_${C_INCLUDE}_H )
