@@ -146,7 +146,7 @@ public:
 	uint32_t GetSet(uint32_t addr) const;
 	uint32_t GetIndex(uint32_t addr) const;
 	bool HasTag(uint32_t tag, uint32_t set) const;
-	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way) const;
+	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way);
 	/** Get a way where to place a new line.
 	 * The current replacement policy will be selected.
 	 *
@@ -204,6 +204,7 @@ private:
 	uint32_t m_tag_shift;
 	uint32_t m_set_mask;
 	uint32_t m_tag[m_sets_][m_associativity_];
+	uint32_t m_last_accessed_way[m_sets_];
 	uint8_t m_data[m_sets_][m_associativity_][m_line_size_];
 	uint8_t m_valid[m_sets_][m_associativity_];
 	uint8_t m_dirty[m_sets_][m_associativity_];
