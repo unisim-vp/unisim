@@ -123,6 +123,8 @@ CPU(const char *name, Object *parent)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
 	, instruction_counter_trap_reporting_import(
 			"instruction-counter-trap-reporting-import", this)
+	, exception_trap_reporting_import(
+			"exception-trap-reporting-import", this)
 	, logger(*this)
 	, icache("icache", this)
 	, dcache("dcache", this)
@@ -130,11 +132,13 @@ CPU(const char *name, Object *parent)
 	, tlb("tlb", this)
 	, arm32_decoder()
 	, thumb_decoder()
+	, exception(0)
 	, cp15(this, "cp15", this)
 	, instruction_counter(0)
 	, cur_instruction_address(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
+	, trap_on_exception(false)
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
 	, param_cpu_cycle_time("cpu-cycle-time", this,
@@ -150,6 +154,9 @@ CPU(const char *name, Object *parent)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter", this,
 			trap_on_instruction_counter,
 			"Produce a trap when the given instruction count is reached.")
+	, param_trap_on_exception("trap-on-exception", this,
+			trap_on_exception,
+			"Produce a trap when an exception occurs.")
 	, stat_instruction_counter("instruction-counter", this,
 			instruction_counter,
 			"Number of instructions executed.")
@@ -489,12 +496,18 @@ StepInstruction()
 	/* perform the memory load/store operations */
 	PerformLoadStoreAccesses();
 
-	// check for possible exceptions
+	bool exception_occurred = false;
+	if ( unlikely(exception) )
+		exception_occurred = HandleException();
 	
 	instruction_counter++;
 	if ( unlikely((trap_on_instruction_counter == instruction_counter)
-			&& instruction_counter_trap_reporting_import) )
+				&& instruction_counter_trap_reporting_import) )
 		instruction_counter_trap_reporting_import->ReportTrap(*this);
+
+	if ( unlikely(trap_on_exception && exception_occurred
+				&& exception_trap_reporting_import) )
+		exception_trap_reporting_import->ReportTrap(*this);
 	
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
@@ -2186,7 +2199,11 @@ NonIntrusiveTranslateVA(bool is_read,
 		logger << DebugError
 			<< "Address translation for 0x"
 			<< std::hex << va << std::dec
-			<< " was not found (or returned a fault page)"
+			<< " was not found (or returned a fault page)" << std::endl
+			<< " - ttb address = 0x" << std::hex << ttb_addr << std::dec
+			<< std::endl
+			<< " - first level fetched = 0x" << std::hex
+			<< first_level << std::dec
 			<< EndDebugError;
 		return false;
 	}
@@ -2314,7 +2331,12 @@ TranslateVA(bool is_read,
 		logger << DebugError
 			<< "Address translation for 0x"
 			<< std::hex << va << std::dec
-			<< " was not found"
+			<< " was not found (or returned a fault page)" << std::endl
+			<< " - ttb address = 0x" << std::hex << ttb_addr << std::dec
+			<< std::endl
+			<< " - first level fetched = 0x" << std::hex
+			<< first_level << std::endl
+			<< " - pc = 0x" << GetGPR(PC_reg) << std::dec
 			<< EndDebugError;
 		assert("Translation fault" == 0);
 		return false;
@@ -2514,114 +2536,6 @@ TranslateVA(bool is_read,
 				assert("TODO: check access permission and domain" == 0);
 			}
 
-//			if ( ap_used == 0x00UL )
-//			{
-//				logger << DebugError
-//					<< "Check access permission and domain"
-//					<< std::endl
-//					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
-//					<< " - va  = 0x" << va << std::endl
-//					<< " - mva = 0x" << mva << std::endl
-//					<< " - pa  = 0x" << pa << std::dec << std::endl
-//					<< " - ap[0-3] = " << ap[0]
-//					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
-//					<< " - ap  = " << ap_used << std::endl
-//					<< " - domain = " << domain << std::endl
-//					<< " - c   = " << c << std::endl
-//					<< " - b   = " << b
-//					<< EndDebugError;
-//				assert("TODO: check access permission and domain" == 0);
-//			}
-//
-//			else if ( ap_used == 0x01UL )
-//			{
-//				uint32_t mode = GetCPSR_Mode();
-//				if ( mode == USER_MODE )
-//				{
-//					logger << DebugError
-//						<< "Check access permission and domain"
-//						<< std::endl
-//						<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
-//						<< std::endl
-//						<< " - va  = 0x" << va << std::endl
-//						<< " - mva = 0x" << mva << std::endl
-//						<< " - pa  = 0x" << pa << std::dec << std::endl
-//						<< " - ap[0-3] = " << ap[0]
-//						<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
-//						<< " - ap  = " << ap_used << std::endl
-//						<< " - domain = " << domain << std::endl
-//						<< " - c   = " << c << std::endl
-//						<< " - b   = " << b
-//						<< EndDebugError;
-//					assert("TODO: raise an error because accessing privileged"
-//							" data under USER mode" == 0);
-//				}
-//				else
-//				{
-//					if ( verbose & 0x010 )
-//					{
-//						logger << DebugInfo
-//							<< "Accessing privileged data under privileged mode."
-//							<< EndDebugInfo;
-//					}
-//				}
-//			}
-//
-//			else if ( ap_used == 0x02UL )
-//			{
-//				uint32_t mode = GetCPSR_Mode();
-//				if ( mode == USER_MODE )
-//				{
-//					if ( !is_read )
-//					{
-//						logger << DebugError
-//							<< "Check access permission and domain"
-//							<< std::endl
-//							<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
-//							<< std::endl
-//							<< " - va  = 0x" << va << std::endl
-//							<< " - mva = 0x" << mva << std::endl
-//							<< " - pa  = 0x" << pa << std::dec << std::endl
-//							<< " - ap[0-3] = " << ap[0]
-//							<< " " << ap[1] << " " << ap[2] 
-//							<< " " << ap[3] << std::endl
-//							<< " - ap  = " << ap_used << std::endl
-//							<< " - domain = " << domain << std::endl
-//							<< " - c   = " << c << std::endl
-//							<< " - b   = " << b
-//							<< EndDebugError;
-//						assert("TODO: raise an error because accessing"
-//								" privileged data under USER mode" == 0);
-//					}
-//					else 
-//					{
-//						if ( verbose & 0x010 )
-//							logger << DebugInfo
-//								<< "Accessing privileged data under user mode"
-//								<< " (read-only)"
-//								<< EndDebugInfo;
-//					}
-//				}
-//				else
-//				{
-//					if ( verbose & 0x010 )
-//					{
-//						logger << DebugInfo
-//							<< "Accessing privileged data under privileged mode."
-//							<< EndDebugInfo;
-//					}
-//				}
-//			}
-//
-//			else if ( ap_used == 0x03UL )
-//			{
-//				if ( verbose & 0x010 )
-//				{
-//					logger << DebugInfo
-//						<< "Accessing non protected data."
-//						<< EndDebugInfo;
-//				}
-//			}
 		}
 
 		else // 3 tiny page
@@ -2676,105 +2590,6 @@ TranslateVA(bool is_read,
 				<< EndDebugError;
 			assert("TODO: check access permission and domain" == 0);
 		}
-//		if ( ap == 0x00UL )
-//		{
-//			logger << DebugError
-//				<< "Check access permission and domain"
-//				<< std::endl
-//				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
-//				<< " - va  = 0x" << va << std::endl
-//				<< " - mva = 0x" << mva << std::endl
-//				<< " - pa  = 0x" << pa << std::dec << std::endl
-//				<< " - ap  = " << ap << std::endl
-//				<< " - domain = " << domain << std::endl
-//				<< " - c   = " << c << std::endl
-//				<< " - b   = " << b
-//				<< EndDebugError;
-//			assert("TODO: check access permission and domain" == 0);
-//		}
-//
-//		else if ( ap == 0x01UL )
-//		{
-//			uint32_t mode = GetCPSR_Mode();
-//			if ( mode == USER_MODE )
-//			{
-//				logger << DebugError
-//					<< "Accessing privileged data under USER mode: "
-//					<< std::endl
-//					<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
-//					<< std::dec << std::endl
-//					<< "- va  = 0x" << std::hex << va << std::endl
-//					<< "- mva = 0x" << mva << std::endl
-//					<< "- pa  = 0x" << pa << std::dec << std::endl
-//					<< "- ap  = " << ap << std::endl
-//					<< "- domain = " << domain << std::endl
-//					<< "- c   = " << c << std::endl
-//					<< "- b   = " << b
-//					<< EndDebugError;
-//				assert("TODO: raise an error because accessing privileged"
-//						" data under USER mode" == 0);
-//			}
-//			else
-//			{
-//				if ( verbose & 0x010 )
-//				{
-//					logger << DebugInfo
-//						<< "Accessing privileged data under privileged mode."
-//						<< EndDebugInfo;
-//				}
-//			}
-//		}
-//
-//		else if ( ap == 0x02UL )
-//		{
-//			uint32_t mode = GetCPSR_Mode();
-//			if ( mode == USER_MODE )
-//			{
-//				if ( !is_read )
-//				{
-//					logger << DebugError
-//						<< "Accessing privileged data under USER mode: "
-//						<< std::endl
-//						<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
-//						<< std::dec << std::endl
-//						<< "- va  = 0x" << std::hex << va << std::endl
-//						<< "- mva = 0x" << mva << std::endl
-//						<< "- pa  = 0x" << pa << std::dec << std::endl
-//						<< "- ap  = " << ap << std::endl
-//						<< "- domain = " << domain << std::endl
-//						<< "- c   = " << c << std::endl
-//						<< "- b   = " << b
-//						<< EndDebugError;
-//					assert("TODO: raise an error because accessing privileged"
-//							" data under USER mode" == 0);
-//				}
-//				else
-//				{
-//					if ( verbose & 0x010 )
-//						logger << DebugInfo
-//							<< "Accessing privileged data under user mode"
-//							<< " (read-only)"
-//							<< EndDebugInfo;
-//				}
-//			}
-//			else
-//			{
-//				if ( verbose & 0x010 )
-//				{
-//					logger << DebugInfo
-//						<< "Accessing privileged data under privileged mode."
-//						<< EndDebugInfo;
-//				}
-//			}
-//		}
-//
-//		else if ( ap == 0x03UL )
-//		{
-//			if ( verbose & 0x010 )
-//				logger << DebugInfo
-//					<< "Accessing non protected data."
-//					<< EndDebugInfo;
-//		}
 	}
 
 	else // 0x03UL fine page table
@@ -2784,6 +2599,120 @@ TranslateVA(bool is_read,
 
 	return true;
 }
+
+/************************************************************************/
+/* Exception handling                                             START */
+/************************************************************************/
+	
+/** Process exceptions
+ *
+ * Returns true if there is an exception to handle.
+ * @return true if an exception handling begins
+ */
+bool
+CPU::
+HandleException()
+{
+	bool handled = false;
+	bool report = false;
+
+	// Exception priorities (from higher to lower)
+	// - 1 Reset
+	// - 2 Data Abort (including data TLB miss)
+	// - 3 FIQ
+	// - 4 IRQ
+	// - 5 Imprecise Abort (external abort) - ARMv6 (so ignored here)
+	// - 6 Prefetch Abort (including prefetch TLB miss)
+	// - 7 Undefined instruction / SWI
+	
+	if ( exception & 
+			unisim::component::cxx::processor::arm::exception::RESET )
+	{
+	}
+
+	else if ( exception & 
+			unisim::component::cxx::processor::arm::exception::DATA_ABORT )
+	{
+	}
+
+	else if ( (exception &
+			unisim::component::cxx::processor::arm::exception::FIQ) &&
+			!GetCPSR_F() )
+	{
+		report = true;
+	}
+
+	else if ( (exception & 
+			unisim::component::cxx::processor::arm::exception::IRQ) &&
+			!GetCPSR_I() )
+	{
+		report = true;
+		logger << DebugInfo
+			<< "Received IRQ interrupt, handling it."
+			<< EndDebugInfo;
+		handled = true;
+		uint32_t cur_pc = GetGPR(15);
+		spsr[3] = cpsr;
+		SetGPRMapping(GetCPSR_Mode(), IRQ_MODE);
+		SetGPR(14, cur_pc + 4);
+		SetCPSR_Mode(IRQ_MODE);
+		SetCPSR_T(false);
+		SetCPSR_I(true);
+		if ( cp15.GetVINITHI() )
+			SetGPR(PC_reg, 0xffff0018UL);
+		else
+			SetGPR(PC_reg, 0x00000018UL);
+	}
+	
+	else if ( exception &
+			unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT )
+	{
+	}
+	
+	else if ( exception &
+			unisim::component::cxx::processor::arm::exception::SWI )
+	{
+	}
+
+	else if ( exception &
+			unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN )
+	{
+	}
+
+	if ( !handled )
+	{
+		if ( (exception &
+					unisim::component::cxx::processor::arm::exception::FIQ) &&
+				GetCPSR_F() )
+			handled = true;
+
+		if ( (exception & 
+					unisim::component::cxx::processor::arm::exception::IRQ) &&
+				GetCPSR_I() )
+			handled = true;
+	}
+
+	if ( !handled )
+	{
+		logger << DebugError
+			<< "Exception not handled (" << (unsigned int)exception << ")" 
+			<< std::endl
+			<< " - CPSR = 0x" << std::hex << cpsr << std::dec
+			<< " - irq? = " 
+			<< (exception & 
+					unisim::component::cxx::processor::arm::exception::IRQ)
+			<< std::endl
+			<< " - CPSR_I = " << GetCPSR_I()
+			<< EndDebugError;
+		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+
+	return report;
+}
+
+/************************************************************************/
+/* Exception handling                                               END */
+/************************************************************************/
 
 /** Performs the load/stores present in the queue of memory operations.
  */
@@ -3150,15 +3079,15 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 						<< " - index = " << cache_index << std::endl
 						<< " - size = " << size << std::endl
 						<< " - data =" << std::hex;
-					for ( int i = 0; i < size; i++ )
+					for ( unsigned int i = 0; i < size; i++ )
 						logger << " " << (unsigned int)data[i];
 					logger << std::endl
 						<< " - pre line =";
-					for ( int i = 0; i < cache_line_size; i++ )
+					for ( unsigned int i = 0; i < cache_line_size; i++ )
 						logger << " " << (unsigned int)prev_data[i];
 					logger << std::endl
 						<< " - new line =";
-					for ( int i = 0; i < cache_line_size; i++ )
+					for ( unsigned int i = 0; i < cache_line_size; i++ )
 						logger << " " << (unsigned int)cache_data[i];
 					logger << std::dec
 						<< EndDebugError;

@@ -417,11 +417,10 @@ void
 ARM926EJS ::
 IRQHandler()
 {
-	logger << DebugWarning
-		<< "TODO" << std::endl
-		<< "nIRQ port value changed to "
-		<< nirq
-		<< EndDebugWarning;
+	if ( nirq )
+		exception &= ~unisim::component::cxx::processor::arm::exception::IRQ;
+	else
+		exception |= unisim::component::cxx::processor::arm::exception::IRQ;
 }
 
 /** nFIQ port handler */
@@ -429,11 +428,10 @@ void
 ARM926EJS ::
 FIQHandler()
 {
-	logger << DebugWarning
-		<< "TODO" << std::endl
-		<< "nFIQ port value changed to "
-		<< nfiq
-		<< EndDebugWarning;
+	if ( nfiq )
+		exception &= ~unisim::component::cxx::processor::arm::exception::FIQ;
+	else
+		exception |= unisim::component::cxx::processor::arm::exception::FIQ;
 }
 	
 /**

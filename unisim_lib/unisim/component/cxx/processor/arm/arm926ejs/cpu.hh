@@ -55,7 +55,7 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
-// #include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include <string>
@@ -140,10 +140,14 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::SymbolTableLookup<uint64_t> > 
 		symbol_table_lookup_import;
-	/** Trap reporting service import. */
+	/** Instruction counter trap reporting service import. */
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting> 
 		instruction_counter_trap_reporting_import;
+	/** Exception trap reporting service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::TrapReporting>
+		exception_trap_reporting_import;
 
 	//=====================================================================
 	//=                       Logger                                      =
@@ -649,6 +653,9 @@ protected:
 		unisim::component::cxx::processor::arm::arm926ejs::CPU>
 		thumb_decoder;
 
+	/** The exceptions that have occured */
+	uint32_t exception;
+
 	/** CP15 */
 	CP15 cp15;
 
@@ -674,6 +681,9 @@ protected:
 	/** Trap when reaching the number of instructions indicated.
 	 */
 	uint64_t trap_on_instruction_counter;
+	/** Trap when handling an exception
+	 */
+	bool trap_on_exception;
 	
 	/** Indicates if the memory accesses require to be reported.
 	 */
@@ -681,7 +691,22 @@ protected:
 	/** Indicates if the finished instructions require to be reported.
 	 */
 	bool requires_finished_instruction_reporting;
-		
+
+	/************************************************************************/
+	/* Exception handling                                             START */
+	/************************************************************************/
+
+	/** Process exceptions
+	 *
+	 * Returns true if there is an exception to handle.
+	 * @return true if an exception handling begins
+	 */
+	bool HandleException();
+
+	/************************************************************************/
+	/* Exception handling                                               END */
+	/************************************************************************/
+
 	/************************************************************************/
 	/* UNISIM parameters, statistics and registers                    START */
 	/************************************************************************/
@@ -699,6 +724,11 @@ protected:
 	 */
 	unisim::kernel::service::Parameter<uint64_t> 
 		param_trap_on_instruction_counter;
+	/** UNISIM Parameter to set traps on exception.
+	 */
+	unisim::kernel::service::Parameter<bool> 
+		param_trap_on_exception;
+	
 	
 	/** UNISIM Statistic of the number of instructions executed.
 	 */
