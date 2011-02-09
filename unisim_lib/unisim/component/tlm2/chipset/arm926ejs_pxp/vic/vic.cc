@@ -186,14 +186,17 @@ VIC(const sc_module_name &name, Object *parent)
 	, nvicirq("nvicirq")
 	, vicvectaddrout("vicvectaddrout")
 	, bus_target_socket("bus_target_socket")
+	, state_semaphore("state_semaphore", 1)
+	, update_status_event()
 	, forwarding_nvicirqin(true)
 	, nvicirqin_value(false)
 	, vect_int_serviced(0)
 	, vect_int_for_service(false)
 	, max_vect_int_for_service(0)
 	, int_source(0)
-	, nvicfiq_value(false)
-	, nvicirq_value(false)
+	, nvicfiq_value(true)
+	, nvicirq_value(true)
+	, vicvectaddrout_value(0)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
@@ -202,6 +205,11 @@ VIC(const sc_module_name &name, Object *parent)
 			"Verbose level (0 = no verbose).")
 	, logger(*this)
 {
+	SC_THREAD(UpdateStatusHandler);
+	nvicirq.initialize(true);
+	nvicfiq.initialize(true);
+	vicvectaddrout.initialize(0);
+
 	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
 	{
 		std::stringstream vicintsource_name;
@@ -280,12 +288,44 @@ Setup()
 	return true;
 }
 
+/** Status update thread handler
+ * Basically it just waits for update status events and updates the status of
+ *   the VIC depending on all the possible entries by calling the UpdateStatus
+ *   method.
+ */
+void
+VIC ::
+UpdateStatusHandler()
+{
+	while ( 1 )
+	{
+		wait(update_status_event);
+		if ( VERBOSE(V0, V_STATUS) )
+		{
+			logger << DebugInfo
+				<< "Starting status update."
+				<< EndDebugInfo;
+		}
+		UpdateStatus();
+		if ( VERBOSE(V0, V_STATUS) )
+		{
+			logger << DebugInfo
+				<< "Status update finished."
+				<< EndDebugInfo;
+		}
+	}
+}
+
 /** Update the status of the VIC depending on all the possible entries
  */
 void
 VIC ::
 UpdateStatus()
 {
+	// first we must lock the state to be sure we are the only ones
+	//   modifying it
+	state_semaphore.wait();
+
 	// apply software interrupt register and the values of 
 	//   interrupt sources to the raw interrupt register
 	uint32_t softint = GetRegister(VICSOFTINTAddr);
@@ -293,14 +333,16 @@ UpdateStatus()
 	uint32_t rawintr = 0;
 	for ( unsigned int i = 0; i < NUM_SOURCE_INT; i++ )
 	{
-		rawintr |= (softint || int_source) & (0x01UL << i);
+		rawintr |= (softint | int_source) & (0x01UL << i);
 	}
 	SetRegister(VICRAWINTRAddr, rawintr);
 	if ( VERBOSE(V0, V_STATUS) && (old_rawintr != rawintr) )
 		logger << DebugInfo
 			<< "Updated raw interrupt status register:" << std::endl
 			<< " - old value = 0x" << std::hex << old_rawintr << std::endl
-			<< " - new value = 0x" << std::hex << rawintr << std::dec
+			<< " - new value = 0x" << rawintr << std::endl
+			<< " - intsource = 0x" << int_source << std::endl
+			<< " - softint   = 0x" << softint << std::dec
 			<< EndDebugInfo;
 
 	// compute the new fiq and irq status
@@ -340,7 +382,7 @@ UpdateStatus()
 
 	// compute the new nVICFIQ
 	bool old_nvicfiq_value = nvicfiq_value;
-	if ( !nvicfiqin || fiqstatus )
+	if ( (!nvicfiqin) || fiqstatus )
 		nvicfiq_value = false;
 	else
 		nvicfiq_value = true;
@@ -371,7 +413,7 @@ UpdateStatus()
 
 	for ( unsigned int i = 0; i < NUM_VECT_INT; i++ )
 	{
-		uint32_t vectcntl = GetVICVECTCNTL(i);
+		uint32_t vectcntl = GetRegister(VICVECTCNTLBaseAddr, i);
 		uint32_t src = VECTCNTLSource(vectcntl);
 
 		vectirq[i] = false;
@@ -395,7 +437,7 @@ UpdateStatus()
 						max_vect_int_for_service = i;
 						vectirq[i] = true;
 						priority = true;
-						new_vicvectaddr = GetVICVECTADDR(i);
+						new_vicvectaddr = GetRegister(VICVECTADDRBaseAddr, i);
 						SetRegister(VICVECTADDRAddr, new_vicvectaddr);
 					}
 				}
@@ -532,16 +574,68 @@ UpdateStatus()
 		}
 	}
 
-	if ( forwarding_nvicirqin != old_forwarding_nvicirqin )
+	if ( VERBOSE(V0, V_STATUS) )
 	{
-		logger << DebugInfo
-			<< "Forwarding nvicirq signal:" << std::endl
-			<< " - nvicirqin = " << old_nvicirqin_value
-			<< " -> " << nvicirqin_value << std::endl
-			<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
-			<< " -> 0x" << new_vicvectaddr << std::dec
-			<< EndDebugInfo;
+		if ( priority )
+		{
+			logger << DebugInfo
+				<< "Found irq interrupt, setting nvicirq (" << nvicirq_value << ")"
+				<< EndDebugInfo;
+			if ( nvicirq_value != old_nvicirq_value )
+			{
+				logger << DebugInfo
+					<< "Setting nvic_irq to " << nvicirq_value
+					<< EndDebugInfo;
+			}
+		}
+		else if ( forwarding_nvicirqin != old_forwarding_nvicirqin )
+		{
+			logger << DebugInfo
+				<< "Forwarding nvicirq signal:" << std::endl
+				<< " - nvicirqin = " << old_nvicirqin_value
+				<< " -> " << nvicirqin_value << std::endl
+				<< " - VICVECTADDR = 0x" << std::hex << old_vicvectaddr
+				<< " -> 0x" << new_vicvectaddr << std::dec
+				<< EndDebugInfo;
+		}
 	}
+
+	// correctly set the output values
+	nvicfiq = nvicfiq_value;
+	nvicirq = nvicirq_value;
+	vicvectaddrout = new_vicvectaddr;
+	if ( VERBOSE(V0, V_OUTIRQ) )
+	{
+		if ( nvicirq_value != old_nvicirq_value )
+		{
+			logger << DebugInfo
+				<< "Changing nvicirq value to " << nvicirq_value << std::endl
+				<< " - vicvectaddrout = 0x" << std::hex
+				<< old_vicvectaddr << " => 0x" << new_vicvectaddr << std::dec
+				<< EndDebugInfo;
+		}
+		else if ( new_vicvectaddr != old_vicvectaddr )
+		{
+			logger << DebugInfo
+				<< "Changing the address on vicvectaddrout:" << std::endl
+				<< " - vicvectaddrout = 0x" << std::hex
+				<< old_vicvectaddr << " => 0x" << new_vicvectaddr << std::dec
+				<< EndDebugInfo;
+		}
+	}
+
+	if ( VERBOSE(V0, V_OUTFIQ) )
+	{
+		if ( nvicfiq_value != old_nvicfiq_value )
+		{
+			logger << DebugInfo
+				<< "Changing nvicfiq value to " << nvicfiq_value
+				<< EndDebugInfo;
+		}
+	}
+
+	// unlock the state
+	state_semaphore.post();
 }
 
 /** Source interrupt handling */
@@ -549,6 +643,9 @@ void
 VIC ::
 VICIntSourceReceived(int id, bool value)
 {
+	// lock the VIC state
+	state_semaphore.wait();
+
 	uint32_t orig = int_source;
 	if ( value )
 		int_source |= (0x01UL << id);
@@ -565,8 +662,20 @@ VICIntSourceReceived(int id, bool value)
 			<< int_source << std::dec
 			<< EndDebugInfo;
 	}
-	UpdateStatus();
 
+	// unlock the state
+	state_semaphore.post();
+
+	// UpdateStatus();
+	
+	if ( VERBOSE(V0, V_STATUS) )
+	{
+		logger << DebugInfo
+			<< "Notifying that the status must be updated."
+			<< EndDebugInfo;
+	}
+
+	update_status_event.notify(SC_ZERO_TIME);
 }
 
 /**************************************************************************/
@@ -585,11 +694,13 @@ bus_target_nb_transport_fw(transaction_type &trans,
 
 void 
 VIC ::
-bus_target_b_transport(transaction_type &trans, 
-		sc_core::sc_time &delay)
+bus_target_b_transport(transaction_type &trans, sc_core::sc_time &delay)
 {
 	wait(delay);
 	delay = SC_ZERO_TIME;
+
+	// first we need to lock the statue of the VIC
+	state_semaphore.wait();
 
 	uint32_t addr = trans.get_address() - base_addr;
 	uint8_t *data = trans.get_data_ptr();
@@ -605,7 +716,10 @@ bus_target_b_transport(transaction_type &trans,
 			for ( unsigned int i = 0; i < size; i += 4 )
 			{
 				uint32_t align_addr = (addr + i) & ~0x03UL;
-				if ( align_addr == VICVECTADDRAddr )
+				if ( align_addr == VICIRQSTATUSAddr )
+					handled = true;
+				
+				else if ( align_addr == VICVECTADDRAddr )
 				{
 					if ( vect_int_for_service )
 					{
@@ -631,8 +745,8 @@ bus_target_b_transport(transaction_type &trans,
 	{
 		if ( (0x01000L - size) >= addr )
 		{
-			uint32_t vicirqstatus = GetVICIRQSTATUS();
-			uint32_t vicfiqstatus = GetVICFIQSTATUS();
+			uint32_t vicirqstatus = GetRegister(VICIRQSTATUSAddr);
+			uint32_t vicfiqstatus = GetRegister(VICFIQSTATUSAddr);
 			bool should_update_status = false;
 			memcpy(&(regs[addr]), data, size);
 			for ( unsigned int i = 0; i < size; i += 4 )
@@ -640,7 +754,7 @@ bus_target_b_transport(transaction_type &trans,
 				uint32_t align_addr = (addr + i) & ~0x03UL;
 				if ( align_addr == VICIRQSTATUSAddr )
 				{
-					SetVICIRQSTATUS(vicirqstatus);
+					SetRegister(VICIRQSTATUSAddr, vicirqstatus);
 					logger << DebugWarning
 						<< "Trying to modify read only register"
 						<< " VICIRQSTATUS."
@@ -650,7 +764,7 @@ bus_target_b_transport(transaction_type &trans,
 
 				else if ( align_addr == VICFIQSTATUSAddr )
 				{
-					SetVICFIQSTATUS(vicfiqstatus);
+					SetRegister(VICFIQSTATUSAddr, vicfiqstatus);
 					logger << DebugWarning
 						<< "Trying to modify read only register"
 						<< " VICFIQSTATUS."
@@ -672,8 +786,8 @@ bus_target_b_transport(transaction_type &trans,
 				
 				else if ( align_addr == VICINTENCLEARAddr )
 				{
-					uint32_t vicintenclear = GetVICINTENCLEAR();
-					uint32_t vicintenable = GetVICINTENABLE();
+					uint32_t vicintenclear = GetRegister(VICINTENCLEARAddr);
+					uint32_t vicintenable = GetRegister(VICINTENABLEAddr);
 					for ( unsigned int index = 0;
 							index < NUM_SOURCE_INT;
 							index++ )
@@ -684,16 +798,16 @@ bus_target_b_transport(transaction_type &trans,
 							 (0x01UL << index));
 					}
 					// reset the value of VICINTENCLEAR
-					SetVICINTENCLEAR(0);
-					SetVICINTENABLE(vicintenable);
+					SetRegister(VICINTENCLEARAddr, 0);
+					SetRegister(VICINTENABLEAddr, vicintenable);
 					should_update_status = true;
 					handled = true;
 				}
 
 				else if ( align_addr == VICSOFTINTCLEARAddr )
 				{
-					uint32_t vicsoftintclear = GetVICSOFTINTCLEAR();
-					uint32_t vicsoftint = GetVICSOFTINT();
+					uint32_t vicsoftintclear = GetRegister(VICSOFTINTCLEARAddr);
+					uint32_t vicsoftint = GetRegister(VICSOFTINTAddr);
 					for ( unsigned int index = 0;
 							index < NUM_SOURCE_INT;
 							index++ )
@@ -704,8 +818,8 @@ bus_target_b_transport(transaction_type &trans,
 							 (0x01UL << index));
 					}
 					// reset the value of VICSOFTINTCLEAR
-					SetVICSOFTINTCLEAR(0);
-					SetVICSOFTINT(vicsoftint);
+					SetRegister(VICSOFTINTCLEARAddr, 0);
+					SetRegister(VICSOFTINTAddr, vicsoftint);
 					should_update_status = true;
 					handled = true;
 				}
@@ -740,7 +854,7 @@ bus_target_b_transport(transaction_type &trans,
 
 				else if ( align_addr == VICITCRAddr )
 				{
-					uint32_t vicitcr = GetVICITCR();
+					uint32_t vicitcr = GetRegister(VICITCRAddr);
 					if ( vicitcr & 0x01UL )
 					{
 						logger << DebugError
@@ -748,12 +862,13 @@ bus_target_b_transport(transaction_type &trans,
 							<< EndDebugError;
 						unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 					}
-					SetVICITCR(vicitcr & 0x01UL);
+					SetRegister(VICITCRAddr, vicitcr & 0x01UL);
 					handled = true;
 				}
 			}
 			if ( should_update_status )
-				UpdateStatus();
+				// UpdateStatus();
+				update_status_event.notify(SC_ZERO_TIME);
 		}
 	}
 
@@ -792,6 +907,9 @@ bus_target_b_transport(transaction_type &trans,
 		logger << std::dec
 			<< EndDebugInfo;
 	}
+
+	// we can unlock the state of the VIC
+	state_semaphore.post();
 }
 
 bool 
@@ -886,6 +1004,19 @@ GetRegister(uint32_t addr) const
 	return value;
 }
 
+/** Returns the register pointed by the given address plus index * 4
+ *
+ * @param addr the base address to consider
+ * @param index the register index from the base address
+ * @return the value of the register pointed by address + (index * 4)
+ */
+uint32_t 
+VIC ::
+GetRegister(uint32_t addr, uint32_t index) const
+{
+	return GetRegister(addr + (index * 4));
+}
+
 /** Sets the register pointed by the given address
  *
  * @param addr the address to consider
@@ -899,399 +1030,6 @@ SetRegister(uint32_t addr, uint32_t value)
 
 	value = Host2LittleEndian(value);
 	memcpy(data, &value, 4);
-}
-
-/** Returns the IRQ status register
- *
- * @return the value of the IRQ status register
- */
-uint32_t 
-VIC ::
-GetVICIRQSTATUS() const
-{
-	return GetRegister(VICIRQSTATUSAddr);
-}
-
-/** Sets the IRQ status register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICIRQSTATUS(uint32_t value)
-{
-	SetRegister(VICIRQSTATUSAddr, value);
-}
-
-/** Returns the FIQ status register
- *
- * @return the value of the FIQ status register
- */
-uint32_t 
-VIC :: 
-GetVICFIQSTATUS() const
-{
-	return GetRegister(VICFIQSTATUSAddr);
-}
-
-/** Sets the FIQ status register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICFIQSTATUS(uint32_t value)
-{
-	SetRegister(VICFIQSTATUSAddr, value);
-}
-
-/** Returns the raw interrupt register
- *
- * @return the value of the raw interrupt register
- */
-uint32_t 
-VIC ::
-GetVICRAWINTR() const
-{
-	return GetRegister(VICRAWINTRAddr);
-}
-
-/** Sets the raw interrupt register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICRAWINTR(uint32_t value)
-{
-	SetRegister(VICRAWINTRAddr, value);
-}
-
-/** Returns the interrupt select register
- *
- * @return the value of the interrupt select register
- */
-uint32_t 
-VIC ::
-GetVICINTSELECT() const
-{
-	return GetRegister(VICINTSELECTAddr);
-}
-
-/** Sets the interrupt select register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICINTSELECT(uint32_t value)
-{
-	SetRegister(VICINTSELECTAddr, value);
-}
-
-/** Returns the interrupt enable register
- *
- * @return the value of the interrupt enable register
- */
-uint32_t 
-VIC ::
-GetVICINTENABLE() const
-{
-	return GetRegister(VICINTENABLEAddr);
-}
-
-/** Sets the interrupt enable register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICINTENABLE(uint32_t value)
-{
-	SetRegister(VICINTENABLEAddr, value);
-}
-
-/** Returns the interrupt enable clear register
- *
- * This always returns 0 always as this register is write only
- *   and never modified, however it returns the actual register
- *   value that could have been modified. The value should be
- *   set back to 0 by the user.
- *
- * @return the value of the interrupt enable clear register
- */
-uint32_t 
-VIC ::
-GetVICINTENCLEAR() const
-{
-	return GetRegister(VICINTENCLEARAddr);
-}
-
-/** Sets the interrupt enable cler register
- *
- * The value to use should be always 0 to respect the VIC specs.
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICINTENCLEAR(uint32_t value)
-{
-	SetRegister(VICINTENCLEARAddr, value);
-}
-
-/** Returns the software interrupt register
- *
- * @return the value of the software interrupt register
- */
-uint32_t 
-VIC ::
-GetVICSOFTINT() const
-{
-	return GetRegister(VICSOFTINTAddr);
-}
-
-/** Sets the software interrupt register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICSOFTINT(uint32_t value)
-{
-	SetRegister(VICSOFTINTAddr, value);
-}
-
-/** Returns the software interrupt clear register
- *
- * This always returns 0 always as this register is write only
- *   and never modified, however it returns the actual register
- *   value that could have been modified. The value should be
- *   set back to 0 by the user.
- *
- * @return the value of the software interrupt clear register
- */
-uint32_t 
-VIC ::
-GetVICSOFTINTCLEAR() const
-{
-	return GetRegister(VICSOFTINTCLEARAddr);
-}
-
-/** Sets the software interrupt cler register
- *
- * The value to use should be always 0 to respect the VIC specs.
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICSOFTINTCLEAR(uint32_t value)
-{
-	SetRegister(VICSOFTINTCLEARAddr, value);
-}
-
-/** Returns the vector address register
- *
- * @return the value of the vector address register
- */
-uint32_t 
-VIC ::
-GetVICVECTADDR() const
-{
-	return GetRegister(VICVECTADDRAddr);
-}
-
-/** Set the vector address register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICVECTADDR(uint32_t value)
-{
-	SetRegister(VICVECTADDRAddr, value);
-}
-
-/** Returns the default vector address register
- *
- * @return the value of the default vector address register
- */
-uint32_t 
-VIC ::
-GetVICDEFVECTADDR() const
-{
-	return GetRegister(VICDEFVECTADDRAddr);
-}
-
-/** Sets the default vector address register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICDEFVECTADDR(uint32_t value)
-{
-	SetRegister(VICDEFVECTADDRAddr, value);
-}
-
-/** Returns one of the vector address registers
- *
- * @param index the index to look for
- * @return the value of the indexed vector address register
- */
-uint32_t 
-VIC ::
-GetVICVECTADDR(uint32_t index) const
-{
-	return GetRegister(VICVECTADDRBaseAddr + (4 * index));
-}
-
-/** Sets the value of one of the vector address registers
- *
- * @param index the index to look for
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICVECTADDR(uint32_t index, uint32_t value)
-{
-	SetRegister(VICVECTADDRBaseAddr + (4 * index),
-			value);
-}
-
-/** Returns one of the vector control registers
- *
- * @param index the index to look for
- * @return the value of the indexed vector control register
- */
-uint32_t 
-VIC ::
-GetVICVECTCNTL(uint32_t index) const
-{
-	return GetRegister(VICVECTCNTLBaseAddr + (4 * index));
-}
-
-/** Sets the value of one of the vector controll registers
- *
- * @param index the index to look for
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICVECTCNTL(uint32_t index, uint32_t value)
-{
-	SetRegister(VICVECTCNTLBaseAddr + (4 * index), value);
-}
-
-/** Returns the test control register
- *
- * @return the value of the test control register
- */
-uint32_t 
-VIC ::
-GetVICITCR() const
-{
-	return GetRegister(VICITCRAddr);
-}
-
-/** Set the test control register
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICITCR(uint32_t value)
-{
-	SetRegister(VICITCRAddr, value);
-}
-
-/** Returns the test input register (nVICIRQIN/nVICFIQIN)
- *
- * @return the value of the test input register (nVICIRQIN/nVICFIQIN)
- */
-uint32_t 
-VIC ::
-GetVICITIP1() const
-{
-	return GetRegister(VICITIP1Addr);
-}
-
-/** Set the test input register (nVICIRQIN/nVICFIQIN)
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICITIP1(uint32_t value)
-{
-	SetRegister(VICITIP1Addr, value);
-}
-
-/** Returns the test input register (VICVECTADDRIN)
- *
- * @return the value of the test input register (VICVECTADDRIN)
- */
-uint32_t 
-VIC ::
-GetVICITIP2() const
-{
-	return GetRegister(VICITIP2Addr);
-}
-
-/** Set the test input register (VICVECTADDRIN)
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICITIP2(uint32_t value)
-{
-	SetRegister(VICITIP2Addr, value);
-}
-
-/** Returns the test output register (nVICIRQ/nVICFIQ)
- *
- * @return the value of the test output register (nVICIRQ/nVICFIQ)
- */
-uint32_t 
-VIC ::
-GetVICITOP1() const
-{
-	return GetRegister(VICITOP1Addr);
-}
-
-/** Set the test output register (nVICIRQ/nVICFIQ)
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICITOP1(uint32_t value)
-{
-	SetRegister(VICITOP1Addr, value);
-}
-
-/** Returns the test output register (VICVECTADDROUT)
- *
- * @return the value of the test output register (VICVECTADDROUT)
- */
-uint32_t 
-VIC ::
-GetVICITOP2() const
-{
-	return GetRegister(VICITOP2Addr);
-}
-
-/** Set the test output register (VICVECTADDROUT)
- *
- * @param value the value to set
- */
-void 
-VIC ::
-SetVICITOP2(uint32_t value)
-{
-	SetRegister(VICITOP2Addr, value);
 }
 
 /**************************************************************************/

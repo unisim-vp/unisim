@@ -88,6 +88,19 @@ public:
 	virtual bool Setup();
 
 private:
+	/** Semaphore to ensure that only one process is modifying the VIC state
+	 */
+	sc_core::sc_semaphore state_semaphore;
+
+	/** event that handles the update process of the VIC
+	 */
+	sc_core::sc_event update_status_event;
+	/** Status update thread handler
+	 * Basically it just waits for update status events and updates the status of
+	 *   the VIC depending on all the possible entries by calling the UpdateStatus
+	 *   method.
+	 */
+	void UpdateStatusHandler();
 	/** Update the status of the VIC depending on all the possible entries
 	 */
 	void UpdateStatus();
@@ -132,6 +145,8 @@ private:
 	bool nvicfiq_value;
 	/** value of the nVICIRQ */
 	bool nvicirq_value;
+	/** value of the VICVECTADDROUT */
+	uint32_t vicvectaddrout_value;
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the bus connection     START */
@@ -212,217 +227,19 @@ private:
 	 * @return the value of the register pointed by the address
 	 */
 	uint32_t GetRegister(uint32_t addr) const;
+	/** Returns the register pointed by the given address plus index * 4
+	 *
+	 * @param addr the base address to consider
+	 * @param index the register index from the base address
+	 * @return the value of the register pointed by address + (index * 4)
+	 */
+	uint32_t GetRegister(uint32_t addr, uint32_t index) const;
 	/** Sets the register pointed by the given address
 	 *
 	 * @param addr the address to consider
 	 * @param value the value to set the register
 	 */
 	void SetRegister(uint32_t addr, uint32_t value);
-
-	/** Returns the IRQ status register
-	 *
-	 * @return the value of the IRQ status register
-	 */
-	uint32_t GetVICIRQSTATUS() const;
-	/** Sets the IRQ status register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICIRQSTATUS(uint32_t value);
-
-	/** Returns the FIQ status register
-	 *
-	 * @return the value of the FIQ status register
-	 */
-	uint32_t GetVICFIQSTATUS() const;
-	/** Sets the FIQ status register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICFIQSTATUS(uint32_t value);
-
-	/** Returns the raw interrupt register
-	 *
-	 * @return the value of the raw interrupt register
-	 */
-	uint32_t GetVICRAWINTR() const;
-	/** Sets the raw interrupt register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICRAWINTR(uint32_t value);
-
-	/** Returns the interrupt select register
-	 *
-	 * @return the value of the interrupt select register
-	 */
-	uint32_t GetVICINTSELECT() const;
-	/** Sets the interrupt select register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICINTSELECT(uint32_t value);
-
-	/** Returns the interrupt enable register
-	 *
-	 * @return the value of the interrupt enable register
-	 */
-	uint32_t GetVICINTENABLE() const;
-	/** Sets the interrupt enable register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICINTENABLE(uint32_t value);
-
-	/** Returns the interrupt enable clear register
-	 *
-	 * This always returns 0 always as this register is write only
-	 *   and never modified, however it returns the actual register
-	 *   value that could have been modified. The value should be
-	 *   set back to 0 by the user.
-	 *
-	 * @return the value of the interrupt enable clear register
-	 */
-	uint32_t GetVICINTENCLEAR() const;
-	/** Sets the interrupt enable cler register
-	 *
-	 * The value to use should be always 0 to respect the VIC specs.
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICINTENCLEAR(uint32_t value);
-
-	/** Returns the software interrupt register
-	 *
-	 * @return the value of the software interrupt register
-	 */
-	uint32_t GetVICSOFTINT() const;
-	/** Sets the software interrupt register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICSOFTINT(uint32_t value);
-
-	/** Returns the software interrupt clear register
-	 *
-	 * This always returns 0 always as this register is write only
-	 *   and never modified, however it returns the actual register
-	 *   value that could have been modified. The value should be
-	 *   set back to 0 by the user.
-	 *
-	 * @return the value of the software interrupt clear register
-	 */
-	uint32_t GetVICSOFTINTCLEAR() const;
-	/** Sets the software interrupt cler register
-	 *
-	 * The value to use should be always 0 to respect the VIC specs.
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICSOFTINTCLEAR(uint32_t value);
-
-	/** Returns the vector address register
-	 *
-	 * @return the value of the vector address register
-	 */
-	uint32_t GetVICVECTADDR() const;
-	/** Set the vector address register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICVECTADDR(uint32_t value);
-
-	/** Returns the default vector address register
-	 *
-	 * @return the value of the default vector address register
-	 */
-	uint32_t GetVICDEFVECTADDR() const;
-	/** Sets the default vector address register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICDEFVECTADDR(uint32_t value);
-
-	/** Returns one of the vector address registers
-	 *
-	 * @param index the index to look for
-	 * @return the value of the indexed vector address register
-	 */
-	uint32_t GetVICVECTADDR(uint32_t index) const;
-	/** Sets the value of one of the vector address registers
-	 *
-	 * @param index the index to look for
-	 * @param value the value to set
-	 */
-	void SetVICVECTADDR(uint32_t index, uint32_t value);
-
-	/** Returns one of the vector control registers
-	 *
-	 * @param index the index to look for
-	 * @return the value of the indexed vector control register
-	 */
-	uint32_t GetVICVECTCNTL(uint32_t index) const;
-	/** Sets the value of one of the vector controll registers
-	 *
-	 * @param index the index to look for
-	 * @param value the value to set
-	 */
-	void SetVICVECTCNTL(uint32_t index, uint32_t value);
-
-	/** Returns the test control register
-	 *
-	 * @return the value of the test control register
-	 */
-	uint32_t GetVICITCR() const;
-	/** Set the test control register
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICITCR(uint32_t value);
-
-	/** Returns the test input register (nVICIRQIN/nVICFIQIN)
-	 *
-	 * @return the value of the test input register (nVICIRQIN/nVICFIQIN)
-	 */
-	uint32_t GetVICITIP1() const;
-	/** Set the test input register (nVICIRQIN/nVICFIQIN)
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICITIP1(uint32_t value);
-
-	/** Returns the test input register (VICVECTADDRIN)
-	 *
-	 * @return the value of the test input register (VICVECTADDRIN)
-	 */
-	uint32_t GetVICITIP2() const;
-	/** Set the test input register (VICVECTADDRIN)
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICITIP2(uint32_t value);
-
-	/** Returns the test output register (nVICIRQ/nVICFIQ)
-	 *
-	 * @return the value of the test output register (nVICIRQ/nVICFIQ)
-	 */
-	uint32_t GetVICITOP1() const;
-	/** Set the test output register (nVICIRQ/nVICFIQ)
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICITOP1(uint32_t value);
-
-	/** Returns the test output register (VICVECTADDROUT)
-	 *
-	 * @return the value of the test output register (VICVECTADDROUT)
-	 */
-	uint32_t GetVICITOP2() const;
-	/** Set the test output register (VICVECTADDROUT)
-	 *
-	 * @param value the value to set
-	 */
-	void SetVICITOP2(uint32_t value);
 
 	/**************************************************************************/
 	/* Methods to get and set the registers                               END */
