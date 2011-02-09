@@ -186,16 +186,6 @@ Simulator(int argc, char **argv)
 	// irq_master_stub->out_interrupt(cpu->in_irq);
 	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
-#ifdef SIM_GDB_SERVER_SUPPORT
-	EnableGdbServer();
-#endif // SIM_GDB_SERVER_SUPPORT
-#ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	EnableInlineDebugger();
-#endif // SIM_INLINE_DEBUGGER_SUPPORT
-#ifdef SIM_SIM_DEBUGGER_SUPPORT
-	EnableSimDebugger();
-#endif // SIM_SIM_DEBUGGER_SUPPORT
-
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
 	raw_kernel_loader->memory_import >> memory->memory_export;
@@ -209,8 +199,12 @@ Simulator(int argc, char **argv)
 	//linux_os->loader_import >> linux_loader->loader_export;
 	//cpu->exception_trap_reporting_import >> 
 	//	*trap_handler->trap_reporting_export[0];
+#ifndef SIM_INLINE_DEBUGGER_SUPPORT
 	cpu->instruction_counter_trap_reporting_import >> 
 		*trap_handler->trap_reporting_export[0];
+	cpu->exception_trap_reporting_import >>
+		*trap_handler->trap_reporting_export[1];
+#endif
 	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
@@ -230,7 +224,16 @@ Simulator(int argc, char **argv)
 
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	// bridge->memory_import >> memory->memory_export;
-	
+
+#ifdef SIM_GDB_SERVER_SUPPORT
+	EnableGdbServer();
+#endif // SIM_GDB_SERVER_SUPPORT
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
+	EnableInlineDebugger();
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	EnableSimDebugger();
+#endif // SIM_SIM_DEBUGGER_SUPPORT
 }
 
 Simulator::~Simulator()
@@ -596,6 +599,8 @@ EnableInlineDebugger()
 		// connect the inline debugger to other components
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->instruction_counter_trap_reporting_import >> inline_debugger->trap_reporting_export;
+		cpu->exception_trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
