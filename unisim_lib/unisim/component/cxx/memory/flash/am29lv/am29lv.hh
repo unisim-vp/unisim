@@ -80,7 +80,7 @@ public:
 	virtual ~AM29LV();
 	
 	virtual void Reset();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual bool WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size);
 protected:

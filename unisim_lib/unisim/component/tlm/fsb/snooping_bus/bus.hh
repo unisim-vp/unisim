@@ -62,6 +62,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::util::garbage_collector::Pointer;
 using unisim::component::tlm::message::SnoopingFSBRequest;
@@ -168,7 +169,7 @@ public:
 	/** Destructor */
 	~Bus();
 
-	virtual bool Setup();
+	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual void Reset();
 	
 	virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size);
@@ -241,6 +242,8 @@ private:
 	unsigned int snoop_counter;
 	sc_time cycle_time;
 	Parameter<sc_time> cycle_time_parameter;
+	
+	bool SetupMemory();
 };
 
 } // end of namespace snooping_bus

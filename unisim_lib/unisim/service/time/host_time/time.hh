@@ -60,7 +60,7 @@ public:
 	HostTime(const char *name, Object *parent = 0);
 	virtual ~HostTime();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual double GetTime(); // in seconds
 };
 

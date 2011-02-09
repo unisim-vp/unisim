@@ -162,7 +162,7 @@ template <class PHYSICAL_ADDR,
 bool 
 MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
 	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
-Setup() {
+BeginSetup() {
 	/* IMPORTANT: before initializing the different components the configuration
 	 *   registers must be set */
 	if(!config_regs.Reset(host_mode, 
@@ -250,6 +250,18 @@ Setup() {
 	/* set the initial sdram_frequency */
 	sdram_master_port = sdram_cycle_time;
 
+	return true;
+}
+
+template <class PHYSICAL_ADDR, 
+		uint32_t MAX_TRANSACTION_DATA_SIZE,
+		class PCI_ADDR,
+		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
+bool 
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
+	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
+SetupMemory()
+{
 	if(!rom_import) {
 		if(unlikely(verbose))
 			logger << DebugError  << LOCATION
@@ -308,6 +320,20 @@ Setup() {
 	}
 
 	return true;
+}
+
+template <class PHYSICAL_ADDR, 
+		uint32_t MAX_TRANSACTION_DATA_SIZE,
+		class PCI_ADDR,
+		uint32_t MAX_PCI_TRANSACTION_DATA_SIZE, bool DEBUG>
+bool 
+MPC107<PHYSICAL_ADDR, MAX_TRANSACTION_DATA_SIZE,
+	PCI_ADDR, MAX_PCI_TRANSACTION_DATA_SIZE, DEBUG>::
+Setup(ServiceExportBase *srv_export) {
+	if(srv_export == &memory_export) return SetupMemory();
+
+	logger << DebugError << "Internal error" << EndDebugError;
+	return false;
 }
 
 template <class PHYSICAL_ADDR, 

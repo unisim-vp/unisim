@@ -40,38 +40,62 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/service/interfaces/loader.hh"
+#include "unisim/service/interfaces/blob.hh"
+#include "unisim/util/debug/blob/blob.hh"
 
 namespace unisim {
 namespace service {
 namespace loader {
 namespace raw_loader {
 
+template <class MEMORY_ADDR>
 class RawLoader
-	: public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::Memory<uint64_t> >
+	: public unisim::kernel::service::Service<
+		unisim::service::interfaces::Loader<MEMORY_ADDR> >
+	, public unisim::kernel::service::Service<
+		unisim::service::interfaces::Blob<MEMORY_ADDR> >
+	, public unisim::kernel::service::Client<
+	  	unisim::service::interfaces::Memory<MEMORY_ADDR> >
 {
 public:
+	unisim::kernel::service::ServiceExport<
+		unisim::service::interfaces::Loader<MEMORY_ADDR> > loader_export;
+	unisim::kernel::service::ServiceExport<
+		unisim::service::interfaces::Blob<MEMORY_ADDR> > blob_export;
 	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::Memory<uint64_t> > memory_import;
+		unisim::service::interfaces::Memory<MEMORY_ADDR> > memory_import;
 
 	RawLoader(const char *name, unisim::kernel::service::Object *parent = 0);
 	virtual ~RawLoader();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(unisim::kernel::service::ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+	
+	virtual bool Load();
+	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 private:
+	bool SetupBlob();
+	bool SetupLoad();
+
+	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 	std::string filename;
-	uint64_t base_addr;
-	uint64_t size;
+	MEMORY_ADDR base_addr;
+	MEMORY_ADDR size;
 	uint32_t verbose;
 	
 	unisim::kernel::service::Parameter<std::string> param_filename;
-	unisim::kernel::service::Parameter<uint64_t> param_base_addr;
-	unisim::kernel::service::Parameter<uint64_t> param_size;
+	unisim::kernel::service::Parameter<MEMORY_ADDR> param_base_addr;
+	unisim::kernel::service::Parameter<MEMORY_ADDR> param_size;
 	unisim::kernel::service::Parameter<uint32_t> param_verbose;
 
 	unisim::kernel::logger::Logger logger;
 };
+
+typedef RawLoader<uint32_t> RawLoader32;
+typedef RawLoader<uint64_t> RawLoader64;
 
 } // end of namespace raw_loader
 } // end of namespace loader

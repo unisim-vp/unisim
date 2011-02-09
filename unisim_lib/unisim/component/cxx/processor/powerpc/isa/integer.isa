@@ -45,6 +45,9 @@ namespace powerpc {
 using unisim::util::arithmetic::Add32;
 using unisim::util::arithmetic::RotateLeft;
 using unisim::util::arithmetic::CountLeadingZeros;
+using unisim::util::arithmetic::SignExtend;
+using unisim::util::arithmetic::SignedSatAdd32;
+using unisim::util::arithmetic::UnsignedSatAdd32;
 
 inline uint32_t Mask(uint32_t mb, uint32_t me)
 {
@@ -1217,7 +1220,7 @@ andi_.execute = {
 	cr = (cr & ~CONFIG::CR0_MASK) |
 		((xer & CONFIG::XER_SO_MASK) ? CONFIG::CR0_SO_MASK : 0) |
 		(((int32_t)(result) < 0) ? CONFIG::CR0_LT_MASK : (((int32_t)(result) > 0) ? CONFIG::CR0_GT_MASK : CONFIG::CR0_EQ_MASK));
-			
+
 	// Update CR
 	cpu->SetCR(cr);
 }
@@ -1914,3 +1917,4 @@ srw.execute = {
 srw.disasm = {
 	os << "srw" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r" << (unsigned int) rs << ", r" << (unsigned int) rb;
 }
+

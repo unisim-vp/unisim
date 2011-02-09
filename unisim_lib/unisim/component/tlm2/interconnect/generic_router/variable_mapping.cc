@@ -54,7 +54,7 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 	buf << "range_start=\"0x" << std::hex << storage->range_start << std::dec
 		<< "\" range_end=\"0x" << std::hex << storage->range_end << std::dec
 		<< "\" output_port=\"" << storage->output_port 
-		<< "\" translation=\"" << std::hex << storage->translation << std::dec << "\"";
+		<< "\" translation=\"0x" << std::hex << storage->translation << std::dec << "\"";
 	return buf.str();
 }
 
@@ -73,7 +73,7 @@ template <> VariableBase& Variable<unisim::component::tlm2::interconnect::generi
 		std::stringstream buf(value);
 		std::string str(buf.str());
 		std::string str_rest;
-		unsigned int pos;
+		size_t pos;
 		pos = str.find('"');
 		str_rest = str.substr(pos + 1);
 		str = str_rest;

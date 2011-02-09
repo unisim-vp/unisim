@@ -190,7 +190,7 @@ public:
 	I8042(const char *name, Object *parent = 0);
 	virtual ~I8042();
 	
-	virtual bool Setup();
+	virtual bool EndSetup();
 	
 	bool WriteIO(isa_address_t addr, const void *buffer, uint32_t size);
 	bool ReadIO(isa_address_t addr, void *buffer, uint32_t size);

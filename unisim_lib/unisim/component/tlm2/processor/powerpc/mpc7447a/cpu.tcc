@@ -99,9 +99,9 @@ CPU<CONFIG>::~CPU()
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::Setup()
+bool CPU<CONFIG>::EndSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::EndSetup()) return false;
 	cpu_cycle_time = sc_time((double) inherited::cpu_cycle_time, SC_PS);
 	return true;
 }

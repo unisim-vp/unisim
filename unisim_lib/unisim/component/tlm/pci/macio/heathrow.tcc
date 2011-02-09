@@ -204,9 +204,9 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Run()
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup()
+bool Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::BeginSetup()) return false;
 	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["bus-frequency"], SC_US);
 	return true;

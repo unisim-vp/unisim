@@ -75,7 +75,7 @@ private:
 		
 	PCIDevIde(const sc_module_name &name, Object *parent = 0);
 	~PCIDevIde();
-	virtual bool Setup ();
+	virtual bool BeginSetup ();
 };
 
 } // end of namespace ide

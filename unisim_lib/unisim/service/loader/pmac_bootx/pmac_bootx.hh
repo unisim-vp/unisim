@@ -38,6 +38,7 @@
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/blob.hh>
 
 #include <unisim/util/xml/xml.hh>
 #include <unisim/kernel/service/service.hh>
@@ -57,10 +58,12 @@ using std::string;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Blob;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 
@@ -138,15 +141,15 @@ public:
 	void *Relocate(uint32_t offset);
 	uint32_t UnRelocate(void *p);
 
-	bool Load(const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height);
-	const uint8_t *GetImage();
-	uint32_t GetImageSize();
+	bool Load(uint32_t boot_infos_addr, const string& device_tree_filename, const string& kernel_parms, const string& ramdisk_filename, unsigned int screen_width, unsigned int screen_height);
+	const unisim::util::debug::blob::Blob<uint32_t> *GetBlob() const;
 private:
 	unisim::kernel::logger::Logger& logger;
 	bool verbose;
 	uint32_t size;
 	uint32_t max_size;
 	uint8_t *image;
+	unisim::util::debug::blob::Blob<uint32_t> *blob;
 
 	/* On kernel entry:
 	*
@@ -252,38 +255,38 @@ private:
 
 class PMACBootX :
 	public Service<Loader<uint32_t> >,
+	public Service<Blob<uint32_t> >,
 	public Client<Loader<uint32_t> >,
+	public Client<Blob<uint32_t> >,
 	public Client<Memory<uint32_t> >,
 	public Client<Registers>
 {
 public:
 	ServiceExport<Loader<uint32_t> > loader_export;
+	ServiceExport<Blob<uint32_t> > blob_export;
 
 	ServiceImport<Loader<uint32_t> > loader_import;
+	ServiceImport<Blob<uint32_t> > blob_import;
 	ServiceImport<Memory<uint32_t> > memory_import;
 	ServiceImport<Registers> registers_import;
 	
 	PMACBootX(const char *name, Object *parent = 0);
 	virtual void OnDisconnect();
-	virtual bool Setup();
-	virtual void Reset();
-	virtual uint32_t GetEntryPoint() const;
-	virtual uint32_t GetTopAddr() const;
-	virtual uint32_t GetStackBase() const;
-	virtual bool Load(const char *filename);
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+	virtual const unisim::util::debug::blob::Blob<uint32_t> *GetBlob() const;
+	virtual bool Load();
 
 private:
 	unisim::kernel::logger::Logger logger;
 	string device_tree_filename;
 	string kernel_parms;
 	string ramdisk_filename;
-	uint32_t r1_value;
-	uint32_t r3_value;
-	uint32_t r4_value;
-	uint32_t r5_value;
 	unsigned int screen_width;
 	unsigned int screen_height;
 	bool verbose;
+	unisim::util::debug::blob::Blob<uint32_t> *blob;
 	
 	Parameter<string> param_device_tree_filename;
 	Parameter<string> param_kernel_parms;
@@ -292,9 +295,9 @@ private:
 	Parameter<unsigned int> param_screen_height;
 	Parameter<bool> param_verbose;
 
-	uint32_t stack_base;
-	
-	bool Load();
+	bool SetupBlob();
+	bool SetupLoad();
+	bool LoadBootInfosAndRegisters();
 };
 
 } // end of namesapce pmac_bootx

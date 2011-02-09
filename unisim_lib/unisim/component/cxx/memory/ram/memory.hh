@@ -84,7 +84,7 @@ public:
 	
 	/* service methods */
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	
 	/* unisim::service::interfaces::Memory methods */
 	virtual void Reset();
@@ -95,17 +95,17 @@ public:
 	void *GetDirectAccess(PHYSICAL_ADDR physical_addr, PHYSICAL_ADDR& physical_start_addr, PHYSICAL_ADDR& physical_end_addr);
 protected:
 	PHYSICAL_ADDR org;
-	uint32_t bytesize;
+	PHYSICAL_ADDR bytesize;
 	PHYSICAL_ADDR lo_addr;
 	PHYSICAL_ADDR hi_addr;
-	uint32_t memory_usage;
+	PHYSICAL_ADDR memory_usage;
 	
 private:
 	HashTable<PHYSICAL_ADDR, MemoryPage<PHYSICAL_ADDR, PAGE_SIZE> > hash_table;
 	
 	Parameter<PHYSICAL_ADDR> param_org;
-	Parameter<uint32_t> param_bytesize;
-	Statistic<uint32_t> stat_memory_usage;
+	Parameter<PHYSICAL_ADDR> param_bytesize;
+	Statistic<PHYSICAL_ADDR> stat_memory_usage;
 };
 
 } // end of namespace ram

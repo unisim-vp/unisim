@@ -63,7 +63,7 @@ PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::~PCIDevIde()
 }
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
+bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::BeginSetup () {
 	std::vector<unisim::component::cxx::pci::ide::IdeDisk<ADDRESS_TYPE> *> disks;
 	unisim::component::cxx::pci::ide::PciConfigData *pci_config_data;
 	typename unisim::component::cxx::pci::ide::IdeController<ADDRESS_TYPE>::Params *ide_ctrl_params;
@@ -121,7 +121,7 @@ bool PCIDevIde<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup () {
 	ide_ctrl_params->disks = disks;
 
 	inherited::pciDev = new unisim::component::cxx::pci::ide::IdeController<ADDRESS_TYPE>(ide_ctrl_params);
-	return inherited::Setup();
+	return inherited::BeginSetup();
 }
 
 } // end of namespace ide

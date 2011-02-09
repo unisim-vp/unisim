@@ -124,7 +124,7 @@ public:
 	 * 
 	 * @return true if the objet is correctly initialized, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	/* Module methods to process incomming requests/responses */
 	/** Method to process incomming requests. 
@@ -192,7 +192,7 @@ TransactionSpy<REQ, RSP> ::
 template<class REQ, class RSP>
 bool
 TransactionSpy<REQ, RSP> ::
-Setup() {
+BeginSetup() {
 	return true;
 }
 

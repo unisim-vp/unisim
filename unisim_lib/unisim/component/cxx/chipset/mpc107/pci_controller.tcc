@@ -84,7 +84,7 @@ bool PCIController<SYSTEM_BUS_PHYSICAL_ADDR,
 		PCI_BUS_PHYSICAL_ADDR, 
 		PCI_MAX_TRANSACTION_DATA_SIZE,
 		DEBUG>
-::Setup() {
+::BeginSetup() {
 	if (config_regs->picr1.value == 1) {
 		if(unlikely(verbose))
 			logger << DebugError << LOCATION

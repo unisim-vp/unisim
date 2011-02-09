@@ -49,12 +49,7 @@ sc.disasm = {
 
 op rfi(19[6]:?[15]:50[10]:?[1])
 rfi.execute = {
-	cpu->FlushSubsequentInstructions();
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
-
-	cpu->SetNIA(cpu->GetSRR0() & 0xfffffffcUL);
-	cpu->SetMSR((msr & 0xffff008cUL) | (cpu->GetSRR1() & 0x0000ff73UL));
+	cpu->Rfi();
 }
 rfi.disasm = {
 	os << "rfi" << endl;
@@ -307,53 +302,4 @@ mtmsr.execute = {
 }
 mtmsr.disasm = {
 	os << "mtmsr r" << (unsigned int) rs;
-}
-
-/**********************************************
-
-SEGMENT REGISTER MANIPULATION INSTRUCTIONS
-
-**********************************************/
-op mfsr(31[6]:rd[5]:?[1]:sr[4]:?[5]:595[10]:?[1])
-mfsr.execute = {
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
-
-	cpu->SetGPR(rd, cpu->GetSR(sr));
-}
-mfsr.disasm = {
-	os << "mfsr r" << (unsigned int) rd << ", " << (unsigned int) sr;
-}
-
-op mfsrin(31[6]:rd[5]:?[5]:rb[5]:659[10]:?[1])
-mfsrin.execute = {
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
-
-	cpu->SetGPR(rd, cpu->GetSR((cpu->GetGPR(rb) >> 28) & 0xf));
-}
-mfsrin.disasm = {
-	os << "mfsrin r" << (unsigned int) rd << ", r" << (unsigned int) rb;
-}
-
-op mtsr(31[6]:rs[5]:?[1]:sr[4]:?[5]:210[10]:?[1])
-mtsr.execute = {
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
-
-	cpu->SetSR(sr, cpu->GetGPR(rs));
-}
-mtsr.disasm = {
-	os << "mtsr " << (unsigned int) sr << ", r" << (unsigned int) rs;
-}
-
-op mtsrin(31[6]:rs[5]:?[5]:rb[5]:242[10]:?[1])
-mtsrin.execute = {
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(msr & CONFIG::MSR_PR_MASK)) throw PrivilegeViolationException<CONFIG>();
-
-	cpu->SetSR((cpu->GetGPR(rb) >> 28) & 0xf, cpu->GetGPR(rs));
-}
-mtsrin.disasm = {
-	os << "mtsrin r" << (unsigned int) rs << ", r" << (unsigned int) rb;
 }

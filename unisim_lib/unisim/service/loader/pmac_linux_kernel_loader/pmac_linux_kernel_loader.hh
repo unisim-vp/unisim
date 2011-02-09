@@ -43,6 +43,7 @@
 #include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/blob.hh>
 
 #include <unisim/kernel/service/service.hh>
 
@@ -56,17 +57,20 @@ using unisim::service::loader::pmac_bootx::PMACBootX;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::StatementLookup;
+using unisim::service::interfaces::Blob;
 
 class PMACLinuxKernelLoader : public Object
 {
 public:
 	ServiceExport<Loader<uint32_t> > loader_export;
+	ServiceExport<Blob<uint32_t> > blob_export;
 	ServiceExport<SymbolTableLookup<uint32_t> > symbol_table_lookup_export;
 	ServiceExport<StatementLookup<uint32_t> > stmt_lookup_export;
 
@@ -77,7 +81,7 @@ public:
 	virtual ~PMACLinuxKernelLoader();
 private:
 	PMACBootX pmac_bootx;
-	Elf32Loader elf32_loader;
+	Elf32Loader<uint32_t> elf32_loader;
 };
 
 } // end of namespace pmac_linux_kernel_loader
