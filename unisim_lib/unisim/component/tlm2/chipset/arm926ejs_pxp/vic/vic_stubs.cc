@@ -51,15 +51,16 @@ using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
 
 VICIntSourceStub ::
-VICIntSourceStub(const sc_module_name &name, Object *parent) 
+VICIntSourceStub(const sc_module_name &name, Object *parent, bool initvalue)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
-	, vicinttarget()
-	, value(false)
+	, vicinttarget("vicinttarget")
+	, value(initvalue)
 	, param_value("value", this, value,
 			"Value to be sent by the interrupt source stub.")
 {
 	SC_METHOD(Method);
+	vicinttarget.initialize(value);
 }
 
 VICIntSourceStub ::

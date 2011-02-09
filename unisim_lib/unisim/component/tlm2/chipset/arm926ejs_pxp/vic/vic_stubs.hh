@@ -57,7 +57,8 @@ public:
 	sc_core::sc_out<bool> vicinttarget;
 
 	SC_HAS_PROCESS(VICIntSourceStub);
-	VICIntSourceStub(const sc_module_name &name, Object *parent = 0);
+	VICIntSourceStub(const sc_module_name &name, Object *parent = 0, 
+			bool initvalue = false);
 	~VICIntSourceStub();
 
 	virtual bool Setup();
