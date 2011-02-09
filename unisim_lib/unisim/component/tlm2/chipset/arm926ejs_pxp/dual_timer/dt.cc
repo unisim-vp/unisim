@@ -123,6 +123,7 @@ DualTimer(const sc_module_name &name, Object *parent)
 	, t2_update_time()
 	, t1_event()
 	, t2_event()
+	, output_update_event()
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of the system controller.")
@@ -133,6 +134,11 @@ DualTimer(const sc_module_name &name, Object *parent)
 {
 	SC_THREAD(Timer1Handler);
 	SC_THREAD(Timer2Handler);
+	SC_THREAD(OutputUpdate);
+
+	timint1_out_port.initialize(false);
+	timint2_out_port.initialize(false);
+	timintc_out_port.initialize(false);
 
 	bus_target_socket.register_nb_transport_fw(this,
 			&DualTimer::bus_target_nb_transport_fw);
@@ -206,8 +212,6 @@ Timer1Handler()
 				if ( GetIntEnable(control) )
 				{
 					SetRegister(TIMER1MIS, 1);
-					timint1_out_port = true;
-					timintc_out_port = true;
 					if ( VERBOSE(V0, V_INT) )
 						logger << DebugInfo
 							<< "Generating interrupt on output 1 and combined"
@@ -216,6 +220,7 @@ Timer1Handler()
 				}
 			}
 		}
+		output_update_event.notify(SC_ZERO_TIME);
 
 		// update the counter, depending on the mode
 		t1_update_time = sc_time_stamp();
@@ -284,8 +289,6 @@ Timer2Handler()
 				if ( GetIntEnable(control) )
 				{
 					SetRegister(TIMER2MIS, 1);
-					timint2_out_port = true;
-					timintc_out_port = true;
 					if ( VERBOSE(V0, V_INT) )
 						logger << DebugInfo
 							<< "Generating interrupt on output 1 and combined"
@@ -294,6 +297,7 @@ Timer2Handler()
 				}
 			}
 		}
+		output_update_event.notify(SC_ZERO_TIME);
 
 		// update the counter, depending on the mode
 		t2_update_time = sc_time_stamp();
@@ -337,6 +341,34 @@ Timer2Handler()
 			}
 		}
 
+	}
+}
+
+void
+DualTimer::
+OutputUpdate()
+{
+	while ( 1 )
+	{
+		wait(output_update_event);
+
+		/** check the status of the raw interrupt status and the interrupt
+		 * enable, if both are active then generate the required interrupt
+		 */
+		uint32_t t1ris = GetRegister(TIMER1RIS);
+		uint32_t t2ris = GetRegister(TIMER2RIS);
+		uint32_t t1control = GetRegister(TIMER1CONTROL);
+		uint32_t t2control = GetRegister(TIMER2CONTROL);
+		bool t1intenable = GetIntEnable(t1control);
+		bool t2intenable = GetIntEnable(t2control);
+
+		bool t1int = (t1ris != 0) && t1intenable;
+		bool t2int = (t2ris != 0) && t2intenable;
+		bool tcint = t1ris || t2ris;
+
+		timint1_out_port = t1int;
+		timint2_out_port = t2int;
+		timintc_out_port = tcint;
 	}
 }
 
@@ -723,6 +755,24 @@ bus_target_b_transport(transaction_type &trans,
 				SetRegister(TIMER1VALUE, prev_value);
 			else
 				SetRegister(TIMER2VALUE, prev_value);
+		}
+
+		else if ( cur_addr == TIMER1INTCLR ||
+				cur_addr == TIMER2INTCLR )
+		{
+			handled = true;
+			if ( cur_addr == TIMER1INTCLR )
+				SetRegister(TIMER1RIS, 0);
+			else
+				SetRegister(TIMER2RIS, 0);
+			if ( VERBOSE(V0, V_STATUS) )
+				logger << DebugInfo
+					<< "Timer "
+					<< ((cur_addr == TIMER1INTCLR) ?
+							"1" : "2")
+					<< " clearing interrupt raw register"
+					<< EndDebugInfo;
+			output_update_event.notify(SC_ZERO_TIME);
 		}
 
 		else if ( cur_addr == TIMER1BGLOAD ||

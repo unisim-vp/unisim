@@ -84,10 +84,13 @@ public:
 
 	virtual bool Setup();
 
-
 private:
+	/** Thread handler of timer 1 */
 	void Timer1Handler();
+	/** Thread handler of timer 2 */
 	void Timer2Handler();
+	/** Thread handler of output signals timintx and timintc */
+	void OutputUpdate();
 
 	/** Registers storage */
 	uint8_t regs[256];
@@ -101,6 +104,9 @@ private:
 	/** Timer 2 event produced when timer reaches threshold
 	 *  The event only takes place if the interrupts are enabled */
 	sc_event t2_event;
+	/** Output update event to indicate that the update of the output signals
+	 */
+	sc_event output_update_event;
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the bus connection     START */
