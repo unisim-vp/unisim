@@ -149,7 +149,7 @@ SimDebugger(const char *_name, Object *_parent)
 		}
 	}
 
-	Object::SetupDependsOn(memory_access_reporting_control_import);
+	debug_control_export.SetupDependsOn(memory_access_reporting_control_import);
 }
 
 template <class ADDRESS>
@@ -173,7 +173,7 @@ SimDebugger<ADDRESS>::
 template<class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
-Setup() {
+EndSetup() {
 	if ( memory_access_reporting_control_import ) {
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				false);
@@ -929,7 +929,7 @@ DumpAvailableLoaders()
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-Load(const char *loader_name, const char *filename)
+Load(const char *loader_name)
 {
 	if ( num_loaders && loader_import )
 	{
@@ -945,9 +945,12 @@ Load(const char *loader_name, const char *filename)
 					if ( strcmp(service->GetName(), loader_name) == 0 )
 					{
 						// Found loader
-						if ( !(*import)->Load(filename) )
+						if ( !(*import)->Load() )
 						{
-							cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load file \"" << filename << "\"" << endl;
+							cerr << Object::GetName() << ": ERROR! Loader \"" 
+								<< loader_name 
+								<< "\" was not able to load data/program" 
+								<< endl;
 						}
 
 						return;

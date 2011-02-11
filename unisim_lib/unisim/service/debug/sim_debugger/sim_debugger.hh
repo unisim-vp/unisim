@@ -216,7 +216,7 @@ public:
 	// DebugControlInterface
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 
-	virtual bool Setup();
+	virtual bool EndSetup();
 	virtual void OnDisconnect();
 
 private:
@@ -269,7 +269,7 @@ private:
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
 	void DumpAvailableLoaders();
-	void Load(const char *loader_name, const char *filename);
+	void Load(const char *loader_name);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 };
 
