@@ -11,6 +11,7 @@
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::kernel::logger</dep>
 			<dep>unisim::service::interfaces::memory</dep>
+			<dep>unisim::service:;interfaces::blob</dep>
 		</depends>
 	</unit>
 </package>

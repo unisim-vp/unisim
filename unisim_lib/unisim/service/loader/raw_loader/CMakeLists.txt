@@ -23,6 +23,7 @@ endforeach ( CXX_INCLUDE )
 set ( raw_loader_subdirs
 	unisim/kernel
 	unisim/service/interfaces/memory
+	unisim/service/interfaces/blob
 	)
 foreach ( dir ${raw_loader_subdirs} )
 	unisim_include ( ${dir} )
@@ -36,11 +37,13 @@ add_library ( unisim__service__loader__raw_loader
 
 target_link_libraries ( unisim__service__loader__raw_loader
 	unisim__kernel
+	unisim__service__interfaces__blob
 	)
 
 add_dependencies ( unisim__service__loader__raw_loader
 	unisim__kernel
 	unisim__service__interfaces__memory
+	unisim__service__interfaces__blob
 	)
 
 message ( STATUS "Checking unisim::service::loader::raw_loader - done" )
