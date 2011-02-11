@@ -239,8 +239,9 @@ LinuxLoader<T>::SetupBlob()
 		return false;
 	}
 
+	stack_size += ((stack_size % size) != 0) ? (size - (stack_size % size)) : 0;
 	T stack_address = stack_base - stack_size;
-
+	
 	// Fill stack data
 	uint8_t *stack_data = (uint8_t *) calloc(stack_size, 1);
 	

@@ -24,6 +24,7 @@ set ( linux_loader_subdirs
 	unisim/kernel
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/loader
+	unisim/service/interfaces/blob
 	unisim/util/endian
 	)
 foreach ( dir ${linux_loader_subdirs} )
@@ -46,6 +47,7 @@ target_link_libraries ( unisim__service__loader__linux_loader
 add_dependencies ( unisim__service__loader__linux_loader
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__loader
+	unisim__service__interfaces__blob
 	)
 	
 message ( STATUS "Checking unisim::service::loader::linux_loader - done" )
