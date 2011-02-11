@@ -188,13 +188,17 @@ Simulator(int argc, char **argv)
 	elf32_loader->memory_import >> memory->memory_export;
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
+	linux_loader->blob_import >> elf32_loader->blob_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
+	linux_os->blob_import >> linux_loader->blob_export;
 	// cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+#ifndef SIM_INLINE_DEBUGGER_SUPPORT
 	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+#endif
 	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
@@ -545,6 +549,7 @@ EnableInlineDebugger()
 		// connect the inline debugger to other components
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->instruction_counter_trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
