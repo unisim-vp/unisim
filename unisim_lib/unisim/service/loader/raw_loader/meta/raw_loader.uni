@@ -4,7 +4,9 @@
 		<name>unisim::service::loader::raw_loader</name>
 		<files>
 			<file>unisim/service/loader/raw_loader/raw_loader.hh</file>
-			<file>unisim/service/loader/raw_loader/raw_loader.cc</file>
+			<file>unisim/service/loader/raw_loader/raw_loader.tcc</file>
+			<file>unisim/service/loader/raw_loader/raw_loader32.cc</file>
+			<file>unisim/service/loader/raw_loader/raw_loader64.cc</file>
 			<file>unisim/service/loader/raw_loader/CMakeLists.txt</file>
 		</files>
 		<depends>

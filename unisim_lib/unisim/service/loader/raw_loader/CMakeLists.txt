@@ -32,7 +32,9 @@ endforeach ( dir )
 include_directories ( ${CMAKE_SOURCE_DIR} )
 add_library ( unisim__service__loader__raw_loader
 		${CMAKE_SOURCE_DIR}/unisim/service/loader/raw_loader/raw_loader.hh
-		${CMAKE_SOURCE_DIR}/unisim/service/loader/raw_loader/raw_loader.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/raw_loader/raw_loader.tcc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/raw_loader/raw_loader32.cc
+		${CMAKE_SOURCE_DIR}/unisim/service/loader/raw_loader/raw_loader64.cc
 	)
 
 target_link_libraries ( unisim__service__loader__raw_loader
