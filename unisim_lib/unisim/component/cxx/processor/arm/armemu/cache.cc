@@ -164,7 +164,7 @@ Cache::~Cache()
 
 bool
 Cache::
-Setup()
+BeginSetup()
 {
 	SetSize(m_size);
 

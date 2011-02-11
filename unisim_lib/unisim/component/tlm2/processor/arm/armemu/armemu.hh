@@ -104,7 +104,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 	
-	virtual bool Setup();
+	virtual bool EndSetup();
 
 	void BusSynchronize();
 	

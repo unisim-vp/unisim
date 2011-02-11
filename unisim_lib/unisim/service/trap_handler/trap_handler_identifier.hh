@@ -61,7 +61,7 @@ public:
 			Object *parent = 0);
 	virtual ~TrapHandlerIdentifier();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	int id;

@@ -230,7 +230,7 @@ CPU::
  */
 bool 
 CPU::
-Setup()
+EndSetup()
 {
 	if (verbose)
 		logger << DebugInfo
@@ -242,7 +242,7 @@ Setup()
 	 *   is not supposed to work without the linux_os_import, so better to stop 
 	 *   now than later.
 	 */
-	if (!linux_os_import)
+	if ( !linux_os_import )
 	{
 		logger << DebugError
 			<< "The connection to the Linux OS (linux_import) is broken or has "
@@ -264,7 +264,7 @@ Setup()
 	}
 	else
 	{
-		if (verbose)
+		if ( verbose )
 			logger << DebugInfo
 				<< "Setting endianness to "
 				<< default_endianness_string
@@ -374,7 +374,7 @@ Setup()
 		<< "Initializing debugging registers"
 		<< EndDebugError;
 	
-	for (int i = 0; i < 16; i++) 
+	for ( int i = 0; i < 16; i++ ) 
 	{
 		stringstream str;
 		str << "r" << i;

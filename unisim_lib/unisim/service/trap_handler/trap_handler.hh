@@ -71,7 +71,7 @@ public:
 	TrapHandler(const char *name, Object *parent = 0);
 	virtual ~TrapHandler();
 
-	virtual bool Setup();
+	virtual bool EndSetup();
 
 	ExternalTrapHandlerInterface *SetExternalTrapHandler(ExternalTrapHandlerInterface *handler);
 
