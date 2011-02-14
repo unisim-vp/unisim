@@ -265,14 +265,19 @@ smlawy.execute = {
 	uint32_t op_tmp = op64;
 	sval_rd = (int32_t)op_tmp;
 	val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
-	if(op_tmp & (uint32_t)0x80000000ULL !=
-		val_rn & (uint32_t)0x80000000ULL) {
+	if ( (op_tmp & (uint32_t)0x80000000ULL) !=
+		(val_rn & (uint32_t)0x80000000ULL) ) 
+	{
 		cpu.SetCPSR_Q(false);
-	} else {
-		if(op_tmp & (uint32_t)0x80000000ULL !=
-			val_rd & (uint32_t)0x80000000ULL) {
+	} 
+	else 
+	{
+		if ( (op_tmp & (uint32_t)0x80000000ULL) !=
+			(val_rd & (uint32_t)0x80000000ULL) )
+		{
 			cpu.SetCPSR_Q(true);
-		} else
+		} 
+		else
 			cpu.SetCPSR_Q(false);
 	}
 	cpu.SetGPR(rd, val_rd);
