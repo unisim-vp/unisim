@@ -157,14 +157,14 @@ void CPU<CONFIG>::SignalIRQ(IRQQueue& queue, unsigned int irq)
 	while(1)
 	{
 		wait(queue.GetEvent());
-		TLMInterruptPayload *payload;
+		InterruptPayload *payload;
 		
 		payload = queue.GetNextIRQ();
 		if(payload)
 		{
 			do
 			{
-				if(payload->level)
+				if(payload->GetValue())
 					inherited::SetIRQ(irq);
 				else
 					inherited::ResetIRQ(irq);
@@ -256,14 +256,14 @@ CPU<CONFIG>::IRQQueue::IRQQueue(const char *name)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IRQQueue::b_transport(TLMInterruptPayload& trans, sc_core::sc_time& t)
+void CPU<CONFIG>::IRQQueue::b_transport(InterruptPayload& trans, sc_core::sc_time& t)
 {
 	trans.acquire();
 	queue.notify(trans, t);
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum CPU<CONFIG>::IRQQueue::nb_transport_fw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum CPU<CONFIG>::IRQQueue::nb_transport_fw(InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	trans.acquire();
 	queue.notify(trans, t);
@@ -271,19 +271,19 @@ tlm::tlm_sync_enum CPU<CONFIG>::IRQQueue::nb_transport_fw(TLMInterruptPayload& t
 }
 
 template <class CONFIG>
-unsigned int CPU<CONFIG>::IRQQueue::transport_dbg(TLMInterruptPayload& trans)
+unsigned int CPU<CONFIG>::IRQQueue::transport_dbg(InterruptPayload& trans)
 {
 	return 0;
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::IRQQueue::get_direct_mem_ptr(TLMInterruptPayload& trans, tlm::tlm_dmi&  dmi_data)
+bool CPU<CONFIG>::IRQQueue::get_direct_mem_ptr(InterruptPayload& trans, tlm::tlm_dmi&  dmi_data)
 {
 	return false;
 }
 
 template <class CONFIG>
-TLMInterruptPayload *CPU<CONFIG>::IRQQueue::GetNextIRQ()
+InterruptPayload *CPU<CONFIG>::IRQQueue::GetNextIRQ()
 {
 	return queue.get_next_transaction();
 }

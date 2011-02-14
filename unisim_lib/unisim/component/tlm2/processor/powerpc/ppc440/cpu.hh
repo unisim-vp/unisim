@@ -59,7 +59,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
-using unisim::component::tlm2::interrupt::TLMInterruptPayload;
+using unisim::component::tlm2::interrupt::InterruptPayload;
 
 template <class CONFIG>
 class CPU
@@ -121,19 +121,19 @@ private:
 	public:
 		IRQQueue(const char *name);
 		
-		virtual void b_transport(TLMInterruptPayload& trans, sc_core::sc_time& t);
+		virtual void b_transport(InterruptPayload& trans, sc_core::sc_time& t);
 
-		virtual tlm::tlm_sync_enum nb_transport_fw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+		virtual tlm::tlm_sync_enum nb_transport_fw(InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
-		virtual unsigned int transport_dbg(TLMInterruptPayload& trans);
+		virtual unsigned int transport_dbg(InterruptPayload& trans);
 		
-		virtual bool get_direct_mem_ptr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data);
+		virtual bool get_direct_mem_ptr(InterruptPayload& trans, tlm::tlm_dmi& dmi_data);
 		
-		TLMInterruptPayload *GetNextIRQ();
+		InterruptPayload *GetNextIRQ();
 		sc_event& GetEvent();
 
 	private:
-		tlm_utils::peq_with_get<TLMInterruptPayload> queue;
+		tlm_utils::peq_with_get<InterruptPayload> queue;
 	};
 
 	IRQQueue external_input_interrupt_queue;

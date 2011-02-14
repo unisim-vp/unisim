@@ -315,6 +315,26 @@ private:
 	std::queue<PAYLOAD *> free_list;
 };
 
+template <class T>
+class SimplePayload : public unisim::kernel::tlm2::ManagedPayload 
+{
+public:
+	SimplePayload() : value() {}
+	SimplePayload(const T& _value) : value(_value) {}
+	void SetValue(const T& _value) { value = _value; }
+	const T& GetValue() const { return value; }
+private:
+	T value;
+};
+
+template <class T>
+class SimpleProtocolTypes
+{
+public:
+	typedef SimplePayload<T>  tlm_payload_type;
+	typedef tlm::tlm_phase tlm_phase_type;
+};
+
 } // end of namespace tlm2
 } // end of namespace kernel
 } // end of namespace unisim
