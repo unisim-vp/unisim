@@ -1,12 +1,12 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 5 )
+set ( SIM_VERSION_MINOR 6 )
 set ( SIM_VERSION_PATCH 0 )
 set ( SIM_VERSION 
 	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "Barcino" )
+set ( SIM_VERSION_CODENAME "Tarraco" )
 set ( SIM_AUTHOR "Daniel Gracia Perez (daniel.gracia-perez@cea.fr)" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique" )
