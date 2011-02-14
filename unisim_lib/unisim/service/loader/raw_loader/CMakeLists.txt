@@ -39,7 +39,6 @@ add_library ( unisim__service__loader__raw_loader
 
 target_link_libraries ( unisim__service__loader__raw_loader
 	unisim__kernel
-	unisim__service__interfaces__blob
 	)
 
 add_dependencies ( unisim__service__loader__raw_loader
