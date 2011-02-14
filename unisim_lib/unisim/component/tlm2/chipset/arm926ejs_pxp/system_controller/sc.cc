@@ -101,13 +101,13 @@ SystemController ::
 
 bool 
 SystemController::
-Setup()
+BeginSetup()
 {
-	refclk_out_port = refclk;
-	timclken0_out_port = refclk;
-	timclken1_out_port = refclk;
-	timclken2_out_port = refclk;
-	timclken3_out_port = refclk;
+	refclk_out_port.initialize(refclk);
+	timclken0_out_port.initialize(refclk);
+	timclken1_out_port.initialize(refclk);
+	timclken2_out_port.initialize(refclk);
+	timclken3_out_port.initialize(refclk);
 	return true;
 }
 

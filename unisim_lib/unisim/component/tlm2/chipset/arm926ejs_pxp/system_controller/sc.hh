@@ -77,7 +77,7 @@ public:
 	SystemController(const sc_module_name &name, Object *parent = 0);
 	~SystemController();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	/** Registers storage */

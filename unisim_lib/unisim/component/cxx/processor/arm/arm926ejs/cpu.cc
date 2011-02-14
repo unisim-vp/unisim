@@ -245,7 +245,7 @@ CPU::
  */
 bool 
 CPU::
-Setup()
+BeginSetup()
 {
 	logger << DebugInfo << "CPU Setup" << EndDebugInfo;
 	if (verbose)
@@ -288,6 +288,41 @@ Setup()
 		return false;
 	}
 
+	/* TODO: Remove this section once all the debuggers use the unisim
+	 *   kernel interface for registers.
+	 */
+	/* setting debugging registers */
+	if (verbose)
+		logger << DebugInfo
+		<< "Initializing debugging registers"
+		<< EndDebugError;
+	
+	for (int i = 0; i < 16; i++) 
+	{
+		stringstream str;
+		str << "r" << i;
+		registers_registry[str.str().c_str()] =
+			new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
+	}
+	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
+	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &gpr[15]);
+	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+	/* End TODO */
+
+	return true;
+}
+
+/** Object end setup method.
+ * This method is required for all UNISIM objects and will be called during
+ *   the end setup phase.
+ * 
+ * @return true on success, false otherwise
+ */
+bool
+CPU::
+EndSetup()
+{
 	/* Initialize the caches and power support as required. */
 	unsigned int min_cycle_time = 0;
 	uint64_t il1_def_voltage = 0;
@@ -369,28 +404,6 @@ Setup()
 			<< EndDebugInfo;
 	}
 			
-	/* TODO: Remove this section once all the debuggers use the unisim
-	 *   kernel interface for registers.
-	 */
-	/* setting debugging registers */
-	if (verbose)
-		logger << DebugInfo
-		<< "Initializing debugging registers"
-		<< EndDebugError;
-	
-	for (int i = 0; i < 16; i++) 
-	{
-		stringstream str;
-		str << "r" << i;
-		registers_registry[str.str().c_str()] =
-			new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
-	}
-	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
-	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &gpr[15]);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
-	/* End TODO */
-
 	/* If the memory access reporting import is not connected remove the need of
 	 *   reporting memory accesses and finished instruction.
 	 */

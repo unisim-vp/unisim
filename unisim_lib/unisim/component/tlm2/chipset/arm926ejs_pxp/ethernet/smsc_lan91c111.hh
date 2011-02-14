@@ -66,7 +66,7 @@ public:
 	SMSC_LAN91C111(const sc_module_name &name, Object *parent = 0);
 	~SMSC_LAN91C111();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	/** Registers storage */

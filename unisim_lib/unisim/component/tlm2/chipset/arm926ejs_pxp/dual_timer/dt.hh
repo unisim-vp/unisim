@@ -82,7 +82,7 @@ public:
 	DualTimer(const sc_module_name &name, Object *parent = 0);
 	~DualTimer();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	/** Thread handler of timer 1 */

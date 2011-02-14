@@ -69,7 +69,7 @@ Watchdog ::
 
 bool 
 Watchdog ::
-Setup()
+BeginSetup()
 {
 	return true;
 }

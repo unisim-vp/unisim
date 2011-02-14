@@ -178,9 +178,9 @@ ARM926EJS ::
  */
 bool 
 ARM926EJS:: 
-Setup() 
+BeginSetup() 
 {
-	if (!inherited::Setup()) 
+	if (!inherited::BeginSetup()) 
 	{
 		inherited::logger << DebugError
 			<< "Error while trying to set up the ARM cpu" << endl

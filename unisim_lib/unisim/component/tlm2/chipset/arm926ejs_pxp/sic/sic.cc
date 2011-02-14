@@ -152,7 +152,7 @@ SIC ::
 
 bool 
 SIC ::
-Setup()
+BeginSetup()
 {
 	return true;
 }

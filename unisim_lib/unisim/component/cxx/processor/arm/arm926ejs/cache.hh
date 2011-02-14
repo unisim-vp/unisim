@@ -79,7 +79,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	/** Cache power estimator service import. */
 	unisim::kernel::service::ServiceImport<

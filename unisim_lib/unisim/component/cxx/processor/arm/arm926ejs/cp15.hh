@@ -71,7 +71,7 @@ public:
 	 * 
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	/** Read the value of a register
 	 *

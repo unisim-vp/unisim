@@ -283,7 +283,7 @@ VIC ::
 
 bool 
 VIC ::
-Setup()
+BeginSetup()
 {
 	return true;
 }

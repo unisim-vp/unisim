@@ -175,13 +175,20 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	/** Object setup method.
+	/** Object begin setup method.
 	 * This method is required for all UNISIM objects and will be called during
-	 *   the setup phase.
+	 *   the begin setup phase.
 	 * 
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	/** Object end setup method.
+	 * This method is required for all UNISIM objects and will be called during
+	 *   the end setup phase.
+	 * 
+	 * @return true on success, false otherwise
+	 */
+	virtual bool EndSetup();
 	/** Object disconnect method.
 	 * This method is called when this UNISIM object is disconnected from other
 	 *   UNISIM objects.

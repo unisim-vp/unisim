@@ -531,7 +531,7 @@ PXP ::
 
 bool 
 PXP ::
-Setup()
+BeginSetup()
 {
 	return true;
 }

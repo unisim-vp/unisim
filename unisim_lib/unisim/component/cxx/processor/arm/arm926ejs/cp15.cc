@@ -126,7 +126,7 @@ CP15::
  */
 bool 
 CP15::
-Setup()
+BeginSetup()
 {
 	logger << DebugInfo << "CP15 Setup" << EndDebugInfo;
 	/* check bigendinit parameter */
