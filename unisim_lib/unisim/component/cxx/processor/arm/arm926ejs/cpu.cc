@@ -45,7 +45,6 @@
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
-// #include "unisim/component/cxx/processor/arm/exception.tcc"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/kernel/logger/logger.hh"
 
@@ -1645,7 +1644,6 @@ CPU::
 InvalidateICacheSingleEntryWithMVA(uint32_t init_mva)
 {
 	uint32_t mva = init_mva & ~(uint32_t)(dcache.LINE_SIZE - 1);
-	uint32_t pa = mva;
 
 	if ( unlikely(verbose & 0x02) )
 	{
@@ -2029,8 +2027,8 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 	// Check first the lockdown TLB and afterwards the regular TLB
 	bool found_first_level = false;
 	uint32_t first_level = 0;
-	bool found_second_level = false;
-	uint32_t second_level = 0;
+	// bool found_second_level = false;
+	// uint32_t second_level = 0;
 	uint32_t way = 0;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
@@ -2103,10 +2101,6 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 		// the descriptor is a section descriptor
 		pa = (first_level & 0xfff00000UL) |
 			(mva & 0x000fffffUL);
-		uint32_t ap = (first_level >> 10) & 0x03UL;
-		uint32_t domain = (first_level >> 5) & 0x0fUL;
-		uint32_t c = (first_level >> 3) & 0x01UL;
-		uint32_t b = (first_level >> 2) & 0x01UL;
 	}
 	else
 	{
@@ -2198,7 +2192,16 @@ NonIntrusiveTranslateVA(bool is_read,
 		// oops, we are forced to perform a page walk
 		status = ExternalReadMemory(ttb_addr,
 				first_level_data, 4);
-		if ( !status ) return false;
+		if ( !status ) 
+		{
+			logger << DebugInfo
+				<< "Could not read first level descriptor from memory"
+				<< " during non intrusive access:" << std::endl
+				<< " - ttb address = 0x" << std::hex << ttb_addr
+				<< std::dec
+				<< EndDebugInfo;
+			return false;
+		}
 		memcpy(&first_level, first_level_data, 4);
 		first_level = LittleEndian2Host(first_level);
 	}
@@ -2222,7 +2225,173 @@ NonIntrusiveTranslateVA(bool is_read,
 	}
 
 	// check wether is a section page or a second access is required
-	if ( first_level & 0x02UL )
+	if ( (first_level & 0x03UL) == 0 )
+	{
+		// fault page
+		logger << DebugError
+			<< "First level descriptor fault when making a non intrusive"
+			<< " access:" << std::endl
+			<< " - ttb address = 0x" << std::hex << ttb_addr << std::dec
+			<< std::endl
+			<< " - first level fetched = 0x" << std::hex
+			<< first_level << std::dec
+			<< EndDebugError;
+		return false;
+	}
+
+	else if ( (first_level & 0x03UL) == 0x01UL ) // coarse page
+	{
+		// a second level descriptor fetch is initiated
+		// build the address of the 2nd level descriptor
+		uint32_t coarse_addr =
+			(first_level & 0xfffffc00UL) |
+			((mva & 0x000ff000UL) >> 10);
+		if ( verbose & 0x020 )
+		{
+			logger << DebugInfo
+				<< "Non intrusive access to coarse page descriptor" << std::endl
+				<< " - first level entry   = 0x" << std::hex
+				<< first_level << std::endl
+				<< " - mva                 = 0x" << mva << std::endl
+				<< " - coarse page address = 0x" << coarse_addr << std::dec
+				<< EndDebugInfo;
+		}
+		uint32_t second_way = 0;
+		if ( ltlb.GetWay(coarse_addr, &second_way) )
+		{
+			second_level = ltlb.GetData(second_way);
+			found_second_level = true;
+		}
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x020 )
+			{
+				logger << DebugInfo
+					<< "Non intrusive access, coarse page descriptor not found"
+					<< " in the lockdown TLB"
+					<< EndDebugInfo;
+			}
+			// the entry was not faound in the lockdown tlb
+			// check the main tlb
+			uint32_t second_tag = tlb.GetTag(coarse_addr);
+			uint32_t second_set = tlb.GetSet(coarse_addr);
+			if ( tlb.GetWay(second_tag, second_set, &second_way) )
+			{
+				second_level = tlb.GetData(second_set, second_way);
+				found_second_level = true;
+			}
+		}
+		if ( !found_second_level )
+		{
+			if ( verbose & 0x020 )
+			{
+				logger << DebugInfo
+					<< "Non intrusive access, coarse page descriptor not found"
+					<< " in the main TLB"
+					<< EndDebugInfo;
+			}
+			uint32_t second_level_data[4];
+			// oops, we are forced to perform a page walk
+			status = ExternalReadMemory(coarse_addr,
+					second_level_data, 4);
+			if ( !status ) 
+			{
+				logger << DebugInfo
+					<< "Could not read coarse page descriptor from memory"
+					<< " during non intrusive access:" << std::endl
+					<< " - address = 0x" << std::hex << coarse_addr
+					<< std::dec
+					<< EndDebugInfo;
+				return false;
+			}
+			memcpy(&second_level, second_level_data, 4);
+			second_level = LittleEndian2Host(second_level);
+		}
+		// NOTE: we let the found_second_level to false to signal that the entry
+		//   was found in the memory table
+		// now we can check that the second level entry obtained is valid
+		if ( (second_level & 0x03UL) == 0 )
+		{
+			// this is an invalid entry
+			logger << DebugError
+				<< "Address translation for 0x" << std::hex << va << std::dec
+				<< " was not found during non intrusive access" << std::endl
+				<< " - mva = 0x" << std::hex << mva << std::endl
+				<< " - first_level = 0x" << first_level << std::endl
+				<< " - coarse page address = 0x" << coarse_addr << std::endl
+				<< " - second_level = 0x" << second_level << std::dec
+				<< EndDebugError;
+			return false;
+		}
+
+		// check whether is a large, small or tiny page
+		if ( (second_level & 0x03UL) == 0 )
+		{
+			// fault page
+			logger << DebugError
+				<< "Found faulty translation second level entry"
+				<< "for address 0x" << std::hex << va << std::dec
+				<< " was not found during non intrusive access" << std::endl
+				<< " - mva = 0x" << std::hex << mva << std::endl
+				<< " - first_level = 0x" << first_level << std::endl
+				<< " - coarse page address = 0x" << coarse_addr << std::endl
+				<< " - second_level = 0x" << second_level << std::dec
+				<< EndDebugError;
+			return false;
+		}
+
+		else if ( (second_level & 0x03UL) == 1 )
+		{
+			// large page
+			pa = (second_level & 0xffff0000UL) |
+				(mva & 0x0000ffffUL);
+			assert("TODO:Large page descriptor" == 0);
+		}
+
+		else if ( (second_level & 0x03UL) == 2 )
+		{
+			// small page
+			pa = (second_level & 0xfffff000UL) |
+				(mva & 0x00000fffUL);
+			uint32_t ap[4];
+			ap[0] = (second_level >> 4) & 0x03UL;
+			ap[1] = (second_level >> 6) & 0x03UL;
+			ap[2] = (second_level >> 8) & 0x03UL;
+			ap[3] = (second_level >> 10) & 0x03UL;
+			uint32_t ap_used = 0;
+			switch ( ((mva & 0x0c00UL) >> 10) & 0x03UL )
+			{
+				case 0x00UL: ap_used = ap[0]; break;
+				case 0x01UL: ap_used = ap[1]; break;
+				case 0x02UL: ap_used = ap[2]; break;
+				case 0x03UL: ap_used = ap[3]; break;
+			}
+			uint32_t domain = (first_level >> 5) & 0x0fUL;
+			uint32_t c = (second_level >> 3) & 0x01UL;
+			cacheable = c;
+			uint32_t b = (second_level >> 2) & 0x01UL;
+			bufferable = b;
+			if ( verbose & 0x020 )
+				logger << DebugInfo
+					<< "Address translated using a small page descriptor"
+					<< " (non intrusive access):"
+					<< std::endl
+					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< std::endl
+					<< " - va  = 0x" << va << std::endl
+					<< " - mva = 0x" << mva << std::endl
+					<< " - pa  = 0x" << pa << std::dec << std::endl
+					<< " - ap[0-3] = " << ap[0]
+					<< " " << ap[1] << " " << ap[2] << " " << ap[3] << std::endl
+					<< " - ap  = " << ap_used << std::endl
+					<< " - domain = " << domain << std::endl
+					<< " - c   = " << c << std::endl
+					<< " - b   = " << b
+					<< EndDebugInfo;
+		}
+	}
+
+	else if ( (first_level & 0x02UL) == 0x02UL ) // section page
 	{
 		// the descriptor is a section descriptor
 		pa = (first_level & 0xfff00000UL) |
@@ -2246,11 +2415,6 @@ NonIntrusiveTranslateVA(bool is_read,
 				<< "- c   = " << c << std::endl
 				<< "- b   = " << b
 				<< EndDebugInfo;
-	}
-	else
-	{
-		// the page is not a section a second access to the tlb is required
-		assert("Translation fault (TODO: second level access)" == 0);
 	}
 
 	return true;
@@ -2448,6 +2612,7 @@ TranslateVA(bool is_read,
 				<< " - first_level = 0x" << first_level << std::endl
 				<< " - coarse page address = 0x" << coarse_addr << std::endl
 				<< " - second_level = 0x" << second_level
+				<< std::dec
 				<< EndDebugError;
 			assert("Translation fault (TODO: data abort)" == 0);
 			return false;
@@ -2484,7 +2649,6 @@ TranslateVA(bool is_read,
 			// large page
 			pa = (second_level & 0xffff0000UL) |
 				(mva & 0x0000ffffUL);
-			uint32_t ap[4];
 			assert("TODO: Large page descriptor" == 0);
 		}
 
