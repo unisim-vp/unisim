@@ -68,7 +68,7 @@ public:
 	UART(const sc_module_name &name, Object *parent = 0);
 	~UART();
 
-	virtual bool Setup();
+	virtual bool EndSetup();
 
 private:
 	/** Registers storage */

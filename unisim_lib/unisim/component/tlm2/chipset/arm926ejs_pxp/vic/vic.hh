@@ -85,7 +85,7 @@ public:
 	VIC(const sc_module_name &name, Object *parent = 0);
 	~VIC();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	/** Semaphore to ensure that only one process is modifying the VIC state

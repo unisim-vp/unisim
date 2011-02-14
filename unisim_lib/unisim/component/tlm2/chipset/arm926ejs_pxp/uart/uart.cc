@@ -163,7 +163,7 @@ TelnetPutPacket(std::string packet)
 }
 bool 
 UART ::
-Setup()
+EndSetup()
 {
 	struct sockaddr_in addr;
 	int server_sock;

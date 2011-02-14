@@ -70,7 +70,7 @@ VICIntSourceStub ::
 
 bool
 VICIntSourceStub ::
-Setup()
+BeginSetup()
 {
 	return true;
 }
@@ -107,7 +107,7 @@ VICIntTargetStub ::
 
 bool
 VICIntTargetStub ::
-Setup()
+BeginSetup()
 {
 	return true;
 }
@@ -147,7 +147,7 @@ VICAddrSourceStub ::
 
 bool
 VICAddrSourceStub ::
-Setup()
+BeginSetup()
 {
 	return true;
 }
@@ -184,7 +184,7 @@ VICAddrTargetStub ::
 
 bool
 VICAddrTargetStub ::
-Setup()
+BeginSetup()
 {
 	return true;
 }

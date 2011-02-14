@@ -84,7 +84,7 @@ SMSC_LAN91C111 ::
 
 bool 
 SMSC_LAN91C111 ::
-Setup()
+BeginSetup()
 {
 	return true;
 }

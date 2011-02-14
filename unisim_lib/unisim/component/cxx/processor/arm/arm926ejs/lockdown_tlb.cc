@@ -138,7 +138,7 @@ LockdownTLB::
 
 bool
 LockdownTLB::
-Setup()
+BeginSetup()
 {
 	return true;
 }

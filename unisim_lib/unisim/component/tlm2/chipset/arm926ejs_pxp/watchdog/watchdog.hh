@@ -66,7 +66,7 @@ public:
 	Watchdog(const sc_module_name &name, Object *parent = 0);
 	~Watchdog();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	/**************************************************************************/

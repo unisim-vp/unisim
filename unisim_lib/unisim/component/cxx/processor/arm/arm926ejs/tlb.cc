@@ -141,7 +141,7 @@ TLB::
 
 bool
 TLB::
-Setup()
+BeginSetup()
 {
 	return true;
 }

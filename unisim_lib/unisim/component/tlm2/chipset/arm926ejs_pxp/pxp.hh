@@ -372,7 +372,7 @@ public:
 	PXP(const sc_module_name &name, Object *parent = 0);
 	~PXP();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 

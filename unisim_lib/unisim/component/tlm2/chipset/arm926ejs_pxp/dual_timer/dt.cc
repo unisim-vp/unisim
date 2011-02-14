@@ -374,7 +374,7 @@ OutputUpdate()
 
 bool 
 DualTimer::
-Setup()
+BeginSetup()
 {
 	return true;
 }

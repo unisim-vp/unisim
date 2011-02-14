@@ -61,7 +61,7 @@ public:
 			bool initvalue = false);
 	~VICIntSourceStub();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	void Method();
 
@@ -82,7 +82,7 @@ public:
 	VICIntTargetStub(const sc_module_name &name, Object *parent = 0);
 	~VICIntTargetStub();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	void Method();
 
@@ -107,7 +107,7 @@ public:
 	VICAddrSourceStub(const sc_module_name &name, Object *parent = 0);
 	~VICAddrSourceStub();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	void Method();
 
@@ -128,7 +128,7 @@ public:
 	VICAddrTargetStub(const sc_module_name &name, Object *parent = 0);
 	~VICAddrTargetStub();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	void Method();
 
