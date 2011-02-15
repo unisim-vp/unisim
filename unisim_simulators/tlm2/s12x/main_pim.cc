@@ -575,6 +575,11 @@ Simulator::Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
+	if (sim) { delete sim; sim = NULL;}
+	if (socketfd) { delete socketfd; socketfd = NULL;}
+	if (target) { delete target; target = NULL; }
+	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
+
 	if (pim) { delete pim; pim = NULL; }
 
 	if (registersTee) { delete registersTee; registersTee = NULL; }
@@ -765,6 +770,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 void Simulator::Stop(Object *object, int _exit_status)
 {
+	// ***********************
+	if (sim) { sim->stop();}
+	if (socketfd) { socketfd->stop();}
+	if (target) { target->stop();}
+	if (pimServerThread) { pimServerThread->stop();}
+
+	// ***********************
+
 	exit_status = _exit_status;
 	if(object)
 	{

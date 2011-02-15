@@ -68,6 +68,16 @@ SocketServerThread::SocketServerThread(string host, uint16_t port, bool _blockin
 
 }
 
+SocketServerThread::~SocketServerThread() {
+
+#ifdef WIN32
+		closesocket(primary_sockfd);
+#else
+		close(primary_sockfd);
+#endif
+
+}
+
 void SocketServerThread::Run() {
 
 #ifdef WIN32
@@ -82,46 +92,65 @@ void SocketServerThread::Run() {
 
     cli_addr_len = sizeof(cli_addr);
 
-    do {
+	fd_set savefds;
+	FD_ZERO(&savefds);
+	FD_SET(primary_sockfd, &savefds);
 
-        sockfd = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
-        if (sockfd >= 0) {
+	do {
 
-// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
-			int opt = 1;
-			if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
-				int array[] = {sockfd};
-				error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
-			}
+		fd_set readfds = savefds;  // this must be set before each call to select()
+		timeval timeout = {1, 0};  // this must be set before each call to select()
+
+		int sel = select(primary_sockfd + 1, &readfds, 0, 0, &timeout);
+
+		if (sel > 0 && FD_ISSET(primary_sockfd, &readfds)) {
+
+			// client connected
+			sockfd = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
+
+			if (sockfd >= 0) {
+
+				// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
+				int opt = 1;
+				if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
+					int array[] = {sockfd};
+					error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
+				}
 
 #ifdef WIN32
 
-			u_long NonBlock = 1;
-			if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-				int array[] = {sockfd};
-				error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
-			}
+				u_long NonBlock = 1;
+				if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
+					int array[] = {sockfd};
+					error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
+				}
 
 #else
 
-			int flags = fcntl(sockfd, F_GETFL, 0);
-			if (flags < 0)	{
-				int array[] = {sockfd};
-				error(array, "fcntl <F_GETFL> failed");
-			}
+				int flags = fcntl(sockfd, F_GETFL, 0);
+				if (flags < 0)	{
+					int array[] = {sockfd};
+					error(array, "fcntl <F_GETFL> failed");
+				}
 
-			if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-				int array[] = {sockfd};
-				error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
-			}
+				if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+					int array[] = {sockfd};
+					error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
+				}
 
 #endif
 
-			if (bindHandler(sockfd)) {
-        		connected++;
-        	}
-        }
-    } while (connected < nbHandlers);
+				if (bindHandler(sockfd)) {
+					connected++;
+				}
+			}
+
+		}
+		else if (sel == 0) {
+		// timeout occurred
+		}
+
+	} while ((connected < nbHandlers) && !isTerminated());
 
 }
 
