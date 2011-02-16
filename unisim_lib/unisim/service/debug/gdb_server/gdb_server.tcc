@@ -479,13 +479,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
 	{
 		logger << DebugError << "ioctlsocket failed" << EndDebugError;
-#ifdef WIN32
 		closesocket(server_sock);
 		closesocket(sock);
-#else
-		close(server_sock);
-		close(sock);
-#endif
 		sock = -1;
 		return false;
 	}
@@ -495,13 +490,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(socket_flag < 0)
 	{
 		logger << DebugError << "fcntl failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-		closesocket(sock);
-#else
 		close(server_sock);
 		close(sock);
-#endif
 		sock = -1;
 		return false;
 	}
@@ -510,13 +500,8 @@ bool GDBServer<ADDRESS>::EndSetup()
 	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
 	{
 		logger << DebugError << "fcntl failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-		closesocket(sock);
-#else
 		close(server_sock);
 		close(sock);
-#endif
 		sock = -1;
 		return false;
 	}

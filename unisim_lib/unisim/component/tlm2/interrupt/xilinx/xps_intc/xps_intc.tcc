@@ -301,7 +301,7 @@ void XPS_IntC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::s
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_bw(TLMInterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_bw(InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	return tlm::TLM_COMPLETED;
 }
@@ -313,7 +313,7 @@ void XPS_IntC<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_d
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::b_transport(unsigned int irq, TLMInterruptPayload& payload, sc_core::sc_time& t)
+void XPS_IntC<CONFIG>::b_transport(unsigned int irq, InterruptPayload& payload, sc_core::sc_time& t)
 {
 	UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
 	sc_event ev_completed;
@@ -328,7 +328,7 @@ void XPS_IntC<CONFIG>::b_transport(unsigned int irq, TLMInterruptPayload& payloa
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(unsigned int irq, TLMInterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(unsigned int irq, InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
@@ -465,9 +465,9 @@ void XPS_IntC<CONFIG>::ProcessCPUPayload(UnifiedPayload *unified_payload)
 template <class CONFIG>
 void XPS_IntC<CONFIG>::ProcessIntrPayload(UnifiedPayload *unified_payload)
 {
-	TLMInterruptPayload *payload = unified_payload->intr_payload;
+	InterruptPayload *payload = unified_payload->intr_payload;
 	
-	inherited::SetInterruptInput(unified_payload->irq, payload->level);
+	inherited::SetInterruptInput(unified_payload->irq, payload->GetValue());
 	
 	if(unified_payload->blocking)
 	{
@@ -535,9 +535,9 @@ void XPS_IntC<CONFIG>::SetOutputLevel(bool level)
 {
 	if(output_level == level) return;
 
-	TLMInterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
+	InterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
 	
-	intr_payload->level = level;
+	intr_payload->SetValue(level);
 	
 	irq_master_sock->b_transport(*intr_payload, local_time);
 	
@@ -549,9 +549,9 @@ void XPS_IntC<CONFIG>::SetOutputEdge(bool final_level)
 {
 	if(output_level == final_level)
 	{
-		TLMInterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
+		InterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
 		
-		intr_payload->level = !final_level;
+		intr_payload->SetValue(!final_level);
 		
 		irq_master_sock->b_transport(*intr_payload, local_time);
 		
@@ -560,9 +560,9 @@ void XPS_IntC<CONFIG>::SetOutputEdge(bool final_level)
 	
 	local_time += cycle_time;
 
-	TLMInterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
+	InterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
 	
-	intr_payload->level = final_level;
+	intr_payload->SetValue(final_level);
 	
 	irq_master_sock->b_transport(*intr_payload, local_time);
 	
@@ -583,25 +583,25 @@ XPS_IntC<CONFIG>::IRQForwarder::IRQForwarder(unsigned int _irq, XPS_IntC<CONFIG>
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::IRQForwarder::b_transport(TLMInterruptPayload& trans, sc_core::sc_time& t)
+void XPS_IntC<CONFIG>::IRQForwarder::b_transport(InterruptPayload& trans, sc_core::sc_time& t)
 {
 	xps_intc->b_transport(irq, trans, t);
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::IRQForwarder::nb_transport_fw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum XPS_IntC<CONFIG>::IRQForwarder::nb_transport_fw(InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	return xps_intc->nb_transport_fw(irq, trans, phase, t);
 }
 
 template <class CONFIG>
-unsigned int XPS_IntC<CONFIG>::IRQForwarder::transport_dbg(TLMInterruptPayload& trans)
+unsigned int XPS_IntC<CONFIG>::IRQForwarder::transport_dbg(InterruptPayload& trans)
 {
 	return 0;
 }
 
 template <class CONFIG>
-bool XPS_IntC<CONFIG>::IRQForwarder::get_direct_mem_ptr(TLMInterruptPayload& trans, tlm::tlm_dmi&  dmi_data)
+bool XPS_IntC<CONFIG>::IRQForwarder::get_direct_mem_ptr(InterruptPayload& trans, tlm::tlm_dmi&  dmi_data)
 {
 	return false;
 }
@@ -630,7 +630,7 @@ void XPS_IntC<CONFIG>::UnifiedPayload::SetPayload(tlm::tlm_generic_payload *_cpu
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::UnifiedPayload::SetPayload(TLMInterruptPayload *_intr_payload)
+void XPS_IntC<CONFIG>::UnifiedPayload::SetPayload(InterruptPayload *_intr_payload)
 {
 	type = INTR_PAYLOAD;
 	intr_payload = _intr_payload;

@@ -1486,6 +1486,8 @@ void CPU<CONFIG>::StepOneInstruction()
 template <class CONFIG>
 void CPU<CONFIG>::OnTimerClock()
 {
+	timer_cycle++;
+	
 	/* update the time base */
 	IncrementTB();
 

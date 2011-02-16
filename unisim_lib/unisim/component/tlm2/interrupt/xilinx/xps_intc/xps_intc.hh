@@ -54,7 +54,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
-using unisim::component::tlm2::interrupt::TLMInterruptPayload;
+using unisim::component::tlm2::interrupt::InterruptPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
 template <class CONFIG>
@@ -86,11 +86,11 @@ public:
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
 
-	virtual tlm::tlm_sync_enum nb_transport_bw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual tlm::tlm_sync_enum nb_transport_bw(InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
-	virtual void b_transport(unsigned int irq, TLMInterruptPayload& trans, sc_core::sc_time& t);
-	virtual tlm::tlm_sync_enum nb_transport_fw(unsigned int irq, TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual void b_transport(unsigned int irq, InterruptPayload& trans, sc_core::sc_time& t);
+	virtual tlm::tlm_sync_enum nb_transport_fw(unsigned int irq, InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 	void Process();
 protected:
@@ -104,13 +104,13 @@ private:
 	public:
 		IRQForwarder(unsigned int irq, XPS_IntC<CONFIG> *xps_intc);
 		
-		virtual void b_transport(TLMInterruptPayload& trans, sc_core::sc_time& t);
+		virtual void b_transport(InterruptPayload& trans, sc_core::sc_time& t);
 
-		virtual tlm::tlm_sync_enum nb_transport_fw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+		virtual tlm::tlm_sync_enum nb_transport_fw(InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
-		virtual unsigned int transport_dbg(TLMInterruptPayload& trans);
+		virtual unsigned int transport_dbg(InterruptPayload& trans);
 		
-		virtual bool get_direct_mem_ptr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data);
+		virtual bool get_direct_mem_ptr(InterruptPayload& trans, tlm::tlm_dmi& dmi_data);
 
 	private:
 		unsigned int irq;
@@ -150,7 +150,7 @@ private:
 
 		UnifiedPayload();
 		void SetPayload(tlm::tlm_generic_payload *cpu_payload);
-		void SetPayload(TLMInterruptPayload *intr_payload);
+		void SetPayload(InterruptPayload *intr_payload);
 		void SetNonBlocking();
 		void SetBlocking(sc_event *ev_completed);
 		virtual ~UnifiedPayload();
@@ -158,14 +158,14 @@ private:
 		Type type;
 		bool blocking;
 		tlm::tlm_generic_payload *cpu_payload;
-		TLMInterruptPayload *intr_payload;
+		InterruptPayload *intr_payload;
 		unsigned int irq;
 		sc_event *ev_completed;
 	};
 	
 	tlm_utils::peq_with_get<UnifiedPayload> unified_payload_queue;
 	PayloadFabric<UnifiedPayload> unified_payload_fabric;
-	PayloadFabric<TLMInterruptPayload> interrupt_payload_fabric;
+	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 
 	void ProcessCPUPayload(UnifiedPayload *unified_payload);
 	void ProcessIntrPayload(UnifiedPayload *unified_payload);

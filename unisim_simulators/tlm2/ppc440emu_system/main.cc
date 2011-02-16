@@ -42,6 +42,9 @@
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
 #include <unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh>
+#include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
+#include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
+#include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
@@ -110,8 +113,8 @@ class RouterDebugConfig : public unisim::component::tlm2::interconnect::generic_
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 2;
-	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 3;
+	static const unsigned int MAX_NUM_MAPPINGS = 5;
 	static const unsigned int BUSWIDTH = 128;
 };
 
@@ -121,8 +124,8 @@ class RouterConfig : public unisim::component::tlm2::interconnect::generic_route
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 2;
-	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 3;
+	static const unsigned int MAX_NUM_MAPPINGS = 5;
 	static const unsigned int BUSWIDTH = 128;
 };
 
@@ -130,6 +133,8 @@ typedef RouterConfig ROUTER_CONFIG;
 #endif
 
 typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
+typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
+static const unsigned int TIMER_IRQ = 3;
 
 class IRQStub
 	: public sc_module
@@ -140,7 +145,7 @@ public:
 	
 	IRQStub(const sc_module_name& name);
 
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 };
@@ -152,7 +157,7 @@ IRQStub::IRQStub(const sc_module_name& name)
 	irq_master_sock(*this);
 }
 
-tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	return tlm::TLM_COMPLETED;
 }
@@ -161,6 +166,123 @@ void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64
 {
 }
 
+class CaptureTriggerStub
+	: public sc_module
+	, tlm::tlm_bw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes>
+{
+public:
+	tlm::tlm_initiator_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> capture_trigger_master_sock;
+	
+	CaptureTriggerStub(const sc_module_name& name);
+
+	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+};
+
+CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name)
+	: sc_module(name)
+	, capture_trigger_master_sock("capture-trigger-master-sock")
+{
+	capture_trigger_master_sock(*this);
+}
+
+tlm::tlm_sync_enum CaptureTriggerStub::nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	return tlm::TLM_COMPLETED;
+}
+
+void CaptureTriggerStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+}
+
+class PWMStub
+	: public sc_module
+	, tlm::tlm_fw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes>
+{
+public:
+	tlm::tlm_target_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> pwm_slave_sock;
+	
+	PWMStub(const sc_module_name& name);
+
+	virtual void b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, sc_core::sc_time& t);
+
+	virtual tlm::tlm_sync_enum nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+
+	virtual unsigned int transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans);
+	
+	virtual bool get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_dmi& dmi_data);
+};
+
+PWMStub::PWMStub(const sc_module_name& name)
+	: sc_module(name)
+	, pwm_slave_sock("pwm-slave-sock")
+{
+	pwm_slave_sock(*this);
+}
+
+void PWMStub::b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, sc_core::sc_time& t)
+{
+}
+
+tlm::tlm_sync_enum PWMStub::nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	return tlm::TLM_COMPLETED;
+}
+
+unsigned int PWMStub::transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans)
+{
+	return 0;
+}
+	
+bool PWMStub::get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_dmi& dmi_data)
+{
+	return false;
+}
+
+class GenerateOutStub
+	: public sc_module
+	, tlm::tlm_fw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes>
+{
+public:
+	tlm::tlm_target_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> generate_out_slave_sock;
+	
+	GenerateOutStub(const sc_module_name& name);
+
+	virtual void b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, sc_core::sc_time& t);
+
+	virtual tlm::tlm_sync_enum nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+
+	virtual unsigned int transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans);
+	
+	virtual bool get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_dmi& dmi_data);
+};
+
+GenerateOutStub::GenerateOutStub(const sc_module_name& name)
+	: sc_module(name)
+	, generate_out_slave_sock("generate-out-slave-sock")
+{
+	generate_out_slave_sock(*this);
+}
+
+void GenerateOutStub::b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, sc_core::sc_time& t)
+{
+}
+
+tlm::tlm_sync_enum GenerateOutStub::nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	return tlm::TLM_COMPLETED;
+}
+
+unsigned int GenerateOutStub::transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans)
+{
+	return 0;
+}
+	
+bool GenerateOutStub::get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_dmi& dmi_data)
+{
+	return false;
+}
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -191,6 +313,7 @@ private:
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<CPU_CONFIG> CPU;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<ROUTER_CONFIG> ROUTER;
 	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
+	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<TIMER_CONFIG> TIMER;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -207,6 +330,14 @@ private:
 	ROUTER *router;
 	// - Interrupt controller
 	INTC *intc;
+	// - Timer
+	TIMER *timer;
+	// - Capture trigger stubs
+	CaptureTriggerStub *capture_trigger_stub[TIMER_CONFIG::NUM_TIMERS];
+	// - GenerateOutStub
+	GenerateOutStub *generate_out_stub[TIMER_CONFIG::NUM_TIMERS];
+	// - PWM stub
+	PWMStub *pwm_stub;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -253,6 +384,7 @@ Simulator::Simulator(int argc, char **argv)
 	, critical_input_interrupt_stub(0)
 	, router(0)
 	, intc(0)
+	, timer(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -272,6 +404,7 @@ Simulator::Simulator(int argc, char **argv)
 	, exit_status(0)
 {
 	unsigned int irq;
+	unsigned int channel;
 	
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -283,9 +416,16 @@ Simulator::Simulator(int argc, char **argv)
 	//  - IRQ Stubs
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
-		std::stringstream input_interrupt_stub_name_sstr;
-		input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
-		input_interrupt_stub[irq] = new IRQStub(input_interrupt_stub_name_sstr.str().c_str());
+		if(irq == TIMER_IRQ)
+		{
+			input_interrupt_stub[irq] = 0;
+		}
+		else
+		{
+			std::stringstream input_interrupt_stub_name_sstr;
+			input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
+			input_interrupt_stub[irq] = new IRQStub(input_interrupt_stub_name_sstr.str().c_str());
+		}
 	}
 	//external_input_interrupt_stub = new IRQStub("external-input-interrupt-stub");
 	critical_input_interrupt_stub = new IRQStub("critical-input-interrupt-stub");
@@ -293,6 +433,24 @@ Simulator::Simulator(int argc, char **argv)
 	router = new ROUTER("router");
 	// - Interrupt controller
 	intc = new INTC("intc");
+	// - Timer
+	timer = new TIMER("timer");
+	// - Capture trigger stubs
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		std::stringstream capture_trigger_stub_name_sstr;
+		capture_trigger_stub_name_sstr << "capture-trigger-stub" << channel;
+		capture_trigger_stub[channel] = new CaptureTriggerStub(capture_trigger_stub_name_sstr.str().c_str());
+	}
+	// - Generate out stubs
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		std::stringstream generate_out_stub_name_sstr;
+		generate_out_stub_name_sstr << "generate-out-stub" << channel;
+		generate_out_stub[channel] = new GenerateOutStub(generate_out_stub_name_sstr.str().c_str());
+	}
+	// - PWM stub
+	pwm_stub = new PWMStub("pwm-stub");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -326,10 +484,27 @@ Simulator::Simulator(int argc, char **argv)
 	(*router->init_socket[0])(memory->slave_sock); // PLB <-> RAM
 	//cpu->bus_master_sock(memory->slave_sock); // CPU <-> RAM
 	(*router->init_socket[1])(intc->slave_sock); // PLB <-> INTC
+	(*router->init_socket[2])(timer->slave_sock); // PLB <-> TIMER
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
-		(input_interrupt_stub[irq]->irq_master_sock)(*intc->irq_slave_sock[irq]); // INTC <-> IRQ stub
+		if(irq == TIMER_IRQ)
+		{
+			timer->interrupt_master_sock(*intc->irq_slave_sock[irq]); // INTC <-> TIMER
+		}
+		else
+		{
+			(input_interrupt_stub[irq]->irq_master_sock)(*intc->irq_slave_sock[irq]); // INTC <-> IRQ stub
+		}
 	}
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		capture_trigger_stub[channel]->capture_trigger_master_sock(*timer->capture_trigger_slave_sock[channel]); // TIMER <-> Capture trigger stub
+	}
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		(*timer->generate_out_master_sock[channel])(generate_out_stub[channel]->generate_out_slave_sock); // TIMER <-> Generate out stub
+	}
+	timer->pwm_master_sock(pwm_stub->pwm_slave_sock); // TIMER <-> PWM stub
 	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC <-> CPU
 	//external_input_interrupt_stub->irq_master_sock(cpu->external_input_interrupt_slave_sock);
 	critical_input_interrupt_stub->irq_master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
@@ -467,7 +642,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("router.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("router.mapping_0", "range_start=\"0x0\" range_end=\"0x3fffffff\" output_port=\"0\" translation=\"0x0\"");
 	simulator->SetVariable("router.mapping_1", "range_start=\"0x41200000\" range_end=\"0x4120ffff\" output_port=\"1\" translation=\"0x41200000\"");
-	simulator->SetVariable("router.mapping_2", "range_start=\"0x41210000\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x41210000\"");
+	simulator->SetVariable("router.mapping_2", "range_start=\"0x41210000\" range_end=\"0x83bfffff\" output_port=\"0\" translation=\"0x41210000\"");
+	simulator->SetVariable("router.mapping_3", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"2\" translation=\"0x83c00000\"");
+	simulator->SetVariable("router.mapping_4", "range_start=\"0x83c10000\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x83c10000\"");
 
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());

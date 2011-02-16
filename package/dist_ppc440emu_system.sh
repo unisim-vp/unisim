@@ -158,7 +158,9 @@ unisim/component/cxx/processor/powerpc/ppc440/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
+unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -295,11 +297,14 @@ unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh \
+unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh \
 unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh \
+unisim/component/cxx/timer/xilinx/xps_timer/config.hh \
 "
 
 UNISIM_LIB_PPC440EMU_SYSTEM_TEMPLATE_FILES="\
@@ -353,9 +358,11 @@ unisim/component/cxx/tlb/tlb.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
+unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.tcc \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
 "
 
 UNISIM_LIB_PPC440EMU_SYSTEM_M4_FILES="\
