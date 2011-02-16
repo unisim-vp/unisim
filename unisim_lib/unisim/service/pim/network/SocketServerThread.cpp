@@ -156,7 +156,11 @@ void SocketServerThread::Run() {
 
 bool SocketServerThread::bindHandler(int sockfd) {
 
-	if (!send_packet("WHO", true)) {
+	string who("WHO");
+	string ack("ACK");
+	string nack("NACK");
+
+	if (!send_packet(who, true)) {
 		cerr << "SocketServerThread:: unable to send <WHO>" << endl;
 		return false;
 	}
@@ -168,7 +172,7 @@ bool SocketServerThread::bindHandler(int sockfd) {
 	for (int i=0; i < protocolHandlers->size(); i++) {
 
 		if ((*protocolHandlers)[i]->getProtocol().compare(protocol) == 0) {
-			if (!send_packet("ACK", true)) {
+			if (!send_packet(ack, true)) {
 				cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
 				return false;
 			}
@@ -185,7 +189,7 @@ bool SocketServerThread::bindHandler(int sockfd) {
 	}
 
 	if (!found) {
-		if (!send_packet("NACK", true)) {
+		if (!send_packet(nack, true)) {
 			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
 			return false;
 		}

@@ -97,12 +97,10 @@ void PIMThread::Run(){
 
 						std::string str = os.str();
 
-						const char *bstr = str.c_str();
-
-//						cerr << name << " send: " << bstr << endl;
+//						cerr << name << " send: " << str << endl;
 
 						while (true) {
-							if (!send_packet(bstr, blocking)) {
+							if (!send_packet(str, blocking)) {
 								if (blocking) {
 									cerr << "PIM-Target unable to send !" << endl;
 								} else {

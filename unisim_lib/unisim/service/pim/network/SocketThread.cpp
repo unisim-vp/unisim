@@ -138,39 +138,36 @@ void SocketThread::waitConnection() {
 
 }
 
-bool SocketThread::send_packet(const char* data, bool blocking) {
+bool SocketThread::send_packet(string& data, bool blocking) {
 
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
 
 	int err;
 
-	int data_size = strlen(data);
-	char* dd = (char *) malloc(data_size+5);
-	memset(dd, 0, data_size+5);
+	int data_size = data.size();
+	stringstream output_buffer_strm;
 
-	dd[0] = '$';
+	output_buffer_strm << '$' << data << '#';
+
 	uint8_t checksum = 0;
-	unsigned int pos = 0;
-	char c;
 
-	while(pos < data_size)
+	for (int pos=0; pos < data_size; pos++)
 	{
-		c = data[pos];
-		dd[pos+1] = c;
-		checksum += (uint8_t) c;
-		pos++;
+		checksum += (uint8_t) data[pos];
 	}
-	dd[pos+1] = '#';
 
-	dd[pos+2] = Nibble2HexChar(checksum >> 4);
-	dd[pos+3] = Nibble2HexChar(checksum & 0xf);
+	output_buffer_strm << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf);
 
 	waitConnection();
 
-	int dd_size = strlen(dd);
+	string output_buffer = output_buffer_strm.str();
+
+	cerr << "SocketThread:: Ready to send " << output_buffer << endl;
+
+	int output_buffer_size = output_buffer.size();
 	int index = 0;
-	while (dd_size > 0) {
+	while (output_buffer_size > 0) {
 
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
@@ -204,17 +201,19 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 			int n;
 
 #ifdef WIN32
-			n = send(sockfd, dd+index, dd_size, 0);
+			n = send(sockfd, &(output_buffer.at(index)), output_buffer_size, 0);
 #else
-			n = write(sockfd, dd+index, dd_size);
+			n = write(sockfd, &(output_buffer.at(index)), output_buffer_size);
 #endif
 			if (n <= 0) {
 				int array[] = {sockfd};
 				error(array, "ERROR writing to socket");
 			} else {
 				index += n;
-				dd_size -= n;
+				output_buffer_size -= n;
 			}
+
+			cerr << "SocketThread:: Send success N= " << n << endl;
 
 		} else {
 
@@ -233,9 +232,9 @@ bool SocketThread::send_packet(const char* data, bool blocking) {
 
 	}
 
-	free(dd);
+	output_buffer_strm.clear();
 
-	if (dd_size > 0) {
+	if (output_buffer_size > 0) {
 		return false;
 	}
 
