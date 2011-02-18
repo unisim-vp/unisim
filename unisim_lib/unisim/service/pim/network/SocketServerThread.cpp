@@ -98,6 +98,8 @@ void SocketServerThread::Run() {
 
 	do {
 
+		int sockfdTmp = -1;
+
 		fd_set readfds = savefds;  // this must be set before each call to select()
 		timeval timeout = {1, 0};  // this must be set before each call to select()
 
@@ -106,41 +108,43 @@ void SocketServerThread::Run() {
 		if (sel > 0 && FD_ISSET(primary_sockfd, &readfds)) {
 
 			// client connected
-			sockfd = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
+			sockfdTmp = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
 
-			if (sockfd >= 0) {
+			if (sockfdTmp >= 0) {
 
 				// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
 				int opt = 1;
-				if (setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
-					int array[] = {sockfd};
+				if (setsockopt(sockfdTmp, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
+					int array[] = {sockfdTmp};
 					error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
 				}
 
 #ifdef WIN32
 
 				u_long NonBlock = 1;
-				if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-					int array[] = {sockfd};
+				if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
+					int array[] = {sockfdTmp};
 					error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
 				}
 
 #else
 
-				int flags = fcntl(sockfd, F_GETFL, 0);
+				int flags = fcntl(sockfdTmp, F_GETFL, 0);
 				if (flags < 0)	{
-					int array[] = {sockfd};
+					int array[] = {sockfdTmp};
 					error(array, "fcntl <F_GETFL> failed");
 				}
 
-				if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-					int array[] = {sockfd};
+				if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
+					int array[] = {sockfdTmp};
 					error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
 				}
 
 #endif
 
-				if (bindHandler(sockfd)) {
+				SetSockfd(sockfdTmp);
+
+				if (bindHandler(sockfdTmp)) {
 					connected++;
 				}
 			}
@@ -160,25 +164,27 @@ bool SocketServerThread::bindHandler(int sockfd) {
 	string ack("ACK");
 	string nack("NACK");
 
-	if (!send_packet(who, true)) {
+	PutPacket(who, true);
+	if (!FlushOutput()) {
 		cerr << "SocketServerThread:: unable to send <WHO>" << endl;
 		return false;
 	}
 
 	string protocol;
-	receive_packet(protocol, true);
+	GetPacket(protocol, true);
 
 	bool found = false;
 	for (int i=0; i < protocolHandlers->size(); i++) {
 
 		if ((*protocolHandlers)[i]->getProtocol().compare(protocol) == 0) {
-			if (!send_packet(ack, true)) {
+			PutPacket(ack, true);
+			if (!FlushOutput()) {
 				cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
 				return false;
 			}
 
 			string ack;
-			receive_packet(ack, true);
+			GetPacket(ack, true);
 
 			(*protocolHandlers)[i]->Start(sockfd, blocking);
 
@@ -189,7 +195,8 @@ bool SocketServerThread::bindHandler(int sockfd) {
 	}
 
 	if (!found) {
-		if (!send_packet(nack, true)) {
+		PutPacket(nack, true);
+		if (!FlushOutput()) {
 			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
 			return false;
 		}

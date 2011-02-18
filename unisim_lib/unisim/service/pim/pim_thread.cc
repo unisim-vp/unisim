@@ -49,7 +49,7 @@ void PIMThread::Run(){
 
 		string buf_str;
 
-		if (!receive_packet(buf_str, blocking)) {
+		if (!GetPacket(buf_str, blocking)) {
 			if (blocking) {
 				cerr << "PIM-Target receive **NULL**" << endl;
 				break;
@@ -100,7 +100,8 @@ void PIMThread::Run(){
 //						cerr << name << " send: " << str << endl;
 
 						while (true) {
-							if (!send_packet(str, blocking)) {
+							PutPacket(str, blocking);
+							if (!FlushOutput()) {
 								if (blocking) {
 									cerr << "PIM-Target unable to send !" << endl;
 								} else {

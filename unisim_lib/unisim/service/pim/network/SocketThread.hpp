@@ -9,6 +9,7 @@
 #define SOCKETTHREAD_HPP_
 
 #include <stdint.h>
+#include <sstream>
 
 #include "GenericThread.hpp"
 
@@ -32,12 +33,13 @@ public:
 	virtual void Run() { };
 	virtual string getProtocol() { return "NONE"; }
 
-	virtual bool send_packet(string& data, bool blocking);
-
-	virtual bool receive_packet(string& s, bool blocking);
-
 	bool GetChar(char& c, bool blocking);
+	virtual bool GetPacket(string& s, bool blocking);
 
+	bool PutChar(char c);
+	virtual bool PutPacket(const string& data, bool blocking);
+	bool OutputText(const char *s, int count);
+	bool FlushOutput();
 
 	void SetSockfd(int sockfd);
 	void waitConnection();
@@ -65,6 +67,8 @@ private:
 	int input_buffer_index;
 
 	char *input_buffer;
+
+	std::stringstream output_buffer_strm;
 
 };
 

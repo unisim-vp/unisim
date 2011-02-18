@@ -852,6 +852,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMGDBServer<ADDRESS>::FetchDebugCo
 					PutPacket("");
 				}
 		} // end of switch
+
 	}
 	Object::Stop(0);
 	return DebugControl<ADDRESS>::DBG_KILL;
@@ -1382,7 +1383,6 @@ bool PIMGDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS ad
 template <class ADDRESS>
 void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 
-//	size_t separator_index = command.find_first_of(':');
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {
@@ -1408,7 +1408,6 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
 			{
-				strstm << "O";
 				strstm << (*symbol_iter)->GetName();
 
 				strstm << ":" << std::hex;
@@ -1419,7 +1418,8 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 				strstm << ":" << "FUNCTION";
 
-				PutPacket(strstm.str());
+				string str = strstm.str();
+				OutputText(str.c_str(), str.size());
 
 				strstm.str(std::string());
 			}
@@ -1427,7 +1427,6 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
 			{
 
-				strstm << "O";
 				strstm << (*symbol_iter)->GetName();
 
 				strstm << ":" << std::hex;
@@ -1438,7 +1437,8 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 				strstm << ":" << "VARIABLE";
 
-				PutPacket(strstm.str());
+				string str = strstm.str();
+				OutputText(str.c_str(), str.size());
 
 				strstm.str(std::string());
 
@@ -1477,7 +1477,9 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 				PutPacket("E00");
 			}
 
-			Disasm(symbol_address, symbol_size);
+			if (disasm_import) {
+				Disasm(symbol_address, symbol_size);
+			}
 
 			PutPacket("T05");
 
@@ -1509,14 +1511,15 @@ void PIMGDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_s
 			break;
 		}
 
-		strstm << "O" << hex << current_address << ":";
+		strstm << hex << current_address << ":";
 
 		strstm << hex;
 		strstm.width(8);
 		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
 		strstm.fill(' ');
 
-		PutPacket(strstm.str());
+		string str = strstm.str();
+		OutputText(str.c_str(), str.size());
 
 		disassembled_size += next_address - current_address;
 		current_address = next_address;

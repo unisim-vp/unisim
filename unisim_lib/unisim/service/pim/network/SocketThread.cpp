@@ -10,8 +10,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <fstream>
-
 #ifdef WIN32
 
 #include <winsock2.h>
@@ -138,15 +136,16 @@ void SocketThread::waitConnection() {
 
 }
 
-bool SocketThread::send_packet(string& data, bool blocking) {
+bool SocketThread::PutChar(char c) {
 
-	fd_set read_flags, write_flags;
-	struct timeval waitd;
+	output_buffer_strm << c;
 
-	int err;
+	return true;
+}
+
+bool SocketThread::PutPacket(const string& data, bool blocking) {
 
 	int data_size = data.size();
-	stringstream output_buffer_strm;
 
 	output_buffer_strm << '$' << data << '#';
 
@@ -159,11 +158,38 @@ bool SocketThread::send_packet(string& data, bool blocking) {
 
 	output_buffer_strm << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf);
 
+	return true;
+
+}
+
+bool SocketThread::OutputText(const char *s, int count)
+{
+	int i;
+	uint8_t packet[1 + 2 * count + 1];
+	uint8_t *p = packet;
+
+	*p = 'O';
+	p++;
+	for(i = 0; i < count; i++, p += 2)
+	{
+		p[0] = Nibble2HexChar((uint8_t) s[i] >> 4);
+		p[1] = Nibble2HexChar((uint8_t) s[i] & 0xf);
+	}
+	*p = 0;
+	return PutPacket((const char *) packet, blocking);
+}
+
+bool SocketThread::FlushOutput() {
+
+	fd_set read_flags, write_flags;
+	struct timeval waitd;
+
+	int err;
+
 	waitConnection();
 
 	string output_buffer = output_buffer_strm.str();
-
-	cerr << "SocketThread:: Ready to send " << output_buffer << endl;
+	output_buffer_strm.str(std::string());
 
 	int output_buffer_size = output_buffer.size();
 	int index = 0;
@@ -213,8 +239,6 @@ bool SocketThread::send_packet(string& data, bool blocking) {
 				output_buffer_size -= n;
 			}
 
-			cerr << "SocketThread:: Send success N= " << n << endl;
-
 		} else {
 
 			if (blocking) {
@@ -232,17 +256,14 @@ bool SocketThread::send_packet(string& data, bool blocking) {
 
 	}
 
-	output_buffer_strm.clear();
-
 	if (output_buffer_size > 0) {
 		return false;
 	}
 
 	return true;
-
 }
 
-bool SocketThread::receive_packet(string& str, bool blocking) {
+bool SocketThread::GetPacket(string& str, bool blocking) {
 
 	str.clear();
 
