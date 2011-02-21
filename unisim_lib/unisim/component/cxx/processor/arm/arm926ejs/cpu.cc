@@ -979,7 +979,17 @@ ReadInsn(uint32_t address, uint32_t &val)
 			<< EndDebugInfo;
 
 	if ( likely(cp15.IsMMUEnabled()) )
-		TranslateVA(true, va, mva, pa, cacheable, bufferable);
+		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+		{
+			logger << DebugError
+				<< "Could not translate address when performing instruction read"
+				<< std::endl
+				<< " - va = 0x" << std::hex << va << std::dec << std::endl
+				<< " - instruction counter = " << instruction_counter
+				<< EndDebugError;
+			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		}
+
 
 	if ( likely(cp15.IsICacheEnabled() && icache.GetSize() && cacheable) )
 	{
@@ -2522,7 +2532,6 @@ TranslateVA(bool is_read,
 			<< first_level << std::endl
 			<< " - pc = 0x" << GetGPR(PC_reg) << std::dec
 			<< EndDebugError;
-		assert("Translation fault" == 0);
 		return false;
 	}
 
@@ -2953,7 +2962,17 @@ PerformPrefetchAccess(unisim::component::cxx::processor::arm::MemoryOp
 			<< EndDebugInfo;
 
 	if ( likely(cp15.IsMMUEnabled()) )
-		TranslateVA(true, va, mva, pa, cacheable, bufferable);
+		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+		{
+			if ( unlikely(verbose & 0x02) )
+				logger << DebugInfo
+					<< "Prefetch not performed because there is no translation"
+					<< " for the requested address (0x" << std::hex
+					<< va << std::dec << ")"
+					<< EndDebugInfo;
+			// no translation found for the given address, do nothing
+			return;
+		}
 
 	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize() && cacheable) )
 	{
@@ -3111,7 +3130,18 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	}
 
 	if ( likely(cp15.IsMMUEnabled()) )
-		TranslateVA(false, va, mva, pa, cacheable, bufferable);
+		if ( !TranslateVA(false, va, mva, pa, cacheable, bufferable) )
+		{
+			logger << DebugError
+				<< "Could not translate address when performing write:"
+				<< std::endl
+				<< " - va = 0x" << std::hex << va << std::dec << std::endl
+				<< " - size = " << size << std::endl
+				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - instruction counter = " << instruction_counter
+				<< EndDebugError;
+			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		}
 
 	if ( unlikely(verbose & 0x02) )
 	{
@@ -3342,7 +3372,18 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	uint32_t pa = mva;
 
 	if ( likely(cp15.IsMMUEnabled()) )
-		TranslateVA(true, va, mva, pa, cacheable, bufferable);
+		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+		{
+			logger << DebugError
+				<< "Could not translate address when performing read:"
+				<< std::endl
+				<< " - va = 0x" << std::hex << va << std::dec << std::endl
+				<< " - size = " << size << std::endl
+				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - instruction counter = " << instruction_counter
+				<< EndDebugError;
+			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		}
 
 	if ( unlikely(verbose & 0x02) )
 		logger << DebugInfo
@@ -3549,7 +3590,18 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 			<< EndDebugInfo;
 
 	if ( likely(cp15.IsMMUEnabled()) )
-		TranslateVA(true, va, mva, pa, cacheable, bufferable);
+		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+		{
+			logger << DebugError
+				<< "Could not translate address when performing read to PC:"
+				<< std::endl
+				<< " - va = 0x" << std::hex << va << std::dec << std::endl
+				<< " - size = " << size << std::endl
+				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - instruction counter = " << instruction_counter
+				<< EndDebugError;
+			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		}
 
 	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
@@ -3691,7 +3743,18 @@ PerformReadToPCUpdateTAccess(
 			<< EndDebugInfo;
 
 	if ( likely(cp15.IsMMUEnabled()) )
-		TranslateVA(true, va, mva, pa, cacheable, bufferable);
+		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
+		{
+			logger << DebugError
+				<< "Could not translate address when performing read to PC with T update:"
+				<< std::endl
+				<< " - va = 0x" << std::hex << va << std::dec << std::endl
+				<< " - size = " << size << std::endl
+				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - instruction counter = " << instruction_counter
+				<< EndDebugError;
+			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+		}
 
 	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
 	{
