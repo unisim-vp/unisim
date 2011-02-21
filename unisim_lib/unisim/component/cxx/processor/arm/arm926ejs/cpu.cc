@@ -3115,7 +3115,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 
 	if ( unlikely(verbose & 0x02) )
 	{
-		logger << DebugError 
+		logger << DebugInfo
 			<< "Writing into 0x" << std::hex << pa
 			<< " with data = "
 			<< (unsigned int)data[0]
@@ -3126,10 +3126,11 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 		if ( cp15.IsDCacheEnabled() && dcache.GetSize() && cacheable )
 			logger << std::endl
 				<< " - line cacheable"
-				<< EndDebugError;
+				<< EndDebugInfo;
 		else
-			logger << EndDebugError;
+			logger << EndDebugInfo;
 	}
+
 	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize() && cacheable) )
 	{
 		dcache.write_accesses++;
@@ -3146,19 +3147,19 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 			}
 			else
 				if ( unlikely(verbose & 0x02) )
-					logger << DebugError
+					logger << DebugInfo
 						<< "Way found but not valid (way = "
 						<< cache_way << ")"
-						<< EndDebugError;
+						<< EndDebugInfo;
 		}
 		if ( likely(cache_hit) )
 		{
 			if ( unlikely(verbose & 0x02) )
-				logger << DebugError
+				logger << DebugInfo
 					<< "Cache hit (set = "
 					<< cache_set << ", way = "
 					<< cache_way << ")"
-					<< EndDebugError;
+					<< EndDebugInfo;
 			dcache.write_hits++;
 			uint32_t cache_index = dcache.GetIndex(mva);
 			dcache.SetData(cache_set, cache_way, cache_index,
@@ -3169,24 +3170,24 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 			if ( bufferable == 0 )
 			{
 				if ( unlikely(verbose & 0x02) )
-					logger << DebugError
+					logger << DebugInfo
 						<< "Seding to memory"
-						<< EndDebugError;
+						<< EndDebugInfo;
 				PrWrite(pa, data, size);
 			}
 		}
 		else
 		{
 			if ( unlikely(verbose & 0x02) )
-				logger << DebugError
+				logger << DebugInfo
 					<< "Cache miss"
-					<< EndDebugError;
+					<< EndDebugInfo;
 			if ( bufferable )
 			{
 				if ( unlikely(verbose & 0x02) )
-					logger << DebugError
+					logger << DebugInfo
 						<< "Bufferable"
-						<< EndDebugError;
+						<< EndDebugInfo;
 				// the cache act as a write back cache, so the line is fetched
 				//   into cache and modified in the cache but not sent into
 				//   memory
@@ -3214,7 +3215,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 					if ( unlikely(verbose & 0x02) )
 					{
 						uint32_t rep_tag = dcache.GetTag(cache_set, cache_way);
-						logger << DebugError
+						logger << DebugInfo
 							<< "Evicting cache line:" << std::endl
 							<< " - mva = 0x" << std::hex << mva_cache_address << std::endl
 							<< " - pa  = 0x" << pa_cache_address << std::endl
@@ -3225,7 +3226,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 						for ( unsigned int i = 0; i < dcache.LINE_SIZE; i++ )
 							logger << " " << (unsigned int)rep_cache_data[i];
 						logger << std::dec
-							<< EndDebugError;
+							<< EndDebugInfo;
 					}
 					PrWrite(pa_cache_address, rep_cache_data, 
 							dcache.LINE_SIZE);
@@ -3253,7 +3254,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 				{
 					cache_line_size = dcache.GetData(cache_set,
 							cache_way, &cache_data);
-					logger << DebugError
+					logger << DebugInfo
 						<< "Written line:" << std::endl
 						<< " - mva = 0x" << std::hex << mva << std::dec << std::endl
 						<< " - pa  = 0x" << std::hex << pa << std::dec << std::endl
@@ -3262,6 +3263,8 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 						<< " - way = " << cache_way << std::endl
 						<< " - index = " << cache_index << std::endl
 						<< " - size = " << size << std::endl
+						<< " - valid = " << (uint32_t)dcache.GetValid(cache_set, cache_way) << std::endl
+						<< " - dirty = " << (uint32_t)dcache.GetDirty(cache_set, cache_way) << std::endl
 						<< " - data =" << std::hex;
 					for ( unsigned int i = 0; i < size; i++ )
 						logger << " " << (unsigned int)data[i];
@@ -3274,7 +3277,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 					for ( unsigned int i = 0; i < cache_line_size; i++ )
 						logger << " " << (unsigned int)cache_data[i];
 					logger << std::dec
-						<< EndDebugError;
+						<< EndDebugInfo;
 				}
 			}
 			else
@@ -3287,9 +3290,9 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	else // there is no data cache
 	{
 		if ( unlikely(verbose & 0x02) )
-			logger << DebugError
+			logger << DebugInfo
 				<< "No cache, sending to memory"
-				<< EndDebugError;
+				<< EndDebugInfo;
 		// there is no data cache, so just send the request to the
 		//   memory interface
 		PrWrite(pa, data, size);
