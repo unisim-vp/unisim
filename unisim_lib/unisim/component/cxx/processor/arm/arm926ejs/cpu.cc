@@ -1756,8 +1756,6 @@ CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
 				}
 				PrWrite(pa, data, dcache.LINE_SIZE);
 				dcache.SetDirty(cache_set, cache_way, 0);
-				if ( invalidate )
-					dcache.SetValid(cache_set, cache_way, 0);
 			}
 			else
 			{
@@ -1766,6 +1764,8 @@ CleanDCacheSingleEntryWithMVA(uint32_t init_mva, bool invalidate)
 						<< "Line is already cleaned, doing nothing"
 						<< EndDebugInfo;
 			}
+			if ( invalidate )
+				dcache.SetValid(cache_set, cache_way, 0);
 		}
 		else
 		{
