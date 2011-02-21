@@ -1833,6 +1833,7 @@ TestAndCleanDCache()
 
 	uint32_t dirty_set = 0;
 	uint32_t dirty_way = 0;
+
 	for ( set_index = 0; 
 			cleaned && (set_index < num_sets);
 			set_index++ )
@@ -1841,12 +1842,14 @@ TestAndCleanDCache()
 				cleaned && (way_index < num_ways); 
 				way_index++ )
 		{
-			if ( (dcache.GetValid(set_index, way_index) != 0)
-					&& (dcache.GetDirty(set_index, way_index) != 0) )
+			if ( dcache.GetValid(set_index, way_index) != 0 )
 			{
-				cleaned = false;
-				dirty_set = set_index;
-				dirty_way = way_index;
+				if ( dcache.GetDirty(set_index, way_index) != 0 )
+				{
+					cleaned = false;
+					dirty_set = set_index;
+					dirty_way = way_index;
+				}
 			}
 		}
 	}
@@ -1856,9 +1859,11 @@ TestAndCleanDCache()
 		/* Get the address and data of the dirty line */
 		uint32_t mva = dcache.GetBaseAddress(dirty_set, dirty_way);
 		uint32_t pa = mva;
-		TranslateMVA(mva, pa);
+		if ( likely(cp15.IsMMUEnabled()) )
+			TranslateMVA(mva, pa);
 		uint8_t *data = 0;
 		dcache.GetData(dirty_set, dirty_way, &data);
+
 		/* Write the data into memory */
 		PrWrite(pa, data, dcache.LINE_SIZE);
 		/* Set the line as clean */
@@ -1870,13 +1875,15 @@ TestAndCleanDCache()
 				cleaned && (set_index < num_sets);
 				set_index++ )
 		{
-			for ( way_index = dirty_way;
+			for ( way_index = 0; // we might be doing some useless work
 					cleaned && (way_index < num_ways);
 					way_index++ )
 			{
 				if ( (dcache.GetValid(set_index, way_index) != 0)
 						&& (dcache.GetDirty(set_index, way_index) != 0) )
+				{
 					cleaned = false;
+				}
 			}
 		}
 	}
