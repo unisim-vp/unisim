@@ -62,7 +62,7 @@ public:
 	static const unsigned int TCSR0_PWMA0_OFFSET = 9;
 	static const unsigned int TCSR0_T0INT_OFFSET = 8;
 	static const unsigned int TCSR0_ENT0_OFFSET = 7;
-	static const unsigned int TCSR0_EINT0_OFFSET = 6;
+	static const unsigned int TCSR0_ENIT0_OFFSET = 6;
 	static const unsigned int TCSR0_LOAD0_OFFSET = 5;
 	static const unsigned int TCSR0_ARHT0_OFFSET = 4;
 	static const unsigned int TCSR0_CAPT0_OFFSET = 3;
@@ -74,7 +74,7 @@ public:
 	static const unsigned int TCSR0_PWMA0_BITSIZE = 1;
 	static const unsigned int TCSR0_T0INT_BITSIZE = 1;
 	static const unsigned int TCSR0_ENT0_BITSIZE = 1;
-	static const unsigned int TCSR0_EINT0_BITSIZE = 1;
+	static const unsigned int TCSR0_ENIT0_BITSIZE = 1;
 	static const unsigned int TCSR0_LOAD0_BITSIZE = 1;
 	static const unsigned int TCSR0_ARHT0_BITSIZE = 1;
 	static const unsigned int TCSR0_CAPT0_BITSIZE = 1;
@@ -86,7 +86,7 @@ public:
 	static const uint32_t TCSR0_PWMA0_MASK = ((1UL << TCSR0_PWMA0_BITSIZE) - 1) << TCSR0_PWMA0_OFFSET;
 	static const uint32_t TCSR0_T0INT_MASK = ((1UL << TCSR0_T0INT_BITSIZE) - 1) << TCSR0_T0INT_OFFSET;
 	static const uint32_t TCSR0_ENT0_MASK = ((1UL << TCSR0_ENT0_BITSIZE) - 1) << TCSR0_ENT0_OFFSET;
-	static const uint32_t TCSR0_EINT0_MASK = ((1UL << TCSR0_EINT0_BITSIZE) - 1) << TCSR0_EINT0_OFFSET;
+	static const uint32_t TCSR0_ENIT0_MASK = ((1UL << TCSR0_ENIT0_BITSIZE) - 1) << TCSR0_ENIT0_OFFSET;
 	static const uint32_t TCSR0_LOAD0_MASK = ((1UL << TCSR0_LOAD0_BITSIZE) - 1) << TCSR0_LOAD0_OFFSET;
 	static const uint32_t TCSR0_ARHT0_MASK = ((1UL << TCSR0_ARHT0_BITSIZE) - 1) << TCSR0_ARHT0_OFFSET;
 	static const uint32_t TCSR0_CAPT0_MASK = ((1UL << TCSR0_CAPT0_BITSIZE) - 1) << TCSR0_CAPT0_OFFSET;
@@ -95,7 +95,7 @@ public:
 	static const uint32_t TCSR0_MDT0_MASK = ((1UL << TCSR0_MDT0_BITSIZE) - 1) << TCSR0_MDT0_OFFSET;
 
 	static const uint32_t TCSR0_MASK = TCSR0_ENALL_MASK | TCSR0_PWMA0_MASK | TCSR0_T0INT_MASK | TCSR0_ENT0_MASK |
-	                                   TCSR0_EINT0_MASK | TCSR0_LOAD0_MASK | TCSR0_ARHT0_MASK | TCSR0_CAPT0_MASK |
+	                                   TCSR0_ENIT0_MASK | TCSR0_LOAD0_MASK | TCSR0_ARHT0_MASK | TCSR0_CAPT0_MASK |
 	                                   TCSR0_GENT0_MASK | TCSR0_UDT0_MASK | TCSR0_MDT0_MASK;
 };
 
@@ -106,7 +106,7 @@ public:
 	static const unsigned int TCSR1_PWMB0_OFFSET = 9;
 	static const unsigned int TCSR1_T1INT_OFFSET = 8;
 	static const unsigned int TCSR1_ENT1_OFFSET = 7;
-	static const unsigned int TCSR1_EINT1_OFFSET = 6;
+	static const unsigned int TCSR1_ENIT1_OFFSET = 6;
 	static const unsigned int TCSR1_LOAD1_OFFSET = 5;
 	static const unsigned int TCSR1_ARHT1_OFFSET = 4;
 	static const unsigned int TCSR1_CAPT1_OFFSET = 3;
@@ -118,7 +118,7 @@ public:
 	static const unsigned int TCSR1_PWMB0_BITSIZE = 1;
 	static const unsigned int TCSR1_T1INT_BITSIZE = 1;
 	static const unsigned int TCSR1_ENT1_BITSIZE = 1;
-	static const unsigned int TCSR1_EINT1_BITSIZE = 1;
+	static const unsigned int TCSR1_ENIT1_BITSIZE = 1;
 	static const unsigned int TCSR1_LOAD1_BITSIZE = 1;
 	static const unsigned int TCSR1_ARHT1_BITSIZE = 1;
 	static const unsigned int TCSR1_CAPT1_BITSIZE = 1;
@@ -130,7 +130,7 @@ public:
 	static const uint32_t TCSR1_PWMB0_MASK = ((1UL << TCSR1_PWMB0_BITSIZE) - 1) << TCSR1_PWMB0_OFFSET;
 	static const uint32_t TCSR1_T1INT_MASK = ((1UL << TCSR1_T1INT_BITSIZE) - 1) << TCSR1_T1INT_OFFSET;
 	static const uint32_t TCSR1_ENT1_MASK = ((1UL << TCSR1_ENT1_BITSIZE) - 1) << TCSR1_ENT1_OFFSET;
-	static const uint32_t TCSR1_EINT1_MASK = ((1UL << TCSR1_EINT1_BITSIZE) - 1) << TCSR1_EINT1_OFFSET;
+	static const uint32_t TCSR1_ENIT1_MASK = ((1UL << TCSR1_ENIT1_BITSIZE) - 1) << TCSR1_ENIT1_OFFSET;
 	static const uint32_t TCSR1_LOAD1_MASK = ((1UL << TCSR1_LOAD1_BITSIZE) - 1) << TCSR1_LOAD1_OFFSET;
 	static const uint32_t TCSR1_ARHT1_MASK = ((1UL << TCSR1_ARHT1_BITSIZE) - 1) << TCSR1_ARHT1_OFFSET;
 	static const uint32_t TCSR1_CAPT1_MASK = ((1UL << TCSR1_CAPT1_BITSIZE) - 1) << TCSR1_CAPT1_OFFSET;
@@ -139,7 +139,7 @@ public:
 	static const uint32_t TCSR1_MDT1_MASK = ((1UL << TCSR1_MDT1_BITSIZE) - 1) << TCSR1_MDT1_OFFSET;
 
 	static const uint32_t TCSR1_MASK = TCSR1_ENALL_MASK | TCSR1_PWMB0_MASK | TCSR1_T1INT_MASK | TCSR1_ENT1_MASK |
-	                                   TCSR1_EINT1_MASK | TCSR1_LOAD1_MASK | TCSR1_ARHT1_MASK | TCSR1_CAPT1_MASK |
+	                                   TCSR1_ENIT1_MASK | TCSR1_LOAD1_MASK | TCSR1_ARHT1_MASK | TCSR1_CAPT1_MASK |
 	                                   TCSR1_GENT1_MASK | TCSR1_UDT1_MASK | TCSR1_MDT1_MASK;
 };
 

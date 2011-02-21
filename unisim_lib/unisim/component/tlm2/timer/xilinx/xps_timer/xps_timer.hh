@@ -98,6 +98,8 @@ public:
 	XPS_Timer(const sc_module_name& name, Object *parent = 0);
 	virtual ~XPS_Timer();
 	
+	virtual bool BeginSetup();
+	
 	// PLB interface
 	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
@@ -115,6 +117,7 @@ public:
 	virtual tlm::tlm_sync_enum interrupt_nb_transport_bw(unsigned int channel, InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 	void Process();
+	
 protected:
 private:
 	void AlignToClock(sc_time& t);
@@ -160,16 +163,16 @@ private:
 		typedef enum
 		{
 			// In order of priority
-			EV_GENERIC,           // a generic event
+			EV_WAKE_UP,           // a simple event to make process wake up
+			EV_LOAD,              // an event to make load or reload counters
 			EV_CAPTURE_TRIGGER,   // a capture trigger input is available
 			EV_CPU,               // a CPU request occured
 		} Type;
 		
 		Event()
-			: type(EV_GENERIC)
+			: type(EV_WAKE_UP)
 			, time_stamp(SC_ZERO_TIME)
 			, cpu_payload(0)
-			, capture_trigger_payload(0)
 			, channel(0)
 			, ev_completed(0)
 		{
@@ -180,38 +183,43 @@ private:
 			Clear();
 		}
 		
-		void Initialize(tlm::tlm_generic_payload *_payload, const sc_time& _time_stamp, sc_event *_ev_completed = 0)
+		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_time& _time_stamp, sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
 			type = EV_CPU;
 			time_stamp = _time_stamp;
 			cpu_payload = _payload;
+			channel = 0;
 			ev_completed = _ev_completed;
 		}
 		
-		void Initialize(CaptureTriggerPayload *_payload, unsigned int _channel, const sc_time& _time_stamp)
+		void InitializeCaptureTriggerEvent(unsigned int _channel, const sc_time& _time_stamp)
 		{
-			_payload->acquire();
 			type = EV_CAPTURE_TRIGGER;
 			time_stamp = _time_stamp;
-			capture_trigger_payload = _payload;
 			channel = _channel;
 		}
-		
-		void Initialize(const sc_time& _time_stamp)
+
+		void InitializeLoadEvent(unsigned int _channel, const sc_time& _time_stamp)
 		{
-			type = EV_GENERIC;
+			type = EV_LOAD;
 			time_stamp = _time_stamp;
+			channel = _channel;
 		}
-		
+
+		void InitializeWakeUpEvent(const sc_time& _time_stamp)
+		{
+			type = EV_WAKE_UP;
+			time_stamp = _time_stamp;
+			channel = 0;
+		}
+
 		void Clear()
 		{
 			if(cpu_payload) cpu_payload->release();
-			if(capture_trigger_payload) capture_trigger_payload->release();
-			type = EV_GENERIC;
+			type = EV_WAKE_UP;
 			time_stamp = SC_ZERO_TIME;
 			cpu_payload = 0;
-			capture_trigger_payload = 0;
 			channel = 0;
 			ev_completed = 0;
 		}
@@ -236,11 +244,6 @@ private:
 			return cpu_payload;
 		}
 		
-		CaptureTriggerPayload *GetCaptureTriggerPayload() const
-		{
-			return capture_trigger_payload;
-		}
-		
 		unsigned int GetChannel() const
 		{
 			return channel;
@@ -255,7 +258,6 @@ private:
 		Type type;
 		sc_time time_stamp;
 		tlm::tlm_generic_payload *cpu_payload;
-		CaptureTriggerPayload *capture_trigger_payload;
 		unsigned int channel;
 		sc_event *ev_completed;
 	};
@@ -302,16 +304,18 @@ private:
 	class ScheduleKey
 	{
 	public:
-		ScheduleKey(const sc_time& _time_stamp, typename Event::Type _type)
+		ScheduleKey(const sc_time& _time_stamp, typename Event::Type _type, unsigned int _channel)
 			: time_stamp(_time_stamp)
 			, type(_type)
+			, channel(_channel)
 		{
 		}
 		
 		int operator < (const ScheduleKey& sk) const
 		{
-			return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && (type < sk.type));
+			return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (channel < sk.channel))));
 		}
+		
 		const sc_time& GetTimeStamp() const
 		{
 			return time_stamp;
@@ -319,6 +323,7 @@ private:
 	private:
 		sc_time time_stamp;
 		typename Event::Type type;
+		unsigned int channel;
 	};
 	
 	class Schedule
@@ -342,30 +347,82 @@ private:
 			}
 		}
 		
-		void Notify(tlm::tlm_generic_payload *payload, const sc_time& time_stamp, sc_event *ev_completed = 0)
+		void NotifyCPUEvent(tlm::tlm_generic_payload *payload, const sc_time& time_stamp, sc_event *ev_completed = 0)
 		{
+			std::cerr << "NotifyCPUEvent at " << time_stamp << std::endl;
+			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_CPU, 0);
+			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
+			if(it != schedule.end())
+			{
+				if((*it).second->GetCPUPayload() == payload) return; // Already scheduled
+			}
 			Event *event = event_allocator.AllocEvent();
-			event->Initialize(payload, time_stamp, ev_completed);
-			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, Event::EV_CPU), event));
+			event->InitializeCPUEvent(payload, time_stamp, ev_completed);
+			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
 		}
 		
-		void Notify(CaptureTriggerPayload *payload, unsigned int channel, const sc_time& time_stamp)
+		void NotifyCaptureTriggerEvent(unsigned int channel, const sc_time& time_stamp)
 		{
+			std::cerr << "NotifyCaptureTriggerEvent at " << time_stamp << std::endl;
+			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_CAPTURE_TRIGGER, channel);
+			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
+			if(it != schedule.end())
+			{
+				if((*it).second->GetChannel() == channel) return; // Already scheduled
+			}
 			Event *event = event_allocator.AllocEvent();
-			event->Initialize(payload, channel, time_stamp);
-			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, Event::EV_CAPTURE_TRIGGER), event));
+			event->InitializeCaptureTriggerEvent(channel, time_stamp);
+			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
 		}
-		
-		void Notify(const sc_time& time_stamp)
+
+		void NotifyLoadEvent(unsigned int channel, const sc_time& time_stamp)
 		{
+			std::cerr << "NotifyLoadEvent at " << time_stamp << std::endl;
+			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_LOAD, channel);
+			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
+			if(it != schedule.end())
+			{
+				if((*it).second->GetChannel() == channel)
+				{
+					std::cerr << "!!! Already scheduled" << std::endl;
+					return; // Already scheduled
+				}
+			}
 			Event *event = event_allocator.AllocEvent();
-			event->Initialize(time_stamp);
-			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, Event::EV_GENERIC), event));
+			event->InitializeLoadEvent(channel, time_stamp);
+			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
+		}
+
+		void NotifyWakeUpEvent(const sc_time& time_stamp)
+		{
+			std::cerr << "NotifyWakeUpEvent at " << time_stamp << std::endl;
+			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_WAKE_UP, 0);
+			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
+			if(it != schedule.end()) return; // Already scheduled
+			Event *event = event_allocator.AllocEvent();
+			event->InitializeWakeUpEvent(time_stamp);
+			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
 		}
 		
 		void Notify(Event *event)
 		{
-			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(event->GetTimeStamp(), event->GetType()), event));
+			const sc_time& time_stamp = event->GetTimeStamp();
+			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, event->GetType(), event->GetChannel()), event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
 		}
 		
 		Event *GetNextEvent(const sc_time& time_stamp)
@@ -381,7 +438,9 @@ private:
 				return event;
 			}
 			
-			kernel_event.notify(event_time_stamp - time_stamp);
+			sc_time t(event_time_stamp);
+			t -= time_stamp;
+			kernel_event.notify(t);
 			
 			return 0;
 		}
@@ -396,6 +455,35 @@ private:
 			return kernel_event;
 		}
 		
+		void Flush(const sc_time& time_stamp, typename Event::Type event_type)
+		{
+			typename std::multimap<ScheduleKey, Event *>::iterator it;
+			for(it = schedule.begin(); it != schedule.end(); it++)
+			{
+				Event *event = (*it).second;
+				
+				if(event->GetType() == event_type)
+				{
+					event_allocator.FreeEvent(event);
+					schedule.erase(it);
+				}
+			}
+			kernel_event.cancel();
+
+			if(schedule.empty()) return;
+			
+			it = schedule.begin();
+			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			if(event_time_stamp <= time_stamp)
+			{
+				return;
+			}
+			
+			sc_time t(event_time_stamp);
+			t -= time_stamp;
+			kernel_event.notify(t);
+		}
+
 		void Clear()
 		{
 			typename std::multimap<ScheduleKey, Event *>::iterator it;
@@ -408,6 +496,7 @@ private:
 			schedule.clear();
 			kernel_event.cancel();
 		}
+
 	private:
 		std::multimap<ScheduleKey, Event *> schedule;
 		
@@ -429,7 +518,7 @@ private:
 	bool interrupt_output;
 	bool generate_output[2];
 	bool pwm_output;
-	sc_time last_timer_counter_update_time_stamp;
+	sc_time last_timer_counter_update_time_stamp[2];
 	sc_time last_generate_output_time_stamp[2];
 	bool tcr0_roll_over;
 	bool tcr1_roll_over;
@@ -450,9 +539,11 @@ private:
 	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 	Schedule schedule;
 	
+	void ProcessLoadEvent(Event *event);
 	void ProcessCaptureTriggerEvent(Event *event);
 	void ProcessCPUEvent(Event *event);
-	void UpdateTimerCounters();
+	void RunCounters();
+	void Update();
 	void GenerateOutput();
 };
 

@@ -65,7 +65,6 @@ XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
 	, read_latency()
 	, write_latency()
 	, interrupt_output(false)
-	, last_timer_counter_update_time_stamp(SC_ZERO_TIME)
 	, tcr0_roll_over(false)
 	, tcr1_roll_over(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
@@ -83,6 +82,8 @@ XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
 	generate_output[1] = false;
 	last_generate_output_time_stamp[0] = SC_ZERO_TIME;
 	last_generate_output_time_stamp[1] = SC_ZERO_TIME;
+	last_timer_counter_update_time_stamp[0] = SC_ZERO_TIME;
+	last_timer_counter_update_time_stamp[1] = SC_ZERO_TIME;
 
 	slave_sock(*this); // Bind socket to implementer of interface
 	
@@ -140,6 +141,17 @@ XPS_Timer<CONFIG>::~XPS_Timer()
 
 	delete pwm_redirector;
 	delete interrupt_redirector;
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::BeginSetup()
+{
+	if(cycle_time == SC_ZERO_TIME)
+	{
+		inherited::logger << DebugError << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
+		return false;
+	}
+	return inherited::BeginSetup();
 }
 
 template <class CONFIG>
@@ -237,7 +249,7 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& 
 				sc_time notify_time_stamp(sc_time_stamp());
 				notify_time_stamp += t;
 				AlignToClock(notify_time_stamp);
-				schedule.Notify(&payload, notify_time_stamp);
+				schedule.NotifyCPUEvent(&payload, notify_time_stamp);
 				return tlm::TLM_ACCEPTED;
 			}
 			break;
@@ -271,7 +283,7 @@ void XPS_Timer<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::
 	sc_time notify_time_stamp(sc_time_stamp());
 	notify_time_stamp += t;
 	AlignToClock(notify_time_stamp);
-	schedule.Notify(&payload, notify_time_stamp, &ev_completed);
+	schedule.NotifyCPUEvent(&payload, notify_time_stamp, &ev_completed);
 	wait(ev_completed);
 	t = SC_ZERO_TIME;
 }
@@ -285,10 +297,26 @@ void XPS_Timer<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_
 template <class CONFIG>
 void XPS_Timer<CONFIG>::capture_trigger_b_transport(unsigned int channel, CaptureTriggerPayload& payload, sc_core::sc_time& t)
 {
-	sc_time notify_time_stamp(sc_time_stamp());
-	notify_time_stamp += t;
-	AlignToClock(notify_time_stamp);
-	schedule.Notify(&payload, channel, notify_time_stamp);
+	if((!CONFIG::C_ONE_TIMER_ONLY && (channel < 2)) || (channel == 0))
+	{
+		bool level = payload.GetValue();
+		if((((channel == 0) ? CONFIG::C_TRIG0_ASSERT : CONFIG::C_TRIG1_ASSERT) && !capture_trigger_input[channel] && level) ||
+		(((channel == 0) ? !CONFIG::C_TRIG0_ASSERT : !CONFIG::C_TRIG1_ASSERT) && capture_trigger_input[channel] && !level))
+		{
+			// capture event
+			sc_time notify_time_stamp(sc_time_stamp());
+			notify_time_stamp += t;
+
+			AlignToClock(notify_time_stamp);
+			schedule.NotifyCaptureTriggerEvent(channel, notify_time_stamp);
+		}
+		capture_trigger_input[channel] = level;
+	}
+	else
+	{
+		inherited::logger << DebugError << "protocol error (invalid channel number)" << EndDebugError;
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
@@ -298,7 +326,7 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw(unsigned i
 	{
 		case tlm::BEGIN_REQ:
 			{
-				if(!CONFIG::C_ONE_TIMER_ONLY || (channel == 0))
+				if((!CONFIG::C_ONE_TIMER_ONLY && (channel < 2)) || (channel == 0))
 				{
 					bool level = payload.GetValue();
 					if((((channel == 0) ? CONFIG::C_TRIG0_ASSERT : CONFIG::C_TRIG1_ASSERT) && !capture_trigger_input[channel] && level) ||
@@ -309,8 +337,14 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw(unsigned i
 						notify_time_stamp += t;
 
 						AlignToClock(notify_time_stamp);
-						schedule.Notify(&payload, channel, notify_time_stamp);
+						schedule.NotifyCaptureTriggerEvent(channel, notify_time_stamp);
 					}
+					capture_trigger_input[channel] = level;
+				}
+				else
+				{
+					inherited::logger << DebugError << "protocol error (invalid channel number)" << EndDebugError;
+					Object::Stop(-1);
 				}
 				
 				phase = tlm::END_REQ;
@@ -384,14 +418,18 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::interrupt_nb_transport_bw(unsigned int cha
 template <class CONFIG>
 void XPS_Timer<CONFIG>::Process()
 {
-	UpdateTimerCounters(); // Compute the timer/counter values at the event time stamp
+	RunCounters(); // Compute the timer/counter values at the event time stamp
 	GenerateOutput();      // Generate "generate out", PWM and interrupt signals
+	Update(); // Update state and post events
 	while(1)
 	{
 		wait(schedule.GetKernelEvent());
 		time_stamp = sc_time_stamp();
-		UpdateTimerCounters(); // Compute the timer/counter values at the event time stamp
-		GenerateOutput();      // Generate "generate out", PWM and interrupt signals
+		if(inherited::IsVerbose())
+		{
+			inherited::logger << DebugInfo << "Waking up at " << time_stamp << EndDebugInfo;
+		}
+		RunCounters(); // Compute the timer/counter values at the event time stamp
 		
 		Event *event = schedule.GetNextEvent(time_stamp);
 		
@@ -399,7 +437,7 @@ void XPS_Timer<CONFIG>::Process()
 		{
 			do
 			{
-				if(event->GetTimeStamp() != time_stamp)
+				if((event->GetTimeStamp() != time_stamp) || ((time_stamp.value() % cycle_time.value()) != 0))
 				{
 					inherited::logger << DebugError << "Internal error" << EndDebugError;
 					Object::Stop(-1);
@@ -407,8 +445,12 @@ void XPS_Timer<CONFIG>::Process()
 	
 				switch(event->GetType())
 				{
-					case Event::EV_GENERIC:
+					case Event::EV_WAKE_UP:
 						// Nothing to do
+						schedule.FreeEvent(event);
+						break;
+					case Event::EV_LOAD:
+						ProcessLoadEvent(event);
 						schedule.FreeEvent(event);
 						break;
 					case Event::EV_CAPTURE_TRIGGER:
@@ -433,6 +475,31 @@ void XPS_Timer<CONFIG>::Process()
 			}
 			while((event = schedule.GetNextEvent(time_stamp)) != 0);
 		}
+		
+		Update();              // Update state
+		GenerateOutput();      // Generate "generate out", PWM and interrupt signals
+	}
+}
+
+template <class CONFIG>
+void XPS_Timer<CONFIG>::ProcessLoadEvent(Event *event)
+{
+	switch(event->GetChannel())
+	{
+		case 0:
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << "Processing a TCR0 load/reload (TCR0 <- 0x" << std::hex << inherited::GetTLR0() << std::dec << ") at " << time_stamp << EndDebugInfo;
+			}
+			inherited::SetTCR0(inherited::GetTLR0());
+			break;
+		case 1:
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << "Processing a TCR1 load/reload (TCR1 <- 0x" << std::hex << inherited::GetTLR1() << std::dec << ") at " << time_stamp << EndDebugInfo;
+			}
+			inherited::SetTCR1(inherited::GetTLR1());
+			break;
 	}
 }
 
@@ -442,44 +509,10 @@ void XPS_Timer<CONFIG>::ProcessCaptureTriggerEvent(Event *event)
 	switch(event->GetChannel())
 	{
 		case 0:
-			// Capture mode (channel 0)
-			if(inherited::GetTCSR0_CAPT0())
-			{
-				// Timer 0 is in capture mode
-				if(inherited::GetTCSR0_MDT0())
-				{
-					// External capture trigger Timer 0 enabled
-					if(!inherited::GetTCSR0_T0INT() || inherited::GetTCSR0_ARHT0())
-					{
-						// Overwrite capture value
-						// Snap counter/timer 0
-						inherited::SetTLR0(inherited::GetTCR0());
-						inherited::SetTCSR0_T0INT(1);
-					}
-				}
-			}
+			inherited::CaptureTrigger0();
 			break;
 		case 1:
-			// Capture mode (channel 1)
-			if(!CONFIG::C_ONE_TIMER_ONLY)
-			{
-				// Timer 1 is available
-				if(inherited::GetTCSR1_CAPT1())
-				{
-					// Timer 1 is in capture mode
-					if(inherited::GetTCSR1_MDT1())
-					{
-						// External capture trigger Timer 1 enabled
-						if(!inherited::GetTCSR1_T1INT() || inherited::GetTCSR1_ARHT1())
-						{
-							// Overwrite capture value
-							// Snap counter/timer 1
-							inherited::SetTLR1(inherited::GetTCR1());
-							inherited::SetTCSR1_T1INT(1);
-						}
-					}
-				}
-			}
+			inherited::CaptureTrigger1();
 			break;
 	}
 }
@@ -530,7 +563,7 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< ":" << time_stamp.to_string()
+					<< time_stamp
 					<< ": byte enable is unsupported"
 					<< EndDebugInfo;
 			}
@@ -547,6 +580,7 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 					if(inherited::IsVerbose())
 					{
 						inherited::logger << DebugInfo << LOCATION
+							<< time_stamp
 							<< ": processing a TLM_READ_COMMAND payload at 0x"
 							<< std::hex << addr << std::dec
 							<< EndDebugInfo;
@@ -562,6 +596,7 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 					if(inherited::IsVerbose())
 					{
 						inherited::logger << DebugInfo << LOCATION
+							<< time_stamp
 							<< ": processing a TLM_WRITE_COMMAND payload at 0x"
 							<< std::hex << addr << std::dec
 							<< EndDebugInfo;
@@ -576,6 +611,7 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 				if(inherited::IsVerbose())
 				{
 					inherited::logger << DebugInfo << LOCATION
+						<< time_stamp
 						<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 						<< std::hex << addr << std::dec
 						<< EndDebugInfo;
@@ -662,7 +698,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time += cycle_time;
-				schedule.Notify(end_of_pulse_time); // pulse ends after one clock cycle
+				schedule.NotifyWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
 			}
 			else if(generate_output[0] == CONFIG::C_GEN0_ASSERT)
 			{
@@ -708,7 +744,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time += cycle_time;
-				schedule.Notify(end_of_pulse_time); // pulse ends after one clock cycle
+				schedule.NotifyWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
 			}
 			else if(generate_output[1] == CONFIG::C_GEN1_ASSERT)
 			{
@@ -733,9 +769,14 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 		}
 	}
 	
-	bool level = inherited::GetTCSR0_T0INT() || inherited::GetTCSR1_T1INT();
+	bool level = (inherited::GetTCSR0_ENIT0() && inherited::GetTCSR0_T0INT()) || (inherited::GetTCSR1_ENIT1() && inherited::GetTCSR1_T1INT());
 	if(interrupt_output != level)
 	{
+		if(inherited::IsVerbose())
+		{
+			inherited::logger << DebugInfo << "At " << time_stamp << ", interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
+		}
+		
 		InterruptPayload *interrupt_payload = interrupt_payload_fabric.allocate();
 
 		interrupt_payload->SetValue(true);
@@ -762,94 +803,140 @@ void XPS_Timer<CONFIG>::AlignToClock(sc_time& t)
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::UpdateTimerCounters()
+void XPS_Timer<CONFIG>::RunCounters()
 {
-	uint32_t delta_count = 0;
-	
-	if((!inherited::GetTCSR0_LOAD0() && inherited::GetTCSR0_ENT0()) || (!CONFIG::C_ONE_TIMER_ONLY && !inherited::GetTCSR1_LOAD1() && inherited::GetTCSR1_ENT1()))
+	// Note: time_stamp is supposed to be a multiple of cycle_time
+	// Update TCR0 according to spent simulation time
+	// Also detect TCR0 roll over
+	if(inherited::GetTCSR0_ENT0())
 	{
-		// At least one timer/counter is updated as time advances
+		// Timer0 enabled
+
+		// Compute delta time since last update
 		sc_time delta_time(time_stamp);
-		delta_time -= last_timer_counter_update_time_stamp;
+		delta_time -= last_timer_counter_update_time_stamp[0];
 		double delta = floor(delta_time / cycle_time);
 		if(delta > (double) CONFIG::MAX_COUNT)
 		{
-			inherited::logger << DebugError << "Internal error: count overflow" << EndDebugError;
+			inherited::logger << DebugError << "Internal error: TCR0 count overflow" << EndDebugError;
 			Object::Stop(-1);
 		}
-		delta_count = (uint32_t) delta;
-	}
-	
-	if(inherited::GetTCSR0_LOAD0())
-	{
-		// Load TCR0 from TLR0
-		inherited::SetTCR0(inherited::GetTLR0());
-	}
-	else
-	{
-		if(inherited::GetTCSR0_ENT0())
+		uint32_t delta_count = (uint32_t) delta;
+		if(inherited::IsVerbose())
 		{
-			// Timer0 enabled
-			uint32_t old_tcr0 = inherited::GetTCR0();
-			if(inherited::GetTCSR0_UDT0())
-			{
-				// Down counter
-				uint32_t new_tcr0 = (old_tcr0 - delta_count) & CONFIG::MAX_COUNT;
-				inherited::SetTCR0(new_tcr0);
-				tcr0_roll_over = new_tcr0 > old_tcr0;
-			}
-			else
-			{
-				// Up counter
-				uint32_t new_tcr0 = (old_tcr0 + delta_count) & CONFIG::MAX_COUNT;
-				inherited::SetTCR0(new_tcr0);
-				tcr0_roll_over = new_tcr0 < old_tcr0;
-			}
+			inherited::logger << DebugInfo << delta_count << " cycles elapsed since last update of TCR0" << EndDebugInfo;
 		}
-		else
+
+		tcr0_roll_over = inherited::RunCounter0(delta_count);
+		
+		if(inherited::IsVerbose() && tcr0_roll_over)
 		{
-			// Leave Timer/counter 0 unchanged
-			tcr0_roll_over = false;
+			inherited::logger << DebugInfo << "TCR0 rolls over (0x" << std::hex << inherited::GetTCR0() << std::dec << ")" << EndDebugInfo;
 		}
+		
+		last_timer_counter_update_time_stamp[0] = time_stamp;
 	}
 	
 	if(!CONFIG::C_ONE_TIMER_ONLY)
 	{
-		if(inherited::GetTCSR1_LOAD1())
+		// Update TCR1 according to spent simulation time
+		// Also detect TCR1 roll over
+		if(inherited::GetTCSR1_ENT1())
 		{
-			// Load TCR1 from TLR1
-			inherited::SetTCR1(inherited::GetTLR1());
+			// Timer1 enabled
+
+			// Compute delta time since last update
+			sc_time delta_time(time_stamp);
+			delta_time -= last_timer_counter_update_time_stamp[1];
+			double delta = floor(delta_time / cycle_time);
+			if(delta > (double) CONFIG::MAX_COUNT)
+			{
+				inherited::logger << DebugError << "Internal error: TCR1 count overflow" << EndDebugError;
+				Object::Stop(-1);
+			}
+			uint32_t delta_count = (uint32_t) delta;
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << delta_count << " cycles elapsed since last update of TCR1" << EndDebugInfo;
+			}
+
+			tcr1_roll_over = inherited::RunCounter1(delta_count);
+
+			if(inherited::IsVerbose() && tcr1_roll_over)
+			{
+				inherited::logger << DebugInfo << "TCR1 rolls over (0x" << std::hex << inherited::GetTCR1() << std::dec << ")" << EndDebugInfo;
+			}
+			
+			last_timer_counter_update_time_stamp[1] = time_stamp;
 		}
-		else
+	}
+}
+
+template <class CONFIG>
+void XPS_Timer<CONFIG>::Update()
+{
+	inherited::Update(); // Write back modified registers
+
+	if(inherited::GetTCSR0_ENT0())
+	{
+		// timer 0 runs
+		last_timer_counter_update_time_stamp[0] = time_stamp;
+							
+		// Notify roll over
+		sc_time notify_time_stamp(cycle_time);
+		notify_time_stamp *= inherited::GetTCSR0_UDT0() ? ((inherited::GetTCR0() != CONFIG::MAX_COUNT) ? inherited::GetTCR0() + 1 : 0) : ((inherited::GetTCR0() != 0) ? CONFIG::MAX_COUNT - inherited::GetTCR0() + 1 : 0);
+		notify_time_stamp += time_stamp;
+		
+		if(notify_time_stamp != time_stamp)
 		{
-			if(inherited::GetTCSR1_ENT1())
+			if(inherited::IsVerbose())
 			{
-				// Timer1 enabled
-				uint32_t old_tcr1 = inherited::GetTCR1();
-				if(inherited::GetTCSR1_UDT1())
-				{
-					// Down counter
-					uint32_t new_tcr1 = (old_tcr1 - delta_count) & CONFIG::MAX_COUNT;
-					inherited::SetTCR1(new_tcr1);
-					tcr1_roll_over = new_tcr1 > old_tcr1;
-				}
-				else
-				{
-					// Up counter
-					uint32_t new_tcr1 = (old_tcr1 + delta_count) & CONFIG::MAX_COUNT;
-					inherited::SetTCR1(new_tcr1);
-					tcr1_roll_over = new_tcr1 < old_tcr1;
-				}
+				inherited::logger << DebugInfo << "TCR0 (0x" << std::hex << inherited::GetTCR0() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
 			}
-			else
-			{
-				// Leave Timer/counter 1 unchanged
-				tcr1_roll_over = false;
-			}
+			schedule.NotifyWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
 		}
 	}
 	
-	last_timer_counter_update_time_stamp = time_stamp;
+	if(inherited::GetTCSR1_ENT1())
+	{
+		// timer 1 runs
+		last_timer_counter_update_time_stamp[1] = time_stamp;
+							
+		// Notify roll over
+		sc_time notify_time_stamp(cycle_time);
+		notify_time_stamp *= inherited::GetTCSR1_UDT1() ? ((inherited::GetTCR1() != CONFIG::MAX_COUNT) ? inherited::GetTCR1() + 1 : 0) : ((inherited::GetTCR1() != 0) ? CONFIG::MAX_COUNT - inherited::GetTCR1() + 1 : 0);
+		notify_time_stamp += time_stamp;
+		if(notify_time_stamp != time_stamp)
+		{
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << "TCR1 (0x" << std::hex << inherited::GetTCR1() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
+			}
+			schedule.NotifyWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
+		}
+	}
+	
+	if(inherited::NeedsLoadingTCR0())
+	{
+		sc_time notify_time_stamp(cycle_time);
+		notify_time_stamp += time_stamp;
+		schedule.NotifyLoadEvent(0, notify_time_stamp); // schedule a load on next cycle
+		if(inherited::IsVerbose())
+		{
+			inherited::logger << DebugInfo << "TCR0 will be loaded at " << notify_time_stamp << EndDebugInfo;
+		}
+	}
+
+	if(inherited::NeedsLoadingTCR1())
+	{
+		sc_time notify_time_stamp(cycle_time);
+		notify_time_stamp += time_stamp;
+		schedule.NotifyLoadEvent(1, notify_time_stamp); // schedule a load on next cycle
+		if(inherited::IsVerbose())
+		{
+			inherited::logger << DebugInfo << "TCR1 will be loaded at " << notify_time_stamp << EndDebugInfo;
+		}
+	}
 }
 
 template <class CONFIG>

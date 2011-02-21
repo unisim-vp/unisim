@@ -75,22 +75,36 @@ public:
 	template <typename T> void Read(typename CONFIG::MEMORY_ADDR addr, T& value);
 	template <typename T> void Write(typename CONFIG::MEMORY_ADDR addr, T value);
 	bool IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const;
+	
+	void Update();
 protected:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	bool IsVerbose() const;
 private:
-	uint32_t tcsr0;   // Control/Status Register 0
-	uint32_t tlr0;    // Load register 0
-	uint32_t tcr0;    // Timer/Counter Register 0
-	uint32_t tcsr1;   // Control/Status Register 1
-	uint32_t tlr1;    // Load register 1
-	uint32_t tcr1;    // Timer/Counter Register 1
+	static const unsigned int TCSR0_IDX_SHIFT = 0;
+	static const unsigned int TLR0_IDX_SHIFT = 1;
+	static const unsigned int TCR0_IDX_SHIFT = 2;
+	static const unsigned int TCSR1_IDX_SHIFT = 3;
+	static const unsigned int TLR1_IDX_SHIFT = 4;
+	static const unsigned int TCR1_IDX_SHIFT = 5;
 	
-	uint32_t tcsr0_toggle;
-	uint32_t tcsr1_toggle;
-	bool tcr0_toggle;
-	bool tcr1_toggle;
+	unsigned int toggle;
+	unsigned int read_idx;
+	unsigned int write_idx;
+	
+	uint32_t tcsr0[2];   // Control/Status Register 0
+	uint32_t tlr0[2];    // Load register 0
+	uint32_t tcr0[2];    // Timer/Counter Register 0
+	uint32_t tcsr1[2];   // Control/Status Register 1
+	uint32_t tlr1[2];    // Load register 1
+	uint32_t tcr1[2];    // Timer/Counter Register 1
+	
+	
+	bool tcr0_roll_over;
+	bool tcr1_roll_over;
+	
+	void LogTCSR(uint32_t old_tcsr0, uint32_t old_tcsr1, uint32_t new_tcsr0, uint32_t new_tcsr1);
 protected:
 	uint32_t GetTCSR0() const;
 	uint32_t GetTLR0() const;
@@ -105,13 +119,14 @@ protected:
 	void SetTCSR1(uint32_t value);
 	void SetTLR1(uint32_t value);
 	void SetTCR1(uint32_t value);
-	void SetTCSR0_T0INT(uint32_t value);
-	void SetTCSR1_T1INT(uint32_t value);
+	void SetTCSR0_T0INT();
+	void SetTCSR1_T1INT();
 	
 	uint32_t GetTCSR0_ENALL() const;
 	uint32_t GetTCSR0_PWMA0() const;
 	uint32_t GetTCSR0_T0INT() const;
 	uint32_t GetTCSR0_ENT0() const;
+	uint32_t GetTCSR0_ENIT0() const;
 	uint32_t GetTCSR0_LOAD0() const;
 	uint32_t GetTCSR0_ARHT0() const;
 	uint32_t GetTCSR0_CAPT0() const;
@@ -123,13 +138,24 @@ protected:
 	uint32_t GetTCSR1_PWMB0() const;
 	uint32_t GetTCSR1_T1INT() const;
 	uint32_t GetTCSR1_ENT1() const;
-	uint32_t GetTCSR1_EINT1() const;
+	uint32_t GetTCSR1_ENIT1() const;
 	uint32_t GetTCSR1_LOAD1() const;
 	uint32_t GetTCSR1_ARHT1() const;
 	uint32_t GetTCSR1_CAPT1() const;
 	uint32_t GetTCSR1_UDT1() const;
 	uint32_t GetTCSR1_MDT1() const;
-	
+
+	bool IsTCSR0_ENT0_Rising() const;
+	bool IsTCSR1_ENT1_Rising() const;
+	bool IsTCSR0_UDT0_Toggling() const;
+	bool IsTCSR1_UDT1_Toggling() const;
+	bool NeedsLoadingTCR0() const;
+	bool NeedsLoadingTCR1() const;
+
+	bool RunCounter0(uint32_t count);
+	bool RunCounter1(uint32_t count);
+	void CaptureTrigger0();
+	void CaptureTrigger1();
 	Parameter<bool> param_verbose;
 };
 

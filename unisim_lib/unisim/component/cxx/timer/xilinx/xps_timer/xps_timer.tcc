@@ -60,14 +60,26 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	, memory_export("memory-export", this)
 	, logger(*this)
 	, verbose(false)
-	, tcsr0(0)
-	, tlr0(0)
-	, tcr0(0)
-	, tcsr1(0)
-	, tlr1(0)
-	, tcr1(0)
+	, toggle(0)
+	, read_idx(0)
+	, write_idx(~0)
+	, tcr0_roll_over(false)
+	, tcr1_roll_over(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	tcsr0[0] = 0;
+	tcsr0[1] = 0;
+	tlr0[0] = 0;
+	tlr0[1] = 0;
+	tcr0[0] = 0;
+	tcr0[1] = 0;
+	tcsr1[0] = 0;
+	tcsr1[1] = 0;
+	tlr1[0] = 0;
+	tlr1[1] = 0;
+	tcr1[0] = 0;
+	tcr1[1] = 0;
+	
 	std::stringstream sstr_description;
 	sstr_description << "This module implements a Xilinx XPS Timer/Counter (v1.02a). It has the following characteristics:" << std::endl;
 	sstr_description << "PLB data width: " << CONFIG::C_SPLB_DWITH << " bits" << std::endl;
@@ -97,12 +109,23 @@ bool XPS_Timer<CONFIG>::BeginSetup()
 template <class CONFIG>
 void XPS_Timer<CONFIG>::Reset()
 {
-	tcsr0 = 0;
-	tlr0 = 0;
-	tcr0 = 0;
-	tcsr1 = 0;
-	tlr1 = 0;
-	tcr1 = 0;
+	read_idx = 0;
+	write_idx = ~0;
+	toggle = 0;
+	tcsr0[0] = 0;
+	tcsr0[1] = 0;
+	tlr0[0] = 0;
+	tlr0[1] = 0;
+	tcr0[0] = 0;
+	tcr0[1] = 0;
+	tcsr1[0] = 0;
+	tcsr1[1] = 0;
+	tlr1[0] = 0;
+	tlr1[1] = 0;
+	tcr1[0] = 0;
+	tcr1[1] = 0;
+	tcr0_roll_over = false;
+	tcr1_roll_over = false;
 }
 
 template <class CONFIG>
@@ -183,21 +206,6 @@ template <typename T>
 void XPS_Timer<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, T& value)
 {
 	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
-	if(verbose)
-	{
-		logger << DebugInfo << "Reading register 0x" << std::hex << offset << std::dec << "(";
-		switch(offset)
-		{
-			case CONFIG::TCSR0: logger << "tcsr0"; break;
-			case CONFIG::TLR0: logger << "tlr0"; break;
-			case CONFIG::TCR0: logger << "tcr0"; break;
-			case CONFIG::TCSR1: logger << "tcsr1"; break;
-			case CONFIG::TLR1: logger << "tlr1"; break;
-			case CONFIG::TCR1: logger << "tcr1"; break;
-			default: logger << "?"; break;
-		}
-		logger << ")" << EndDebugInfo;
-	}
 	uint32_t reg_value;
 	switch(sizeof(T))
 	{
@@ -240,6 +248,21 @@ void XPS_Timer<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, T& value)
 		default: reg_value = 0; break;
 	}
 	
+	if(verbose)
+	{
+		logger << DebugInfo << "Reading 0x" << std::hex << reg_value << " from register 0x" << offset << std::dec << " (";
+		switch(offset)
+		{
+			case CONFIG::TCSR0: logger << "tcsr0"; break;
+			case CONFIG::TLR0: logger << "tlr0"; break;
+			case CONFIG::TCR0: logger << "tcr0"; break;
+			case CONFIG::TCSR1: logger << "tcsr1"; break;
+			case CONFIG::TLR1: logger << "tlr1"; break;
+			case CONFIG::TCR1: logger << "tcr1"; break;
+			default: logger << "?"; break;
+		}
+		logger << ")" << EndDebugInfo;
+	}
 	value = unisim::util::endian::Host2BigEndian(reg_value);
 }
 
@@ -248,9 +271,10 @@ template <typename T>
 void XPS_Timer<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, T value)
 {
 	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
+	uint32_t reg_value = unisim::util::endian::BigEndian2Host(value);
 	if(verbose)
 	{
-		logger << DebugInfo << "Writing register 0x" << std::hex << offset << std::dec << "(";
+		logger << DebugInfo << "Writing 0x" << std::hex << reg_value << " in register 0x" << offset << std::dec << " (";
 		switch(offset)
 		{
 			case CONFIG::TCSR0: logger << "tcsr0"; break;
@@ -261,8 +285,6 @@ void XPS_Timer<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, T value)
 		}
 		logger << ")" << EndDebugInfo;
 	}
-
-	uint32_t reg_value = unisim::util::endian::BigEndian2Host(value);
 
 	switch(sizeof(T))
 	{
@@ -300,92 +322,332 @@ void XPS_Timer<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, T value)
 }
 
 template <class CONFIG>
+void XPS_Timer<CONFIG>::LogTCSR(uint32_t old_tcsr0, uint32_t old_tcsr1, uint32_t new_tcsr0, uint32_t new_tcsr1)
+{
+	if(((old_tcsr0 & CONFIG::TCSR0_MASK) != (new_tcsr0 & CONFIG::TCSR0_MASK)) || ((old_tcsr1 & CONFIG::TCSR1_MASK) != (new_tcsr1 & CONFIG::TCSR1_MASK)))
+	{
+		// either TCSR0 or TCSR1 have changed
+		logger << DebugInfo << "TCSR:" << std::endl;
+		if(!(old_tcsr0 & CONFIG::TCSR0_ENALL_MASK) && !(old_tcsr1 & CONFIG::TCSR1_ENALL_MASK) && (new_tcsr0 & CONFIG::TCSR0_ENALL_MASK) && (new_tcsr1 & CONFIG::TCSR1_ENALL_MASK))
+		{
+			logger << " - enabling all timers" << std::endl;
+		}
+		if(!CONFIG::C_ONE_TIMER_ONLY && CONFIG::C_GEN0_ASSERT && CONFIG::C_GEN1_ASSERT)
+		{
+			if((!(old_tcsr0 & CONFIG::TCSR0_PWMA0_MASK) || (old_tcsr0 & CONFIG::TCSR0_MDT0_MASK) ||
+			    !(old_tcsr1 & CONFIG::TCSR1_PWMB0_MASK) || (old_tcsr1 & CONFIG::TCSR1_MDT1_MASK)) &&
+			   (new_tcsr0 & CONFIG::TCSR0_PWMA0_MASK) &&
+			   (new_tcsr1 & CONFIG::TCSR1_PWMB0_MASK) &&
+			   !(new_tcsr0 & CONFIG::TCSR0_MDT0_MASK) &&
+			   !(new_tcsr1 & CONFIG::TCSR1_MDT1_MASK))
+			{
+				logger << " - enabling pulse width modulation" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_PWMA0_MASK) && !(old_tcsr0 & CONFIG::TCSR0_MDT0_MASK) &&
+			   (old_tcsr1 & CONFIG::TCSR1_PWMB0_MASK) && !(old_tcsr1 & CONFIG::TCSR1_MDT1_MASK) &&
+			   (!(new_tcsr0 & CONFIG::TCSR0_PWMA0_MASK) ||
+			    !(new_tcsr1 & CONFIG::TCSR1_PWMB0_MASK) ||
+			    (new_tcsr0 & CONFIG::TCSR0_MDT0_MASK) ||
+			    (new_tcsr1 & CONFIG::TCSR1_MDT1_MASK)))
+			{
+				logger << " - disabling pulse width modulation" << std::endl;
+			}
+		}
+	
+		if((old_tcsr0 & CONFIG::TCSR0_MASK) != (new_tcsr0 & CONFIG::TCSR0_MASK))
+		{
+			if(!(old_tcsr0 & CONFIG::TCSR0_T0INT_MASK) && (new_tcsr0 & CONFIG::TCSR0_T0INT_MASK))
+			{
+				logger << " - timer 0 interrupt has occured" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_T0INT_MASK) && !(new_tcsr0 & CONFIG::TCSR0_T0INT_MASK))
+			{
+				logger << " - timer 0 interrupt acknowledged" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_ENT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_ENT0_MASK))
+			{
+				logger << " - enabling timer 0 (counter runs)" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_ENT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_ENT0_MASK))
+			{
+				logger << " - disabling timer 0 (counter halts)" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_ENIT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_ENIT0_MASK))
+			{
+				logger << " - enabling timer 0 interrupt signal" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_ENIT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_ENIT0_MASK))
+			{
+				logger << " - disabling timer 0 interrupt signal" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_LOAD0_MASK) && (new_tcsr0 & CONFIG::TCSR0_LOAD0_MASK))
+			{
+				logger << " - loading timer 0 with value in TLR0" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_LOAD0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_LOAD0_MASK))
+			{
+				logger << " - not loading timer 0" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_ARHT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_ARHT0_MASK))
+			{
+				if(new_tcsr0 & CONFIG::TCSR0_MDT0_MASK)
+				{
+					logger << " - timer 0 will overwrite capture value" << std::endl;
+				}
+				else
+				{
+					logger << " - timer 0 will reload the generate value" << std::endl;
+				}
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_ARHT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_ARHT0_MASK))
+			{
+				if(new_tcsr0 & CONFIG::TCSR0_MDT0_MASK)
+				{
+					logger << " - timer 0 will hold capture value" << std::endl;
+				}
+				else
+				{
+					logger << " - timer 0 will hold counter" << std::endl;
+				}
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_CAPT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_CAPT0_MASK))
+			{
+				logger << " - enabling external capture trigger Timer0" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_CAPT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_CAPT0_MASK))
+			{
+				logger << " - disabling external capture trigger Timer0" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_GENT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_GENT0_MASK))
+			{
+				logger << " - enabling external generate signal Timer0" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_GENT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_GENT0_MASK))
+			{
+				logger << " - disabling external generate signal Timer0" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_UDT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_UDT0_MASK))
+			{
+				logger << " - timer 0 functions as down counter" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_UDT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_UDT0_MASK))
+			{
+				logger << " - timer 0 functions as up counter" << std::endl;
+			}
+			if(!(old_tcsr0 & CONFIG::TCSR0_MDT0_MASK) && (new_tcsr0 & CONFIG::TCSR0_MDT0_MASK))
+			{
+				logger << " - timer 0 enters capture mode" << std::endl;
+			}
+			if((old_tcsr0 & CONFIG::TCSR0_MDT0_MASK) && !(new_tcsr0 & CONFIG::TCSR0_MDT0_MASK))
+			{
+				logger << " - timer 0 enters generate mode" << std::endl;
+			}
+		}
+
+		if((old_tcsr1 & CONFIG::TCSR1_MASK) != (new_tcsr1 & CONFIG::TCSR1_MASK))
+		{
+			if(!(old_tcsr1 & CONFIG::TCSR1_T1INT_MASK) && (new_tcsr1 & CONFIG::TCSR1_T1INT_MASK))
+			{
+				logger << " - timer 1 interrupt has occured" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_T1INT_MASK) && !(new_tcsr1 & CONFIG::TCSR1_T1INT_MASK))
+			{
+				logger << " - timer 1 interrupt acknowledged" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_ENT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_ENT1_MASK))
+			{
+				logger << " - enabling timer 1 (counter runs)" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_ENT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_ENT1_MASK))
+			{
+				logger << " - disabling timer 1 (counter halts)" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_ENIT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_ENIT1_MASK))
+			{
+				logger << " - enabling timer 1 interrupt signal" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_ENIT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_ENIT1_MASK))
+			{
+				logger << " - disabling timer 1 interrupt signal" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_LOAD1_MASK) && (new_tcsr1 & CONFIG::TCSR1_LOAD1_MASK))
+			{
+				logger << " - loading timer 1 with value in TLR1" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_LOAD1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_LOAD1_MASK))
+			{
+				logger << " - not loading timer 1" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_ARHT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_ARHT1_MASK))
+			{
+				if(new_tcsr1 & CONFIG::TCSR1_MDT1_MASK)
+				{
+					logger << " - timer 1 will overwrite capture value" << std::endl;
+				}
+				else
+				{
+					logger << " - timer 1 will reload the generate value" << std::endl;
+				}
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_ARHT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_ARHT1_MASK))
+			{
+				if(new_tcsr1 & CONFIG::TCSR1_MDT1_MASK)
+				{
+					logger << " - timer 1 will hold capture value" << std::endl;
+				}
+				else
+				{
+					logger << " - timer 1 will hold counter" << std::endl;
+				}
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_CAPT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_CAPT1_MASK))
+			{
+				logger << " - enabling external capture trigger Timer1" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_CAPT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_CAPT1_MASK))
+			{
+				logger << " - disabling external capture trigger Timer1" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_GENT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_GENT1_MASK))
+			{
+				logger << " - enabling external generate signal Timer1" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_GENT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_GENT1_MASK))
+			{
+				logger << " - disabling external generate signal Timer1" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_UDT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_UDT1_MASK))
+			{
+				logger << " - timer 1 functions as down counter" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_UDT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_UDT1_MASK))
+			{
+				logger << " - timer 1 functions as up counter" << std::endl;
+			}
+			if(!(old_tcsr1 & CONFIG::TCSR1_MDT1_MASK) && (new_tcsr1 & CONFIG::TCSR1_MDT1_MASK))
+			{
+				logger << " - timer 1 enters capture mode" << std::endl;
+			}
+			if((old_tcsr1 & CONFIG::TCSR1_MDT1_MASK) && !(new_tcsr1 & CONFIG::TCSR1_MDT1_MASK))
+			{
+				logger << " - timer 1 enters generate mode" << std::endl;
+			}
+		}
+		logger << EndDebugInfo;
+	}
+}
+
+template <class CONFIG>
 bool XPS_Timer<CONFIG>::IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const
 {
 	return (addr >= CONFIG::C_BASEADDR) && ((addr + size - 1) <= CONFIG::C_HIGHADDR);
 }
 
 template <class CONFIG>
+void XPS_Timer<CONFIG>::Update()
+{
+	read_idx ^= toggle;
+	write_idx ^= toggle;
+	toggle = 0;
+}
+
+template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTCSR0() const
 {
-	return tcsr0 & CONFIG::TCSR0_MASK;
+	return tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1] & CONFIG::TCSR0_MASK;
 }
 
 template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTLR0() const
 {
-	return tlr0 & CONFIG::COUNTER_MASK;
+	return tlr0[(read_idx >> TLR0_IDX_SHIFT) & 1] & CONFIG::COUNTER_MASK;
 }
 
 template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTCR0() const
 {
-	return tcr0 & CONFIG::COUNTER_MASK;
+	return tcr0[(read_idx >> TCR0_IDX_SHIFT) & 1] & CONFIG::COUNTER_MASK;
 }
 
 template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTCSR1() const
 {
-	return CONFIG::C_ONE_TIMER_ONLY ? 0 : tcsr1 & CONFIG::TCSR1_MASK;
+	return CONFIG::C_ONE_TIMER_ONLY ? 0 : tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1] & CONFIG::TCSR1_MASK;
 }
 
 template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTLR1() const
 {
-	return tlr1 & CONFIG::COUNTER_MASK;
+	return tlr1[(read_idx >> TLR1_IDX_SHIFT) & 1] & CONFIG::COUNTER_MASK;
 }
 
 template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTCR1() const
 {
-	return CONFIG::C_ONE_TIMER_ONLY ? 0 : tcr1 & CONFIG::COUNTER_MASK;
+	return CONFIG::C_ONE_TIMER_ONLY ? 0 : tcr1[(read_idx >> TCR1_IDX_SHIFT) & 1] & CONFIG::COUNTER_MASK;
 }
 
 template <class CONFIG>
 void XPS_Timer<CONFIG>::SetTCSR0(uint32_t value)
 {
-	// write value in TCSR0, preserve T0INT
-	tcsr0 = (tcsr0 & CONFIG::TCSR0_T0INT_MASK) | (value & ~CONFIG::TCSR0_T0INT_MASK & CONFIG::TCSR0_MASK);
+	uint32_t old_tcsr0 = tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1];
+	uint32_t new_tcsr0 = (old_tcsr0 & (CONFIG::TCSR0_ENALL_MASK | CONFIG::TCSR0_T0INT_MASK)) | (value & ~(CONFIG::TCSR0_ENALL_MASK | CONFIG::TCSR0_T0INT_MASK));
+	uint32_t old_tcsr1 = tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1];
+	uint32_t new_tcsr1 = old_tcsr1;
+	
+	if(value & CONFIG::TCSR0_ENALL_MASK)
+	{
+		// writing a '1' in ENALL, sets ENALL, ENT0 and ENT1
+		new_tcsr0 = new_tcsr0 | CONFIG::TCSR0_ENALL_MASK | CONFIG::TCSR0_ENT0_MASK;
+		new_tcsr1 = new_tcsr1 | CONFIG::TCSR1_ENALL_MASK | CONFIG::TCSR1_ENT1_MASK;
+	}
+	else
+	{
+		// writing a '0' in ENALL, clear ENALL
+		new_tcsr0 = new_tcsr0 & ~CONFIG::TCSR0_ENALL_MASK;
+		new_tcsr1 = new_tcsr1 & ~CONFIG::TCSR1_ENALL_MASK;
+	}
 	
 	if(value & CONFIG::TCSR0_T0INT_MASK)
 	{
-		// clear T0INT
-		tcsr0 = tcsr0 & ~CONFIG::TCSR0_T0INT_MASK;
+		// writing a '1' in T0INT, clears T0INT
+		new_tcsr0 = new_tcsr0 & ~CONFIG::TCSR0_T0INT_MASK;
 	}
 	
-	if(tcsr0 & CONFIG::TCSR0_ENALL_MASK)
-	{
-		// set ENT0 and ENT1
-		tcsr0 = tcsr0 | CONFIG::TCSR0_ENT0_MASK;
-		if(!CONFIG::C_ONE_TIMER_ONLY)
-		{
-			tcsr1 = tcsr1 | CONFIG::TCSR1_ENT1_MASK;
-		}
-	}
-
+	toggle |= (1 << TCSR0_IDX_SHIFT);
+	tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1] = new_tcsr0;
 	if(!CONFIG::C_ONE_TIMER_ONLY)
 	{
-		// mirror ENALL in TCSR1
-		tcsr1 = (tcsr1 & ~CONFIG::TCSR1_ENALL_MASK) | (tcsr0 & CONFIG::TCSR0_ENALL_MASK);
+		toggle |= (1 << TCSR1_IDX_SHIFT);
+		tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1] = new_tcsr1;
+	}
+
+	std::cerr << "old=0x" << std::hex << old_tcsr0 << ", new=0x" << new_tcsr0 << std::dec << std::endl;
+	if(IsVerbose())
+	{
+		LogTCSR(old_tcsr0, old_tcsr1, new_tcsr0, new_tcsr1);
 	}
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::SetTCSR0_T0INT(uint32_t value)
+void XPS_Timer<CONFIG>::SetTCSR0_T0INT()
 {
-	SetTCSR0((GetTCSR0() & ~CONFIG::TCSR0_T0INT_MASK) | ((value << CONFIG::TCSR0_T0INT_OFFSET) & CONFIG::TCSR0_T0INT_MASK));
+	toggle |= (1 << TCSR0_IDX_SHIFT);
+	tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1] = tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1] | CONFIG::TCSR0_T0INT_MASK;
 }
 
 template <class CONFIG>
 void XPS_Timer<CONFIG>::SetTLR0(uint32_t value)
 {
-	tlr0 = value & CONFIG::COUNTER_MASK;
+	toggle |= (1 << TLR0_IDX_SHIFT);
+	tlr0[(write_idx >> TLR0_IDX_SHIFT) & 1] = value & CONFIG::COUNTER_MASK;
 }
 
 template <class CONFIG>
 void XPS_Timer<CONFIG>::SetTCR0(uint32_t value)
 {
-	tcr0 = value & CONFIG::COUNTER_MASK;
+	toggle |= (1 << TCR0_IDX_SHIFT);
+	tcr0[(write_idx >> TCR0_IDX_SHIFT) & 1] = value & CONFIG::COUNTER_MASK;
 }
 
 template <class CONFIG>
@@ -393,37 +655,60 @@ void XPS_Timer<CONFIG>::SetTCSR1(uint32_t value)
 {
 	if(!CONFIG::C_ONE_TIMER_ONLY)
 	{
-		// write value in TCSR1, preserve T1INT
-		tcsr1 = (tcsr1 & CONFIG::TCSR1_T1INT_MASK) | (value & ~CONFIG::TCSR1_T1INT_MASK & CONFIG::TCSR1_MASK);
+		uint32_t old_tcsr0 = tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1];
+		uint32_t new_tcsr0 = old_tcsr0;
+		uint32_t old_tcsr1 = tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1];
+		uint32_t new_tcsr1 = (old_tcsr1 & (CONFIG::TCSR1_ENALL_MASK | CONFIG::TCSR1_T1INT_MASK)) | (value & ~(CONFIG::TCSR1_ENALL_MASK | CONFIG::TCSR1_T1INT_MASK));
+		
+		if(value & CONFIG::TCSR1_ENALL_MASK)
+		{
+			// writing a '1' in ENALL, sets ENALL, ENT0 and ENT1
+			new_tcsr0 = new_tcsr0 | CONFIG::TCSR0_ENALL_MASK | CONFIG::TCSR0_ENT0_MASK;
+			new_tcsr1 = new_tcsr1 | CONFIG::TCSR1_ENALL_MASK | CONFIG::TCSR1_ENT1_MASK;
+		}
+		else
+		{
+			// writing a '0' in ENALL, clear ENALL
+			new_tcsr0 = new_tcsr0 & ~CONFIG::TCSR0_ENALL_MASK;
+			new_tcsr1 = new_tcsr1 & ~CONFIG::TCSR1_ENALL_MASK;
+		}
 		
 		if(value & CONFIG::TCSR1_T1INT_MASK)
 		{
-			// clear T1INT
-			tcsr1 = tcsr1 & ~CONFIG::TCSR1_T1INT_MASK;
-		}
-		
-		if(tcsr1 & CONFIG::TCSR1_ENALL_MASK)
-		{
-			// set ENT0 and ENT1
-			tcsr0 = tcsr0 | CONFIG::TCSR0_ENT0_MASK;
-			tcsr1 = tcsr1 | CONFIG::TCSR1_ENT1_MASK;
+			// writing a '1' in T1INT, clears T1INT
+			new_tcsr1 = new_tcsr1 & ~CONFIG::TCSR1_T1INT_MASK;
 		}
 
-		// mirror ENALL in TCSR0
-		tcsr0 = (tcsr0 & ~CONFIG::TCSR0_ENALL_MASK) | (tcsr1 & CONFIG::TCSR1_ENALL_MASK);
+		toggle |= (1 << TCSR0_IDX_SHIFT);
+		toggle |= (1 << TCSR1_IDX_SHIFT);
+		tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1] = new_tcsr0;
+		tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1] = new_tcsr1;
+
+		if(IsVerbose())
+		{
+			LogTCSR(old_tcsr0, old_tcsr1, new_tcsr0, new_tcsr1);
+		}
 	}
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::SetTCSR1_T1INT(uint32_t value)
+void XPS_Timer<CONFIG>::SetTCSR1_T1INT()
 {
-	SetTCSR1((GetTCSR1() & ~CONFIG::TCSR1_T1INT_MASK) | ((value << CONFIG::TCSR1_T1INT_OFFSET) & CONFIG::TCSR1_T1INT_MASK));
+	if(!CONFIG::C_ONE_TIMER_ONLY)
+	{
+		toggle |= (1 << TCSR1_IDX_SHIFT);
+		tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1] = tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1] | CONFIG::TCSR1_T1INT_MASK;
+	}
 }
 
 template <class CONFIG>
 void XPS_Timer<CONFIG>::SetTLR1(uint32_t value)
 {
-	tlr1 = value & CONFIG::COUNTER_MASK;
+	if(!CONFIG::C_ONE_TIMER_ONLY)
+	{
+		toggle |= (1 << TLR1_IDX_SHIFT);
+		tlr1[(write_idx >> TLR1_IDX_SHIFT) & 1] = value & CONFIG::COUNTER_MASK;
+	}
 }
 
 template <class CONFIG>
@@ -431,7 +716,8 @@ void XPS_Timer<CONFIG>::SetTCR1(uint32_t value)
 {
 	if(!CONFIG::C_ONE_TIMER_ONLY)
 	{
-		tcr1 = value & CONFIG::COUNTER_MASK;
+		toggle |= (1 << TCR1_IDX_SHIFT);
+		tcr1[(write_idx >> TCR1_IDX_SHIFT) & 1] = value & CONFIG::COUNTER_MASK;
 	}
 }
 
@@ -457,6 +743,12 @@ template <class CONFIG>
 uint32_t XPS_Timer<CONFIG>::GetTCSR0_ENT0() const
 {
 	return (GetTCSR0() & CONFIG::TCSR0_ENT0_MASK) >> CONFIG::TCSR0_ENT0_OFFSET;
+}
+
+template <class CONFIG>
+uint32_t XPS_Timer<CONFIG>::GetTCSR0_ENIT0() const
+{
+	return (GetTCSR0() & CONFIG::TCSR0_ENIT0_MASK) >> CONFIG::TCSR0_ENIT0_OFFSET;
 }
 
 template <class CONFIG>
@@ -520,9 +812,9 @@ uint32_t XPS_Timer<CONFIG>::GetTCSR1_ENT1() const
 }
 
 template <class CONFIG>
-uint32_t XPS_Timer<CONFIG>::GetTCSR1_EINT1() const
+uint32_t XPS_Timer<CONFIG>::GetTCSR1_ENIT1() const
 {
-	return (GetTCSR1() & CONFIG::TCSR1_EINT1_MASK) >> CONFIG::TCSR1_EINT1_OFFSET;
+	return (GetTCSR1() & CONFIG::TCSR1_ENIT1_MASK) >> CONFIG::TCSR1_ENIT1_OFFSET;
 }
 
 template <class CONFIG>
@@ -559,6 +851,161 @@ template <class CONFIG>
 bool XPS_Timer<CONFIG>::IsVerbose() const
 {
 	return verbose;
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::IsTCSR0_ENT0_Rising() const
+{
+	return (toggle & (1 << TCSR0_IDX_SHIFT)) &&
+	       !(tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1] & CONFIG::TCSR0_ENT0_MASK) &&
+	       (tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1] & CONFIG::TCSR0_ENT0_MASK);
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::IsTCSR1_ENT1_Rising() const
+{
+	return (toggle & (1 << TCSR1_IDX_SHIFT)) &&
+	       !(tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1] & CONFIG::TCSR1_ENT1_MASK) &&
+	       (tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1] & CONFIG::TCSR1_ENT1_MASK);
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::IsTCSR0_UDT0_Toggling() const
+{
+	return (toggle & (1 << TCSR0_IDX_SHIFT)) &&
+	       ((tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1] & CONFIG::TCSR0_UDT0_MASK) != (tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1] & CONFIG::TCSR0_UDT0_MASK));
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::IsTCSR1_UDT1_Toggling() const
+{
+	return (toggle & (1 << TCSR1_IDX_SHIFT)) &&
+	       ((tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1] & CONFIG::TCSR1_UDT1_MASK) != (tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1] & CONFIG::TCSR1_UDT1_MASK));
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::RunCounter0(uint32_t delta_count)
+{
+	if(!GetTCSR0_ENT0()) return false; // counter is halted
+
+	// counter is running
+	uint32_t old_tcr0 = GetTCR0();
+	
+	uint32_t new_tcr0;
+	if(GetTCSR0_UDT0())
+	{
+		// Down counter
+		new_tcr0 = (old_tcr0 != CONFIG::MAX_COUNT) ? (old_tcr0 - delta_count) & CONFIG::MAX_COUNT : CONFIG::MAX_COUNT;
+		tcr0_roll_over = new_tcr0 > old_tcr0;
+	}
+	else
+	{
+		// Up counter
+		new_tcr0 = (old_tcr0 != 0) ? (old_tcr0 + delta_count) & CONFIG::MAX_COUNT : 0;
+		tcr0_roll_over = new_tcr0 < old_tcr0;
+	}
+
+	if(tcr0_roll_over && !GetTCSR0_MDT0())
+	{
+		// If the mode is generate, T0INT indicates the counter has rolled over
+		SetTCSR0_T0INT();
+	}
+
+	// immediate update of TCR0
+	tcr0[(read_idx >> TCR0_IDX_SHIFT) & 1] = new_tcr0;
+
+	return tcr0_roll_over;
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::RunCounter1(uint32_t delta_count)
+{
+	if(!GetTCSR1_ENT1()) return false; // counter is halted
+
+	// counter is running
+	uint32_t old_tcr1 = GetTCR1();
+	uint32_t new_tcr1;
+	if(GetTCSR1_UDT1())
+	{
+		// Down counter
+		new_tcr1 = (old_tcr1 != CONFIG::MAX_COUNT) ? (old_tcr1 - delta_count) & CONFIG::MAX_COUNT : CONFIG::MAX_COUNT;
+		tcr1_roll_over = new_tcr1 > old_tcr1;
+	}
+	else
+	{
+		// Up counter
+		new_tcr1 = (old_tcr1 != 0) ? (old_tcr1 + delta_count) & CONFIG::MAX_COUNT : 0;
+		tcr1_roll_over = new_tcr1 < old_tcr1;
+	}
+
+	if(tcr1_roll_over && !GetTCSR1_MDT1())
+	{
+		// If the mode is generate, T1INT indicates the counter has rolled over
+		SetTCSR1_T1INT();
+	}
+
+	// immediate update of TCR1
+	tcr1[(read_idx >> TCR1_IDX_SHIFT) & 1] = new_tcr1;
+
+	return tcr1_roll_over;
+}
+
+template <class CONFIG>
+void XPS_Timer<CONFIG>::CaptureTrigger0()
+{
+	// Capture mode (channel 0)
+	if(GetTCSR0_CAPT0())
+	{
+		// Timer 0 is in capture mode
+		if(GetTCSR0_MDT0())
+		{
+			// External capture trigger Timer 0 enabled
+			if(!GetTCSR0_T0INT() || GetTCSR0_ARHT0())
+			{
+				// Overwrite capture value
+				// Snap counter/timer 0
+				SetTLR0(GetTCR0());
+				SetTCSR0_T0INT();
+			}
+		}
+	}
+}
+
+template <class CONFIG>
+void XPS_Timer<CONFIG>::CaptureTrigger1()
+{
+	// Capture mode (channel 1)
+	if(!CONFIG::C_ONE_TIMER_ONLY)
+	{
+		// Timer 1 is available
+		if(GetTCSR1_CAPT1())
+		{
+			// Timer 1 is in capture mode
+			if(GetTCSR1_MDT1())
+			{
+				// External capture trigger Timer 1 enabled
+				if(!GetTCSR1_T1INT() || GetTCSR1_ARHT1())
+				{
+					// Overwrite capture value
+					// Snap counter/timer 1
+					SetTLR1(GetTCR1());
+					SetTCSR1_T1INT();
+				}
+			}
+		}
+	}
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::NeedsLoadingTCR0() const
+{
+	return GetTCSR0_LOAD0() || (tcr0_roll_over && GetTCSR0_ENT0() && !GetTCSR0_MDT0() && GetTCSR0_ARHT0());
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::NeedsLoadingTCR1() const
+{
+	return GetTCSR1_LOAD1() || (tcr1_roll_over && GetTCSR1_ENT1() && !GetTCSR1_MDT1() && GetTCSR1_ARHT1());
 }
 
 } // end of namespace xps_timer
