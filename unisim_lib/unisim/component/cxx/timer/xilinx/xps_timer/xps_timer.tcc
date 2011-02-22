@@ -65,7 +65,11 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	, write_idx(~0)
 	, tcr0_roll_over(false)
 	, tcr1_roll_over(false)
+	, num_tcr0_roll_over(0)
+	, num_tcr1_roll_over(0)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, stat_num_tcr0_roll_over("num-tcr0-roll-over", this, num_tcr0_roll_over, "Number of timer/counter 0 roll over")
+	, stat_num_tcr1_roll_over("num-tcr1-roll-over", this, num_tcr1_roll_over, "Number of timer/counter 1 roll over")
 {
 	tcsr0[0] = 0;
 	tcsr0[1] = 0;
@@ -126,6 +130,8 @@ void XPS_Timer<CONFIG>::Reset()
 	tcr1[1] = 0;
 	tcr0_roll_over = false;
 	tcr1_roll_over = false;
+	num_tcr0_roll_over = 0;
+	num_tcr1_roll_over = 0;
 }
 
 template <class CONFIG>
@@ -322,12 +328,45 @@ void XPS_Timer<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, T value)
 }
 
 template <class CONFIG>
-void XPS_Timer<CONFIG>::LogTCSR(uint32_t old_tcsr0, uint32_t old_tcsr1, uint32_t new_tcsr0, uint32_t new_tcsr1)
+void XPS_Timer<CONFIG>::LogTCSR()
 {
+	uint32_t old_tcsr0 = tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1];
+	uint32_t old_tcsr1 = tcsr1[(read_idx >> TCSR1_IDX_SHIFT) & 1];
+	uint32_t new_tcsr0 = tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1];
+	uint32_t new_tcsr1 =  tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1];
+	
 	if(((old_tcsr0 & CONFIG::TCSR0_MASK) != (new_tcsr0 & CONFIG::TCSR0_MASK)) || ((old_tcsr1 & CONFIG::TCSR1_MASK) != (new_tcsr1 & CONFIG::TCSR1_MASK)))
 	{
 		// either TCSR0 or TCSR1 have changed
-		logger << DebugInfo << "TCSR:" << std::endl;
+		logger << DebugInfo << "TCSR: ENALL PWMA0 T0INT ENT0 EINT0 LOAD0 ARHT0 CAPT0 GENT0 UDT0 MDT0";
+		if(!CONFIG::C_ONE_TIMER_ONLY) logger << " PWMB0 T1INT ENT1 EINT1 LOAD1 ARHT1 CAPT1 GENT1 UDT1 MDT1";
+		logger << EndDebugInfo;
+		logger << DebugInfo << "        " << ((new_tcsr0 & CONFIG::TCSR0_ENALL_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_PWMA0_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_T0INT_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_ENT0_MASK) ? '1':'0')
+		       << "    " << ((new_tcsr0 & CONFIG::TCSR0_ENIT0_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_LOAD0_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_ARHT0_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_CAPT0_MASK) ? '1':'0')
+		       << "     " << ((new_tcsr0 & CONFIG::TCSR0_GENT0_MASK) ? '1':'0')
+		       << "    " << ((new_tcsr0 & CONFIG::TCSR0_UDT0_MASK) ? '1':'0')
+		       << "    " << ((new_tcsr0 & CONFIG::TCSR0_MDT0_MASK) ? '1':'0');
+		if(!CONFIG::C_ONE_TIMER_ONLY)
+		{
+			logger << "     " << ((new_tcsr1 & CONFIG::TCSR1_PWMB0_MASK) ? '1':'0')
+		           << "     " << ((new_tcsr1 & CONFIG::TCSR1_T1INT_MASK) ? '1':'0')
+		           << "    " << ((new_tcsr1 & CONFIG::TCSR1_ENT1_MASK) ? '1':'0')
+		           << "     " << ((new_tcsr1 & CONFIG::TCSR1_ENIT1_MASK) ? '1':'0')
+		           << "     " << ((new_tcsr1 & CONFIG::TCSR1_LOAD1_MASK) ? '1':'0')
+		           << "     " << ((new_tcsr1 & CONFIG::TCSR1_ARHT1_MASK) ? '1':'0')
+		           << "     " << ((new_tcsr1 & CONFIG::TCSR1_CAPT1_MASK) ? '1':'0')
+		           << "     " << ((new_tcsr1 & CONFIG::TCSR1_GENT1_MASK) ? '1':'0')
+		           << "    " << ((new_tcsr1 & CONFIG::TCSR1_UDT1_MASK) ? '1':'0')
+		           << "    " << ((new_tcsr1 & CONFIG::TCSR1_MDT1_MASK) ? '1':'0');
+		}
+		logger << EndDebugInfo;
+		logger << DebugInfo << "TCSR recent changes:" << std::endl;
 		if(!(old_tcsr0 & CONFIG::TCSR0_ENALL_MASK) && !(old_tcsr1 & CONFIG::TCSR1_ENALL_MASK) && (new_tcsr0 & CONFIG::TCSR0_ENALL_MASK) && (new_tcsr1 & CONFIG::TCSR1_ENALL_MASK))
 		{
 			logger << " - enabling all timers" << std::endl;
@@ -622,10 +661,9 @@ void XPS_Timer<CONFIG>::SetTCSR0(uint32_t value)
 		tcsr1[(write_idx >> TCSR1_IDX_SHIFT) & 1] = new_tcsr1;
 	}
 
-	std::cerr << "old=0x" << std::hex << old_tcsr0 << ", new=0x" << new_tcsr0 << std::dec << std::endl;
 	if(IsVerbose())
 	{
-		LogTCSR(old_tcsr0, old_tcsr1, new_tcsr0, new_tcsr1);
+		LogTCSR();
 	}
 }
 
@@ -634,6 +672,10 @@ void XPS_Timer<CONFIG>::SetTCSR0_T0INT()
 {
 	toggle |= (1 << TCSR0_IDX_SHIFT);
 	tcsr0[(write_idx >> TCSR0_IDX_SHIFT) & 1] = tcsr0[(read_idx >> TCSR0_IDX_SHIFT) & 1] | CONFIG::TCSR0_T0INT_MASK;
+	if(IsVerbose())
+	{
+		LogTCSR();
+	}
 }
 
 template <class CONFIG>
@@ -686,7 +728,7 @@ void XPS_Timer<CONFIG>::SetTCSR1(uint32_t value)
 
 		if(IsVerbose())
 		{
-			LogTCSR(old_tcsr0, old_tcsr1, new_tcsr0, new_tcsr1);
+			LogTCSR();
 		}
 	}
 }
@@ -913,6 +955,8 @@ bool XPS_Timer<CONFIG>::RunCounter0(uint32_t delta_count)
 
 	// immediate update of TCR0
 	tcr0[(read_idx >> TCR0_IDX_SHIFT) & 1] = new_tcr0;
+	
+	if(tcr0_roll_over) num_tcr0_roll_over++;
 
 	return tcr0_roll_over;
 }
@@ -920,7 +964,7 @@ bool XPS_Timer<CONFIG>::RunCounter0(uint32_t delta_count)
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::RunCounter1(uint32_t delta_count)
 {
-	if(!GetTCSR1_ENT1()) return false; // counter is halted
+	if(CONFIG::C_ONE_TIMER_ONLY || !GetTCSR1_ENT1()) return false; // counter is missing or halted
 
 	// counter is running
 	uint32_t old_tcr1 = GetTCR1();
@@ -946,6 +990,8 @@ bool XPS_Timer<CONFIG>::RunCounter1(uint32_t delta_count)
 
 	// immediate update of TCR1
 	tcr1[(read_idx >> TCR1_IDX_SHIFT) & 1] = new_tcr1;
+
+	if(tcr1_roll_over) num_tcr1_roll_over++;
 
 	return tcr1_roll_over;
 }
@@ -999,13 +1045,25 @@ void XPS_Timer<CONFIG>::CaptureTrigger1()
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::NeedsLoadingTCR0() const
 {
-	return GetTCSR0_LOAD0() || (tcr0_roll_over && GetTCSR0_ENT0() && !GetTCSR0_MDT0() && GetTCSR0_ARHT0());
+	// Load of TCR0 occurs if one of the following condition is met:
+	//  - TCSR0[LOAD0]=1
+	//  - TCR0 rolls over while in generate mode and autoreload is enabled
+	//  - TCR0 rolls over while timer/counter 0 is in PWM mode
+	return GetTCSR0_LOAD0() ||
+	       (!GetTCSR0_PWMA0() && tcr0_roll_over && GetTCSR0_ENT0() && !GetTCSR0_MDT0() && GetTCSR0_ARHT0()) ||
+	       (GetTCSR0_PWMA0() && tcr0_roll_over);
 }
 
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::NeedsLoadingTCR1() const
 {
-	return GetTCSR1_LOAD1() || (tcr1_roll_over && GetTCSR1_ENT1() && !GetTCSR1_MDT1() && GetTCSR1_ARHT1());
+	// Load of TCR1 occurs if one of the following condition is met:
+	//  - TCSR1[LOAD1]=1
+	//  - TCR1 rolls over while in generate mode and autoreload is enabled
+	//  - TCR0 rolls over while timer/counter 1 is in PWM mode (PWM0 output goes high)
+	return GetTCSR1_LOAD1() ||
+	       (!GetTCSR1_PWMB0() && tcr1_roll_over && GetTCSR1_ENT1() && !GetTCSR1_MDT1() && GetTCSR1_ARHT1()) ||
+	       (GetTCSR1_PWMB0() && tcr0_roll_over);
 }
 
 } // end of namespace xps_timer

@@ -427,7 +427,7 @@ void XPS_Timer<CONFIG>::Process()
 		time_stamp = sc_time_stamp();
 		if(inherited::IsVerbose())
 		{
-			inherited::logger << DebugInfo << "Waking up at " << time_stamp << EndDebugInfo;
+			inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
 		}
 		RunCounters(); // Compute the timer/counter values at the event time stamp
 		
@@ -489,14 +489,14 @@ void XPS_Timer<CONFIG>::ProcessLoadEvent(Event *event)
 		case 0:
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << "Processing a TCR0 load/reload (TCR0 <- 0x" << std::hex << inherited::GetTLR0() << std::dec << ") at " << time_stamp << EndDebugInfo;
+				inherited::logger << DebugInfo << time_stamp << ": Processing a TCR0 load/reload (TCR0 <- 0x" << std::hex << inherited::GetTLR0() << std::dec << ")" << EndDebugInfo;
 			}
 			inherited::SetTCR0(inherited::GetTLR0());
 			break;
 		case 1:
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << "Processing a TCR1 load/reload (TCR1 <- 0x" << std::hex << inherited::GetTLR1() << std::dec << ") at " << time_stamp << EndDebugInfo;
+				inherited::logger << DebugInfo << time_stamp << ": Processing a TCR1 load/reload (TCR1 <- 0x" << std::hex << inherited::GetTLR1() << std::dec << ")" << EndDebugInfo;
 			}
 			inherited::SetTCR1(inherited::GetTLR1());
 			break;
@@ -509,9 +509,17 @@ void XPS_Timer<CONFIG>::ProcessCaptureTriggerEvent(Event *event)
 	switch(event->GetChannel())
 	{
 		case 0:
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << time_stamp << ": Processing a capture trigger event for timer 0" << EndDebugInfo;
+			}
 			inherited::CaptureTrigger0();
 			break;
 		case 1:
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << time_stamp << ": Processing a capture trigger event for timer 1" << EndDebugInfo;
+			}
 			inherited::CaptureTrigger1();
 			break;
 	}
@@ -649,6 +657,10 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 		if(tcr0_roll_over && !pwm_output)
 		{
 			// PWM goes from low to high
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << time_stamp << ": PWM0 signal goes high" << EndDebugInfo;
+			}
 			PWMPayload *pwm_payload = pwm_payload_fabric.allocate();
 
 			pwm_payload->SetValue(true);
@@ -663,6 +675,10 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 		else if(tcr1_roll_over && pwm_output)
 		{
 			// PWM goes from high to low
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << time_stamp << ": PWM0 signal goes low" << EndDebugInfo;
+			}
 			PWMPayload *pwm_payload = pwm_payload_fabric.allocate();
 
 			pwm_payload->SetValue(false);
@@ -683,6 +699,10 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 			if(tcr0_roll_over && (generate_output[0] != CONFIG::C_GEN0_ASSERT))
 			{
 				// Start generating a pulse for one clock cycle
+				if(inherited::IsVerbose())
+				{
+					inherited::logger << DebugInfo << time_stamp << ": GenerateOut0 signal goes " << (CONFIG::C_GEN0_ASSERT ? "high" : "low") << EndDebugInfo;
+				}
 				GenerateOutPayload *generate_out_payload = generate_out_payload_fabric.allocate();
 
 				generate_out_payload->SetValue(CONFIG::C_GEN0_ASSERT);
@@ -708,6 +728,12 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				if(end_of_pulse_time >= cycle_time)
 				{
 					// End of pulse
+					if(inherited::IsVerbose())
+					{
+						inherited::logger << DebugInfo << time_stamp << ": GenerateOut0 was " << (CONFIG::C_GEN0_ASSERT ? "high" : "low") << " for " << end_of_pulse_time << EndDebugInfo;
+						inherited::logger << DebugInfo << time_stamp << ": GenerateOut0 signal goes " << (CONFIG::C_GEN0_ASSERT ? "low" : "high") << EndDebugInfo;
+					}
+
 					GenerateOutPayload *generate_out_payload = generate_out_payload_fabric.allocate();
 
 					generate_out_payload->SetValue(!CONFIG::C_GEN0_ASSERT);
@@ -774,7 +800,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 	{
 		if(inherited::IsVerbose())
 		{
-			inherited::logger << DebugInfo << "At " << time_stamp << ", interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
+			inherited::logger << DebugInfo << time_stamp << ": Interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
 		}
 		
 		InterruptPayload *interrupt_payload = interrupt_payload_fabric.allocate();
@@ -818,20 +844,20 @@ void XPS_Timer<CONFIG>::RunCounters()
 		double delta = floor(delta_time / cycle_time);
 		if(delta > (double) CONFIG::MAX_COUNT)
 		{
-			inherited::logger << DebugError << "Internal error: TCR0 count overflow" << EndDebugError;
+			inherited::logger << DebugError << time_stamp << ": Internal error: TCR0 count overflow" << EndDebugError;
 			Object::Stop(-1);
 		}
 		uint32_t delta_count = (uint32_t) delta;
 		if(inherited::IsVerbose())
 		{
-			inherited::logger << DebugInfo << delta_count << " cycles elapsed since last update of TCR0" << EndDebugInfo;
+			inherited::logger << DebugInfo << time_stamp << ": " << delta_count << " cycles elapsed since last update of TCR0" << EndDebugInfo;
 		}
 
 		tcr0_roll_over = inherited::RunCounter0(delta_count);
 		
 		if(inherited::IsVerbose() && tcr0_roll_over)
 		{
-			inherited::logger << DebugInfo << "TCR0 rolls over (0x" << std::hex << inherited::GetTCR0() << std::dec << ")" << EndDebugInfo;
+			inherited::logger << DebugInfo << time_stamp << ": TCR0 rolls over (0x" << std::hex << inherited::GetTCR0() << std::dec << ")" << EndDebugInfo;
 		}
 		
 		last_timer_counter_update_time_stamp[0] = time_stamp;
@@ -844,27 +870,27 @@ void XPS_Timer<CONFIG>::RunCounters()
 		if(inherited::GetTCSR1_ENT1())
 		{
 			// Timer1 enabled
-
+			
 			// Compute delta time since last update
 			sc_time delta_time(time_stamp);
 			delta_time -= last_timer_counter_update_time_stamp[1];
 			double delta = floor(delta_time / cycle_time);
 			if(delta > (double) CONFIG::MAX_COUNT)
 			{
-				inherited::logger << DebugError << "Internal error: TCR1 count overflow" << EndDebugError;
+				inherited::logger << DebugError << time_stamp << ": Internal error: TCR1 count overflow" << EndDebugError;
 				Object::Stop(-1);
 			}
 			uint32_t delta_count = (uint32_t) delta;
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << delta_count << " cycles elapsed since last update of TCR1" << EndDebugInfo;
+				inherited::logger << DebugInfo << time_stamp << ": " << delta_count << " cycles elapsed since last update of TCR1" << EndDebugInfo;
 			}
 
 			tcr1_roll_over = inherited::RunCounter1(delta_count);
 
 			if(inherited::IsVerbose() && tcr1_roll_over)
 			{
-				inherited::logger << DebugInfo << "TCR1 rolls over (0x" << std::hex << inherited::GetTCR1() << std::dec << ")" << EndDebugInfo;
+				inherited::logger << DebugInfo << time_stamp << ": TCR1 rolls over (0x" << std::hex << inherited::GetTCR1() << std::dec << ")" << EndDebugInfo;
 			}
 			
 			last_timer_counter_update_time_stamp[1] = time_stamp;
@@ -891,7 +917,7 @@ void XPS_Timer<CONFIG>::Update()
 		{
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << "TCR0 (0x" << std::hex << inherited::GetTCR0() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
+				inherited::logger << DebugInfo << time_stamp << ": TCR0 (0x" << std::hex << inherited::GetTCR0() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
 			}
 			schedule.NotifyWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
 		}
@@ -910,7 +936,7 @@ void XPS_Timer<CONFIG>::Update()
 		{
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << "TCR1 (0x" << std::hex << inherited::GetTCR1() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
+				inherited::logger << DebugInfo << time_stamp << ": TCR1 (0x" << std::hex << inherited::GetTCR1() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
 			}
 			schedule.NotifyWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
 		}
@@ -923,7 +949,7 @@ void XPS_Timer<CONFIG>::Update()
 		schedule.NotifyLoadEvent(0, notify_time_stamp); // schedule a load on next cycle
 		if(inherited::IsVerbose())
 		{
-			inherited::logger << DebugInfo << "TCR0 will be loaded at " << notify_time_stamp << EndDebugInfo;
+			inherited::logger << DebugInfo << time_stamp << ": TCR0 will be loaded at " << notify_time_stamp << EndDebugInfo;
 		}
 	}
 
@@ -934,7 +960,7 @@ void XPS_Timer<CONFIG>::Update()
 		schedule.NotifyLoadEvent(1, notify_time_stamp); // schedule a load on next cycle
 		if(inherited::IsVerbose())
 		{
-			inherited::logger << DebugInfo << "TCR1 will be loaded at " << notify_time_stamp << EndDebugInfo;
+			inherited::logger << DebugInfo << time_stamp << ": TCR1 will be loaded at " << notify_time_stamp << EndDebugInfo;
 		}
 	}
 }

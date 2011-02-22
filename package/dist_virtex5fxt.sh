@@ -131,6 +131,7 @@ unisim/util/debug/blob/section32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
+unisim/util/random/random.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -247,6 +248,7 @@ unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
+unisim/util/random/random.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \

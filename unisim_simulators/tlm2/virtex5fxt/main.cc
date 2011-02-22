@@ -59,6 +59,10 @@
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/kernel/tlm2/tlm.hh>
+#include <unisim/util/random/random.hh>
+
 #include <iostream>
 #include <stdexcept>
 #include <stdlib.h>
@@ -165,33 +169,109 @@ void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64
 }
 
 class CaptureTriggerStub
-	: public sc_module
+	: public Object
+	, public sc_module
 	, tlm::tlm_bw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes>
 {
 public:
 	tlm::tlm_initiator_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> capture_trigger_master_sock;
 	
-	CaptureTriggerStub(const sc_module_name& name);
+	CaptureTriggerStub(const sc_module_name& name, Object *parent = 0);
 
 	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	
+	void Process();
+private:
+	unisim::kernel::logger::Logger logger;
+	unisim::util::random::Random random;
+	unisim::kernel::tlm2::PayloadFabric<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload> capture_trigger_payload_fabric;
+	sc_time cycle_time;
+	sc_time nice_time;
+	sc_time time;
+	bool verbose;
+	Parameter<sc_time> param_cycle_time;
+	Parameter<sc_time> param_nice_time;
+	Parameter<bool> param_verbose;
 };
 
-CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name)
-	: sc_module(name)
+CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *parent)
+	: Object(name, parent)
+	, sc_module(name)
 	, capture_trigger_master_sock("capture-trigger-master-sock")
+	, logger(*this)
+	, random(-34525, +96489, -57430854, +786329085)
+	, capture_trigger_payload_fabric()
+	, cycle_time(SC_ZERO_TIME)
+	, nice_time(sc_time(1, SC_MS))
+	, time(SC_ZERO_TIME)
+	, verbose(false)
+	, param_cycle_time("cycle-time", this, cycle_time, "cycle time")
+	, param_nice_time("nice-time", this, nice_time, "nice time")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	capture_trigger_master_sock(*this);
+	
+	SC_HAS_PROCESS(CaptureTriggerStub);
+	
+	SC_THREAD(Process);
 }
 
 tlm::tlm_sync_enum CaptureTriggerStub::nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
+	switch(phase)
+	{
+		case tlm::END_REQ:
+			return tlm::TLM_ACCEPTED;
+		case tlm::BEGIN_RESP:
+			return tlm::TLM_COMPLETED;
+		default:
+			logger << unisim::kernel::logger::DebugError << "protocol error" << unisim::kernel::logger::EndDebugError;
+			Object::Stop(-1);
+			break;
+	}
+	
 	return tlm::TLM_COMPLETED;
 }
 
 void CaptureTriggerStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+}
+
+void CaptureTriggerStub::Process()
+{
+	bool flipflop = false;
+	
+	while(1)
+	{
+		int32_t r = random.Generate(500) + 501;
+		sc_time delay(cycle_time);
+		delay *= r;
+		time += delay;
+		
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (flipflop ? "high" : "low") << unisim::kernel::logger::EndDebugInfo;
+		}
+		
+		unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload *capture_trigger_payload = capture_trigger_payload_fabric.allocate();
+		
+		capture_trigger_payload->SetValue(flipflop);
+		
+		flipflop = !flipflop;
+		
+		tlm::tlm_phase phase = tlm::BEGIN_REQ;
+		capture_trigger_master_sock->nb_transport_fw(*capture_trigger_payload, phase, time);
+		
+		capture_trigger_payload->release();
+		
+		if(time >= nice_time)
+		{
+			wait(time);
+			time = SC_ZERO_TIME;
+		}
+	}
 }
 
 class PWMStub
@@ -648,12 +728,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", 0xffffffffffffffffULL);
 
-	//  - Timer
+	//  - Interrupt controller
 	simulator->SetVariable("intc.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - Timer
 	simulator->SetVariable("timer.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
+	//  - Capture Trigger stubs
+	simulator->SetVariable("capture-trigger-stub0.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("capture-trigger-stub0.nice-time", "1 ms");
+	simulator->SetVariable("capture-trigger-stub1.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("capture-trigger-stub1.nice-time", "1 ms");
+	
 	//=========================================================================
 	//===                      Service run-time configuration               ===
 	//=========================================================================

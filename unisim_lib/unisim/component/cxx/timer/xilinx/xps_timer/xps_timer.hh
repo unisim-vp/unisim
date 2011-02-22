@@ -49,6 +49,7 @@ namespace xps_timer {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;
@@ -103,8 +104,15 @@ private:
 	
 	bool tcr0_roll_over;
 	bool tcr1_roll_over;
+	uint64_t num_tcr0_roll_over;
+	uint64_t num_tcr1_roll_over;
 	
-	void LogTCSR(uint32_t old_tcsr0, uint32_t old_tcsr1, uint32_t new_tcsr0, uint32_t new_tcsr1);
+	Parameter<bool> param_verbose;
+	Statistic<uint64_t> stat_num_tcr0_roll_over;
+	Statistic<uint64_t> stat_num_tcr1_roll_over;
+	
+	void LogTCSR();
+
 protected:
 	uint32_t GetTCSR0() const;
 	uint32_t GetTLR0() const;
@@ -156,7 +164,6 @@ protected:
 	bool RunCounter1(uint32_t count);
 	void CaptureTrigger0();
 	void CaptureTrigger1();
-	Parameter<bool> param_verbose;
 };
 
 } // end of namespace xps_timer

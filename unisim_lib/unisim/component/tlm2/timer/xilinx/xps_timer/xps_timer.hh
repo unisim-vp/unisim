@@ -349,7 +349,6 @@ private:
 		
 		void NotifyCPUEvent(tlm::tlm_generic_payload *payload, const sc_time& time_stamp, sc_event *ev_completed = 0)
 		{
-			std::cerr << "NotifyCPUEvent at " << time_stamp << std::endl;
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_CPU, 0);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
 			if(it != schedule.end())
@@ -366,7 +365,6 @@ private:
 		
 		void NotifyCaptureTriggerEvent(unsigned int channel, const sc_time& time_stamp)
 		{
-			std::cerr << "NotifyCaptureTriggerEvent at " << time_stamp << std::endl;
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_CAPTURE_TRIGGER, channel);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
 			if(it != schedule.end())
@@ -383,16 +381,11 @@ private:
 
 		void NotifyLoadEvent(unsigned int channel, const sc_time& time_stamp)
 		{
-			std::cerr << "NotifyLoadEvent at " << time_stamp << std::endl;
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_LOAD, channel);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
 			if(it != schedule.end())
 			{
-				if((*it).second->GetChannel() == channel)
-				{
-					std::cerr << "!!! Already scheduled" << std::endl;
-					return; // Already scheduled
-				}
+				if((*it).second->GetChannel() == channel) return; // Already scheduled
 			}
 			Event *event = event_allocator.AllocEvent();
 			event->InitializeLoadEvent(channel, time_stamp);
@@ -404,7 +397,6 @@ private:
 
 		void NotifyWakeUpEvent(const sc_time& time_stamp)
 		{
-			std::cerr << "NotifyWakeUpEvent at " << time_stamp << std::endl;
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_WAKE_UP, 0);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
 			if(it != schedule.end()) return; // Already scheduled
