@@ -1225,6 +1225,71 @@ Read32toGPRAligned(uint32_t address, uint32_t reg)
 					address, 4);
 }
 
+/** 32bits memory read into one of the user general purpose registers.
+ * This method reads 32bits from memory and stores the result into
+ *   the user general purpose register indicated by the input reg
+ * 
+ * @param address the base address of the 32bits read
+ * @param reg the user register to store the resulting read
+ */
+void
+CPU::
+Read32toUserGPR(uint32_t address, uint32_t reg)
+{
+	MemoryOp *memop;
+	
+	if ( free_ls_queue.empty() )
+		memop = new MemoryOp();
+	else
+	{
+		memop = free_ls_queue.front();
+		free_ls_queue.pop();
+	}
+	memop->SetUserRead(address, 4, reg, false, false);
+	ls_queue.push(memop);
+
+	if ( requires_memory_access_reporting )
+		if ( memory_access_reporting_import )
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
+					address & ~((uint32_t)0x3), 4);
+}
+
+/** 32bits aligned memory read into one of the user general purpose registers.
+ * This method reads 32bits from memory and stores the result into
+ *   the user general purpose register indicated by the input reg. Note that
+ *   this read methods supposes that the address is 32bits aligned.
+ * 
+ * @param address the base address of the 32bits read
+ * @param reg the user register to store the resulting read
+ */
+void
+CPU::
+Read32toUserGPRAligned(uint32_t address, uint32_t reg)
+{
+	MemoryOp *memop;
+	
+	address = address & ~((uint32_t)0x3);
+
+	if ( free_ls_queue.empty() )
+		memop = new MemoryOp();
+	else
+	{
+		memop = free_ls_queue.front();
+		free_ls_queue.pop();
+	}
+	memop->SetUserRead(address, 4, reg, true, false);
+	ls_queue.push(memop);
+	
+	if ( requires_memory_access_reporting )
+		if ( memory_access_reporting_import )
+			memory_access_reporting_import->ReportMemoryAccess(
+					MemoryAccessReporting<uint64_t>::MAT_READ,
+					MemoryAccessReporting<uint64_t>::MT_DATA,
+					address, 4);
+}
+
 /** 16bits aligned memory read into one of the general purpose registers.
  * This method reads 16bits from memory and stores the result into
  *   the general purpose register indicated by the input reg. Note that this
@@ -2927,6 +2992,7 @@ PerformLoadStoreAccesses()
 				PerformWriteAccess(memop);
 				break;
 			case MemoryOp::READ:
+			case MemoryOp::USER_READ:
 				PerformReadAccess(memop);
 				break;
 			case MemoryOp::READ_TO_PC_UPDATE_T:
@@ -3550,7 +3616,10 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 			<< " - value = 0x" << std::hex << value << std::dec
 			<< EndDebugInfo;
 
-	SetGPR(memop->GetTargetReg(), value);
+	if ( likely(memop->GetType() == MemoryOp::READ) )
+		SetGPR(memop->GetTargetReg(), value);
+	else
+		SetGPR_usr(memop->GetTargetReg(), value, GetCPSR_Mode());
 
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )

@@ -370,9 +370,31 @@ SetGPR(uint32_t id, uint32_t val)
  */
 uint32_t 
 CPU::
-GetGPR_usr(uint32_t id) const
+GetGPR_usr(uint32_t id, uint32_t mode) const
 {
-	return gpr[id];
+	switch ( mode )
+	{
+		case SUPERVISOR_MODE:
+		case ABORT_MODE:
+		case UNDEFINED_MODE:
+		case IRQ_MODE:
+			if ( (id < 13) || (id == 15) )
+				return gpr[id];
+			else
+				return phys_gpr[id];
+			break;
+		case FIQ_MODE:
+			if ( (id < 8) || (id == 15) )
+				return gpr[id];
+			else
+				return phys_gpr[id];
+			break;
+		case USER_MODE:
+		case SYSTEM_MODE:
+		default:
+			return gpr[id];
+			break;
+	}
 }
 
 /** Set the value contained by a user GPR.
@@ -384,9 +406,30 @@ GetGPR_usr(uint32_t id) const
  */
 void
 CPU::
-SetGPR_usr(uint32_t id, uint32_t val)
+SetGPR_usr(uint32_t id, uint32_t val, uint32_t mode)
 {
-	gpr[id] = val;
+	switch ( mode )
+	{
+		case USER_MODE:
+		case SYSTEM_MODE:
+			gpr[id] = val;
+			break;
+		case SUPERVISOR_MODE:
+		case ABORT_MODE:
+		case UNDEFINED_MODE:
+		case IRQ_MODE:
+			if ( (id < 13) || (id == 15) )
+				gpr[id] = val;
+			else
+				phys_gpr[id] = val;
+			break;
+		case FIQ_MODE:
+			if ( (id < 8) || (id == 15 ) )
+				gpr[id] = val;
+			else
+				phys_gpr[id] = val;
+			break;
+	}
 }
 
 /** Get the value of the CPSR register.
