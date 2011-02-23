@@ -10,11 +10,12 @@
 
 #include <stdint.h>
 
- #include <iostream>
- #include <sstream>
- #include <string>
- #include <typeinfo>
- #include <stdexcept>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+#include <typeinfo>
+#include <stdexcept>
 
 class BadConversion : public std::runtime_error {
 public:
@@ -74,6 +75,60 @@ inline bool IsHexChar(char ch)
 	if(ch >= '0' && ch <= '9') return true;
 	if(ch >= 'A' && ch <= 'F') return true;
 	return false;
+}
+
+inline void TextToHex(const char *s, int count, std::string& packet)
+{
+	int i;
+	std::stringstream strm;
+
+	for(i = 0; i < count; i++)
+	{
+		strm << Nibble2HexChar((uint8_t) s[i] >> 4);
+		strm << Nibble2HexChar((uint8_t) s[i] & 0xf);
+	}
+
+	packet = strm.str();
+	strm.str(std::string());
+
+}
+
+inline void HexToText(const char *s, int count, std::string& packet)
+{
+	int i;
+	std::stringstream strm;
+	uint8_t c;
+
+	for (i = 0; i < count; i=i+2) {
+		c = (HexChar2Nibble((uint8_t) s[i]) << 4) | HexChar2Nibble((uint8_t) s[i+1]);
+		strm << c;
+	}
+
+	packet = strm.str();
+	strm.str(std::string());
+}
+
+inline void StringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
+{
+	int cutAt;
+
+	do {
+
+		cutAt = str.find_first_of(delim);
+
+		if (cutAt > 0) {
+			results.push_back(str.substr(0,cutAt));
+		}
+
+		str = str.substr(cutAt+1);
+
+	} while (cutAt != str.npos);
+
+	if(str.length() > 0)
+	{
+		results.push_back(str);
+	}
+
 }
 
 #endif /* CONVERT_HH_ */

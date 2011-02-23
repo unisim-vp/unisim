@@ -180,6 +180,8 @@ private:
 	bool FlushOutput();
 	bool OutputText(const char *s, int count);
 
+	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
+
 	bool ReadRegisters();
 	bool WriteRegisters(const string& hex);
 	bool ReadRegister(unsigned int regnum);
@@ -193,6 +195,9 @@ private:
 	bool RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size);
 
 	void HandleQRcmd(string command);
+	bool HandleSymbolLookup();
+	bool ReadSymbol(const string name);
+	bool WriteSymbol(const string name, const string& hex);
 
 	void Disasm(ADDRESS addr, unsigned int size);
 	

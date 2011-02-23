@@ -820,9 +820,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMGDBServer<ADDRESS>::FetchDebugCo
 
 			default:
 
-				if(packet == "qSymbol" || packet == "qSymbol::")
+				if(packet.substr(0, 9) == "qSymbol::")
 				{
-					PutPacket("OK");
+					PutPacket("qSymbol::");
+
+					if (!HandleSymbolLookup()) {
+						Object::Stop(0);
+						return DebugControl<ADDRESS>::DBG_KILL;
+					}
 				}
 				else if(packet == "vCont?")
 				{
@@ -858,55 +863,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMGDBServer<ADDRESS>::FetchDebugCo
 	return DebugControl<ADDRESS>::DBG_KILL;
 }
 
-//template <class ADDRESS>
-//bool PIMGDBServer<ADDRESS>::GetChar(char& c, bool blocking)
-//{
-//	if(input_buffer_size == 0)
-//	{
-//		do
-//		{
-//#ifdef WIN32
-//			int r = recv(sockfd, input_buffer, sizeof(input_buffer), 0);
-//			if(r == 0 || r == SOCKET_ERROR)
-//#else
-//			ssize_t r = read(sockfd, input_buffer, sizeof(input_buffer));
-//			if(r <= 0)
-//#endif
-//			{
-//#ifdef WIN32
-//				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-//#else
-//				if(r < 0 && errno == EAGAIN)
-//#endif
-//				{
-//					if(blocking)
-//					{
-//#ifdef WIN32
-//						Sleep(1); // sleep for 10ms
-//#else
-//						usleep(1000); // sleep for 10ms
-//#endif
-//						continue;
-//					}
-//					else
-//					{
-//						return false;
-//					}
-//				}
-//
-//				logger << DebugError << "can't read from socket" << EndDebugError;
-//				return false;
-//			}
-//			input_buffer_index = 0;
-//			input_buffer_size = r;
-//			break;
-//		} while(1);
-//	}
-//
-//	c = input_buffer[input_buffer_index++];
-//	input_buffer_size--;
-//	return true;
-//}
 
 template <class ADDRESS>
 bool PIMGDBServer<ADDRESS>::FlushOutput()
@@ -1059,19 +1015,16 @@ bool PIMGDBServer<ADDRESS>::PutPacket(const string& s)
 template <class ADDRESS>
 bool PIMGDBServer<ADDRESS>::OutputText(const char *s, int count)
 {
-	int i;
-	uint8_t packet[1 + 2 * count + 1];
-	uint8_t *p = packet;
+	string packet = "";
+	string tmpPacket;
 
-	*p = 'O';
-	p++;
-	for(i = 0; i < count; i++, p += 2)
-	{
-		p[0] = Nibble2HexChar((uint8_t) s[i] >> 4);
-		p[1] = Nibble2HexChar((uint8_t) s[i] & 0xf);
-	}
-	*p = 0;
-	return PutPacket((const char *) packet);
+	TextToHex(s, count, tmpPacket);
+
+	packet.append("O");
+
+	packet.append(tmpPacket);
+
+	return PutPacket(packet);
 }
 
 template <class ADDRESS>
@@ -1122,11 +1075,139 @@ bool PIMGDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+bool PIMGDBServer<ADDRESS>::HandleSymbolLookup() {
+
+	while (true) {
+
+		string packet;
+		bool	found_error = false;
+
+		if(!GetPacket(packet, true))
+		{
+			return false;
+		}
+
+		if (packet.compare("OK") == 0) {
+			break;
+		} else if (packet.substr(0, 8).compare("qSymbol:") == 0) {
+			vector<string> segments;
+
+			StringSplit(packet, ":", segments);
+
+			string name;
+			string value;
+
+			if (segments.size() == 2) // read request
+			{
+				HexToText(segments[1].c_str(), segments[1].size(), name);
+
+				ReadSymbol(name);
+
+			}
+			else if (segments.size() == 3) // write_symbol request
+			{
+				HexToText(segments[2].c_str(), segments[2].size(), name);
+
+				WriteSymbol(name, segments[1]);
+			}
+			else {
+				found_error = true;
+			}
+
+		} else {
+			found_error = true;
+		}
+
+		if (found_error) {
+			if(verbose)
+			{
+				logger << DebugWarning << "HandleSymbolLookup:: unknown command (" << packet << ")" << EndDebugWarning;
+			}
+		}
+	}
+
+	return true;
+}
+
+template <class ADDRESS>
+bool PIMGDBServer<ADDRESS>::WriteSymbol(const string name, const string& hex) {
+
+	return false;
+}
+
+template <class ADDRESS>
+bool PIMGDBServer<ADDRESS>::ReadSymbol(const string name)
+{
+
+	/**
+	 * command: qRcmd, symboles
+	 * return "symbName:symbAddress:symbSize:symbType"
+	 *
+	 * with: symbType in {"FUNCTION", "VARIABLE"}
+	 */
+	const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+
+	if (symbol_registries != 0) {
+
+		typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
+
+		for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
+		{
+
+			if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
+
+				string packet("qSymbol:");
+
+				string value;
+
+				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+				{
+					if(verbose)
+					{
+						logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
+					}
+				}
+
+				string hexName;
+
+				TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
+
+				packet.append(value);
+				packet.append(":");
+				packet.append(hexName);
+
+				PutPacket(packet);
+
+				if (name.compare("*") != 0) {
+					break;
+				}
+			}
+
+		}
+
+		if (name.compare("*") == 0) {
+			string packet("qSymbol:0:");
+
+			string hexName;
+			TextToHex("*", 1, hexName);
+			packet.append(hexName);
+
+			PutPacket(packet);
+		}
+
+		return true;
+
+	}
+
+	return false;
+}
+
+template <class ADDRESS>
+bool PIMGDBServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string& packet)
 {
 	bool read_error = false;
 	bool overwrapping = false;
-	string packet;
+
 	char ch[2];
 	ch[1] = 0;
 
@@ -1152,6 +1233,20 @@ bool PIMGDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 	}
 
 	if(read_error)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+template <class ADDRESS>
+bool PIMGDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+{
+	string packet;
+
+	if(!InternalReadMemory(addr, size, packet))
 	{
 		if(verbose)
 		{
