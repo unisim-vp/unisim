@@ -39,7 +39,6 @@
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/tlm2/interrupt/types.hh>
-#include <tlm_utils/peq_with_get.h>
 #include <stack>
 #include <vector>
 
@@ -367,10 +366,7 @@ private:
 		{
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_CAPTURE_TRIGGER, channel);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
-			if(it != schedule.end())
-			{
-				if((*it).second->GetChannel() == channel) return; // Already scheduled
-			}
+			if(it != schedule.end()) return; // Already scheduled
 			Event *event = event_allocator.AllocEvent();
 			event->InitializeCaptureTriggerEvent(channel, time_stamp);
 			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
@@ -383,10 +379,7 @@ private:
 		{
 			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_LOAD, channel);
 			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
-			if(it != schedule.end())
-			{
-				if((*it).second->GetChannel() == channel) return; // Already scheduled
-			}
+			if(it != schedule.end()) return; // Already scheduled
 			Event *event = event_allocator.AllocEvent();
 			event->InitializeLoadEvent(channel, time_stamp);
 			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));

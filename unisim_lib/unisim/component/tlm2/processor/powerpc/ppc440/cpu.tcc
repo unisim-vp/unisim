@@ -42,6 +42,13 @@ namespace processor {
 namespace powerpc {
 namespace ppc440 {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class CONFIG>
 CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a PPC440 CPU core")
@@ -164,6 +171,10 @@ void CPU<CONFIG>::SignalIRQ(IRQQueue& queue, unsigned int irq)
 		{
 			do
 			{
+				if(inherited::IsVerboseException())
+				{
+					inherited::logger << DebugInfo << sc_time_stamp() << ": Processing an interrupt payload (IRQ #" << irq << ", level=" << payload->GetValue() << ")" << EndDebugInfo;
+				}
 				if(payload->GetValue())
 					inherited::SetIRQ(irq);
 				else

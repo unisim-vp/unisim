@@ -805,10 +805,11 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 		
 		InterruptPayload *interrupt_payload = interrupt_payload_fabric.allocate();
 
-		interrupt_payload->SetValue(true);
+		interrupt_payload->SetValue(level);
 		
 		sc_time t(SC_ZERO_TIME);
-		interrupt_master_sock->b_transport(*interrupt_payload, t);
+		tlm::tlm_phase phase = tlm::BEGIN_REQ;
+		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
+#include <unisim/kernel/debug/debug.hh>
 
 #include <sstream>
 #include <stdexcept>
@@ -1764,6 +1765,29 @@ endian_type CPU<CONFIG>::GetEndianess()
 template <class CONFIG>
 void CPU<CONFIG>::SetIRQ(unsigned int _irq)
 {
+	if(IsVerboseException())
+	{
+		if(_irq & CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT)
+		{
+			logger << DebugInfo << "Got an external input interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a critical input interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a decrementer interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a fixed interval timer interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a watchdog timer interrupt condition" << EndDebugInfo;
+		}
+	}
 	irq = irq | (_irq & (CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT | CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT));
 	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
 	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
@@ -1803,6 +1827,10 @@ void CPU<CONFIG>::ResetIRQ(unsigned int _irq)
 	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
 	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
 	if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
+	if(IsVerboseException())
+	{
+		logger << DebugInfo << "Reseting pending IRQ mask: " << irq << EndDebugInfo;
+	}
 }
 
 template <class CONFIG>

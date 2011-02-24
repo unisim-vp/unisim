@@ -72,8 +72,8 @@ public:
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
 	virtual bool WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size, const uint8_t *byte_enable, uint32_t byte_enable_length, uint32_t streaming_width);
 	
-	bool Read(typename CONFIG::MEMORY_ADDR addr, uint32_t& value);
-	bool Write(typename CONFIG::MEMORY_ADDR addr, uint32_t value);
+	void Read(typename CONFIG::MEMORY_ADDR addr, uint32_t& value);
+	void Write(typename CONFIG::MEMORY_ADDR addr, uint32_t value);
 protected:
 	void SetInterruptInput(unsigned int irq, bool level);
 	void DetectInterruptInput();
@@ -81,6 +81,8 @@ protected:
 	virtual void SetOutputEdge(bool final_level);
 	void GenerateRequest();
 	unisim::kernel::logger::Logger logger;
+	bool IsVerbose() const;
+	bool IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const;
 private:
 	
 	uint32_t isr;   // Interrupt Status Register
@@ -104,6 +106,9 @@ private:
 	void SetSIE(uint32_t value);
 	void SetCIE(uint32_t value);
 	void SetMER(uint32_t value);
+	
+	bool verbose;
+	Parameter<bool> param_verbose;
 	
 };
 
