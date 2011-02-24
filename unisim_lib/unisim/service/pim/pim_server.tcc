@@ -1139,26 +1139,21 @@ template <class ADDRESS>
 bool PIMGDBServer<ADDRESS>::ReadSymbol(const string name)
 {
 
-	/**
-	 * command: qRcmd, symboles
-	 * return "symbName:symbAddress:symbSize:symbType"
-	 *
-	 * with: symbType in {"FUNCTION", "VARIABLE"}
-	 */
 	const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
 
 	if (symbol_registries != 0) {
 
 		typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
 
+		string packet = "";
+		string value;
+
 		for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
 		{
 
 			if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
 
-				string packet("qSymbol:");
-
-				string value;
+				value = "";
 
 				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
 				{
@@ -1172,11 +1167,10 @@ bool PIMGDBServer<ADDRESS>::ReadSymbol(const string name)
 
 				TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
 
+				packet.append("qSymbol:");
 				packet.append(value);
 				packet.append(":");
 				packet.append(hexName);
-
-				PutPacket(packet);
 
 				if (name.compare("*") != 0) {
 					break;
@@ -1185,15 +1179,7 @@ bool PIMGDBServer<ADDRESS>::ReadSymbol(const string name)
 
 		}
 
-		if (name.compare("*") == 0) {
-			string packet("qSymbol:0:");
-
-			string hexName;
-			TextToHex("*", 1, hexName);
-			packet.append(hexName);
-
-			PutPacket(packet);
-		}
+		PutPacket(packet);
 
 		return true;
 
@@ -1581,7 +1567,27 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 		}
 
 	}
-	else {
+	else if (cmdPrefix.compare("stack") == 0) {
+		string packet("T05");
+
+		if(gdb_pc)
+		{
+			std::stringstream sstr;
+			string hex;
+			unsigned int reg_num = gdb_pc->GetRegNum();
+			gdb_pc->GetValue(hex);
+			sstr << std::hex << reg_num;
+			packet += sstr.str();
+			packet += ":";
+			packet += hex;
+			packet += ";";
+		}
+
+		PutPacket(packet);
+
+		ReadSymbol("*");
+
+	} else {
 		PutPacket("E00");
 	}
 
