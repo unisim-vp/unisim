@@ -1900,7 +1900,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
 	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
-	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory", "path"));
+	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory (absolute path)", "path"));
 	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
 	
 	if(LoadBuiltInConfig)
@@ -2049,7 +2049,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 		if(has_share_data_dir_hint ?
-				GetSharePath(bin_dir, shared_data_dir, shared_data_dir_hint) :
+				GetSharePath(shared_data_dir_hint, shared_data_dir, string()) :
 				GetSharePath(bin_dir, shared_data_dir))
 		{
 			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
