@@ -245,14 +245,20 @@ void CaptureTriggerStub::Process()
 	
 	while(1)
 	{
-		int32_t r = random.Generate(500) + 501;
+		int32_t r = random.Generate(80) + 80 + 40;
+		if(r < 40 || r > 199)
+		{
+			logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
+			Object::Stop(-1);
+		}
 		sc_time delay(cycle_time);
 		delay *= r;
+		// delay should be in [40; 199] cycles ([200; 995] nanoseconds with a 5 nanoseconds cycle time) */
 		time += delay;
 		
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (flipflop ? "high" : "low") << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (flipflop ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
 		}
 		
 		unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload *capture_trigger_payload = capture_trigger_payload_fabric.allocate();
@@ -710,7 +716,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.ext-timer-cycle-time", sc_time(ext_timer_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.voltage", 1.3 * 1e3); // mV
 	simulator->SetVariable("cpu.max-inst", maxinst);
-	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
+	simulator->SetVariable("cpu.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 
 	//  - Router

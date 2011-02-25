@@ -62,13 +62,9 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 	, slave_sock("slave-sock")
 	, irq_master_sock("irq-master-sock")
 	, cycle_time()
-	, read_latency()
-	, write_latency()
 	, time_stamp(SC_ZERO_TIME)
 	, ready_time_stamp(SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
-	, param_read_latency("read-latency", this, read_latency, "Latency for reading an interrupt controller register")
-	, param_write_latency("write-latency", this, write_latency, "Latency for writing an interrupt controller register")
 	, schedule()
 {
 	slave_sock(*this); // Bind socket to implementer of interface
@@ -343,7 +339,6 @@ void XPS_IntC<CONFIG>::ProcessCPUEvent(Event *event)
 	typename CONFIG::MEMORY_ADDR addr = payload->get_address();
 
 	tlm::tlm_response_status status = tlm::TLM_OK_RESPONSE;
-	const sc_time& latency = (cmd == tlm::TLM_READ_COMMAND) ? read_latency : ((cmd == tlm::TLM_WRITE_COMMAND) ? write_latency : SC_ZERO_TIME);
 	
 	if(cmd != tlm::TLM_IGNORE_COMMAND)
 	{
@@ -438,16 +433,16 @@ void XPS_IntC<CONFIG>::ProcessCPUEvent(Event *event)
 	payload->set_dmi_allowed(false);
 
 	ready_time_stamp = time_stamp;
-	ready_time_stamp += latency;
+	ready_time_stamp += cycle_time;
 
 	sc_event *ev_completed = event->GetCompletionEvent();
 	if(ev_completed)
 	{
-		ev_completed->notify(latency);
+		ev_completed->notify(cycle_time);
 	}
 	else
 	{
-		sc_time t(latency);
+		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
 	}
@@ -504,9 +499,12 @@ void XPS_IntC<CONFIG>::Process()
 						}
 						else
 						{
-							// reschedule the event later
-							event->SetTimeStamp(ready_time_stamp);
+							// Reschedule the event
 							schedule.Notify(event);
+							// delay the CPU events later
+							sc_time delay(ready_time_stamp);
+							delay -= time_stamp;
+							schedule.DelayEvents(delay, Event::EV_CPU);
 						}
 						break;
 				}

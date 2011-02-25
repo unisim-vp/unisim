@@ -950,6 +950,10 @@ bool XPS_Timer<CONFIG>::RunCounter0(uint32_t delta_count)
 	if(tcr0_roll_over && !GetTCSR0_MDT0())
 	{
 		// If the mode is generate, T0INT indicates the counter has rolled over
+		if(GetTCSR0_T0INT())
+		{
+			logger << DebugWarning << "A timer 0 interrupt has been lost while in generate mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
+		}
 		SetTCSR0_T0INT();
 	}
 
@@ -985,6 +989,10 @@ bool XPS_Timer<CONFIG>::RunCounter1(uint32_t delta_count)
 	if(tcr1_roll_over && !GetTCSR1_MDT1())
 	{
 		// If the mode is generate, T1INT indicates the counter has rolled over
+		if(GetTCSR1_T1INT())
+		{
+			logger << DebugWarning << "A timer 1 interrupt has been lost while in generate mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
+		}
 		SetTCSR1_T1INT();
 	}
 
@@ -1013,6 +1021,10 @@ void XPS_Timer<CONFIG>::CaptureTrigger0()
 				SetTLR0(GetTCR0());
 				SetTCSR0_T0INT();
 			}
+			else
+			{
+				logger << DebugWarning << "Timer 0 is loosing a capture trigger event while in capture mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
+			}
 		}
 	}
 }
@@ -1036,6 +1048,10 @@ void XPS_Timer<CONFIG>::CaptureTrigger1()
 					// Snap counter/timer 1
 					SetTLR1(GetTCR1());
 					SetTCSR1_T1INT();
+				}
+				else
+				{
+				logger << DebugWarning << "Timer 1 is loosing a capture trigger event while in capture mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
 				}
 			}
 		}

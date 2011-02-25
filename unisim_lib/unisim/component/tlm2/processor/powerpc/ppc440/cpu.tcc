@@ -71,23 +71,35 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
-	, external_input_interrupt_queue("external-input-interrupt-queue")
-	, critical_input_interrupt_queue("critical-input-interrupt-queue")
+	, external_event_schedule()
+	, critical_input_interrupt_redirector(0)
+	, external_input_interrupt_redirector(0)
 {
 	bus_master_sock(*this);
-	external_input_interrupt_slave_sock(external_input_interrupt_queue);
-	critical_input_interrupt_slave_sock(critical_input_interrupt_queue);
+	
+	critical_input_interrupt_redirector = new FwRedirector(Event::IRQ_CRITICAL_INPUT, this, &CPU<CONFIG>::interrupt_nb_transport_fw, &CPU<CONFIG>::interrupt_b_transport);
+	critical_input_interrupt_slave_sock(*critical_input_interrupt_redirector); // Bind socket to implementer of interface
+	
+	external_input_interrupt_redirector = new FwRedirector(Event::IRQ_EXTERNAL_INPUT, this, &CPU<CONFIG>::interrupt_nb_transport_fw, &CPU<CONFIG>::interrupt_b_transport);
+	external_input_interrupt_slave_sock(*external_input_interrupt_redirector); // Bind socket to implementer of interface
 	
 	SC_HAS_PROCESS(CPU);
 	
 	SC_THREAD(Run);
-	SC_THREAD(SignalExternalInputInterrupt);
-	SC_THREAD(SignalCriticalInputInterrupt);
 }
 
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
+	if(critical_input_interrupt_redirector)
+	{
+		delete critical_input_interrupt_redirector;
+	}
+	
+	if(external_input_interrupt_redirector)
+	{
+		delete external_input_interrupt_redirector;
+	}
 }
 
 template <class CONFIG>
@@ -121,6 +133,118 @@ void CPU<CONFIG>::Synchronize()
 	//std::cerr << "sc_time_stamp() = " << sc_time_stamp() << ":" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
 	timer_time -= cpu_time;
 	cpu_time = SC_ZERO_TIME;
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ProcessExternalEvents()
+{
+	sc_time time_stamp = sc_time_stamp();
+	time_stamp += cpu_time;
+	Event *event = external_event_schedule.GetNextEvent(time_stamp);
+	
+	if(event)
+	{
+		do
+		{
+			switch(event->GetType())
+			{
+				case Event::EV_IRQ:
+					ProcessIRQEvent(event);
+					external_event_schedule.FreeEvent(event);
+					break;
+			}
+		}
+		while((event = external_event_schedule.GetNextEvent(time_stamp)) != 0);
+	}
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::ProcessIRQEvent(Event *event)
+{
+	if(inherited::IsVerboseException())
+	{
+		inherited::logger << DebugInfo << event->GetTimeStamp() << ": processing an IRQ event (";
+		switch(event->GetIRQ())
+		{
+			case CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT:
+				inherited::logger << "external";
+				break;
+			case CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT:
+				inherited::logger << "critical";
+				break;
+			default:
+				inherited::logger << "?";
+				break;
+		}
+		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << ")" << EndDebugInfo;
+	}
+	if(event->GetLevel())
+		inherited::SetIRQ(event->GetIRQ());
+	else
+		inherited::ResetIRQ(event->GetIRQ());
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::interrupt_b_transport(unsigned int irq, InterruptPayload& payload, sc_core::sc_time& t)
+{
+	if(irq < 2)
+	{
+		bool level = payload.GetValue();
+		sc_time notify_time_stamp(sc_time_stamp());
+		notify_time_stamp += t;
+
+		AlignToBusClock(notify_time_stamp);
+		if(inherited::IsVerboseException())
+		{
+			inherited::logger << DebugInfo << notify_time_stamp << ": " << (irq ? "External" : "Critical") << " input interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
+		}
+		external_event_schedule.NotifyIRQEvent(irq ? CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT : CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT, level, notify_time_stamp);
+	}
+	else
+	{
+		inherited::logger << DebugError << "protocol error (invalid IRQ number)" << EndDebugError;
+		Object::Stop(-1);
+	}
+}
+
+template <class CONFIG>
+tlm::tlm_sync_enum CPU<CONFIG>::interrupt_nb_transport_fw(unsigned int irq, InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case tlm::BEGIN_REQ:
+			{
+				if(irq < 2)
+				{
+					bool level = payload.GetValue();
+					sc_time notify_time_stamp(sc_time_stamp());
+					notify_time_stamp += t;
+
+					AlignToBusClock(notify_time_stamp);
+					if(inherited::IsVerboseException())
+					{
+						inherited::logger << DebugInfo << notify_time_stamp << ": " << (irq ? "External" : "Critical") << " input interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
+					}
+					external_event_schedule.NotifyIRQEvent(irq ? CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT : CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT, level, notify_time_stamp);
+				}
+				else
+				{
+					inherited::logger << DebugError << "protocol error (invalid IRQ number)" << EndDebugError;
+					Object::Stop(-1);
+				}
+				
+				phase = tlm::END_REQ;
+				return tlm::TLM_COMPLETED;
+			}
+			break;
+		case tlm::END_RESP:
+			return tlm::TLM_COMPLETED;
+		default:
+			inherited::logger << DebugError << "protocol error" << EndDebugError;
+			Object::Stop(-1);
+			break;
+	}
+	return tlm::TLM_COMPLETED;
 }
 
 template <class CONFIG>
@@ -159,47 +283,17 @@ inline void CPU<CONFIG>::AlignToBusClock()
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::SignalIRQ(IRQQueue& queue, unsigned int irq)
+void CPU<CONFIG>::AlignToBusClock(sc_time& t)
 {
-	while(1)
-	{
-		wait(queue.GetEvent());
-		InterruptPayload *payload;
-		
-		payload = queue.GetNextIRQ();
-		if(payload)
-		{
-			do
-			{
-				if(inherited::IsVerboseException())
-				{
-					inherited::logger << DebugInfo << sc_time_stamp() << ": Processing an interrupt payload (IRQ #" << irq << ", level=" << payload->GetValue() << ")" << EndDebugInfo;
-				}
-				if(payload->GetValue())
-					inherited::SetIRQ(irq);
-				else
-					inherited::ResetIRQ(irq);
-				
-				payload->release();
-			}
-			while((payload = queue.GetNextIRQ()) != 0);
+	sc_dt::uint64 time_tu = t.value();
+	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+	sc_dt::uint64 modulo = time_tu % bus_cycle_time_tu;
+	if(!modulo) return; // already aligned
 
-			ev_irq.notify(SC_ZERO_TIME);
-		}
-	}
+	time_tu += bus_cycle_time_tu - modulo;
+	t = sc_time(time_tu, false);
 }
 
-template <class CONFIG>
-void CPU<CONFIG>::SignalExternalInputInterrupt()
-{
-	SignalIRQ(external_input_interrupt_queue, CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT);
-}
-
-template <class CONFIG>
-void CPU<CONFIG>::SignalCriticalInputInterrupt()
-{
-	SignalIRQ(critical_input_interrupt_queue, CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT);
-}
 
 template <class CONFIG>
 void CPU<CONFIG>::Run()
@@ -211,6 +305,7 @@ void CPU<CONFIG>::Run()
 		inherited::StepOneInstruction();
 		cpu_time += time_per_instruction;
 		UpdateTime();
+		ProcessExternalEvents();
 	}
 }
 
@@ -261,48 +356,36 @@ bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 }
 
 template <class CONFIG>
-CPU<CONFIG>::IRQQueue::IRQQueue(const char *name)
-	: queue(name)
+CPU<CONFIG>::FwRedirector::FwRedirector(unsigned int _id, CPU<CONFIG> *_cpu, tlm::tlm_sync_enum (CPU<CONFIG>::*_cb_nb_transport_fw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&), void (CPU<CONFIG>::*_cb_b_transport)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, sc_core::sc_time&))
+	: id(_id)
+	, cpu(_cpu)
+	, cb_nb_transport_fw(_cb_nb_transport_fw)
+	, cb_b_transport(_cb_b_transport)
 {
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::IRQQueue::b_transport(InterruptPayload& trans, sc_core::sc_time& t)
+void CPU<CONFIG>::FwRedirector::b_transport(unisim::kernel::tlm2::SimplePayload<bool>& trans, sc_core::sc_time& t)
 {
-	trans.acquire();
-	queue.notify(trans, t);
+	(cpu->*cb_b_transport)(id, trans, t);
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum CPU<CONFIG>::IRQQueue::nb_transport_fw(InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum CPU<CONFIG>::FwRedirector::nb_transport_fw(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
-	trans.acquire();
-	queue.notify(trans, t);
-	return tlm::TLM_COMPLETED;
+	return (cpu->*cb_nb_transport_fw)(id, trans, phase, t);
 }
 
 template <class CONFIG>
-unsigned int CPU<CONFIG>::IRQQueue::transport_dbg(InterruptPayload& trans)
+unsigned int CPU<CONFIG>::FwRedirector::transport_dbg(unisim::kernel::tlm2::SimplePayload<bool>& trans)
 {
 	return 0;
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::IRQQueue::get_direct_mem_ptr(InterruptPayload& trans, tlm::tlm_dmi&  dmi_data)
+bool CPU<CONFIG>::FwRedirector::get_direct_mem_ptr(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_dmi&  dmi_data)
 {
 	return false;
-}
-
-template <class CONFIG>
-InterruptPayload *CPU<CONFIG>::IRQQueue::GetNextIRQ()
-{
-	return queue.get_next_transaction();
-}
-
-template <class CONFIG>
-sc_event& CPU<CONFIG>::IRQQueue::GetEvent()
-{
-	return queue.get_event();
 }
 
 } // end of namespace ppc440

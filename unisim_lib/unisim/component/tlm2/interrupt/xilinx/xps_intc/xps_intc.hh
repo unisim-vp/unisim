@@ -326,6 +326,36 @@ private:
 			kernel_event.notify(t);
 		}
 
+		void DelayEvents(const sc_time& delay, typename Event::Type event_type)
+		{
+			typename std::multimap<ScheduleKey, Event *>::iterator it;
+			for(it = schedule.begin(); it != schedule.end(); it++)
+			{
+				Event *event = (*it).second;
+				
+				if(event->GetType() == event_type)
+				{
+					sc_time time_stamp(event->GetTimeStamp());
+					time_stamp += delay;
+					schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, event_type, event->GetIRQ()), event));
+				}
+			}
+
+			if(schedule.empty()) return;
+			
+			it = schedule.begin();
+			const sc_time& time_stamp = sc_time_stamp();
+			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			if(event_time_stamp <= time_stamp)
+			{
+				return;
+			}
+			
+			sc_time t(event_time_stamp);
+			t -= time_stamp;
+			kernel_event.notify(t);
+		}
+
 		Event *GetNextEvent(const sc_time& time_stamp)
 		{
 			if(schedule.empty()) return 0;
@@ -427,18 +457,12 @@ private:
 	
 	/** Cycle time */
 	sc_time cycle_time;
-	/** Latencies */
-	sc_time read_latency;
-	sc_time write_latency;
 
 	sc_time time_stamp;
 	sc_time ready_time_stamp;
 	
 	/** The parameter for the cycle time */
 	Parameter<sc_time> param_cycle_time;
-	/** The parameters to set the latencies */
-	Parameter<sc_time> param_read_latency;
-	Parameter<sc_time> param_write_latency;
 
 	FwRedirector *irq_redirector[CONFIG::C_NUM_INTR_INPUTS];
 	bool interrupt_input[CONFIG::C_NUM_INTR_INPUTS];
