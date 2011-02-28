@@ -244,6 +244,7 @@ PXP(const sc_module_name &name, Object *parent)
 	dt1["base-addr"]       = 0x101e2000UL;
 	dt2["base-addr"]       = 0x101e3000UL;
 	uart0["base-addr"]     = 0x101f1000UL;
+	dmac["base-addr"]      = 0x10130000UL;
 
 	cpu_target_socket.register_nb_transport_fw(this,
 			&PXP::cpu_target_nb_transport_fw);
@@ -368,7 +369,9 @@ PXP(const sc_module_name &name, Object *parent)
 	// - dmacinttc (unused) -> attached to stub dmacinttc_in_pot
 	dmac.dmacintr(dmacintr_to_pic17_signal);
 	dmacinterr_in_port(dmacinterr_signal);
+	dmac.dmacinterr(dmacinterr_signal);
 	dmacinttc_in_port(dmacinttc_signal);
+	dmac.dmacinttc(dmacinttc_signal);
 
 	/* PIC connections START */
 	// connection list (so do not need stubs)
@@ -567,6 +570,9 @@ PXP(const sc_module_name &name, Object *parent)
 	pic_init_socket(pic.bus_target_socket);
 	sic_init_socket(sic.bus_target_socket);
 	dmac_init_socket(dmac.bus_target_socket);
+
+	dmac_master1_target_socket(dmac.bus_master_1_socket);
+	dmac_master2_target_socket(dmac.bus_master_2_socket);
 }
 
 PXP ::
@@ -703,6 +709,12 @@ cpu_target_b_transport(transaction_type &trans,
 			trans.get_address()   <  0x10020000UL )
 	{
 		eth_init_socket->b_transport(trans, delay);
+		handled = true;
+	}
+	else if ( trans.get_address() >= 0x10130000UL &&
+			trans.get_address()   <  0x10140000UL )
+	{
+		dmac_init_socket->b_transport(trans, delay);
 		handled = true;
 	}
 	else if ( trans.get_address() >= 0x10140000UL &&
