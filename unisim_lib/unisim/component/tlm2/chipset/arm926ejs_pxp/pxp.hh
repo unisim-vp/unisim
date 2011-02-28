@@ -44,7 +44,7 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh"
-#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh"
@@ -121,7 +121,7 @@ public:
 	/** The System Controller */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::system_controller::SystemController sc;
 	/** The UART 0 */
-	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::UART uart0;
+	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::pl011::PL011 uart0;
 	/** Dual Timer for Timer 1 and 2 */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt1;
 	/** Dual Timer for Timer 3 and 4 */
@@ -166,11 +166,11 @@ public:
 	/** SSP to pic signal */
 	sc_signal<bool> ssp_to_pic11_signal;
 	/** UART0 to pic signal */
-	sc_signal<bool> uart0_to_pic12_signal;
+	sc_signal<bool> uart0_uartintr_to_pic12_signal;
 	/** UART1 to pic signal */
-	sc_signal<bool> uart1_to_pic13_signal;
+	sc_signal<bool> uart1_uartintr_to_pic13_signal;
 	/** UART2 to pic signal */
-	sc_signal<bool> uart2_to_pic14_signal;
+	sc_signal<bool> uart2_uartintr_to_pic14_signal;
 	/** SCI0 to pic signal */
 	sc_signal<bool> sci0_to_pic15_signal;
 	/** CLCD to pic signal */
@@ -218,7 +218,6 @@ public:
 		gpio3_int_stub, // pic9
 		rtc_int_stub, // pic10
 		ssp_int_stub, // pic11
-		uart0_int_stub, // pic12
 		uart1_int_stub, // pic13
 		uart2_int_stub, // pic14
 		sci0_int_stub, // pic15
@@ -385,6 +384,18 @@ public:
 	sc_in<bool> dmacinterr_in_port;
 	sc_in<bool> dmacinttc_in_port;
 	sc_signal<bool> dmacinterr_signal, dmacinttc_signal;
+
+	/** uart0 unused interrupt connections */
+	sc_in<bool> uart0_uartrxintr_in_port;
+	sc_in<bool> uart0_uarttxintr_in_port;
+	sc_in<bool> uart0_uartrtintr_in_port;
+	sc_in<bool> uart0_uartmsintr_in_port;
+	sc_in<bool> uart0_uarteintr_in_port;
+	sc_signal<bool> uart0_uartrxintr_signal,
+		uart0_uarttxintr_signal,
+		uart0_uartrtintr_signal,
+		uart0_uartmsintr_signal,
+		uart0_uarteintr_signal;
 
 	SC_HAS_PROCESS(PXP);
 	PXP(const sc_module_name &name, Object *parent = 0);

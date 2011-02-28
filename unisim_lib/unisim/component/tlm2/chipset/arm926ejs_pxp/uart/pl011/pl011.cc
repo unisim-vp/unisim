@@ -33,7 +33,7 @@
  */
  
 #define SC_INCLUDE_DYNAMIC_PROCESSES
-#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.hh"
 #include "unisim/kernel/tlm2/tlm.hh"
 #include "unisim/util/endian/endian.hh"
 #include <inttypes.h>
@@ -59,6 +59,7 @@ namespace tlm2 {
 namespace chipset {
 namespace arm926ejs_pxp {
 namespace uart {
+namespace pl011 {
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
@@ -69,11 +70,17 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
-UART ::
-UART(const sc_module_name &name, Object *parent)
+PL011 ::
+PL011(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
 	, bus_target_socket("bus_target_socket")
+	, uartrxintr("uartrxintr")
+	, uarttxintr("uarttxintr")
+	, uartrtintr("uartrtintr")
+	, uartmsintr("uartmsintr")
+	, uarteintr("uarteintr")
+	, uartintr("uartintr")
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of uart.")
@@ -90,13 +97,19 @@ UART(const sc_module_name &name, Object *parent)
 	, logger(*this)
 {
 	bus_target_socket.register_nb_transport_fw(this,
-			&UART::bus_target_nb_transport_fw);
+			&PL011::bus_target_nb_transport_fw);
 	bus_target_socket.register_b_transport(this,
-			&UART::bus_target_b_transport);
+			&PL011::bus_target_b_transport);
 	bus_target_socket.register_get_direct_mem_ptr(this,
-			&UART::bus_target_get_direct_mem_ptr);
+			&PL011::bus_target_get_direct_mem_ptr);
 	bus_target_socket.register_transport_dbg(this,
-			&UART::bus_target_transport_dbg);
+			&PL011::bus_target_transport_dbg);
+
+	uartrxintr.initialize(false);
+	uarttxintr.initialize(false);
+	uartrtintr.initialize(false);
+	uartmsintr.initialize(false);
+	uartintr.initialize(false);
 
 	// init the registers values
 	memset(regs, 0, 4096);
@@ -107,8 +120,8 @@ UART(const sc_module_name &name, Object *parent)
 	memcpy(&regs[0x18], &val16, sizeof(val16));
 }
 
-UART ::
-~UART()
+PL011 ::
+~PL011()
 {
 	if ( sock >= 0 )
 	{
@@ -124,7 +137,7 @@ UART ::
 }
 
 bool
-UART ::
+PL011 ::
 TelnetPutChar(uint8_t ch)
 {
 #ifdef WIN32
@@ -142,7 +155,7 @@ TelnetPutChar(uint8_t ch)
 }
 
 void
-UART ::
+PL011 ::
 TelnetPutPacket(std::string packet)
 {
 	const char *ch = packet.c_str();
@@ -162,7 +175,7 @@ TelnetPutPacket(std::string packet)
 	}
 }
 bool 
-UART ::
+PL011 ::
 EndSetup()
 {
 	struct sockaddr_in addr;
@@ -291,7 +304,7 @@ EndSetup()
 /**************************************************************************/
 
 tlm::tlm_sync_enum
-UART ::
+PL011 ::
 bus_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
@@ -301,7 +314,7 @@ bus_target_nb_transport_fw(transaction_type &trans,
 }
 
 void 
-UART ::
+PL011 ::
 bus_target_b_transport(transaction_type &trans, 
 		sc_core::sc_time &delay)
 {
@@ -421,7 +434,7 @@ bus_target_b_transport(transaction_type &trans,
 }
 
 bool 
-UART ::
+PL011 ::
 bus_target_get_direct_mem_ptr(transaction_type &trans, 
 		tlm::tlm_dmi &dmi_data)
 {
@@ -430,7 +443,7 @@ bus_target_get_direct_mem_ptr(transaction_type &trans,
 }
 
 unsigned int 
-UART ::
+PL011 ::
 bus_target_transport_dbg(transaction_type &trans)
 {
 	assert("TODO" == 0);
@@ -441,6 +454,7 @@ bus_target_transport_dbg(transaction_type &trans)
 /* Virtual methods for the target socket for the bus connection       END */
 /**************************************************************************/
 
+} // end of namespace pl011
 } // end of namespace uart 
 } // end of namespace arm926ejs_pxp
 } // end of namespace chipset

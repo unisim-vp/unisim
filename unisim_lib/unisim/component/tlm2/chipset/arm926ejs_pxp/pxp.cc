@@ -90,9 +90,9 @@ PXP(const sc_module_name &name, Object *parent)
 	, gpio3_to_pic9_signal("gpio3_to_pic9_signal")
 	, rtc_to_pic10_signal("rtc_to_pic10_signal")
 	, ssp_to_pic11_signal("ssp_to_pic11_signal")
-	, uart0_to_pic12_signal("uart0_to_pic12_signal")
-	, uart1_to_pic13_signal("uart1_to_pic13_signal")
-	, uart2_to_pic14_signal("uart2_to_pic14_signal")
+	, uart0_uartintr_to_pic12_signal("uart0_uartintr_to_pic12_signal")
+	, uart1_uartintr_to_pic13_signal("uart1_uartintr_to_pic13_signal")
+	, uart2_uartintr_to_pic14_signal("uart2_uartintr_to_pic14_signal")
 	, sci0_to_pic15_signal("sci0_to_pic15_signal")
 	, clcd_to_pic16_signal("clcd_to_pic16_signal")
 	, dmacintr_to_pic17_signal("dmacintr_to_pic17_signal")
@@ -120,7 +120,6 @@ PXP(const sc_module_name &name, Object *parent)
 	, gpio3_int_stub("gpio3_int_stub", this, false)
 	, rtc_int_stub("rtc_int_stub", this, false)
 	, ssp_int_stub("ssp_int_stub", this, false)
-	, uart0_int_stub("uart0_int_stub", this, false)
 	, uart1_int_stub("uart1_int_stub", this, false)
 	, uart2_int_stub("uart2_int_stub", this, false)
 	, sci0_int_stub("sci0_int_stub", this, false)
@@ -234,6 +233,16 @@ PXP(const sc_module_name &name, Object *parent)
 	, dmacinttc_in_port("dmacinttc_in_port")
 	, dmacinterr_signal("dmacinterr_signal")
 	, dmacinttc_signal("dmacinttc_signal")
+	, uart0_uartrxintr_in_port("uart0_uartrxintr_in_port")
+	, uart0_uarttxintr_in_port("uart0_uarttxintr_in_port")
+	, uart0_uartrtintr_in_port("uart0_uartrtintr_in_port")
+	, uart0_uartmsintr_in_port("uart0_uartmsintr_in_port")
+	, uart0_uarteintr_in_port("uart0_uarteintr_in_port")
+	, uart0_uartrxintr_signal("uart0_uartrxintr_signal")
+	, uart0_uarttxintr_signal("uart0_uarttxintr_signal")
+	, uart0_uartrtintr_signal("uart0_uartrtintr_signal")
+	, uart0_uartmsintr_signal("uart0_uartmsintr_signal")
+	, uart0_uarteintr_signal("uart0_uarteintr_signal")
 	, logger(*this)
 {
 
@@ -373,10 +382,30 @@ PXP(const sc_module_name &name, Object *parent)
 	dmacinttc_in_port(dmacinttc_signal);
 	dmac.dmacinttc(dmacinttc_signal);
 
+	// uart0 interrupts usage:
+	// - uartrxintr (unused) -> attached to stub uart0_uartrxintr_in_port
+	// - uarttxintr (unused) -> attached to stub uart0_uarttxintr_in_port
+	// - uartrtintr (unused) -> attached to stub uart0_uartrtintr_in_port
+	// - uartmsintr (unused) -> attached to stub uart0_uartmsintr_in_port
+	// - uarteintr (unused) -> attached to stub uart0_uarteintr_in_port
+	// - uartintr -> attached to pic.vicintsource[12]
+	uart0.uartintr(uart0_uartintr_to_pic12_signal);
+	uart0.uartrxintr(uart0_uartrxintr_signal);
+	uart0_uartrxintr_in_port(uart0_uartrxintr_signal);
+	uart0.uarttxintr(uart0_uarttxintr_signal);
+	uart0_uarttxintr_in_port(uart0_uarttxintr_signal);
+	uart0.uartrtintr(uart0_uartrtintr_signal);
+	uart0_uartrtintr_in_port(uart0_uartrtintr_signal);
+	uart0.uartmsintr(uart0_uartmsintr_signal);
+	uart0_uartmsintr_in_port(uart0_uartmsintr_signal);
+	uart0.uarteintr(uart0_uarteintr_signal);
+	uart0_uarteintr_in_port(uart0_uarteintr_signal);
+
 	/* PIC connections START */
 	// connection list (so do not need stubs)
 	// - 4 (dt1.timintc through timint12_to_pic4_signal)
 	// - 5 (dt2.timintc through timint34_to_pic5_signal)
+	// - 12 (uart0.uartintr through uart0_uartintr_to_pic12_signal)
 	// - 17 (dmac.dmacintr through dmacintr_to_pic17_signal)
 	// - 21 (sic.sicinttarget[0] through sic0_to_pic21_signal)
 	// - 22 (sic.sicinttarget[1] through sic1_to_pic22_signal)
@@ -391,6 +420,7 @@ PXP(const sc_module_name &name, Object *parent)
 	// - 31 (sic.sicinttarget[10] through sic10_to_pic31_signal)
 	(*pic.vicintsource[4])(timint12_to_pic4_signal);
 	(*pic.vicintsource[5])(timint34_to_pic5_signal);
+	(*pic.vicintsource[12])(uart0_uartintr_to_pic12_signal);
 	(*pic.vicintsource[17])(dmacintr_to_pic17_signal);
 	(*pic.vicintsource[21])(sic0_to_pic21_signal);
 	(*pic.vicintsource[22])(sic1_to_pic22_signal);
@@ -414,9 +444,8 @@ PXP(const sc_module_name &name, Object *parent)
 	(*pic.vicintsource[9])(gpio3_to_pic9_signal);
 	(*pic.vicintsource[10])(rtc_to_pic10_signal);
 	(*pic.vicintsource[11])(ssp_to_pic11_signal);
-	(*pic.vicintsource[12])(uart0_to_pic12_signal);
-	(*pic.vicintsource[13])(uart1_to_pic13_signal);
-	(*pic.vicintsource[14])(uart2_to_pic14_signal);
+	(*pic.vicintsource[13])(uart1_uartintr_to_pic13_signal);
+	(*pic.vicintsource[14])(uart2_uartintr_to_pic14_signal);
 	(*pic.vicintsource[15])(sci0_to_pic15_signal);
 	(*pic.vicintsource[16])(clcd_to_pic16_signal);
 	(*pic.vicintsource[18])(pwrfail_to_pic18_signal);
@@ -433,9 +462,8 @@ PXP(const sc_module_name &name, Object *parent)
 	gpio3_int_stub.vicinttarget(gpio3_to_pic9_signal);
 	rtc_int_stub.vicinttarget(rtc_to_pic10_signal);
 	ssp_int_stub.vicinttarget(ssp_to_pic11_signal);
-	uart0_int_stub.vicinttarget(uart0_to_pic12_signal);
-	uart1_int_stub.vicinttarget(uart1_to_pic13_signal);
-	uart2_int_stub.vicinttarget(uart2_to_pic14_signal);
+	uart1_int_stub.vicinttarget(uart1_uartintr_to_pic13_signal);
+	uart2_int_stub.vicinttarget(uart2_uartintr_to_pic14_signal);
 	sci0_int_stub.vicinttarget(sci0_to_pic15_signal);
 	clcd_int_stub.vicinttarget(clcd_to_pic16_signal);
 	pwrfail_int_stub.vicinttarget(pwrfail_to_pic18_signal);

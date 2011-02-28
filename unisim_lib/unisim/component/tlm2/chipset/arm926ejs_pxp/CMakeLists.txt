@@ -42,8 +42,8 @@ set ( tlm2_pxp_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh
@@ -69,7 +69,7 @@ set_source_files_properties (
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/pxp.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.cc

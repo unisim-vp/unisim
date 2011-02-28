@@ -34,8 +34,8 @@
  
 /** Models the ARM PrimeCell UART (PL011) */
 
-#ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_UART_HH__
-#define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_UART_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_PL011_PL011_HH__
+#define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_PL011_PL011_HH__
 
 #include <systemc.h>
 #include <tlm.h>
@@ -50,8 +50,9 @@ namespace tlm2 {
 namespace chipset {
 namespace arm926ejs_pxp {
 namespace uart {
+namespace pl011 {
 
-class UART
+class PL011
 	: public unisim::kernel::service::Object
 	, public sc_module
 {
@@ -61,12 +62,20 @@ public:
 	typedef tlm::tlm_sync_enum                             sync_enum_type;
 
 	/** Target socket for the bus connection */
-	tlm_utils::passthrough_target_socket<UART, 32>
+	tlm_utils::passthrough_target_socket<PL011, 32>
 		bus_target_socket;
 
-	SC_HAS_PROCESS(UART);
-	UART(const sc_module_name &name, Object *parent = 0);
-	~UART();
+	/** Output interrupt ports */
+	sc_core::sc_out<bool> uartrxintr;
+	sc_core::sc_out<bool> uarttxintr;
+	sc_core::sc_out<bool> uartrtintr;
+	sc_core::sc_out<bool> uartmsintr;
+	sc_core::sc_out<bool> uarteintr;
+	sc_core::sc_out<bool> uartintr;
+
+	SC_HAS_PROCESS(PL011);
+	PL011(const sc_module_name &name, Object *parent = 0);
+	~PL011();
 
 	virtual bool EndSetup();
 
@@ -121,12 +130,13 @@ private:
 	unisim::kernel::logger::Logger logger;
 };
 
-} // end of namespace system_controller
+} // end of namespace pl011
+} // end of namespace uart
 } // end of namespace arm926ejs_pxp
 } // end of namespace chipset
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_SYSTEM_CONTROLLER_SC_HH__
+#endif // __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_UART_PL011_HH__
 
