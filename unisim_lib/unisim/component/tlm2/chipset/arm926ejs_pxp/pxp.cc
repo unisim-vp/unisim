@@ -57,6 +57,8 @@ PXP(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
 	, cpu_target_socket("cpu-target-socket")
+	, dmac_master1_target_socket("dmac_master1_target_socket")
+	, dmac_master2_target_socket("dmac_master2_target_socket")
 	, ssmc0_init_socket("ssmc0-init-socket")
 	, mpmc0_init_socket("mpmc0-init-socket")
 	, eth_init_socket("eth-init-socket")
@@ -64,6 +66,7 @@ PXP(const sc_module_name &name, Object *parent)
 	, wd_init_socket("wd-init-socket")
 	, pic_init_socket("pic-init-socket")
 	, sic_init_socket("sic-init-socket")
+	, dmac_init_socket("dmac-init-socket")
 	, eth("ethernet", this)
 	, sc("system-controller", this)
 	, uart0("uart0", this)
@@ -72,6 +75,7 @@ PXP(const sc_module_name &name, Object *parent)
 	, wd("watchdog", this)
 	, pic("pic", this)
 	, sic("sic", this)
+	, dmac("dmac", this)
 	, tss("time-signal-splitter")
 	, sc_to_dt_signal("sc_to_dt_signal")
 	, wdog_to_pic0_signal("wdog_to_pic0_signal")
@@ -91,7 +95,7 @@ PXP(const sc_module_name &name, Object *parent)
 	, uart2_to_pic14_signal("uart2_to_pic14_signal")
 	, sci0_to_pic15_signal("sci0_to_pic15_signal")
 	, clcd_to_pic16_signal("clcd_to_pic16_signal")
-	, dma_to_pic17_signal("dma_to_pic17_signal")
+	, dmacintr_to_pic17_signal("dmacintr_to_pic17_signal")
 	, pwrfail_to_pic18_signal("pwrfail_to_pic18_signal")
 	, mbx_to_pic19_signal("mbx_to_pic19_signal")
 	, gnd_to_pic20_signal("gnd_to_pic20_signal")
@@ -121,7 +125,6 @@ PXP(const sc_module_name &name, Object *parent)
 	, uart2_int_stub("uart2_int_stub", this, false)
 	, sci0_int_stub("sci0_int_stub", this, false)
 	, clcd_int_stub("clcd_int_stub", this, false)
-	, dma_int_stub("dma_int_stub", this, false)
 	, pwrfail_int_stub("pwrfail_int_stub", this, false)
 	, mbx_int_stub("mbx_int_stub", this, false)
 	, gnd_int_stub("gnd_int_stub", this, false)
@@ -219,6 +222,18 @@ PXP(const sc_module_name &name, Object *parent)
 	, zu214_int_stub("zu214_int_stub", this, false)
 	, zu215_int_stub("zu215_int_stub", this, false)
 	, zu216_int_stub("zu216_int_stub", this, false)
+	, timint1_in_port("timint1_in_port")
+	, timint2_in_port("timint2_in_port")
+	, timint1_signal("timint1_signal")
+	, timint2_signal("timint2_signal")
+	, timint3_in_port("timint3_in_port")
+	, timint4_in_port("timint4_in_port")
+	, timint3_signal("timint3_signal")
+	, timint4_signal("timint4_signal")
+	, dmacinterr_in_port("dmacinterr_in_port")
+	, dmacinttc_in_port("dmacinttc_in_port")
+	, dmacinterr_signal("dmacinterr_signal")
+	, dmacinttc_signal("dmacinttc_signal")
 	, logger(*this)
 {
 
@@ -238,6 +253,24 @@ PXP(const sc_module_name &name, Object *parent)
 			&PXP::cpu_target_get_direct_mem_ptr);
 	cpu_target_socket.register_transport_dbg(this,
 			&PXP::cpu_target_transport_dbg);
+
+	dmac_master1_target_socket.register_nb_transport_fw(this,
+			&PXP::dmac_master1_target_nb_transport_fw);
+	dmac_master1_target_socket.register_b_transport(this,
+			&PXP::dmac_master1_target_b_transport);
+	dmac_master1_target_socket.register_get_direct_mem_ptr(this,
+			&PXP::dmac_master1_target_get_direct_mem_ptr);
+	dmac_master1_target_socket.register_transport_dbg(this,
+			&PXP::dmac_master1_target_transport_dbg);
+
+	dmac_master2_target_socket.register_nb_transport_fw(this,
+			&PXP::dmac_master2_target_nb_transport_fw);
+	dmac_master2_target_socket.register_b_transport(this,
+			&PXP::dmac_master2_target_b_transport);
+	dmac_master2_target_socket.register_get_direct_mem_ptr(this,
+			&PXP::dmac_master2_target_get_direct_mem_ptr);
+	dmac_master2_target_socket.register_transport_dbg(this,
+			&PXP::dmac_master2_target_transport_dbg);
 
 	ssmc0_init_socket.register_nb_transport_bw(this,
 			&PXP::ssmc0_init_nb_transport_bw);
@@ -289,6 +322,11 @@ PXP(const sc_module_name &name, Object *parent)
 	sic_init_socket.register_invalidate_direct_mem_ptr(this,
 			&PXP::sic_init_invalidate_direct_mem_ptr);
 
+	dmac_init_socket.register_nb_transport_bw(this,
+			&PXP::dmac_init_nb_transport_bw);
+	dmac_init_socket.register_invalidate_direct_mem_ptr(this,
+			&PXP::dmac_init_invalidate_direct_mem_ptr);
+
 	sc.refclk_out_port(sc_to_dt_signal);
 	tss.sc_ref_in_port(sc_to_dt_signal);
 	
@@ -299,15 +337,14 @@ PXP(const sc_module_name &name, Object *parent)
 	sc.timclken1_out_port(sc_to_dt1_signal[2]);
 	dt1.timclken2_in_port(sc_to_dt1_signal[2]);
 	// dt1 interruptions usage:
-	// - timint1 (unused) -> attached to stub timint1_stub_in_port
-	// - timint2 (unused) -> attached to stub timint2_stub_in_port
+	// - timint1 (unused) -> attached to stub timint1_in_port
+	// - timint2 (unused) -> attached to stub timint2_in_port
 	// - timintc -> attached to pic.vicintsource[4]
 	dt1.timint1_out_port(timint1_signal);
 	timint1_in_port(timint1_signal);
 	dt1.timint2_out_port(timint2_signal);
 	timint2_in_port(timint2_signal);
 	dt1.timintc_out_port(timint12_to_pic4_signal);
-	// timintc12_in_port(timintc12_signal);
 
 	tss.dt2_timclk_out_port(sc_to_dt2_signal[0]);
 	dt2.timclk_in_port(sc_to_dt2_signal[0]);
@@ -315,21 +352,29 @@ PXP(const sc_module_name &name, Object *parent)
 	dt2.timclken1_in_port(sc_to_dt2_signal[1]);
 	sc.timclken3_out_port(sc_to_dt2_signal[2]);
 	dt2.timclken2_in_port(sc_to_dt2_signal[2]);
-	// dt1 interruptions usage:
-	// - timint1 (unused) -> attached to stub timint3_stub_in_port
-	// - timint2 (unused) -> attached to stub timint4_stub_in_port
+	// dt2 interruptions usage:
+	// - timint1 (unused) -> attached to stub timint3_in_port
+	// - timint2 (unused) -> attached to stub timint4_in_port
 	// - timintc -> attached to pic.vicintsource[5]
 	dt2.timint1_out_port(timint3_signal);
 	timint3_in_port(timint3_signal);
 	dt2.timint2_out_port(timint4_signal);
 	timint4_in_port(timint4_signal);
 	dt2.timintc_out_port(timint34_to_pic5_signal);
-	// timintc34_in_port(timintc34_signal);
+
+	// dmac interrupts usage:
+	// - dmacintr -> attached to pic.vicintsource[17]
+	// - dmacinterr (unused) -> attached to stub dmacinterr_in_port
+	// - dmacinttc (unused) -> attached to stub dmacinttc_in_pot
+	dmac.dmacintr(dmacintr_to_pic17_signal);
+	dmacinterr_in_port(dmacinterr_signal);
+	dmacinttc_in_port(dmacinttc_signal);
 
 	/* PIC connections START */
 	// connection list (so do not need stubs)
 	// - 4 (dt1.timintc through timint12_to_pic4_signal)
 	// - 5 (dt2.timintc through timint34_to_pic5_signal)
+	// - 17 (dmac.dmacintr through dmacintr_to_pic17_signal)
 	// - 21 (sic.sicinttarget[0] through sic0_to_pic21_signal)
 	// - 22 (sic.sicinttarget[1] through sic1_to_pic22_signal)
 	// - 23 (sic.sicinttarget[2] through sic2_to_pic23_signal)
@@ -343,6 +388,7 @@ PXP(const sc_module_name &name, Object *parent)
 	// - 31 (sic.sicinttarget[10] through sic10_to_pic31_signal)
 	(*pic.vicintsource[4])(timint12_to_pic4_signal);
 	(*pic.vicintsource[5])(timint34_to_pic5_signal);
+	(*pic.vicintsource[17])(dmacintr_to_pic17_signal);
 	(*pic.vicintsource[21])(sic0_to_pic21_signal);
 	(*pic.vicintsource[22])(sic1_to_pic22_signal);
 	(*pic.vicintsource[23])(sic2_to_pic23_signal);
@@ -370,7 +416,6 @@ PXP(const sc_module_name &name, Object *parent)
 	(*pic.vicintsource[14])(uart2_to_pic14_signal);
 	(*pic.vicintsource[15])(sci0_to_pic15_signal);
 	(*pic.vicintsource[16])(clcd_to_pic16_signal);
-	(*pic.vicintsource[17])(dma_to_pic17_signal);
 	(*pic.vicintsource[18])(pwrfail_to_pic18_signal);
 	(*pic.vicintsource[19])(mbx_to_pic19_signal);
 	(*pic.vicintsource[20])(gnd_to_pic20_signal);
@@ -390,7 +435,6 @@ PXP(const sc_module_name &name, Object *parent)
 	uart2_int_stub.vicinttarget(uart2_to_pic14_signal);
 	sci0_int_stub.vicinttarget(sci0_to_pic15_signal);
 	clcd_int_stub.vicinttarget(clcd_to_pic16_signal);
-	dma_int_stub.vicinttarget(dma_to_pic17_signal);
 	pwrfail_int_stub.vicinttarget(pwrfail_to_pic18_signal);
 	mbx_int_stub.vicinttarget(mbx_to_pic19_signal);
 	gnd_int_stub.vicinttarget(gnd_to_pic20_signal);
@@ -522,6 +566,7 @@ PXP(const sc_module_name &name, Object *parent)
 	dt2_init_socket(dt2.bus_target_socket);
 	pic_init_socket(pic.bus_target_socket);
 	sic_init_socket(sic.bus_target_socket);
+	dmac_init_socket(dmac.bus_target_socket);
 }
 
 PXP ::
@@ -624,7 +669,10 @@ cpu_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO: cpu_target_nb_transport_fw"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -715,7 +763,9 @@ PXP ::
 cpu_target_get_direct_mem_ptr(transaction_type &trans, 
 		tlm::tlm_dmi &dmi_data)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TLM2 Direct memory access not supported."
+		<< EndDebugError;
 	return false;
 }
 
@@ -749,13 +799,104 @@ cpu_target_transport_dbg(transaction_type &trans)
 	else if ( trans.get_address()   >= 0x101f1000UL &&
 			trans.get_address()     <  0x101f2000UL )
 		return uart0_init_socket->transport_dbg(trans);
-	return false;
+	return 0;
 }
 
 /**************************************************************************/
 /* Virtual methods for the target socket for the cpu connection       END */
 /**************************************************************************/
 
+/**************************************************************************/
+/* Virtual methods for the target sockets of the dmac connections   START */
+/**************************************************************************/
+
+tlm::tlm_sync_enum
+PXP ::
+dmac_master1_target_nb_transport_fw(transaction_type &trans,
+		phase_type &phase, sc_core::sc_time &time)
+{
+	logger << DebugError
+		<< "TODO: dmac_master1_target_nb_transport_fw"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+PXP ::
+dmac_master1_target_b_transport(transaction_type &trans, 
+		sc_core::sc_time &delay)
+{
+	cpu_target_b_transport(trans, delay);
+}
+
+bool 
+PXP ::
+dmac_master1_target_get_direct_mem_ptr(transaction_type &trans,
+		tlm::tlm_dmi &dmi_data)
+{
+	logger << DebugError
+		<< "TLM2 Direct memory access not supported."
+		<< EndDebugError;
+	return false;
+}
+
+unsigned int 
+PXP ::
+dmac_master1_target_transport_dbg(transaction_type &trans)
+{
+	logger << DebugError
+		<< "TLM2 debug interface not supported from dmac access."
+		<< EndDebugError;
+	return 0;
+}
+
+tlm::tlm_sync_enum
+PXP ::
+dmac_master2_target_nb_transport_fw(transaction_type &trans,
+		phase_type &phase,
+		sc_core::sc_time &time)
+{
+	logger << DebugError
+		<< "TODO: dmac_master2_target_nb_transport_fw"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+PXP ::
+dmac_master2_target_b_transport(transaction_type &trans, 
+		sc_core::sc_time &delay)
+{
+	cpu_target_b_transport(trans, delay);
+}
+
+bool
+PXP ::
+dmac_master2_target_get_direct_mem_ptr(transaction_type &trans, 
+		tlm::tlm_dmi &dmi_data)
+{
+	logger << DebugError
+		<< "TLM2 Direct memory access not supported."
+		<< EndDebugError;
+	return false;
+}
+
+unsigned int
+PXP ::
+dmac_master2_target_transport_dbg(transaction_type &trans)
+{
+	logger << DebugError
+		<< "TLM2 debug interface not supported from dmac access."
+		<< EndDebugError;
+	return 0;
+}
+
+/**************************************************************************/
+/* Virtual methods for the target sockets of the dmac connections     END */
+/**************************************************************************/
+	
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                     START */
 /*   the SSMC Chip Select 0                                               */
@@ -767,7 +908,10 @@ ssmc0_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -776,7 +920,10 @@ PXP ::
 ssmc0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -795,7 +942,10 @@ mpmc0_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -804,7 +954,10 @@ PXP ::
 mpmc0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -823,7 +976,10 @@ eth_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -832,7 +988,10 @@ PXP ::
 eth_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -851,7 +1010,10 @@ sc_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -860,7 +1022,10 @@ PXP ::
 sc_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -879,7 +1044,10 @@ uart0_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -888,7 +1056,10 @@ PXP ::
 uart0_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -907,7 +1078,10 @@ dt1_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -916,7 +1090,10 @@ PXP ::
 dt1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 tlm::tlm_sync_enum
@@ -925,7 +1102,10 @@ dt2_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -934,7 +1114,10 @@ PXP ::
 dt2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -953,7 +1136,10 @@ wd_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -962,7 +1148,10 @@ PXP ::
 wd_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -981,7 +1170,10 @@ pic_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -990,7 +1182,10 @@ PXP ::
 pic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
@@ -1009,7 +1204,10 @@ sic_init_nb_transport_bw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 	return tlm::TLM_COMPLETED;
 }
 
@@ -1018,12 +1216,48 @@ PXP ::
 sic_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 		sc_dt::uint64)
 {
-	assert("TODO" == 0);
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
 }
 
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                           */
 /*   the SIC                                                          END */
+/**************************************************************************/
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                     START */
+/*   the DMAC                                                             */
+/**************************************************************************/
+tlm::tlm_sync_enum
+PXP ::
+dmac_init_nb_transport_bw(transaction_type &trans,
+		phase_type &phase,
+		sc_core::sc_time &time)
+{
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	return tlm::TLM_COMPLETED;
+}
+
+void
+PXP ::
+dmac_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+		sc_dt::uint64)
+{
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+}
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                           */
+/*   the DMAC                                                         END */
 /**************************************************************************/
 
 } // end of namespace arm926ejs_pxp

@@ -57,6 +57,8 @@ set ( tlm2_pxp_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.hh
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.cc
 	)
 
 add_library ( unisim__component__tlm2__chipset__arm926ejs_pxp
@@ -74,6 +76,7 @@ set_source_files_properties (
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.cc
+	${CMAKE_SOURCE_DIR}/unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.cc
 	PROPERTIES
 		COMPILE_FLAGS "-I${OSCI_SYSTEMC_INCLUDE_DIR} -I${OSCI_TLM2_INCLUDE_DIR}"
 	)
