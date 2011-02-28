@@ -97,6 +97,9 @@ public:
 	/** Initiator socket for the UART0 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		uart0_init_socket;
+	/** Initiator socket for the UART1 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		uart1_init_socket;
 	/** Initiator socket for the Timer 1-2 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		dt1_init_socket;
@@ -122,6 +125,8 @@ public:
 	unisim::component::tlm2::chipset::arm926ejs_pxp::system_controller::SystemController sc;
 	/** The UART 0 */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::pl011::PL011 uart0;
+	/** The UART 1 */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::pl011::PL011 uart1;
 	/** Dual Timer for Timer 1 and 2 */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt1;
 	/** Dual Timer for Timer 3 and 4 */
@@ -397,6 +402,18 @@ public:
 		uart0_uartmsintr_signal,
 		uart0_uarteintr_signal;
 
+	/** uart1 unused interrupt connections */
+	sc_in<bool> uart1_uartrxintr_in_port;
+	sc_in<bool> uart1_uarttxintr_in_port;
+	sc_in<bool> uart1_uartrtintr_in_port;
+	sc_in<bool> uart1_uartmsintr_in_port;
+	sc_in<bool> uart1_uarteintr_in_port;
+	sc_signal<bool> uart1_uartrxintr_signal,
+		uart1_uarttxintr_signal,
+		uart1_uartrtintr_signal,
+		uart1_uartmsintr_signal,
+		uart1_uarteintr_signal;
+
 	SC_HAS_PROCESS(PXP);
 	PXP(const sc_module_name &name, Object *parent = 0);
 	~PXP();
@@ -541,6 +558,22 @@ private:
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                           */
 	/*   the UART 0                                                       END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the UART 1                                                           */
+	/**************************************************************************/
+
+	sync_enum_type uart1_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void uart1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the UART 1                                                       END */
 	/**************************************************************************/
 
 	/**************************************************************************/
