@@ -50,6 +50,7 @@ namespace xps_timer {
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
+using unisim::kernel::service::Formula;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;
@@ -106,10 +107,32 @@ private:
 	bool tcr1_roll_over;
 	uint64_t num_tcr0_roll_over;
 	uint64_t num_tcr1_roll_over;
+	uint64_t num_timer0_generate_interrupts;
+	uint64_t num_timer1_generate_interrupts;
+	uint64_t num_timer0_generate_interrupt_losses;
+	uint64_t num_timer1_generate_interrupt_losses;
+	uint64_t num_timer0_captures;
+	uint64_t num_timer1_captures;
+	uint64_t num_timer0_old_capture_losses;
+	uint64_t num_timer1_old_capture_losses;
+	uint64_t num_timer0_new_capture_losses;
+	uint64_t num_timer1_new_capture_losses;
 	
 	Parameter<bool> param_verbose;
 	Statistic<uint64_t> stat_num_tcr0_roll_over;
 	Statistic<uint64_t> stat_num_tcr1_roll_over;
+	Statistic<uint64_t> stat_num_timer0_generate_interrupts;
+	Statistic<uint64_t> stat_num_timer1_generate_interrupts;
+	Statistic<uint64_t> stat_num_timer0_generate_interrupt_losses;
+	Statistic<uint64_t> stat_num_timer1_generate_interrupt_losses;
+	Statistic<uint64_t> stat_num_timer0_captures;
+	Statistic<uint64_t> stat_num_timer1_captures;
+	Statistic<uint64_t> stat_num_timer0_old_capture_losses;
+	Statistic<uint64_t> stat_num_timer1_old_capture_losses;
+	Statistic<uint64_t> stat_num_timer0_new_capture_losses;
+	Statistic<uint64_t> stat_num_timer1_new_capture_losses;
+	Formula<uint64_t> formula_num_timer0_capture_losses;
+	Formula<uint64_t> formula_num_timer1_capture_losses;
 	
 	void LogTCSR();
 

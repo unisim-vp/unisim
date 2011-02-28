@@ -433,9 +433,14 @@ void XPS_Timer<CONFIG>::Process()
 		{
 			do
 			{
-				if((event->GetTimeStamp() != time_stamp) || ((time_stamp.value() % cycle_time.value()) != 0))
+				if(event->GetTimeStamp() != time_stamp)
 				{
-					inherited::logger << DebugError << "Internal error" << EndDebugError;
+					inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
+					Object::Stop(-1);
+				}
+				if((time_stamp.value() % cycle_time.value()) != 0)
+				{
+					inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
 					Object::Stop(-1);
 				}
 	

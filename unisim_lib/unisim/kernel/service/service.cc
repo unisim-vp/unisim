@@ -648,6 +648,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
@@ -662,6 +663,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = 0;
@@ -676,6 +678,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child;
 	childs[1] = 0;
 	childs[2] = 0;

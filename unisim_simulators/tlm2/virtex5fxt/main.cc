@@ -241,31 +241,66 @@ void CaptureTriggerStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc
 
 void CaptureTriggerStub::Process()
 {
-	bool flipflop = false;
+	bool output_level = false;
+	int32_t p = 0;   // period in cycles
+	int32_t d = 0;   // duty in cycles
+	sc_time period(SC_ZERO_TIME);
+	sc_time duty(SC_ZERO_TIME);
+	sc_time delay(SC_ZERO_TIME);
 	
 	while(1)
 	{
-		int32_t r = random.Generate(80) + 80 + 40;
-		if(r < 40 || r > 199)
+		// Compute next output
+		if(output_level)
 		{
-			logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
-			Object::Stop(-1);
+			d = random.Generate((p / 2) - 1) + (p / 2);
+			// d is in [1; p - 2]
+			if(d < 1 || d > (p - 1))
+			{
+				logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
+				Object::Stop(-1);
+			}
+			duty = cycle_time;
+			duty *= d;
+			if(verbose)
+			{
+				logger << unisim::kernel::logger::DebugInfo << "Duty = " << duty << unisim::kernel::logger::EndDebugInfo;
+			}
+			// duty is in [cycle_time; period - 2 * cycle_time] */
+			delay = duty;
 		}
-		sc_time delay(cycle_time);
-		delay *= r;
-		// delay should be in [40; 199] cycles ([200; 995] nanoseconds with a 5 nanoseconds cycle time) */
+		else
+		{
+			delay = period - duty;
+
+			p = random.Generate(160) + 160 + 80;
+			// p is in [80; 399]
+			if(p < 80 || p > 399)
+			{
+				logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
+				Object::Stop(-1);
+			}
+			period = cycle_time;
+			period *= p;
+			if(verbose)
+			{
+				logger << unisim::kernel::logger::DebugInfo << "Period = " << period << unisim::kernel::logger::EndDebugInfo;
+			}
+			// period is in [80; 399] cycles ([400; 1995] nanoseconds with a 5 nanoseconds cycle time) */
+		}
+		
+		output_level = !output_level;
+		
 		time += delay;
 		
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (flipflop ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (output_level ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
 		}
 		
 		unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload *capture_trigger_payload = capture_trigger_payload_fabric.allocate();
 		
-		capture_trigger_payload->SetValue(flipflop);
-		
-		flipflop = !flipflop;
+		capture_trigger_payload->SetValue(output_level);
 		
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
 		capture_trigger_master_sock->nb_transport_fw(*capture_trigger_payload, phase, time);
@@ -274,8 +309,8 @@ void CaptureTriggerStub::Process()
 		
 		if(time >= nice_time)
 		{
-			wait(time);
-			time = SC_ZERO_TIME;
+			wait(nice_time);
+			time -= nice_time;
 		}
 	}
 }

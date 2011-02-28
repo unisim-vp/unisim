@@ -163,7 +163,7 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 {
 	if(inherited::IsVerboseException())
 	{
-		inherited::logger << DebugInfo << event->GetTimeStamp() << ": processing an IRQ event (";
+		inherited::logger << DebugInfo << (sc_time_stamp() + cpu_time) << ": processing an IRQ event that occured at " << event->GetTimeStamp() << " (";
 		switch(event->GetIRQ())
 		{
 			case CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT:
@@ -176,7 +176,7 @@ void CPU<CONFIG>::ProcessIRQEvent(Event *event)
 				inherited::logger << "?";
 				break;
 		}
-		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << ")" << EndDebugInfo;
+		inherited::logger << " input goes " << (event->GetLevel() ? "high" : "low") << "). Event skew is " << (sc_time_stamp() + cpu_time - event->GetTimeStamp()) << "." << EndDebugInfo;
 	}
 	if(event->GetLevel())
 		inherited::SetIRQ(event->GetIRQ());

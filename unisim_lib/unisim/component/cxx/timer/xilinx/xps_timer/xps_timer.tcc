@@ -67,9 +67,31 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	, tcr1_roll_over(false)
 	, num_tcr0_roll_over(0)
 	, num_tcr1_roll_over(0)
+	, num_timer0_generate_interrupts(0)
+	, num_timer1_generate_interrupts(0)
+	, num_timer0_generate_interrupt_losses(0)
+	, num_timer1_generate_interrupt_losses(0)
+	, num_timer0_captures(0)
+	, num_timer1_captures(0)
+	, num_timer0_old_capture_losses(0)
+	, num_timer1_old_capture_losses(0)
+	, num_timer0_new_capture_losses(0)
+	, num_timer1_new_capture_losses(0)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, stat_num_tcr0_roll_over("num-tcr0-roll-over", this, num_tcr0_roll_over, "Number of timer/counter 0 roll over")
 	, stat_num_tcr1_roll_over("num-tcr1-roll-over", this, num_tcr1_roll_over, "Number of timer/counter 1 roll over")
+	, stat_num_timer0_generate_interrupts("num-timer0-generate-interrupts", this, num_timer0_generate_interrupts, "Number of timer 0 generate interrupts")
+	, stat_num_timer1_generate_interrupts("num-timer1-generate-interrupts", this, num_timer1_generate_interrupts, "Number of timer 1 generate interrupts")
+	, stat_num_timer0_generate_interrupt_losses("num-timer0-generate-interrupt-losses", this, num_timer0_generate_interrupt_losses, "Number of timer 0 generate interrupt losses")
+	, stat_num_timer1_generate_interrupt_losses("num-timer1-generate-interrupt-losses", this, num_timer1_generate_interrupt_losses, "Number of timer 1 generate interrupt losses")
+	, stat_num_timer0_captures("num-timer0-captures", this, num_timer0_captures, "Number of timer 0 captures")
+	, stat_num_timer1_captures("num-timer1-captures", this, num_timer1_captures, "Number of timer 1 captures")
+	, stat_num_timer0_old_capture_losses("num-timer0-old-capture-losses", this, num_timer0_old_capture_losses, "Number of timer 0 old capture losses")
+	, stat_num_timer1_old_capture_losses("num-timer1-old-capture-losses", this, num_timer1_old_capture_losses, "Number of timer 1 old capture losses")
+	, stat_num_timer0_new_capture_losses("num-timer0-new-capture-losses", this, num_timer0_new_capture_losses, "Number of timer 0 new capture losses")
+	, stat_num_timer1_new_capture_losses("num-timer1-new-capture-losses", this, num_timer1_new_capture_losses, "Number of timer 1 new capture losses")
+	, formula_num_timer0_capture_losses("num-timer0-capture-losses", this, Formula<uint64_t>::OP_ADD, &stat_num_timer0_old_capture_losses, &stat_num_timer0_new_capture_losses, "Number of timer 0 capture losses")
+	, formula_num_timer1_capture_losses("num-timer1-capture-losses", this, Formula<uint64_t>::OP_ADD, &stat_num_timer1_old_capture_losses, &stat_num_timer1_new_capture_losses, "Number of timer 1 capture losses")
 {
 	tcsr0[0] = 0;
 	tcsr0[1] = 0;
@@ -947,11 +969,13 @@ bool XPS_Timer<CONFIG>::RunCounter0(uint32_t delta_count)
 		tcr0_roll_over = new_tcr0 < old_tcr0;
 	}
 
-	if(tcr0_roll_over && !GetTCSR0_MDT0())
+	if(tcr0_roll_over && !GetTCSR0_MDT0() && GetTCSR0_ENIT0())
 	{
 		// If the mode is generate, T0INT indicates the counter has rolled over
+		num_timer0_generate_interrupts++;
 		if(GetTCSR0_T0INT())
 		{
+			num_timer0_generate_interrupt_losses++;
 			logger << DebugWarning << "A timer 0 interrupt has been lost while in generate mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
 		}
 		SetTCSR0_T0INT();
@@ -986,11 +1010,13 @@ bool XPS_Timer<CONFIG>::RunCounter1(uint32_t delta_count)
 		tcr1_roll_over = new_tcr1 < old_tcr1;
 	}
 
-	if(tcr1_roll_over && !GetTCSR1_MDT1())
+	if(tcr1_roll_over && !GetTCSR1_MDT1() && GetTCSR1_ENIT1())
 	{
 		// If the mode is generate, T1INT indicates the counter has rolled over
+		num_timer1_generate_interrupts++;
 		if(GetTCSR1_T1INT())
 		{
+			num_timer1_generate_interrupt_losses++;
 			logger << DebugWarning << "A timer 1 interrupt has been lost while in generate mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
 		}
 		SetTCSR1_T1INT();
@@ -1014,16 +1040,28 @@ void XPS_Timer<CONFIG>::CaptureTrigger0()
 		if(GetTCSR0_MDT0())
 		{
 			// External capture trigger Timer 0 enabled
+			num_timer0_captures++;
+			if(GetTCSR0_T0INT() && GetTCSR0_ENIT0())
+			{
+				logger << DebugWarning << "Timer 0 is loosing ";
+				if(GetTCSR0_ARHT0())
+				{
+					num_timer0_old_capture_losses++;
+					logger << "an old capture because a new capture has arrived while the old capture";
+				}
+				else
+				{
+					num_timer0_new_capture_losses++;
+					logger << "a new capture because it is holding an old capture that";
+				}
+				logger << DebugWarning << " has not been yet acknowledged: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning;
+			}
 			if(!GetTCSR0_T0INT() || GetTCSR0_ARHT0())
 			{
 				// Overwrite capture value
 				// Snap counter/timer 0
 				SetTLR0(GetTCR0());
 				SetTCSR0_T0INT();
-			}
-			else
-			{
-				logger << DebugWarning << "Timer 0 is loosing a capture trigger event while in capture mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
 			}
 		}
 	}
@@ -1042,16 +1080,28 @@ void XPS_Timer<CONFIG>::CaptureTrigger1()
 			if(GetTCSR1_MDT1())
 			{
 				// External capture trigger Timer 1 enabled
+				num_timer1_captures++;
+				if(GetTCSR1_T1INT() && GetTCSR1_ENIT1())
+				{
+					logger << DebugWarning << "Timer 1 is loosing ";
+					if(GetTCSR1_ARHT1())
+					{
+						num_timer1_old_capture_losses++;
+						logger << "an old capture because a new capture has arrived while the old capture";
+					}
+					else
+					{
+						num_timer1_new_capture_losses++;
+						logger << "a new capture because it is holding an old capture that";
+					}
+					logger << DebugWarning << " has not been yet acknowledged: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning;
+				}
 				if(!GetTCSR1_T1INT() || GetTCSR1_ARHT1())
 				{
 					// Overwrite capture value
 					// Snap counter/timer 1
 					SetTLR1(GetTCR1());
 					SetTCSR1_T1INT();
-				}
-				else
-				{
-				logger << DebugWarning << "Timer 1 is loosing a capture trigger event while in capture mode: either CPU is too slow to handle interrupts, or temporal decoupling of CPU model is too agressive" << EndDebugWarning; 
 				}
 			}
 		}
