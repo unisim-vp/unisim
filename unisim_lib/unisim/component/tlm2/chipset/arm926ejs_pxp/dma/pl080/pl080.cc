@@ -291,7 +291,8 @@ bus_target_nb_transport_fw(transaction_type &trans,
 		phase_type &phase,
 		sc_core::sc_time &time)
 {
-	return tlm::TLM_ACCEPTED;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	return tlm::TLM_COMPLETED;
 }
 
 void 
@@ -299,6 +300,133 @@ PL080 ::
 bus_target_b_transport(transaction_type &trans, 
 		sc_core::sc_time &delay)
 {
+	uint32_t addr = trans.get_address() - base_addr;
+	uint8_t *data = trans.get_data_ptr();
+	uint32_t size = trans.get_data_length();
+	bool is_read = trans.is_read();
+	bool handled = false;
+
+	// address must be:
+	// - within bounds
+	// - word aligned
+	// - be a multiple of a word size (multiple of 4 bytes)
+	// - writes must be exactly 4 bytes
+	bool address_error = false;
+	if ( !((trans.get_address() >= base_addr) &&
+			((trans.get_address() + size) <= (base_addr + 0x01000UL))) )
+	{
+		address_error = true;
+	}
+	else
+	{
+		if ( trans.get_address() & 0x03UL )
+		{
+			address_error = true;
+		}
+		else
+		{
+			if ( is_read )
+			{
+				if ( (size % 4) != 0 )
+				{
+					address_error = true;
+				}
+			}
+			else
+			{
+				if ( size != 4 )
+				{
+					address_error = true;
+				}
+			}
+		}
+	}
+	if ( address_error )
+	{
+		logger << DebugError
+			<< "Out of bounds access to DMAC:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size;
+		if ( !is_read )
+		{
+			logger << std::endl
+				<< " - data =" << std::hex;
+			for ( unsigned int i = 0; i < size; i++ )
+				logger << " " << (unsigned int)data[i];
+			logger << std::dec;
+		}
+		logger << EndDebugError;
+		trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
+		return;
+	}
+
+	if ( is_read )
+	{
+		handled = true;
+		memcpy(data, &(regs[addr]), size);
+		for ( unsigned int i = 0; handled && (i < size); i += 4 )
+		{
+			uint32_t cur_addr = addr + i;
+			switch ( cur_addr )
+			{
+				case DMACPeriphID0:
+				case DMACPeriphID1:
+				case DMACPeriphID2:
+				case DMACPeriphID3:
+				case DMACPCellID0:
+				case DMACPCellID1:
+				case DMACPCellID2:
+				case DMACPCellID3:
+					break;
+				default:
+					handled = false;
+					break;
+			}
+
+		}
+	}
+	// it is a write
+	else
+	{
+	}
+
+	if ( !handled )
+	{
+		logger << DebugError
+			<< "Access to DMAC:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size;
+		if ( !is_read )
+		{
+			logger << std::endl
+				<< " - data =" << std::hex;
+			for ( unsigned int i = 0; i < size; i++ )
+				logger << " " << (unsigned int)data[i];
+			logger << std::dec;
+		}
+		logger << EndDebugError;
+		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+
+	// everything went fine, update the status of the tlm response
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+
+	if ( VERBOSE(V0, V_TRANS) )
+	{
+		logger << DebugInfo
+			<< "Access to DMAC:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
+			<< " - data =" << std::hex;
+		for ( unsigned int i = 0; i < size; i++ )
+			logger << " " << (unsigned int)data[i];
+		logger << std::dec
+			<< EndDebugInfo;
+	}
+
 }
 
 bool 

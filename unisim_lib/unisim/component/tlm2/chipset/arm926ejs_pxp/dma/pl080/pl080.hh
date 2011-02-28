@@ -271,6 +271,7 @@ private:
 	/** Verbose target mask */
 	static const uint32_t V_STATUS    = 0x01UL <<  4;
 	static const uint32_t V_OUTIRQ    = 0x02UL <<  5;
+	static const uint32_t V_TRANS     = 0x03UL <<  6;
 	/** Check if we should verbose */
 	bool VERBOSE(uint32_t level, uint32_t mask) const
 	{
