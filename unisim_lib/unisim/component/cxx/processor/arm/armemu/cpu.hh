@@ -179,7 +179,7 @@ public:
 	 * 
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool EndSetup();
 	/** Object disconnect method.
 	 * This method is called when this UNISIM object is disconnected from other
 	 *   UNISIM objects.

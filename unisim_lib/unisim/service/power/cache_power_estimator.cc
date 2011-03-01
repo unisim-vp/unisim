@@ -229,11 +229,7 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	param_banks.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_output_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_tag_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-#if defined(HAVE_CACTI4_2)
-	cacti =  new Cacti4_2();
-#else
 	cacti = 0;
-#endif
 }
 
 CachePowerEstimator::~CachePowerEstimator()
@@ -424,6 +420,9 @@ bool CachePowerEstimator::SetupCacti()
 		logger << DebugError << "no time service is connected." << EndDebugError;
 		return false;
 	}
+
+	cacti = new Cacti4_2();
+
 	if(verbose)
 	{
 		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;

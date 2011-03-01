@@ -143,6 +143,25 @@ namespace arm {
  *
  * void Read32toGPRAligned(uint32_t address, uint32_t reg);
  *
+ * * 32bits memory read into one of the user general purpose registers.
+ * This method reads 32bits from memory and stores the result into
+ *   the user general purpose register indicated by the input reg
+ * 
+ * @param address the base address of the 32bits read
+ * @param reg the user register to store the resulting read
+ *
+ * void Read32toUserGPR(uint32_t address, uint32_t reg);
+ * 
+ * * 32bits aligned memory read into one of the user general purpose registers.
+ * This method reads 32bits from memory and stores the result into
+ *   the user general purpose register indicated by the input reg. Note that
+ *   this read methods supposes that the address is 32bits aligned.
+ * 
+ * @param address the base address of the 32bits read
+ * @param reg the user register to store the resulting read
+ *
+ * void Read32toUserGPRAligned(uint32_t address, uint32_t reg);
+ *
  * * 16bits aligned memory read that stores result into one of the general 
  *  purpose registers
  * This method reads 16bits from memory and stores the result into
@@ -302,7 +321,7 @@ public:
 	 * @param id the register index
 	 * @return the value contained by the register
 	 */
-	uint32_t GetGPR_usr(uint32_t id) const;
+	uint32_t GetGPR_usr(uint32_t id, uint32_t mode) const;
 	/** Set the value contained by a user GPR.
 	 * Sets the value contained by a user GPR. It is the same than SetGPR byt
 	 *   restricting the index from 0 to 15 (only the first 16 registers).
@@ -310,7 +329,7 @@ public:
 	 * @param id the register index
 	 * @param val the value to set
 	 */
-	void SetGPR_usr(uint32_t id, uint32_t val);
+	void SetGPR_usr(uint32_t id, uint32_t val, uint32_t mode);
 		
 	/* CPSR access functions */
 	/** Get the value of the CPSR register.

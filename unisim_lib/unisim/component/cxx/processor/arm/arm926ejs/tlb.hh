@@ -79,7 +79,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	/** Cache power estimator service import. */
 	unisim::kernel::service::ServiceImport<
@@ -112,7 +112,7 @@ public:
 	 * @param way the way in which the tag was found
 	 * @return true if found, false otherwise
 	 */
-	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way) const;
+	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way);
 	/** Get a new way where a new entry can be placed.
 	 *
 	 * @param set the set to which the entry should be placed
@@ -176,6 +176,7 @@ private:
 	uint32_t m_tag_shift;
 	uint32_t m_set_mask;
 	uint32_t m_tag[m_sets_][m_associativity_];
+	uint32_t m_last_accessed_way[m_sets_];
 	uint32_t m_data[m_sets_][m_associativity_];
 	uint8_t m_valid[m_sets_][m_associativity_];
 	uint32_t m_replacement_history[m_sets_];

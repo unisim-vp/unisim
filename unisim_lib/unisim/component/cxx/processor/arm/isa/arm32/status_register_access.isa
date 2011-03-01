@@ -119,106 +119,63 @@ msr_imm.disasm = {
 }
 
 msr_imm.execute = {
+	typedef Operation<STATE> inherited;
+
 	uint32_t operand;
 	uint32_t reg;
-	uint32_t reg_mask;
+	uint32_t byte_mask = 0;
+	uint32_t reg_mask = 0;
 	uint32_t run_mode;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
-	
+	if ( !cpu.CheckCondition(cond) ) return;
+
 	operand = ShiftOperand32imm(rotate_imm, imm);
+	if ( operand & inherited::msr_unallocmask ) // unpredictable
+		return;
+
+	/* creating the byte mask */
+	if ( (mask & 0x01) == 0x01 ) byte_mask = byte_mask | 0xFF;
+	if ( (mask & 0x02) == 0x02 ) byte_mask = byte_mask | 0xFF00;
+	if ( (mask & 0x04) == 0x04 ) byte_mask = byte_mask | 0xFF0000;
+	if ( (mask & 0x08) == 0x08 ) byte_mask = byte_mask | 0xFF000000;
+
 	run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
-	if(r) {
-		/* check current running mode, if in user or system mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if((run_mode == USER_MODE) ||
-				(run_mode == SYSTEM_MODE)) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cerr << str.str() 
-				<< endl;
-
-#else // SOCLIB
-
-			cpu.logger << DebugWarning
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cpu.logger << str.str() << endl 
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
+	if ( r == 0 )
+	{
+		if ( run_mode != USER_MODE ) // we are in a privileged mode
+		{
+			if ( operand & inherited::msr_statemask )
+				return; // unpredictable
+			reg_mask = byte_mask & 
+				( inherited::msr_usermask | inherited::msr_privmask );
 		}
-		reg = cpu.GetSPSR();
-	} else {
-		/* check current running mode, if in user mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if(mask != 0x08 && run_mode == USER_MODE) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "Warning: trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << Endl;
-			cerr << str.str() 
-				<< endl;
-
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning
-				<< "trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << endl;
-			cpu.logger << str.str() << endl
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
+		else
+		{
+			reg_mask = byte_mask & inherited::msr_usermask;
 		}
-		reg = cpu.GetCPSR();
-	}
-
-	/* creating the register mask */
-	reg_mask = 0;
-	if((mask & 0x01) == 0x01) reg_mask = reg_mask | 0xFF;
-	if((mask & 0x02) == 0x02) reg_mask = reg_mask | 0xFF00;
-	if((mask & 0x04) == 0x04) reg_mask = reg_mask | 0xFF0000;
-	if((mask & 0x08) == 0x08) reg_mask = reg_mask | 0xFF000000;
-	
-	/* updating the register */
-	reg = (reg & ~reg_mask) | (operand & reg_mask);
-	
-	if(r) cpu.SetSPSR(reg);
-	else {
+		reg = (cpu.GetCPSR() & ~reg_mask) | (operand & reg_mask);
 		cpu.SetCPSR(reg);
-		/* check if there has been any change in the running mode,
-		 *   and switch registers if so */
+
+		/* check if the running mode did change, if so switch registers */
 		uint32_t new_run_mode = reg & RUNNING_MODE_MASK;
-		if(run_mode != new_run_mode) {
+		if ( run_mode != new_run_mode )
 			cpu.SetGPRMapping(run_mode, new_run_mode);
+	}
+	else // r == 1
+	{
+		// check that the mode has SPSR
+		if ( !((run_mode == USER_MODE) || (run_mode == SYSTEM_MODE)) )
+		{
+			reg_mask = byte_mask &
+				(inherited::msr_usermask | inherited::msr_privmask |
+					inherited::msr_statemask);
+			reg = (cpu.GetSPSR() & ~reg_mask) | (operand & reg_mask);
+			cpu.SetSPSR(reg);
 		}
+		else
+			return; // unpredictable
 	}
 }
 
@@ -239,106 +196,59 @@ msr_reg.execute = {
 
 	uint32_t operand;
 	uint32_t reg;
-	uint32_t reg_mask;
+	uint32_t byte_mask = 0;
+	uint32_t reg_mask = 0;
 	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 	uint32_t run_mode;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(!cpu.CheckCondition(cond)) return;
+	if ( !cpu.CheckCondition(cond) ) return;
 
 	operand = rm_value;
+	if ( operand & inherited::msr_unallocmask ) // unpredictable
+		return;
+
+	/* creating the byte mask */
+	if ( (mask & 0x01) == 0x01 ) byte_mask = byte_mask | 0xFF;
+	if ( (mask & 0x02) == 0x02 ) byte_mask = byte_mask | 0xFF00;
+	if ( (mask & 0x04) == 0x04 ) byte_mask = byte_mask | 0xFF0000;
+	if ( (mask & 0x08) == 0x08 ) byte_mask = byte_mask | 0xFF000000;
+
 	run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
-	if(r) {
-		/* check current running mode, if in user or system mode then the behaviour is 
-		 *   unpredictable, so we will do a return */
-		if((run_mode == USER_MODE) ||
-				(run_mode == SYSTEM_MODE)) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "Warning: trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cerr << str.str() 
-				<< endl;
-
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning 
-				<< "trying to access SPSR while running in "
-				<< ((run_mode == USER_MODE)?"user":"system")
-				<< " mode with the following instruction: " 
-				<< endl;
-			cpu.logger << str.str() << endl
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
+	if ( r == 0 )
+	{
+		if ( run_mode != USER_MODE )
+		{
+			if ( operand & inherited::msr_statemask )
+				return; // unpredictable
+			reg_mask = byte_mask & 
+				( inherited::msr_usermask | inherited::msr_privmask );
 		}
-		reg = cpu.GetSPSR();
-	} else {
-		/* check current running mode, if in user mode then the behaviour is 
-		 * 	 unpredictable, so we will do a return */
-		if(mask != 0x08 && run_mode == USER_MODE) {
-			stringstream str;
-			this->disasm(cpu, str);
-
-#ifdef SOCLIB
-			
-			cerr << "Warning(" << __FUNCTION__
-				<< ":" << __FILE__ << ":" << __LINE__
-				<< "):" << endl
-				<< "Warning: trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << endl;
-			cerr << str.str() 
-				<< endl;
-			
-#else // SOCLIB
-			
-			cpu.logger << DebugWarning
-				<< "trying to execute msr instruction  while running in "
-				<< "user"
-				<< " mode: " << endl;
-			cpu.logger << str.str() << endl
-				<< "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
-				<< EndDebugWarning;
-			
-#endif // SOCLIB
-			
-			return;
+		else
+		{
+			reg_mask = byte_mask & inherited::msr_usermask;
 		}
-		reg = cpu.GetCPSR();
-	}
-
-	/* creating the register mask */
-	reg_mask = 0;
-	if((mask & 0x01) == 0x01) reg_mask = reg_mask | 0xFF;
-	if((mask & 0x02) == 0x02) reg_mask = reg_mask | 0xFF00;
-	if((mask & 0x04) == 0x04) reg_mask = reg_mask | 0xFF0000;
-	if((mask & 0x08) == 0x08) reg_mask = reg_mask | 0xFF000000;
-
-	/* updating the register */
-	reg = (reg & ~reg_mask) | (operand & reg_mask);
-
-	if(r) cpu.SetSPSR(reg);
-	else {
+		reg = (cpu.GetCPSR() & ~reg_mask) | (operand & reg_mask);
 		cpu.SetCPSR(reg);
-		/* check if there has been any change in the running mode,
-		 *   and switch registers if so */
+		
+		/* check if the running mode did change, if so switch registers */
 		uint32_t new_run_mode = reg & RUNNING_MODE_MASK;
-		if(run_mode != new_run_mode) {
+		if ( run_mode != new_run_mode )
 			cpu.SetGPRMapping(run_mode, new_run_mode);
+	}
+	else // r == 1
+	{
+		if ( !((run_mode == USER_MODE) || (run_mode == SYSTEM_MODE)) )
+		{
+			reg_mask = byte_mask &
+				(inherited::msr_usermask | inherited::msr_privmask |
+					inherited::msr_statemask);
+			reg = (cpu.GetSPSR() & ~reg_mask) | (operand & reg_mask);
+			cpu.SetSPSR(reg);
 		}
+		else
+			return; // unpredictable
 	}
 }
 
@@ -354,3 +264,12 @@ status_register_access_rm_init.initialize_rm_init = {
 	else inherited::rm_init = 0;
 }
 
+group status_register_access_masks_init(msr_imm, msr_reg)
+status_register_access_masks_init.initialize_msr_masks = {
+	typedef Operation<STATE> inherited;
+
+	inherited::msr_unallocmask = 0x06ffff00UL;
+	inherited::msr_usermask    = 0xf8000000UL;
+	inherited::msr_privmask    = 0x000000dfUL;
+	inherited::msr_statemask   = 0x01000020UL;
+}

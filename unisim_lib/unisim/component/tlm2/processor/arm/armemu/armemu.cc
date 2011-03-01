@@ -172,9 +172,9 @@ ARMEMU ::
  */
 bool 
 ARMEMU:: 
-Setup() 
+EndSetup() 
 {
-	if (!inherited::Setup()) 
+	if ( !inherited::EndSetup() ) 
 	{
 		inherited::logger << DebugError
 			<< "Error while trying to set up the ARM cpu" << endl
@@ -186,7 +186,8 @@ Setup()
 	cpu_cycle_time = sc_time((double)inherited::cpu_cycle_time, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
-	if (inherited::verbose) {
+	if ( inherited::verbose ) 
+	{
 		inherited::logger << DebugInfo << LOCATION
 			<< "Setting CPU cycle time to " 
 			<< cpu_cycle_time.to_string() << endl

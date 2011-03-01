@@ -35,12 +35,13 @@
 #ifndef __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 #define __UNISIM_COMPONENT_TLM2_CHIPSET_ARM926EJS_PXP_DUAL_TIMER_DT_HH__
 
+#include <inttypes.h>
 #include <systemc.h>
 #include <tlm.h>
 #include <tlm_utils/passthrough_target_socket.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include <inttypes.h>
+#include "unisim/util/generic_peripheral_register/generic_peripheral_register.hh"
 
 namespace unisim {
 namespace component {
@@ -52,6 +53,7 @@ namespace dual_timer {
 class DualTimer
 	: public unisim::kernel::service::Object
 	, public sc_module
+	, public unisim::util::generic_peripheral_register::GenericPeripheralRegisterInterface<uint32_t>
 {
 public:
 	typedef tlm::tlm_base_protocol_types::tlm_payload_type transaction_type;
@@ -80,15 +82,31 @@ public:
 	DualTimer(const sc_module_name &name, Object *parent = 0);
 	~DualTimer();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
+	/** Thread handler of timer 1 */
+	void Timer1Handler();
+	/** Thread handler of timer 2 */
+	void Timer2Handler();
+	/** Thread handler of output signals timintx and timintc */
+	void OutputUpdate();
+
 	/** Registers storage */
 	uint8_t regs[256];
 	/** Timer 1 last update time */
 	sc_time t1_update_time;
 	/** Timer 2 last update time */
 	sc_time t2_update_time;
+	/** Timer 1 event produced when timer reaches threshold
+	 *  The event only takes place if the interrupts are enabled */
+	sc_event t1_event;
+	/** Timer 2 event produced when timer reaches threshold
+	 *  The event only takes place if the interrupts are enabled */
+	sc_event t2_event;
+	/** Output update event to indicate that the update of the output signals
+	 */
+	sc_event output_update_event;
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the bus connection     START */
@@ -107,15 +125,172 @@ private:
 	/* Virtual methods for the target socket for the bus connection       END */
 	/**************************************************************************/
 
+	/**************************************************************************/
+	/* Registers and accessors                                          START */
+	/**************************************************************************/
+
+	static const uint32_t TIMER1LOAD      = 0x0000UL;
+	static const uint32_t TIMER1VALUE     = 0x0004UL;
+	static const uint32_t TIMER1CONTROL   = 0x0008UL;
+	static const uint32_t TIMER1INTCLR    = 0x000cUL;
+	static const uint32_t TIMER1RIS       = 0x0010UL;
+	static const uint32_t TIMER1MIS       = 0x0014UL;
+	static const uint32_t TIMER1BGLOAD    = 0x0018UL;
+	static const uint32_t TIMER2LOAD      = 0x0020UL;
+	static const uint32_t TIMER2VALUE     = 0x0024UL;
+	static const uint32_t TIMER2CONTROL   = 0x0028UL;
+	static const uint32_t TIMER2INTCLR    = 0x002cUL;
+	static const uint32_t TIMER2RIS       = 0x0030UL;
+	static const uint32_t TIMER2MIS       = 0x0034UL;
+	static const uint32_t TIMER2BGLOAD    = 0x0038UL;
+	static const uint32_t TIMERITCR       = 0x0f00UL;
+	static const uint32_t TIMERITOP       = 0x0f04UL;
+	static const uint32_t TIMERPERIPHID0  = 0x0fe0UL;
+	static const uint32_t TIMERPERIPHID1  = 0x0fe4UL;
+	static const uint32_t TIMERPERIPHID2  = 0x0fe8UL;
+	static const uint32_t TIMERPERIPHID3  = 0x0fecUL;
+	static const uint32_t TIMERPCELLID0   = 0x0ff0UL;
+	static const uint32_t TIMERPCELLID1   = 0x0ff4UL;
+	static const uint32_t TIMERPCELLID2   = 0x0ff8UL;
+	static const uint32_t TIMERPCELLID3   = 0x0ffcUL;
+
+	static const uint32_t NUMREGS = 24;
+	static const uint32_t REGS_ADDR_ARRAY[NUMREGS];
+	static const char *REGS_NAME_ARRAY[NUMREGS];
+
+	/** Returns the register pointed by the given address
+	 *
+	 * @param addr the address to consider
+	 * @return the value of the register pointed by the address
+	 */
+	uint32_t GetRegister(uint32_t addr) const;
+	/** Sets the register pointed by the given address
+	 *
+	 * @param addr the address to consider
+	 * @param value the value to set the register
+	 */
+	void SetRegister(uint32_t addr, uint32_t value);
+
+	/** Get interface for the generic peripheral register interface
+	 *
+	 * @param addr the address to consider
+	 * @return the value of the register pointed by the address
+	 */
+	virtual uint32_t GetPeripheralRegister(uint64_t addr);
+	/** Set interface for the generic peripheral register interface
+	 *
+	 * @param addr the address to consider
+	 * @param value the value to set the register to
+	 */
+	virtual void SetPeripheralRegister(uint64_t addr, uint32_t value);
+
+	/**************************************************************************/
+	/* Registers and accessors                                            END */
+	/**************************************************************************/
+
+	/** Update the status of the timer at the given time
+	 *
+	 * @param delay the delta time 
+	 */
+	void UpdateStatus(sc_core::sc_time &delay);
+
+	/** Update the counter
+	 *
+	 * @param control_addr the timer control register address
+	 * @param value_addr the timer counter register address
+	 * @param clken the clock enable of the given timer (in picoseconds)
+	 * @param update_time when was the timer counter last updated and the new time
+	 */
+	void UpdateTime(uint32_t control_addr, uint32_t value_addr,
+			uint64_t clken, sc_time &update_time);
+
+	/** Extracts the Enable bit from the given control register value
+	 *
+	 * @param control the control register value to use
+	 * @return true if the enable bit is enable, false otherwise
+	 */
+	bool GetEnable(uint32_t control) const;
+
+	/** Extracts the interrupt enable bit from the given control register value
+	 *
+	 * @param control the control register value to use
+	 * @return true if the interrupt enable bit is enable, false otherwise
+	 */
+	bool GetIntEnable(uint32_t control) const;
+
+	/** Return timer size from the given control value
+	 *
+	 * Returns true if the timer is in 32b mode, false otherwise
+	 *
+	 * @param control the control register value to use
+	 * @return true if the timer is in 32b mode, false otherwise
+	 */
+	bool GetTimerSize(uint32_t control) const;
+
+	/** Extract prescale from the given control value
+	 *
+	 * @param value the value of the control register
+	 * @return the prescaling value
+	 */
+	uint32_t GetPrescale(uint32_t control);
+
+	/** Return timer mode from the givel control value
+	 *
+	 * Returns true if the timer is in periodic mode, false otherwise
+	 *
+	 * @param control the value of the control register
+	 * @return true if timer is in periodic mode, false otherwise
+	 */
+	bool GetTimerMode(uint32_t control) const;
+
+	/** Return one shot mode from the given control value
+	 *
+	 * Returns true if the timer is in one shot mode, false otherwise
+	 *
+	 * @param control the value of the control register
+	 * @return true if the timer is in one shot mode, false otherwise
+	 */
+	bool GetOneShot(uint32_t control) const;
+
 	/** Base address of the system controller */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the system controller */
 	unisim::kernel::service::Parameter<uint32_t> param_base_addr;
 
+	/** Register helpers to use the UNISIM Register service */
+	unisim::util::generic_peripheral_register::GenericPeripheralWordRegister *
+		regs_accessor[NUMREGS];
+	/** UNISIM Registers for the timer registers */
+	unisim::kernel::service::Register<
+		unisim::util::generic_peripheral_register::GenericPeripheralWordRegister
+		> *
+		regs_service[NUMREGS];
+
+	/** Verbose */
+	uint32_t verbose;
+	/** UNISIM Paramter for verbose */
+	unisim::kernel::service::Parameter<uint32_t> param_verbose;
+	/** Verbose levels */
+	static const uint32_t V0 = 0x01UL;
+	static const uint32_t V1 = 0x03UL;
+	static const uint32_t V2 = 0x07UL;
+	static const uint32_t V3 = 0x0fUL;
+	/** Verbose target mask */
+	static const uint32_t V_READ     = 0x01UL << 4;
+	static const uint32_t V_WRITE    = 0x01UL << 5;
+	static const uint32_t V_STATUS   = 0x01UL << 6;
+	static const uint32_t V_INT      = 0x01UL << 7;
+	/** Check if we should verbose */
+	bool VERBOSE(uint32_t level, uint32_t mask) const
+	{
+		uint32_t ok_level = level & verbose;
+		uint32_t ok_mask = (~verbose) & mask; 
+		return ok_level && ok_mask;
+	};
+
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;
 
-	void UpdateStatus(sc_core::sc_time &delay);
 };
 
 } // end of namespace dual_timer

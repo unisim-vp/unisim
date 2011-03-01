@@ -100,7 +100,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> MEMORY;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> FLASH;
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
-	typedef unisim::service::loader::raw_loader::RawLoader RAW_LOADER;
+	typedef unisim::service::loader::raw_loader::RawLoader64 RAW_LOADER;
 	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
 #ifdef SIM_GDB_SERVER_SUPPORT
 	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;

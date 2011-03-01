@@ -47,8 +47,6 @@
 using namespace std;
 #endif
 
-using unisim::service::interfaces::CachePowerEstimator;
-using unisim::service::interfaces::PowerMode;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using std::endl;
@@ -73,8 +71,8 @@ namespace arm926ejs {
 TLB::
 TLB(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::CachePowerEstimator>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::PowerMode>(name,  parent)
 	, power_estimator_import("power-estimator-import", this)
 	, power_mode_import("power-mode-import", this)
 	, accesses(0)
@@ -118,6 +116,7 @@ TLB(const char *name, unisim::kernel::service::Object *parent)
 			m_data[set][way] = 0;
 			m_valid[set][way] = false;
 		}
+		m_last_accessed_way[set] = 0;
 		m_replacement_history[set] = 0;
 	}
 	stat_read_accesses.SetFormat(
@@ -142,7 +141,7 @@ TLB::
 
 bool
 TLB::
-Setup()
+BeginSetup()
 {
 	return true;
 }
@@ -188,20 +187,32 @@ GetSet(uint32_t addr) const
  */
 bool 
 TLB::
-GetWay(uint32_t tag, uint32_t set, uint32_t *way) const
+GetWay(uint32_t tag, uint32_t set, uint32_t *way)
 {
 	bool found = false;
+	uint32_t current_way = 0;
 
-	for ( unsigned int i = 0; !false && (i < m_associativity_); i++ )
+	current_way = m_last_accessed_way[set];
+	if ( (m_tag[set][current_way] == tag) && m_valid[set][current_way] )
 	{
-		if ( m_tag[set][i] == tag )
-		{
-			*way = i;
-			found = true;
-		}
+		*way = current_way;
+		return true;
 	}
 
-	return found;
+	current_way = 0;
+	while (current_way < m_associativity_)
+	{
+		found = (m_tag[set][current_way] == tag) && m_valid[set][current_way];
+		if ( found )
+		{
+			*way = current_way;
+			m_last_accessed_way[set] = current_way;
+			return true;
+		}
+		current_way++;
+	}
+	*way = 0;
+	return false;
 }
 
 /** Get a new way where a new entry can be placed.
