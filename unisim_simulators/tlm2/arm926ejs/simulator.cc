@@ -51,8 +51,6 @@ Simulator(int argc, char **argv)
 #endif // SIM_LIBRARY
 	, cpu(0)
 	, devchip(0)
-	//, irq_master_stub(0)
-	//, fiq_master_stub(0)
 	, memory(0)
 	, nor_flash_2(0)
 	, nor_flash_1(0)
@@ -473,6 +471,10 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 			"cpu-instruction-counter-trap-handler");
 	sim->SetVariable("trap-handler.trap-reporting-export-name[2]",
 			"cpu-irq-trap-handler");
+
+	sim->SetVariable("pxp.uart0.enable-telnet", true);
+	sim->SetVariable("pxp.uart1.enable-logger", true);
+	sim->SetVariable("pxp.uart2.enable-logger", true);
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	sim->SetVariable("gdb-server.architecture-description-filename",

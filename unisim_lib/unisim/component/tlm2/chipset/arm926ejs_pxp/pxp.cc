@@ -71,6 +71,7 @@ PXP(const sc_module_name &name, Object *parent)
 	, sc("system-controller", this)
 	, uart0("uart0", this)
 	, uart1("uart1", this)
+	, uart2("uart2", this)
 	, dt1("timer1-2", this)
 	, dt2("timer3-4", this)
 	, wd("watchdog", this)
@@ -121,8 +122,6 @@ PXP(const sc_module_name &name, Object *parent)
 	, gpio3_int_stub("gpio3_int_stub", this, false)
 	, rtc_int_stub("rtc_int_stub", this, false)
 	, ssp_int_stub("ssp_int_stub", this, false)
-	, uart1_int_stub("uart1_int_stub", this, false)
-	, uart2_int_stub("uart2_int_stub", this, false)
 	, sci0_int_stub("sci0_int_stub", this, false)
 	, clcd_int_stub("clcd_int_stub", this, false)
 	, pwrfail_int_stub("pwrfail_int_stub", this, false)
@@ -254,6 +253,16 @@ PXP(const sc_module_name &name, Object *parent)
 	, uart1_uartrtintr_signal("uart1_uartrtintr_signal")
 	, uart1_uartmsintr_signal("uart1_uartmsintr_signal")
 	, uart1_uarteintr_signal("uart1_uarteintr_signal")
+	, uart2_uartrxintr_in_port("uart2_uartrxintr_in_port")
+	, uart2_uarttxintr_in_port("uart2_uarttxintr_in_port")
+	, uart2_uartrtintr_in_port("uart2_uartrtintr_in_port")
+	, uart2_uartmsintr_in_port("uart2_uartmsintr_in_port")
+	, uart2_uarteintr_in_port("uart2_uarteintr_in_port")
+	, uart2_uartrxintr_signal("uart2_uartrxintr_signal")
+	, uart2_uarttxintr_signal("uart2_uarttxintr_signal")
+	, uart2_uartrtintr_signal("uart2_uartrtintr_signal")
+	, uart2_uartmsintr_signal("uart2_uartmsintr_signal")
+	, uart2_uarteintr_signal("uart2_uarteintr_signal")
 	, logger(*this)
 {
 
@@ -265,6 +274,7 @@ PXP(const sc_module_name &name, Object *parent)
 	dt2["base-addr"]       = 0x101e3000UL;
 	uart0["base-addr"]     = 0x101f1000UL;
 	uart1["base-addr"]     = 0x101f2000UL;
+	uart2["base-addr"]     = 0x101f3000UL;
 	dmac["base-addr"]      = 0x10130000UL;
 
 	cpu_target_socket.register_nb_transport_fw(this,
@@ -323,6 +333,11 @@ PXP(const sc_module_name &name, Object *parent)
 			&PXP::uart1_init_nb_transport_bw);
 	uart1_init_socket.register_invalidate_direct_mem_ptr(this,
 			&PXP::uart1_init_invalidate_direct_mem_ptr);
+
+	uart2_init_socket.register_nb_transport_bw(this,
+			&PXP::uart2_init_nb_transport_bw);
+	uart2_init_socket.register_invalidate_direct_mem_ptr(this,
+			&PXP::uart2_init_invalidate_direct_mem_ptr);
 
 	wd_init_socket.register_nb_transport_bw(this,
 			&PXP::wd_init_nb_transport_bw);
@@ -424,7 +439,7 @@ PXP(const sc_module_name &name, Object *parent)
 	// - uartrtintr (unused) -> attached to stub uart1_uartrtintr_in_port
 	// - uartmsintr (unused) -> attached to stub uart1_uartmsintr_in_port
 	// - uarteintr (unused) -> attached to stub uart1_uarteintr_in_port
-	// - uartintr -> attached to pic.vicintsource[12]
+	// - uartintr -> attached to pic.vicintsource[13]
 	uart1.uartintr(uart1_uartintr_to_pic13_signal);
 	uart1.uartrxintr(uart1_uartrxintr_signal);
 	uart1_uartrxintr_in_port(uart1_uartrxintr_signal);
@@ -437,12 +452,32 @@ PXP(const sc_module_name &name, Object *parent)
 	uart1.uarteintr(uart1_uarteintr_signal);
 	uart1_uarteintr_in_port(uart1_uarteintr_signal);
 
+	// uart2 interrupts usage:
+	// - uartrxintr (unused) -> attached to stub uart2_uartrxintr_in_port
+	// - uarttxintr (unused) -> attached to stub uart2_uarttxintr_in_port
+	// - uartrtintr (unused) -> attached to stub uart2_uartrtintr_in_port
+	// - uartmsintr (unused) -> attached to stub uart2_uartmsintr_in_port
+	// - uarteintr (unused) -> attached to stub uart2_uarteintr_in_port
+	// - uartintr -> attached to pic.vicintsource[14]
+	uart2.uartintr(uart2_uartintr_to_pic14_signal);
+	uart2.uartrxintr(uart2_uartrxintr_signal);
+	uart2_uartrxintr_in_port(uart2_uartrxintr_signal);
+	uart2.uarttxintr(uart2_uarttxintr_signal);
+	uart2_uarttxintr_in_port(uart2_uarttxintr_signal);
+	uart2.uartrtintr(uart2_uartrtintr_signal);
+	uart2_uartrtintr_in_port(uart2_uartrtintr_signal);
+	uart2.uartmsintr(uart2_uartmsintr_signal);
+	uart2_uartmsintr_in_port(uart2_uartmsintr_signal);
+	uart2.uarteintr(uart2_uarteintr_signal);
+	uart2_uarteintr_in_port(uart2_uarteintr_signal);
+
 	/* PIC connections START */
 	// connection list (so do not need stubs)
 	// - 4 (dt1.timintc through timint12_to_pic4_signal)
 	// - 5 (dt2.timintc through timint34_to_pic5_signal)
 	// - 12 (uart0.uartintr through uart0_uartintr_to_pic12_signal)
 	// - 13 (uart1.uartintr through uart1_uartintr_to_pic13_signal)
+	// - 14 (uart2.uartintr through uart2_uartintr_to_pic13_signal)
 	// - 17 (dmac.dmacintr through dmacintr_to_pic17_signal)
 	// - 21 (sic.sicinttarget[0] through sic0_to_pic21_signal)
 	// - 22 (sic.sicinttarget[1] through sic1_to_pic22_signal)
@@ -459,6 +494,7 @@ PXP(const sc_module_name &name, Object *parent)
 	(*pic.vicintsource[5])(timint34_to_pic5_signal);
 	(*pic.vicintsource[12])(uart0_uartintr_to_pic12_signal);
 	(*pic.vicintsource[13])(uart1_uartintr_to_pic13_signal);
+	(*pic.vicintsource[14])(uart2_uartintr_to_pic14_signal);
 	(*pic.vicintsource[17])(dmacintr_to_pic17_signal);
 	(*pic.vicintsource[21])(sic0_to_pic21_signal);
 	(*pic.vicintsource[22])(sic1_to_pic22_signal);
@@ -482,7 +518,6 @@ PXP(const sc_module_name &name, Object *parent)
 	(*pic.vicintsource[9])(gpio3_to_pic9_signal);
 	(*pic.vicintsource[10])(rtc_to_pic10_signal);
 	(*pic.vicintsource[11])(ssp_to_pic11_signal);
-	(*pic.vicintsource[14])(uart2_uartintr_to_pic14_signal);
 	(*pic.vicintsource[15])(sci0_to_pic15_signal);
 	(*pic.vicintsource[16])(clcd_to_pic16_signal);
 	(*pic.vicintsource[18])(pwrfail_to_pic18_signal);
@@ -499,8 +534,6 @@ PXP(const sc_module_name &name, Object *parent)
 	gpio3_int_stub.vicinttarget(gpio3_to_pic9_signal);
 	rtc_int_stub.vicinttarget(rtc_to_pic10_signal);
 	ssp_int_stub.vicinttarget(ssp_to_pic11_signal);
-	uart1_int_stub.vicinttarget(uart1_uartintr_to_pic13_signal);
-	uart2_int_stub.vicinttarget(uart2_uartintr_to_pic14_signal);
 	sci0_int_stub.vicinttarget(sci0_to_pic15_signal);
 	clcd_int_stub.vicinttarget(clcd_to_pic16_signal);
 	pwrfail_int_stub.vicinttarget(pwrfail_to_pic18_signal);
@@ -630,6 +663,7 @@ PXP(const sc_module_name &name, Object *parent)
 	sc_init_socket(sc.bus_target_socket);
 	uart0_init_socket(uart0.bus_target_socket);
 	uart1_init_socket(uart1.bus_target_socket);
+	uart2_init_socket(uart2.bus_target_socket);
 	wd_init_socket(wd.bus_target_socket);
 	dt1_init_socket(dt1.bus_target_socket);
 	dt2_init_socket(dt2.bus_target_socket);
@@ -825,6 +859,12 @@ cpu_target_b_transport(transaction_type &trans,
 		uart1_init_socket->b_transport(trans, delay);
 		handled = true;
 	}
+	else if ( trans.get_address() >= 0x101f3000UL &&
+			trans.get_address()   <  0x101f4000UL )
+	{
+		uart2_init_socket->b_transport(trans, delay);
+		handled = true;
+	}
 	else if ( trans.get_address() >= 0x34000000UL &&
 			trans.get_address()   <  0x38000000UL )
 	{
@@ -886,6 +926,9 @@ cpu_target_transport_dbg(transaction_type &trans)
 	else if ( trans.get_address()   >= 0x101f2000UL &&
 			trans.get_address()     <  0x101f3000UL )
 		return uart1_init_socket->transport_dbg(trans);
+	else if ( trans.get_address()   >= 0x101f3000UL &&
+			trans.get_address()     <  0x101f4000UL )
+		return uart2_init_socket->transport_dbg(trans);
 	else if ( trans.get_address() >= 0x34000000UL &&
 			trans.get_address()   <  0x38000000UL )
 		return ssmc1_init_socket->transport_dbg(trans);
@@ -1189,6 +1232,40 @@ uart1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
 /**************************************************************************/
 /* Virtual methods for the initiator socket for                           */
 /*   the UART 1                                                       END */
+/**************************************************************************/
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                     START */
+/*   the UART 2                                                           */
+/**************************************************************************/
+
+tlm::tlm_sync_enum
+PXP ::
+uart2_init_nb_transport_bw(transaction_type &trans,
+		phase_type &phase,
+		sc_core::sc_time &time)
+{
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	return tlm::TLM_COMPLETED;
+}
+
+void 
+PXP ::
+uart2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+		sc_dt::uint64)
+{
+	logger << DebugError
+		<< "TODO"
+		<< EndDebugError;
+	unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+}
+
+/**************************************************************************/
+/* Virtual methods for the initiator socket for                           */
+/*   the UART 2                                                       END */
 /**************************************************************************/
 
 /**************************************************************************/
