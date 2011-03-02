@@ -100,6 +100,9 @@ private:
 	/* Virtual methods for the target socket for the bus connection       END */
 	/**************************************************************************/
 
+	/** Telnet socket for uart input and output */
+	int sock;
+
 	/** Base address of the uart */
 	uint32_t base_addr;
 	/** UNISIM Parameter for the base address of the uart */
@@ -115,14 +118,22 @@ private:
 	/** UNISIM Parameter for the external timer module clock */
 	unisim::kernel::service::Parameter<uint64_t> param_uartclk;
 
-	/** Telnet socket for uart input and output */
-	int sock;
+	/** Enable logger output for UART messages */
+	bool enable_logger;
+	/** UNISIM Parameter for the enable logger option */
+	unisim::kernel::service::Parameter<bool> param_enable_logger;
+
+	/** Enable telnet redirection for UART messages */
+	bool enable_telnet;
+	/** UNISIM Parameter for then enable telnet option */
+	unisim::kernel::service::Parameter<bool> param_enable_telnet;
 
 	/** TCP port used for the telnet socket */
 	unsigned int tcp_port;
 	/** UNISIM Parameter for the TCP port used for the telnet socket */
 	unisim::kernel::service::Parameter<unsigned int> param_tcp_port;
 
+	bool TransmitChar(uint8_t ch);
 	bool TelnetPutChar(uint8_t ch);
 	void TelnetPutPacket(std::string packet);
 

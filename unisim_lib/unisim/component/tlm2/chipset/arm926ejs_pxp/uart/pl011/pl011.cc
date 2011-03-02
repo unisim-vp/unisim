@@ -81,6 +81,7 @@ PL011(const sc_module_name &name, Object *parent)
 	, uartmsintr("uartmsintr")
 	, uarteintr("uarteintr")
 	, uartintr("uartintr")
+	, sock(-1)
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
 			"Base address of uart.")
@@ -90,7 +91,12 @@ PL011(const sc_module_name &name, Object *parent)
 	, uartclk(41667)
 	, param_uartclk("uartclk", this, uartclk,
 			"External UART clock (UARTCLK) period in picoseconds.")
-	, sock(0)
+	, enable_logger(false)
+	, param_enable_logger("enable-logger", this, enable_logger,
+			"Enable logger output for messages.")
+	, enable_telnet(false)
+	, param_enable_telnet("enable-telnet", this, enable_telnet,
+			"Enable the telnet connection.")
 	, tcp_port(1234)
 	, param_tcp_port("tcp-port", this, tcp_port,
 			"TCP port used for the Telnet connection.")
@@ -154,6 +160,26 @@ TelnetPutChar(uint8_t ch)
 	return true;
 }
 
+bool
+PL011 ::
+TransmitChar(uint8_t ch)
+{
+	if ( enable_telnet )
+	{
+		return TelnetPutChar(ch);
+	}
+	if ( enable_logger )
+	{
+		logger << DebugInfo
+			<< "Sending char: '"
+			<< (char)ch
+			<< "'"
+			<< EndDebugInfo;
+		return true;
+	}
+	return true;
+}
+
 void
 PL011 ::
 TelnetPutPacket(std::string packet)
@@ -174,127 +200,138 @@ TelnetPutPacket(std::string packet)
 			<< EndDebugError;
 	}
 }
+
 bool 
 PL011 ::
 EndSetup()
 {
-	struct sockaddr_in addr;
-	int server_sock;
-	int on = 1;
-
-	server_sock = socket(AF_INET, SOCK_STREAM, 0);
-
-	if ( server_sock < 0 )
+	if ( enable_telnet )
 	{
-		logger << DebugError << "Socket failed" << EndDebugError;
-		return false;
-	}
+		struct sockaddr_in addr;
+		int server_sock;
+		int on = 1;
 
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(tcp_port);
-	addr.sin_addr.s_addr = INADDR_ANY;
-	if ( setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0 )
-	{
-		logger << DebugWarning << "Could not set socket reuse address option"
-			<< EndDebugWarning;
-	}
-	if ( bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0 )
-	{
-		logger << DebugError << "Bind failed" << EndDebugError;
+		server_sock = socket(AF_INET, SOCK_STREAM, 0);
+
+		if ( server_sock < 0 )
+		{
+			logger << DebugError << "Socket failed" << EndDebugError;
+			return false;
+		}
+
+		memset(&addr, 0, sizeof(addr));
+		addr.sin_family = AF_INET;
+		addr.sin_port = htons(tcp_port);
+		addr.sin_addr.s_addr = INADDR_ANY;
+		if ( setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, (char *)&on, sizeof(on)) < 0 )
+		{
+			logger << DebugWarning << "Could not set socket reuse address option"
+				<< EndDebugWarning;
+		}
+		if ( bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0 )
+		{
+			logger << DebugError << "Bind failed" << EndDebugError;
 #ifdef WIN32
-		closesocket(server_sock);
+			closesocket(server_sock);
 #else
-		close(server_sock);
+			close(server_sock);
 #endif
-		return false;
-	}
+			return false;
+		}
 
-	if ( listen(server_sock, 1) )
-	{
-		logger << DebugError << "listen failed" << EndDebugError;
+		if ( listen(server_sock, 1) )
+		{
+			logger << DebugError << "listen failed" << EndDebugError;
 #ifdef WIN32
-		closesocket(server_sock);
+			closesocket(server_sock);
 #else
-		close(server_sock);
+			close(server_sock);
 #endif
-		return false;
-	}
+			return false;
+		}
 
 #ifdef WIN32
-	int addr_len;
+		int addr_len;
 #else
-	socklen_t addr_len;
+		socklen_t addr_len;
 #endif
 
-	logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
+		logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
 
-	addr_len = sizeof(addr);
-	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
+		addr_len = sizeof(addr);
+		sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 
-	if ( sock < 0 )
-	{
-		logger << DebugError << "accept failed" << EndDebugError;
+		if ( sock < 0 )
+		{
+			logger << DebugError << "accept failed" << EndDebugError;
 #ifdef WIN32
-		closesocket(server_sock);
+			closesocket(server_sock);
 #else
-		close(server_sock);
+			close(server_sock);
 #endif
-		return false;
-	}
+			return false;
+		}
 
-	logger << DebugInfo << "Connection with Telnet client established" 
-		<< EndDebugInfo;
+		logger << DebugInfo << "Connection with Telnet client established" 
+			<< EndDebugInfo;
 
     /* set short latency */
     int opt = 1;
     if ( setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt))
-			< 0 )
-	{
-		logger << DebugWarning 
-			<< "setsockopt failed requesting short latency" 
-			<< EndDebugWarning;
-	}
+				< 0 )
+		{
+			logger << DebugWarning 
+				<< "setsockopt failed requesting short latency" 
+				<< EndDebugWarning;
+		}
 
 
 #ifdef WIN32
-	u_long NonBlock = 1;
-	if ( ioctlsocket(sock, FIONBIO, &NonBlock) != 0 )
-	{
-		logger << DebugError << "ioctlsocket failed" << EndDebugError;
+		u_long NonBlock = 1;
+		if ( ioctlsocket(sock, FIONBIO, &NonBlock) != 0 )
+		{
+			logger << DebugError << "ioctlsocket failed" << EndDebugError;
+			closesocket(server_sock);
+			closesocket(sock);
+			sock = -1;
+			return false;
+		}
+#else
+		int socket_flag = fcntl(sock, F_GETFL, 0);
+
+		if(socket_flag < 0)
+		{
+			logger << DebugError << "fcntl failed" << EndDebugError;
+			close(server_sock);
+			close(sock);
+			sock = -1;
+			return false;
+		}
+
+		/* Ask for non-blocking reads on socket */
+		if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
+		{
+			logger << DebugError << "fcntl failed" << EndDebugError;
+			close(server_sock);
+			close(sock);
+			sock = -1;
+			return false;
+		}
+#endif
+
+#ifdef WIN32
 		closesocket(server_sock);
-		closesocket(sock);
-		sock = -1;
-		return false;
-	}
 #else
-	int socket_flag = fcntl(sock, F_GETFL, 0);
-
-	if(socket_flag < 0)
-	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
 		close(server_sock);
-		close(sock);
-		sock = -1;
-		return false;
+#endif
 	}
 
-	/* Ask for non-blocking reads on socket */
-	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
+	if ( enable_logger )
 	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
-		close(server_sock);
-		close(sock);
-		sock = -1;
-		return false;
+		logger << DebugInfo
+			<< "UART message logger output activated."
+			<< EndDebugInfo;
 	}
-#endif
-
-#ifdef WIN32
-	closesocket(server_sock);
-#else
-	close(server_sock);
-#endif
 
 	return true;
 }
@@ -349,7 +386,7 @@ bus_target_b_transport(transaction_type &trans,
 			if ( cr & (uint32_t)0x0100 )
 			{
 				uint8_t ch = new_value & 0x0ff;
-				TelnetPutChar(ch);
+				TransmitChar(ch);
 			}
 			else
 			{
@@ -360,6 +397,7 @@ bus_target_b_transport(transaction_type &trans,
 					<< cr << std::dec
 					<< EndDebugWarning;
 			}
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		}
 		else if ( (addr & ~(uint32_t)0x03) == 0x24 )
 		{
@@ -374,6 +412,7 @@ bus_target_b_transport(transaction_type &trans,
 				<< prev_value << std::dec
 				<< ")"
 				<< EndDebugWarning;
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		}
 		else if ( (addr & ~(uint32_t)0x03) == 0x28 )
 		{
@@ -388,6 +427,7 @@ bus_target_b_transport(transaction_type &trans,
 				<< prev_value << std::dec
 				<< ")"
 				<< EndDebugWarning;
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		}
 		else if ( (addr & ~(uint32_t)0x03) == 0x2c )
 		{
@@ -403,6 +443,7 @@ bus_target_b_transport(transaction_type &trans,
 				<< ")"
 				<< EndDebugWarning;
 			// TODO: set read trigger ?
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		}
 		else if ( (addr & ~(uint32_t)0x03) == 0x30 )
 		{
@@ -417,6 +458,7 @@ bus_target_b_transport(transaction_type &trans,
 				<< prev_value << std::dec
 				<< ")"
 				<< EndDebugWarning;
+			trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		}
 		else 
 		{
@@ -427,6 +469,7 @@ bus_target_b_transport(transaction_type &trans,
 				<< prev_value << std::dec
 				<< ")"
 				<< EndDebugError;
+			trans.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
 		}
 	}
 	if ( !handled )
