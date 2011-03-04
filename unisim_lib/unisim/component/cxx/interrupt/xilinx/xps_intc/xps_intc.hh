@@ -108,7 +108,11 @@ private:
 	void SetMER(uint32_t value);
 	
 	bool verbose;
+	typename CONFIG::MEMORY_ADDR c_baseaddr;
+	typename CONFIG::MEMORY_ADDR c_highaddr;
 	Parameter<bool> param_verbose;
+	Parameter<typename CONFIG::MEMORY_ADDR> param_c_baseaddr;
+	Parameter<typename CONFIG::MEMORY_ADDR> param_c_highaddr;
 	
 };
 

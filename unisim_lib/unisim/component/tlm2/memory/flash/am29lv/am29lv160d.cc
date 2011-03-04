@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,27 +29,25 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_INTERRUPT_TYPES_HH__
-#define __UNISIM_COMPONENT_TLM2_INTERRUPT_TYPES_HH__
-
-#include <tlm.h>
-
-#include "unisim/kernel/tlm2/tlm.hh"
+#include "unisim/component/tlm2/memory/flash/am29lv/am29lv.hh"
+#include "unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh"
+#include "unisim/component/tlm2/memory/flash/am29lv/am29lv.tcc"
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
-namespace interrupt {
+namespace memory {
+namespace flash {
+namespace am29lv {
 
-typedef unisim::kernel::tlm2::SimplePayload<bool> InterruptPayload;
-typedef unisim::kernel::tlm2::SimpleProtocolTypes<bool> InterruptProtocolTypes;
+template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV160DTConfig, 32 * unisim::component::cxx::memory::flash::am29lv::M, 16, 128>; // 32 MB/128 bits
 
-} // end of namespace interrupt
-} // end of namespace tlm2
+} // end of namespace am29lv
+} // end of namespace flash
+} // end of namespace memory
+} // end of namespace tlm
 } // end of namespace component
-} // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_TLM2_INTERRUPT_TYPES_HH__
+} // end of namespace unisim 

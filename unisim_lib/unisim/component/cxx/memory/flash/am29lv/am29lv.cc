@@ -31,26 +31,9 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.tcc"
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace memory {
-namespace flash {
-namespace am29lv {
-
-template class AM29LV<AM29LV800BConfig, 4 * M, 8>; // 4 MB/64 bits
-template class AM29LV<AM29LV800BConfig, 8 * M, 8>; // 8 MB/64 bits
-
-} // end of namespace am29lv
-} // end of namespace flash
-} // end of namespace memory
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+#include "unisim/kernel/service/service.hh"
+#include "unisim/component/cxx/memory/flash/am29lv/types.hh"
 
 namespace unisim {
 namespace kernel {
@@ -68,7 +51,7 @@ template <> Variable<MODE>::Variable(const char *_name, Object *_object, MODE& _
 template <>
 const char *Variable<MODE>::GetDataTypeName() const
 {
-	return "memory flash am29lv mode";
+	return "am29lv flash memory transfer mode";
 }
 
 template <> Variable<MODE>::operator bool () const { return *storage == MODE_X8; }

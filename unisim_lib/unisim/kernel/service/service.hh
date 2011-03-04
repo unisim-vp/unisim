@@ -306,12 +306,14 @@ private:
 	string description;
 	string version;
 	string license;
+	string schematic;
 	Parameter<string> *var_program_name;
 	Parameter<string> *var_authors;
 	Parameter<string> *var_copyright;
 	Parameter<string> *var_description;
 	Parameter<string> *var_version;
 	Parameter<string> *var_license;
+	Parameter<string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
 	
 	void Version(ostream& os) const;

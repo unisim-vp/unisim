@@ -63,16 +63,18 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	, Service<Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, memory_export("memory-export", this)
 	, logger(*this)
-	, verbose(false)
-	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, org(0)
 	, bytesize(BYTESIZE)
 	, endian(E_LITTLE_ENDIAN)
+	, verbose(false)
+	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_org("org", this, org, "flash memory base address")
 	, param_bytesize("bytesize", this, bytesize, "flash memory size in bytes")
 	, param_endian("endian", this, endian, "endianness of flash memory")
 	, param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS, "enable/disable sector write protection")
 {
+	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	uint32_t chip_io_width;
 	for(config_addr_shift = 0, chip_io_width = CHIP_IO_WIDTH; chip_io_width > 1; chip_io_width >>= 1, config_addr_shift++);
 
@@ -94,6 +96,23 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 
 	storage = new uint8_t[BYTESIZE];
 	memset(storage, 0, BYTESIZE);
+
+	std::stringstream sstr_description;
+	sstr_description << "This module implements an " << CONFIG::DEVICE_NAME << " flash memory with the following characteristics:" << std::endl;
+	sstr_description << "Size: " << BYTESIZE << " bytes" << std::endl;
+	sstr_description << "I/O width: " << IO_WIDTH << " bits" << std::endl;
+	sstr_description << "Number of chips: " << NUM_CHIPS << " chips" << std::endl;
+	sstr_description << "I/O width per chip: " << CHIP_IO_WIDTH << " bits" << std::endl;
+	sstr_description << "Size per chip: " << CONFIG::BYTESIZE << " bytes" << std::endl;
+	sstr_description << "Number of Sectors: " << CONFIG::NUM_SECTORS << " sectors" << std::endl;
+	sstr_description << "8-bit mode support: " << (CONFIG::MODE_SUPPORT & MODE_X8 ? "yes" : "no") << std::endl;
+	sstr_description << "16-bit mode support: " << (CONFIG::MODE_SUPPORT & MODE_X16 ? "yes" : "no") << std::endl;
+	sstr_description << "Access time: " << CONFIG::ACCESS_TIME << " ns" << std::endl;
+	sstr_description << "Byte programming time: " << CONFIG::PROGRAMMING_TIME[0] << " us" << std::endl;
+	sstr_description << "Word programming time: " << CONFIG::PROGRAMMING_TIME[1] << " us" << std::endl;
+	sstr_description << "Sector erasing time: " << CONFIG::SECTOR_ERASING_TIME << " us" << std::endl;
+	sstr_description << "Chip erasing time: " << CONFIG::CHIP_ERASING_TIME << " us" << std::endl;
+	Object::SetDescription(sstr_description.str().c_str());
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -117,23 +136,17 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 
 	if((IO_WIDTH / NUM_CHIPS) > CONFIG::MAX_IO_WIDTH)
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugError;
-			logger << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")" << std::endl;
-			logger << EndDebugError;
-		}
+		logger << DebugError;
+		logger << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")" << std::endl;
+		logger << EndDebugError;
 		return false;
 	}
 	
 	if(!(CONFIG::MODE_SUPPORT & (IO_WIDTH / NUM_CHIPS)))
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugError;
-			logger << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O.std::decrease or increase either BYTESIZE or IO_WIDTH" << std::endl;
-			logger << EndDebugError;
-		}
+		logger << DebugError;
+		logger << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O: decrease or increase either BYTESIZE (" << BYTESIZE << ") or IO_WIDTH (" << IO_WIDTH << ")" << std::endl;
+		logger << EndDebugError;
 		return false;
 	}
 
@@ -221,12 +234,10 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 			}
 		}
 	}
-	if(unlikely(verbose))
-	{
-		logger << DebugError;
-		logger << "No transition found. You should check the FSM" << std::endl;
-		logger << EndDebugError;
-	}
+	logger << DebugError;
+	logger << "No transition found. You should check the FSM" << std::endl;
+	logger << EndDebugError;
+	Object::Stop(-1);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -234,23 +245,17 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugWarning;
-			logger << "out of range address" << std::endl;
-			logger << EndDebugWarning;
-		}
+		logger << DebugWarning;
+		logger << "out of range address" << std::endl;
+		logger << EndDebugWarning;
 		return false;
 	}
 
 	if(size > IO_WIDTH)
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugWarning;
-			logger << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH << std::endl;
-			logger << EndDebugWarning;
-		}
+		logger << DebugWarning;
+		logger << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH << std::endl;
+		logger << EndDebugWarning;
 		return false;
 	}
 
@@ -279,7 +284,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 	switch((chip_addr & 0xff) << config_addr_shift)
 	{
 		case CONFIG::MANUFACTURER_ID_ADDR:
-			if(unlikely(verbose))
+			if(unlikely(IsVerbose()))
 			{
 				logger << DebugInfo;
 				logger << "Chip #" << chip_num << ": Reading Manufacturer ID" << std::endl;
@@ -291,7 +296,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				ReverseCopy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			return;
 		case CONFIG::DEVICE_ID_ADDR:
-			if(unlikely(verbose))
+			if(unlikely(IsVerbose()))
 			{
 				logger << DebugInfo;
 				logger << "Chip #" << chip_num << ": Reading Device ID" << std::endl;
@@ -304,7 +309,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 			return;
 		case CONFIG::SECTOR_PROTECT_VERIFY_ADDR:
 			{
-				if(unlikely(verbose))
+				if(unlikely(IsVerbose()))
 				{
 					logger << DebugInfo;
 					logger << "Chip #" << chip_num << ": Sector protected verify" << std::endl;
@@ -356,7 +361,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 		return;
 	}
 
-	if(unlikely(verbose))
+	if(unlikely(IsVerbose()))
 	{
 		logger << DebugInfo;
 		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << ": Programming ";
@@ -377,7 +382,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 {
-	if(unlikely(verbose))
+	if(unlikely(IsVerbose()))
 	{
 		logger << DebugInfo;
 		logger << "Erasing Chip #" << chip_num << std::endl;
@@ -414,7 +419,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 		return;
 	}
 
-	if(unlikely(verbose))
+	if(unlikely(IsVerbose()))
 	{
 		logger << DebugInfo;
 		logger << "Erasing sector at 0x" << std::hex << addr << std::dec << " of chip #" << chip_num << std::endl;
@@ -429,12 +434,9 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS ad
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugWarning;
-			logger << "out of range address" << std::endl;
-			logger << EndDebugWarning;
-		}
+		logger << DebugWarning;
+		logger << "out of range address" << std::endl;
+		logger << EndDebugWarning;
 		return false;
 	}
 	// the third condition is for testing overwrapping (gdb did it !)
@@ -449,12 +451,9 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS add
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
-		if(unlikely(verbose))
-		{
-			logger << DebugWarning;
-			logger << "out of range address" << std::endl;
-			logger << EndDebugWarning;
-		}
+		logger << DebugWarning;
+		logger << "out of range address" << std::endl;
+		logger << EndDebugWarning;
 		return false;
 	}
 	// the third condition is for testing overwrapping (gdb did it !)
@@ -462,6 +461,12 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS add
 	typename CONFIG::ADDRESS offset = (addr - org) & ADDR_MASK;
 	memcpy(buffer, storage + offset, size);
 	return true;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::IsVerbose() const
+{
+	return verbose;
 }
 
 } // end of namespace am29lv

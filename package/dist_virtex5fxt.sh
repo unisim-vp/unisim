@@ -157,6 +157,9 @@ unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.cc \
+unisim/component/cxx/memory/flash/am29lv/am29lv.cc \
+unisim/component/cxx/memory/flash/am29lv/am29lv160d.cc \
+unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.cc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
@@ -166,6 +169,7 @@ unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/memory/flash/am29lv/am29lv160d.cc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
@@ -289,6 +293,13 @@ unisim/component/cxx/processor/powerpc/ppc440/exception.hh \
 unisim/component/cxx/processor/powerpc/ppc440/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh \
+unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh \
+unisim/component/cxx/timer/xilinx/xps_timer/config.hh \
+unisim/component/cxx/memory/flash/am29lv/types.hh \
+unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
+unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh \
 unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
@@ -297,10 +308,7 @@ unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
-unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh \
-unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh \
-unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh \
-unisim/component/cxx/timer/xilinx/xps_timer/config.hh \
+unisim/component/tlm2/memory/flash/am29lv/am29lv.hh \
 "
 
 UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES="\
@@ -348,14 +356,16 @@ unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.tcc \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
+unisim/component/cxx/memory/flash/am29lv/am29lv.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
-unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.tcc \
-unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
+unisim/component/tlm2/memory/flash/am29lv/am29lv.tcc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_M4_FILES="\

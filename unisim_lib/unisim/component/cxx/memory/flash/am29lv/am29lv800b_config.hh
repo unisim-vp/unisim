@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_CONFIG_HH__
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV800B_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV800B_CONFIG_HH__
 
 #include "unisim/component/cxx/memory/flash/am29lv/types.hh"
 
@@ -69,7 +69,6 @@ public:
 	static const uint64_t PROGRAMMING_TIME[MAX_IO_WIDTH]; // in ns
 	static const uint64_t SECTOR_ERASING_TIME = 700000000ULL; // in ns (0.7 s)
 	static const uint64_t CHIP_ERASING_TIME = 14000000000ULL; // in ns (14 s)
-	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
 	static const uint8_t MANUFACTURER_ID[MAX_IO_WIDTH];
 	static const uint8_t DEVICE_ID[MAX_IO_WIDTH];
 	static const uint8_t PROTECTED[MAX_IO_WIDTH];
@@ -81,6 +80,22 @@ public:
 	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
 };
 
+// AM29LV800B (top boot device)
+class AM29LV800BTConfig : public AM29LV800Config
+{
+public:
+	static const char *DEVICE_NAME;
+	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
+};
+
+// AM29LV800B (bottom boot device)
+class AM29LV800BBConfig : public AM29LV800Config
+{
+public:
+	static const char *DEVICE_NAME;
+	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
+};
+
 } // end of namespace am29lv
 } // end of namespace flash
 } // end of namespace memory
@@ -88,4 +103,4 @@ public:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_CONFIG_HH__
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV800B_CONFIG_HH__

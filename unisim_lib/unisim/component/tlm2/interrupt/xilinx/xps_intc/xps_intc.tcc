@@ -65,6 +65,7 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 	, time_stamp(SC_ZERO_TIME)
 	, ready_time_stamp(SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
+	, output_level(false)
 	, schedule()
 {
 	slave_sock(*this); // Bind socket to implementer of interface
@@ -81,6 +82,8 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 		irq_redirector[irq] = new FwRedirector(irq, this, &XPS_IntC<CONFIG>::interrupt_nb_transport_fw, &XPS_IntC<CONFIG>::interrupt_b_transport);
 		
 		(*irq_slave_sock[irq])(*irq_redirector[irq]); // Bind socket to implementer of interface
+		
+		interrupt_input[irq] = false;
 	}
 	
 	SC_HAS_PROCESS(XPS_IntC);

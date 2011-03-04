@@ -32,7 +32,7 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/memory/flash/am29lv/config.hh"
+#include "unisim/component/cxx/memory/flash/am29lv/am29lv800b_config.hh"
 
 namespace unisim {
 namespace component {
@@ -41,10 +41,17 @@ namespace memory {
 namespace flash {
 namespace am29lv {
 
-// AM29LV800B Configuration
+//-----------------------------------------------------------------------------------------------------------------------------------
+//                                           AM29LV800B Configuration
+//-----------------------------------------------------------------------------------------------------------------------------------
+
+const char *AM29LV800BTConfig::DEVICE_NAME = "AM29LV800BT";
+const char *AM29LV800BBConfig::DEVICE_NAME = "AM29LV800BB";
+
 const uint64_t AM29LV800BConfig::PROGRAMMING_TIME[AM29LV800BConfig::MAX_IO_WIDTH] = { 9000, 110000 }; // 9 us/11us
 
-const SECTOR_ADDRESS_RANGE<AM29LV800BConfig::ADDRESS> AM29LV800BConfig::SECTOR_MAP[AM29LV800BConfig::NUM_SECTORS] = {
+// Sector address tables (top boot device)
+const SECTOR_ADDRESS_RANGE<AM29LV800BConfig::ADDRESS> AM29LV800BTConfig::SECTOR_MAP[AM29LV800BConfig::NUM_SECTORS] = {
 	{ 0x00000, 65536 }, // SA0/64 KB
 	{ 0x10000, 65536 }, // SA1/64 KB
 	{ 0x20000, 65536 }, // SA2/64 KB
@@ -64,6 +71,29 @@ const SECTOR_ADDRESS_RANGE<AM29LV800BConfig::ADDRESS> AM29LV800BConfig::SECTOR_M
 	{ 0xf8000,  8192 }, // SA16/8 KB
 	{ 0xfa000,  8192 }, // SA17/8 KB
 	{ 0xfc000, 16384 }  // SA18/16 KB
+};
+
+// Sector address tables (bottom boot device)
+const SECTOR_ADDRESS_RANGE<AM29LV800BConfig::ADDRESS> AM29LV800BBConfig::SECTOR_MAP[AM29LV800BConfig::NUM_SECTORS] = {
+	{ 0x00000, 16384 }, // SA0/16 KB
+	{ 0x04000,  8192 }, // SA1/8 KB
+	{ 0x06000,  8192 }, // SA2/8 KB
+	{ 0x08000, 32768 }, // SA3/32 KB
+	{ 0x10000, 65536 }, // SA4/64 KB
+	{ 0x20000, 65536 }, // SA5/64 KB
+	{ 0x30000, 65536 }, // SA6/64 KB
+	{ 0x40000, 65536 }, // SA7/64 KB
+	{ 0x50000, 65536 }, // SA8/64 KB
+	{ 0x60000, 65536 }, // SA9/64 KB
+	{ 0x70000, 65536 }, // SA10/64 KB
+	{ 0x80000, 65536 }, // SA11/64 KB
+	{ 0x90000, 65536 }, // SA12/64 KB
+	{ 0xa0000, 65536 }, // SA13/64 KB
+	{ 0xb0000, 65536 }, // SA14/64 KB
+	{ 0xc0000, 65536 }, // SA15/64 KB
+	{ 0xd0000, 65536 }, // SA16/64 KB
+	{ 0xe0000, 65536 }, // SA17/64 KB
+	{ 0xf0000, 65536 }  // SA18/64 KB
 };
 
 const uint8_t AM29LV800BConfig::MANUFACTURER_ID[MAX_IO_WIDTH] = { 0x01, 0x00 };

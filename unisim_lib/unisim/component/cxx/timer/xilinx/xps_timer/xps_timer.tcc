@@ -77,7 +77,11 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	, num_timer1_old_capture_losses(0)
 	, num_timer0_new_capture_losses(0)
 	, num_timer1_new_capture_losses(0)
+	, c_baseaddr(CONFIG::C_BASEADDR)
+	, c_highaddr(CONFIG::C_HIGHADDR)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_c_baseaddr("c-baseaddr", this, c_baseaddr, "Base address (C_BASEADDR design parameter)")
+	, param_c_highaddr("c-highaddr", this, c_highaddr, "High address (C_HIGHADDR design parameter)")
 	, stat_num_tcr0_roll_over("num-tcr0-roll-over", this, num_tcr0_roll_over, "Number of timer/counter 0 roll over")
 	, stat_num_tcr1_roll_over("num-tcr1-roll-over", this, num_tcr1_roll_over, "Number of timer/counter 1 roll over")
 	, stat_num_timer0_generate_interrupts("num-timer0-generate-interrupts", this, num_timer0_generate_interrupts, "Number of timer 0 generate interrupts")
@@ -93,6 +97,9 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	, formula_num_timer0_capture_losses("num-timer0-capture-losses", this, Formula<uint64_t>::OP_ADD, &stat_num_timer0_old_capture_losses, &stat_num_timer0_new_capture_losses, "Number of timer 0 capture losses")
 	, formula_num_timer1_capture_losses("num-timer1-capture-losses", this, Formula<uint64_t>::OP_ADD, &stat_num_timer1_old_capture_losses, &stat_num_timer1_new_capture_losses, "Number of timer 1 capture losses")
 {
+	param_c_baseaddr.SetMutable(false);
+	param_c_highaddr.SetMutable(false);
+
 	tcsr0[0] = 0;
 	tcsr0[1] = 0;
 	tlr0[0] = 0;
@@ -110,7 +117,6 @@ XPS_Timer<CONFIG>::XPS_Timer(const char *name, Object *parent)
 	sstr_description << "This module implements a Xilinx XPS Timer/Counter (v1.02a). It has the following characteristics:" << std::endl;
 	sstr_description << "PLB data width: " << CONFIG::C_SPLB_DWITH << " bits" << std::endl;
 	sstr_description << "Width of the counters: " << CONFIG::C_COUNT_WIDTH << " bits" << std::endl;
-	sstr_description << "Address range: 0x" << std::hex << CONFIG::C_BASEADDR << "-0x" << CONFIG::C_HIGHADDR << std::dec << std::endl;
 	sstr_description << "One timer only: " << (CONFIG::C_ONE_TIMER_ONLY ? "yes" : "no") << std::endl;
 	sstr_description << "CaptureTrig0 assertion level: " << (CONFIG::C_TRIG0_ASSERT ? "high" : "low") << std::endl;
 	sstr_description << "CaptureTrig1 assertion level: " << (CONFIG::C_TRIG1_ASSERT ? "high" : "low") << std::endl;
@@ -233,7 +239,7 @@ template <class CONFIG>
 template <typename T>
 void XPS_Timer<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, T& value)
 {
-	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
+	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
 	uint32_t reg_value;
 	switch(sizeof(T))
 	{
@@ -298,7 +304,7 @@ template <class CONFIG>
 template <typename T>
 void XPS_Timer<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, T value)
 {
-	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
+	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
 	uint32_t reg_value = unisim::util::endian::BigEndian2Host(value);
 	if(verbose)
 	{
@@ -601,7 +607,7 @@ void XPS_Timer<CONFIG>::LogTCSR()
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const
 {
-	return (addr >= CONFIG::C_BASEADDR) && ((addr + size - 1) <= CONFIG::C_HIGHADDR);
+	return (addr >= c_baseaddr) && ((addr + size - 1) <= c_highaddr);
 }
 
 template <class CONFIG>

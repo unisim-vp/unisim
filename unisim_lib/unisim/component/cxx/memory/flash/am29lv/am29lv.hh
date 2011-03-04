@@ -40,7 +40,6 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/memory/flash/am29lv/types.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/config.hh"
 #include "unisim/util/endian/endian.hh"
 
 namespace unisim {
@@ -88,18 +87,20 @@ protected:
 	
 	// debug stuff
 	unisim::kernel::logger::Logger logger;
-	bool verbose;
-	Parameter<bool> param_verbose;
+	
+	bool IsVerbose() const;
 private:
 	unsigned int config_addr_shift; // shift (right) amount to apply to addresses in CONFIG when matching addresses
 	unsigned int addr_shift;      // shift (right) amount to apply to a byte address in order to obtain the actual address provided to the flash chips
 	typename CONFIG::ADDRESS org;
-	uint32_t bytesize;
+	typename CONFIG::ADDRESS bytesize;
 	endian_type endian;
 	unsigned int cycle[NUM_CHIPS];
 	typename CONFIG::STATE state[NUM_CHIPS];
 	bool sector_protect[CONFIG::NUM_SECTORS];
 	uint8_t *storage;
+	bool verbose;
+	Parameter<bool> param_verbose;
 	Parameter<typename CONFIG::ADDRESS> param_org;
 	Parameter<typename CONFIG::ADDRESS> param_bytesize;
 	Parameter<endian_type> param_endian;

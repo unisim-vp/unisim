@@ -117,8 +117,12 @@ private:
 	uint64_t num_timer1_old_capture_losses;
 	uint64_t num_timer0_new_capture_losses;
 	uint64_t num_timer1_new_capture_losses;
+	typename CONFIG::MEMORY_ADDR c_baseaddr;
+	typename CONFIG::MEMORY_ADDR c_highaddr;
 	
 	Parameter<bool> param_verbose;
+	Parameter<typename CONFIG::MEMORY_ADDR> param_c_baseaddr;
+	Parameter<typename CONFIG::MEMORY_ADDR> param_c_highaddr;
 	Statistic<uint64_t> stat_num_tcr0_roll_over;
 	Statistic<uint64_t> stat_num_tcr1_roll_over;
 	Statistic<uint64_t> stat_num_timer0_generate_interrupts;

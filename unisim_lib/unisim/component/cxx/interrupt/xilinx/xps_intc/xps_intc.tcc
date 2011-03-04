@@ -64,8 +64,15 @@ XPS_IntC<CONFIG>::XPS_IntC(const char *name, Object *parent)
 	, ivr(0xffffffffUL)
 	, mer(0)
 	, verbose(false)
+	, c_baseaddr(CONFIG::C_BASEADDR)
+	, c_highaddr(CONFIG::C_HIGHADDR)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_c_baseaddr("c-baseaddr", this, c_baseaddr, "Base address (C_BASEADDR design parameter)")
+	, param_c_highaddr("c-highaddr", this, c_highaddr, "High address (C_HIGHADDR design parameter)")
 {
+	param_c_baseaddr.SetMutable(false);
+	param_c_highaddr.SetMutable(false);
+
 	intr[0] = 0;
 	intr[1] = 0;
 
@@ -73,7 +80,6 @@ XPS_IntC<CONFIG>::XPS_IntC(const char *name, Object *parent)
 	sstr_description << "This module implements a Xilinx XPS Interrupt Controller (v2.01a). It has the following characteristics:" << std::endl;
 	sstr_description << "PLB data width: " << CONFIG::C_SPLB_DWITH << " bits" << std::endl;
 	sstr_description << "Number of interrupt inputs: " << CONFIG::C_NUM_INTR_INPUTS << " interrupt inputs" << std::endl;
-	sstr_description << "Address range: 0x" << std::hex << CONFIG::C_BASEADDR << "-0x" << CONFIG::C_HIGHADDR << std::dec << std::endl;
 	sstr_description << "IPR support: " << (CONFIG::C_HAS_IPR ? "yes" : "no") << std::endl;
 	sstr_description << "SIE support: " << (CONFIG::C_HAS_SIE ? "yes" : "no") << std::endl;
 	sstr_description << "CIE support: " << (CONFIG::C_HAS_CIE ? "yes" : "no") << std::endl;
@@ -164,7 +170,7 @@ bool XPS_IntC<CONFIG>::IsVerbose() const
 template <class CONFIG>
 bool XPS_IntC<CONFIG>::IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const
 {
-	return (addr >= CONFIG::C_BASEADDR) && ((addr + size - 1) <= CONFIG::C_HIGHADDR);
+	return (addr >= c_baseaddr) && ((addr + size - 1) <= c_highaddr);
 }
 
 template <class CONFIG>
@@ -243,7 +249,7 @@ bool XPS_IntC<CONFIG>::WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void
 template <class CONFIG>
 void XPS_IntC<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint32_t& value)
 {
-	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
+	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
 	uint32_t reg_value;
 	switch(offset)
 	{
@@ -278,7 +284,7 @@ void XPS_IntC<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, uint32_t value)
 {
 	uint32_t reg_value = unisim::util::endian::BigEndian2Host(value);
 
-	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
+	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
 
 	if(IsVerbose())
 	{

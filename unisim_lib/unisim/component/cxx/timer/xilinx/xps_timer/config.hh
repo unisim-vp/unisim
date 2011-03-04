@@ -153,8 +153,8 @@ public:
 	
 	static const unsigned int C_SPLB_DWITH = 128;        // PLB data with (in bits)
 	static const unsigned int C_COUNT_WIDTH = 32;        // The width in bits of the counters in the XPS Timer/Counter
-	static const MEMORY_ADDR C_BASEADDR = 0x83c00000ULL; // XPS Timer/Counter Base Address
-	static const MEMORY_ADDR C_HIGHADDR = 0x83c0ffffULL; // XPS Timer/Counter High Address
+	static const MEMORY_ADDR C_BASEADDR = 0x83c00000ULL; // XPS Timer/Counter Base Address default value (as ML507 board)
+	static const MEMORY_ADDR C_HIGHADDR = 0x83c0ffffULL; // XPS Timer/Counter High Address default value (as ML507 board)
 	
 	// Optional features
 	static const bool C_ONE_TIMER_ONLY = false;  // Number of Timer modules

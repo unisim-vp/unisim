@@ -1,5 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <variables>
+	<object name="capture-trigger-stub0">
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>cycle time</description>
+		</variable>
+		<variable name="nice-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>1 ms</value>
+			<description>nice time</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="capture-trigger-stub1">
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>cycle time</description>
+		</variable>
+		<variable name="nice-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>1 ms</value>
+			<description>nice time</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="cpu">
 		<variable name="cpu-cycle-time">
 			<type>parameter</type>
@@ -210,7 +258,7 @@
 		<variable name="nice-time">
 			<type>parameter</type>
 			<data_type>sc_time</data_type>
-			<value>1 ms</value>
+			<value>200 ns</value>
 			<description>maximum time between synchonizations</description>
 		</variable>
 		<variable name="ipc">
@@ -288,6 +336,24 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+	</object>
+	<object name="intc">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
 		</variable>
 	</object>
 	<object name="memory">
@@ -402,6 +468,118 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="router">
+		<variable name="cycle_time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Time to process a request/response by the router</description>
+		</variable>
+		<variable name="port_buffer_size">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0</value>
+			<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
+		</variable>
+		<variable name="verbose_all">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Activate all the verbose options</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose_setup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Display Object setup information</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose_tlm">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Display TLM blocking/non-blocking transactions information</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose_tlm_debug">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Display TLM debug transactions information</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose_memory_interface">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Display memory interface operations information</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mapping_0">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x0&quot; range_end=&quot;0x3fffffff&quot; output_port=&quot;0&quot; translation=&quot;0x0&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_1">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x41200000&quot; range_end=&quot;0x4120ffff&quot; output_port=&quot;1&quot; translation=&quot;0x41200000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_2">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x41210000&quot; range_end=&quot;0x83bfffff&quot; output_port=&quot;0&quot; translation=&quot;0x41210000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_3">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x83c00000&quot; range_end=&quot;0x83c0ffff&quot; output_port=&quot;2&quot; translation=&quot;0x83c00000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_4">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x83c10000&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;0&quot; translation=&quot;0x83c10000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+	</object>
+	<object name="timer">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
+		</variable>
+	</object>
 	<variable name="authors">
 		<type>parameter</type>
 		<data_type>string</data_type>
@@ -411,7 +589,7 @@
 	<variable name="copyright">
 		<type>parameter</type>
 		<data_type>string</data_type>
-		<value>Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)</value>
+		<value>Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)</value>
 		<description>Copyright</description>
 	</variable>
 	<variable name="description">
@@ -475,7 +653,7 @@
 	<variable name="version">
 		<type>parameter</type>
 		<data_type>string</data_type>
-		<value>1.0beta1</value>
+		<value>1.0beta2</value>
 		<description>Version</description>
 	</variable>
 </variables>
