@@ -326,8 +326,10 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
+	 'unisim__util__debug__blob',
 	 'unisim__util__debug__debugger_handler',
 	 'unisim__util__xml',
+	 'unisim__util__generic_peripheral_register',
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")

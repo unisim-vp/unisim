@@ -1,83 +1,36 @@
 #!/usr/bin/env python
 
-from armemu042 import simulator
+from arm926ejs040 import simulator
 
 class SimulatorHandler(simulator.Simulator):
 	def trap_handler(self, context, id):
 		print("Python: Received a trap handler call with id = ", id)
 		parms = self.get_parameters()
-		print("        cpu.trap-on-instruction-counter = ",
-				parms['cpu.trap-on-instruction-counter'].value)
-		if parms['cpu.trap-on-instruction-counter'].value is 100:
-			print("      Setting debugger to step mode")
-			self.debugger.set_step_mode()
-			print("      Setting trap-on-instruction-counter to 200")
-			parms['cpu.trap-on-instruction-counter'].value = 200
-		elif parms['cpu.trap-on-instruction-counter'].value is 200:
-			print("      Setting debugger to continue mode")
-			self.debugger.set_continue_mode()
-			print("      Setting breakpoint at 'main'", end = "")
-			if self.debugger.set_breakpoint("main"):
-				print("  OK")
-			else:
-				print("  ERROR") 
-			print("      Setting breakpoint at 'rec_fibonnaci_test'", end = "")
-			if self.debugger.set_breakpoint("rec_fibonnaci_test"):
-				print("  OK")
-			else:
-				print("  ERROR")
-			print("      Setting trap-on-instruction-counter to 300")
-			parms['cpu.trap-on-instruction-counter'].value = 300
+		stats = self.get_statistics()
+		instruction_counter = stats['cpu.instruction-counter'].value
+		print("cpu.instruction-counter = ", instruction_counter)
+		if instruction_counter >= self.max_insns:
+			print("Stopping the simulation")
+			self.stop()
 		else:
-			print("      Resetting cpu.trap-on-instruction-counter")
-			parms['cpu.trap-on-instruction-counter'].value = 0
-
-	def breakpoint_handler(self, context, addr):
-		print("Python: 0x%08x (%s, %s, %s)" % 
-				(addr, 
-					addr, 
-					self.debugger.is_mode_step(),
-					self.debugger.has_breakpoint(addr)))
-		if self.debugger.has_breakpoint(addr):
-			print("      Removing breakpoint at 0x%08x" % addr)
-			self.debugger.delete_breakpoint(addr)
+			parms['cpu.trap-on-instruction-counter'].value = (instruction_counter - (instruction_counter % self.insn_threshold)) + self.insn_threshold
 
 	def __init__(self):
 		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
 		parms = self.get_parameters()
-		self.insn_threshold = 100
+		self.max_insns = 1000000
+		self.insn_threshold = 10000
 		self.traps_to_logger = True
-		print("cpu.trap-on-instruction-counter = ",
-			parms['cpu.trap-on-instruction-counter'].value)
-		print("trap-handler.send-traps-to-logger =",
-				parms['trap-handler.send-traps-to-logger'].value)
-		print("Setting cpu.trap-on-instruction-counter to ", 
-				self.insn_threshold)
-		parms['cpu.trap-on-instruction-counter'].value = \
-				self.insn_threshold
-		print("Setting trap-handler.send-traps-to-logger to ", 
-				self.traps_to_logger)
-		parms['trap-handler.send-traps-to-logger'].value = \
-			self.traps_to_logger
-		print("cpu.trap-on-instruction-counter = ",
-			parms['cpu.trap-on-instruction-counter'].value)
-		print("trap-handler.send-traps-to-logger =",
-				parms['trap-handler.send-traps-to-logger'].value)
-		print("Setting external trap handler")
+		parms['cpu.trap-on-instruction-counter'].value = self.insn_threshold
+		parms['trap-handler.send-traps-to-logger'].value = self.traps_to_logger
 		self.set_trap_handler(None, self.trap_handler)
-		self.debugger = self.get_debugger("main")
-		# self.debugger.set_step_mode()
-		self.debugger.set_context(None)
-		self.debugger.set_breakpoint_callback(self.breakpoint_handler)
 
 	def setup(self):
-		print("Launching simulator setup.")
 		# we can not call self.setup() because it would cause a recursive
 		#   call to the SimulatorHandler class. To avoid that we call the
 		#   class directly (simulator.Simulator.setup()) giving it the 
 		#   reference to itself.
 		simulator.Simulator.setup(self)
-		print("Launching simulator.")
 
 	def dump_params(self):
 		print("Dumping parameters:")
@@ -91,11 +44,15 @@ class SimulatorHandler(simulator.Simulator):
 		for k, v in stats.items():
 			print("- %s = %s" % (k, v.str) )
 
+print("Creating simulator")
 sim = SimulatorHandler()
+print("Launching simulator setup")
 sim.setup()
+print("Launching simulation")
 sim.run()
+print("Simulation finished")
 sim.remove_trap_handler()
-sim.dump_params()
-sim.dump_statistics()
+# sim.dump_params()
+# sim.dump_statistics()
 
 print("Bye!")
