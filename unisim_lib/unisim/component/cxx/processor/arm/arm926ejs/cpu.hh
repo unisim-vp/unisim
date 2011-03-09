@@ -887,6 +887,24 @@ protected:
 	 */
 	void PerformReadToPCUpdateTAccess(
 			unisim::component::cxx::processor::arm::MemoryOp *memop);
+	
+	/************************************************************************/
+	/* Memory statistics                                              START */
+	/************************************************************************/
+	
+	uint64_t num_data_prefetches;
+	uint64_t num_data_reads;
+	uint64_t num_data_writes;
+	uint64_t num_insn_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_prefetches;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_writes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_insn_reads;
+
+	/************************************************************************/
+	/* Memory statistics                                                END */
+	/************************************************************************/
+
 };
 
 } // end of namespace arm926ejs

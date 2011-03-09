@@ -174,6 +174,18 @@ CPU(const char *name, Object *parent)
 	, first_ls(0)
 	, has_sent_first_ls(false)
 	, free_ls_queue()
+	, num_data_prefetches(0)
+	, num_data_reads(0)
+	, num_data_writes(0)
+	, num_insn_reads(0)
+	, stat_num_data_prefetches("num-data-prefetches", this,	num_data_prefetches,
+			"Number of data prefetches issued to the memory system.")
+	, stat_num_data_reads("num-data-reads", this, num_data_reads,
+			"Number of data reads issued to the memory system.")
+	, stat_num_data_writes("num-data-writes", this, num_data_writes,
+			"Number of data writes issued to the memory system.")
+	, stat_num_insn_reads("num-insn-reads", this, num_insn_reads,
+			"Number of instruction reads issued to the memory system.")
 {
 	for (unsigned int i = 0; i < num_phys_gprs; i++)
 	{
@@ -971,6 +983,8 @@ ReadInsn(uint32_t address, uint32_t &val)
 	uint32_t pa = mva;
 	uint32_t cacheable = 1;
 	uint32_t bufferable = 1; // instruction cache ignores the bufferable status
+
+	num_insn_reads++;
 
 	if ( verbose & 0x04 )
 		logger << DebugInfo
@@ -2544,8 +2558,10 @@ TranslateVA(bool is_read,
 	bool found_second_level = false;
 	uint32_t second_level = 0;
 	uint32_t way = 0;
+	ltlb.read_accesses++;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
+		ltlb.read_hits++;
 		first_level = ltlb.GetData(way);
 		found_first_level = true;
 	}
@@ -2561,8 +2577,10 @@ TranslateVA(bool is_read,
 		// check the main tlb
 		uint32_t tag = tlb.GetTag(ttb_addr);
 		uint32_t set = tlb.GetSet(ttb_addr);
+		tlb.read_accesses++;
 		if ( tlb.GetWay(tag, set, &way) )
 		{
+			tlb.read_hits++;
 			first_level = tlb.GetData(set, way);
 			found_first_level = true;
 		}
@@ -2613,6 +2631,7 @@ TranslateVA(bool is_read,
 		uint32_t tag = tlb.GetTag(ttb_addr);
 		uint32_t set = tlb.GetSet(ttb_addr);
 		uint32_t way = tlb.GetNewWay(set);
+		tlb.write_accesses++;
 		tlb.SetEntry(tag, set, way, first_level, 1);
 	}
 
@@ -2642,8 +2661,10 @@ TranslateVA(bool is_read,
 				<< EndDebugInfo;
 		}
 		uint32_t second_way = 0;
+		ltlb.read_accesses++;
 		if ( ltlb.GetWay(coarse_addr, &second_way) )
 		{
+			ltlb.read_hits++;
 			second_level = ltlb.GetData(second_way);
 			found_second_level = true;
 		}
@@ -2659,8 +2680,10 @@ TranslateVA(bool is_read,
 			// check the main tlb
 			uint32_t second_tag = tlb.GetTag(coarse_addr);
 			uint32_t second_set = tlb.GetSet(coarse_addr);
+			tlb.read_accesses++;
 			if ( tlb.GetWay(second_tag, second_set, &second_way) )
 			{
+				tlb.read_hits++;
 				second_level = tlb.GetData(second_set, second_way);
 				found_second_level = true;
 			}
@@ -2714,6 +2737,7 @@ TranslateVA(bool is_read,
 			uint32_t second_tag = tlb.GetTag(coarse_addr);
 			uint32_t second_set = tlb.GetSet(coarse_addr);
 			uint32_t second_way = tlb.GetNewWay(second_set);
+			tlb.write_accesses++;
 			tlb.SetEntry(second_tag, second_set, second_way, second_level, 1);
 		}
 
@@ -2986,19 +3010,24 @@ PerformLoadStoreAccesses()
 		switch (memop->GetType()) 
 		{
 			case MemoryOp::PREFETCH:
+				num_data_prefetches++;
 				PerformPrefetchAccess(memop);
 				break;
 			case MemoryOp::WRITE:
+				num_data_writes++;
 				PerformWriteAccess(memop);
 				break;
 			case MemoryOp::READ:
 			case MemoryOp::USER_READ:
+				num_data_reads++;
 				PerformReadAccess(memop);
 				break;
 			case MemoryOp::READ_TO_PC_UPDATE_T:
+				num_data_reads++;
 				PerformReadToPCUpdateTAccess(memop);
 				break;
 			case MemoryOp::READ_TO_PC:
+				num_data_reads++;
 				PerformReadToPCAccess(memop);
 				break;
 		}
