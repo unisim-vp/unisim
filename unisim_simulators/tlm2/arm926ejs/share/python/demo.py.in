@@ -1,16 +1,60 @@
 #!/usr/bin/env python
 
-from arm926ejs040 import simulator
+from @SIM_PYTHON_IMPORT_NAME@ import simulator
+import re
 
 class SimulatorHandler(simulator.Simulator):
 	def trap_handler(self, context, id):
-		print("Python: Received a trap handler call with id = ", id)
+		# print("Python: Received a trap handler call with id = ", id)
 		parms = self.get_parameters()
 		stats = self.get_statistics()
 		instruction_counter = stats['cpu.instruction-counter'].value
-		print("cpu.instruction-counter = ", instruction_counter)
+		current_time = parms['cpu.cpu-time'].value
+		(current_time, time_unit) = re.split(' ', current_time)
+		current_time = int(current_time)
+		if re.match('ns', time_unit):
+			current_time = current_time * 1000
+		else:
+			if not re.match('ps', time_unit):
+				print("++++++++++++++++ Unknown time unit: '" + time_unit + "'")
+				print("Stopping the simulation")
+				self.log.close()
+				self.stop()
+		cpu_dcache_read_accesses = stats['cpu.dcache.read-accesses'].value
+		cpu_dcache_write_accesses = stats['cpu.dcache.write-accesses'].value
+		cpu_dcache_prefetch_accesses = stats['cpu.dcache.prefetch-accesses'].value
+		cpu_dcache_read_hits = stats['cpu.dcache.read-hits'].value
+		cpu_dcache_write_hits = stats['cpu.dcache.write-hits'].value
+		cpu_dcache_prefetch_hits = stats['cpu.dcache.prefetch-hits'].value
+		cpu_icache_read_accesses = stats['cpu.icache.read-accesses'].value
+		cpu_icache_read_hits = stats['cpu.icache.read-hits'].value
+		list = (instruction_counter,
+				current_time - self.current_time,
+				cpu_dcache_read_accesses - self.cpu_dcache_read_accesses,
+				cpu_dcache_write_accesses - self.cpu_dcache_write_accesses,
+				cpu_dcache_prefetch_accesses - self.cpu_dcache_prefetch_accesses,
+				cpu_dcache_read_hits - self.cpu_dcache_read_hits,
+				cpu_dcache_write_hits - self.cpu_dcache_write_hits,
+				cpu_dcache_prefetch_hits - self.cpu_dcache_prefetch_hits,
+				cpu_icache_read_accesses - self.cpu_icache_read_accesses,
+				cpu_icache_read_hits - self.cpu_icache_read_hits)
+		self.current_time = current_time
+		self.cpu_dcache_read_accesses = cpu_dcache_read_accesses
+		self.cpu_dcache_write_accesses = cpu_dcache_write_accesses
+		self.cpu_dcache_prefetch_accesses = cpu_dcache_prefetch_accesses
+		self.cpu_dcache_read_hits = cpu_dcache_read_hits
+		self.cpu_dcache_write_hits = cpu_dcache_write_hits
+		self.cpu_dcache_prefetch_hits = cpu_dcache_prefetch_hits
+		self.cpu_icache_read_accesses = cpu_icache_read_accesses
+		self.cpu_icache_read_hits = cpu_icache_read_hits
+		for (i) in list:
+			self.log.write(str(i))
+			self.log.write(' ')
+		self.log.write('\n')
+		self.log.flush()
 		if instruction_counter >= self.max_insns:
 			print("Stopping the simulation")
+			self.log.close()
 			self.stop()
 		else:
 			parms['cpu.trap-on-instruction-counter'].value = (instruction_counter - (instruction_counter % self.insn_threshold)) + self.insn_threshold
@@ -18,9 +62,19 @@ class SimulatorHandler(simulator.Simulator):
 	def __init__(self):
 		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
 		parms = self.get_parameters()
-		self.max_insns = 1000000
-		self.insn_threshold = 10000
-		self.traps_to_logger = True
+		self.insn_threshold = 100000
+		self.max_insns = self.insn_threshold * 10 # 100000
+		# self.max_insns =    10000000000
+		self.traps_to_logger = False
+		self.current_time = 0
+		self.cpu_dcache_read_accesses = 0
+		self.cpu_dcache_write_accesses = 0
+		self.cpu_dcache_prefetch_accesses = 0
+		self.cpu_dcache_read_hits = 0
+		self.cpu_dcache_write_hits = 0
+		self.cpu_dcache_prefetch_hits = 0
+		self.cpu_icache_read_accesses = 0
+		self.cpu_icache_read_hits = 0
 		parms['cpu.trap-on-instruction-counter'].value = self.insn_threshold
 		parms['trap-handler.send-traps-to-logger'].value = self.traps_to_logger
 		self.set_trap_handler(None, self.trap_handler)
@@ -31,17 +85,23 @@ class SimulatorHandler(simulator.Simulator):
 		#   class directly (simulator.Simulator.setup()) giving it the 
 		#   reference to itself.
 		simulator.Simulator.setup(self)
+		# we prepare a log file for our collected data
+		self.log = open("log.txt", "w")
 
 	def dump_params(self):
 		print("Dumping parameters:")
 		parms = self.get_parameters()
-		for k, v in parms.items():
+		for k, v in sorted(parms.items()):
 			print("- %s = %s" % (k, v.str) )
 
 	def dump_statistics(self):
 		print("Dumping statistics:")
 		stats = self.get_statistics()
-		for k, v in stats.items():
+		forms = self.get_formulas()
+		out = dict()
+		out.update(stats)
+		out.update(forms)
+		for k, v in sorted(out.items()):
 			print("- %s = %s" % (k, v.str) )
 
 print("Creating simulator")
@@ -52,7 +112,7 @@ print("Launching simulation")
 sim.run()
 print("Simulation finished")
 sim.remove_trap_handler()
-# sim.dump_params()
-# sim.dump_statistics()
+sim.dump_params()
+sim.dump_statistics()
 
 print("Bye!")
