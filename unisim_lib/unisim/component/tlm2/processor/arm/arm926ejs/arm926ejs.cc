@@ -149,6 +149,8 @@ ARM926EJS(const sc_module_name& name, Object *parent)
 			"Instructions per cycle performance.")
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int,
 			"The processor bus cycle time in picoseconds.")
+	, param_cpu_time("cpu-time", this, cpu_time,
+			"The processor time")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose_tlm", this, verbose_tlm, 
 			"Display TLM information")
