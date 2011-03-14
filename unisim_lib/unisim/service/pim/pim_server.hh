@@ -90,10 +90,13 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::Simulator;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
 using unisim::service::pim::network::SocketServerThread;
+
+using unisim::service::pim::PIMThread;
 
 typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER_MODE_CONTINUE } GDBServerRunningMode;
 
@@ -124,7 +127,7 @@ private:
 };
 
 template <class ADDRESS>
-class PIMGDBServer :
+class PIMServer :
 	public Service<DebugControl<ADDRESS> >,
 	public Service<MemoryAccessReporting<ADDRESS> >,
 	public Service<TrapReporting>,
@@ -146,8 +149,8 @@ public:
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
 
-	PIMGDBServer(const char *name, Object *parent = 0);
-	virtual ~PIMGDBServer();
+	PIMServer(const char *name, Object *parent = 0);
+	virtual ~PIMServer();
 
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS next_addr);
@@ -160,6 +163,7 @@ public:
 							const char *c_str);
 	virtual bool Setup();
 	virtual void OnDisconnect();
+	virtual void Stop(int exit_status);
 
 	virtual void Run() { }
 	virtual string getProtocol() { return "GDB"; }
@@ -167,8 +171,43 @@ public:
 	uint16_t GetTCPPort() { return tcp_port;}
 	string GetHost() { return fHost; }
 
-//protected:
-//	int sock;
+protected:
+	class SimulatorThread : public GenericThread {
+	public:
+
+		SimulatorThread(PIMServer<ADDRESS> *pp) : GenericThread(), gdb_server(pp) {}
+		virtual void Run() {
+
+			vector<SocketThread*> protocolHandlers;
+
+			// Start Simulation <-> ToolBox communication
+			gdb_server->target = new PIMThread("pim-thread");
+			protocolHandlers.push_back(gdb_server->target);
+
+			protocolHandlers.push_back(gdb_server);
+
+			// Open Socket Stream
+			gdb_server->socketfd = new SocketServerThread(gdb_server->GetHost(), gdb_server->GetTCPPort(), true, 2);
+
+			gdb_server->socketfd->setProtocolHandlers(&protocolHandlers);
+
+			gdb_server->socketfd->start();
+
+			gdb_server->waitConnection();
+
+		}
+
+	private:
+		PIMServer<ADDRESS> *gdb_server;
+
+	};
+
+	SimulatorThread *sim;
+
+	SocketServerThread *socketfd;
+
+	SocketThread *target;
+	SocketThread *pimServerThread;
 
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;

@@ -127,6 +127,9 @@ unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/endian/endian.cc \
+unisim/service/debug/gdb_server/gdb_server_32.cc \
+unisim/service/debug/gdb_server/gdb_server_64.cc \
+unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -247,6 +250,7 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
+unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
@@ -311,6 +315,7 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \

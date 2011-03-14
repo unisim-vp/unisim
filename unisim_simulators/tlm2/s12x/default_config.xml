@@ -822,26 +822,6 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="pim">
-		<variable name="tcp-port">
-			<type>parameter</type>
-			<data_type>unsigned 16-bit integer</data_type>
-			<value>0x4d2</value>
-			<description>TCP/IP port to listen waiting for clients (GDB/PIM) connections</description>
-		</variable>
-		<variable name="host">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>127.0.0.1</value>
-			<description></description>
-		</variable>
-		<variable name="filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>pim.xml</value>
-			<description></description>
-		</variable>
-	</object>
 	<variable name="authors">
 		<type>parameter</type>
 		<data_type>string</data_type>
@@ -875,6 +855,16 @@
 		<data_type>boolean</data_type>
 		<value>false</value>
 		<description>Enable/Disable inline debugger instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-pim-server">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable PIM server instantiation</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

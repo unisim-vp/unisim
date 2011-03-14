@@ -44,6 +44,7 @@
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/pim/pim_server.hh>
+#include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <unisim/service/interfaces/loader.hh>
@@ -59,10 +60,6 @@
 #include <unisim/service/time/host_time/time.hh>
 
 #include <unisim/service/pim/pim.hh>
-#include <unisim/service/pim/pim_thread.hh>
-#include <unisim/service/pim/network/GenericThread.hpp>
-#include <unisim/service/pim/network/SocketThread.hpp>
-#include <unisim/service/pim/network/SocketServerThread.hpp>
 
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
@@ -124,7 +121,8 @@ using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::service::loader::s19_loader::S19_Loader;
-using unisim::service::pim::PIMGDBServer;
+using unisim::service::pim::PIMServer;
+using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -133,10 +131,6 @@ using unisim::kernel::service::VariableBase;
 using unisim::service::interfaces::Loader;
 
 using unisim::service::pim::PIM;
-using unisim::service::pim::PIMThread;
-using unisim::service::pim::network::GenericThread;
-using unisim::service::pim::network::SocketThread;
-using unisim::service::pim::network::SocketServerThread;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -156,57 +150,11 @@ public:
 		
 	void Run();
 
-	void GeneratePim() { pim->GeneratePimFile(); };
-
-protected:
-
-	class SimulatorThread : public GenericThread {
-	public:
-
-		SimulatorThread(Simulator *pp) : GenericThread(), parentSimulator(pp) {}
-		virtual void Run() {
-
-			vector<SocketThread*> protocolHandlers;
-
-			// Start Simulation <-> ToolBox communication
-			parentSimulator->target = new PIMThread("pim-thread");
-			protocolHandlers.push_back(parentSimulator->target);
-
-			protocolHandlers.push_back(parentSimulator->gdb_server);
-
-			// Open Socket Stream
-			parentSimulator->socketfd = new SocketServerThread(parentSimulator->gdb_server->GetHost(), parentSimulator->gdb_server->GetTCPPort(), true, 2);
-
-			parentSimulator->socketfd->setProtocolHandlers(&protocolHandlers);
-
-			parentSimulator->socketfd->start();
-
-			parentSimulator->gdb_server->waitConnection();
-			parentSimulator->InternalRun();
-
-			parentSimulator->gdb_server->join();
-
-			parentSimulator->target->join();
-
-			parentSimulator->socketfd->join();
-
-		}
-
-	private:
-		Simulator *parentSimulator;
-
+	void GeneratePim() {
+		PIM *pim = new PIM("pim");
+		pim->GeneratePimFile();
+		if (pim) { delete pim; pim = NULL; }
 	};
-
-	PIMGDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
-
-	SimulatorThread *sim;
-
-	SocketServerThread *socketfd;
-
-	SocketThread *target;
-	SocketThread *pimServerThread;
-
-	void InternalRun();
 
 private:
 
@@ -295,10 +243,13 @@ private:
 	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19;
 	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF;
 
-	PIM *pim;
 
 	//  - GDB server
-//	PIMGDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+
+	// PIM server
+	PIMServer<SERVICE_ADDRESS_TYPE> *pim_server;
+
 	//  - Inline debugger
 	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger;
 	//  - SystemC Time
@@ -306,9 +257,11 @@ private:
 	//  - Host Time
 	unisim::service::time::host_time::HostTime *host_time;
 
+	bool enable_pim_server;
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	string filename;
+	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	int exit_status;
@@ -340,12 +293,14 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 	, loaderS19(0)
 	, loaderELF(0)
+	, pim_server(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, isS19(false)
@@ -361,8 +316,6 @@ Simulator::Simulator(int argc, char **argv)
 		filename = (string)(*cmd_args)[0];
 		std::cerr << "filename=\"" << filename << "\"" << std::endl;
 	}
-
-	sim = new SimulatorThread(this);
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -416,10 +369,11 @@ Simulator::Simulator(int argc, char **argv)
 		loaderELF = new Elf32Loader("elf32-loader");
 	}
 
-	pim = new PIM("pim");
+	//  - PIM server
+	pim_server = enable_pim_server ? new PIMServer<SERVICE_ADDRESS_TYPE>("pim-server") : 0;
 
 	//  - GDB server
-	gdb_server = enable_gdb_server ? new PIMGDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
@@ -548,8 +502,26 @@ Simulator::Simulator(int argc, char **argv)
 		gdb_server->memory_import >> cpu->memory_export;
 
 		gdb_server->registers_import >> registersTee->registers_export;
-//		gdb_server->registers_import >> cpu->registers_export;
 		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+	}
+	else if (enable_pim_server)
+	{
+		// Connect gdb-server to CPU
+		cpu->debug_control_import >> pim_server->debug_control_export;
+		cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;
+		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		pwm->trap_reporting_import >> pim_server->trap_reporting_export;
+		atd0->trap_reporting_import >> pim_server->trap_reporting_export;
+		atd1->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		mmc->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		pim_server->disasm_import >> cpu->disasm_export;
+		pim_server->memory_import >> cpu->memory_export;
+
+		pim_server->registers_import >> registersTee->registers_export;
+		pim_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
 
 	if (isS19) {
@@ -565,9 +537,14 @@ Simulator::Simulator(int argc, char **argv)
 		{
 			*inline_debugger->symbol_table_lookup_import[0] >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 			*inline_debugger->stmt_lookup_import[0] >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
-		} else if(gdb_server)
+		}
+		else if (gdb_server)
 		{
 			gdb_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+		}
+		else if (pim_server)
+		{
+			pim_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 		}
 	}
 
@@ -575,12 +552,8 @@ Simulator::Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
-	if (sim) { delete sim; sim = NULL;}
-	if (socketfd) { delete socketfd; socketfd = NULL;}
-	if (target) { delete target; target = NULL; }
-	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
-	if (pim) { delete pim; pim = NULL; }
+	if (pim_server) { delete pim_server; pim_server = NULL; }
 
 	if (registersTee) { delete registersTee; registersTee = NULL; }
 	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
@@ -631,17 +604,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	const char *filename = "";
 	const char *symbol_filename = "";
 
-//	double cpu_frequency = 4.0; // in Mhz
-
-//	uint8_t cpu_clock_multiplier = 1;
-//	uint8_t xgate_clock_multiplier = 2;
-//	double cpu_ipc = 1.0; // in instructions per cycle
-//	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-//	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-//	uint32_t mem_cycle_time = fsb_cycle_time;
 	bool force_use_virtual_address = true;
-
-//	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -656,6 +619,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("pim.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 	simulator->SetVariable("pim.tcp-port", 1234);
 	simulator->SetVariable("pim.filename", "pim.xml");
+
+	//  - PIM Server run-time configuration
+	simulator->SetVariable("pim-server.tcp-port", gdb_server_tcp_port);
+	simulator->SetVariable("pim-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
@@ -770,14 +738,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 void Simulator::Stop(Object *object, int _exit_status)
 {
-	// ***********************
-	if (sim) { sim->stop();}
-	if (socketfd) { socketfd->stop();}
-	if (target) { target->stop();}
-	if (pimServerThread) { pimServerThread->stop();}
-
-	// ***********************
-
 	exit_status = _exit_status;
 	if(object)
 	{
@@ -788,7 +748,7 @@ void Simulator::Stop(Object *object, int _exit_status)
 	wait();
 }
 
-void Simulator::InternalRun() {
+void Simulator::Run() {
 
 	// If no filename has been specified, abort simulation
 	if(filename.empty())
@@ -859,18 +819,6 @@ void Simulator::InternalRun() {
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-
-}
-
-void Simulator::Run()
-{
-
-	if (enable_gdb_server) {
-		sim->start();
-		sim->join();
-	} else if (enable_inline_debugger) {
-		InternalRun();
-	}
 
 }
 

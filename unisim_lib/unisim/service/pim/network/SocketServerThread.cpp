@@ -92,66 +92,50 @@ void SocketServerThread::Run() {
 
     cli_addr_len = sizeof(cli_addr);
 
-	fd_set savefds;
-	FD_ZERO(&savefds);
-	FD_SET(primary_sockfd, &savefds);
-
 	do {
 
 		int sockfdTmp = -1;
 
-		fd_set readfds = savefds;  // this must be set before each call to select()
-		timeval timeout = {1, 0};  // this must be set before each call to select()
+		// client connected
+		sockfdTmp = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
 
-		int sel = select(primary_sockfd + 1, &readfds, 0, 0, &timeout);
+		if (sockfdTmp >= 0) {
 
-		if (sel > 0 && FD_ISSET(primary_sockfd, &readfds)) {
-
-			// client connected
-			sockfdTmp = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
-
-			if (sockfdTmp >= 0) {
-
-				// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
-				int opt = 1;
-				if (setsockopt(sockfdTmp, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
-					int array[] = {sockfdTmp};
-					error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
-				}
+			// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
+			int opt = 1;
+			if (setsockopt(sockfdTmp, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
+				int array[] = {sockfdTmp};
+				error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
+			}
 
 #ifdef WIN32
 
-				u_long NonBlock = 1;
-				if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
-					int array[] = {sockfdTmp};
-					error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
-				}
+			u_long NonBlock = 1;
+			if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
+				int array[] = {sockfdTmp};
+				error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
+			}
 
 #else
 
-				int flags = fcntl(sockfdTmp, F_GETFL, 0);
-				if (flags < 0)	{
-					int array[] = {sockfdTmp};
-					error(array, "fcntl <F_GETFL> failed");
-				}
+			int flags = fcntl(sockfdTmp, F_GETFL, 0);
+			if (flags < 0)	{
+				int array[] = {sockfdTmp};
+				error(array, "fcntl <F_GETFL> failed");
+			}
 
-				if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
-					int array[] = {sockfdTmp};
-					error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
-				}
+			if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
+				int array[] = {sockfdTmp};
+				error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
+			}
 
 #endif
 
-				SetSockfd(sockfdTmp);
+			SetSockfd(sockfdTmp);
 
-				if (bindHandler(sockfdTmp)) {
-					connected++;
-				}
+			if (bindHandler(sockfdTmp)) {
+				connected++;
 			}
-
-		}
-		else if (sel == 0) {
-		// timeout occurred
 		}
 
 	} while ((connected < nbHandlers) && !isTerminated());

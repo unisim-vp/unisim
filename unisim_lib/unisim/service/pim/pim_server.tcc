@@ -85,7 +85,7 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::service::pim::PIMThread;
 
 template <class ADDRESS>
-PIMGDBServer<ADDRESS>::PIMGDBServer(const char *_name, Object *_parent)
+PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "GDB Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
@@ -136,7 +136,7 @@ PIMGDBServer<ADDRESS>::PIMGDBServer(const char *_name, Object *_parent)
 }
 
 template <class ADDRESS>
-PIMGDBServer<ADDRESS>::~PIMGDBServer()
+PIMServer<ADDRESS>::~PIMServer()
 {
 	if(sockfd >= 0)
 	{
@@ -149,10 +149,16 @@ PIMGDBServer<ADDRESS>::~PIMGDBServer()
 #endif
 		sockfd = -1;
 	}
+
+	if (sim) { delete sim; sim = NULL;}
+	if (socketfd) { delete socketfd; socketfd = NULL;}
+	if (target) { delete target; target = NULL; }
+	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
+
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::Setup()
+bool PIMServer<ADDRESS>::Setup()
 {
 	if(memory_atom_size != 1 &&
 	   memory_atom_size != 2 &&
@@ -399,147 +405,35 @@ bool PIMGDBServer<ADDRESS>::Setup()
 		return false;
 	}
 
-//	struct sockaddr_in addr;
-//	int server_sock;
-//
-//	server_sock = socket(AF_INET, SOCK_STREAM, 0);
-//
-//	if(server_sock < 0)
-//	{
-//		logger << DebugError << "socket failed" << EndDebugError;
-//		return false;
-//	}
-//
-//	memset(&addr, 0, sizeof(addr));
-//	addr.sin_family = AF_INET;
-//	addr.sin_port = htons(tcp_port);
-//	addr.sin_addr.s_addr = INADDR_ANY;
-//	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
-//	{
-//		logger << DebugError << "bind failed" << EndDebugError;
-//#ifdef WIN32
-//		closesocket(server_sock);
-//#else
-//		close(server_sock);
-//#endif
-//		return false;
-//	}
-//
-//	if(listen(server_sock, 1))
-//	{
-//		logger << DebugError << "listen failed" << EndDebugError;
-//#ifdef WIN32
-//		closesocket(server_sock);
-//#else
-//		close(server_sock);
-//#endif
-//		return false;
-//	}
-//
-//#ifdef WIN32
-//		int addr_len;
-//#else
-//		socklen_t addr_len;
-//#endif
-//
-//	if(verbose)
-//	{
-//		logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
-//	}
-//	addr_len = sizeof(addr);
-//	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
-//
-//	if(sock < 0)
-//	{
-//		logger << DebugError << "accept failed" << EndDebugError;
-//#ifdef WIN32
-//		closesocket(server_sock);
-//#else
-//		close(server_sock);
-//#endif
-//		return false;
-//	}
-//
-//	if(verbose)
-//	{
-//		logger << DebugInfo << "Connection with GDB client established" << EndDebugInfo;
-//	}
-//
-//    /* set short latency */
-//    int opt = 1;
-//    if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
-//	{
-//		if(verbose)
-//		{
-//			logger << DebugWarning << "setsockopt failed requesting short latency" << EndDebugWarning;
-//		}
-//	}
-//
-//
-//#ifdef WIN32
-//	u_long NonBlock = 1;
-//	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
-//	{
-//		logger << DebugError << "ioctlsocket failed" << EndDebugError;
-//#ifdef WIN32
-//		closesocket(server_sock);
-//		closesocket(sock);
-//#else
-//		close(server_sock);
-//		close(sock);
-//#endif
-//		sock = -1;
-//		return false;
-//	}
-//#else
-//	int socket_flag = fcntl(sock, F_GETFL, 0);
-//
-//	if(socket_flag < 0)
-//	{
-//		logger << DebugError << "fcntl failed" << EndDebugError;
-//#ifdef WIN32
-//		closesocket(server_sock);
-//		closesocket(sock);
-//#else
-//		close(server_sock);
-//		close(sock);
-//#endif
-//		sock = -1;
-//		return false;
-//	}
-//
-//	/* Ask for non-blocking reads on socket */
-//	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
-//	{
-//		logger << DebugError << "fcntl failed" << EndDebugError;
-//#ifdef WIN32
-//		closesocket(server_sock);
-//		closesocket(sock);
-//#else
-//		close(server_sock);
-//		close(sock);
-//#endif
-//		sock = -1;
-//		return false;
-//	}
-//#endif
-//
-//#ifdef WIN32
-//	closesocket(server_sock);
-//#else
-//	close(server_sock);
-//#endif
+
+// ************************
+
+	sim = new SimulatorThread(this);
+
+	sim->start();
+
+// ************************
 
 	return true;
 }
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::OnDisconnect()
+void PIMServer<ADDRESS>::Stop(int exit_status) {
+
+	if (sim) { sim->stop();}
+	if (socketfd) { socketfd->stop();}
+	if (target) { target->stop();}
+	if (pimServerThread) { pimServerThread->stop();}
+
+}
+
+template <class ADDRESS>
+void PIMServer<ADDRESS>::OnDisconnect()
 {
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& value)
+bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& value)
 {
 	unsigned int len = s.length();
 	unsigned int n = 0;
@@ -559,7 +453,7 @@ bool PIMGDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS
 }
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
@@ -569,7 +463,7 @@ void PIMGDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<AD
 }
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -579,7 +473,7 @@ void PIMGDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 }
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::ReportTrap()
+void PIMServer<ADDRESS>::ReportTrap()
 {
 	trap = true;
 	synched = false;
@@ -587,7 +481,7 @@ void PIMGDBServer<ADDRESS>::ReportTrap()
 
 template <class ADDRESS>
 void
-PIMGDBServer<ADDRESS>::
+PIMServer<ADDRESS>::
 ReportTrap(const unisim::kernel::service::Object &obj)
 {
 	ReportTrap();
@@ -595,7 +489,7 @@ ReportTrap(const unisim::kernel::service::Object &obj)
 
 template <class ADDRESS>
 void
-PIMGDBServer<ADDRESS>::
+PIMServer<ADDRESS>::
 ReportTrap(const unisim::kernel::service::Object &obj,
 		   const std::string &str)
 {
@@ -604,7 +498,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 
 template <class ADDRESS>
 void
-PIMGDBServer<ADDRESS>::
+PIMServer<ADDRESS>::
 ReportTrap(const unisim::kernel::service::Object &obj,
 		   const char *c_str)
 {
@@ -612,7 +506,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 }
 
 template <class ADDRESS>
-typename DebugControl<ADDRESS>::DebugCommand PIMGDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
 	ADDRESS addr;
 	ADDRESS size;
@@ -865,7 +759,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMGDBServer<ADDRESS>::FetchDebugCo
 
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::FlushOutput()
+bool PIMServer<ADDRESS>::FlushOutput()
 {
 	if(output_buffer_size > 0)
 	{
@@ -896,7 +790,7 @@ bool PIMGDBServer<ADDRESS>::FlushOutput()
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::PutChar(char c)
+bool PIMServer<ADDRESS>::PutChar(char c)
 {
 	if(output_buffer_size >= sizeof(output_buffer))
 	{
@@ -908,7 +802,7 @@ bool PIMGDBServer<ADDRESS>::PutChar(char c)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
+bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
 {
 	uint8_t checksum;
 	uint8_t received_checksum;
@@ -979,7 +873,7 @@ bool PIMGDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::PutPacket(const string& s)
+bool PIMServer<ADDRESS>::PutPacket(const string& s)
 {
 	uint8_t checksum;
 	unsigned int pos;
@@ -1013,7 +907,7 @@ bool PIMGDBServer<ADDRESS>::PutPacket(const string& s)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::OutputText(const char *s, int count)
+bool PIMServer<ADDRESS>::OutputText(const char *s, int count)
 {
 	string packet = "";
 	string tmpPacket;
@@ -1028,7 +922,7 @@ bool PIMGDBServer<ADDRESS>::OutputText(const char *s, int count)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReadRegisters()
+bool PIMServer<ADDRESS>::ReadRegisters()
 {
 	string packet;
 	vector<GDBRegister>::const_iterator gdb_reg;
@@ -1043,7 +937,7 @@ bool PIMGDBServer<ADDRESS>::ReadRegisters()
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::WriteRegisters(const string& hex)
+bool PIMServer<ADDRESS>::WriteRegisters(const string& hex)
 {
 	vector<GDBRegister>::iterator gdb_reg;
 	unsigned int pos = 0;
@@ -1057,7 +951,7 @@ bool PIMGDBServer<ADDRESS>::WriteRegisters(const string& hex)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
+bool PIMServer<ADDRESS>::ReadRegister(unsigned int regnum)
 {
 	if(regnum >= gdb_registers.size()) return false;
 	const GDBRegister& gdb_reg = gdb_registers[regnum];
@@ -1067,7 +961,7 @@ bool PIMGDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
+bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 {
 	if(regnum >= gdb_registers.size()) return false;
 	GDBRegister& gdb_reg = gdb_registers[regnum];
@@ -1075,7 +969,7 @@ bool PIMGDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::HandleSymbolLookup() {
+bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 
 	while (true) {
 
@@ -1130,13 +1024,13 @@ bool PIMGDBServer<ADDRESS>::HandleSymbolLookup() {
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::WriteSymbol(const string name, const string& hex) {
+bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hex) {
 
 	return false;
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReadSymbol(const string name)
+bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 {
 
 	const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
@@ -1189,7 +1083,7 @@ bool PIMGDBServer<ADDRESS>::ReadSymbol(const string name)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string& packet)
+bool PIMServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string& packet)
 {
 	bool read_error = false;
 	bool overwrapping = false;
@@ -1228,7 +1122,7 @@ bool PIMGDBServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, stri
 
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+bool PIMServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 {
 	string packet;
 
@@ -1244,7 +1138,7 @@ bool PIMGDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t size)
+bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t size)
 {
 	bool write_error = false;
 	bool overwrapping = false;
@@ -1280,7 +1174,7 @@ bool PIMGDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_
 }
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::Kill()
+void PIMServer<ADDRESS>::Kill()
 {
 	if(sockfd >= 0)
 	{
@@ -1294,13 +1188,13 @@ void PIMGDBServer<ADDRESS>::Kill()
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReportProgramExit()
+bool PIMServer<ADDRESS>::ReportProgramExit()
 {
 	return PutPacket("W00");
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReportSignal(unsigned int signum)
+bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	char packet[4];
 	sprintf(packet, "S%02x", signum);
@@ -1308,7 +1202,7 @@ bool PIMGDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::ReportTracePointTrap()
+bool PIMServer<ADDRESS>::ReportTracePointTrap()
 {
 	string packet("T05");
 	vector<GDBRegister>::const_iterator gdb_reg;
@@ -1330,7 +1224,7 @@ bool PIMGDBServer<ADDRESS>::ReportTracePointTrap()
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
 {
 	uint32_t i;
 
@@ -1395,7 +1289,7 @@ bool PIMGDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 }
 
 template <class ADDRESS>
-bool PIMGDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
 {
 	uint32_t i;
 
@@ -1462,7 +1356,7 @@ bool PIMGDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS ad
 // *** Start ************ REDA ADDED CODE ****************
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
+void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
@@ -1594,7 +1488,7 @@ void PIMGDBServer<ADDRESS>::HandleQRcmd(string command) {
 }
 
 template <class ADDRESS>
-void PIMGDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
+void PIMServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
 {
 
 	ADDRESS current_address = symbol_address;

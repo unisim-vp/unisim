@@ -40,7 +40,7 @@ namespace unisim {
 namespace service {
 namespace pim {
 
-template class PIMGDBServer<uint32_t>;
+template class PIMServer<uint32_t>;
 
 } // end of namespace pim
 } // end of namespace service
