@@ -44,11 +44,14 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
+#include <unisim/service/interfaces/time.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
 #include <unisim/service/pim/network/SocketThread.hpp>
 #include <unisim/service/pim/network/SocketServerThread.hpp>
 #include <unisim/service/pim/pim_thread.hh>
+
+#include <unisim/service/time/sc_time/time.hh>
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -79,6 +82,8 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
+using unisim::service::interfaces::Time;
+
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
@@ -171,6 +176,8 @@ public:
 	uint16_t GetTCPPort() { return tcp_port;}
 	string GetHost() { return fHost; }
 
+	double GetSimTime();
+
 protected:
 	class SimulatorThread : public GenericThread {
 	public:
@@ -241,6 +248,9 @@ private:
 	void Disasm(ADDRESS addr, unsigned int size);
 	
 	void Kill();
+
+	//  - SystemC Time
+	unisim::service::time::sc_time::ScTime *sim_time;
 
 	unisim::kernel::logger::Logger logger;
 
