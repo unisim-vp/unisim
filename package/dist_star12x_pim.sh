@@ -379,11 +379,13 @@ vector \
 
 UNISIM_SIMULATORS_STAR12X_SOURCE_FILES="\
 main_pim.cc \
+simulator.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 rtb_unisim.cc \
 "
 UNISIM_SIMULATORS_STAR12X_HEADER_FILES="\
+simulator.hh \
 atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
