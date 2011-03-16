@@ -79,6 +79,8 @@ Simulator(int argc, char **argv)
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	, il1_power_estimator(0)
 	, dl1_power_estimator(0)
+	, ltlb_power_estimator(0)
+	, tlb_power_estimator(0)
 	, enable_power_estimation(false)
 	, param_enable_power_estimation("enable-power-estimation", 0,
 			enable_power_estimation,
@@ -87,6 +89,14 @@ Simulator(int argc, char **argv)
 	, formula_caches_total_dynamic_power(0)
 	, formula_caches_total_leakage_power(0)
 	, formula_caches_total_power(0)
+	, formula_tlbs_total_dynamic_energy(0)
+	, formula_tlbs_total_dynamic_power(0)
+	, formula_tlbs_total_leakage_power(0)
+	, formula_tlbs_total_power(0)
+	, formula_total_dynamic_energy(0)
+	, formula_total_dynamic_power(0)
+	, formula_total_leakage_power(0)
+	, formula_total_power(0)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 #ifdef SIM_LIBRARY
 	, notif_list()
@@ -136,6 +146,8 @@ Simulator(int argc, char **argv)
 	{
 		il1_power_estimator = new POWER_ESTIMATOR("il1-power-estimator");
 		dl1_power_estimator = new POWER_ESTIMATOR("dl1-power-estimator");
+		ltlb_power_estimator = new POWER_ESTIMATOR("ltlb-power-estimator");
+		tlb_power_estimator = new POWER_ESTIMATOR("tlb-power-estimator");
 		formula_caches_total_dynamic_energy =
 				new unisim::kernel::service::Formula<double> (
 						"caches-total-dynamic-energy", 0,
@@ -168,6 +180,70 @@ Simulator(int argc, char **argv)
 						formula_caches_total_leakage_power,
 						0,
 						"caches total (dynamic+leakage) power (in J)");
+		formula_tlbs_total_dynamic_energy =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-dynamic-energy", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*ltlb_power_estimator)["dynamic-energy"],
+						&(*tlb_power_estimator)["dynamic-energy"],
+						0,
+						"combined tlb's total dynamic energy (in J)");
+		formula_tlbs_total_dynamic_power =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-dynamic-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*ltlb_power_estimator)["dynamic-power"],
+						&(*tlb_power_estimator)["dynamic-power"],
+						0,
+						"combined tlb's total dynamic power (in J)");
+		formula_tlbs_total_leakage_power =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-leakage-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*ltlb_power_estimator)["leakage-power"],
+						&(*tlb_power_estimator)["leakage-power"],
+						0,
+						"combined tlb's total leakage power (in J)");
+		formula_tlbs_total_power =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_tlbs_total_dynamic_power,
+						formula_tlbs_total_leakage_power,
+						0,
+						"combined tlb's total (dynamic+leakage) power (in J)");
+		formula_total_dynamic_energy =
+				new unisim::kernel::service::Formula<double> (
+						"total-dynamic-energy", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_dynamic_energy,
+						formula_tlbs_total_dynamic_energy,
+						0,
+						"total dynamic energy (in J)");
+		formula_total_dynamic_power =
+				new unisim::kernel::service::Formula<double> (
+						"total-dynamic-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_dynamic_power,
+						formula_tlbs_total_dynamic_power,
+						0,
+						"total dynamic power (in J)");
+		formula_total_leakage_power =
+				new unisim::kernel::service::Formula<double> (
+						"total-leakage-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_leakage_power,
+						formula_tlbs_total_leakage_power,
+						0,
+						"total leakage power (in J)");
+		formula_total_power =
+				new unisim::kernel::service::Formula<double> (
+						"total-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_power,
+						formula_tlbs_total_power,
+						0,
+						"total (dynamic+leakage) power (in J)");
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
@@ -214,9 +290,17 @@ Simulator(int argc, char **argv)
 		cpu->dcache.power_estimator_import >> 
 			dl1_power_estimator->power_estimator_export;
 		cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
+		cpu->ltlb.power_estimator_import >>
+			ltlb_power_estimator->power_estimator_export;
+		cpu->ltlb.power_mode_import >> ltlb_power_estimator->power_mode_export;
+		cpu->tlb.power_estimator_import >>
+			tlb_power_estimator->power_estimator_export;
+		cpu->tlb.power_mode_import >> tlb_power_estimator->power_mode_export;
 
 		il1_power_estimator->time_import >> time->time_export;
 		dl1_power_estimator->time_import >> time->time_export;
+		ltlb_power_estimator->time_import >> time->time_export;
+		tlb_power_estimator->time_import >> time->time_export;
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
@@ -262,8 +346,34 @@ Simulator::~Simulator()
 	if ( sim_debugger ) delete sim_debugger;
 #endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	if ( formula_caches_total_dynamic_energy )
+		delete formula_caches_total_dynamic_energy;
+	if ( formula_caches_total_dynamic_power )
+		delete formula_caches_total_dynamic_power;
+	if ( formula_caches_total_leakage_power )
+		delete formula_caches_total_leakage_power;
+	if ( formula_caches_total_power )
+		delete formula_caches_total_power;
+	if ( formula_tlbs_total_dynamic_energy )
+		delete formula_tlbs_total_dynamic_energy;
+	if ( formula_tlbs_total_dynamic_power )
+		delete formula_tlbs_total_dynamic_power;
+	if ( formula_tlbs_total_leakage_power )
+		delete formula_tlbs_total_leakage_power;
+	if ( formula_tlbs_total_power )
+		delete formula_tlbs_total_power;
+	if ( formula_total_dynamic_energy )
+		delete formula_total_dynamic_energy;
+	if ( formula_total_dynamic_power )
+		delete formula_total_dynamic_power;
+	if ( formula_total_leakage_power )
+		delete formula_total_leakage_power;
+	if ( formula_total_power )
+		delete formula_total_power;
 	if ( il1_power_estimator ) delete il1_power_estimator;
 	if ( dl1_power_estimator ) delete dl1_power_estimator;
+	if ( ltlb_power_estimator ) delete ltlb_power_estimator;
+	if ( tlb_power_estimator ) delete tlb_power_estimator;
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
@@ -527,6 +637,34 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
 	sim->SetVariable("dl1-power-estimator.access-mode", "fast");
 	sim->SetVariable("dl1-power-estimator.verbose", false);
+	
+	sim->SetVariable("ltlb-power-estimator.cache-size", 32 * 128);
+	sim->SetVariable("ltlb-power-estimator.line-size", 32);
+	sim->SetVariable("ltlb-power-estimator.associativity", 4);
+	sim->SetVariable("ltlb-power-estimator.rw-ports", 1);
+	sim->SetVariable("ltlb-power-estimator.excl-read-ports", 0);
+	sim->SetVariable("ltlb-power-estimator.excl-write-ports", 0);
+	sim->SetVariable("ltlb-power-estimator.single-ended-read-ports", 0);
+	sim->SetVariable("ltlb-power-estimator.banks", 1);
+	sim->SetVariable("ltlb-power-estimator.tech-node", 130); // in nm
+	sim->SetVariable("ltlb-power-estimator.output-width", 32 * 8);
+	sim->SetVariable("ltlb-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("ltlb-power-estimator.access-mode", "fast");
+	sim->SetVariable("ltlb-power-estimator.verbose", false);
+
+	sim->SetVariable("tlb-power-estimator.cache-size", 32 * 128);
+	sim->SetVariable("tlb-power-estimator.line-size", 32);
+	sim->SetVariable("tlb-power-estimator.associativity", 4);
+	sim->SetVariable("tlb-power-estimator.rw-ports", 1);
+	sim->SetVariable("tlb-power-estimator.excl-read-ports", 0);
+	sim->SetVariable("tlb-power-estimator.excl-write-ports", 0);
+	sim->SetVariable("tlb-power-estimator.single-ended-read-ports", 0);
+	sim->SetVariable("tlb-power-estimator.banks", 1);
+	sim->SetVariable("tlb-power-estimator.tech-node", 130); // in nm
+	sim->SetVariable("tlb-power-estimator.output-width", 32 * 8);
+	sim->SetVariable("tlb-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("tlb-power-estimator.access-mode", "fast");
+	sim->SetVariable("tlb-power-estimator.verbose", false);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
