@@ -10,7 +10,10 @@
 
 #include <unisim/kernel/service/service.hh>
 
+#include <unisim/service/interfaces/time.hh>
+
 #include <unisim/service/pim/convert.hh>
+#include <unisim/service/time/sc_time/time.hh>
 
 #include <unisim/service/pim/network/SocketThread.hpp>
 
@@ -25,12 +28,17 @@ using unisim::service::pim::network::SocketThread;
 class PIMThread : public SocketThread {
 public:
 	PIMThread(string _name);
+	~PIMThread();
 
 	virtual void Run();
 	virtual string getProtocol() { return "PIM"; }
+	double GetSimTime();
 
 private:
 	string name;
+
+	//  - SystemC Time
+	unisim::service::time::sc_time::ScTime *sim_time;
 
 };
 

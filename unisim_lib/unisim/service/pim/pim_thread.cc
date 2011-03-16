@@ -18,10 +18,23 @@ using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
 
 PIMThread::PIMThread(string _name) :
-		SocketThread(),
-		name(_name)
+	SocketThread()
+	, name(_name)
+	, sim_time(0)
+
 {
 
+	//  - SystemC Time
+	sim_time = new unisim::service::time::sc_time::ScTime("sim-time2");
+
+}
+
+PIMThread::~PIMThread() {
+	if(sim_time) { delete sim_time; sim_time = NULL; }
+}
+
+double PIMThread::GetSimTime() {
+	return sim_time->GetTime();
 }
 
 void PIMThread::Run(){
@@ -94,6 +107,8 @@ void PIMThread::Run(){
 
 						double val = *(simulator_variables[i]);
 						os << stringify(val);
+
+						os << ":" << GetSimTime();
 
 						std::string str = os.str();
 
