@@ -620,7 +620,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("il1-power-estimator.banks", 1);
 	sim->SetVariable("il1-power-estimator.tech-node", 130); // in nm
 	sim->SetVariable("il1-power-estimator.output-width", 32 * 8);
-	sim->SetVariable("il1-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("il1-power-estimator.tag-width", 32);
 	sim->SetVariable("il1-power-estimator.access-mode", "fast");
 	sim->SetVariable("il1-power-estimator.verbose", false);
 
@@ -634,35 +634,35 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.banks", 1);
 	sim->SetVariable("dl1-power-estimator.tech-node", 130); // in nm
 	sim->SetVariable("dl1-power-estimator.output-width", 32 * 8);
-	sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("dl1-power-estimator.tag-width", 32);
 	sim->SetVariable("dl1-power-estimator.access-mode", "fast");
 	sim->SetVariable("dl1-power-estimator.verbose", false);
 	
-	sim->SetVariable("ltlb-power-estimator.cache-size", 32 * 128);
-	sim->SetVariable("ltlb-power-estimator.line-size", 32);
-	sim->SetVariable("ltlb-power-estimator.associativity", 4);
+	sim->SetVariable("ltlb-power-estimator.cache-size", 4 * 2 * 8);
+	sim->SetVariable("ltlb-power-estimator.line-size", 4 * 2);
+	sim->SetVariable("ltlb-power-estimator.associativity", 0);
 	sim->SetVariable("ltlb-power-estimator.rw-ports", 1);
 	sim->SetVariable("ltlb-power-estimator.excl-read-ports", 0);
 	sim->SetVariable("ltlb-power-estimator.excl-write-ports", 0);
 	sim->SetVariable("ltlb-power-estimator.single-ended-read-ports", 0);
 	sim->SetVariable("ltlb-power-estimator.banks", 1);
 	sim->SetVariable("ltlb-power-estimator.tech-node", 130); // in nm
-	sim->SetVariable("ltlb-power-estimator.output-width", 32 * 8);
-	sim->SetVariable("ltlb-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("ltlb-power-estimator.output-width", 4 * 8);
+	sim->SetVariable("ltlb-power-estimator.tag-width", 32);
 	sim->SetVariable("ltlb-power-estimator.access-mode", "fast");
 	sim->SetVariable("ltlb-power-estimator.verbose", false);
 
-	sim->SetVariable("tlb-power-estimator.cache-size", 32 * 128);
-	sim->SetVariable("tlb-power-estimator.line-size", 32);
-	sim->SetVariable("tlb-power-estimator.associativity", 4);
+	sim->SetVariable("tlb-power-estimator.cache-size", 4 * 64);
+	sim->SetVariable("tlb-power-estimator.line-size", 4);
+	sim->SetVariable("tlb-power-estimator.associativity", 2);
 	sim->SetVariable("tlb-power-estimator.rw-ports", 1);
 	sim->SetVariable("tlb-power-estimator.excl-read-ports", 0);
 	sim->SetVariable("tlb-power-estimator.excl-write-ports", 0);
 	sim->SetVariable("tlb-power-estimator.single-ended-read-ports", 0);
 	sim->SetVariable("tlb-power-estimator.banks", 1);
 	sim->SetVariable("tlb-power-estimator.tech-node", 130); // in nm
-	sim->SetVariable("tlb-power-estimator.output-width", 32 * 8);
-	sim->SetVariable("tlb-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("tlb-power-estimator.output-width", 4 * 8);
+	sim->SetVariable("tlb-power-estimator.tag-width", 32);
 	sim->SetVariable("tlb-power-estimator.access-mode", "fast");
 	sim->SetVariable("tlb-power-estimator.verbose", false);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
