@@ -13,28 +13,23 @@ namespace pim {
 
 using namespace std;
 
-using unisim::kernel::service::Object;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
 
-PIMThread::PIMThread(string _name) :
+PIMThread::PIMThread(const char *_name, Object *_parent) :
 	SocketThread()
-	, name(_name)
-	, sim_time(0)
-
+	, Object(_name, _parent)
+	, name(string(_name))
 {
-
-	//  - SystemC Time
-	sim_time = new unisim::service::time::sc_time::ScTime("sim-time2");
 
 }
 
 PIMThread::~PIMThread() {
-	if(sim_time) { delete sim_time; sim_time = NULL; }
+
 }
 
 double PIMThread::GetSimTime() {
-	return sim_time->GetTime();
+	return Object::GetSimulator()->GetSimTime();
 }
 
 void PIMThread::Run(){

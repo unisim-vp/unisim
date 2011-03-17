@@ -51,8 +51,6 @@
 #include <unisim/service/pim/network/SocketServerThread.hpp>
 #include <unisim/service/pim/pim_thread.hh>
 
-#include <unisim/service/time/sc_time/time.hh>
-
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 
@@ -248,9 +246,6 @@ private:
 	void Disasm(ADDRESS addr, unsigned int size);
 	
 	void Kill();
-
-	//  - SystemC Time
-	unisim::service::time::sc_time::ScTime *sim_time;
 
 	unisim::kernel::logger::Logger logger;
 

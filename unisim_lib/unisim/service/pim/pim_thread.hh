@@ -23,11 +23,13 @@ namespace pim {
 
 using namespace std;
 
+using unisim::kernel::service::Object;
+
 using unisim::service::pim::network::SocketThread;
 
-class PIMThread : public SocketThread {
+class PIMThread : public SocketThread, virtual public Object {
 public:
-	PIMThread(string _name);
+	PIMThread(const char *_name, Object *_parent = 0);
 	~PIMThread();
 
 	virtual void Run();
@@ -36,9 +38,6 @@ public:
 
 private:
 	string name;
-
-	//  - SystemC Time
-	unisim::service::time::sc_time::ScTime *sim_time;
 
 };
 

@@ -129,15 +129,11 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_host("host", this, fHost)
-	, sim_time(0)
 
 {
 	Object::SetupDependsOn(registers_import);
 	Object::SetupDependsOn(memory_access_reporting_control_import);
 	counter = period;
-
-	//  - SystemC Time
-	sim_time = new unisim::service::time::sc_time::ScTime("sim-time");
 
 }
 
@@ -161,13 +157,11 @@ PIMServer<ADDRESS>::~PIMServer()
 	if (target) { delete target; target = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
-	if(sim_time) { delete sim_time; sim_time = NULL; }
-
 }
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetSimTime() {
-	return sim_time->GetTime();
+	return Object::GetSimulator()->GetSimTime();
 }
 
 template <class ADDRESS>

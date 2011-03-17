@@ -273,6 +273,8 @@ public:
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
+	virtual double GetSimTime()	{ return 0;	}
+
 private:
 	friend class Object;
 	friend class VariableBase;
