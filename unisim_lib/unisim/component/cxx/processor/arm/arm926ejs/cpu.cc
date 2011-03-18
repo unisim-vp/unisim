@@ -2136,6 +2136,8 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 			found_first_level = true;
 		}
 	}
+	if ( unlikely(ltlb.power_estimator_import != 0) )
+		ltlb.power_estimator_import->ReportReadAccess();
 	if ( !found_first_level )
 	{
 		// the entry was not found in the lockdown tlb
@@ -2152,6 +2154,8 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 				found_first_level = true;
 			}
 		}
+		if ( unlikely(tlb.power_estimator_import != 0) )
+			tlb.power_estimator_import->ReportReadAccess();
 	}
 	if ( !found_first_level )
 	{
@@ -2572,6 +2576,8 @@ TranslateVA(bool is_read,
 			found_first_level = true;
 		}
 	}
+	if ( unlikely(ltlb.power_estimator_import != 0) )
+		ltlb.power_estimator_import->ReportReadAccess();
 	if ( !found_first_level )
 	{
 		if ( verbose & 0x010 )
@@ -2594,6 +2600,8 @@ TranslateVA(bool is_read,
 				found_first_level = true;
 			}
 		}
+		if ( unlikely(tlb.power_estimator_import != 0) )
+			tlb.power_estimator_import->ReportReadAccess();
 	}
 	if ( !found_first_level )
 	{
@@ -2681,6 +2689,8 @@ TranslateVA(bool is_read,
 				found_second_level = true;
 			}
 		}
+		if ( unlikely(ltlb.power_estimator_import != 0) )
+			ltlb.power_estimator_import->ReportReadAccess();
 		if ( !found_second_level )
 		{
 			if ( verbose & 0x010 )
@@ -2703,6 +2713,8 @@ TranslateVA(bool is_read,
 					found_second_level = true;
 				}
 			}
+			if ( unlikely(tlb.power_estimator_import != 0) )
+				tlb.power_estimator_import->ReportReadAccess();
 		}
 		if ( !found_second_level )
 		{
