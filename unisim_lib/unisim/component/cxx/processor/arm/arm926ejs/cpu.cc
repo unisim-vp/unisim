@@ -2126,10 +2126,12 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 	// bool found_second_level = false;
 	// uint32_t second_level = 0;
 	uint32_t way = 0;
+	ltlb.read_accesses++;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
 		if ( ltlb.GetValid(way) )
 		{
+			ltlb.read_hits++;
 			first_level = ltlb.GetData(way);
 			found_first_level = true;
 		}
@@ -2140,10 +2142,12 @@ TranslateMVA(uint32_t mva, uint32_t &pa)
 		// check the main tlb
 		uint32_t tag = tlb.GetTag(ttb_addr);
 		uint32_t set = tlb.GetSet(ttb_addr);
+		tlb.read_accesses++;
 		if ( tlb.GetWay(tag, set, &way) )
 		{
 			if ( tlb.GetValid(set, way) )
 			{
+				tlb.read_hits++;
 				first_level = tlb.GetData(set, way);
 				found_first_level = true;
 			}
