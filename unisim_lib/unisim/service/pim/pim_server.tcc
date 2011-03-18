@@ -82,6 +82,9 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Statistic;
+
 using unisim::service::pim::PIMThread;
 
 template <class ADDRESS>
@@ -1497,6 +1500,24 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		packet += sstr.str();
 
 		PutPacket(packet);
+
+	}
+	else if (cmdPrefix.compare("statistics") == 0) {
+
+		list<VariableBase *> lst;
+		list<VariableBase *>::iterator iter;
+
+		Object::GetSimulator()->GetStatistics(lst);
+		std::stringstream sstr;
+		sstr << "simulated time" << ":" << GetSimTime()*1000 << " ms";
+
+		for (iter = lst.begin(); iter != lst.end(); iter++) {
+			sstr << ";" << (*iter)->GetName() << ":" << (string) *(*iter);
+		}
+
+		string str = sstr.str();
+
+		OutputText(str.c_str(), str.size());
 
 	} else {
 		PutPacket("E00");

@@ -128,8 +128,13 @@ CPU::CPU(const char *name, Object *parent):
 	param_max_inst("max-inst",this,max_inst)
 
 {
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_cycles_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
     ccr = new CCR_t();
 

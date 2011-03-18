@@ -591,13 +591,12 @@ void Simulator::Run() {
 		double spent_time = time_stop - time_start;
 
 		cerr << "Simulation statistics:" << endl;
-//		DumpStatistics(cerr);
-//		cerr << endl;
+		DumpStatistics(cerr);
+		cerr << endl;
 
-		cerr << "Executed Instructions : " << (uint64_t) (*cpu)["instruction-counter"] << endl;
-		cerr << "Load Instructions : " << (uint64_t) (*cpu)["load-counter"] << " ratio : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
-		cerr << "Store Instructions : " << (uint64_t) (*cpu)["store-counter"] << " ratio : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
-		cerr << "Total-Cycles : " << (uint64_t) (*cpu)["cycles-counter"] << " CPI : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		cerr << "load ratio  : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "store ratio : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
 		cerr << endl;
 
 		cerr << "simulation time: " << spent_time << " seconds" << endl;
