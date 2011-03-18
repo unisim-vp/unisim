@@ -2565,9 +2565,12 @@ TranslateVA(bool is_read,
 	ltlb.read_accesses++;
 	if ( ltlb.GetWay(ttb_addr, &way) )
 	{
-		ltlb.read_hits++;
-		first_level = ltlb.GetData(way);
-		found_first_level = true;
+		if ( ltlb.GetValid(way) )
+		{
+			ltlb.read_hits++;
+			first_level = ltlb.GetData(way);
+			found_first_level = true;
+		}
 	}
 	if ( !found_first_level )
 	{
@@ -2584,9 +2587,12 @@ TranslateVA(bool is_read,
 		tlb.read_accesses++;
 		if ( tlb.GetWay(tag, set, &way) )
 		{
-			tlb.read_hits++;
-			first_level = tlb.GetData(set, way);
-			found_first_level = true;
+			if ( tlb.GetValid(set, way) )
+			{
+				tlb.read_hits++;
+				first_level = tlb.GetData(set, way);
+				found_first_level = true;
+			}
 		}
 	}
 	if ( !found_first_level )
@@ -2668,9 +2674,12 @@ TranslateVA(bool is_read,
 		ltlb.read_accesses++;
 		if ( ltlb.GetWay(coarse_addr, &second_way) )
 		{
-			ltlb.read_hits++;
-			second_level = ltlb.GetData(second_way);
-			found_second_level = true;
+			if ( ltlb.GetValid(second_way) )
+			{
+				ltlb.read_hits++;
+				second_level = ltlb.GetData(second_way);
+				found_second_level = true;
+			}
 		}
 		if ( !found_second_level )
 		{
@@ -2687,9 +2696,12 @@ TranslateVA(bool is_read,
 			tlb.read_accesses++;
 			if ( tlb.GetWay(second_tag, second_set, &second_way) )
 			{
-				tlb.read_hits++;
-				second_level = tlb.GetData(second_set, second_way);
-				found_second_level = true;
+				if ( tlb.GetValid(second_set, second_way) )
+				{
+					tlb.read_hits++;
+					second_level = tlb.GetData(second_set, second_way);
+					found_second_level = true;
+				}
 			}
 		}
 		if ( !found_second_level )
