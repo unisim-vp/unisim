@@ -112,6 +112,8 @@ public:
 
 	void Run();
 
+	virtual double GetSimTime()	{ if (sim_time) { return sim_time->GetTime(); } else { return 0; }	}
+
 	void GeneratePim() {
 		PIM *pim = new PIM("pim");
 		pim->GeneratePimFile();
