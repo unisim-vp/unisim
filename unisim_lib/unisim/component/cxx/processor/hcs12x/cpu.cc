@@ -117,8 +117,14 @@ CPU::CPU(const char *name, Object *parent):
 	syscall_interrupt(false),
 	spurious_interrupt(false),
 	instruction_counter(0),
+	cycles_counter(0),
+	load_counter(0),
+	store_counter(0),
 	max_inst((uint64_t) -1),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
+	stat_cycles_counter("cycles-counter", this, cycles_counter),
+	stat_load_counter("load-counter", this, load_counter),
+	stat_store_counter("store-counter", this, store_counter),
 	param_max_inst("max-inst",this,max_inst)
 
 {
@@ -337,6 +343,8 @@ uint8_t CPU::Step()
 		op->execute(this);
 
 		opCycles = op->getCycles();
+
+		cycles_counter += opCycles;
 
 		VerboseDumpRegsEnd();
 

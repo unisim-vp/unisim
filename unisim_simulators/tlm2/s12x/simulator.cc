@@ -54,12 +54,21 @@ Simulator::Simulator(int argc, char **argv)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
+	, isS19(false)
+
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, dump_parameters(false)
+	, dump_formulas(false)
+	, dump_statistics(true)
+
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, isS19(false)
+	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
+	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
+	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
+
 {
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -355,6 +364,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications");
 
+	simulator->SetVariable("enable-pim-server", false);
+	simulator->SetVariable("enable-gdb-server", false);
+	simulator->SetVariable("enable-inline-debugger", false);
+	simulator->SetVariable("dump-parameters", false);
+	simulator->SetVariable("dump-formulas", false);
+	simulator->SetVariable("dump-statistics", true);
+
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
 	const char *filename = "";
@@ -547,7 +563,7 @@ void Simulator::Run() {
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
 	}
 
@@ -556,25 +572,41 @@ void Simulator::Run() {
 		signal(SIGINT, prev_sig_int_handler);
 	}
 
-	cerr << "Simulation finished" << endl;
+	cerr << "Simulation finished" << endl << endl;
 
-	double time_stop = host_time->GetTime();
-	double spent_time = time_stop - time_start;
+	if (dump_parameters) {
+		cerr << "Simulation run-time parameters:" << endl;
+		DumpParameters(cerr);
+		cerr << endl;
+	}
 
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
+	if (dump_formulas) {
+		cerr << "Simulation formulas:" << endl;
+		DumpFormulas(cerr);
+		cerr << endl;
+	}
 
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+	if (dump_statistics) {
+		double time_stop = host_time->GetTime();
+		double spent_time = time_stop - time_start;
+
+		cerr << "Simulation statistics:" << endl;
+//		DumpStatistics(cerr);
+//		cerr << endl;
+
+		cerr << "Executed Instructions : " << (uint64_t) (*cpu)["instruction-counter"] << endl;
+		cerr << "Load Instructions : " << (uint64_t) (*cpu)["load-counter"] << " ratio : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "Store Instructions : " << (uint64_t) (*cpu)["store-counter"] << " ratio : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "Total-Cycles : " << (uint64_t) (*cpu)["cycles-counter"] << " CPI : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		cerr << endl;
+
+		cerr << "simulation time: " << spent_time << " seconds" << endl;
+		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+		cerr << "time expansion: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		cerr << endl;
+
+	}
 
 }
 
