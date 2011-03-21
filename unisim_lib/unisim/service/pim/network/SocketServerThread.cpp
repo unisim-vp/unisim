@@ -167,8 +167,8 @@ bool SocketServerThread::bindHandler(int sockfd) {
 				return false;
 			}
 
-			string ack;
-			GetPacket(ack, true);
+//			string ack;
+//			GetPacket(ack, true);
 
 			(*protocolHandlers)[i]->Start(sockfd, blocking);
 
