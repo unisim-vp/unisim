@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,17 +31,11 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu.hh>
-#include <unisim/component/cxx/processor/powerpc/ppc440/exception.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_exception_handling.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_fetch.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_load_store.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc>
+
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DCR_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DCR_TCC__
+
+#include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
 namespace component {
@@ -50,7 +44,32 @@ namespace processor {
 namespace powerpc {
 namespace ppc440 {
 
-template class CPU<Config_woMMU_wFPU>;
+template <class CONFIG>
+void CPU<CONFIG>::MoveFromDCR(unsigned int rd, unsigned int dcrn)
+{
+	uint32_t value;
+	DCRRead(dcrn, &value, sizeof(value));
+	SetGPR(rd, unisim::util::endian::BigEndian2Host(value));
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::MoveToDCR(unsigned int rs, unsigned int dcrn)
+{
+	uint32_t value;
+	value = unisim::util::endian::Host2BigEndian(GetGPR(rs));
+	DCRWrite(dcrn, &value, sizeof(value));
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DCRRead(unsigned int dcrn, void *buffer, uint32_t size)
+{
+	memset(buffer, 0, size);
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::DCRWrite(unsigned int dcrn, const void *buffer, uint32_t size)
+{
+}
 
 } // end of namespace ppc440
 } // end of namespace powerpc
@@ -59,3 +78,4 @@ template class CPU<Config_woMMU_wFPU>;
 } // end of namespace component
 } // end of namespace unisim
 
+#endif

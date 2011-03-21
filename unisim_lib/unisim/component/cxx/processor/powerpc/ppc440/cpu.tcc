@@ -1741,20 +1741,6 @@ const char *CPU<CONFIG>::GetArchitectureName() const
 	return "powerpc";
 }
 
-template <class CONFIG>
-bool CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
-{
-	return memory_import->ReadMemory(physical_addr, buffer, size);
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
-{
-	return memory_import->WriteMemory(physical_addr, buffer, size);
-}
-
-
-
 /* Endian interface */
 template <class CONFIG>
 endian_type CPU<CONFIG>::GetEndianess()

@@ -88,7 +88,7 @@ void CPU<CONFIG>::EmuLoad(MMUAccess<CONFIG>& mmu_access, void *buffer, uint32_t 
 	else
 	{
 		// DL1 disabled
-		if(unlikely(!BusRead(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
+		if(unlikely(!PLBDataRead(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 		{
 			throw DataAsynchronousMachineCheckException<CONFIG>();
 		}
@@ -188,7 +188,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 		if(unlikely(mmu_access.storage_attr & CONFIG::SA_W)) // write-through ?
 		{
 			// Note: dirty bit is not set when storage attribute W is set
-			if(unlikely(!BusWrite(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
+			if(unlikely(!PLBDataWrite(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 			{
 				throw DataAsynchronousMachineCheckException<CONFIG>();
 			}
@@ -201,7 +201,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 	else
 	{
 		// DL1 disabled
-		if(unlikely(!BusWrite(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
+		if(unlikely(!PLBDataWrite(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 		{
 			throw DataAsynchronousMachineCheckException<CONFIG>();
 		}
@@ -683,6 +683,24 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 		} while(size > 0);
 	}
 	return true;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
+{
+	return memory_import->ReadMemory(physical_addr, buffer, size);
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
+{
+	return memory_import->WriteMemory(physical_addr, buffer, size);
 }
 
 } // end of namespace ppc440

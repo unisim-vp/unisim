@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_fetch.tcc>
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_load_store.tcc>
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc>
+#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc>
 
 namespace unisim {
 namespace component {

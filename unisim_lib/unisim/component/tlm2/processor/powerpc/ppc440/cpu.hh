@@ -66,38 +66,54 @@ template <class CONFIG>
 class CPU
 	: public sc_module
 	, public unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>
-	, public tlm::tlm_bw_transport_if<>
 {
 public:
 	
 	typedef unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG> inherited;
-	typedef tlm::tlm_initiator_socket<CONFIG::FSB_WIDTH * 8> bus_master_socket;
+	typedef tlm::tlm_initiator_socket<CONFIG::FSB_WIDTH * 8> plb_master_socket;
 	typedef tlm::tlm_target_socket<0, InterruptProtocolTypes> irq_slave_socket;
+	typedef tlm::tlm_initiator_socket<4> dcr_master_socket;
 
-	bus_master_socket bus_master_sock;
-	irq_slave_socket external_input_interrupt_slave_sock;
-	irq_slave_socket critical_input_interrupt_slave_sock;
+	plb_master_socket icurd_plb_master_sock; // Instruction Cache Unit Read PLB interface
+	plb_master_socket dcuwr_plb_master_sock; // Data Cache Unit Write PLB interface
+	plb_master_socket dcurd_plb_master_sock; // Data Cache Unit Read PLB interface
+	irq_slave_socket external_input_interrupt_slave_sock; // External Input
+	irq_slave_socket critical_input_interrupt_slave_sock; // Critical Input
+	dcr_master_socket dcr_master_sock; // DCR master interface
 	
 	CPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual bool EndSetup();
-	
-	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	// Back path
+	virtual tlm::tlm_sync_enum nb_transport_bw(unsigned int if_id, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual void invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	
-	virtual void interrupt_b_transport(unsigned int irq, InterruptPayload& trans, sc_core::sc_time& t);
-	virtual tlm::tlm_sync_enum interrupt_nb_transport_fw(unsigned int irq, InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	// Forward path
+	void interrupt_b_transport(unsigned int irq, InterruptPayload& payload, sc_core::sc_time& t);
+	tlm::tlm_sync_enum interrupt_nb_transport_fw(unsigned int irq, InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	unsigned int interrupt_transport_dbg(unsigned int, InterruptPayload& payload);
+	bool interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& payload, tlm::tlm_dmi& dmi_data);
 
 	virtual void Synchronize();
 	
 	void Run();
 	
 protected:
-	virtual bool BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
-	virtual bool BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual void DCRRead(unsigned int dcrn, void *buffer, uint32_t size);
+	virtual void DCRWrite(unsigned int dcrn, const void *buffer, uint32_t size);
 private:
+	typedef enum
+	{
+		IF_ICURD_PLB,
+		IF_DCUWR_PLB,
+		IF_DCURD_PLB,
+		IF_DCR
+	} Interface;
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	sc_time cpu_cycle_time;
@@ -381,30 +397,13 @@ private:
 		EventAllocator event_allocator;
 	};
 
-	class FwRedirector : public tlm::tlm_fw_transport_if<unisim::kernel::tlm2::SimpleProtocolTypes<bool> >
-	{
-	public:
-		FwRedirector(unsigned int id, CPU<CONFIG> *cpu, tlm::tlm_sync_enum (CPU<CONFIG>::*cb_nb_transport_fw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&), void (CPU<CONFIG>::*cb_b_transport)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, sc_core::sc_time&));
-		
-		virtual void b_transport(unisim::kernel::tlm2::SimplePayload<bool>& trans, sc_core::sc_time& t);
-
-		virtual tlm::tlm_sync_enum nb_transport_fw(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-		virtual unsigned int transport_dbg(unisim::kernel::tlm2::SimplePayload<bool>& trans);
-		
-		virtual bool get_direct_mem_ptr(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_dmi& dmi_data);
-
-	private:
-		unsigned int id;
-		CPU<CONFIG> *cpu;
-		tlm::tlm_sync_enum (CPU<CONFIG>::*cb_nb_transport_fw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&);
-		void (CPU<CONFIG>::*cb_b_transport)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, sc_core::sc_time&);
-	};
-
 	Schedule external_event_schedule;
-	FwRedirector *critical_input_interrupt_redirector;
-	FwRedirector *external_input_interrupt_redirector;
-
+	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *critical_input_interrupt_redirector;
+	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *external_input_interrupt_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *icurd_plb_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcuwr_plb_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcurd_plb_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcr_redirector;
 	inline void UpdateTime();
 	inline void AlignToBusClock();
 	void AlignToBusClock(sc_time& t);

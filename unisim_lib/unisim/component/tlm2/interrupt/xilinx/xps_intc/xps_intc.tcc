@@ -79,7 +79,15 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 		
 		irq_slave_sock[irq] = new irq_slave_socket(irq_slave_sock_name_sstr.str().c_str());
 
-		irq_redirector[irq] = new FwRedirector(irq, this, &XPS_IntC<CONFIG>::interrupt_nb_transport_fw, &XPS_IntC<CONFIG>::interrupt_b_transport);
+		irq_redirector[irq] = 
+			new unisim::kernel::tlm2::FwRedirector<XPS_IntC<CONFIG>, InterruptProtocolTypes>(
+				irq,
+				this,
+				&XPS_IntC<CONFIG>::interrupt_nb_transport_fw,
+				&XPS_IntC<CONFIG>::interrupt_b_transport,
+				&XPS_IntC<CONFIG>::interrupt_transport_dbg,
+				&XPS_IntC<CONFIG>::interrupt_get_direct_mem_ptr
+			);
 		
 		(*irq_slave_sock[irq])(*irq_redirector[irq]); // Bind socket to implementer of interface
 		
@@ -209,7 +217,9 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 				sc_time notify_time_stamp(sc_time_stamp());
 				notify_time_stamp += t;
 				AlignToClock(notify_time_stamp);
-				schedule.NotifyCPUEvent(&payload, notify_time_stamp);
+				Event *event = schedule.AllocEvent();
+				event->InitializeCPUEvent(&payload, notify_time_stamp);
+				schedule.Notify(event);
 				return tlm::TLM_ACCEPTED;
 			}
 			break;
@@ -243,7 +253,9 @@ void XPS_IntC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::s
 	sc_time notify_time_stamp(sc_time_stamp());
 	notify_time_stamp += t;
 	AlignToClock(notify_time_stamp);
-	schedule.NotifyCPUEvent(&payload, notify_time_stamp, &ev_completed);
+	Event *event = schedule.AllocEvent();
+	event->InitializeCPUEvent(&payload, notify_time_stamp, &ev_completed);
+	schedule.Notify(event);
 	wait(ev_completed);
 	t = SC_ZERO_TIME;
 }
@@ -273,7 +285,9 @@ void XPS_IntC<CONFIG>::interrupt_b_transport(unsigned int irq, InterruptPayload&
 			notify_time_stamp += t;
 
 			AlignToClock(notify_time_stamp);
-			schedule.NotifyIRQEvent(irq, level, notify_time_stamp);
+			Event *event = schedule.AllocEvent();
+			event->InitializeIRQEvent(irq, level, notify_time_stamp);
+			schedule.Notify(event);
 			
 			interrupt_input[irq] = level;
 		}
@@ -305,7 +319,9 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::interrupt_nb_transport_fw(unsigned int irq,
 						notify_time_stamp += t;
 
 						AlignToClock(notify_time_stamp);
-						schedule.NotifyIRQEvent(irq, level, notify_time_stamp);
+						Event *event = schedule.AllocEvent();
+						event->InitializeIRQEvent(irq, level, notify_time_stamp);
+						schedule.Notify(event);
 						
 						interrupt_input[irq] = level;
 					}
@@ -328,6 +344,18 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::interrupt_nb_transport_fw(unsigned int irq,
 			break;
 	}
 	return tlm::TLM_COMPLETED;
+}
+
+template <class CONFIG>
+unsigned int XPS_IntC<CONFIG>::interrupt_transport_dbg(unsigned int, InterruptPayload& trans)
+{
+	return 0;
+}
+
+template <class CONFIG>
+bool XPS_IntC<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& payload, tlm::tlm_dmi& dmi_data)
+{
+	return false;
 }
 
 template <class CONFIG>
@@ -476,7 +504,7 @@ void XPS_IntC<CONFIG>::Process()
 			inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
 		}
 		
-		Event *event = schedule.GetNextEvent(time_stamp);
+		Event *event = schedule.GetNextEvent();
 		
 		if(event)
 		{
@@ -502,17 +530,15 @@ void XPS_IntC<CONFIG>::Process()
 						}
 						else
 						{
-							// Reschedule the event
+							// delay the CPU event later
+							// Note: this doesn't work if more than one CPU event is scheduled
+							event->SetTimeStamp(ready_time_stamp);
 							schedule.Notify(event);
-							// delay the CPU events later
-							sc_time delay(ready_time_stamp);
-							delay -= time_stamp;
-							schedule.DelayEvents(delay, Event::EV_CPU);
 						}
 						break;
 				}
 			}
-			while((event = schedule.GetNextEvent(time_stamp)) != 0);
+			while((event = schedule.GetNextEvent()) != 0);
 		}
 		inherited::DetectInterruptInput();
 		inherited::GenerateRequest();
@@ -584,39 +610,6 @@ void XPS_IntC<CONFIG>::SetOutputEdge(bool final_level)
 	intr_payload->release();
 	
 	output_level = final_level;
-}
-
-template <class CONFIG>
-XPS_IntC<CONFIG>::FwRedirector::FwRedirector(unsigned int _id, XPS_IntC<CONFIG> *_xps_intc, tlm::tlm_sync_enum (XPS_IntC<CONFIG>::*_cb_nb_transport_fw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&), void (XPS_IntC<CONFIG>::*_cb_b_transport)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, sc_core::sc_time&))
-	: id(_id)
-	, xps_intc(_xps_intc)
-	, cb_nb_transport_fw(_cb_nb_transport_fw)
-	, cb_b_transport(_cb_b_transport)
-{
-}
-
-template <class CONFIG>
-void XPS_IntC<CONFIG>::FwRedirector::b_transport(unisim::kernel::tlm2::SimplePayload<bool>& trans, sc_core::sc_time& t)
-{
-	(xps_intc->*cb_b_transport)(id, trans, t);
-}
-
-template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::FwRedirector::nb_transport_fw(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return (xps_intc->*cb_nb_transport_fw)(id, trans, phase, t);
-}
-
-template <class CONFIG>
-unsigned int XPS_IntC<CONFIG>::FwRedirector::transport_dbg(unisim::kernel::tlm2::SimplePayload<bool>& trans)
-{
-	return 0;
-}
-
-template <class CONFIG>
-bool XPS_IntC<CONFIG>::FwRedirector::get_direct_mem_ptr(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_dmi&  dmi_data)
-{
-	return false;
 }
 
 } // end of namespace xps_intc

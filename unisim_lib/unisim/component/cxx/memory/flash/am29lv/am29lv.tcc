@@ -100,9 +100,9 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	std::stringstream sstr_description;
 	sstr_description << "This module implements an " << CONFIG::DEVICE_NAME << " flash memory with the following characteristics:" << std::endl;
 	sstr_description << "Size: " << BYTESIZE << " bytes" << std::endl;
-	sstr_description << "I/O width: " << IO_WIDTH << " bits" << std::endl;
+	sstr_description << "I/O width: " << (8 * IO_WIDTH) << " bits" << std::endl;
 	sstr_description << "Number of chips: " << NUM_CHIPS << " chips" << std::endl;
-	sstr_description << "I/O width per chip: " << CHIP_IO_WIDTH << " bits" << std::endl;
+	sstr_description << "I/O width per chip: " << (8 * CHIP_IO_WIDTH) << " bits" << std::endl;
 	sstr_description << "Size per chip: " << CONFIG::BYTESIZE << " bytes" << std::endl;
 	sstr_description << "Number of Sectors: " << CONFIG::NUM_SECTORS << " sectors" << std::endl;
 	sstr_description << "8-bit mode support: " << (CONFIG::MODE_SUPPORT & MODE_X8 ? "yes" : "no") << std::endl;

@@ -92,7 +92,15 @@ XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
 		
 		capture_trigger_slave_sock[channel] = new capture_trigger_slave_socket(capture_trigger_slave_sock_name_sstr.str().c_str());
 
-		capture_trigger_redirector[channel] = new FwRedirector(channel, this, &XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw, &XPS_Timer<CONFIG>::capture_trigger_b_transport);
+		capture_trigger_redirector[channel] = 
+			new unisim::kernel::tlm2::FwRedirector<XPS_Timer<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> >(
+				channel,
+				this,
+				&XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw,
+				&XPS_Timer<CONFIG>::capture_trigger_b_transport,
+				&XPS_Timer<CONFIG>::capture_trigger_transport_dbg,
+				&XPS_Timer<CONFIG>::capture_trigger_get_direct_mem_ptr
+			);
 		
 		(*capture_trigger_slave_sock[channel])(*capture_trigger_redirector[channel]);
 	}
@@ -104,15 +112,33 @@ XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
 		
 		generate_out_master_sock[channel] = new generate_out_master_socket(generate_out_master_sock_name_sstr.str().c_str());
 
-		generate_out_redirector[channel] = new BwRedirector(channel, this, &XPS_Timer<CONFIG>::generate_out_nb_transport_bw);
+		generate_out_redirector[channel] = 
+			new unisim::kernel::tlm2::BwRedirector<XPS_Timer<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> >(
+				channel,
+				this,
+				&XPS_Timer<CONFIG>::generate_out_nb_transport_bw,
+				&XPS_Timer<CONFIG>::generate_out_invalidate_direct_mem_ptr
+			);
 		
 		(*generate_out_master_sock[channel])(*generate_out_redirector[channel]);
 	}
 
-	pwm_redirector = new BwRedirector(0, this, &XPS_Timer<CONFIG>::pwm_nb_transport_bw);
+	pwm_redirector = 
+		new unisim::kernel::tlm2::BwRedirector<XPS_Timer<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> >(
+			0,
+			this,
+			&XPS_Timer<CONFIG>::pwm_nb_transport_bw,
+			&XPS_Timer<CONFIG>::pwm_invalidate_direct_mem_ptr
+		);
 	pwm_master_sock(*pwm_redirector);
 	
-	interrupt_redirector = new BwRedirector(0, this, &XPS_Timer<CONFIG>::interrupt_nb_transport_bw);
+	interrupt_redirector = 
+		new unisim::kernel::tlm2::BwRedirector<XPS_Timer<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> >(
+			0,
+			this,
+			&XPS_Timer<CONFIG>::interrupt_nb_transport_bw,
+			&XPS_Timer<CONFIG>::interrupt_invalidate_direct_mem_ptr
+		);
 	interrupt_master_sock(*interrupt_redirector);
 	
 	SC_HAS_PROCESS(XPS_Timer);
@@ -246,7 +272,9 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& 
 				sc_time notify_time_stamp(sc_time_stamp());
 				notify_time_stamp += t;
 				AlignToClock(notify_time_stamp);
-				schedule.NotifyCPUEvent(&payload, notify_time_stamp);
+				Event *event = schedule.AllocEvent();
+				event->InitializeCPUEvent(&payload, notify_time_stamp);
+				schedule.Notify(event);
 				return tlm::TLM_ACCEPTED;
 			}
 			break;
@@ -280,7 +308,9 @@ void XPS_Timer<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::
 	sc_time notify_time_stamp(sc_time_stamp());
 	notify_time_stamp += t;
 	AlignToClock(notify_time_stamp);
-	schedule.NotifyCPUEvent(&payload, notify_time_stamp, &ev_completed);
+	Event *event = schedule.AllocEvent();
+	event->InitializeCPUEvent(&payload, notify_time_stamp, &ev_completed);
+	schedule.Notify(event);
 	wait(ev_completed);
 	t = SC_ZERO_TIME;
 }
@@ -305,7 +335,9 @@ void XPS_Timer<CONFIG>::capture_trigger_b_transport(unsigned int channel, Captur
 			notify_time_stamp += t;
 
 			AlignToClock(notify_time_stamp);
-			schedule.NotifyCaptureTriggerEvent(channel, notify_time_stamp);
+			Event *event = schedule.AllocEvent();
+			event->InitializeCaptureTriggerEvent(channel, notify_time_stamp);
+			schedule.Notify(event);
 		}
 		capture_trigger_input[channel] = level;
 	}
@@ -334,7 +366,9 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw(unsigned i
 						notify_time_stamp += t;
 
 						AlignToClock(notify_time_stamp);
-						schedule.NotifyCaptureTriggerEvent(channel, notify_time_stamp);
+						Event *event = schedule.AllocEvent();
+						event->InitializeCaptureTriggerEvent(channel, notify_time_stamp);
+						schedule.Notify(event);
 					}
 					capture_trigger_input[channel] = level;
 				}
@@ -359,6 +393,18 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::capture_trigger_nb_transport_fw(unsigned i
 }
 
 template <class CONFIG>
+unsigned int XPS_Timer<CONFIG>::capture_trigger_transport_dbg(unsigned int channel, CaptureTriggerPayload& payload)
+{
+	return 0;
+}
+
+template <class CONFIG>
+bool XPS_Timer<CONFIG>::capture_trigger_get_direct_mem_ptr(unsigned int channel, CaptureTriggerPayload& payload, tlm::tlm_dmi& dmi_data)
+{
+	return false;
+}
+
+template <class CONFIG>
 tlm::tlm_sync_enum XPS_Timer<CONFIG>::generate_out_nb_transport_bw(unsigned int channel, GenerateOutPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
@@ -374,6 +420,11 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::generate_out_nb_transport_bw(unsigned int 
 	}
 	
 	return tlm::TLM_COMPLETED;
+}
+
+template <class CONFIG>
+void XPS_Timer<CONFIG>::generate_out_invalidate_direct_mem_ptr(unsigned int channel, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
 }
 
 template <class CONFIG>
@@ -395,6 +446,11 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::pwm_nb_transport_bw(unsigned int channel, 
 }
 
 template <class CONFIG>
+void XPS_Timer<CONFIG>::pwm_invalidate_direct_mem_ptr(unsigned int channel, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+}
+
+template <class CONFIG>
 tlm::tlm_sync_enum XPS_Timer<CONFIG>::interrupt_nb_transport_bw(unsigned int channel, InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
@@ -413,6 +469,11 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::interrupt_nb_transport_bw(unsigned int cha
 }
 
 template <class CONFIG>
+void XPS_Timer<CONFIG>::interrupt_invalidate_direct_mem_ptr(unsigned int channel, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+}
+
+template <class CONFIG>
 void XPS_Timer<CONFIG>::Process()
 {
 	RunCounters(); // Compute the timer/counter values at the event time stamp
@@ -428,7 +489,7 @@ void XPS_Timer<CONFIG>::Process()
 		}
 		RunCounters(); // Compute the timer/counter values at the event time stamp
 		
-		Event *event = schedule.GetNextEvent(time_stamp);
+		Event *event = schedule.GetNextEvent();
 		
 		if(event)
 		{
@@ -467,19 +528,16 @@ void XPS_Timer<CONFIG>::Process()
 						}
 						else
 						{
-							// Reschedule the event
-							schedule.Notify(event);
-							// delay the CPU events later
+							// delay the CPU event later
+							// Note: this doesn't work if more than one CPU event is scheduled
 							event->SetTimeStamp(ready_time_stamp);
-							sc_time delay(ready_time_stamp);
-							delay -= time_stamp;
-							schedule.DelayEvents(delay, Event::EV_CPU);
+							schedule.Notify(event);
 						}
 						break;
 				}
 				
 			}
-			while((event = schedule.GetNextEvent(time_stamp)) != 0);
+			while((event = schedule.GetNextEvent()) != 0);
 		}
 		
 		Update();              // Update state
@@ -723,7 +781,9 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time += cycle_time;
-				schedule.NotifyWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
+				Event *event = schedule.AllocEvent();
+				event->InitializeWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
+				schedule.Notify(event);
 			}
 			else if(generate_output[0] == CONFIG::C_GEN0_ASSERT)
 			{
@@ -775,7 +835,9 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				sc_time end_of_pulse_time(time_stamp);
 				end_of_pulse_time += cycle_time;
-				schedule.NotifyWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
+				Event *event = schedule.AllocEvent();
+				event->InitializeWakeUpEvent(end_of_pulse_time); // pulse ends after one clock cycle
+				schedule.Notify(event);
 			}
 			else if(generate_output[1] == CONFIG::C_GEN1_ASSERT)
 			{
@@ -925,7 +987,9 @@ void XPS_Timer<CONFIG>::Update()
 			{
 				inherited::logger << DebugInfo << time_stamp << ": TCR0 (0x" << std::hex << inherited::GetTCR0() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
 			}
-			schedule.NotifyWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
+			Event *event = schedule.AllocEvent();
+			event->InitializeWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
+			schedule.Notify(event);
 		}
 	}
 	
@@ -944,7 +1008,9 @@ void XPS_Timer<CONFIG>::Update()
 			{
 				inherited::logger << DebugInfo << time_stamp << ": TCR1 (0x" << std::hex << inherited::GetTCR1() << std::dec << ") should roll over at " << notify_time_stamp << EndDebugInfo;
 			}
-			schedule.NotifyWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
+			Event *event = schedule.AllocEvent();
+			event->InitializeWakeUpEvent(notify_time_stamp); // schedule a wakup when counter should roll over
+			schedule.Notify(event);
 		}
 	}
 	
@@ -952,7 +1018,9 @@ void XPS_Timer<CONFIG>::Update()
 	{
 		sc_time notify_time_stamp(cycle_time);
 		notify_time_stamp += time_stamp;
-		schedule.NotifyLoadEvent(0, notify_time_stamp); // schedule a load on next cycle
+		Event *event = schedule.AllocEvent();
+		event->InitializeLoadEvent(0, notify_time_stamp); // schedule a load on next cycle
+		schedule.Notify(event);
 		if(inherited::IsVerbose())
 		{
 			inherited::logger << DebugInfo << time_stamp << ": TCR0 will be loaded at " << notify_time_stamp << EndDebugInfo;
@@ -963,64 +1031,14 @@ void XPS_Timer<CONFIG>::Update()
 	{
 		sc_time notify_time_stamp(cycle_time);
 		notify_time_stamp += time_stamp;
-		schedule.NotifyLoadEvent(1, notify_time_stamp); // schedule a load on next cycle
+		Event *event = schedule.AllocEvent();
+		event->InitializeLoadEvent(1, notify_time_stamp); // schedule a load on next cycle
+		schedule.Notify(event);
 		if(inherited::IsVerbose())
 		{
 			inherited::logger << DebugInfo << time_stamp << ": TCR1 will be loaded at " << notify_time_stamp << EndDebugInfo;
 		}
 	}
-}
-
-template <class CONFIG>
-XPS_Timer<CONFIG>::FwRedirector::FwRedirector(unsigned int _id, XPS_Timer<CONFIG> *_xps_timer, tlm::tlm_sync_enum (XPS_Timer<CONFIG>::*_cb_nb_transport_fw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&), void (XPS_Timer<CONFIG>::*_cb_b_transport)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, sc_core::sc_time&))
-	: id(_id)
-	, xps_timer(_xps_timer)
-	, cb_nb_transport_fw(_cb_nb_transport_fw)
-	, cb_b_transport(_cb_b_transport)
-{
-}
-
-template <class CONFIG>
-void XPS_Timer<CONFIG>::FwRedirector::b_transport(unisim::kernel::tlm2::SimplePayload<bool>& trans, sc_core::sc_time& t)
-{
-	(xps_timer->*cb_b_transport)(id, trans, t);
-}
-
-template <class CONFIG>
-tlm::tlm_sync_enum XPS_Timer<CONFIG>::FwRedirector::nb_transport_fw(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return (xps_timer->*cb_nb_transport_fw)(id, trans, phase, t);
-}
-
-template <class CONFIG>
-unsigned int XPS_Timer<CONFIG>::FwRedirector::transport_dbg(unisim::kernel::tlm2::SimplePayload<bool>& trans)
-{
-	return 0;
-}
-
-template <class CONFIG>
-bool XPS_Timer<CONFIG>::FwRedirector::get_direct_mem_ptr(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_dmi&  dmi_data)
-{
-	return false;
-}
-
-template <class CONFIG>
-XPS_Timer<CONFIG>::BwRedirector::BwRedirector(unsigned int _id, XPS_Timer<CONFIG> *_xps_timer, tlm::tlm_sync_enum (XPS_Timer<CONFIG>::*_cb_nb_transport_bw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&))
-	: id(_id)
-	, xps_timer(_xps_timer)
-	, cb_nb_transport_bw(_cb_nb_transport_bw)
-{
-}
-
-template <class CONFIG>
-tlm::tlm_sync_enum XPS_Timer<CONFIG>::BwRedirector::nb_transport_bw(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return (xps_timer->*cb_nb_transport_bw)(id, trans, phase, t);
-}
-
-template <class CONFIG>
-void XPS_Timer<CONFIG>::BwRedirector::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
 }
 
 } // end of namespace xps_timer

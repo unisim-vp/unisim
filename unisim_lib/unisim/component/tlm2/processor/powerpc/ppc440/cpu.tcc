@@ -54,9 +54,12 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	: Object(name, parent, "this module implements a PPC440 CPU core")
 	, sc_module(name)
 	, unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>(name, parent)
-	, bus_master_sock("bus-master-sock")
+	, icurd_plb_master_sock("icurd-plb-master-sock")
+	, dcuwr_plb_master_sock("dcuwr-plb-master-sock")
+	, dcurd_plb_master_sock("dcurd-plb-master-sock")
 	, external_input_interrupt_slave_sock("external-input-interrupt-slave-sock")
 	, critical_input_interrupt_slave_sock("critical-input-interrupt-slave-sock")
+	, dcr_master_sock("dcr-master-sock")
 	, payload_fabric()
 	, cpu_cycle_time()
 	, bus_cycle_time()
@@ -74,14 +77,61 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, external_event_schedule()
 	, critical_input_interrupt_redirector(0)
 	, external_input_interrupt_redirector(0)
+	, icurd_plb_redirector(0)
+	, dcuwr_plb_redirector(0)
+	, dcurd_plb_redirector(0)
+	, dcr_redirector(0)
 {
-	bus_master_sock(*this);
+	icurd_plb_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
+		IF_ICURD_PLB,
+		this,
+		&CPU<CONFIG>::nb_transport_bw,
+		&CPU<CONFIG>::invalidate_direct_mem_ptr
+	);
+	icurd_plb_master_sock(*icurd_plb_redirector); // Bind socket to the interface implementer
 	
-	critical_input_interrupt_redirector = new FwRedirector(Event::IRQ_CRITICAL_INPUT, this, &CPU<CONFIG>::interrupt_nb_transport_fw, &CPU<CONFIG>::interrupt_b_transport);
+	dcuwr_plb_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
+		IF_DCUWR_PLB,
+		this,
+		&CPU<CONFIG>::nb_transport_bw,
+		&CPU<CONFIG>::invalidate_direct_mem_ptr
+	);
+	dcuwr_plb_master_sock(*dcuwr_plb_redirector); // Bind socket to the interface implementer
+
+	dcurd_plb_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
+		IF_DCURD_PLB,
+		this,
+		&CPU<CONFIG>::nb_transport_bw,
+		&CPU<CONFIG>::invalidate_direct_mem_ptr
+	);
+	dcurd_plb_master_sock(*dcurd_plb_redirector); // Bind socket to the interface implementer
+	
+	critical_input_interrupt_redirector = new unisim::kernel::tlm2::FwRedirector<CPU<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> >(
+		Event::IRQ_CRITICAL_INPUT,
+		this, &CPU<CONFIG>::interrupt_nb_transport_fw,
+		&CPU<CONFIG>::interrupt_b_transport,
+		&CPU<CONFIG>::interrupt_transport_dbg,
+		&CPU<CONFIG>::interrupt_get_direct_mem_ptr
+	);
 	critical_input_interrupt_slave_sock(*critical_input_interrupt_redirector); // Bind socket to implementer of interface
 	
-	external_input_interrupt_redirector = new FwRedirector(Event::IRQ_EXTERNAL_INPUT, this, &CPU<CONFIG>::interrupt_nb_transport_fw, &CPU<CONFIG>::interrupt_b_transport);
+	external_input_interrupt_redirector = new unisim::kernel::tlm2::FwRedirector<CPU<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> >(
+		Event::IRQ_EXTERNAL_INPUT,
+		this,
+		&CPU<CONFIG>::interrupt_nb_transport_fw,
+		&CPU<CONFIG>::interrupt_b_transport,
+		&CPU<CONFIG>::interrupt_transport_dbg,
+		&CPU<CONFIG>::interrupt_get_direct_mem_ptr
+	);
 	external_input_interrupt_slave_sock(*external_input_interrupt_redirector); // Bind socket to implementer of interface
+	
+	dcr_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
+		IF_DCR,
+		this,
+		&CPU<CONFIG>::nb_transport_bw,
+		&CPU<CONFIG>::invalidate_direct_mem_ptr
+	);
+	dcr_master_sock(*dcr_redirector);
 	
 	SC_HAS_PROCESS(CPU);
 	
@@ -111,7 +161,7 @@ bool CPU<CONFIG>::EndSetup()
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum CPU<CONFIG>::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum CPU<CONFIG>::nb_transport_bw(unsigned int if_id, tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase == tlm::BEGIN_RESP)
 	{
@@ -122,7 +172,7 @@ tlm::tlm_sync_enum CPU<CONFIG>::nb_transport_bw(tlm::tlm_generic_payload& trans,
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+void CPU<CONFIG>::invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 }
 
@@ -248,6 +298,18 @@ tlm::tlm_sync_enum CPU<CONFIG>::interrupt_nb_transport_fw(unsigned int irq, Inte
 }
 
 template <class CONFIG>
+unsigned int CPU<CONFIG>::interrupt_transport_dbg(unsigned int, InterruptPayload& trans)
+{
+	return 0;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& payload, tlm::tlm_dmi& dmi_data)
+{
+	return false;
+}
+
+template <class CONFIG>
 inline void CPU<CONFIG>::UpdateTime()
 {
 	if(unlikely(cpu_time > timer_time))
@@ -310,7 +372,7 @@ void CPU<CONFIG>::Run()
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
+bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 	
@@ -321,7 +383,7 @@ bool CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	bus_master_sock->b_transport(*payload, cpu_time);
+	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -333,7 +395,30 @@ bool CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, voi
 }
 
 template <class CONFIG>
-bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
+bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
+{
+	AlignToBusClock();
+	
+	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
+	
+	payload->set_address(physical_addr);
+	payload->set_command(tlm::TLM_READ_COMMAND);
+	payload->set_data_length(size);
+	payload->set_data_ptr((unsigned char *) buffer);
+	
+	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
+	
+	tlm::tlm_response_status status = payload->get_response_status();
+	
+	payload->release();
+
+	UpdateTime();
+	
+	return status == tlm::TLM_OK_RESPONSE;
+}
+
+template <class CONFIG>
+bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
 	
@@ -344,7 +429,7 @@ bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 	payload->set_data_length(size);
 	payload->set_data_ptr((unsigned char *) buffer);
 	
-	bus_master_sock->b_transport(*payload, cpu_time);
+	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 
@@ -356,36 +441,45 @@ bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, co
 }
 
 template <class CONFIG>
-CPU<CONFIG>::FwRedirector::FwRedirector(unsigned int _id, CPU<CONFIG> *_cpu, tlm::tlm_sync_enum (CPU<CONFIG>::*_cb_nb_transport_fw)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, tlm::tlm_phase&, sc_core::sc_time&), void (CPU<CONFIG>::*_cb_b_transport)(unsigned int, unisim::kernel::tlm2::SimplePayload<bool>&, sc_core::sc_time&))
-	: id(_id)
-	, cpu(_cpu)
-	, cb_nb_transport_fw(_cb_nb_transport_fw)
-	, cb_b_transport(_cb_b_transport)
+void CPU<CONFIG>::DCRRead(unsigned int dcrn, void *buffer, uint32_t size)
 {
+	AlignToBusClock();
+	
+	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
+	
+	payload->set_address(dcrn);
+	payload->set_command(tlm::TLM_READ_COMMAND);
+	payload->set_data_length(size);
+	payload->set_data_ptr((unsigned char *) buffer);
+	
+	dcr_master_sock->b_transport(*payload, cpu_time);
+	
+	tlm::tlm_response_status status = payload->get_response_status();
+	
+	payload->release();
+
+	UpdateTime();
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::FwRedirector::b_transport(unisim::kernel::tlm2::SimplePayload<bool>& trans, sc_core::sc_time& t)
+void CPU<CONFIG>::DCRWrite(unsigned int dcrn, const void *buffer, uint32_t size)
 {
-	(cpu->*cb_b_transport)(id, trans, t);
-}
+	AlignToBusClock();
+	
+	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
+	
+	payload->set_address(dcrn);
+	payload->set_command(tlm::TLM_WRITE_COMMAND);
+	payload->set_data_length(size);
+	payload->set_data_ptr((unsigned char *) buffer);
+	
+	dcr_master_sock->b_transport(*payload, cpu_time);
+	
+	tlm::tlm_response_status status = payload->get_response_status();
 
-template <class CONFIG>
-tlm::tlm_sync_enum CPU<CONFIG>::FwRedirector::nb_transport_fw(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return (cpu->*cb_nb_transport_fw)(id, trans, phase, t);
-}
+	payload->release();
 
-template <class CONFIG>
-unsigned int CPU<CONFIG>::FwRedirector::transport_dbg(unisim::kernel::tlm2::SimplePayload<bool>& trans)
-{
-	return 0;
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::FwRedirector::get_direct_mem_ptr(unisim::kernel::tlm2::SimplePayload<bool>& trans, tlm::tlm_dmi&  dmi_data)
-{
-	return false;
+	UpdateTime();
 }
 
 } // end of namespace ppc440

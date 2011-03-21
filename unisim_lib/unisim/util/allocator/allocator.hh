@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,31 +31,58 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu.hh>
-#include <unisim/component/cxx/processor/powerpc/ppc440/exception.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_cache.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_debugging.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_exception_handling.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_fetch.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_load_store.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc>
-#include <unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc>
+
+#ifndef __UNISIM_UTIL_ALLOCATOR_ALLOCATOR_HH__
+#ifndef __UNISIM_UTIL_ALLOCATOR_ALLOCATOR_HH__
+
+#include <stack>
+#include <vector>
 
 namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace powerpc {
-namespace ppc440 {
+namespace util {
+namespace allocator {
 
-template class CPU<Config_woMMU_wFPU>;
+template <class T>
+class Allocator
+{
+public:
+	Allocator()
+		: free_list()
+	{
+	}
 
-} // end of namespace ppc440
-} // end of namespace powerpc
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
+	~Allocator()
+	{
+		while(!free_list.empty())
+		{
+			T *e = free_list.top();
+			delete e;
+			free_list.pop();
+		}
+	}
+
+	T *Alloc()
+	{
+		if(!free_list.empty())
+		{
+			T *e = free_list.top();
+			free_list.pop();
+			return e;
+		}
+		
+		return new T();
+	}
+
+	void Free(T *e)
+	{
+		free_list.push(e);
+	}
+private:
+	std::stack<T *, std::vector<T *> > free_list;
+};
+
+} // end of namespace allocator
+} // end of namespace util
 } // end of namespace unisim
 
+#endif // __UNISIM_UTIL_ALLOCATOR_ALLOCATOR_HH__
