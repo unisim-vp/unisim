@@ -416,6 +416,31 @@ public:
 	 * @param reg the register to store the resulting read
 	 */
 	void Read32toGPRAligned(uint32_t address, uint32_t reg);
+	/** 32bits memory read into one of the user general purpose registers.
+	 * This method reads 32bits from memory and stores the result into
+	 *   the user general purpose register indicated by the input reg. For the
+	 *   armemu version this makes the same as Read32toGPR.
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the user register to store the resulting read
+	 */
+	void Read32toUserGPR(uint32_t address, uint32_t reg)
+	{
+		Read32toGPR(address, reg);
+	}
+	/** 32bits aligned memory read into one of the user general purpose registers.
+	 * This method reads 32bits from memory and stores the result into
+	 *   the user general purpose register indicated by the input reg. Note that
+	 *   this read methods supposes that the address is 32bits aligned. For the
+	 *   armemu version this makes the same as Read32toGPRAligned.
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the user register to store the resulting read
+	 */
+	void Read32toUserGPRAligned(uint32_t address, uint32_t reg)
+	{
+		Read32toGPRAligned(address, reg);
+	}
 	/** 16bits aligned memory read into one of the general purpose registers.
 	 * This method reads 16bits from memory and stores the result into
 	 *   the general purpose register indicated by the input reg. Note that this
