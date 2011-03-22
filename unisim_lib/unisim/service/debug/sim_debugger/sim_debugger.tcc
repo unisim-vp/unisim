@@ -43,6 +43,10 @@
 #include <fstream>
 #include <iostream>
 
+#ifdef WIN32
+#include <unistd.h>
+#endif
+
 #include <unisim/util/endian/endian.hh>
 
 namespace unisim {
