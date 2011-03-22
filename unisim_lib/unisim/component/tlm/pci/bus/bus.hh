@@ -59,6 +59,7 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
@@ -195,11 +196,11 @@ public:
 		param_num_mappings.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 		param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	for(unsigned int i = 0; i < NUM_MASTERS; i++){
+		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;
-	  		s << "input_port[" << i << "]";
-	  		input_port[i] =
-	  			new sc_export<TlmSendIfType>(s.str().c_str());
+			s << "input_port[" << i << "]";
+			input_port[i] =
+				new sc_export<TlmSendIfType>(s.str().c_str());
 			(*input_port[i]) (*this);
 			r << "memory_export[" << i << "]";
 			memory_export[i] =
@@ -214,9 +215,14 @@ public:
 			r << "memory_import[" << i << "]";
 			memory_import[i] =
 				new ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
-			SetupDependsOn(*memory_import[i]);
 		}
-		
+
+		for(unsigned int i = 0; i < NUM_MASTERS; i++){
+			for (unsigned int j = 0; j < NUM_TARGETS; j++) {
+				memory_export[i]->SetupDependsOn(*memory_import[j]);
+			}
+		}
+
 		for (unsigned int i = 0; i < NUM_TARGETS; i++) {
 			for (unsigned int j = 0; j < NUM_BARS; j++) {
 				devmap[i][j] = NULL;
@@ -259,23 +265,9 @@ public:
       		}
 		}
 	}
-
-	virtual bool Setup() {
-			
-		if(!frequency) {
-			if(unlikely(verbose))
-				logger << DebugError << "SERVICE_SETUP_ERROR("
-					<< __FUNCTION__ << ":"
-					<< __FILE__ << ":"
-					<< __LINE__ << "): frequency parameter has not been set" 
-					<< std::endl << EndDebugError;
-			return false;
-		}
-		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
-		
-    	for(unsigned int i = 0; i < NUM_TARGETS; i++)
-			if(!memory_import[i])
-				return false;
+	
+	virtual bool BeginSetup()
+	{
 		Reset ();
 
 //		for (unsigned int i = 0; i < NUM_MAPPINGS; i++) {
@@ -331,7 +323,44 @@ public:
 			portToDevNumberMap[device_number[i]] = target_port[i];
 			 
 		}
+		
+		return true;
+	}
 
+	virtual bool SetupMemory()
+	{
+    	for(unsigned int i = 0; i < NUM_TARGETS; i++)
+			if(!memory_import[i])
+				return false;
+			
+		return true;
+	}
+
+	virtual bool Setup(ServiceExportBase *srv_export)
+	{
+		for(unsigned int i = 0; i < NUM_MASTERS; i++)
+		{
+			if(srv_export == memory_export[i]) return SetupMemory();
+		}
+		
+		logger << DebugError << "Internal error" << EndDebugError;
+		
+		return false;
+	}
+
+	virtual bool EndSetup() {
+			
+		if(!frequency) {
+			if(unlikely(verbose))
+				logger << DebugError << "SERVICE_SETUP_ERROR("
+					<< __FUNCTION__ << ":"
+					<< __FILE__ << ":"
+					<< __LINE__ << "): frequency parameter has not been set" 
+					<< std::endl << EndDebugError;
+			return false;
+		}
+		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
+		
 		return true;
     }
 

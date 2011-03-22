@@ -968,6 +968,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("pmac-linux-kernel-loader.pmac-bootx.screen-height", display_height);
 	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.filename", filename);
 	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.base-addr", 0x00400000UL);
+	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.force-base-addr", true);
+	simulator->SetVariable("pmac-linux-kernel-loader.elf32-loader.force-use-virtual-address", true);
 	
 	// - kernel logger
 	simulator->SetVariable("kernel_logger.std_err", true);
@@ -989,7 +991,7 @@ void Simulator::Run()
 	double time_start = host_time->GetTime();
 
 	EnableDebug();
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{

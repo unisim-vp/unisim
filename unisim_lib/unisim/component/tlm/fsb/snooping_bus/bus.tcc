@@ -193,7 +193,7 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 bool
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
-Setup() {
+SetupMemory() {
 	if(!memory_import) {
 		logger << DebugError << LOCATION << ", "
 			<< "No memory connected" << endl
@@ -212,6 +212,18 @@ Setup() {
 		return false;
 	}
 	return true;
+}
+
+template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
+		unsigned int NUM_PROCS>
+bool
+Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
+Setup(ServiceExportBase *srv_export) {
+	if(srv_export == &memory_export) return SetupMemory();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	
+	return false;
 }
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,

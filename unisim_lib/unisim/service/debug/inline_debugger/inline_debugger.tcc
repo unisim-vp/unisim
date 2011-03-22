@@ -78,7 +78,7 @@ using unisim::util::debug::Statement;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
-	: Object(_name, _parent, "Inline debugger")
+	: Object(_name, _parent, "this service implements a built-in debugger in the terminal console")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
@@ -189,8 +189,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 			stmt_lookup_import[i] = new ServiceImport<StatementLookup<ADDRESS> >(sstr_name.str().c_str(), this);
 		}
 	}
-
-	Object::SetupDependsOn(memory_access_reporting_control_import);
 }
 
 template <class ADDRESS>
@@ -216,12 +214,12 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 }
 
 template<class ADDRESS>
-bool InlineDebugger<ADDRESS>::Setup() {
-	if(memory_access_reporting_control_import) {
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
+bool InlineDebugger<ADDRESS>::EndSetup()
+{
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(false);
 	}
 
 	if(memory_atom_size != 1 &&
@@ -268,7 +266,7 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportTrap()
 {
 	trap = true;
-	cout << "-> Trap recieved" << endl;
+	cout << "-> Received trap" << endl;
 }
 
 template <class ADDRESS>
@@ -626,8 +624,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						break;
 					}
 				}
-				break;
 				
+				if(IsLoadCommand(parm[0]))
+				{
+					recognized = true;
+					Load(parm[1]);
+					break;
+				}
+				break;
 			case 3:
 				if(IsWatchCommand(parm[0]) && ParseAddrRange(parm[1], addr, size))
 				{
@@ -718,12 +722,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsLoadCommand(parm[0]))
-				{
-					recognized = true;
-					Load(parm[1], parm[2]);
-					break;
-				}
 				break;
 
 			case EOF:
@@ -1571,7 +1569,7 @@ void InlineDebugger<ADDRESS>::DumpAvailableLoaders()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::Load(const char *loader_name, const char *filename)
+void InlineDebugger<ADDRESS>::Load(const char *loader_name)
 {
 	if(num_loaders && loader_import)
 	{
@@ -1587,9 +1585,9 @@ void InlineDebugger<ADDRESS>::Load(const char *loader_name, const char *filename
 					if(strcmp(service->GetName(), loader_name) == 0)
 					{
 						// Found loader
-						if(!(*import)->Load(filename))
+						if(!(*import)->Load())
 						{
-							cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load file \"" << filename << "\"" << endl;
+							cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load data/program" << endl;
 						}
 						
 						return;

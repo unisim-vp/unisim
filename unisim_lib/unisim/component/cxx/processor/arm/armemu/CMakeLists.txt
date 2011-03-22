@@ -48,7 +48,7 @@ endforeach ( dir )
 set ( arm32_isa_files
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa
+	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/load_store_multiple.isa
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/branch.isa
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa
@@ -76,7 +76,7 @@ add_custom_command (
 		${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.hh
 		${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32.tcc
 	COMMAND
-		genisslib -o ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32 -w 32 -I ${CMAKE_CURRENT_SOURCE_DIR}/../isa/arm32 ${CMAKE_CURRENT_SOURCE_DIR}/../isa/arm32/arm32.isa
+		genisslib -o ${CMAKE_BINARY_DIR}/unisim/component/cxx/processor/arm/isa_arm32 -w 32 -I ${CMAKE_CURRENT_SOURCE_DIR}/../isa/arm32 ${CMAKE_CURRENT_SOURCE_DIR}/../isa/arm32/arm32_emu.isa
 	DEPENDS
 		${arm32_isa_files}
 	COMMENT
@@ -93,8 +93,6 @@ set ( cxx_arm_srcs
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cpu.cc
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.hh
 	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/armemu/cache.cc
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.hh
-	${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/exception.tcc
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.hh
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/cpu.step_instruction.tcc
 	# ${CMAKE_SOURCE_DIR}/unisim/component/cxx/processor/arm/instruction.tcc

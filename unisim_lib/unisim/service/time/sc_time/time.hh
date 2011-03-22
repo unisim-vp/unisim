@@ -60,7 +60,7 @@ public:
 	ScTime(const char *name, Object *parent = 0);
 	virtual ~ScTime();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual double GetTime(); // in seconds
 };
 

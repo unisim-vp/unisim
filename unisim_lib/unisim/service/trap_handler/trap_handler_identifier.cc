@@ -58,7 +58,7 @@ TrapHandlerIdentifier::TrapHandlerIdentifier(int _id,
 TrapHandlerIdentifier::~TrapHandlerIdentifier() { id = 0; interface = 0; }
 
 bool
-TrapHandlerIdentifier::Setup()
+TrapHandlerIdentifier::BeginSetup()
 {
 	if ( interface == 0 )
 	{

@@ -103,7 +103,7 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::~AM29LV()
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Setup()
+bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 {
 	unsigned int chip_num;
 

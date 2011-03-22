@@ -93,7 +93,7 @@ public:
 	virtual ~CPU();
 	virtual void Stop(int ret);
 	virtual void Synchronize();
-	virtual bool Setup();
+	virtual bool EndSetup();
 	inline void BusSynchronize()
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 	__attribute__((always_inline))

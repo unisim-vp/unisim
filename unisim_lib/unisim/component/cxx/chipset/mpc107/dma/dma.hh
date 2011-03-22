@@ -69,7 +69,7 @@ public:
 	virtual ~DMA();
 
 	/* Initialization methods of the service */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual void Reset();
 		
 	uint32_t ReadRegister(PHYSICAL_ADDR addr, 

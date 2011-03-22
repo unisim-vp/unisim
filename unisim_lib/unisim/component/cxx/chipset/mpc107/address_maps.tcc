@@ -74,7 +74,7 @@ AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::~AddressMap() {
 
 template <class ADDRESS_TYPE, class PCI_ADDRESS_TYPE, bool DEBUG>
 bool
-AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::Setup() {
+AddressMap<ADDRESS_TYPE, PCI_ADDRESS_TYPE, DEBUG>::BeginSetup() {
 	return true;
 }
 

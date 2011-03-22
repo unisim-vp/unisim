@@ -542,7 +542,7 @@ void Heathrow<ADDRESS>::SetIRQ(unsigned int int_num, bool level)
 }
 	
 template <class ADDRESS>
-bool Heathrow<ADDRESS>::Setup()
+bool Heathrow<ADDRESS>::BeginSetup()
 {
 	// PCI configuration registers initialization	
 	pci_conf_base_addr.Initialize("pci_conf_base_addr", "PCI Config Base Address", 0xfffffff0UL, initial_base_addr);

@@ -758,7 +758,7 @@ I8042::~I8042()
 {
 }
 
-bool I8042::Setup()
+bool I8042::EndSetup()
 {
 	if(!keyboard_import)
 	{

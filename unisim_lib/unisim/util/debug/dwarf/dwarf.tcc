@@ -55,33 +55,41 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugInfo;
+	
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(endian_type _endianness, uint8_t _address_size)
-	: endianness(_endianness)
-	, address_size(_address_size)
-	, debug_line_section(0)
-	, debug_line_section_size(0)
-	, debug_info_section(0)
-	, debug_info_section_size(0)
-	, debug_abbrev_section(0)
-	, debug_abbrev_section_size(0)
-	, debug_aranges_section(0)
-	, debug_aranges_section_size(0)
-	, debug_pubnames_section(0)
-	, debug_pubnames_section_size(0)
-	, debug_pubtypes_section(0)
-	, debug_pubtypes_section_size(0)
-	, debug_macinfo_section(0)
-	, debug_macinfo_section_size(0)
-	, debug_frame_section(0)
-	, debug_frame_section_size(0)
-	, debug_str_section(0)
-	, debug_str_section_size(0)
-	, debug_loc_section(0)
-	, debug_loc_section_size(0)
-	, debug_ranges_section(0)
-	, debug_ranges_section_size(0)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& _logger)
+	: endianness(blob->GetEndian())
+	, address_size(blob->GetAddressSize())
+	, debug_line_section(blob->FindSection(".debug_line"))
+	, debug_info_section(blob->FindSection(".debug_info"))
+	, debug_abbrev_section(blob->FindSection(".debug_abbrev"))
+	, debug_aranges_section(blob->FindSection(".debug_aranges"))
+	, debug_pubnames_section(blob->FindSection(".debug_pubnames"))
+	, debug_pubtypes_section(blob->FindSection(".debug_pubtypes"))
+	, debug_macinfo_section(blob->FindSection(".debug_macinfo"))
+	, debug_frame_section(blob->FindSection(".debug_frame"))
+	, debug_str_section(blob->FindSection(".debug_str"))
+	, debug_loc_section(blob->FindSection(".debug_loc"))
+	, debug_ranges_section(blob->FindSection(".debug_ranges"))
+	, logger(_logger)
 {
+	if(debug_line_section) debug_line_section->Catch();
+	if(debug_info_section) debug_info_section->Catch();
+	if(debug_abbrev_section) debug_abbrev_section->Catch();
+	if(debug_aranges_section) debug_aranges_section->Catch();
+	if(debug_pubnames_section) debug_pubnames_section->Catch();
+	if(debug_pubtypes_section) debug_pubtypes_section->Catch();
+	if(debug_macinfo_section) debug_macinfo_section->Catch();
+	if(debug_frame_section) debug_frame_section->Catch();
+	if(debug_str_section) debug_str_section->Catch();
+	if(debug_loc_section) debug_loc_section->Catch();
+	if(debug_ranges_section) debug_ranges_section->Catch();
 }
 
 template <class MEMORY_ADDR>
@@ -186,60 +194,17 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 		}
 	}
 
-	if(debug_line_section)
-	{
-		free(debug_line_section);
-	}
-	
-	if(debug_info_section)
-	{
-		free(debug_info_section);
-	}
-	
-	if(debug_abbrev_section)
-	{
-		free(debug_abbrev_section);
-	}
-	
-	if(debug_aranges_section)
-	{
-		free(debug_aranges_section);
-	}
-	
-	if(debug_pubnames_section)
-	{
-		free(debug_pubnames_section);
-	}
-	
-	if(debug_pubtypes_section)
-	{
-		free(debug_pubtypes_section);
-	}
-	
-	if(debug_macinfo_section)
-	{
-		free(debug_macinfo_section);
-	}
-	
-	if(debug_frame_section)
-	{
-		free(debug_frame_section);
-	}
-	
-	if(debug_str_section)
-	{
-		free(debug_str_section);
-	}
-	
-	if(debug_loc_section)
-	{
-		free(debug_loc_section);
-	}
-	
-	if(debug_ranges_section)
-	{
-		free(debug_ranges_section);
-	}
+	if(debug_line_section) debug_line_section->Release();
+	if(debug_info_section) debug_info_section->Release();
+	if(debug_abbrev_section) debug_abbrev_section->Release();
+	if(debug_aranges_section) debug_aranges_section->Release();
+	if(debug_pubnames_section) debug_pubnames_section->Release();
+	if(debug_pubtypes_section) debug_pubtypes_section->Release();
+	if(debug_macinfo_section) debug_macinfo_section->Release();
+	if(debug_frame_section) debug_frame_section->Release();
+	if(debug_str_section) debug_str_section->Release();
+	if(debug_loc_section) debug_loc_section->Release();
+	if(debug_ranges_section) debug_ranges_section->Release();
 }
 
 template <class MEMORY_ADDR>
@@ -262,74 +227,19 @@ const DWARF_Abbrev *DWARF_Handler<MEMORY_ADDR>::FindAbbrev(uint64_t debug_abbrev
 template <class MEMORY_ADDR>
 const char *DWARF_Handler<MEMORY_ADDR>::GetString(uint64_t debug_str_offset) const
 {
-	return (debug_str_offset < debug_str_section_size) ? (const char *) debug_str_section + debug_str_offset : 0;
+	return (debug_str_offset < debug_str_section->GetSize()) ? (const char *) debug_str_section->GetData() + debug_str_offset : 0;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::Handle(const char *section_name, uint8_t *section, uint64_t section_size)
-{
-	if(!debug_line_section && strcmp(section_name, ".debug_line") == 0)
-	{
-		debug_line_section = section;
-		debug_line_section_size = section_size;
-	}
-	else if(!debug_info_section && strcmp(section_name, ".debug_info") == 0)
-	{
-		debug_info_section = section;
-		debug_info_section_size = section_size;
-	}
-	else if(!debug_abbrev_section && strcmp(section_name, ".debug_abbrev") == 0)
-	{
-		debug_abbrev_section = section;
-		debug_abbrev_section_size = section_size;
-	}
-	else if(!debug_aranges_section && strcmp(section_name, ".debug_aranges") == 0)
-	{
-		debug_aranges_section = section;
-		debug_aranges_section_size = section_size;
-	}
-	else if(!debug_pubnames_section && strcmp(section_name, ".debug_pubnames") == 0)
-	{
-		debug_pubnames_section = section;
-		debug_pubnames_section_size = section_size;
-	}
-	else if(!debug_pubtypes_section && strcmp(section_name, ".debug_pubtypes") == 0)
-	{
-		debug_pubtypes_section = section;
-		debug_pubtypes_section_size = section_size;
-	}
-	else if(!debug_macinfo_section && strcmp(section_name, ".debug_macinfo") == 0)
-	{
-		debug_macinfo_section = section;
-		debug_macinfo_section_size = section_size;
-	}
-	else if(!debug_str_section && strcmp(section_name, ".debug_str") == 0)
-	{
-		debug_str_section = section;
-		debug_str_section_size = section_size;
-	}
-	else if(!debug_loc_section && strcmp(section_name, ".debug_loc") == 0)
-	{
-		debug_loc_section = section;
-		debug_loc_section_size = section_size;
-	}
-	else if(!debug_ranges_section && strcmp(section_name, ".debug_ranges") == 0)
-	{
-		debug_ranges_section = section;
-		debug_ranges_section_size = section_size;
-	}
-	else if(!debug_frame_section && strcmp(section_name, ".debug_frame") == 0)
-	{
-		debug_frame_section = section;
-		debug_frame_section_size = section_size;
-	}
-}
-
-template <class MEMORY_ADDR>
-void DWARF_Handler<MEMORY_ADDR>::Initialize()
+void DWARF_Handler<MEMORY_ADDR>::Parse()
 {
 	unsigned int i;
-	
+	if(!debug_str_section)
+	{
+		logger << DebugWarning << "No DWARF v2/v3 debugging informations" << EndDebugWarning;
+		return; // We can't continue
+	}
+
 /*	if(debug_line_section)
 	{
 		uint64_t debug_line_offset = 0;
@@ -337,7 +247,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = new DWARF_StatementProgram<MEMORY_ADDR>(this);
 			int64_t sz;
-			if((sz = dw_stmt_prog->Load((const uint8_t *) debug_line_section + debug_line_offset, debug_line_section_size - debug_line_offset, debug_line_offset)) < 0)
+			if((sz = dw_stmt_prog->Load((const uint8_t *) debug_line_section->GetData() + debug_line_offset, debug_line_section->GetSize() - debug_line_offset, debug_line_offset)) < 0)
 			{
 				std::cerr << "Invalid DWARF2 statement program prologue at offset 0x" << std::hex << debug_line_offset << std::dec << std::endl;
 				delete dw_stmt_prog;
@@ -358,7 +268,7 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				}
 			}
 		}
-		while(debug_line_offset < debug_line_section_size);
+		while(debug_line_offset < debug_line_section->GetSize());
 	}*/
 	
 	if(debug_abbrev_section)
@@ -368,9 +278,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_Abbrev *dw_abbrev = new DWARF_Abbrev(endianness);
 			int64_t sz;
-			if((sz = dw_abbrev->Load((const uint8_t *) debug_abbrev_section + debug_abbrev_offset, debug_abbrev_section_size - debug_abbrev_offset, debug_abbrev_offset)) < 0)
+			if((sz = dw_abbrev->Load((const uint8_t *) debug_abbrev_section->GetData() + debug_abbrev_offset, debug_abbrev_section->GetSize() - debug_abbrev_offset, debug_abbrev_offset)) < 0)
 			{
-				std::cerr << "Invalid DWARF2 abbreviation informations at offset 0x" << std::hex << debug_abbrev_offset << std::dec << std::endl;
+				logger << DebugWarning << "Invalid DWARF2 abbreviation informations at offset 0x" << std::hex << debug_abbrev_offset << std::dec << EndDebugWarning;
 				delete dw_abbrev;
 				break;
 			}
@@ -388,7 +298,11 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				debug_abbrev_offset += sz;
 			}
 		}
-		while(debug_abbrev_offset < debug_abbrev_section_size);
+		while(debug_abbrev_offset < debug_abbrev_section->GetSize());
+	}
+	else
+	{
+		logger << DebugWarning << "No DWARF v2/v3 .debug_abbrev section" << EndDebugWarning;
 	}
 
 	if(debug_info_section)
@@ -398,9 +312,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = new DWARF_CompilationUnit<MEMORY_ADDR>(this);
 			int64_t sz;
-			if((sz = dw_cu->Load((const uint8_t *) debug_info_section + debug_info_offset, debug_info_section_size - debug_info_offset, debug_info_offset)) < 0)
+			if((sz = dw_cu->Load((const uint8_t *) debug_info_section->GetData() + debug_info_offset, debug_info_section->GetSize() - debug_info_offset, debug_info_offset)) < 0)
 			{
-				std::cerr << "Invalid DWARF2 debug informations at offset 0x" << std::hex << debug_info_offset << std::dec << std::endl;
+				logger << DebugWarning << "Invalid DWARF2 debug informations at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugWarning;
 				delete dw_cu;
 				break;
 			}
@@ -411,7 +325,11 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				debug_info_offset += sz;
 			}
 		}
-		while(debug_info_offset < debug_info_section_size);
+		while(debug_info_offset < debug_info_section->GetSize());
+	}
+	else
+	{
+		logger << DebugWarning << "No DWARF v2/v3 .debug_info section" << EndDebugWarning;
 	}
 
 	if(debug_frame_section)
@@ -422,16 +340,16 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_FDE<MEMORY_ADDR> *dw_fde = new DWARF_FDE<MEMORY_ADDR>(this);
 			
-			if((sz = dw_fde->Load(debug_frame_section + debug_frame_offset, debug_frame_section_size - debug_frame_offset, debug_frame_offset)) < 0)
+			if((sz = dw_fde->Load((const uint8_t *) debug_frame_section->GetData() + debug_frame_offset, debug_frame_section->GetSize() - debug_frame_offset, debug_frame_offset)) < 0)
 			{
 				delete dw_fde;
 				DWARF_CIE<MEMORY_ADDR> *dw_cie = new DWARF_CIE<MEMORY_ADDR>(this);
 			
-				if((sz = dw_cie->Load(debug_frame_section + debug_frame_offset, debug_frame_section_size - debug_frame_offset, debug_frame_offset)) < 0)
+				if((sz = dw_cie->Load((const uint8_t *) debug_frame_section->GetData() + debug_frame_offset, debug_frame_section->GetSize() - debug_frame_offset, debug_frame_offset)) < 0)
 				{
 					delete dw_cie;
 					
-					std::cerr << "Invalid DWARF2 debug frame at offset 0x" << std::hex << debug_frame_offset << std::dec << std::endl;
+					logger << DebugWarning << "Invalid DWARF2 debug frame at offset 0x" << std::hex << debug_frame_offset << std::dec << EndDebugWarning;
 					break;
 				}
 				
@@ -446,7 +364,11 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 			
 			debug_frame_offset += sz;
 		}
-		while(debug_frame_offset < debug_frame_section_size);
+		while(debug_frame_offset < debug_frame_section->GetSize());
+	}
+	else
+	{
+		logger << DebugWarning << "No DWARF v2/v3 .debug_frame section" << EndDebugWarning;
 	}
 
 	if(debug_aranges_section)
@@ -456,9 +378,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_AddressRanges<MEMORY_ADDR> *dw_address_ranges = new DWARF_AddressRanges<MEMORY_ADDR>(this);
 			int64_t sz;
-			if((sz = dw_address_ranges->Load((const uint8_t *) debug_aranges_section + debug_aranges_offset, debug_aranges_section_size - debug_aranges_offset)) < 0)
+			if((sz = dw_address_ranges->Load((const uint8_t *) debug_aranges_section->GetData() + debug_aranges_offset, debug_aranges_section->GetSize() - debug_aranges_offset)) < 0)
 			{
-				std::cerr << "Invalid DWARF2 debug aranges at offset 0x" << std::hex << debug_aranges_offset << std::dec << std::endl;
+				logger << DebugWarning << "Invalid DWARF2 debug aranges at offset 0x" << std::hex << debug_aranges_offset << std::dec << EndDebugWarning;
 				delete dw_address_ranges;
 				break;
 			}
@@ -469,7 +391,11 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				debug_aranges_offset += sz;
 			}
 		}
-		while(debug_aranges_offset < debug_aranges_section_size);
+		while(debug_aranges_offset < debug_aranges_section->GetSize());
+	}
+	else
+	{
+		logger << DebugWarning << "No DWARF v2/v3 .debug_aranges section" << EndDebugWarning;
 	}
 
 	if(debug_pubnames_section)
@@ -479,9 +405,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_Pubs<MEMORY_ADDR> *dw_public_names = new DWARF_Pubs<MEMORY_ADDR>(this);
 			int64_t sz;
-			if((sz = dw_public_names->Load((const uint8_t *) debug_pubnames_section + debug_pubnames_offset, debug_pubnames_section_size - debug_pubnames_offset)) < 0)
+			if((sz = dw_public_names->Load((const uint8_t *) debug_pubnames_section->GetData() + debug_pubnames_offset, debug_pubnames_section->GetSize() - debug_pubnames_offset)) < 0)
 			{
-				std::cerr << "Invalid DWARF2 debug pubnames at offset 0x" << std::hex << debug_pubnames_offset << std::dec << std::endl;
+				logger << DebugWarning << "Invalid DWARF2 debug pubnames at offset 0x" << std::hex << debug_pubnames_offset << std::dec << EndDebugWarning;
 				delete dw_public_names;
 				break;
 			}
@@ -492,7 +418,11 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				debug_pubnames_offset += sz;
 			}
 		}
-		while(debug_pubnames_offset < debug_pubnames_section_size);
+		while(debug_pubnames_offset < debug_pubnames_section->GetSize());
+	}
+	else
+	{
+		logger << DebugWarning << "No DWARF v2/v3 .debug_pubnames section" << EndDebugWarning;
 	}
 
 	if(debug_pubtypes_section)
@@ -502,9 +432,9 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 		{
 			DWARF_Pubs<MEMORY_ADDR> *dw_public_types = new DWARF_Pubs<MEMORY_ADDR>(this);
 			int64_t sz;
-			if((sz = dw_public_types->Load((const uint8_t *) debug_pubtypes_section + debug_pubtypes_offset, debug_pubtypes_section_size - debug_pubtypes_offset)) < 0)
+			if((sz = dw_public_types->Load((const uint8_t *) debug_pubtypes_section->GetData() + debug_pubtypes_offset, debug_pubtypes_section->GetSize() - debug_pubtypes_offset)) < 0)
 			{
-				std::cerr << "Invalid DWARF2 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << std::endl;
+				logger << DebugWarning << "Invalid DWARF2 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << EndDebugWarning;
 				delete dw_public_types;
 				break;
 			}
@@ -515,9 +445,10 @@ void DWARF_Handler<MEMORY_ADDR>::Initialize()
 				debug_pubtypes_offset += sz;
 			}
 		}
-		while(debug_pubtypes_offset < debug_pubtypes_section_size);
+		while(debug_pubtypes_offset < debug_pubtypes_section->GetSize());
 	}
 
+	// Fix all pointer cross-references
 	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
 	
 	unsigned int dw_cu_id = 0;
@@ -2024,7 +1955,7 @@ uint8_t DWARF_Handler<MEMORY_ADDR>::GetAddressSize() const
 template <class MEMORY_ADDR>
 const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatementProgram(uint64_t debug_line_offset)
 {
-	if(!debug_line_section || debug_line_offset >= debug_line_section_size) return 0;
+	if(!debug_line_section || debug_line_offset >= debug_line_section->GetSize()) return 0;
 	
 	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::const_iterator dw_stmt_prog_iter = dw_stmt_progs.find(debug_line_offset);
 		
@@ -2035,9 +1966,9 @@ const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindState
 
 	DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = new DWARF_StatementProgram<MEMORY_ADDR>(this);
 	int64_t sz;
-	if((sz = dw_stmt_prog->Load((const uint8_t *) debug_line_section + debug_line_offset, debug_line_section_size - debug_line_offset, debug_line_offset)) < 0)
+	if((sz = dw_stmt_prog->Load((const uint8_t *) debug_line_section->GetData() + debug_line_offset, debug_line_section->GetSize() - debug_line_offset, debug_line_offset)) < 0)
 	{
-		std::cerr << "Invalid DWARF2 statement program prologue at offset 0x" << std::hex << debug_line_offset << std::dec << std::endl;
+		logger << DebugWarning << "Invalid DWARF2 statement program prologue at offset 0x" << std::hex << debug_line_offset << std::dec << EndDebugWarning;
 		delete dw_stmt_prog;
 		return 0;
 	}
@@ -2058,7 +1989,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIE(uint64_t debug
 template <class MEMORY_ADDR>
 const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset)
 {
-	if(!debug_ranges_section || debug_ranges_offset >= debug_ranges_section_size) return 0;
+	if(!debug_ranges_section || debug_ranges_offset >= debug_ranges_section->GetSize()) return 0;
 	
 	DWARF_RangeListEntry<MEMORY_ADDR> *head = 0;
 	do
@@ -2073,9 +2004,9 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeLi
 		DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = new DWARF_RangeListEntry<MEMORY_ADDR>(dw_cu);
 		int64_t sz;
 			
-		if((sz = dw_range_list_entry->Load((const uint8_t *) debug_ranges_section + debug_ranges_offset, debug_ranges_section_size - debug_ranges_offset, debug_ranges_offset)) < 0)
+		if((sz = dw_range_list_entry->Load((const uint8_t *) debug_ranges_section->GetData() + debug_ranges_offset, debug_ranges_section->GetSize() - debug_ranges_offset, debug_ranges_offset)) < 0)
 		{
-			std::cerr << "Invalid DWARF2 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << std::endl;
+			logger << DebugWarning << "Invalid DWARF2 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << EndDebugWarning;
 			delete dw_range_list_entry;
 			return head;
 		}
@@ -2085,7 +2016,7 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeLi
 		debug_ranges_offset += sz;
 		if(!head) head = dw_range_list_entry;
 		if(dw_range_list_entry->IsEndOfList()) break; // End of list
-	} while(debug_ranges_offset < debug_ranges_section_size);
+	} while(debug_ranges_offset < debug_ranges_section->GetSize());
 	
 	return head;
 }
@@ -2093,7 +2024,7 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeLi
 template <class MEMORY_ADDR>
 const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacInfoListEntry(uint64_t debug_macinfo_offset)
 {
-	if(!debug_macinfo_section || debug_macinfo_offset >= debug_macinfo_section_size) return 0;
+	if(!debug_macinfo_section || debug_macinfo_offset >= debug_macinfo_section->GetSize()) return 0;
 
 	DWARF_MacInfoListEntry<MEMORY_ADDR> *head = 0;
 	do
@@ -2105,7 +2036,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 			return head ? head : (*dw_macinfo_list_iter).second;
 		}
 		
-		uint8_t dw_mac_info_type = *((const uint8_t *) debug_macinfo_section + debug_macinfo_offset);
+		uint8_t dw_mac_info_type = *((const uint8_t *) debug_macinfo_section->GetData() + debug_macinfo_offset);
 
 		DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = 0;
 
@@ -2130,7 +2061,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 				dw_macinfo_list_entry = new DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>();
 				break;
 			default:
-				std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (unknown type " << ((unsigned int) dw_mac_info_type) << ")" << std::endl;
+				logger << DebugWarning << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (unknown type " << ((unsigned int) dw_mac_info_type) << ")" << EndDebugWarning;
 				return 0;
 		}
 			
@@ -2138,9 +2069,9 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 
 		int64_t sz;
 			
-		if((sz = dw_macinfo_list_entry->Load((const uint8_t *) debug_macinfo_section + debug_macinfo_offset, debug_macinfo_section_size - debug_macinfo_offset, debug_macinfo_offset)) < 0)
+		if((sz = dw_macinfo_list_entry->Load((const uint8_t *) debug_macinfo_section->GetData() + debug_macinfo_offset, debug_macinfo_section->GetSize() - debug_macinfo_offset, debug_macinfo_offset)) < 0)
 		{
-			std::cerr << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (type " << ((unsigned int) dw_mac_info_type) << ")" << std::endl;
+			logger << DebugWarning << "Invalid DWARF2 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (type " << ((unsigned int) dw_mac_info_type) << ")" << EndDebugWarning;
 			delete dw_macinfo_list_entry;
 			return head;
 		}
@@ -2150,7 +2081,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 		debug_macinfo_offset += sz;
 		if(!head) head = dw_macinfo_list_entry;
 		if(dw_macinfo_list_entry->GetType() == 0) break; // Null entry, i.e. End of list
-	} while(debug_macinfo_offset < debug_macinfo_section_size);
+	} while(debug_macinfo_offset < debug_macinfo_section->GetSize());
 	
 	return head;
 }
@@ -2166,7 +2097,7 @@ const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompil
 template <class MEMORY_ADDR>
 const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset)
 {
-	if(!debug_loc_section || debug_loc_offset >= debug_loc_section_size) return 0;
+	if(!debug_loc_section || debug_loc_offset >= debug_loc_section->GetSize()) return 0;
 	
 	DWARF_LocListEntry<MEMORY_ADDR> *head = 0;
 	
@@ -2182,9 +2113,9 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEn
 		DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = new DWARF_LocListEntry<MEMORY_ADDR>(dw_cu);
 		int64_t sz;
 			
-		if((sz = dw_loc_list_entry->Load((const uint8_t *) debug_loc_section + debug_loc_offset, debug_loc_section_size - debug_loc_offset, debug_loc_offset)) < 0)
+		if((sz = dw_loc_list_entry->Load((const uint8_t *) debug_loc_section->GetData() + debug_loc_offset, debug_loc_section->GetSize() - debug_loc_offset, debug_loc_offset)) < 0)
 		{
-			std::cerr << "Invalid DWARF2 debug loc at offset 0x" << std::hex << debug_loc_offset << std::dec << std::endl;
+			logger << DebugWarning << "Invalid DWARF2 debug loc at offset 0x" << std::hex << debug_loc_offset << std::dec << EndDebugWarning;
 			delete dw_loc_list_entry;
 			return head;
 		}
@@ -2197,7 +2128,7 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEn
 		{
 			break; // End of list
 		}
-	} while(debug_loc_offset < debug_loc_section_size);
+	} while(debug_loc_offset < debug_loc_section->GetSize());
 	
 	return head;
 }

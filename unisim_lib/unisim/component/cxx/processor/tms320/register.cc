@@ -570,7 +570,7 @@ namespace tms320 {
 	void Register::AddfSubf(bool is_add, uint8_t hi_a, uint32_t lo_a, uint8_t hi_b, uint32_t lo_b, uint32_t& overflow, uint32_t& underflow, uint32_t& neg)
 	{
 		uint8_t r_hi = 0;
-		uint32_t r_lo = 0;
+		//uint32_t r_lo = 0;
 		int64_t ext_lo_a = 0;
 		int64_t ext_lo_b = 0;
 		overflow = 0;
@@ -1178,8 +1178,8 @@ namespace tms320 {
 	
 	RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, bool _extended_precision)
 	: name(_name)
-	, reg(_reg)
 	, extended_precision(_extended_precision)
+	, reg(_reg)
 	{
 	}
 	

@@ -80,7 +80,7 @@ template <class PHYSICAL_ADDR,
 	bool DEBUG>
 bool
 EPIC<PHYSICAL_ADDR, DEBUG> ::
-Setup() {
+BeginSetup() {
 	return true;
 } 
 

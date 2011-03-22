@@ -155,6 +155,19 @@ DeleteReadWatchpoint(const char *str, uint32_t size)
 
 bool
 DebuggerHandler::
+DeleteWriteWatchpoint(const char *str, uint32_t size)
+{
+	uint64_t addr = 0;
+	bool has_addr = false;
+
+	if ( GetSymbolAddress(str, addr) ) has_addr = true;
+	if ( !has_addr && GetFileSystemAddress(str, addr) ) has_addr = true;
+
+	return DeleteWriteWatchpoint(addr, size);
+}
+
+bool
+DebuggerHandler::
 SetHandlerContext(void *context)
 {
 	handler_context = context;

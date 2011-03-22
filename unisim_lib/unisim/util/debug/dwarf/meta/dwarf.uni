@@ -58,6 +58,7 @@
 			<dep>unisim::util::debug</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::arithmetic</dep>
+			<dep>unisim::util::debug::blob</dep>
 		</depends>
 	</unit>
 </package>

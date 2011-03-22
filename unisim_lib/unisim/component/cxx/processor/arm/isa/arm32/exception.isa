@@ -56,25 +56,9 @@ swi.execute = {
 
 	if (!cpu.CheckCondition(cond)) return;
 
-	if (cpu.MODEL == ARMEMU) 
-	{
-		// we are executing on linux emulation mode
-		// use linux_os_import
-		try 
-		{
-			cpu.linux_os_import->ExecuteSystemCall(immed);
-		}
-		catch(std::exception &e)
-		{
-			cerr << e.what() << endl;
-		}
-	} 
-	else 
-	{		
-		// we are executing on full system mode
-		cpu.MarkVirtualExceptionVector(
-			unisim::component::cxx::processor::arm::exception::SWI);
-	}
+	// we are executing on full system mode
+	cpu.MarkVirtualExceptionVector(
+		unisim::component::cxx::processor::arm::exception::SWI);
 }
 
 /*
@@ -96,28 +80,15 @@ bkpt.disasm = {
 }
 
 bkpt.execute = {
-//	if(cpu.logger_import) 
-//		(*cpu.logger_import) << DebugInfo
-//			<< Function << __FUNCTION__
-//			<< File << __FILE__
-//			<< Line << __LINE__
-//			<< "executing swi (#" << immed << ")"
-//			<< Endl << EndDebugInfo;
 	uint32_t immed;
 	
 	immed = limmed + ((uint32_t)himmed << 4);
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	if(cpu.MODEL == ARMEMU) {
-		// we are executing on linux emulation mode
-		// what should we do with this kind of call? ignore it
-	} else {
-		// we are executing on full system mode
-		cpu.MarkVirtualExceptionVector(
-			unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
-	}
-	
+	// we are executing on full system mode
+	cpu.MarkVirtualExceptionVector(
+		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
 }
 
 /*

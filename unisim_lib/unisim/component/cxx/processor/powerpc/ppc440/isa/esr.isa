@@ -1,0 +1,88 @@
+/*
+ *  Copyright (c) 2007,
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ */
+
+group fp(mffs, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx)
+
+group fp_update_cr0(fadd, fadds, fdiv, fdivs, fmul, fmuls, fsub, fsubs, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, fres, frsqrte, fsel, fsqrt, fsqrts)
+
+group fp_update_crf(mcrfs, mtfsfi)
+
+group fp_update_crb(mtfsb0, mtfsb1)
+
+group st(sthbrx, stwbrx, dcbi, dcbz, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx) 
+
+group fp_st(stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx)
+
+group fp_cmp(fcmpo, fcmpu)
+
+dcbf.get_esr = {
+	return (0x1 << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK;
+}
+
+icbi.get_esr = {
+	return (0x2 << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK;
+}
+
+fp.get_esr = {
+	return CONFIG::ESR_FP_MASK;
+}
+
+fp_update_cr0.get_esr = {
+	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK;
+}
+
+fp_update_crf.get_esr = {
+	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK | (((uint32_t) crfD << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK);
+}
+
+fp_update_crb.get_esr = {
+	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK | (((uint32_t)(crbD / 4) << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK);
+}
+
+mtfsf.get_esr = {
+	// Note: mtfsf can update all CR fields: Q: what to put into ESR[PCRF]?
+	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK;
+}
+
+st.get_esr = {
+	return CONFIG::ESR_ST_MASK;
+}
+
+fp_st.get_esr = {
+	return CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK;
+}
+
+fp_cmp.get_esr = {
+	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCMP_MASK;
+}

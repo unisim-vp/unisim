@@ -71,6 +71,7 @@ public:
 	BreakpointRegistry();
 	virtual ~BreakpointRegistry();
 
+	void Reset();
 	bool SetBreakpoint(ADDRESS addr);
 	bool RemoveBreakpoint(ADDRESS addr);
 	bool HasBreakpoint(ADDRESS addr);

@@ -21,6 +21,7 @@
 			<dep>unisim::service::interfaces::loader</dep>
 			<dep>unisim::service::interfaces::symbol_table_lookup</dep>
 			<dep>unisim::service::interfaces::stmt_lookup</dep>
+			<dep>unisim::service::interfaces::blob</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::debug</dep>
 			<dep>unisim::util::debug::dwarf</dep>

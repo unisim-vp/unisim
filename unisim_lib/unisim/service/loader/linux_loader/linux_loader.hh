@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #ifndef __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_HH__
@@ -38,6 +39,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/service/interfaces/loader.hh"
+#include "unisim/service/interfaces/blob.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 
@@ -51,12 +53,14 @@ namespace linux_loader {
 using std::string;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Blob;
 using namespace unisim::util::endian;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
 using unisim::kernel::logger::Logger;
@@ -64,15 +68,19 @@ using unisim::kernel::logger::Logger;
 template<class T>
 class LinuxLoader :
 public Client<Loader<T> >,
+public Client<Blob<T> >,
 public Client<Memory<T> >,
-public Service<Loader<T> >
+public Service<Loader<T> >,
+public Service<Blob<T> >
 {
 public:
 	/* Import of the different services */
 	ServiceImport<Loader<T> > loader_import;
+	ServiceImport<Blob<T> > blob_import;
 	ServiceImport<Memory<T> > memory_import;
 	/* Exported services */
 	ServiceExport<Loader<T> > loader_export;
+	ServiceExport<Blob<T> > blob_export;
 
 	/* Constructor/Destructor */
 	LinuxLoader(const char *name, Object *parent = 0);
@@ -80,14 +88,13 @@ public:
 
 	/* Service methods */
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 
 	/* Service interface methods */
-	virtual void Reset();
-	virtual T GetEntryPoint() const;
-	virtual T GetTopAddr() const;
-	virtual T GetStackBase() const;
-	virtual bool Load(const char *filename);
+	virtual bool Load();
+	virtual const unisim::util::debug::blob::Blob<T> *GetBlob() const;
 
 protected:
 	endian_type endianness;
@@ -97,13 +104,19 @@ protected:
 	string *argv;
 	unsigned int envc;
 	string *envp;
-
-	T stack_address;
-	T arg_address;
+	unisim::util::debug::blob::Blob<T> *blob;
+	unisim::util::debug::blob::Blob<T> *stack_blob;
+	
+	//T stack_address;
+	//T arg_address;
 
 	bool verbose;
 
 private:
+	bool LoadStack();
+	bool SetupLoad();
+	bool SetupBlob();
+	
 	static const int size = sizeof(T);
 
 	string endianness_string;
@@ -118,7 +131,6 @@ private:
 	Parameter<bool> param_verbose;
 	Logger logger;
 
-	bool Load();
 	void Log(T addr, const uint8_t *value, uint32_t size);
 };
 

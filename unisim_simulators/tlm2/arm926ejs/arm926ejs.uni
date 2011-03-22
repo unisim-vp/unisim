@@ -13,6 +13,7 @@
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
 			<file>share/test/test.armv5l</file>
+			<file>share/test/u-boot</file>
 			<file>share/logo/logo_unisim.icns</file>
 			<file>share/logo/logo_unisim.png</file>
 			<file>share/logo/logo_unisim256.png</file>
@@ -46,6 +47,7 @@
 			<dep>osci_systemc</dep>
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::component::tlm2::processor::arm::arm926ejs</dep>
+			<dep>unisim::component::tlm2::chipset::arm926ejs_pxp</dep>
 			<dep>unisim::component::tlm2::memory::ram</dep>
 			<dep>unisim::service::time::host_time</dep>
 			<dep>unisim::service::time::sc_time</dep>
@@ -53,8 +55,7 @@
 			<dep>unisim::service::debug::inline_debugger</dep>
 			<dep>unisim::service::debug::sim_debugger</dep>
 			<dep>unisim::service::loader::elf_loader</dep>
-			<dep>unisim::service::loader::linux_loader</dep>
-			<dep>unisim::service::os::linux_os::linux_os_32</dep>
+			<dep>unisim::service::loader::raw_loader</dep>
 			<dep>unisim::service::power</dep>
 			<dep>unisim::service::trap_handler</dep>
 		</depends>

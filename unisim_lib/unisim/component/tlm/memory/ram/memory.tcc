@@ -77,7 +77,7 @@ Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
 /* ClientIndependentSetup */
 template <class PHYSICAL_ADDR, uint32_t DATA_SIZE, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<PHYSICAL_ADDR, DATA_SIZE, PAGE_SIZE, DEBUG>::
-Setup() {
+EndSetup() {
 	if(unlikely(DEBUG && verbose)) 
 		logger << DebugInfo << LOCATION
 			<< " cycle time of " << cycle_sctime 
@@ -88,7 +88,7 @@ Setup() {
 			<< EndDebugError;
 		return false;
 	}
-	return unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>::Setup();
+	return unisim::component::cxx::memory::ram::Memory<PHYSICAL_ADDR, PAGE_SIZE>::EndSetup();
 }
 
 /* Tlm Send method to handle incomming memory requests */
