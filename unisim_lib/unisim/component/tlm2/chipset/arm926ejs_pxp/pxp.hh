@@ -44,13 +44,14 @@
 #include "unisim/kernel/tlm2/tlm.hh"
 #include <inttypes.h>
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh"
-#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic_stubs.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh"
+#include "unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.hh"
 #include "unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.hh"
 
 namespace unisim {
@@ -71,6 +72,13 @@ public:
 	/** Target socket for the cpu connection */
 	tlm_utils::passthrough_target_socket<PXP, 32>
 		cpu_target_socket;
+	/** Target socket for the DMAC connection (1st) */
+	tlm_utils::passthrough_target_socket<PXP, 32>
+		dmac_master1_target_socket;
+	/** Target socket for the DMAC connection (2nd) */
+	tlm_utils::passthrough_target_socket<PXP, 32>
+		dmac_master2_target_socket;
+
 	/** Initiator socket for the SSMC Chip Select 0, NOR flash 2 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		ssmc0_init_socket;
@@ -89,6 +97,12 @@ public:
 	/** Initiator socket for the UART0 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		uart0_init_socket;
+	/** Initiator socket for the UART1 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		uart1_init_socket;
+	/** Initiator socket for the UART2 */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		uart2_init_socket;
 	/** Initiator socket for the Timer 1-2 */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		dt1_init_socket;
@@ -104,13 +118,20 @@ public:
 	/** Initiator socket for the SIC (Secondry Interrupt Controller) */
 	tlm_utils::simple_initiator_socket<PXP, 32>
 		sic_init_socket;
+	/** Initiator socket for the DMAC (PL080) */
+	tlm_utils::simple_initiator_socket<PXP, 32>
+		dmac_init_socket;
 
 	/** The Ethernet Controller */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::ethernet::SMSC_LAN91C111 eth;
 	/** The System Controller */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::system_controller::SystemController sc;
 	/** The UART 0 */
-	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::UART uart0;
+	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::pl011::PL011 uart0;
+	/** The UART 1 */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::pl011::PL011 uart1;
+	/** The UART 2 */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::uart::pl011::PL011 uart2;
 	/** Dual Timer for Timer 1 and 2 */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::dual_timer::DualTimer dt1;
 	/** Dual Timer for Timer 3 and 4 */
@@ -121,6 +142,8 @@ public:
 	unisim::component::tlm2::chipset::arm926ejs_pxp::vic::VIC pic;
 	/** SIC (Secondary Interrupt Controller) module */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::sic::SIC sic;
+	/** DMAC (PL080) module */
+	unisim::component::tlm2::chipset::arm926ejs_pxp::dma::pl080::PL080 dmac;
 
 	/** Timers signal splitter */
 	unisim::component::tlm2::chipset::arm926ejs_pxp::util::TSS tss;
@@ -153,17 +176,17 @@ public:
 	/** SSP to pic signal */
 	sc_signal<bool> ssp_to_pic11_signal;
 	/** UART0 to pic signal */
-	sc_signal<bool> uart0_to_pic12_signal;
+	sc_signal<bool> uart0_uartintr_to_pic12_signal;
 	/** UART1 to pic signal */
-	sc_signal<bool> uart1_to_pic13_signal;
+	sc_signal<bool> uart1_uartintr_to_pic13_signal;
 	/** UART2 to pic signal */
-	sc_signal<bool> uart2_to_pic14_signal;
+	sc_signal<bool> uart2_uartintr_to_pic14_signal;
 	/** SCI0 to pic signal */
 	sc_signal<bool> sci0_to_pic15_signal;
 	/** CLCD to pic signal */
 	sc_signal<bool> clcd_to_pic16_signal;
 	/** DMA to pic signal */
-	sc_signal<bool> dma_to_pic17_signal;
+	sc_signal<bool> dmacintr_to_pic17_signal;
 	/** Power Fail to pic signal */
 	sc_signal<bool> pwrfail_to_pic18_signal;
 	/** MBX to pic signal */
@@ -205,12 +228,8 @@ public:
 		gpio3_int_stub, // pic9
 		rtc_int_stub, // pic10
 		ssp_int_stub, // pic11
-		uart0_int_stub, // pic12
-		uart1_int_stub, // pic13
-		uart2_int_stub, // pic14
 		sci0_int_stub, // pic15
 		clcd_int_stub, // pic16
-		dma_int_stub, // pic17
 		pwrfail_int_stub, // pic18
 		mbx_int_stub, // pic19
 		gnd_int_stub; // pic20
@@ -225,6 +244,7 @@ public:
 	sc_signal<bool> nvicirq_signal;
 	vic::VICAddrTargetStub vicvectaddrout_stub;
 	sc_signal<uint32_t> vicvectaddrout_signal;
+
 	/* PIC stubs    END */
 
 	/** software stub to sic signal */
@@ -360,13 +380,54 @@ public:
 		zu216_int_stub; // sic31
 	/* SIC stubs    END */
 
-	sc_in<bool> timint1_in_port;
-	sc_in<bool> timint2_in_port;
-	sc_signal<bool> timint1_signal, timint2_signal, timintc12_signal;
-	sc_in<bool> timint3_in_port;
-	sc_in<bool> timint4_in_port;
-	sc_signal<bool> timint3_signal, timint4_signal, timintc34_signal;
+	/** Timers unused interrupts connections */
+	sc_in<bool> timint1_in_port; // for unused port dt1.timint1_out_port
+	sc_in<bool> timint2_in_port; // for unused port dt1.timint2_out_port
+	sc_signal<bool> timint1_signal, timint2_signal;
+	sc_in<bool> timint3_in_port; // for unused port dt2.timint1_out_port
+	sc_in<bool> timint4_in_port; // for unused port dt2.timint2_out_port
+	sc_signal<bool> timint3_signal, timint4_signal;
 
+	/** DMAC unused interrupt connections */
+	sc_in<bool> dmacinterr_in_port;
+	sc_in<bool> dmacinttc_in_port;
+	sc_signal<bool> dmacinterr_signal, dmacinttc_signal;
+
+	/** uart0 unused interrupt connections */
+	sc_in<bool> uart0_uartrxintr_in_port;
+	sc_in<bool> uart0_uarttxintr_in_port;
+	sc_in<bool> uart0_uartrtintr_in_port;
+	sc_in<bool> uart0_uartmsintr_in_port;
+	sc_in<bool> uart0_uarteintr_in_port;
+	sc_signal<bool> uart0_uartrxintr_signal,
+		uart0_uarttxintr_signal,
+		uart0_uartrtintr_signal,
+		uart0_uartmsintr_signal,
+		uart0_uarteintr_signal;
+
+	/** uart1 unused interrupt connections */
+	sc_in<bool> uart1_uartrxintr_in_port;
+	sc_in<bool> uart1_uarttxintr_in_port;
+	sc_in<bool> uart1_uartrtintr_in_port;
+	sc_in<bool> uart1_uartmsintr_in_port;
+	sc_in<bool> uart1_uarteintr_in_port;
+	sc_signal<bool> uart1_uartrxintr_signal,
+		uart1_uarttxintr_signal,
+		uart1_uartrtintr_signal,
+		uart1_uartmsintr_signal,
+		uart1_uarteintr_signal;
+
+	/** uart2 unused interrupt connections */
+	sc_in<bool> uart2_uartrxintr_in_port;
+	sc_in<bool> uart2_uarttxintr_in_port;
+	sc_in<bool> uart2_uartrtintr_in_port;
+	sc_in<bool> uart2_uartmsintr_in_port;
+	sc_in<bool> uart2_uarteintr_in_port;
+	sc_signal<bool> uart2_uartrxintr_signal,
+		uart2_uarttxintr_signal,
+		uart2_uartrtintr_signal,
+		uart2_uartmsintr_signal,
+		uart2_uarteintr_signal;
 
 	SC_HAS_PROCESS(PXP);
 	PXP(const sc_module_name &name, Object *parent = 0);
@@ -406,6 +467,32 @@ private:
 
 	/**************************************************************************/
 	/* Virtual methods for the target socket for the cpu connection       END */
+	/**************************************************************************/
+	
+	/**************************************************************************/
+	/* Virtual methods for the target sockets of the dmac connections   START */
+	/**************************************************************************/
+
+	sync_enum_type dmac_master1_target_nb_transport_fw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void dmac_master1_target_b_transport(transaction_type &trans, 
+			sc_core::sc_time &delay);
+	bool dmac_master1_target_get_direct_mem_ptr(transaction_type &trans, 
+			tlm::tlm_dmi &dmi_data);
+	unsigned int dmac_master1_target_transport_dbg(transaction_type &trans);
+
+	sync_enum_type dmac_master2_target_nb_transport_fw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void dmac_master2_target_b_transport(transaction_type &trans, 
+			sc_core::sc_time &delay);
+	bool dmac_master2_target_get_direct_mem_ptr(transaction_type &trans, 
+			tlm::tlm_dmi &dmi_data);
+	unsigned int dmac_master2_target_transport_dbg(transaction_type &trans);
+
+	/**************************************************************************/
+	/* Virtual methods for the target sockets of the dmac connections     END */
 	/**************************************************************************/
 	
 	/**************************************************************************/
@@ -490,6 +577,38 @@ private:
 
 	/**************************************************************************/
 	/* Virtual methods for the initiator socket for                     START */
+	/*   the UART 1                                                           */
+	/**************************************************************************/
+
+	sync_enum_type uart1_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void uart1_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the UART 1                                                       END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the UART 2                                                           */
+	/**************************************************************************/
+
+	sync_enum_type uart2_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void uart2_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the UART 2                                                       END */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
 	/*   the Dual Timers                                                      */
 	/**************************************************************************/
 
@@ -556,6 +675,23 @@ private:
 	/* Virtual methods for the initiator socket for                           */
 	/*   the SIC                                                          END */
 	/**************************************************************************/
+	
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                     START */
+	/*   the DMAC                                                             */
+	/**************************************************************************/
+
+	sync_enum_type dmac_init_nb_transport_bw(transaction_type &trans,
+			phase_type &phase,
+			sc_core::sc_time &time);
+	void dmac_init_invalidate_direct_mem_ptr(sc_dt::uint64,
+			sc_dt::uint64);
+
+	/**************************************************************************/
+	/* Virtual methods for the initiator socket for                           */
+	/*   the DMAC                                                         END */
+	/**************************************************************************/
+
 	/** Interface to the UNISIM logger */
 	unisim::kernel::logger::Logger logger;
 };

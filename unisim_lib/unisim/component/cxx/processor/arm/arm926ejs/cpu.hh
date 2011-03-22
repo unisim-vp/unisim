@@ -834,6 +834,16 @@ protected:
 	 * @return true on success, false on error
 	 */
 	bool TranslateMVA(uint32_t mva, uint32_t &pa);
+	/** Get the TLB descriptor at the given Translation Table Base address.
+	 *
+	 * This method check the logical TLB for the given Translation Table 
+	 *   address, by accessing first the lockdown TLB, then the main TLB or 
+	 *   otherwise the memory TLB.
+	 *
+	 * @param ttb_addr the address on the Translation Table Base to look for
+	 * @param descriptor the found descriptor
+	 */
+	void GetTLBEntry(uint32_t ttb_addr, uint32_t &descriptor);
 	/** Translate address from VA to MVA and physical address.
 	 *
 	 * @param is_read the type of access (read/write)
@@ -887,6 +897,24 @@ protected:
 	 */
 	void PerformReadToPCUpdateTAccess(
 			unisim::component::cxx::processor::arm::MemoryOp *memop);
+	
+	/************************************************************************/
+	/* Memory statistics                                              START */
+	/************************************************************************/
+	
+	uint64_t num_data_prefetches;
+	uint64_t num_data_reads;
+	uint64_t num_data_writes;
+	uint64_t num_insn_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_prefetches;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_writes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_insn_reads;
+
+	/************************************************************************/
+	/* Memory statistics                                                END */
+	/************************************************************************/
+
 };
 
 } // end of namespace arm926ejs
