@@ -54,7 +54,6 @@ set_property ( GLOBAL
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${SIM_EXEC_NAME}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-# set ( CMAKE_CXX_FLAGS "-fPIC" )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${SIM_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
@@ -296,6 +295,10 @@ if ( BUILD_POWER_SUPPORT )
 	list ( APPEND sim__libraries
 		unisim__service__power )
 endif ( BUILD_POWER_SUPPORT )
+if ( WIN32 )
+	list ( APPEND sim__libraries
+		wsock32 )
+endif ( WIN32 )
 
 set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${SIM_EXEC_NAME}" )
 set ( PYTHON__SIM__INCLUDE_DIRS
