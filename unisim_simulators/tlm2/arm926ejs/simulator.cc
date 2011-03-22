@@ -563,11 +563,13 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
-	sim->SetVariable("memory.cycle-time",        "13332ps");
+	sim->SetVariable("memory.cycle-time",        "31250 ps");
+	sim->SetVariable("memory.read-latency",      "31250 ps");
+	sim->SetVariable("memory.write-latency",     "0 ps");
 	sim->SetVariable("nor-flash-2.bytesize",     0xffffffffUL); 
-	sim->SetVariable("nor-flash-2.cycle-time",   "13332ps");
+	sim->SetVariable("nor-flash-2.cycle-time",   "31250 ps");
 	sim->SetVariable("nor-flash-1.bytesize",     0xffffffffUL); 
-	sim->SetVariable("nor-flash-1.cycle-time",   "13332ps");
+	sim->SetVariable("nor-flash-1.cycle-time",   "31250 ps");
 	sim->SetVariable("elf-loader.filename",      "test/install/u-boot");
 	sim->SetVariable("elf-loader.force-base-addr",
 												 true);
