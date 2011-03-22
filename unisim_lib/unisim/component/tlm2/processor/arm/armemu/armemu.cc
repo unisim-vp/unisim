@@ -148,7 +148,7 @@ ARMEMU(const sc_module_name& name, Object *parent)
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int,
 			"The processor bus cycle time in picoseconds.")
 	, verbose_tlm(false)
-	, param_verbose_tlm("verbose_tlm", this, verbose_tlm, 
+	, param_verbose_tlm("verbose-tlm", this, verbose_tlm, 
 			"Display TLM information")
 {
 	param_nice_time.SetFormat(
@@ -182,13 +182,15 @@ EndSetup()
 			<< EndDebugError;
 		return false;
 	}
-	
+
+	cpu_time = SC_ZERO_TIME;
+	bus_time = SC_ZERO_TIME;
 	cpu_cycle_time = sc_time((double)inherited::cpu_cycle_time, SC_PS);
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 	nice_time = sc_time((double)nice_time_int, SC_PS);
-	if ( inherited::verbose ) 
+	if ( verbose_tlm ) 
 	{
-		inherited::logger << DebugInfo << LOCATION
+		inherited::logger << DebugInfo
 			<< "Setting CPU cycle time to " 
 			<< cpu_cycle_time.to_string() << endl
 			<< "Setting Bus cycle time to " 
@@ -220,7 +222,15 @@ void
 ARMEMU ::
 Sync() 
 {
-	wait(cpu_time - sc_time_stamp());
+	if ( unlikely(verbose_tlm) )
+	{
+		inherited::logger << DebugInfo
+			<< "Sync" << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
+	}
+	wait(quantum_time);
 	cpu_time = sc_time_stamp();
 	quantum_time = SC_ZERO_TIME;
 }
@@ -231,18 +241,37 @@ Sync()
  */
 void 
 ARMEMU :: 
-BusSynchronize() {
-	quantum_time += 
-		(((cpu_time / bus_cycle_time) + 1) * bus_cycle_time) -
-		cpu_time;
-	if (quantum_time > nice_time)
+BusSynchronize() 
+{
+	if ( unlikely(verbose_tlm) )
 	{
-		wait(quantum_time);
-		cpu_time = sc_time_stamp();
+		inherited::logger << DebugInfo
+			<< "Bus Synchronize:" << std::endl
+			<< " - bus_time     = " << bus_time << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
 	}
-	else
+	// Note: this needs to be better tested, but in order to avoid 
+	//   multiplications and divisions with sc_time we do a loop expecting
+	//   it will not loop too much. An idea of the operation to perform to
+	//   avoid the loop:
+	// quantum_time += 
+	// 	((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+	// 	(cpu_time + quantum_time);
+	while ( bus_time < (cpu_time + quantum_time) )
+		bus_time += bus_cycle_time;
+	quantum_time = bus_time - cpu_time;
+	if ( quantum_time > nice_time )
+		Sync();
+	if ( unlikely(verbose_tlm) )
 	{
-		cpu_time = sc_time_stamp() + quantum_time;
+		inherited::logger << DebugInfo
+			<< "Bus is now Synchronized:" << std::endl
+			<< " - bus_time     = " << bus_time << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
 	}
 	
 	return;
@@ -259,17 +288,29 @@ Run()
 {
 	/* compute the average time of each instruction */
 	sc_time time_per_instruction = cpu_cycle_time * ipc;
-	while (1)
+	while ( 1 )
 	{
-		StepInstruction();
-		cpu_time += time_per_instruction;
-		quantum_time += time_per_instruction;
-		if (quantum_time > nice_time)
+		if ( unlikely(verbose_tlm) )
 		{
-			wait(quantum_time);
-			quantum_time = SC_ZERO_TIME;
-			cpu_time = sc_time_stamp();
+			inherited::logger << DebugInfo
+				<< "Starting instruction:" << std::endl
+				<< " - cpu_time     = " << cpu_time << std::endl
+				<< " - quantum_time = " << quantum_time
+				<< EndDebugInfo;
 		}
+		StepInstruction();
+		// cpu_time += time_per_instruction;
+		quantum_time += time_per_instruction;
+		if ( unlikely(verbose_tlm) )
+		{
+			inherited::logger << DebugInfo
+				<< "Instruction finished:" << std::endl
+				<< " - cpu_time     = " << cpu_time << std::endl
+				<< " - quantum_time = " << quantum_time
+				<< EndDebugInfo;
+		}
+		if ( quantum_time > nice_time )
+			Sync();
 	}
 }
 
@@ -488,8 +529,15 @@ void
 ARMEMU :: 
 PrRead(uint32_t addr, 
 	uint8_t *buffer, 
-	uint32_t size) {
-		
+	uint32_t size)
+{
+	if ( unlikely(verbose_tlm) )
+		inherited::logger << DebugInfo
+			<< "Starting PrRead:" << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
+
 	/* Use blocking transactions.
 	 * Steps:
 	 * 1 - check when the request can be send (synchronize with the bus)
@@ -499,7 +547,7 @@ PrRead(uint32_t addr,
 	 */
 	// 1 - synchronize with the bus
 	BusSynchronize();
-	
+
 	// 2 - create the transaction
 	transaction_type *trans;
 	trans = payload_fabric.allocate();
@@ -507,15 +555,23 @@ PrRead(uint32_t addr,
 	trans->set_data_length(size);
 	trans->set_data_ptr(buffer);
 	trans->set_read();
-		
+
 	// 3 - send the transaction
 	master_socket->b_transport(*trans, quantum_time);
-	cpu_time = sc_time_stamp() + quantum_time;
+	// cpu_time = sc_time_stamp() + quantum_time;
 	if (quantum_time > nice_time)
-		wait(quantum_time);
-		
+		Sync();
+
 	// 4 - release the transaction
 	trans->release();
+
+	if ( unlikely(verbose_tlm) )
+		inherited::logger << DebugInfo
+			<< "Finished PrRead:" << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
+
 	return;
 }
 
@@ -525,6 +581,13 @@ PrWrite(uint32_t addr,
 	const uint8_t *buffer, 
 	uint32_t size) 
 {
+	if ( unlikely(verbose_tlm) )
+		inherited::logger << DebugInfo
+			<< "Starting PrWrite:" << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
+
 	/* Use blocking transactions.
 	 * Steps:
 	 * 1 - check when the request can be send (synchronize with the bus)
@@ -533,7 +596,7 @@ PrWrite(uint32_t addr,
 	 */
 	// 1 - synchronize with the bus
 	BusSynchronize();
-		
+
 	// 2 - create the transaction
 	transaction_type *trans;
 	trans = payload_fabric.allocate();
@@ -544,12 +607,19 @@ PrWrite(uint32_t addr,
 
 	// 3 - send the transaction
 	master_socket->b_transport(*trans, quantum_time);
-	cpu_time = sc_time_stamp() + quantum_time;
 	if (quantum_time > nice_time)
-		wait(quantum_time);
+		Sync();
 
 	// 4 - release the transaction
 	trans->release();
+
+	if ( unlikely(verbose_tlm) )
+		inherited::logger << DebugInfo
+			<< "Finished PrWrite:" << std::endl
+			<< " - cpu_time     = " << cpu_time << std::endl
+			<< " - quantum_time = " << quantum_time
+			<< EndDebugInfo;
+
 	return;
 }
 
