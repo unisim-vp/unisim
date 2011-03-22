@@ -1,12 +1,11 @@
 #!/bin/bash
-#!/bin/bash
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim repository>"
+	echo "  $0 <destination directory>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
 	Usage
 	exit -1
 fi
@@ -18,11 +17,10 @@ if test ${MY_DIR} = "."; then
 elif test ${MY_DIR} = ".."; then
 	MY_DIR=${HERE}/..
 fi
-
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2/unisim_tools
-UNISIM_LIB_DIR=$2/unisim_lib
-UNISIM_SIMULATORS_DIR=$2/unisim_simulators
+UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators
 
 mkdir -p ${DEST_DIR}
 

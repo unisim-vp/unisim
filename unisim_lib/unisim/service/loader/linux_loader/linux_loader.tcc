@@ -92,6 +92,10 @@ param_envp(0),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
+	param_max_environ.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	loader_export.SetupDependsOn(memory_import);
 	loader_export.SetupDependsOn(loader_import);
 	loader_export.SetupDependsOn(blob_import);
