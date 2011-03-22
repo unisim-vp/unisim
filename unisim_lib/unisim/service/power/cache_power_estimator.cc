@@ -184,7 +184,7 @@ CachePowerEstimator::CachePowerEstimator(const char *name, Object *parent) :
 	param_line_size("line-size", this, p_line_size,
 			"cache line size (in bytes)"),
 	param_associativity("associativity", this, p_associativity,
-			"cache associativity level"),
+			"cache associativity level (0 for fully associative)"),
 	param_rw_ports("rw-ports", this, p_rw_ports, "number of read-write ports"),
 	param_excl_read_ports("excl-read-ports", this, p_excl_read_ports,
 			"number of read only ports"),

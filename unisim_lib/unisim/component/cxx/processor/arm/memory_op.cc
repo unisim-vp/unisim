@@ -49,7 +49,7 @@ MemoryOp()
 MemoryOp::
 ~MemoryOp() 
 {}
-	
+
 void 
 MemoryOp::
 SetReadToPCUpdateT(uint32_t address) 
@@ -61,7 +61,7 @@ SetReadToPCUpdateT(uint32_t address)
 	this->read_signed = false;
 	this->aligned = true;
 }
-	
+
 void 
 MemoryOp::
 SetReadToPC(uint32_t address) 
@@ -73,7 +73,7 @@ SetReadToPC(uint32_t address)
 	this->read_signed = false;
 	this->aligned = true;
 }
-	
+
 void 
 MemoryOp::
 SetRead(uint32_t address, uint32_t size, uint32_t dest, 
@@ -86,7 +86,20 @@ SetRead(uint32_t address, uint32_t size, uint32_t dest,
 	this->read_signed = read_signed;
 	this->aligned = aligned;
 }
-	
+
+void 
+MemoryOp::
+SetUserRead(uint32_t address, uint32_t size, uint32_t dest, 
+		bool aligned, bool read_signed) 
+{
+	type = USER_READ;
+	this->address = address;
+	this->size = size;
+	target_reg = dest;
+	this->read_signed = read_signed;
+	this->aligned = aligned;
+}
+
 void 
 MemoryOp::
 SetWrite(uint32_t address, uint32_t size, uint32_t value) 

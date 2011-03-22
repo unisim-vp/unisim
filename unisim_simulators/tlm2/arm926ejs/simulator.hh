@@ -150,12 +150,22 @@ private:
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	POWER_ESTIMATOR *il1_power_estimator;
 	POWER_ESTIMATOR *dl1_power_estimator;
+	POWER_ESTIMATOR *ltlb_power_estimator;
+	POWER_ESTIMATOR *tlb_power_estimator;
 	bool enable_power_estimation;
 	unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
 	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
 	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
 	unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
 	unisim::kernel::service::Formula<double> *formula_caches_total_power;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_dynamic_energy;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_dynamic_power;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_leakage_power;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_power;
+	unisim::kernel::service::Formula<double> *formula_total_dynamic_energy;
+	unisim::kernel::service::Formula<double> *formula_total_dynamic_power;
+	unisim::kernel::service::Formula<double> *formula_total_leakage_power;
+	unisim::kernel::service::Formula<double> *formula_total_power;
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 #ifdef SIM_LIBRARY

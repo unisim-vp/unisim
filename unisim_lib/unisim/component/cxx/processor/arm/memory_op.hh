@@ -48,6 +48,7 @@ class MemoryOp {
 public:
 	typedef enum {
 		READ,
+		USER_READ,
 		READ_TO_PC_UPDATE_T,
 		READ_TO_PC,
 		WRITE,
@@ -60,6 +61,8 @@ public:
 	void SetReadToPCUpdateT(uint32_t address);
 	void SetReadToPC(uint32_t address);
 	void SetRead(uint32_t address, uint32_t size, uint32_t dest, 
+			bool aligned, bool read_signed);
+	void SetUserRead(uint32_t address, uint32_t size, uint32_t dest, 
 			bool aligned, bool read_signed);
 	void SetWrite(uint32_t address, uint32_t size, uint32_t value);
 	void SetPrefetch(uint32_t address); 

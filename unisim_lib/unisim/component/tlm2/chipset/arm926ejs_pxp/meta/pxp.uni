@@ -9,8 +9,8 @@
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/ethernet/smsc_lan91c111.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/system_controller/sc.cc</file>
-			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.hh</file>
-			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/uart/uart.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/uart/pl011/pl011.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/dual_timer/dt.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/vic/vic.hh</file>
@@ -22,6 +22,8 @@
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/sic/sic.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/watchdog/watchdog.cc</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.hh</file>
+			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/dma/pl080/pl080.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.hh</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/util/time_signal_splitter.cc</file>
 			<file>unisim/component/tlm2/chipset/arm926ejs_pxp/CMakeLists.txt</file>

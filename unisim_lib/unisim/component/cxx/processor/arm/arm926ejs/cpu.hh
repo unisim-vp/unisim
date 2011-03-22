@@ -414,6 +414,23 @@ public:
 	 * @param reg the register to store the resulting read
 	 */
 	void Read32toGPRAligned(uint32_t address, uint32_t reg);
+	/** 32bits memory read into one of the user general purpose registers.
+	 * This method reads 32bits from memory and stores the result into
+	 *   the user general purpose register indicated by the input reg
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the user register to store the resulting read
+	 */
+	void Read32toUserGPR(uint32_t address, uint32_t reg);
+	/** 32bits aligned memory read into one of the user general purpose registers.
+	 * This method reads 32bits from memory and stores the result into
+	 *   the user general purpose register indicated by the input reg. Note that
+	 *   this read methods supposes that the address is 32bits aligned.
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the user register to store the resulting read
+	 */
+	void Read32toUserGPRAligned(uint32_t address, uint32_t reg);
 	/** 16bits aligned memory read into one of the general purpose registers.
 	 * This method reads 16bits from memory and stores the result into
 	 *   the general purpose register indicated by the input reg. Note that this
@@ -817,6 +834,16 @@ protected:
 	 * @return true on success, false on error
 	 */
 	bool TranslateMVA(uint32_t mva, uint32_t &pa);
+	/** Get the TLB descriptor at the given Translation Table Base address.
+	 *
+	 * This method check the logical TLB for the given Translation Table 
+	 *   address, by accessing first the lockdown TLB, then the main TLB or 
+	 *   otherwise the memory TLB.
+	 *
+	 * @param ttb_addr the address on the Translation Table Base to look for
+	 * @param descriptor the found descriptor
+	 */
+	void GetTLBEntry(uint32_t ttb_addr, uint32_t &descriptor);
 	/** Translate address from VA to MVA and physical address.
 	 *
 	 * @param is_read the type of access (read/write)
@@ -870,6 +897,24 @@ protected:
 	 */
 	void PerformReadToPCUpdateTAccess(
 			unisim::component::cxx::processor::arm::MemoryOp *memop);
+	
+	/************************************************************************/
+	/* Memory statistics                                              START */
+	/************************************************************************/
+	
+	uint64_t num_data_prefetches;
+	uint64_t num_data_reads;
+	uint64_t num_data_writes;
+	uint64_t num_insn_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_prefetches;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_writes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_insn_reads;
+
+	/************************************************************************/
+	/* Memory statistics                                                END */
+	/************************************************************************/
+
 };
 
 } // end of namespace arm926ejs
