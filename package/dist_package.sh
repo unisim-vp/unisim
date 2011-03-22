@@ -696,14 +696,20 @@ for PKG in "$@"; do
 				share/unisim-armemu-${PKG_VERSION}/INSTALL.txt \
 				share/unisim-armemu-${PKG_VERSION}/NEWS.txt \
 				share/unisim-armemu-${PKG_VERSION}/README.txt \
-				lib/libunisim-armemu.so \
-				lib/libunisim-armemu.so.0.2 \
-				lib/libunisim-armemu.so.${PKG_VERSION} \
 				share/unisim-armemu-${PKG_VERSION}/test/src/CMakeLists.txt \
 				share/unisim-armemu-${PKG_VERSION}/test/src/main.c \
 				share/unisim-armemu-${PKG_VERSION}/test/src/toolchain-armv5l.cmake \
 				share/unisim-armemu-${PKG_VERSION}/gdb_server/gdb_armv5l.xml \
-				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml" \
+				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml \
+				share/applications/unisim-armemu-${PKG_VERSION}.desktop \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim.icns \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim128.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim16.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim256.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim32.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/unisim.ico \
+				share/unisim-armemu-${PKG_VERSION}/test/install/test.armv5l" \
 				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
 				"" \
 				"" \
