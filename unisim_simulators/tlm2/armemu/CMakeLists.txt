@@ -289,7 +289,7 @@ if ( BUILD_ARMEMU_POWER_SUPPORT )
 		unisim__service__power )
 endif ( BUILD_ARMEMU_POWER_SUPPORT )
 if ( WIN32 )
-	list ( APPEND armemu_libraries
+	list ( APPEND armemu__libraries
 		wsock32 )
 endif ( WIN32 )
 
