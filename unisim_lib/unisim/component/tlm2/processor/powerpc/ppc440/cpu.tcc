@@ -441,16 +441,18 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::DCRRead(unsigned int dcrn, void *buffer, uint32_t size)
+void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 {
 	AlignToBusClock();
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	payload->set_address(dcrn);
+	uint32_t buffer = 0;
+	
+	payload->set_address(4 * dcrn);
 	payload->set_command(tlm::TLM_READ_COMMAND);
-	payload->set_data_length(size);
-	payload->set_data_ptr((unsigned char *) buffer);
+	payload->set_data_length(4);
+	payload->set_data_ptr((unsigned char *) &buffer);
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
@@ -459,19 +461,23 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, void *buffer, uint32_t size)
 	payload->release();
 
 	UpdateTime();
+	
+	value = unisim::util::endian::BigEndian2Host(buffer);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::DCRWrite(unsigned int dcrn, const void *buffer, uint32_t size)
+void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 {
+	uint32_t buffer = unisim::util::endian::Host2BigEndian(value);
+	
 	AlignToBusClock();
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
-	payload->set_address(dcrn);
+	payload->set_address(4 * dcrn);
 	payload->set_command(tlm::TLM_WRITE_COMMAND);
-	payload->set_data_length(size);
-	payload->set_data_ptr((unsigned char *) buffer);
+	payload->set_data_length(4);
+	payload->set_data_ptr((unsigned char *) &buffer);
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
