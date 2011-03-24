@@ -155,7 +155,6 @@ PIMServer<ADDRESS>::~PIMServer()
 		sockfd = -1;
 	}
 
-	if (sim) { delete sim; sim = NULL;}
 	if (socketfd) { delete socketfd; socketfd = NULL;}
 	if (target) { delete target; target = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
@@ -418,9 +417,18 @@ bool PIMServer<ADDRESS>::Setup()
 
 // ************************
 
-	sim = new SimulatorThread(this);
+	// Start Simulation <-> Workbench communication
+	target = new PIMThread("pim-thread");
+	protocolHandlers.push_back(target);
 
-	sim->start();
+	protocolHandlers.push_back(this);
+
+	// Open Socket Stream
+	socketfd = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
+
+	socketfd->setProtocolHandlers(&protocolHandlers);
+
+	socketfd->start();
 
 // ************************
 
@@ -430,7 +438,6 @@ bool PIMServer<ADDRESS>::Setup()
 template <class ADDRESS>
 void PIMServer<ADDRESS>::Stop(int exit_status) {
 
-	if (sim) { sim->stop();}
 	if (socketfd) { socketfd->stop();}
 	if (target) { target->stop();}
 	if (pimServerThread) { pimServerThread->stop();}

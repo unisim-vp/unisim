@@ -168,7 +168,8 @@ public:
 	virtual void OnDisconnect();
 	virtual void Stop(int exit_status);
 
-	virtual void Run() { }
+	virtual void Run() { cerr << "PIM-Server:: start RUN " << std::endl; }
+
 	virtual string getProtocol() { return "GDB"; }
 
 	uint16_t GetTCPPort() { return tcp_port;}
@@ -177,37 +178,7 @@ public:
 	double GetSimTime();
 
 protected:
-	class SimulatorThread : public GenericThread {
-	public:
-
-		SimulatorThread(PIMServer<ADDRESS> *pp) : GenericThread(), gdb_server(pp) {}
-		virtual void Run() {
-
-			vector<SocketThread*> protocolHandlers;
-
-			// Start Simulation <-> ToolBox communication
-			gdb_server->target = new PIMThread("pim-thread");
-			protocolHandlers.push_back(gdb_server->target);
-
-			protocolHandlers.push_back(gdb_server);
-
-			// Open Socket Stream
-			gdb_server->socketfd = new SocketServerThread(gdb_server->GetHost(), gdb_server->GetTCPPort(), true, 2);
-
-			gdb_server->socketfd->setProtocolHandlers(&protocolHandlers);
-
-			gdb_server->socketfd->start();
-
-			gdb_server->waitConnection();
-
-		}
-
-	private:
-		PIMServer<ADDRESS> *gdb_server;
-
-	};
-
-	SimulatorThread *sim;
+	vector<SocketThread*> protocolHandlers;
 
 	SocketServerThread *socketfd;
 

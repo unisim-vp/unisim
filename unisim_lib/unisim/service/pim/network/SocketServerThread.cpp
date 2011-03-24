@@ -138,7 +138,7 @@ void SocketServerThread::Run() {
 			}
 		}
 
-	} while ((connected < nbHandlers) && !isTerminated());
+	} while ((connected < protocolHandlers->size()) && !isTerminated());
 
 }
 
@@ -160,15 +160,14 @@ bool SocketServerThread::bindHandler(int sockfd) {
 	bool found = false;
 	for (int i=0; i < protocolHandlers->size(); i++) {
 
+		if ((*protocolHandlers)[i]) cerr << "";
+
 		if ((*protocolHandlers)[i]->getProtocol().compare(protocol) == 0) {
 			PutPacket(ack, true);
 			if (!FlushOutput()) {
 				cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
 				return false;
 			}
-
-//			string ack;
-//			GetPacket(ack, true);
 
 			(*protocolHandlers)[i]->Start(sockfd, blocking);
 

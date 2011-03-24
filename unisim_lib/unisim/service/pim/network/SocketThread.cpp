@@ -28,6 +28,7 @@
 
 #include "SocketThread.hpp"
 #include "../convert.hh"
+#include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
 namespace service {
@@ -64,6 +65,10 @@ SocketThread::SocketThread(string host, uint16_t port, bool _blocking) :
 {
 	hostname = name_resolve(host.c_str());
 	hostport = port;
+
+	pthread_mutex_init (&sockfd_mutex, NULL);
+	pthread_mutex_init (&sockfd_condition_mutex, NULL);
+	pthread_cond_init (&sockfd_condition_cond, NULL);
 
 	input_buffer = (char*) malloc(MAXDATASIZE+1);
 
@@ -110,31 +115,31 @@ void SocketThread::Start(int sockfd, bool _blocking) {
 
 void SocketThread::SetSockfd(int sockfd) {
 
-    pthread_mutex_lock( &sockfd_condition_mutex );
-
     pthread_mutex_lock( &sockfd_mutex );
 
 	this->sockfd = sockfd;
 
+//    pthread_cond_signal( &sockfd_condition_cond );
+    pthread_cond_broadcast( &sockfd_condition_cond );
+
     pthread_mutex_unlock( &sockfd_mutex );
-
-    pthread_cond_signal( &sockfd_condition_cond );
-
-    pthread_mutex_unlock( &sockfd_condition_mutex );
 
 }
 
 void SocketThread::waitConnection() {
 
-	pthread_mutex_lock( &sockfd_condition_mutex );
+    pthread_mutex_lock( &sockfd_mutex );
 
 	if (sockfd == -1) {
-		pthread_cond_wait( &sockfd_condition_cond, &sockfd_condition_mutex );
+
+		pthread_cond_wait( &sockfd_condition_cond, &sockfd_mutex );
+
 	}
 
-	pthread_mutex_unlock( &sockfd_condition_mutex );
+	pthread_mutex_unlock( &sockfd_mutex );
 
 }
+
 
 bool SocketThread::PutChar(char c) {
 
