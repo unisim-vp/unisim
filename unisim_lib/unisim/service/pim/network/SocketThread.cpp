@@ -66,11 +66,7 @@ SocketThread::SocketThread(string host, uint16_t port, bool _blocking) :
 	hostname = name_resolve(host.c_str());
 	hostport = port;
 
-	pthread_mutex_init (&sockfd_mutex, NULL);
-	pthread_mutex_init (&sockfd_condition_mutex, NULL);
-	pthread_cond_init (&sockfd_condition_cond, NULL);
-
-	input_buffer = (char*) malloc(MAXDATASIZE+1);
+	init();
 
 }
 
@@ -85,15 +81,23 @@ SocketThread::SocketThread() :
 				input_buffer(NULL)
 
 {
+
+	init();
+
+}
+
+void SocketThread::init() {
+
 	pthread_mutex_init (&sockfd_mutex, NULL);
 	pthread_mutex_init (&sockfd_condition_mutex, NULL);
 	pthread_cond_init (&sockfd_condition_cond, NULL);
 
 	input_buffer = (char*) malloc(MAXDATASIZE+1);
-
 }
 
 SocketThread::~SocketThread() {
+
+    pthread_mutex_lock( &sockfd_mutex );
 
 	if (sockfd) {
 #ifdef WIN32
@@ -102,6 +106,12 @@ SocketThread::~SocketThread() {
 		close(sockfd);
 #endif
 	}
+
+    pthread_mutex_unlock( &sockfd_mutex );
+
+    pthread_cond_destroy(&sockfd_condition_cond);
+	pthread_mutex_destroy(&sockfd_condition_mutex);
+    pthread_mutex_destroy( &sockfd_mutex );
 
 }
 

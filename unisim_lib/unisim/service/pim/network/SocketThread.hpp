@@ -70,6 +70,7 @@ private:
 
 	std::stringstream output_buffer_strm;
 
+	void init();
 };
 
 } // network 
