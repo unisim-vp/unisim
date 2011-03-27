@@ -47,6 +47,11 @@ public:
 class GenericThread : public TObject
 {
 public:
+#ifdef WIN32
+	static const int kill_signo = SIGTERM;
+#else
+	static const int kill_signo = SIGKILL;
+#endif
 
 	GenericThread() : ret(0), terminated(false), started(false) {}
 
@@ -56,7 +61,7 @@ public:
 		/**
 		 *  If pthread_kill(thid, 0) return 0 the thread is still running - if not equal to 0 the thread has already terminated.
 		 */
-		if (pthread_kill(thid, 0) == 0) pthread_kill(thid, SIGKILL);
+		if (pthread_kill(thid, 0) == 0) pthread_kill(thid, kill_signo);
 	}
 
 	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; started = true; }

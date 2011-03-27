@@ -15,13 +15,6 @@
 #include <stdlib.h>
 #include <stdexcept>
 
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#endif
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -67,6 +60,13 @@
 
 #ifdef HAVE_RTBCOB
 #include "rtb_unisim.hh"
+#endif
+
+#ifdef WIN32
+
+#include <windows.h>
+#include <winsock2.h>
+
 #endif
 
 
