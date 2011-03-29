@@ -142,12 +142,20 @@ private:
 	bool SetupLinuxOS();
 	bool ARMSetup();
 	bool PPCSetup();
+
+	/*
+	 * The following methods are just here for printf debugging purposes,
+	 * otherwise they are unused
+	 */
+	void DumpBlob();
+	void DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level);
 	
 	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
 	
 	int GetSyscallNumber(int id);
 	int ARMGetSyscallNumber(int id);
+	int ARMEABIGetSyscallNumber(int id);
 	int PPCGetSyscallNumber(int id);
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);
@@ -157,9 +165,11 @@ private:
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
 	PARAMETER_TYPE GetSystemCallParam(int id);
 	PARAMETER_TYPE ARMGetSystemCallParam(int id);
+	PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
 	PARAMETER_TYPE PPCGetSystemCallParam(int id);
 	void SetSystemCallStatus(int ret, bool error);
 	void ARMSetSystemCallStatus(int ret, bool error);
+	void ARMEABISetSystemCallStatus(int ret, bool error);
 	void PPCSetSystemCallStatus(int ret, bool error);
 	
 	endian_type GetEndianess();

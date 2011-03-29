@@ -289,7 +289,7 @@ if ( BUILD_ARMEMU_POWER_SUPPORT )
 		unisim__service__power )
 endif ( BUILD_ARMEMU_POWER_SUPPORT )
 if ( WIN32 )
-	list ( APPEND armemu_libraries
+	list ( APPEND armemu__libraries
 		wsock32 )
 endif ( WIN32 )
 
@@ -312,6 +312,7 @@ set ( PYTHON__ARMEMU__LIBS
 	"'simulatorlib',
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__armemu',
+	 'unisim__component__cxx__processor__arm__armemu',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
@@ -327,6 +328,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
 	 'unisim__util__debug__debugger_handler',
+	 'unisim__util__debug__blob',
 	 'unisim__util__xml',
 	 'unisim__kernel',
 	 'xml2',

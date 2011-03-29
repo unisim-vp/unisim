@@ -382,6 +382,7 @@ Simulator ::
 Stop(unisim::kernel::service::Object *object, int exit_status)
 {
 	sc_stop();
+	wait();
 }
 
 void
@@ -399,11 +400,11 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
 	sim->SetVariable("cpu.default-endianness",   "little-endian");
-	sim->SetVariable("cpu.cpu-cycle-time",       31250UL); // 32Mhz
-	sim->SetVariable("cpu.bus-cycle-time",       31250UL); // 32Mhz
+	sim->SetVariable("cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
+	sim->SetVariable("cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
 	sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
 	sim->SetVariable("cpu.dcache.size",          0x020000); // 128 KB
-	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
+	sim->SetVariable("cpu.nice-time",            "1 ms"); // 1ms
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
 	sim->SetVariable("memory.cycle-time",        "31250 ps");
@@ -414,7 +415,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("linux-loader.endianness",  "little-endian");
 	sim->SetVariable("linux-loader.argc",        1);
 	sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
-	sim->SetVariable("linux-os.system",          "arm");
+	sim->SetVariable("linux-os.system",          "arm-eabi");
 	sim->SetVariable("linux-os.endianness",      "little-endian");
 	sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
 
