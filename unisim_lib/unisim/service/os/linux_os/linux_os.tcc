@@ -370,21 +370,100 @@ SetupLinuxOS()
 	mmap_brk_point = mmap_base;
 	ADDRESS_TYPE start_addr;
 	ADDRESS_TYPE end_addr;
-	
-	blob->GetAddrRange(start_addr, end_addr);
-	
-	ADDRESS_TYPE top_addr = end_addr + 1;
+
+	ADDRESS_TYPE top_addr = blob->GetStackBase() + 1;
 	
 	brk_point = top_addr +
     	(memory_page_size - (top_addr % memory_page_size));
 		
-	if( verbose )
+	if ( verbose )
 	{
-		logger << DebugInfo << "Using brk start at @0x" << std::hex << 
-			brk_point << std::dec << EndDebugInfo;
+		logger << DebugInfo 
+			<< "Using brk start at @0x" << std::hex << brk_point << std::dec
+			<< EndDebugInfo;
 	}
-	
+
 	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+DumpBlob()
+{
+	logger << DebugWarning
+		<< "Dumping blobs:" << std::endl;
+	DumpBlob(blob, 0);
+//	const std::vector<const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *> &blobs =
+//		blob->GetBlobs();
+//	typename std::vector<
+//		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+//		>::const_iterator b;
+//	b = blobs.begin();
+//	for ( b = blobs.begin();
+//			b != blobs.end();
+//			b++ )
+//	{
+//		DumpBlob(*b, 0);
+//		(*iter)->GetAddrRange(start, end);
+//		logger << std::endl
+//			<< " + 0x" << std::hex << start << " - "
+//			<< "0x" << end << std::dec;
+//		const std::vector<const unisim::util::debug::blob::Section<ADDRESS_TYPE> *> &secs =
+//			(*iter)->GetSections();
+//		typename std::vector<
+//			const unisim::util::debug::blob::Section<ADDRESS_TYPE> *
+//			>::const_iterator sec;
+//		for ( sec = secs.begin();
+//				sec != secs.end();
+//				sec++ )
+//		{
+//			logger << std::endl
+//				<< "   - Section \"" << (*sec)->GetName() << "\"" << std::endl
+//				<< "     Addr = 0x" << std::hex << (*sec)->GetAddr() << std::dec << std::endl
+//				<< "     Top  = 0x" << std::hex << ((*sec)->GetAddr() + (*sec)->GetSize()) << std::dec << std::endl
+//				<< "     Size = " << (*sec)->GetSize();
+//		}
+//	}
+	logger << EndDebugWarning;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level)
+{
+	ADDRESS_TYPE start_addr, end_addr;
+	b->GetAddrRange(start_addr, end_addr);
+	const std::vector<const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *> &blobs =
+		b->GetBlobs();
+	const std::vector<const unisim::util::debug::blob::Section<ADDRESS_TYPE> *> &secs =
+		b->GetSections();
+	logger << std::endl
+		<< "(" << level << ") 0x"
+		<< std::hex << start_addr
+		<< " - 0x" << end_addr << std::dec
+		<< " Cap = " << b->GetCapability();
+	typename std::vector<
+		const unisim::util::debug::blob::Section<ADDRESS_TYPE> *
+		>::const_iterator sec;
+	for ( sec = secs.begin();
+			sec != secs.end();
+			sec++ )
+	{
+		logger << std::endl
+			<< " - Section \"" << (*sec)->GetName() << "\"" << std::endl
+			<< "   Addr = 0x" << std::hex << (*sec)->GetAddr() << std::dec << std::endl
+			<< "   Top  = 0x" << std::hex << ((*sec)->GetAddr() + (*sec)->GetSize()) << std::dec << std::endl
+			<< "   Size = " << (*sec)->GetSize();
+	}
+	typename std::vector<
+		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+		>::const_iterator bl;
+	for ( bl = blobs.begin();
+			bl != blobs.end();
+			bl++ )
+		DumpBlob(*bl, level + 1);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

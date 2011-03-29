@@ -142,6 +142,13 @@ private:
 	bool SetupLinuxOS();
 	bool ARMSetup();
 	bool PPCSetup();
+
+	/*
+	 * The following methods are just here for printf debugging purposes,
+	 * otherwise they are unused
+	 */
+	void DumpBlob();
+	void DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level);
 	
 	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
