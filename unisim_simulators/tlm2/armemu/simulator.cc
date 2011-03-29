@@ -382,6 +382,7 @@ Simulator ::
 Stop(unisim::kernel::service::Object *object, int exit_status)
 {
 	sc_stop();
+	wait();
 }
 
 void
