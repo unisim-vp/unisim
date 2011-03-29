@@ -1,5 +1,4 @@
-cmake_minimum_required ( VERSION 2.8 )
-
+cmake_minimum_required ( VERSION 2.8 ) 
 project ( test_static )
 include ( CheckIncludeFile )
 
@@ -25,7 +24,7 @@ if ( CMAKE_TOOLCHAIN_FILE )
 	SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS)
 	set_target_properties ( ${TARGET_NAME}
 		PROPERTIES
-			COMPILE_FLAGS   "-g3 -O0 -march=armv5 -mlittle-endian -msoft-float"
+			COMPILE_FLAGS   "-g3 -O0 -march=armv5 -mlittle-endian -msoft-float -mno-thumb-interwork"
 			LINK_FLAGS      "-static -march=armv5 -mlittle-endian"
 	)
 	install ( TARGETS ${TARGET_NAME}
