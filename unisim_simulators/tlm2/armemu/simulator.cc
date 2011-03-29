@@ -415,7 +415,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("linux-loader.endianness",  "little-endian");
 	sim->SetVariable("linux-loader.argc",        1);
 	sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
-	sim->SetVariable("linux-os.system",          "arm");
+	sim->SetVariable("linux-os.system",          "arm-eabi");
 	sim->SetVariable("linux-os.endianness",      "little-endian");
 	sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
 

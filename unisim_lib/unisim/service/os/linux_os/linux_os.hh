@@ -155,6 +155,7 @@ private:
 	
 	int GetSyscallNumber(int id);
 	int ARMGetSyscallNumber(int id);
+	int ARMEABIGetSyscallNumber(int id);
 	int PPCGetSyscallNumber(int id);
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);
@@ -164,9 +165,11 @@ private:
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
 	PARAMETER_TYPE GetSystemCallParam(int id);
 	PARAMETER_TYPE ARMGetSystemCallParam(int id);
+	PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
 	PARAMETER_TYPE PPCGetSystemCallParam(int id);
 	void SetSystemCallStatus(int ret, bool error);
 	void ARMSetSystemCallStatus(int ret, bool error);
+	void ARMEABISetSystemCallStatus(int ret, bool error);
 	void PPCSetSystemCallStatus(int ret, bool error);
 	
 	endian_type GetEndianess();

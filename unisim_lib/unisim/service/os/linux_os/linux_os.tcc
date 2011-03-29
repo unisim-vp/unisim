@@ -137,7 +137,7 @@ LinuxOS(const char *name, Object *parent)
 	, current_syscall_name()
 	, system("")
 	, param_system("system", this, system, "Emulated system architecture "
-			"available values are \"arm\" and \"powerpc\"")
+			"available values are \"arm\", \"arm-eabi\" and \"powerpc\"")
 	, endianess(E_LITTLE_ENDIAN)
 	, endianess_string("little-endian")
 	, param_endian("endianness", this, endianess_string,
@@ -243,7 +243,7 @@ BeginSetup()
 	}
 	
 	// check that the given system is supported
-	if (system != "arm" && system != "powerpc") 
+	if (system != "arm" && system != "arm-eabi" && system != "powerpc") 
 	{
 		logger << DebugError
 			<< "Unsupported system (" << system << "), this service only supports"
@@ -280,7 +280,7 @@ SetupLoad()
 	}
 	
 	// Call the system dependent setup
-	if ( system == "arm" )
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		if ( !SetupLoadARM() ) 
 		{
@@ -345,7 +345,7 @@ SetupLinuxOS()
 	syscall_impl_assoc_map.clear();
 
 	// Call the system dependent setup
-	if ( system == "arm" ) 
+	if ( (system == "arm") || (system == "arm-eabi") ) 
 	{
 		if ( !SetupLinuxOSARM() ) 
 		{
@@ -494,7 +494,7 @@ SetupBlob()
 	blob->AddBlob(loader_blob);
 
 	// Call the system dependent setup
-	if (system == "arm") 
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		if (!SetupBlobARM()) return false;
 	}
@@ -913,7 +913,7 @@ bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 EndSetup()
 {
-	if ( system == "arm" )
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		if ( !LoadARM() )
 		{
@@ -1063,6 +1063,7 @@ Load()
 	if(!loader_import->Load()) return false;
 	// Call the system dependent Load
 	if (system == "arm") return LoadARM();
+	if (system == "arm-eabi") return LoadARM();
 	if (system == "powerpc") return LoadPPC();
 	
 	return false;
@@ -1583,7 +1584,7 @@ LSC_times()
 	ADDRESS_TYPE buf_addr;
 	buf_addr = GetSystemCallParam(0);
 
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		struct arm_tms_t target_tms;
 		ret = Times(&target_tms);
@@ -1622,7 +1623,7 @@ LSC_brk()
 	ADDRESS_TYPE new_brk_point;
     
 	new_brk_point = GetSystemCallParam(0);
-    
+   
 	if (new_brk_point > GetBrkPoint())
 		SetBrkPoint(new_brk_point);      
 		
@@ -2122,7 +2123,7 @@ LSC_fstat()
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		ret = -1;
 	}
@@ -2317,7 +2318,7 @@ LSC_stat64()
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		struct arm_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
@@ -2349,7 +2350,7 @@ LSC_fstat64()
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		struct arm_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
@@ -2809,8 +2810,10 @@ int
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 GetSyscallNumber(int id) 
 {
-	if (system == "arm")
+	if ( system == "arm" )
 		return ARMGetSyscallNumber(id);
+	else if ( system == "arm-eabi" )
+		return ARMEABIGetSyscallNumber(id);
 	else
 		return PPCGetSyscallNumber(id);
 }
@@ -2822,6 +2825,18 @@ ARMGetSyscallNumber(int id)
 {
 	int translated_id = id - 0x0900000;
 	return translated_id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ARMEABIGetSyscallNumber(int id) 
+{
+	// the arm eabi ignores the given id and uses register 7
+	//   as the id and translated id
+	uint32_t translated_id = 0;
+	arm_regs[7]->GetValue(&translated_id);
+	return (int)translated_id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -3216,8 +3231,10 @@ PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 GetSystemCallParam(int id) 
 {
-	if (system == "arm")
+	if ( system == "arm" )
 		return ARMGetSystemCallParam(id);
+	else if ( system == "arm-eabi" )
+		return ARMEABIGetSystemCallParam(id);
 	else
 		return PPCGetSystemCallParam(id);
 }
@@ -3226,6 +3243,16 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ARMGetSystemCallParam(int id) 
+{
+	PARAMETER_TYPE val;
+	arm_regs[id]->GetValue(&val);
+	return val;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+PARAMETER_TYPE
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ARMEABIGetSystemCallParam(int id) 
 {
 	PARAMETER_TYPE val;
 	arm_regs[id]->GetValue(&val);
@@ -3247,8 +3274,10 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetSystemCallStatus(int ret, bool error) 
 {
-	if (system == "arm")
+	if ( system == "arm" )
 		ARMSetSystemCallStatus(ret, error);
+	else if ( system == "arm-eabi" )
+		ARMEABISetSystemCallStatus(ret, error);
 	else
 		PPCSetSystemCallStatus(ret, error);
 }
@@ -3257,6 +3286,15 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ARMSetSystemCallStatus(int ret, bool error) 
+{
+	PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
+	arm_regs[0]->SetValue(&val);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void 
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ARMEABISetSystemCallStatus(int ret, bool error) 
 {
 	PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
 	arm_regs[0]->SetValue(&val);
