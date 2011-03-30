@@ -93,9 +93,9 @@ public:
 	virtual ~Memory();
 
 	/* Service methods */
-	/** Setup
+	/** BeginSetup
 	 * Initializes the service interface. */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	
 	/**
 	 * TLM2 Slave methods

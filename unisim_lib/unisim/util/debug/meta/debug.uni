@@ -5,7 +5,7 @@
 		<files>
 			<file>unisim/util/debug/breakpoint.hh</file>
 			<file>unisim/util/debug/breakpoint_registry.hh</file>
-			<file>unisim/util/debug/netstub.hh</file>
+			<!-- <file>unisim/util/debug/netstub.hh</file> -->
 			<file>unisim/util/debug/profile.hh</file>
 			<file>unisim/util/debug/register.hh</file>
 			<file>unisim/util/debug/simple_register.hh</file>
@@ -15,7 +15,7 @@
 			<file>unisim/util/debug/watchpoint_registry.hh</file>
 			<file>unisim/util/debug/stmt.hh</file>
 			<file>unisim/util/debug/breakpoint_registry.tcc</file>
-			<file>unisim/util/debug/netstub.tcc</file>
+			<!-- <file>unisim/util/debug/netstub.tcc</file> -->
 			<file>unisim/util/debug/profile.tcc</file>
 			<file>unisim/util/debug/symbol.tcc</file>
 			<file>unisim/util/debug/symbol_table.tcc</file>
@@ -23,7 +23,7 @@
 			<file>unisim/util/debug/stmt.tcc</file>
 			<file>unisim/util/debug/breakpoint_registry_32.cc</file>
 			<file>unisim/util/debug/breakpoint_registry_64.cc</file>
-			<file>unisim/util/debug/netstub.cc</file>
+			<!-- <file>unisim/util/debug/netstub.cc</file> -->
 			<file>unisim/util/debug/profile_32.cc</file>
 			<file>unisim/util/debug/profile_64.cc</file>
 			<file>unisim/util/debug/symbol_32.cc</file>

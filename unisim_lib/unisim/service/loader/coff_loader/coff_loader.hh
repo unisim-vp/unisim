@@ -38,6 +38,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
 #include <unisim/kernel/service/service.hh>
@@ -72,6 +73,7 @@ using unisim::util::debug::Symbol;
 using unisim::util::debug::SymbolTable;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Blob;
 
 template <class MEMORY_ADDR> class FileHandler;
 template <class MEMORY_ADDR> class File;
@@ -171,7 +173,7 @@ public:
 	SectionTable(unsigned int num_sections);
 	virtual ~SectionTable();
 	void Insert(unsigned int section_num, Section<MEMORY_ADDR> *section);
-	const Section<MEMORY_ADDR> *operator [] (unsigned int section_num) const;
+	Section<MEMORY_ADDR> *operator [] (unsigned int section_num) const;
 	unsigned int GetSize() const;
 private:
 	std::vector<Section<MEMORY_ADDR> *> sections;
@@ -196,23 +198,24 @@ class CoffLoader :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Service<Loader<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
+	public Service<Blob<MEMORY_ADDR> >,
 	public OutputInterface<MEMORY_ADDR>
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 
 	CoffLoader(const char *name, Object *parent = 0);
 	virtual ~CoffLoader();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool EndSetup();
 
-	virtual void Reset();
-	virtual MEMORY_ADDR GetEntryPoint() const;
-	virtual MEMORY_ADDR GetTopAddr() const;
-	virtual MEMORY_ADDR GetStackBase() const;
+	virtual bool Load();
+	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
 	virtual const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
@@ -349,6 +352,12 @@ private:
 
 	// File handler registry
 	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
+
+	// File
+	File<MEMORY_ADDR> *file;
+
+	// Blob
+	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 
 	// Symbol table
 	SymbolTable<MEMORY_ADDR> symbol_table;

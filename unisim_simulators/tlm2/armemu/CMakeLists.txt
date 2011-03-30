@@ -1,12 +1,12 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 4 )
-set ( SIM_VERSION_PATCH 2 )
+set ( SIM_VERSION_MINOR 6 )
+set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION 
 	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "Barcino" )
+set ( SIM_VERSION_CODENAME "Triumphalis Tarraco" )
 set ( SIM_AUTHOR "Daniel Gracia Perez (daniel.gracia-perez@cea.fr)" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique" )
@@ -54,7 +54,7 @@ set_property ( GLOBAL
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-# set ( CMAKE_CXX_FLAGS "-fPIC" )
+
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
@@ -77,8 +77,7 @@ endforeach ( C_INCLUDE )
 
 set ( armemu_subdirs
 	unisim/kernel
-	unisim/component/tlm2/processor/arm/arm926ejs
-	unisim/component/tlm2/interrupt
+	unisim/component/tlm2/processor/arm/armemu
 	unisim/component/tlm2/memory/ram
 	unisim/service/time/sc_time
 	unisim/service/time/host_time
@@ -96,7 +95,10 @@ foreach ( dir ${armemu_subdirs} )
 	unisim_include ( ${dir} )
 endforeach ( dir )
 
-include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
+include_directories ( ${CMAKE_SOURCE_DIR} 
+	${CMAKE_BINARY_DIR} 
+	${OSCI_SYSTEMC_INCLUDE_DIR} 
+	${OSCI_TLM2_INCLUDE_DIR})
 
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
@@ -212,13 +214,17 @@ add_custom_target ( armemu__share_python
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/python
-	COMMAND
-		${CMAKE_COMMAND} -E copy_if_different
-			${CMAKE_SOURCE_DIR}/share/python/demo.py
-			${SHARE_DIRECTORY}/python/demo.py
+		# COMMAND
+		# ${CMAKE_COMMAND} -E copy_if_different
+		# 	${CMAKE_SOURCE_DIR}/share/python/demo.py
+		# 	${SHARE_DIRECTORY}/python/demo.py
 	COMMENT
 		"Setting python demos."
 	)
+
+configure_file (
+	${CMAKE_SOURCE_DIR}/share/python/demo.py.in
+	${SHARE_DIRECTORY}/python/demo.py )
 
 if ( APPLE )
 	configure_file ( 
@@ -268,8 +274,8 @@ set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel
 	# unisim__component__cxx__processor__arm
-	unisim__component__tlm2__processor__arm__arm926ejs
-	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__processor__arm__armemu
+	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__host_time
 	unisim__service__time__sc_time
@@ -286,6 +292,10 @@ if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__libraries
 		unisim__service__power )
 endif ( BUILD_ARMEMU_POWER_SUPPORT )
+if ( WIN32 )
+	list ( APPEND armemu__libraries
+		wsock32 )
+endif ( WIN32 )
 
 set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${ARMEMU_EXEC_NAME}" )
 set ( PYTHON__ARMEMU__INCLUDE_DIRS
@@ -304,10 +314,9 @@ foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
 	"'simulatorlib',
-	 'unisim__component__tlm2__interrupt',
 	 'unisim__component__tlm2__memory__ram',
-	 'unisim__component__tlm2__processor__arm__arm926ejs',
-	 'unisim__component__cxx__processor__arm',
+	 'unisim__component__tlm2__processor__arm__armemu',
+	 'unisim__component__cxx__processor__arm__armemu',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
@@ -323,6 +332,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
 	 'unisim__util__debug__debugger_handler',
+	 'unisim__util__debug__blob',
 	 'unisim__util__xml',
 	 'unisim__kernel',
 	 'xml2',
@@ -409,8 +419,8 @@ set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	
 set ( armemu__deps
 	unisim__kernel
-	unisim__component__tlm2__processor__arm__arm926ejs
-	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__processor__arm__armemu
+	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__sc_time
 	unisim__service__time__host_time

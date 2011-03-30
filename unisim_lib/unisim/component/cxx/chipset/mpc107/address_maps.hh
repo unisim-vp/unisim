@@ -103,7 +103,7 @@ protected:
 	bool verbose;
 	Parameter<bool> param_verbose;
 public:
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual void OnDisconnect();
 	
 	AddressMap(ConfigurationRegisters &_config_regs,

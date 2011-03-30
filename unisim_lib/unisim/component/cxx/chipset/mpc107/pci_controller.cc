@@ -56,6 +56,16 @@ template <> const uint32_t PCIController<uint32_t, 32, uint64_t, 32, false>::MEM
 template <> const uint32_t PCIController<uint64_t, 32, uint32_t, 32, false>::MEM_BANK_EN_REG;
 template <> const uint32_t PCIController<uint64_t, 32, uint64_t, 32, false>::MEM_BANK_EN_REG;
 
+template <> const uint32_t PCIController<uint32_t, 32, uint32_t, 32, false>::BAR_IO_MASK;
+template <> const uint32_t PCIController<uint32_t, 32, uint64_t, 32, false>::BAR_IO_MASK;
+template <> const uint32_t PCIController<uint64_t, 32, uint32_t, 32, false>::BAR_IO_MASK;
+template <> const uint32_t PCIController<uint64_t, 32, uint64_t, 32, false>::BAR_IO_MASK;
+
+template <> const uint32_t PCIController<uint32_t, 32, uint32_t, 32, false>::BAR_MEM_MASK;
+template <> const uint32_t PCIController<uint32_t, 32, uint64_t, 32, false>::BAR_MEM_MASK;
+template <> const uint32_t PCIController<uint64_t, 32, uint32_t, 32, false>::BAR_MEM_MASK;
+template <> const uint32_t PCIController<uint64_t, 32, uint64_t, 32, false>::BAR_MEM_MASK;
+
 } // end of namespace mpc107
 } // end of namespace chipset
 } // end of namespace cxx

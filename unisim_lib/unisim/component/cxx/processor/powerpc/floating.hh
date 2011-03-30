@@ -113,6 +113,7 @@ namespace powerpc {
       bool isConvertNaNNegative() const { return true; }
       bool acceptMinusZero() const { return true; }
 
+      void setRoundToEven() { fRoundToEven = true; }
       void clearRoundToEven() { fRoundToEven = false; }
       void setUpApproximateInfty() { fUpApproximateInfty = true; }
       void clearUpApproximateInfty() { fUpApproximateInfty = false; }

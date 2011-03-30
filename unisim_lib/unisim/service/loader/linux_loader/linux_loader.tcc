@@ -50,11 +50,15 @@ template<class T>
 LinuxLoader<T>::LinuxLoader(const char *name, Object *parent) :
 Object(name, parent),
 Client<Loader<T> >(name, parent),
+Client<Blob<T> >(name, parent),
 Client<Memory<T> >(name, parent),
 Service<Loader<T> >(name, parent),
+Service<Blob<T> >(name, parent),
 loader_import("loader_import", this),
+blob_import("blob_import", this),
 memory_import("memory_import", this),
 loader_export("loader_export", this),
+blob_export("blob_export", this),
 endianness(E_LITTLE_ENDIAN),
 stack_base(0),
 max_environ(0),
@@ -62,6 +66,8 @@ argc(0),
 argv(0),
 envc(0),
 envp(0),
+blob(0),
+stack_blob(0),
 verbose(false),
 endianness_string("little-endian"),
 param_endian("endianness", this, endianness_string,
@@ -86,8 +92,9 @@ param_envp(0),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
-	Object::SetupDependsOn(memory_import);
-	Object::SetupDependsOn(loader_import);
+	loader_export.SetupDependsOn(memory_import);
+	loader_export.SetupDependsOn(loader_import);
+	loader_export.SetupDependsOn(blob_import);
 }
 
 template<class T>
@@ -96,6 +103,14 @@ LinuxLoader<T>::~LinuxLoader() {
 	if ( param_argv ) delete param_argv;
 	if ( envp ) delete [] envp;
 	if ( param_envp ) delete param_envp;
+	if(blob)
+	{
+		blob->Release();
+	}
+	if(stack_blob)
+	{
+		stack_blob->Release();
+	}
 }
 
 template<class T>
@@ -105,74 +120,29 @@ LinuxLoader<T>::OnDisconnect() {
 
 template<class T>
 bool
-LinuxLoader<T>::Setup() {
-	return Load();
-}
-
-template<class T>
-void
-LinuxLoader<T>::
-Reset()
+LinuxLoader<T>::BeginSetup()
 {
-}
-
-template<class T>
-T
-LinuxLoader<T>::
-GetEntryPoint()
-const
-{
-	return loader_import->GetEntryPoint();
-}
-
-template<class T>
-T
-LinuxLoader<T>::
-GetTopAddr()
-const
-{
-	return loader_import->GetTopAddr();
-}
-
-template<class T>
-T
-LinuxLoader<T>::
-GetStackBase()
-const
-{
-	return stack_address;
-}
-
-template<class T>
-bool
-LinuxLoader<T>::
-Load(const char *_filename)
-{
-	if(!loader_import->Load(_filename)) return false;
-	return Load();
-}
-
-template<class T>
-bool
-LinuxLoader<T>::
-Load()
-{
-	/* check that mem and elf_loader are available */
-	if(!memory_import) {
-		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "Trying to execute LinuxLoader without a memory service connected."
-				<< EndDebugError;
-		return false;
+	if ( argv )
+	{
+		delete [] argv;
+		argv = 0;
 	}
-	if(!loader_import) {
-		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): "
-				<< "Trying to execute LinuxLoader without an elf_loader service connected."
-				<< EndDebugError;
-		return false;
+	if ( envp )
+	{
+		delete [] envp;
+		envp = 0;
+	}
+
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
+
+	if(stack_blob)
+	{
+		stack_blob->Release();
+		stack_blob = 0;
 	}
 
 	/* set the endianness depending on the endian parameter */
@@ -207,82 +177,216 @@ Load()
 		param_envp = new ParameterArray<string>("envp", this, envp, envc,
 				"The different environment variables defined.");
 	}
+	
+	return true;
+}
 
-	/* perform the initialization of the linuxloader */
-	T stack_ptr;
+template<class T>
+bool
+LinuxLoader<T>::SetupLoad()
+{
+	/* check that mem and elf_loader are available */
+	if(!memory_import) {
+		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
+				<< __FILE__ << ":"
+				<< __LINE__ << "): "
+				<< "Trying to execute LinuxLoader without a memory service connected."
+				<< EndDebugError;
+		return false;
+	}
+	if(!loader_import) {
+		logger << DebugError << "ERROR(" << __FUNCTION__ << ":"
+				<< __FILE__ << ":"
+				<< __LINE__ << "): "
+				<< "Trying to execute LinuxLoader without an elf_loader service connected."
+				<< EndDebugError;
+		return false;
+	}
+
+	return true;
+}
+
+template<class T>
+bool
+LinuxLoader<T>::SetupBlob()
+{
+	if(blob) return true;
+	if(!loader_import) return false;
+	const unisim::util::debug::blob::Blob<T> *loader_blob = blob_import->GetBlob();
+	if(!loader_blob) return false;
+
+	// Compute the stack size
+	T stack_size = 0;
+	stack_size += size;                     // account for argc
+	stack_size += (argc + 1) * size;        // account for argv and null pointer
+	stack_size += (envc + 1) * size;        // account for envp and null pointer
+	stack_size += 2 * size;                 // 16 to account for the AUX_VECTOR
+	for(unsigned int i = 0; i < argc; i++)
+	{
+		stack_size += argv[i].length() + 1; // account for null terminated string argv[i]
+	}
+	for(unsigned int i = 0; i < envc; i++)
+	{
+		stack_size += envp[i].length() + 1; // account for null terminated string envp[i]
+	}
+	
+	/* checking stack overflow */
+	if(stack_size >= max_environ) {
+		logger << DebugError << __FUNCTION__ << ":"
+				<< __FILE__ << ":"
+				<< __LINE__ << "): Environment overflow. Need to increase max_environ."
+				<< EndDebugError;
+		return false;
+	}
+
+	stack_size += ((stack_size % size) != 0) ? (size - (stack_size % size)) : 0;
+	T stack_address = stack_base - stack_size;
+	
+	// Fill stack data
+	uint8_t *stack_data = (uint8_t *) calloc(stack_size, 1);
+	
+	T stack_ptr = 0;
 
 	/* Set the stack pointer. Subtract 16 to account for the AUX_VECTOR. */
-	stack_ptr = stack_base - max_environ - (2 * sizeof(T));
 	/* write argc to stack */
-	stack_address = stack_ptr;
 	T target_argc = Host2Target(endianness, (T)argc);
-	memory_import->WriteMemory(stack_ptr, &target_argc, size);
-	if ( verbose ) Log(stack_ptr, (uint8_t *)&target_argc, size);
+	memcpy(stack_data + stack_ptr, &target_argc, size);
+	if ( verbose ) Log(stack_address + stack_ptr, (uint8_t *)&target_argc, size);
 
 	stack_ptr += size;
 
 	/* skip stack_ptr past argv pointer array */
-	arg_address = stack_ptr;
-	stack_ptr += (argc + 1) * size;
+	T arg_address = stack_ptr;
+	stack_ptr += (argc + 1) * size; // Note: there's a null pointer after argv
 
 	/* skip env pointer array */
 	T env_address = stack_ptr;
-	for(unsigned int i = 0; i < envc; i++)
-		stack_ptr += size;
-	stack_ptr += size;
+	stack_ptr += (envc + 1) * size; // Note: there's a null pointer after envp
 
 	T aux_v_address = stack_ptr;
 	stack_ptr += size * 2; /* for aux_v */
 
 	/* write argv to stack */
 	for(unsigned int i = 0; i < argc; i++) {
-		T target_argv = Host2Target(endianness, stack_ptr);
-		memory_import->WriteMemory(arg_address + i * size, &target_argv, size);
-		memory_import->WriteMemory(stack_ptr, argv[i].c_str(), argv[i].length());
+		T target_argv = Host2Target(endianness, stack_address + stack_ptr);
+		memcpy(stack_data + (arg_address + (i * size)), &target_argv, size);
+		memcpy(stack_data + stack_ptr, argv[i].c_str(), argv[i].length() + 1);
 		if ( verbose )
 		{
-			Log(arg_address + i * size, (uint8_t *)&target_argv, size);
-			Log(stack_ptr, (uint8_t *)argv[i].c_str(), argv[i].length());
+			Log(stack_address + arg_address + i * size, (uint8_t *)&target_argv, size);
+			Log(stack_address + stack_ptr, (uint8_t *)argv[i].c_str(), argv[i].length());
 		}
 		stack_ptr += argv[i].length() + 1;
 	}
 
 	/* write env to stack */
 	for(unsigned int i = 0; i < envc; i++) {
-		T target_envp = Host2Target(endianness, stack_ptr);
-		memory_import->WriteMemory(env_address + i * size, &target_envp, size);
-		memory_import->WriteMemory(stack_ptr, envp[i].c_str(), envp[i].length());
+		T target_envp = Host2Target(endianness, stack_address + stack_ptr);
+		memcpy(stack_data + (env_address + (i * size)), &target_envp, size);
+		memcpy(stack_data + stack_ptr, envp[i].c_str(), envp[i].length() + 1);
 		if ( verbose )
 		{
-			Log(env_address + i * size, (uint8_t *)&target_envp, size);
-			Log(stack_ptr, (uint8_t *)envp[i].c_str(), envp[i].length());
+			Log(stack_address + env_address + i * size, (uint8_t *)&target_envp, size);
+			Log(stack_address + stack_ptr, (uint8_t *)envp[i].c_str(), envp[i].length());
 		}
-		stack_ptr += envp[i].length();
+		stack_ptr += envp[i].length() + 1;
 	}
-
+	
 	/* The following two words on the stack are needed on Linux for IA64 !!!! */
 	/* This is filling in the AUX_VECTOR */
 	T target_at_pagesz = Host2Target(endianness, (T)6); /* AT_PAGESZ */
-	memory_import->WriteMemory(aux_v_address, &target_at_pagesz, size);
+	memcpy(stack_data + aux_v_address, &target_at_pagesz, size);
 	if ( verbose )
-		Log(aux_v_address, (uint8_t *)&target_at_pagesz, size);
+		Log(stack_address + aux_v_address, (uint8_t *)&target_at_pagesz, size);
 	T target_page_size = Host2Target(endianness, (T)0x4000ULL); /* PAGE_SIZE */
-	memory_import->WriteMemory(aux_v_address + size, &target_page_size, size);
+	memcpy(stack_data + (aux_v_address + size), &target_page_size, size);
 	if ( verbose )
-		Log(aux_v_address + size, (uint8_t *)&target_page_size, size);
+		Log(stack_address + aux_v_address + size, (uint8_t *)&target_page_size, size);
+	
+	stack_blob = new unisim::util::debug::blob::Blob<T>();
+	stack_blob->Catch();
+	
+	stack_blob->SetEndian(endianness);
+	
+	stack_blob->SetStackBase(stack_address);
+	
+	unisim::util::debug::blob::Section<T> *stack_section = new unisim::util::debug::blob::Section<T>(
+		unisim::util::debug::blob::Section<T>::TY_UNKNOWN,
+		unisim::util::debug::blob::Section<T>::SA_A,
+		"",
+		0,
+		0,
+		stack_address,
+		stack_size,
+		stack_data
+	);
 
-	/* checking stack overflow */
-	if(stack_ptr + size >= stack_base) {
-		cerr << "ERROR(" << __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): Environment overflow. Need to increase max_environ."
-				<< "  (stack_ptr = 0x" << hex << stack_ptr << dec << ", "
-				<< "stack_base = 0x" << hex << stack_base << dec << ", "
-				<< "size = " << size << ", stack_ptr + size = "
-				<< hex << (stack_ptr + size) << dec << ")" << endl;
-		exit(-1);
-	}
+	stack_blob->AddSection(stack_section);
+	
+	blob = new unisim::util::debug::blob::Blob<T>();
+	blob->Catch();
+	blob->AddBlob(loader_blob);
+	blob->AddBlob(stack_blob);
+
 	return true;
+}
+
+template<class T>
+bool
+LinuxLoader<T>::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &loader_export) return SetupLoad();
+	if(srv_export == &blob_export) return SetupBlob();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	return false;
+}
+
+template<class T>
+bool
+LinuxLoader<T>::EndSetup() {
+	return LoadStack();
+}
+
+template<class T>
+bool
+LinuxLoader<T>::
+Load()
+{
+	if(!loader_import->Load()) return false;
+	return LoadStack();
+}
+
+template <class T>
+bool
+LinuxLoader<T>::
+LoadStack()
+{
+	if(!memory_import) return false;
+	const unisim::util::debug::blob::Section<T> *stack_section = stack_blob->GetSection(0);
+	if(!stack_blob) return false;
+
+	T stack_start;
+	T stack_end;
+
+	stack_blob->GetAddrRange(stack_start, stack_end);
+
+	if(verbose)
+	{
+		logger << DebugInfo << "Initializing stack at @0x" << std::hex << stack_start << " - @0x" << stack_end << std::dec << EndDebugInfo;
+	}
+
+	if(!memory_import->WriteMemory(stack_section->GetAddr(), stack_section->GetData(), stack_section->GetSize())) return false;
+	
+	return true;
+}
+
+template<class T>
+const typename unisim::util::debug::blob::Blob<T> *
+LinuxLoader<T>::
+GetBlob() const
+{
+	return blob;
 }
 
 template<class T>
@@ -291,11 +395,11 @@ LinuxLoader<T>::
 Log(T addr, const uint8_t *value, uint32_t size)
 {
 	logger << DebugInfo
-			<< "0x" << hex << (unsigned long int)addr << dec
-			<< " [" << (unsigned int)size << "] =" << hex;
+			<< "0x" << std::hex << (unsigned long int)addr << std::dec
+			<< " [" << (unsigned int)size << "] =" << std::hex;
 	for (uint32_t i = 0; i < size; i++)
 		logger << " " << (unsigned short int)value[i];
-	logger << dec << EndDebugInfo;
+	logger << std::dec << EndDebugInfo;
 }
 
 } // end of linux_loader

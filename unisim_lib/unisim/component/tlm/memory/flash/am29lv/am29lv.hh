@@ -79,14 +79,13 @@ public:
 
 	AM29LV(const sc_module_name& name, Object *parent = 0);
 	virtual ~AM29LV();
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual bool Send(const Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > >& message);
 	void Process();
 private:
 	sc_fifo<Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > > input_queue;
-	unsigned int cycle_time;
-	sc_time cycle_sctime;
-	Parameter<unsigned int> param_cycle_time;
+	sc_time cycle_time;
+	Parameter<sc_time> param_cycle_time;
 };
 
 } // end of namespace am29lv

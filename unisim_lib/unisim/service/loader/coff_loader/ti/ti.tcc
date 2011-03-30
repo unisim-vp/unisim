@@ -778,9 +778,8 @@ bool Section<MEMORY_ADDR>::LoadSpecificContent(OutputInterface<MEMORY_ADDR> *out
 	{
 		uint32_t *record = (uint32_t *) content;
 		uint32_t nrecords = size;
-		uint32_t nwords;
-		uint32_t addr;
-		uint32_t value;
+		uint32_t nwords = 0;
+		uint32_t addr = 0;
 		int state = 0;
 
 		// Note: Section .cinit has endianness of the target (i.e. little endian), not the endianness of the headers (little endian or big endian)

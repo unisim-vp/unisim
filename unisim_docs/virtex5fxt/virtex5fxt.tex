@@ -1,0 +1,1152 @@
+This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta1 on Dec 15 2010.
+\section{Introduction}
+UNISIM Virtex 5 FXT, full system PPC440 simulator with support of ELF32 binaries.\\
+Section \ref{UNISIM Virtex 5 FXT_licensing} gives licensing informations about the simulator.
+Section \ref{UNISIM Virtex 5 FXT_simulated_configuration} shows the set of modules and services that compose the simulator.
+Section \ref{UNISIM Virtex 5 FXT_using} shows how to invoke the simulator at the command line prompt.
+Section \ref{UNISIM Virtex 5 FXT_configuration} gives the simulator parameters.
+Section \ref{UNISIM Virtex 5 FXT_statistics} gives the simulator statistic counters.
+Section \ref{UNISIM Virtex 5 FXT_formulas} gives the simulator statistic formulas.
+\section{Licensing}
+\label{UNISIM Virtex 5 FXT_licensing}
+UNISIM Virtex 5 FXT 1.0beta1\\
+Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)\\
+License: BSD (see file COPYING)\\
+Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
+\section{Simulated configuration}
+\label{UNISIM Virtex 5 FXT_simulated_configuration}
+\noindent The UNISIM Virtex 5 FXT simulator is composed of the following modules and services:
+\begin{itemize}\addtolength{\itemsep}{-0.40\baselineskip}
+\item \textbf{cpu}: This module implements a PPC440 CPU core. It has the following characteristics:\\
+Processor version (PVR value): 0x7ff21912\\
+Reset configuration (RSTCFG): U0=0, U1=0, U2=0, U3=0, E=0, ERPN=0x0\\
+Start address: 0xfffffffc\\
+L1 data cache: size=32768 bytes, block size=32 bytes, associativity=64\\
+L1 instruction cache: size=32768 bytes, block size=32 bytes, associativity=64\\
+shadow instruction TLB: size=4 entries, associativity=4\\
+shadow data TLB: size=8 entries, associativity=8\\
+unified TLB: size=64 entries, associativity=64\\
+FSB/PLB burst size:256 bits\\
+FSB/PLB width:128 bits\\
+MMU: yes\\
+FPU APU: no\\
+
+\item \textbf{dl1-power-estimator}: this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)
+\item \textbf{dtlb-power-estimator}: this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)
+\item \textbf{effective-to-physical-address-translator}: this service translates memory addresses when playing with different address sizes
+\item \textbf{elf32-loader}: this service implements an ELF32 Loader
+\item \textbf{gdb-server}: this service implements the GDB server remote serial protocol over TCP/IP. Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application that runs within the simulator.
+\item \textbf{host-time}: this service is an abstraction layer for the host machine time
+\item \textbf{il1-power-estimator}: this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)
+\item \textbf{itlb-power-estimator}: this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)
+\item \textbf{memory}: this module implements a memory
+\item \textbf{rom-loader}: this service implements an ELF32 Loader
+\item \textbf{time}: this service is an abstraction layer for the SystemC kernel time
+\item \textbf{utlb-power-estimator}: this service implements an SRAM/Cache power estimator (dynamic energy and leakage power)
+\end{itemize}
+\section{Using the UNISIM Virtex 5 FXT simulator}
+\label{UNISIM Virtex 5 FXT_using}
+The UNISIM Virtex 5 FXT simulator has the following command line options:\\
+~\\
+\noindent Usage: \texttt{unisim-virtex5fxt-1.0beta1 [<options>] [...]}
+
+\noindent Options:
+\begin{itemize}
+\item \texttt{--set $<$param=value$>$ or -s $<$param=value$>$}: set value of parameter 'param' to 'value'
+\item \texttt{--config $<$XML file$>$ or -c $<$XML file$>$}: configures the simulator with the given XML configuration file
+\item \texttt{--get-config $<$XML file$>$ or -g $<$XML file$>$}: get the simulator configuration XML file (you can use it to create your own configuration. This option can be combined with -c to get a new configuration file with existing variables from another file
+\item \texttt{--list or -l}: lists all available parameters, their type, and their current value
+\item \texttt{--warn or -w}: enable printing of kernel warnings
+\item \texttt{--doc $<$Latex file$>$ or -d $<$Latex file$>$}: enable printing a latex documentation
+\item \texttt{--version or -v}: displays the program version information
+\item \texttt{--share-path $<$path$>$ or -p $<$path$>$}: the path that should be used for the share directory
+\item \texttt{--help or -h}: displays this help
+\end{itemize}
+\section{Configuration}
+\label{UNISIM Virtex 5 FXT_configuration}
+Simulator configuration (see below) can be modified using command line Options \texttt{--set $<$param=value$>$} or \texttt{--config $<$config file$>$}.\\
+~\\
+\tablehead{\hline}
+\tabletail{\hline}
+\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+\multicolumn{2}{|l|}{\textbf{\Large Global}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-gdb-server}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable GDB server instantiation.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-inline-debugger}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable inline debugger instantiation.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-press-enter-at-exit}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable pressing key enter at exit.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{estimate-power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable power estimators instantiation.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Keep logger output in a file.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{logger\_output.txt}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option file must be activated).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Show logger output through the standard error output.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard error output (only works if std\_err is active).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Show logger output through the standard output.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out\_color}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard output (only works if std\_out is active).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Keep logger output in a file xml formatted.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file\_gzipped}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline If the xml\_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml\_filename option.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{logger\_output.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger xml output (the option xml\_file must be activated).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large cpu}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.cpu-cycle-time}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{2500}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline CPU cycle time in picoseconds.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.voltage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1300}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline CPU voltage in mV.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.max-inst}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{18446744073709551615}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline maximum number of instructions to simulate.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-all}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline globally enable/disable verbosity.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-setup}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity while setup.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-step}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when simulating an instruction.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-itlb}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when accessing shadow instruction translation lookahead buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-dtlb}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when accessing shadow data translation lookahead buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-utlb}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when accessing unified translation lookahead buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-dl1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when accessing L1 data cache.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-il1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when accessing L1 instruction cache.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-load}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when simulating a load.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-store}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when simulating a store.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-read-memory}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when reading memory for a debug purpose.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-write-memory}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when writing memory for a debug purpose.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-exception}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when handling exceptions.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-set-msr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when setting MSR.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.verbose-tlbwe}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity when executing a tlbwe instruction.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-linux-printk-snooping}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable linux printk buffer snooping.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.trap-on-instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{18446744073709551615}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of simulated instruction before traping.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-trap-on-exception}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable trap reporting on exception.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.bus-cycle-time}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{5 ns}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{sc\_time}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline bus cycle time.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.ext-timer-cycle-time}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{5 ns}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{sc\_time}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline external timer cycle time.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.nice-time}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1 ms}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{sc\_time}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline maximum time between synchonizations.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.ipc}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline targeted average instructions per second.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dl1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32768}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.line-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache line size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{64}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache associativity level.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read-write ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.excl-read-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.excl-write-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of write only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of single ended read ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{4}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of cache banks.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.tech-node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the technology node (in nm).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{64}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache output width (in number of bits).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{37}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline tag width in bits.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{normal},~\texttt{sequential},~\texttt{fast}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline access mode type (normal, sequential, fast).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dtlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{424}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.line-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{53}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache line size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{8}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache associativity level.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read-write ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{write-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of write only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of single ended read ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{4}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of cache banks.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.tech-} \newline$\hookrightarrow$\texttt{node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the technology node (in nm).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{53}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache output width (in number of bits).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline tag width in bits.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{normal},~\texttt{sequential},~\texttt{fast}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline access mode type (normal, sequential, fast).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large elf32-loader}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline the ELF filename to load into memory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline if force-base-addr is true force base address for a unique program segment, otherwise ignored.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.force-base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline if true force base address for a unique program segment.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.force-use-virtual-} \newline$\hookrightarrow$\texttt{address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline force use of virtual addresses instead of physical addresses.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline dump headers while loading ELF file.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.dwarf-to-html-} \newline$\hookrightarrow$\texttt{output-directory}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline DWARF v2/v3 to HTML output directory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.parse-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large gdb-server}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the smallest addressable element in memory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{signed 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-description-} \newline$\hookrightarrow$\texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{gdb\_powerpc.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large il1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32768}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.line-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache line size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{64}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache associativity level.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read-write ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.excl-read-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.excl-write-} \newline$\hookrightarrow$\texttt{ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of write only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of single ended read ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{4}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of cache banks.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.tech-node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the technology node (in nm).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{64}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache output width (in number of bits).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{35}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline tag width in bits.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{normal},~\texttt{sequential},~\texttt{fast}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline access mode type (normal, sequential, fast).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large itlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{212}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.line-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{53}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache line size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{4}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache associativity level.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read-write ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{write-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of write only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of single ended read ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{4}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of cache banks.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.tech-} \newline$\hookrightarrow$\texttt{node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the technology node (in nm).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{53}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache output width (in number of bits).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline tag width in bits.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{normal},~\texttt{sequential},~\texttt{fast}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline access mode type (normal, sequential, fast).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large memory}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.org}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory origin/base address.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.bytesize}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{18446744073709551615}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory size in bytes.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.cycle-time}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{5 ns}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{sc\_time}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory cycle time.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.read-latency}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{5 ns}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{sc\_time}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory read latency.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.write-latency}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0 s}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{sc\_time}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory write latency.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large rom-loader}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{boot.elf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline the ELF filename to load into memory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline if force-base-addr is true force base address for a unique program segment, otherwise ignored.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.force-base-addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline if true force base address for a unique program segment.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.force-use-virtual-} \newline$\hookrightarrow$\texttt{address}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline force use of virtual addresses instead of physical addresses.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline dump headers while loading ELF file.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.dwarf-to-html-output-} \newline$\hookrightarrow$\texttt{directory}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline DWARF v2/v3 to HTML output directory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.parse-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large utlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.cache-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{3392}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.line-} \newline$\hookrightarrow$\texttt{size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{53}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache line size (in bytes).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.associativity}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{64}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache associativity level.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.rw-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read-write ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of read only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.excl-} \newline$\hookrightarrow$\texttt{write-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of write only ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.single-} \newline$\hookrightarrow$\texttt{ended-read-ports}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of single ended read ports.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.banks}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{4}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of cache banks.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.tech-} \newline$\hookrightarrow$\texttt{node}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{130}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the technology node (in nm).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.output-} \newline$\hookrightarrow$\texttt{width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{53}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache output width (in number of bits).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.tag-width}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{32}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline tag width in bits.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.access-} \newline$\hookrightarrow$\texttt{mode}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fast}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache power estimator access mode}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{normal},~\texttt{sequential},~\texttt{fast}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline access mode type (normal, sequential, fast).}\\
+\hline
+\hline
+\end{supertabular}
+\section{Statistics}
+\label{UNISIM Virtex 5 FXT_statistics}
+Simulation statistic counters are listed below:\\
+~\\
+\tablehead{\hline}
+\tabletail{\hline}
+\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+\multicolumn{2}{|l|}{\textbf{\Large cpu}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.instruction-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of simulated instructions.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.timer-cycle}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of simulated timer cycles.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-il1-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of accesses to L1 instruction cache.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-il1-misses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to L1 instruction cache.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-dl1-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of accesses to L1 data cache.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-dl1-misses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to L1 data cache.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-itlb-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of accesses to shadow instruction translation look-aside buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-itlb-misses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to shadow instruction translation look-aside buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-dtlb-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of accesses to shadow data translation look-aside buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-dtlb-misses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to shadow data translation look-aside buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-utlb-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of accesses to unified data translation look-aside buffer.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.num-utlb-misses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to unified data translation look-aside buffer.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dl1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{energy}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic energy estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic energy (in J).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic power (in W).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.leakage-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache leakage power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache leakage power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dtlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{energy}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic energy estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic energy (in J).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic power (in W).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.leakage-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache leakage power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache leakage power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large il1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{energy}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic energy estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic energy (in J).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic power (in W).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.leakage-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache leakage power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache leakage power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large itlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{energy}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic energy estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic energy (in J).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic power (in W).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.leakage-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache leakage power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache leakage power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large memory}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline host memory usage in bytes of simulated memory.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large utlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{energy}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic energy estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic energy (in J).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache dynamic power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache dynamic power (in W).}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.leakage-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{cache leakage power estimator}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache leakage power (in W).}\\
+\hline
+\hline
+\end{supertabular}
+\section{Formulas}
+\label{UNISIM Virtex 5 FXT_formulas}
+Simulation statistic formulas are listed below:\\
+~\\
+\tablehead{\hline}
+\tabletail{\hline}
+\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
+\multicolumn{2}{|l|}{\textbf{\Large cpu}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.il1-miss-rate}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{cpu.num-il1-misses / cpu.} \newline$\hookrightarrow$\texttt{num-il1-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline L1 instruction cache miss rate.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.dl1-miss-rate}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{cpu.num-dl1-misses / cpu.} \newline$\hookrightarrow$\texttt{num-dl1-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline L1 data cache miss rate.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.itlb-miss-rate}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{cpu.num-itlb-misses / cpu.} \newline$\hookrightarrow$\texttt{num-itlb-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline shadow instruction translation look-aside buffer miss rate.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.dtlb-miss-rate}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{cpu.num-dtlb-misses / cpu.} \newline$\hookrightarrow$\texttt{num-dtlb-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline shadow data translation look-aside buffer miss rate.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.utlb-miss-rate}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{cpu.num-utlb-misses / cpu.} \newline$\hookrightarrow$\texttt{num-utlb-accesses}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline unified data translation look-aside buffer miss rate.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dl1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dl1-power-estimator.total-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{dl1-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power + dl1-power-estimator.} \newline$\hookrightarrow$\texttt{leakage-power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache total (dynamic+leakage) power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large dtlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{dtlb-power-estimator.total-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{dtlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power + dtlb-power-estimator.} \newline$\hookrightarrow$\texttt{leakage-power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache total (dynamic+leakage) power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large il1-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{il1-power-estimator.total-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{il1-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power + il1-power-estimator.} \newline$\hookrightarrow$\texttt{leakage-power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache total (dynamic+leakage) power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large itlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{itlb-power-estimator.total-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{itlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power + itlb-power-estimator.} \newline$\hookrightarrow$\texttt{leakage-power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache total (dynamic+leakage) power (in W).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large utlb-power-estimator}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{utlb-power-estimator.total-} \newline$\hookrightarrow$\texttt{power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{formula}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Formula:} \texttt{utlb-power-estimator.dynamic-} \newline$\hookrightarrow$\texttt{power + utlb-power-estimator.} \newline$\hookrightarrow$\texttt{leakage-power}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{double precision floating-point}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline cache total (dynamic+leakage) power (in W).}\\
+\hline
+\hline
+\end{supertabular}

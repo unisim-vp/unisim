@@ -40,6 +40,7 @@
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/blob.hh>
 
 #include <unisim/service/loader/elf_loader/elf32.h>
 #include <unisim/service/loader/elf_loader/elf64.h>
@@ -66,71 +67,80 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::SymbolTable;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::Registers;
 
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Client<Registers>,
 	public Service<Loader<MEMORY_ADDR> >,
+	public Service<Blob<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
 	public Service<StatementLookup<MEMORY_ADDR> >
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceImport<Registers> registers_import;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
 
 	ElfLoaderImpl(const char *name, Object *parent = 0);
 	virtual ~ElfLoaderImpl();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 
-	virtual void Reset();
-	virtual MEMORY_ADDR GetEntryPoint() const;
-	virtual MEMORY_ADDR GetTopAddr() const;
-	virtual MEMORY_ADDR GetStackBase() const;
-	virtual bool Load(const char *filename);
+	// unisim::service::interfaces::Loader
+	virtual bool Load();
+	
+	// unisim::service::interfaces::Blob
+	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
+	// unisim::service::interfaces::SymbolTableLookup
 	virtual const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	
+	// unisim::service::interfaces::StatementLookup
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 private:
 	string filename;
-	MEMORY_ADDR entry_point;
-	MEMORY_ADDR top_addr;
 	MEMORY_ADDR base_addr;
+	bool force_base_addr;
 	bool force_use_virtual_address;
 	bool dump_headers;
-	SymbolTable<MEMORY_ADDR> symbol_table;
+	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	SymbolTable<MEMORY_ADDR> *symbol_table;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	string dwarf_to_html_output_directory;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
+	bool parse_dwarf;
 	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
+	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;
+	Parameter<bool> param_parse_dwarf;
 
-	bool Load();
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);
 	void SwapSectionHeader(Elf_Shdr *shdr);
@@ -153,13 +163,28 @@ private:
 	MEMORY_ADDR GetSectionSize(const Elf_Shdr *shdr);
 	MEMORY_ADDR GetSectionAddr(const Elf_Shdr *shdr);
 	MEMORY_ADDR GetSectionType(const Elf_Shdr *shdr);
+	MEMORY_ADDR GetSectionAlignment(const Elf_Shdr *shdr);
+	MEMORY_ADDR GetSectionLink(const Elf_Shdr *shdr);
 	bool LoadSection(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, void *buffer, istream& is);
+	MEMORY_ADDR GetSegmentType(const Elf_Phdr *phdr);
+	MEMORY_ADDR GetSegmentFlags(const Elf_Phdr *phdr);
+	MEMORY_ADDR GetSegmentMemSize(const Elf_Phdr *phdr);
+	MEMORY_ADDR GetSegmentFileSize(const Elf_Phdr *phdr);
+	MEMORY_ADDR GetSegmentAddr(const Elf_Phdr *phdr);
+	MEMORY_ADDR GetSegmentAlignment(const Elf_Phdr *phdr);
 	bool LoadSegment(const Elf_Ehdr *hdr, const Elf_Phdr *phdr, void *buffer, istream& is);
 	MEMORY_ADDR GetSectionFlags(const Elf_Shdr *shdr);
 	const char *GetSectionName(const Elf_Shdr *shdr, const char *string_table);
-	void BuildSymbolTable(const Elf_Shdr *shdr, const void *content, const char *string_table);
 	void DumpRawData(const void *content, MEMORY_ADDR size);
+	const char *GetArchitecture(const Elf_Ehdr *hdr) const;
 	uint8_t GetAddressSize(const Elf_Ehdr *hdr) const;
+	bool SetupSymbolTableLookup();
+	bool SetupLoad();
+	bool SetupBlob();
+	bool SetupStatementLookup();
+	bool SetupDWARF();
+	
+	void Reset(); // To remove ?
 };
 
 } // end of namespace elf_loader

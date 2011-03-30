@@ -253,6 +253,7 @@ inline void GenFPSCR_FEX(uint32_t& fpscr)
 
 op fadd(63[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
 fadd.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -308,6 +309,7 @@ fadd.disasm = {
 
 op fadds(59[6]:fd[5]:fa[5]:fb[5]:?[5]:21[5]:rc[1])
 fadds.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -365,6 +367,7 @@ fadds.disasm = {
 
 op fdiv(63[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
 fdiv.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -422,6 +425,7 @@ fdiv.disasm = {
 
 op fdivs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:18[5]:rc[1])
 fdivs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
 	{
@@ -480,6 +484,7 @@ fdivs.disasm = {
 
 op fmul(63[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
 fmul.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -535,6 +540,7 @@ fmul.disasm = {
 
 op fmuls(59[6]:fd[5]:fa[5]:?[5]:fc[5]:25[5]:rc[1])
 fmuls.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -590,274 +596,9 @@ fmuls.disasm = {
 	os << "fmuls" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc;
 }
 
-op fres(59[6]:fd[5]:?[5]:fb[5]:?[5]:24[5]:rc[1])
-fres.execute = {
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
-	{
-		throw FloatingPointUnavailableException<CONFIG>();
-	}
-
-	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(RN_NEAREST);
-	SoftFloat b(cpu->GetFPR(fb), flags);
-	flags.clear();
-
-	if(unlikely(b.isSNaN()))
-	{
-		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
-		{
-			// Write back result
-			SoftFloat result(b.queryValue() | 0x400000UL);// QNaN (b with high order bit of mantissa set)
-			cpu->SetFPR(fd, SoftDouble(result, flags)); 
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-		}
-		// Generate VXSNAN
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
-	}
-	else if(unlikely(b.isQNaN()))
-	{
-		// b = QNaN
-		// Write back result
-		cpu->SetFPR(fd, SoftDouble(b, flags)); // QNaN (b)
-		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-	}
-	else if(unlikely(b.isZero()))
-	{
-		// Generate ZX
-		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
-
-		if(!(fpscr & CONFIG::FPSCR_ZE_MASK))
-		{
-			if(b.isNegative())
-			{
-				// b = -0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0xfff0000000000000ULL)); // -infinity
-				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_NEGATIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
-			}
-			else
-			{
-				// b = +0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0x7ff0000000000000ULL)); // +infinity
-				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
-			}
-		}
-	}
-	else if(unlikely(b.isInfty()))
-	{
-		if(b.isNegative())
-		{
-			// b = -infinity
-			cpu->SetFPR(fd, SoftDouble(0x8000000000000000ULL)); // -0
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_NEGATIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
-		}
-		else
-		{
-			// b = +infinity
-			cpu->SetFPR(fd, SoftDouble(0x0000000000000000ULL)); // +0
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
-		}
-	}
-	else
-	{
-		SoftFloat result(0x3f800000ULL); // 1.0
-
-		// Compute the result
-		result.divAssign(b, flags);
-
-		// Generate OX, UX, ZX, VXSNAN, FR, FI, FPRF
-		GenFPSCR_OX<CONFIG>(fpscr, flags);
-		GenFPSCR_UX<CONFIG>(fpscr, flags);
-		GenFPSCR_FPRF<CONFIG, SoftFloat>(fpscr, result);
-
-		// Write back the result
-		cpu->SetFPR(fd, SoftDouble(result, flags));
-	}
-
-	// Generate XX, FX, VX, FEX
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
-
-	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
-	{
-		// Raise a floating point exception
-		throw FloatingPointException<CONFIG>();
-	}
-
-	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
-}
-fres.disasm = {
-	os << "fres" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
-
-op frsqrte(63[6]:fd[5]:?[5]:fb[5]:?[5]:26[5]:rc[1])
-frsqrte.execute = {
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
-	{
-		throw FloatingPointUnavailableException<CONFIG>();
-	}
-
-	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	uint32_t old_fpscr = fpscr;
-	Flags flags;
-	flags.setRoundingMode(RN_NEAREST);
-	const SoftDouble& b = cpu->GetFPR(fb);
-
-	if(unlikely(b.isSNaN()))
-	{
-		// b = SNaN
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
-		{
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(b.queryValue() | 0x0008000000000000ULL)); // QNaN (b with high order bit of mantissa set)
-		}
-		// Generate VXSNAN
-		fpscr = fpscr | CONFIG::FPSCR_VXSNAN_MASK;
-	}
-	else if(unlikely(b.isQNaN()))
-	{
-		// b = QNaN
-		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-		// Write back result
-		cpu->SetFPR(fd, b); // QNaN (b)
-	}
-	else if(unlikely(b.isZero()))
-	{
-		// Generate ZX
-		fpscr = fpscr | CONFIG::FPSCR_ZX_MASK;
-
-		if(!(fpscr & CONFIG::FPSCR_ZE_MASK))
-		{
-			if(b.isNegative())
-			{
-				// b = -0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0xfff0000000000000ULL)); // -infinity
-				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_NEGATIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
-			}
-			else
-			{
-				// b = +0
-				// Write back result
-				cpu->SetFPR(fd, SoftDouble(0x7ff0000000000000ULL)); // +infinity
-				// Generate FPRF
-				fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_INFINITY << CONFIG::FPSCR_FPRF_OFFSET);
-			}
-		}
-	}
-	else if(unlikely(b.isNegative()))
-	{
-		// -infinity <= b < 0
-		if(!(fpscr & CONFIG::FPSCR_VE_MASK))
-		{
-			// Write back result
-			cpu->SetFPR(fd, SoftDouble(0x7ff8000000000000ULL)); // Positive QNaN
-			// Generate FPRF
-			fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_QNAN << CONFIG::FPSCR_FPRF_OFFSET);
-		}
-		// Generate VXSQRT
-		fpscr = fpscr | CONFIG::FPSCR_VXSQRT_MASK;
-	}
-	else if(unlikely(b.isInfty()))
-	{
-		// b = +infinity
-		cpu->SetFPR(fd, SoftDouble(0x0000000000000000ULL)); // +0
-		// Generate FPRF
-		fpscr = (fpscr & ~CONFIG::FPSCR_FPRF_MASK) | (CONFIG::FPRF_FOR_POSITIVE_ZERO << CONFIG::FPSCR_FPRF_OFFSET);
-	}
-	else
-	{
-		// 0 < b < infinity
-
-		// First estimation of 1/sqrt(b), seed of Newton-Raphson algorithm 
-		// see http://www.mceniry.net/papers/Fast%20Inverse%20Square%20Root.pdf
-		SoftDouble u((0xbfcdd6a18f6a6f55ULL - b.queryValue()) >> 1);
-
-		// Newton-Raphson method
-		SoftDouble half(0x3fe0000000000000ULL); // 0.5
-		SoftDouble three(0x4008000000000000ULL); // 3.0
-
-		unsigned int i;
-		for(i = 0; i < 5; i++)
-		{
-			// Newton-Raphson iteration
-			// w = b * u * u
-			SoftDouble w(b);
-			w.multAssign(u, flags);
-			w.multAssign(u, flags);
-			// v = 3.0 - w
-			SoftDouble v(three);
-			v.minusAssign(w, flags);
-			// u = 0.5 * u * v
-			u.multAssign(half, flags);
-			u.multAssign(v, flags);
-		}
-
-		// Write back result
-		cpu->SetFPR(fd, u);
-
-		// Generate ZX, VXSNAN, FR, FI, FPRF
-		GenFPSCR_ZX<CONFIG>(fpscr, flags);
-		GenFPSCR_VXSNAN<CONFIG>(fpscr, flags);
-		GenFPSCR_FPRF<CONFIG, SoftDouble>(fpscr, u);
-	}
-
-	// Generate XX, FX, VX, FEX
-	GenFPSCR_XX<CONFIG>(fpscr);
-	GenFPSCR_FX<CONFIG>(fpscr, old_fpscr);
-	GenFPSCR_VX<CONFIG>(fpscr);
-	GenFPSCR_FEX<CONFIG>(fpscr);
-
-	// Update FPSCR
-	cpu->SetFPSCR(fpscr);
-
-	// Check for floating point exception condition: (MSR[FE0] ^ MSR[FE1]) & FPSCR[FEX]
-	if(unlikely(((msr & CONFIG::MSR_FE0_MASK) |
-	            (msr & CONFIG::MSR_FE1_MASK)) &&
-	            (fpscr & CONFIG::FPSCR_FEX_MASK)))
-	{
-		// Raise a floating point exception
-		throw FloatingPointException<CONFIG>();
-	}
-
-	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
-}
-frsqrte.disasm = {
-	os << "frsqrte" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
-
 op fsub(63[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
 fsub.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -913,6 +654,7 @@ fsub.disasm = {
 
 op fsubs(59[6]:fd[5]:fa[5]:fb[5]:?[5]:20[5]:rc[1])
 fsubs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -969,49 +711,6 @@ fsubs.disasm = {
 	os << "fsubs" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fb;
 }
 
-op fsel(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:23[5]:rc[1])
-fsel.execute = {
-	// Check if FPU is enabled
-	uint32_t msr = cpu->GetMSR();
-	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
-	{
-		throw FloatingPointUnavailableException<CONFIG>();
-	}
-
-	// Read the input operands
-	uint32_t fpscr = cpu->GetFPSCR();
-	const SoftDouble& a = cpu->GetFPR(fa);
-	const SoftDouble& b = cpu->GetFPR(fb);
-	const SoftDouble& c = cpu->GetFPR(fc);
-
-	// Compute and write the result
-	cpu->SetFPR(fd, ((!a.isZero() && a.isNegative()) || a.isNaN()) ? b : c);
-
-	// Copy FX, FEX, VX, OX to CR1
-	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
-}
-fsel.disasm = {
-	os << "fsel" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fa << ", f" << (unsigned int) fc << ", f" << (unsigned int) fb;
-}
-
-op fsqrt(63[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
-fsqrt.execute = {
-	/* this optional instruction is not implemented */
-	throw IllegalInstructionException<CONFIG>();
-}
-fsqrt.disasm = {
-	os << "fsqrt" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
-
-op fsqrts(59[6]:fd[5]:?[5]:fb[5]:?[5]:22[5]:rc[1])
-fsqrts.execute = {
-	/* this optional instruction is not implemented */
-	throw IllegalInstructionException<CONFIG>();
-}
-fsqrts.disasm = {
-	os << "fsqrts" << (rc ? "." : "") << " f" << (unsigned int) fd << ", f" << (unsigned int) fb;
-}
-
 /******************************************************
 
 	FLOATING POINT MULTIPLY-ADD INSTRUCTIONS
@@ -1020,6 +719,7 @@ fsqrts.disasm = {
 
 op fmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
 fmadd.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1077,6 +777,7 @@ fmadd.disasm = {
 
 op fmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:29[5]:rc[1])
 fmadds.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1137,6 +838,7 @@ fmadds.disasm = {
 
 op fmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
 fmsub.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1194,6 +896,7 @@ fmsub.disasm = {
 
 op fmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:28[5]:rc[1])
 fmsubs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1254,6 +957,7 @@ fmsubs.disasm = {
 
 op fnmadd(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
 fnmadd.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1314,6 +1018,7 @@ fnmadd.disasm = {
 
 op fnmadds(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:31[5]:rc[1])
 fnmadds.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1377,6 +1082,7 @@ fnmadds.disasm = {
 
 op fnmsub(63[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsub.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1437,6 +1143,7 @@ fnmsub.disasm = {
 
 op fnmsubs(59[6]:fd[5]:fa[5]:fb[5]:fc[5]:30[5]:rc[1])
 fnmsubs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1505,6 +1212,7 @@ fnmsubs.disasm = {
 
 op fcmpo(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:32[10]:?[1])
 fcmpo.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1573,6 +1281,7 @@ fcmpo.disasm = {
 
 op fcmpu(63[6]:crfD[3]:?[2]:fa[5]:fb[5]:0[10]:?[1])
 fcmpu.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1639,6 +1348,7 @@ fcmpu.disasm = {
 
 op fctiw(63[6]:fd[5]:?[5]:fb[5]:14[10]:rc[1])
 fctiw.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1710,6 +1420,7 @@ fctiw.disasm = {
 
 op fctiwz(63[6]:fd[5]:?[5]:fb[5]:15[10]:rc[1])
 fctiwz.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1781,6 +1492,7 @@ fctiwz.disasm = {
 
 op frsp(63[6]:fd[5]:?[5]:fb[5]:12[10]:rc[1])
 frsp.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1844,6 +1556,7 @@ frsp.disasm = {
 
 op fabs(63[6]:fd[5]:?[5]:fb[5]:264[10]:rc[1])
 fabs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1875,6 +1588,7 @@ fabs.disasm = {
 
 op fmr(63[6]:fd[5]:?[5]:fb[5]:72[10]:rc[1])
 fmr.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1895,6 +1609,7 @@ fmr.disasm = {
 
 op fnabs(63[6]:fd[5]:?[5]:fb[5]:136[10]:rc[1])
 fnabs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1926,6 +1641,7 @@ fnabs.disasm = {
 
 op fneg(63[6]:fd[5]:?[5]:fb[5]:40[10]:rc[1])
 fneg.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1958,6 +1674,7 @@ fneg.disasm = {
 
 op mcrfs(63[6]:crfD[3]:?[2]:crfS[3]:?[7]:64[10]:?[1])
 mcrfs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -1983,6 +1700,7 @@ mcrfs.disasm = {
 
 op mffs(63[6]:fd[5]:?[10]:583[10]:rc[1])
 mffs.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -2005,6 +1723,7 @@ mffs.disasm = {
 
 op mtfsb0(63[6]:crbD[5]:?[10]:70[10]:rc[1])
 mtfsb0.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -2035,6 +1754,7 @@ mtfsb0.disasm = {
 
 op mtfsb1(63[6]:crbD[5]:?[10]:38[10]:rc[1])
 mtfsb1.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -2058,6 +1778,7 @@ mtfsb1.disasm = {
 
 op mtfsf(63[6]:?[1]:fm[8]:?[1]:fb[5]:711[10]:rc[1])
 mtfsf.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))
@@ -2099,6 +1820,7 @@ mtfsf.disasm = {
 
 op mtfsfi(63[6]:crfD[3]:?[7]:imm[4]:?[1]:134[10]:rc[1])
 mtfsfi.execute = {
+	if(!CONFIG::HAS_FPU) throw UnimplementedInstructionException<CONFIG>();
 	// Check if FPU is enabled
 	uint32_t msr = cpu->GetMSR();
 	if(unlikely(!(msr & CONFIG::MSR_FP_MASK)))

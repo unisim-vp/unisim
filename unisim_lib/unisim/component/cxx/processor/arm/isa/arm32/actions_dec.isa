@@ -32,11 +32,12 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-action {void} execute({CPU<CONFIG> &} {cpu}) {
-	throw UndefinedInstructionException<CONFIG>();
+action {void} execute({STATE &} {cpu}) {
+	cpu.MarkVirtualExceptionVector(
+		unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
 }
 
-action {void} disasm({CPU<CONFIG> &} {cpu}, {stringstream &} {buffer}) {
+action {void} disasm({STATE &} {cpu}, {stringstream &} {buffer}) {
 	buffer << "Unknown instruction";
 }
 

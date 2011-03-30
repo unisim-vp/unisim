@@ -97,50 +97,29 @@ CPU(const char *name,
 	Client<Memory<uint64_t> >(name, parent),
 	Client<TI_C_IO>(name, parent),
 	Client<Loader<uint64_t> >(name, parent),
+	logger(*this),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
+	memory_export("memory_export", this),
+	memory_injection_export("memory_injection_export", this),
 	memory_access_reporting_control_export(
 		"memory_access_reporting_control_export",
 		this),
-	memory_export("memory_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	trap_reporting_import("trap-reporting-import", this),
 	symbol_table_lookup_import("symbol_table_lookup_import", this),
 	memory_import("memory_import", this),
-	memory_injection_export("memory_injection_export", this),
 	ti_c_io_import("ti-c-io-import", this),
-	loader_import("loader-import", this),
 	requires_memory_access_reporting(true),
 	requires_finished_instruction_reporting(true),
-	logger(*this),
-	enable_parallel_load_bug(true),
-	enable_parallel_store_bug(true),
-	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
-		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
-	enable_rnd_bug(true),
-	param_enable_rnd_bug("enable-rnd-bug", this, enable_rnd_bug,
-		"If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation."),
-	param_enable_parallel_store_bug("enable-parallel-store-bug", this, enable_parallel_store_bug,
-		"If enabled, when using parallel stores (STF src2, dst2 || STF src1, dst1) the first store is treated as a NOP."),
-	enable_float_ops_with_non_ext_regs(false),
-	param_enable_float_ops_with_non_ext_regs("enable-float-ops-with-non-ext-regs", this, enable_float_ops_with_non_ext_regs,
-		"If enabled non extended registers can be used on all the float instructions, however the behavior is not documented and can differ between chips revision. If disabled, it stops simulation when using non extended registers on float instructions."),
-	verbose_all(false),
-	param_verbose_all("verbose-all", this, verbose_all),
-	verbose_setup(false),
-	param_verbose_setup("verbose-setup", this, verbose_setup),
 	instruction_counter(0),
 	trap_on_instruction_counter(0xffffffffffffffffULL),
-	insn_cache_hits(0),
-	insn_cache_misses(0),
-	mimic_dev_board(false),
-	stat_instruction_counter("instruction-counter", this, instruction_counter),
-	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	max_inst(0xffffffffffffffffULL),
+	mimic_dev_board(false),
 	param_max_inst("max-inst", this, max_inst),
-	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
-	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses),
+	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
+	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	param_mimic_dev_board("mimic-dev-board", this, mimic_dev_board),
 	delay_before_branching(0),
 	branch_addr(0),
@@ -150,10 +129,28 @@ CPU(const char *name,
 	idle(0),
 	reg_ir(0),
 	reg_pc(0),
-	reg_npc(0)
+	reg_npc(0),
+	insn_cache_hits(0),
+	insn_cache_misses(0),
+	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
+	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses),
+	enable_parallel_load_bug(true),
+	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
+		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
+	enable_rnd_bug(true),
+	param_enable_rnd_bug("enable-rnd-bug", this, enable_rnd_bug,
+		"If enabled the `rnd` instruction sets the Z flag to 0 systematically, as it is done in the evaluation board. Otherwise, Z is unchanged as it is written in the documentation."),
+	enable_parallel_store_bug(true),
+	param_enable_parallel_store_bug("enable-parallel-store-bug", this, enable_parallel_store_bug,
+		"If enabled, when using parallel stores (STF src2, dst2 || STF src1, dst1) the first store is treated as a NOP."),
+	enable_float_ops_with_non_ext_regs(false),
+	param_enable_float_ops_with_non_ext_regs("enable-float-ops-with-non-ext-regs", this, enable_float_ops_with_non_ext_regs,
+		"If enabled non extended registers can be used on all the float instructions, however the behavior is not documented and can differ between chips revision. If disabled, it stops simulation when using non extended registers on float instructions."),
+	verbose_all(false),
+	verbose_setup(false),
+	param_verbose_all("verbose-all", this, verbose_all),
+	param_verbose_setup("verbose-setup", this, verbose_setup)
 {
-	Object::SetupDependsOn(loader_import);
-
 	regs[REG_ST].SetLoWriteMask(ST_WRITE_MASK);
 	regs[REG_IE].SetLoWriteMask(IE_WRITE_MASK);
 	regs[REG_IF].SetLoWriteMask(IF_WRITE_MASK);
@@ -232,11 +229,8 @@ CPU<CONFIG, DEBUG> ::
 template<class CONFIG, bool DEBUG>
 bool 
 CPU<CONFIG, DEBUG> ::
-Setup() 
+BeginSetup() 
 {
-	bool success = true;
-	
-
 	if (VerboseAll())
 	{
 		verbose_setup = true;
@@ -267,10 +261,10 @@ Setup()
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
-	
-	Reset();
 
-	return success;
+	Reset();
+	
+	return true;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -336,27 +330,11 @@ Reset()
 		regs[reg_num].SetHi(0);
 	}
 
-	if(loader_import && mimic_dev_board)
+	if(unlikely(verbose_setup))
 	{
-		if(unlikely(verbose_setup))
-		{
-			logger << DebugInfo << "Mimicing development board behavior after reset" << EndDebugInfo;
-		}
-		SetSP(loader_import->GetStackBase() / 4);
-		SetPC(loader_import->GetEntryPoint() / 4);
-		SetNPC(loader_import->GetEntryPoint() / 4);
-		// Invalidate the instruction cache
-		InvalidateInsnCache();
-		reset = false;
+		logger << DebugInfo << "Reseting" << EndDebugInfo;
 	}
-	else
-	{
-		if(unlikely(verbose_setup))
-		{
-			logger << DebugInfo << "Reseting" << EndDebugInfo;
-		}
-		reset = true;
-	}
+	reset = true;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -740,7 +718,7 @@ CircularAdd(uint32_t ar, uint32_t bk, uint32_t step)
 
 	// Compute the new index in the circular buffer
 	int32_t index = (int32_t) (ar & k_lsb_mask) + (int32_t) step;
-	if(index >= bk) index = index - bk;
+	if(index >= (int32_t) bk) index = index - bk;
 
 	// Return the new circular address
 	return (base_addr + index) & ADDRESS_MASK;
@@ -1261,20 +1239,44 @@ StepInstruction()
 	{
 		if(unlikely(reset))
 		{
-			// Invalidate the instruction cache
-			InvalidateInsnCache();
+			if(ti_c_io_import && mimic_dev_board)
+			{
+				if(unlikely(verbose_setup))
+				{
+					logger << DebugInfo << "Mimicing development board behavior after reset" << EndDebugInfo;
+				}
 
-			// Load the reset interrupt handler address
-			address_t reset_interrupt_handler_addr = IntLoad(0);
+				// Invalidate the instruction cache
+				InvalidateInsnCache();
 
-			// Branch to the reset interrupt handler
-			SetPC(reset_interrupt_handler_addr);
+				// Reset TI C I/O service
+				ti_c_io_import->Reset();
+				
+				// Fetch first instruction
+				SetIR(Fetch(GetPC23_0()));
 
-			// Fetch first instruction of the interrupt handler
-			SetIR(Fetch(GetPC23_0()));
+				// Compute the address of the next instruction, i.e. PC + 1
+				SetNPC(GetPC() + 1);
 
-			// Compute the address of the next instruction, i.e. PC + 1
-			SetNPC(GetPC() + 1);
+				reset = false;
+			}
+			else
+			{
+				// Invalidate the instruction cache
+				InvalidateInsnCache();
+
+				// Load the reset interrupt handler address
+				address_t reset_interrupt_handler_addr = IntLoad(0);
+
+				// Branch to the reset interrupt handler
+				SetPC(reset_interrupt_handler_addr);
+
+				// Fetch first instruction of the interrupt handler
+				SetIR(Fetch(GetPC23_0()));
+
+				// Compute the address of the next instruction, i.e. PC + 1
+				SetNPC(GetPC() + 1);
+			}
 
 			// Reset finished
 			reset = false;
@@ -1485,15 +1487,6 @@ StepInstruction()
 	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 }
 
-template<class CONFIG, bool DEBUG>
-void
-CPU<CONFIG, DEBUG> ::
-Stop(int ret)
-{
-	logger << DebugWarning << "TODO: implement Stop" << endl
-		<< LOCATION << EndDebug;
-}
-
 //===============================================================
 //= Execution methods                                      STOP =
 //===============================================================
@@ -1663,11 +1656,11 @@ Fetch(address_t addr)
 	}
 
 	uint32_t insn;
-	InsnCacheSet *insn_cache_set;
-	uint32_t insn_cache_way;
-	InsnCacheLine *insn_cache_line;
-	uint32_t insn_cache_line_base_addr;
-	uint32_t insn_cache_sector;
+	InsnCacheSet *insn_cache_set = 0;
+	uint32_t insn_cache_way = 0;
+	InsnCacheLine *insn_cache_line = 0;
+	uint32_t insn_cache_line_base_addr = 0;
+	uint32_t insn_cache_sector = 0;
 	bool insn_cache_line_hit = false;
 
 	// Check wether instruction cache is being cleared
@@ -1779,7 +1772,7 @@ bool
 CPU<CONFIG, DEBUG> ::
 SWI()
 {
-	if(!ti_c_io_import) return false;
+	if(!ti_c_io_import || !mimic_dev_board) return false;
 	TI_C_IO::Status status = ti_c_io_import->HandleEmulatorInterrupt();
 
 	switch(status)

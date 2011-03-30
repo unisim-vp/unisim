@@ -114,7 +114,7 @@ public:
 		AddressMap<SYSTEM_BUS_PHYSICAL_ADDR, PCI_BUS_PHYSICAL_ADDR, DEBUG> &_addr_map, 
 		const char *name, 
 		Object *parent = NULL);
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual void OnDisconnect();
 	
 	void TranslateAddressSystemToPCIMem(SYSTEM_BUS_PHYSICAL_ADDR addr,

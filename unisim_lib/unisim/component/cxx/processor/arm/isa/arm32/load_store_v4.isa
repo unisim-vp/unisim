@@ -47,18 +47,12 @@
  * ldrh instruction
  */
 
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrh_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrh_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
+op ldrh_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
+op ldrh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
+op ldrh_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
+op ldrh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
+op ldrh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
+op ldrh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
 
 ldrh_imm_post.disasm = {
   buffer << "ldr";
@@ -106,101 +100,101 @@ ldrh_reg_pre.disasm = {
 }
 
 ldrh_imm_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
 	address = rn_value; // address used is the contents of rn
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
 	cpu.Read16toGPRAligned(address, rd);
 }
 
 ldrh_imm_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); 
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.Read16toGPRAligned(address, rd);
 }
 
 ldrh_imm_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address); // update rn with the address
 	cpu.Read16toGPRAligned(address, rd);
 }
 
 ldrh_reg_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = rn_value;
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
 	cpu.Read16toGPRAligned(address, rd);
 }
 
 ldrh_reg_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.Read16toGPRAligned(address, rd);
 }
 
 ldrh_reg_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address);
 	cpu.Read16toGPRAligned(address, rd);
 }
@@ -213,18 +207,12 @@ ldrh_reg_pre.execute = {
  * ldrsh instruction
  */
 
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsh_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsh_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
+op ldrsh_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
+op ldrsh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
+op ldrsh_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
+op ldrsh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
+op ldrsh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
+op ldrsh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
 
 ldrsh_imm_post.disasm = {
   buffer << "ldr";
@@ -272,77 +260,77 @@ ldrsh_reg_pre.disasm = {
 }
 
 ldrsh_imm_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = rn_value; // address used is the contents of rn
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
 	cpu.ReadS16toGPRAligned(address, rd);
 }
 
 ldrsh_imm_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); 
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.ReadS16toGPRAligned(address, rd);
 }
 
 ldrsh_imm_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address); // update rn with the address
 	cpu.ReadS16toGPRAligned(address, rd);
 }
 
 ldrsh_reg_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = rn_value;
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
 	cpu.ReadS16toGPRAligned(address, rd);
 }
 
 ldrsh_reg_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -350,24 +338,24 @@ ldrsh_reg_offset.execute = {
   
 //	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
 	address = MLSReg(u, rn_value, rd_value, rm_value);
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.ReadS16toGPRAligned(address, rd);
 }
 
 ldrsh_reg_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address);
 	cpu.ReadS16toGPRAligned(address, rd);
 }
@@ -380,18 +368,12 @@ ldrsh_reg_pre.execute = {
  * ldrsb instruction
  */
 
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsb_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsb_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsb_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsb_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsb_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op ldrsb_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
+op ldrsb_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
+op ldrsb_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
+op ldrsb_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
+op ldrsb_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
+op ldrsb_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
+op ldrsb_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
 
 ldrsb_imm_post.disasm = {
   buffer << "ldr";
@@ -439,10 +421,10 @@ ldrsb_reg_pre.disasm = {
 }
 
 ldrsb_imm_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -454,10 +436,10 @@ ldrsb_imm_post.execute = {
 }
 
 ldrsb_imm_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
   
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -468,10 +450,10 @@ ldrsb_imm_offset.execute = {
 }
 
 ldrsb_imm_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -483,12 +465,12 @@ ldrsb_imm_pre.execute = {
 }
 
 ldrsb_reg_post.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -500,12 +482,12 @@ ldrsb_reg_post.execute = {
 }
 
 ldrsb_reg_offset.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -516,12 +498,12 @@ ldrsb_reg_offset.execute = {
 }
 
 ldrsb_reg_pre.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t address;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	typename CONFIG::reg_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t address;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -540,18 +522,12 @@ ldrsb_reg_pre.execute = {
  * strh instruction
  */
 
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op strh_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op strh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op strh_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op strh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op strh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
-{	CONFIG::HAS_LOAD_STORE_V4 
-}:op strh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
+op strh_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*w*/0b1[1]:/*i*/0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
+op strh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
+op strh_imm_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1011[4]:immedL[4])
+op strh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
+op strh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
+op strh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4])
 
 strh_imm_post.disasm = {
 	buffer << "str";
@@ -599,7 +575,7 @@ strh_reg_pre.disasm = {
 }
 
 strh_imm_post.execute = {
-	typename CONFIG::address_t address;
+	uint32_t address;
 	uint16_t value16;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -607,14 +583,14 @@ strh_imm_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = cpu.GetGPR(rn); // address used is the contents of rn
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSImmOffset(u, cpu.GetGPR(rn), immedH, immedL)); // update rn
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
 	cpu.Write16(address, value16);
 }
 
 strh_imm_offset.execute = {
-	typename CONFIG::address_t address;
+	uint32_t address;
 	uint16_t value16;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -622,13 +598,13 @@ strh_imm_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = MLSImmOffset(u, cpu.GetGPR(rn), immedH, immedL); 
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
 	cpu.Write16(address, value16);
 }
 
 strh_imm_pre.execute = {
-	typename CONFIG::address_t address;
+	uint32_t address;
 	uint16_t value16;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -636,14 +612,14 @@ strh_imm_pre.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = MLSImmOffset(u, cpu.GetGPR(rn), immedH, immedL); // compute address
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address); // update rn with the address
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
 	cpu.Write16(address, value16);
 }
 
 strh_reg_post.execute = {
-	typename CONFIG::address_t address;
+	uint32_t address;
 	uint16_t value16;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -651,14 +627,14 @@ strh_reg_post.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = cpu.GetGPR(rn);
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm)));
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
 	cpu.Write16(address, value16);
 }
 
 strh_reg_offset.execute = {
-	typename CONFIG::address_t address;
+	uint32_t address;
 	uint16_t value16;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -666,13 +642,13 @@ strh_reg_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
 	cpu.Write16(address, value16);
 }
 
 strh_reg_pre.execute = {
-	typename CONFIG::address_t address;
+	uint32_t address;
 	uint16_t value16;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -680,7 +656,7 @@ strh_reg_pre.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
-	cpu.CheckAlignmentExcep(address & ~(typename CONFIG::address_t)(0x02)); // TODO
+	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address);
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
   cpu.Write16(address, value16);
@@ -697,7 +673,7 @@ group load_store_v4_rn_init(ldrh_imm_post, ldrh_imm_offset, ldrh_imm_pre, \
                             ldrsb_imm_post, ldrsb_imm_offset, ldrsb_imm_pre, \
                             ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre)
 load_store_v4_rn_init.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rn == 15) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
@@ -707,7 +683,7 @@ group load_store_v4_rm_init(ldrh_reg_post, ldrh_reg_offset, ldrh_reg_pre, \
                             ldrsh_reg_post, ldrsh_reg_offset, ldrsh_reg_pre, \
                             ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre)
 load_store_v4_rm_init.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
 	if(rm == 15) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
@@ -717,7 +693,7 @@ group load_store_v4_rd_init(ldrh_reg_post, ldrh_reg_offset, ldrh_reg_pre, \
                             ldrsh_reg_post, ldrsh_reg_offset, ldrsh_reg_pre, \
                             ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre)
 load_store_v4_rd_init.initialize_rd_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rd == 15) inherited::rd_init = 8;
 	else inherited::rd_init = 0;

@@ -177,7 +177,7 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader;
+	Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader;
 	//  - Linux loader
 	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader;
 	//  - Linux OS
@@ -277,7 +277,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	elf32_loader = new Elf32Loader("elf32-loader");
+	elf32_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("elf32-loader");
 	//  - Linux loader
 	linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
 	//  - Linux OS

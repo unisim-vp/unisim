@@ -131,7 +131,6 @@ ControlSelector<MAX_IMPORTS>::ControlSelector(
 	in("in", this),
 	out("out_control", this)
 {
-	Object::SetupDependsOn(out);
 	this->index = index;
 	this->requires_memory_access_reporting = requires_memory_access_reporting;
 	this->requires_finished_instruction_reporting = requires_finished_instruction_reporting;

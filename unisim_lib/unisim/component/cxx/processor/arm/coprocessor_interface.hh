@@ -41,7 +41,6 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_CP_INTERFACE_HH__
 
 #include <inttypes.h>
-
 #include "unisim/util/endian/endian.hh"
 
 namespace unisim {
@@ -57,57 +56,33 @@ using unisim::util::endian::endian_type;
 // crn     = primary register involved in instruction
 // crm     = additional register; if not needed,  0 must be specified
 
-#include <inttypes.h>
-
-class CPUCPInterface {
-public:
-	virtual ~CPUCPInterface() {};
-	virtual endian_type CoprocessorGetEndianness() = 0;
-	virtual void CoprocessorStop(unsigned int cp_id, int ret) = 0;
-	virtual bool CoprocessorGetVinithi() = 0;
-	virtual bool CoprocessorGetInitram() = 0;
-	
-	// CP15 -> cpu memory (for debugging purposes/non-intrusive accesses)
-	virtual bool CoprocessorReadMemory(uint64_t addr, void *buffer, uint32_t size) = 0;
-	virtual bool CoprocessorWriteMemory(uint64_t addr, const void *buffer, uint32_t size) = 0;
-};
 
 /// Arm Coprocessor generic interface.
 /** This class describes the communication interface between Arm CPU and a Coprocessor
  */
 
-template<bool DEBUG_ENABLE>
+template <class CPU>
 class CPInterface {
 
-private:
-	typedef uint32_t reg_t;
-	
 public:
-
-	CPInterface(unsigned int _cp_id,
-			CPUCPInterface *_cpu) :
-		cpu(_cpu),
-		cp_id(_cp_id) {}
-	
-	
-	/// Destructor.
-	virtual ~CPInterface(){};
-
-	/* Gives the name of the Coprocessor component.
-	 * @return The name of the componenet (constant character string pointer)
+	/** Constructor
+	 *
+	 * @param the cpu to which this coprocessor is attached with
 	 */
-	virtual const char* Description() = 0;
+	CPInterface(CPU *_cpu) :
+		cpu(_cpu) {};
+	
+	/** Destructor. */
+	virtual ~CPInterface() 
+	{ 
+		cpu = 0;
+	};
 
-	/* Gives the name of a specified register
-	 * @param[in] id : unsigned 32 bits integer for register id 
-	 * @return The name of the componenet (constant character string pointer)
-	 */
-	virtual const char* RegisterName(uint32_t id, uint32_t option = 0) = 0;
-
-	/// Set coprocessor to reset state.
+	/** Set coprocessor to reset state. */
     virtual void Reset() = 0;
 
     /** Read the value of a register
+	 *
      * @param[in]  opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
      * @param[in]  opcode2 : the "opcode2" field of the instruction code ( unsigned 8 bits integer)
      * @param[in]  crn     : the "crn" field of the instruction code (unsigned 8 bits integer)
@@ -118,9 +93,10 @@ public:
     		uint8_t opcode2, 
     		uint8_t crn, 
     		uint8_t crm, 
-    		reg_t& reg) = 0;
+    		uint32_t& reg) = 0;
 
     /** Write a value in a register
+	 *
      * @param[in] opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
      * @param[in] opcode2 : the "opcode2" field of the instruction code (unsigned 8 bits integer)
      * @param[in] crn     : the "crn" field of the instruction code (unsigned 8 bits integer)
@@ -131,9 +107,10 @@ public:
     		uint8_t opcode2, 
     		uint8_t crn, 
     		uint8_t crm, 
-    		reg_t value) = 0;
+    		uint32_t value) = 0;
 
     /** Perform a coprocessor operation
+	 *
      * @param[in] opcode1 : the "opcode1" field of the instruction code (unsigned 8 bits integer)
      * @param[in] opcode2 : the "opcode2" field of the instruction code (unsigned 8 bits integer)
      * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
@@ -147,30 +124,23 @@ public:
     		uint8_t crm) = 0;
 
     /** Perform a coprocessor load
+	 *
      * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
 	 * @param[in] address : the address to load data from
      */
     virtual void Load(uint8_t crd,
-    		reg_t address) = 0;
+    		uint32_t address) = 0;
 
     /** Perform a coprocessor load
+	 *
      * @param[in] crd     : the "crd" field of the instruction code (unsigned 8 bits integer)
 	 * @param[in] address : the address to store the data to
      */
     virtual void Store(uint8_t crd,
-    		reg_t address) = 0;
+    		uint32_t address) = 0;
 
-#ifndef SOCLIB
-	
-	// CP15 -> Memory Interface (for debugging purposes/non-intrusive accesses)
-	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size) = 0;
-	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size) = 0;
-	
-#endif // SOCLIB
-    
 protected:
-	CPUCPInterface *cpu;
-	unsigned int cp_id;
+	CPU *cpu;
 };
 
 } // end of namespace arm

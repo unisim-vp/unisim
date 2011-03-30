@@ -50,6 +50,7 @@ public:
 		EXIT  = 1,
 	} Status;
 
+	virtual void Reset() = 0;
 	virtual Status HandleEmulatorInterrupt() = 0;
 };
 

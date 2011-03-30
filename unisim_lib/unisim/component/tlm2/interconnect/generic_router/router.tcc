@@ -142,8 +142,7 @@ memory_export("memory-export", this),
 m_req_dispatcher(),
 m_rsp_dispatcher(),
 cycle_time(SC_ZERO_TIME),
-cycle_time_double(0.0),
-param_cycle_time_double("cycle_time", this, cycle_time_double, "Time to process a request/response by the router in SC_PS)"),
+param_cycle_time("cycle_time", this, cycle_time, "Time to process a request/response by the router"),
 port_buffer_size(0),
 param_port_buffer_size("port_buffer_size", this, port_buffer_size, "Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)"),
 logger(*this),
@@ -232,7 +231,7 @@ param_verbose_memory_interface(0)
 		stringstream str;
 		str << "memory-import[" << i << "]";
 		memory_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >(str.str().c_str(), this);
-		SetupDependsOn(*memory_import[i]);
+		memory_export.SetupDependsOn(*memory_import[i]);
 	}
 //	/* create initiator sockets and register socket callbacks */
 //	for (unsigned int i = 0; i < MAX_OUTPUT_SOCKETS; i++)
@@ -316,20 +315,18 @@ Router<CONFIG>::
 template<class CONFIG>
 bool
 Router<CONFIG>::
-Setup()
+BeginSetup()
 {
 	const unsigned int num_mappings = CONFIG::MAX_NUM_MAPPINGS;
 
 	SetVerboseAll();
 
-	if (cycle_time_double == 0.0) 
+	if (cycle_time == SC_ZERO_TIME) 
 	{
-		logger << DebugError << "PARAMETER ERROR: the cycle_time parameter must be bigger than 0" << endl
+		logger << DebugError << "PARAMETER ERROR: the " << param_cycle_time.GetName() << " parameter must be bigger than 0" << endl
 			<< LOCATION << EndDebug;
 		return false;
 	}
-
-	cycle_time = sc_time(cycle_time_double, SC_PS);
 
 	bool has_mapping = false;
 	for (unsigned int i = 0; i < num_mappings; i++) 

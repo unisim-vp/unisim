@@ -50,8 +50,8 @@ Simulator(int argc, char **argv)
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
-	, irq_master_stub(0)
-	, fiq_master_stub(0)
+	//, irq_master_stub(0)
+	//, fiq_master_stub(0)
 	, memory(0)
 	, time(0)
 	, host_time(0)
@@ -94,8 +94,8 @@ Simulator(int argc, char **argv)
 #endif // SIM_LIBRARY
 {
 	cpu = new CPU("cpu");
-	irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
-	fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
+	// irq_master_stub = new IRQ_MASTER_STUB("irq-master-stub");
+	// fiq_master_stub = new FIQ_MASTER_STUB("fiq-master-stub");
 	memory = new MEMORY("memory");
 	time = new unisim::service::time::sc_time::ScTime("time");
 	host_time = new unisim::service::time::host_time::HostTime("host-time");
@@ -171,8 +171,8 @@ Simulator(int argc, char **argv)
 	// This mode allows to run Linux applications without simulating all the peripherals.
 
 	cpu->master_socket(memory->slave_sock);
-	irq_master_stub->out_interrupt(cpu->in_irq);
-	fiq_master_stub->out_interrupt(cpu->in_fiq);
+	// irq_master_stub->out_interrupt(cpu->in_irq);
+	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	EnableGdbServer();
@@ -188,23 +188,26 @@ Simulator(int argc, char **argv)
 	elf32_loader->memory_import >> memory->memory_export;
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
+	linux_loader->blob_import >> elf32_loader->blob_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
-	linux_os->cpu_linux_os_import >> cpu->cpu_linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
-	cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
-	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[1];
-	cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
+	linux_os->blob_import >> linux_loader->blob_export;
+	// cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+#ifndef SIM_INLINE_DEBUGGER_SUPPORT
+	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+#endif
+	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
 	if ( enable_power_estimation )
 	{
-		cpu->il1_power_estimator_import >> il1_power_estimator->power_estimator_export;
-		cpu->il1_power_mode_import >> il1_power_estimator->power_mode_export;
-		cpu->dl1_power_estimator_import >> dl1_power_estimator->power_estimator_export;
-		cpu->dl1_power_mode_import >> dl1_power_estimator->power_mode_export;
+		cpu->icache.power_estimator_import >> il1_power_estimator->power_estimator_export;
+		cpu->icache.power_mode_import >> il1_power_estimator->power_mode_export;
+		cpu->dcache.power_estimator_import >> dl1_power_estimator->power_estimator_export;
+		cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
 
 		il1_power_estimator->time_import >> time->time_export;
 		dl1_power_estimator->time_import >> time->time_export;
@@ -218,8 +221,8 @@ Simulator(int argc, char **argv)
 Simulator::~Simulator()
 {
 	if ( cpu ) delete cpu;
-	if ( irq_master_stub ) delete irq_master_stub;
-	if ( fiq_master_stub ) delete fiq_master_stub;
+	// if ( irq_master_stub ) delete irq_master_stub;
+	// if ( fiq_master_stub ) delete fiq_master_stub;
 	if ( memory ) delete memory;
 	if ( time ) delete time;
 	if ( host_time ) delete host_time;
@@ -376,9 +379,10 @@ SimulationFinished() const
 
 void
 Simulator ::
-Stop()
+Stop(unisim::kernel::service::Object *object, int exit_status)
 {
 	sc_stop();
+	wait();
 }
 
 void
@@ -396,15 +400,22 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
 	sim->SetVariable("cpu.default-endianness",   "little-endian");
-	sim->SetVariable("cpu.cpu-cycle-time",       1000UL);
-	sim->SetVariable("memory.bytesize",          0xffffffffUL);
-	sim->SetVariable("memory.cycle-time",        1000000UL);
+	sim->SetVariable("cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
+	sim->SetVariable("cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
+	sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
+	sim->SetVariable("cpu.dcache.size",          0x020000); // 128 KB
+	sim->SetVariable("cpu.nice-time",            "1 ms"); // 1ms
+	sim->SetVariable("cpu.ipc",                  1.0);
+	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
+	sim->SetVariable("memory.cycle-time",        "31250 ps");
+	sim->SetVariable("memory.read-latency",      "31250 ps");
+	sim->SetVariable("memory.write-latency",     "0 ps");
 	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
 	sim->SetVariable("linux-loader.endianness",  "little-endian");
 	sim->SetVariable("linux-loader.argc",        1);
 	sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
-	sim->SetVariable("linux-os.system",          "arm");
+	sim->SetVariable("linux-os.system",          "arm-eabi");
 	sim->SetVariable("linux-os.endianness",      "little-endian");
 	sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
 
@@ -432,6 +443,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	sim->SetVariable("enable-power-estimation", true);
 	sim->SetVariable("il1-power-estimator.cache-size", 32 * 128);
 	sim->SetVariable("il1-power-estimator.line-size", 32);
 	sim->SetVariable("il1-power-estimator.associativity", 4);
@@ -540,6 +552,7 @@ EnableInlineDebugger()
 		// connect the inline debugger to other components
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->instruction_counter_trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;

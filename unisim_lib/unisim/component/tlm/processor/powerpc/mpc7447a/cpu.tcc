@@ -123,9 +123,9 @@ void CPU<CONFIG>::Synchronize()
 
 	
 template <class CONFIG>
-bool CPU<CONFIG>::Setup()
+bool CPU<CONFIG>::EndSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::EndSetup()) return false;
 	cpu_cycle_sctime = sc_time((double) inherited::cpu_cycle_time, SC_PS);
 	//bus_cycle_sctime = sc_time((double) inherited::bus_cycle_time, SC_PS);
 	//nice_sctime = sc_time((double) nice_time, SC_PS); // 10000 * cpu_cycle_sctime;//

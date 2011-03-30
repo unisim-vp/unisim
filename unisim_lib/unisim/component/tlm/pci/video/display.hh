@@ -94,7 +94,7 @@ public:
 	Display(const sc_module_name& name, Object *parent = 0);
 	virtual ~Display();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
-	virtual bool Setup();
+	virtual bool EndSetup();
 private:
 	
 	sc_time pci_bus_cycle_time;

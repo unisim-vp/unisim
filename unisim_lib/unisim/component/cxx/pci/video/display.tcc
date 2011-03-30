@@ -102,17 +102,34 @@ Display<ADDRESS>::Display(const char *name, Object *parent) :
 	param_width.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_height.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_depth.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	
-	Object::SetupDependsOn(video_import);
 }
 
 template <class ADDRESS>
-bool Display<ADDRESS>::Setup()
+Display<ADDRESS>::~Display()
 {
-	// PCI configuration registers initialization	
-	pci_conf_base_addr.Initialize("pci_conf_base_addr", "PCI Config Base Address", 0xfffffff0UL, initial_base_addr);
+	if(frame_buffer)
+	{
+		delete[] frame_buffer;
+		frame_buffer = 0;
+	}
+}
 
-	pci_conf_command = pci_conf_command | 0x2; // active memory space
+template <class ADDRESS>
+bool Display<ADDRESS>::BeginSetup()
+{
+	if(frame_buffer)
+	{
+		delete[] frame_buffer;
+		frame_buffer = 0;
+	}
+	
+	return true;
+}
+
+template <class ADDRESS>
+bool Display<ADDRESS>::SetupFrameBuffer()
+{
+	if(frame_buffer) return true;
 
 	bytes_per_pixels = (depth + 7) / 8;
 	bytes_per_line = width * bytes_per_pixels;
@@ -126,26 +143,40 @@ bool Display<ADDRESS>::Setup()
 	frame_buffer = new uint8_t[bytesize];
 	memset(frame_buffer, 0, bytesize);
 	
+	return frame_buffer != 0;
+}
+
+template <class ADDRESS>
+bool Display<ADDRESS>::Setup(ServiceExportBase *srv_export)
+{
+	if(srv_export == &memory_export) return SetupFrameBuffer();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	return false;
+}
+
+template <class ADDRESS>
+bool Display<ADDRESS>::EndSetup()
+{
+	// PCI configuration registers initialization	
+	pci_conf_base_addr.Initialize("pci_conf_base_addr", "PCI Config Base Address", 0xfffffff0UL, initial_base_addr);
+
+	pci_conf_command = pci_conf_command | 0x2; // active memory space
+
 	if(video_import)
 	{
 		if(!video_import->SetVideoMode(pci_conf_base_addr, width, height, depth, bytes_per_line))
 		{
-			logger << DebugError << ": Can't set video mode" << EndDebugError;
+			logger << DebugError << "Can't set video mode" << EndDebugError;
 			return false;
 		}
 	}
+	else
+	{
+		logger << DebugWarning << "No video output on host machine is available" << EndDebugWarning;
+	}
 	
 	return true;
-}
-
-template <class ADDRESS>
-Display<ADDRESS>::~Display()
-{
-	if(frame_buffer)
-	{
-		delete[] frame_buffer;
-		frame_buffer = 0;
-	}
 }
 
 template <class ADDRESS>

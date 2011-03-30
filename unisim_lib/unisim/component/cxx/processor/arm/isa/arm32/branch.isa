@@ -49,25 +49,25 @@ op b_110x(0b110[3]:sub_cond[1]:0b1010[4]:sext<32> imm[24])
 op b_1110(0b1110[4]:0b1010[4]:sext<32> imm[24])
 
 b_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 b_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 b_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 b_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -75,7 +75,7 @@ b_1110.initialize_condition = {
 group b(b_0xxx, b_10xx, b_110x, b_1110)
 
 b.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "b";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -83,9 +83,9 @@ b.disasm = {
 }
 
 b.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t new_PC;
+	uint32_t new_PC;
 
 	if(!cpu.CheckCondition(inherited::cond_init)) {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -111,25 +111,25 @@ op bl_110x(0b110[3]:sub_cond[1]:0b1011[4]:sext<32> imm[24])
 op bl_1110(0b1110[4]:0b1011[4]:sext<32> imm[24])
 
 bl_0xxx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = sub_cond;
 }
 
 bl_10xx.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 8 + sub_cond;
 }
 
 bl_110x.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 12 + sub_cond;
 }
 
 bl_1110.initialize_condition = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	inherited::cond_init = 14;
 }
@@ -137,7 +137,7 @@ bl_1110.initialize_condition = {
 group bl(bl_0xxx, bl_10xx, bl_110x, bl_1110)
 
 bl.disasm = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	buffer << "bl";
 	DisasmCondition(inherited::cond_init, buffer);
@@ -145,16 +145,17 @@ bl.disasm = {
 }
 
 bl.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t new_PC;
+	uint32_t new_PC;
 
 	if(!cpu.CheckCondition(inherited::cond_init)) {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 		return;
 	}
 
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
+	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 
+		/* instruction byte size */ 4); // cpu.InstructionByteSize());
 
 	new_PC = cpu.GetGPR(cpu.PC_reg) + (imm << 2) + 8;
 	cpu.SetGPR(cpu.PC_reg, new_PC);
@@ -167,17 +168,22 @@ bl.execute = {
 /*******************************************************************
  * bx (branch and exchange) instruction
  * this instruction is only availabe for the following architectures
- * 	CONFIG::ARMV4T,
- *  CONFIG::ARMV4TXM,
- *  CONFIG::ARMV5,
- *	CONFIG::ARMV5XM,
- *	CONFIG::ARMV5T,
- *	CONFIG::ARMV5TXM,
- *	CONFIG::ARMV5TE,
- *	CONFIG::ARMV5TEXP
+ * 	ARMV4T,
+ *  ARMV4TXM,
+ *  ARMV5 (ARMEMU),
+ *	ARMV5XM,
+ *	ARMV5T,
+ *	ARMV5TXM,
+ *	ARMV5TE,
+ *	ARMV5TEXP
  */
 
-{ CONFIG::HAS_INSN_BX
+{ STATE::MODEL == ARMV4T ||
+  STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMEMU
 }:op bx(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0001[4]:rm[4])
 
 bx.disasm = {
@@ -187,10 +193,10 @@ bx.disasm = {
 }
 
 bx.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t new_PC;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t new_PC;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 
 	if(!cpu.CheckCondition(cond)) {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -203,7 +209,7 @@ bx.execute = {
 }
 
 bx.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rm == 15) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
@@ -216,15 +222,19 @@ bx.initialize_rm_init = {
 /*******************************************************************
  * blx (1) (branch with link and exchange version 1) instruction
  * this instruction is only availabe for the following architectures
- *  CONFIG::ARMV5,
- *	CONFIG::ARMV5XM,
- *	CONFIG::ARMV5T,
- *	CONFIG::ARMV5TXM,
- *	CONFIG::ARMV5TE,
- *	CONFIG::ARMV5TEXP
+ *  ARMV5 (ARMEMU),
+ *	ARMV5XM,
+ *	ARMV5T,
+ *	ARMV5TXM,
+ *	ARMV5TE,
+ *	ARMV5TEXP
  */
 
-{ CONFIG::HAS_INSN_BLX
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMEMU
 }:op blx_1(0b1111101[7]:h[1] :sext<32> imm[24])
 
 blx_1.disasm = {
@@ -232,9 +242,10 @@ blx_1.disasm = {
 }
 
 blx_1.execute = {
-	typename CONFIG::reg_t new_PC;
+	uint32_t new_PC;
 
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
+	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 
+		/* instruction byte size */ 4); // cpu.InstructionByteSize());
 	cpu.SetCPSR_T(true);
 	new_PC = cpu.GetGPR(cpu.PC_reg) + (imm << 2) + (h << 1) + 8;
 	cpu.SetGPR(cpu.PC_reg, new_PC);
@@ -248,15 +259,19 @@ blx_1.execute = {
 /*******************************************************************
  * blx (2) (branch with link and exchange version 2) instruction
  * this instruction is only availabe for the following architectures
- *  CONFIG::ARMV5,
- *	CONFIG::ARMV5XM,
- *	CONFIG::ARMV5T,
- *	CONFIG::ARMV5TXM,
- *	CONFIG::ARMV5TE,
- *	CONFIG::ARMV5TEXP
+ *  ARMV5 (ARMEMU),
+ *	ARMV5XM,
+ *	ARMV5T,
+ *	ARMV5TXM,
+ *	ARMV5TE,
+ *	ARMV5TEXP
  */
 
-{ CONFIG::HAS_INSN_BLX
+{ STATE::MODEL == ARMV5T ||
+  STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMEMU
 }:op blx_2(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0011[4]:rm[4])
 
 blx_2.disasm = {
@@ -266,24 +281,25 @@ blx_2.disasm = {
 }
 
 blx_2.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::reg_t new_PC;
-	typename CONFIG::reg_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t new_PC;
+	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
 
 	if(!cpu.CheckCondition(cond)) {
 		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 		return;
 	}
 
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + cpu.InstructionByteSize());
+	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 
+		/* instruction byte size */ 4); // cpu.InstructionByteSize());
 	cpu.SetCPSR_T((rm_value & 0x01) == 1);
 	new_PC = rm_value & 0xFFFFFFFE;
 	cpu.SetGPR(cpu.PC_reg, new_PC);
 }
 
 blx_2.initialize_rm_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
 	if(rm == 15) inherited::rm_init = 8;
 	else inherited::rm_init = 0;

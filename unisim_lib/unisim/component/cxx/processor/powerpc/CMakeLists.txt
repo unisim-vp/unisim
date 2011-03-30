@@ -32,7 +32,6 @@ set ( cxx_powerpc_subdirs
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/linux_os
-	unisim/service/interfaces/cpu_linux_os
 	unisim/service/interfaces/symbol_table_lookup
 	unisim/service/interfaces/cache_power_estimator
 	unisim/service/interfaces/power_mode
@@ -142,7 +141,6 @@ add_dependencies ( unisim__component__cxx__processor__powerpc
 	unisim__service__interfaces__disassembly
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__linux_os
-	unisim__service__interfaces__cpu_linux_os
 	unisim__service__interfaces__symbol_table_lookup
 	unisim__service__interfaces__cache_power_estimator
 	unisim__service__interfaces__power_mode

@@ -53,6 +53,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
+#include "unisim/service/interfaces/blob.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
@@ -77,12 +78,14 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::logger::Logger;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::Blob;
 using unisim::util::endian::endian_type;
 using unisim::util::debug::Register;
 
@@ -90,20 +93,25 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class LinuxOS :
 	public Service<unisim::service::interfaces::LinuxOS>,
 	public Service<unisim::service::interfaces::Loader<ADDRESS_TYPE> >,
+	public Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >,
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<MemoryInjection<ADDRESS_TYPE> >,
 	public Client<Registers>,
-	public Client<Loader<ADDRESS_TYPE> > {
+	public Client<Loader<ADDRESS_TYPE> >,
+	public Client<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
+{
 public:
     /* Exported services */
 	ServiceExport<unisim::service::interfaces::LinuxOS> linux_os_export;
 	ServiceExport<unisim::service::interfaces::Loader<ADDRESS_TYPE> > loader_export;
+	ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> > blob_export;
 
 	/* Imported services */
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
 	ServiceImport<MemoryInjection<ADDRESS_TYPE> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
-	ServiceImport<Loader<ADDRESS_TYPE> > loader_import; 
+	ServiceImport<Loader<ADDRESS_TYPE> > loader_import;
+	ServiceImport<Blob<ADDRESS_TYPE> > blob_import;
 
     /* Constructor/Destructor */
     LinuxOS(const char *name, Object *parent = 0);
@@ -111,26 +119,43 @@ public:
 
     /* Service methods */
     virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 
     /* Service interface methods */
     virtual void ExecuteSystemCall(int id);
-	virtual void Reset();
-	virtual ADDRESS_TYPE GetEntryPoint() const;
-	virtual ADDRESS_TYPE GetTopAddr() const;
-	virtual ADDRESS_TYPE GetStackBase() const;
-	virtual bool Load(const char *filename);
+	virtual bool Load();
+	virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
 
 private:
+	bool LoadARM();
+	bool LoadPPC();
+	bool SetupLoadARM();
+	bool SetupLoadPPC();
+	bool SetupLoad();
+	bool SetupBlobARM();
+	bool SetupBlobPPC();
+	bool SetupBlob();
+	bool SetupLinuxOSARM();
+	bool SetupLinuxOSPPC();
+	bool SetupLinuxOS();
 	bool ARMSetup();
 	bool PPCSetup();
-	bool Load();
+
+	/*
+	 * The following methods are just here for printf debugging purposes,
+	 * otherwise they are unused
+	 */
+	void DumpBlob();
+	void DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level);
 	
 	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
 	
 	int GetSyscallNumber(int id);
 	int ARMGetSyscallNumber(int id);
+	int ARMEABIGetSyscallNumber(int id);
 	int PPCGetSyscallNumber(int id);
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);
@@ -140,9 +165,11 @@ private:
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
 	PARAMETER_TYPE GetSystemCallParam(int id);
 	PARAMETER_TYPE ARMGetSystemCallParam(int id);
+	PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
 	PARAMETER_TYPE PPCGetSystemCallParam(int id);
 	void SetSystemCallStatus(int ret, bool error);
 	void ARMSetSystemCallStatus(int ret, bool error);
+	void ARMEABISetSystemCallStatus(int ret, bool error);
 	void PPCSetSystemCallStatus(int ret, bool error);
 	
 	endian_type GetEndianess();
@@ -158,7 +185,9 @@ private:
     typedef LinuxOS<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
     typedef void (thistype::*syscall_t)();
 
-    map<string, syscall_t> syscall_name_map;
+	unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob;
+
+	map<string, syscall_t> syscall_name_map;
     map<int, string> syscall_name_assoc_map;
     map<int, syscall_t> syscall_impl_assoc_map;
 
@@ -257,6 +286,7 @@ private:
 
     // registers for the ppc system
     Register *ppc_cr;
+	Register *ppc_cia;
     Register *ppc_regs[31];
     
     // uname structure

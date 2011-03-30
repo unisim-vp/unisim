@@ -56,23 +56,27 @@ template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	: Object(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
-	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
+	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
-	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
+	, blob_export("blob-export", this)
+	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, filename()
 	, entry_point(0)
 	, top_addr(0)
 	, stack_base(0)
 	, dump_headers(false)
 	, verbose_write(false)
-	, logger(*this)
 	, param_filename("filename", this, filename)
 	, param_dump_headers("dump-headers", this, dump_headers)
 	, param_verbose_write("verbose-write", this, verbose_write)
+	, logger(*this)
+	, file(0)
+	, blob(0)
 {
-	Object::SetupDependsOn(memory_import);
+	loader_export.SetupDependsOn(memory_import);
 
 	unisim::service::loader::coff_loader::ti::FileHandler<MEMORY_ADDR>::Register(&file_handler_registry);
 }
@@ -80,6 +84,17 @@ CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::~CoffLoader()
 {
+	if(file)
+	{
+		delete file;
+		file = 0;
+	}
+
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -87,6 +102,7 @@ void CoffLoader<MEMORY_ADDR>::OnDisconnect()
 {
 }
 
+#if 0
 template <class MEMORY_ADDR>
 MEMORY_ADDR CoffLoader<MEMORY_ADDR>::GetEntryPoint() const
 {
@@ -104,6 +120,7 @@ MEMORY_ADDR CoffLoader<MEMORY_ADDR>::GetStackBase() const
 {
   return (MEMORY_ADDR) stack_base * memory_atom_size;
 }
+#endif
 
 template <class MEMORY_ADDR>
 bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint32_t size)
@@ -118,6 +135,397 @@ bool CoffLoader<MEMORY_ADDR>::Write(MEMORY_ADDR addr, const void *content, uint3
 	return true;
 }
 
+template <class MEMORY_ADDR>
+bool CoffLoader<MEMORY_ADDR>::BeginSetup()
+{
+	if(file)
+	{
+		delete file;
+		file = 0;
+	}
+	
+	if(blob)
+	{
+		delete blob;
+		blob = 0;
+	}
+	
+	bool success = true;
+
+	if(filename.empty())
+	{
+		logger << DebugError << "Don't know which executable file to load. Please specify file to load in parameter " << param_filename.GetName() << EndDebugError;
+		return false;
+	}
+	
+	ifstream is(Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str(), ifstream::in | ifstream::binary);
+	if(is.fail())
+	{
+		logger << DebugError << "Can't open executable \"" << filename << "\"" << EndDebugError;
+		return false;
+	}
+	
+	logger << DebugInfo << "Opening \"" << filename << "\"" << EndDebugInfo;
+
+	if(is.seekg(0, ios::beg).fail())
+	{
+		return false;
+	}
+
+	// Read the magic number
+	uint16_t magic;
+
+	if(is.read((char *) &magic, sizeof(magic)).fail())
+	{
+		logger << DebugError << "Could not read file header or \"" << filename << "\" is not a COFF file." << EndDebugError;
+		return false;
+	}
+
+	magic = unisim::util::endian::Host2LittleEndian(magic);
+
+	FileHandler<MEMORY_ADDR> *file_handler = file_handler_registry[magic];
+
+	if(!file_handler)
+	{
+		logger << DebugError << "Can't handle format of \"" << filename << "\"." << EndDebugError;
+		logger << DebugInfo << "Supported formats are:" << endl;
+		stringstream sstr;
+		file_handler_registry.DumpFileHandlers(sstr);
+		logger << sstr.str() << EndDebugInfo;
+		return false;
+	}
+
+	file = file_handler->GetFile();
+
+	if(!file)
+	{
+		logger << DebugError<< file_handler->What() << " can't handle format of \"" << filename << "\"" << EndDebugError;
+		return false;
+	}
+
+	// Read the remaining bytes in file header
+	unsigned int file_hdr_size = file->GetFileHeaderSize();
+
+	char hdr[file_hdr_size];
+
+	memcpy(hdr, &magic, sizeof(uint16_t));
+	//*(uint16_t *) hdr = magic;
+	if(is.read(hdr + sizeof(magic), file_hdr_size - sizeof(magic)).fail())
+	{
+		logger << DebugError << "Could not read file header or \"" << filename << "\" is not a COFF file." << EndDebugError;
+		delete file;
+		file = 0;
+		return false;
+	}
+
+	if(!file->ParseFileHeader(hdr))
+	{
+		logger << DebugError << "File header is not supported or \"" << filename << "\" is not a COFF file." << EndDebugError;
+		delete file;
+		file = 0;
+		return false;
+	}
+
+	file_endianness = file->GetFileEndian();
+	file->GetBasicTypeSizes(basic_type_sizes);
+
+	if(dump_headers)
+	{
+		stringstream sstr;
+		file->DumpFileHeader(sstr);
+		logger << DebugInfo << sstr.str() << EndDebugInfo;
+	}
+
+	logger << DebugInfo << "File \"" << filename << "\" has " << (file->GetFileEndian() == E_LITTLE_ENDIAN ? "little" : "big") << "-endian headers" << EndDebugInfo;
+	logger << DebugInfo << "File \"" << filename << "\" is for " << file->GetArchitectureName() << EndDebugInfo;
+
+	if(!file->IsExecutable())
+	{
+		logger << DebugError << "File \"" << filename << "\" is not an executable COFF file." << EndDebugError;
+		delete file;
+		file = 0;
+		return false;
+	}
+
+	logger << DebugInfo << "File \"" << filename << "\" is executable" << EndDebugInfo;
+
+	unsigned int aout_hdr_size = file->GetAoutHeaderSize();
+
+	if(aout_hdr_size > 0)
+	{
+		char aout_hdr[aout_hdr_size];
+
+		if(is.read(aout_hdr, aout_hdr_size).fail())
+		{
+			logger << DebugError << "Could not read optional header." << EndDebugInfo;
+			delete file;
+			file = 0;
+			return false;
+		}
+
+		if(!file->ParseAoutHeader(aout_hdr))
+		{
+			logger << DebugError << "optional header is invalid or unsupported." << EndDebugError;
+			delete file;
+			file = 0;
+			return false;
+		}
+
+		entry_point = file->GetEntryPoint();
+
+		logger << DebugInfo << "Program entry point at 0x" << hex << entry_point << dec << EndDebugInfo;
+
+		if(dump_headers)
+		{
+			stringstream sstr;
+			file->DumpAoutHeader(sstr);
+			logger << DebugInfo << sstr.str() << EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << DebugWarning << "File \"" << filename << "\" has no optional header." << EndDebugWarning;
+		logger << DebugWarning << "Program entry point is unknown" << EndDebugWarning;
+	}
+
+	unsigned int num_sections = file->GetNumSections();
+	unsigned int shdr_size = file->GetSectionHeaderSize();
+	memory_atom_size = file->GetMemoryAtomSize();
+	unsigned int section_num;
+
+	for(section_num = 0; section_num < num_sections; section_num++)
+	{
+		char shdr[shdr_size];
+
+		if(is.read(shdr, shdr_size).fail())
+		{
+			logger << DebugError << "Can't read section headers" << EndDebugError;
+			delete file;
+			file = 0;
+			return false;
+		}
+		
+		if(!file->ParseSectionHeader(section_num, shdr))
+		{
+			logger << DebugError << "Section header #" << section_num << " is invalid or unsupported" << EndDebugError;
+			delete file;
+			file = 0;
+			return false;
+		}
+	}
+
+	blob = new unisim::util::debug::blob::Blob<MEMORY_ADDR>();
+	blob->Catch();
+	
+	blob->SetEntryPoint(entry_point * memory_atom_size);
+	blob->SetArchitecture(file->GetArchitectureName());
+		
+	const SectionTable<MEMORY_ADDR> *section_table = file->GetSectionTable();
+
+	for(section_num = 0; section_num < num_sections; section_num++)
+	{
+		Section<MEMORY_ADDR> *section = (*section_table)[section_num];
+
+		if(dump_headers)
+		{
+			stringstream sstr;
+			section->DumpHeader(sstr);
+			logger << DebugInfo << sstr.str() << EndDebugInfo;
+		}
+
+		typename Section<MEMORY_ADDR>::Type section_type = section->GetType();
+		const char *section_name = section->GetName();
+		MEMORY_ADDR section_addr = section->GetPhysicalAddress();
+		MEMORY_ADDR section_size = section->GetSize();
+		long section_content_file_ptr = section->GetContentFilePtr();
+
+		void *section_content = 0;
+		
+		if(section_size > 0 && section_type != Section<MEMORY_ADDR>::ST_NOT_LOADABLE)
+		{
+			switch(section_type)
+			{
+				case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
+				case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
+				{
+					logger << DebugInfo << "Loading section " << section_name << " (" << (section_size * memory_atom_size) << " bytes)" << EndDebugInfo;
+					section_content = calloc(section_size, memory_atom_size);
+
+					if(!section_content || is.seekg(section_content_file_ptr, ios::beg).fail() || is.read((char *) section_content, section_size * memory_atom_size).fail())
+					{
+						logger << DebugError << "Can't load section " << section_name << EndDebugError;
+						if(section_content)
+						{
+							free(section_content);
+							section_content = 0;
+						}
+						success = false;
+					}
+					break;
+				}
+				
+				default:
+					break;
+			}
+		}
+		
+		if(section_type == Section<MEMORY_ADDR>::ST_STACK)
+		{
+			blob->SetStackBase((MEMORY_ADDR) section_addr * memory_atom_size);
+			logger << DebugInfo << "Stack base at 0x" << hex << section_addr << dec << EndDebugInfo;
+		}
+
+		typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type blob_section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
+		switch(section_type)
+		{
+			case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
+			case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
+				blob_section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_PROGBITS;
+				break;
+			default:
+				break;
+		}
+			
+		typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute blob_section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_AWX; // FIXME
+
+		typename unisim::util::debug::blob::Section<MEMORY_ADDR> *blob_section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+			blob_section_type,
+			blob_section_attr,
+			section_name,
+			0,
+			0,
+			section_addr * memory_atom_size,
+			section_size * memory_atom_size,
+			section_content
+		);
+		
+		blob->AddSection(blob_section);
+	}
+	
+	long symtab_file_ptr = file->GetSymbolTableFilePtr();
+	unsigned long num_symbols = file->GetNumSymbols();
+	if(symtab_file_ptr && num_symbols)
+	{
+		logger << DebugInfo << "Loading symbol table" << EndDebugInfo;
+
+		unsigned long symtab_size = num_symbols * sizeof(syment);
+
+		void *symtab_content = calloc(symtab_size, 1);
+
+		if(!symtab_content || is.seekg(symtab_file_ptr, ios::beg).fail() || is.read((char *) symtab_content, symtab_size).fail())
+		{
+			logger << DebugError << "Can't load symbol table" << EndDebugError;
+			success = false;
+		}
+		else
+		{
+			logger << DebugInfo << "Loading string table" << EndDebugInfo;
+			uint32_t string_table_size;
+
+			if(is.read((char *) &string_table_size, sizeof(string_table_size)).fail())
+			{
+				logger << DebugError << "Can't load string table" << EndDebugError;
+				success = false;
+			}
+			else
+			{
+				string_table_size = unisim::util::endian::Target2Host(file_endianness, string_table_size);
+				void *string_table = calloc(string_table_size, 1);
+
+				*(uint32_t *) string_table = 0;
+				if(!string_table || is.read((char *) string_table + 4, string_table_size - 4).fail())
+				{
+					logger << DebugError << "Can't load string table" << EndDebugError;
+					success = false;
+				}
+				else
+				{
+					// Parse the symbol table
+					if(!ParseSymbolTable((syment *) symtab_content, num_symbols, (const char *) string_table, string_table_size))
+					{
+						logger << DebugError << "Symbol table is broken" << EndDebugError;
+						success = false;
+					}
+				}
+				if(string_table) free(string_table);
+			}
+		}
+
+		if(symtab_content) free(symtab_content);
+	}
+	return success;
+}
+
+template <class MEMORY_ADDR>
+bool CoffLoader<MEMORY_ADDR>::EndSetup()
+{
+	return Load();
+}
+
+template <class MEMORY_ADDR>
+bool CoffLoader<MEMORY_ADDR>::Load()
+{
+	if(!file || !blob) return false;
+	bool success = true;
+	unsigned int num_sections = file->GetNumSections();
+	memory_atom_size = file->GetMemoryAtomSize();
+	unsigned int section_num;
+
+	const SectionTable<MEMORY_ADDR> *section_table = file->GetSectionTable();
+
+	for(section_num = 0; section_num < num_sections; section_num++)
+	{
+		const Section<MEMORY_ADDR> *section = (*section_table)[section_num];
+
+		typename Section<MEMORY_ADDR>::Type section_type = section->GetType();
+		const char *section_name = section->GetName();
+		MEMORY_ADDR section_addr = section->GetPhysicalAddress();
+		MEMORY_ADDR section_size = section->GetSize();
+		const typename unisim::util::debug::blob::Section<MEMORY_ADDR> *blob_section = blob->FindSection(section_name);
+		
+		if(!blob_section)
+		{
+			success = false;
+			continue;
+		}
+		
+		const void *section_content = blob_section->GetData();
+
+		if(section_content)
+		{
+			switch(section_type)
+			{
+				case Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA:
+					logger << DebugInfo << "Writing section " << section_name << " at 0x" << std::hex << section_addr << std::dec << " (" << (section_size * memory_atom_size)<< " bytes)" << EndDebugInfo;
+					if(!Write(section_addr, section_content, section_size))
+					{
+						logger << DebugError << "Can't write raw data of section " << section_name << " into memory" << EndDebugError;
+						success = false;
+					}
+					break;
+				case Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT:
+					logger << DebugInfo << "Interpreting section " << section_name << EndDebugInfo;
+					if(!section->LoadSpecificContent(this, section_content, section_size))
+					{
+						logger << DebugError << "Can't load specific content of section " << section_name << EndDebugError;
+						success = false;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	}
+	return success;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::blob::Blob<MEMORY_ADDR> *CoffLoader<MEMORY_ADDR>::GetBlob() const
+{
+	return blob;
+}
+
+#if 0
 template <class MEMORY_ADDR>
 bool CoffLoader<MEMORY_ADDR>::Setup()
 {
@@ -397,12 +805,7 @@ bool CoffLoader<MEMORY_ADDR>::Setup()
 	delete file;
 	return success;
 }
-
-template <class MEMORY_ADDR>
-void CoffLoader<MEMORY_ADDR>::Reset()
-{
-	if(memory_import) memory_import->Reset();
-}
+#endif
 
 template <class MEMORY_ADDR>
 const char *CoffLoader<MEMORY_ADDR>::GetStorageClassName(uint8_t sclass) const
@@ -593,7 +996,7 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 	unsigned long i;
 	int numaux = 0;
 	char name_buf[E_SYMNMLEN + 1];
-	syment *coff_sym;
+	syment *coff_sym = 0;
 	const char *sym_name = 0;
 
 	for(i = 0; i < nsyms; i++)
@@ -826,7 +1229,7 @@ void SectionTable<MEMORY_ADDR>::Insert(unsigned int section_num, Section<MEMORY_
 }
 
 template <class MEMORY_ADDR>
-const Section<MEMORY_ADDR> *SectionTable<MEMORY_ADDR>::operator [] (unsigned int section_num) const
+Section<MEMORY_ADDR> *SectionTable<MEMORY_ADDR>::operator [] (unsigned int section_num) const
 {
 	return sections[section_num];
 }

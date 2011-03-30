@@ -147,7 +147,7 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, CPU_CONFIG::physical_address_t, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
 	typedef unisim::component::tlm2::processor::powerpc::mpc7447a::CPU<CPU_CONFIG> CPU;
 
 	//=========================================================================
@@ -169,7 +169,7 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	Elf32Loader *elf32_loader;
+	Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader;
 	//  - Linux loader
 	LinuxLoader<FSB_ADDRESS_TYPE> *linux_loader;
 	//  - Linux OS
@@ -248,7 +248,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - ELF32 loader
-	elf32_loader = new Elf32Loader("elf32-loader");
+	elf32_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("elf32-loader");
 	//  - Linux loader
 	linux_loader = new LinuxLoader<FSB_ADDRESS_TYPE>("linux-loader");
 	//  - Linux OS
@@ -337,11 +337,13 @@ Simulator::Simulator(int argc, char **argv)
 	elf32_loader->memory_import >> memory->memory_export;
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
+	linux_loader->blob_import >> elf32_loader->blob_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
+	linux_os->blob_import >> linux_loader->blob_export;
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 }
 

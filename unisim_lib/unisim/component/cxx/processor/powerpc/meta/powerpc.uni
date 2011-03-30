@@ -40,7 +40,6 @@
 			<dep>unisim::service::interfaces::disassembly</dep>
 			<dep>unisim::service::interfaces::loader</dep>
 			<dep>unisim::service::interfaces::linux_os</dep>
-			<dep>unisim::service::interfaces::cpu_linux_os</dep>
 			<dep>unisim::service::interfaces::symbol_table_lookup</dep>
 			<dep>unisim::service::interfaces::cache_power_estimator</dep>
 			<dep>unisim::service::interfaces::power_mode</dep>

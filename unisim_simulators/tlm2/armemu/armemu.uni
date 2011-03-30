@@ -25,7 +25,7 @@
 			<file>share/macosx/Info.plist</file>
 			<file>share/linux/unisim-armemu.desktop.in</file>
 			<file>share/linux/find_deb_dependencies.sh</file>
-			<file>share/python/demo.py</file>
+			<file>share/python/demo.py.in</file>
 			<file>python/py_simulator.hh</file>
 			<file>python/py_simulator.cc</file>
 			<file>python/py_variable.hh</file>
@@ -45,7 +45,7 @@
 			<dep>unisim</dep>
 			<dep>osci_systemc</dep>
 			<dep>unisim::kernel::service</dep>
-			<dep>unisim::component::tlm2::processor::arm::arm926ejs</dep>
+			<dep>unisim::component::tlm2::processor::arm::armemu</dep>
 			<dep>unisim::component::tlm2::memory::ram</dep>
 			<dep>unisim::service::time::host_time</dep>
 			<dep>unisim::service::time::sc_time</dep>

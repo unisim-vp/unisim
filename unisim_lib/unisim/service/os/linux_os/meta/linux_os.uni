@@ -14,11 +14,11 @@
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::kernel::logger</dep>
 			<dep>unisim::service::interfaces::linux_os</dep>
-			<dep>unisim::service::interfaces::cpu_linux_os</dep>
 			<dep>unisim::service::interfaces::loader</dep>
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::memory_injection</dep>
 			<dep>unisim::service::interfaces::registers</dep>
+			<dep>unisim::service::interfaces::blob</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::debug</dep>
 			<dep>stl_map</dep>

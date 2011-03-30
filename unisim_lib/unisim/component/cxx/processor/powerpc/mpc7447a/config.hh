@@ -41,12 +41,108 @@
 namespace unisim {
 namespace component {
 namespace cxx {
+namespace cache {
+	
+template <class CONFIG>
+class CacheLine;
+	
+} // end of namespace cache
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace tlb {
+	
+template <class CONFIG>
+class TLBEntry;
+	
+} // end of namespace tlb
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+namespace unisim {
+namespace component {
+namespace cxx {
 namespace processor {
 namespace powerpc {
 namespace mpc7447a {
 
 template <class CONFIG>
 class CPU;
+
+class MSRLayout
+{
+public:
+	// MSR fields offsets
+	static const unsigned int MSR_VEC_OFFSET = 25;
+	static const unsigned int MSR_POW_OFFSET = 18;
+	static const unsigned int MSR_ILE_OFFSET = 16;
+	static const unsigned int MSR_EE_OFFSET = 15;
+	static const unsigned int MSR_PR_OFFSET = 14;
+	static const unsigned int MSR_FP_OFFSET = 13;
+	static const unsigned int MSR_ME_OFFSET = 12;
+	static const unsigned int MSR_FE0_OFFSET = 11;
+	static const unsigned int MSR_SE_OFFSET = 10;
+	static const unsigned int MSR_BE_OFFSET = 9;
+	static const unsigned int MSR_FE1_OFFSET = 8;
+	static const unsigned int MSR_IP_OFFSET = 6;
+	static const unsigned int MSR_IR_OFFSET = 5;
+	static const unsigned int MSR_DR_OFFSET = 4;
+	static const unsigned int MSR_PM_OFFSET = 2;
+	static const unsigned int MSR_RI_OFFSET = 1;
+	static const unsigned int MSR_LE_OFFSET = 0;
+
+	// MSR fields sizes
+	static const unsigned int MSR_VEC_BITSIZE = 1;
+	static const unsigned int MSR_POW_BITSIZE = 1;
+	static const unsigned int MSR_ILE_BITSIZE = 1;
+	static const unsigned int MSR_EE_BITSIZE = 1;
+	static const unsigned int MSR_PR_BITSIZE = 1;
+	static const unsigned int MSR_FP_BITSIZE = 1;
+	static const unsigned int MSR_ME_BITSIZE = 1;
+	static const unsigned int MSR_FE0_BITSIZE = 1;
+	static const unsigned int MSR_SE_BITSIZE = 1;
+	static const unsigned int MSR_BE_BITSIZE = 1;
+	static const unsigned int MSR_FE1_BITSIZE = 1;
+	static const unsigned int MSR_IP_BITSIZE = 1;
+	static const unsigned int MSR_IR_BITSIZE = 1;
+	static const unsigned int MSR_DR_BITSIZE = 1;
+	static const unsigned int MSR_PM_BITSIZE = 1;
+	static const unsigned int MSR_RI_BITSIZE = 1;
+	static const unsigned int MSR_LE_BITSIZE = 1;
+
+	static const uint32_t MSR_VEC_MASK = ((1UL << MSR_VEC_BITSIZE) - 1) << MSR_VEC_OFFSET;
+	static const uint32_t MSR_POW_MASK = ((1UL << MSR_POW_BITSIZE) - 1) << MSR_POW_OFFSET;
+	static const uint32_t MSR_ILE_MASK = ((1UL << MSR_ILE_BITSIZE) - 1) << MSR_ILE_OFFSET;
+	static const uint32_t MSR_EE_MASK = ((1UL << MSR_EE_BITSIZE) - 1) << MSR_EE_OFFSET;
+	static const uint32_t MSR_PR_MASK = ((1UL << MSR_PR_BITSIZE) - 1) << MSR_PR_OFFSET;
+	static const uint32_t MSR_FP_MASK = ((1UL << MSR_FP_BITSIZE) - 1) << MSR_FP_OFFSET;
+	static const uint32_t MSR_ME_MASK = ((1UL << MSR_ME_BITSIZE) - 1) << MSR_ME_OFFSET;
+	static const uint32_t MSR_FE0_MASK = ((1UL << MSR_FE0_BITSIZE) - 1) << MSR_FE0_OFFSET;
+	static const uint32_t MSR_SE_MASK = ((1UL << MSR_SE_BITSIZE) - 1) << MSR_SE_OFFSET;
+	static const uint32_t MSR_BE_MASK = ((1UL << MSR_BE_BITSIZE) - 1) << MSR_BE_OFFSET;
+	static const uint32_t MSR_FE1_MASK = ((1UL << MSR_FE1_BITSIZE) - 1) << MSR_FE1_OFFSET;
+	static const uint32_t MSR_IP_MASK = ((1UL << MSR_IP_BITSIZE) - 1) << MSR_IP_OFFSET;
+	static const uint32_t MSR_IR_MASK = ((1UL << MSR_IR_BITSIZE) - 1) << MSR_IR_OFFSET;
+	static const uint32_t MSR_DR_MASK = ((1UL << MSR_DR_BITSIZE) - 1) << MSR_DR_OFFSET;
+	static const uint32_t MSR_PM_MASK = ((1UL << MSR_PM_BITSIZE) - 1) << MSR_PM_OFFSET;
+	static const uint32_t MSR_RI_MASK = ((1UL << MSR_RI_BITSIZE) - 1) << MSR_RI_OFFSET;
+	static const uint32_t MSR_LE_MASK = ((1UL << MSR_RI_BITSIZE) - 1) << MSR_LE_OFFSET;
+
+	// MSR bitwise AND mask
+	static const uint32_t MSR_MASK = MSR_VEC_MASK | MSR_POW_MASK | MSR_ILE_MASK | MSR_EE_MASK |
+	                                 MSR_PR_MASK | MSR_FP_MASK | MSR_ME_MASK | MSR_FE0_MASK |
+	                                 MSR_SE_MASK | MSR_BE_MASK | MSR_FE1_MASK | MSR_IP_MASK |
+	                                 MSR_IR_MASK | MSR_DR_MASK | MSR_PM_MASK | MSR_RI_MASK |
+	                                 MSR_LE_MASK;
+
+	// MSR reset value
+	static const uint32_t MSR_RESET_VALUE = MSR_IP_MASK; // only MSR[IP] is set
+};
 
 class HID0Layout
 {
@@ -202,20 +298,6 @@ public:
 	static const uint32_t HID1_RESET_VALUE = 0x00000080UL;
 };
 
-class MSRLayout : unisim::component::cxx::processor::powerpc::MSRLayout
-{
-public:
-	// MSR bitwise AND mask
-	static const uint32_t MSR_MASK = MSR_VEC_MASK | MSR_POW_MASK | MSR_ILE_MASK | MSR_EE_MASK |
-	                                 MSR_PR_MASK | MSR_FP_MASK | MSR_ME_MASK | MSR_FE0_MASK |
-	                                 MSR_SE_MASK | MSR_BE_MASK | MSR_FE1_MASK | MSR_IP_MASK |
-	                                 MSR_IR_MASK | MSR_DR_MASK | MSR_PM_MASK | MSR_RI_MASK |
-	                                 MSR_LE_MASK;
-
-	// MSR reset value
-	static const uint32_t MSR_RESET_VALUE = MSR_IP_MASK; // only MSR[IP] is set
-};
-
 class ICTRLLayout
 {
 public:
@@ -363,6 +445,7 @@ public:
 	static const bool DEBUG_SETUP_ENABLE = false;
 	static const bool DEBUG_STEP_ENABLE = false;
 	static const bool DEBUG_DTLB_ENABLE = false;
+	static const bool DEBUG_ITLB_ENABLE = false;
 	static const bool DEBUG_DL1_ENABLE = false;
 	static const bool DEBUG_IL1_ENABLE = false;
 	static const bool DEBUG_L2_ENABLE = false;
@@ -450,12 +533,17 @@ public:
 		{
 		public:
 			bool valid;
+			uint32_t way;
+			unisim::component::cxx::cache::CacheLine<DL1_CONFIG> *next;
+			unisim::component::cxx::cache::CacheLine<DL1_CONFIG> *prev;
 		};
 
 		class SET_STATUS
 		{
 		public:
 			uint32_t plru_bits;
+			unisim::component::cxx::cache::CacheLine<DL1_CONFIG> *mru_line;
+			unisim::component::cxx::cache::CacheLine<DL1_CONFIG> *lru_line;
 		};
 
 		class CACHE_STATUS
@@ -487,12 +575,17 @@ public:
 		{
 		public:
 			bool valid;
+			uint32_t way;
+			unisim::component::cxx::cache::CacheLine<IL1_CONFIG> *next;
+			unisim::component::cxx::cache::CacheLine<IL1_CONFIG> *prev;
 		};
 
 		class SET_STATUS
 		{
 		public:
 			uint32_t plru_bits;
+			unisim::component::cxx::cache::CacheLine<IL1_CONFIG> *mru_line;
+			unisim::component::cxx::cache::CacheLine<IL1_CONFIG> *lru_line;
 		};
 
 		class CACHE_STATUS
@@ -525,12 +618,17 @@ public:
 		{
 		public:
 			bool valid;
+			uint32_t way;
+			unisim::component::cxx::cache::CacheLine<L2_CONFIG> *next;
+			unisim::component::cxx::cache::CacheLine<L2_CONFIG> *prev;
 		};
 
 		class SET_STATUS
 		{
 		public:
 			uint32_t plru_bits;
+			unisim::component::cxx::cache::CacheLine<L2_CONFIG> *mru_line;
+			unisim::component::cxx::cache::CacheLine<L2_CONFIG> *lru_line;
 		};
 
 		class CACHE_STATUS
@@ -556,12 +654,17 @@ public:
 		{
 		public:
 			bool valid;
+			uint32_t way;
+			unisim::component::cxx::tlb::TLBEntry<ITLB_CONFIG> *next;
+			unisim::component::cxx::tlb::TLBEntry<ITLB_CONFIG> *prev;
 		};
 
 		class SET_STATUS
 		{
 		public:
 			uint32_t plru_bits;
+			unisim::component::cxx::tlb::TLBEntry<ITLB_CONFIG> *mru_entry;
+			unisim::component::cxx::tlb::TLBEntry<ITLB_CONFIG> *lru_entry;
 		};
 
 		static const bool ENABLE = true;
@@ -581,12 +684,17 @@ public:
 		{
 		public:
 			bool valid;
+			uint32_t way;
+			unisim::component::cxx::tlb::TLBEntry<DTLB_CONFIG> *next;
+			unisim::component::cxx::tlb::TLBEntry<DTLB_CONFIG> *prev;
 		};
 
 		class SET_STATUS
 		{
 		public:
 			uint32_t plru_bits;
+			unisim::component::cxx::tlb::TLBEntry<DTLB_CONFIG> *mru_entry;
+			unisim::component::cxx::tlb::TLBEntry<DTLB_CONFIG> *lru_entry;
 		};
 
 		static const bool ENABLE = true;
@@ -607,6 +715,13 @@ public:
 	static const unsigned int NUM_PREFETCH_BUFFER_ENTRIES = 8; //!< Maximum number of instruction in the prefetch buffer
 	static const bool IABR_ENABLE = false;
 	static const bool DABR_ENABLE = false;
+	static const bool FAST_DL1_LOOKUP_ENABLE = true;
+	static const bool FAST_IL1_LOOKUP_ENABLE = true;
+	static const bool FAST_L2_LOOKUP_ENABLE = true;
+	static const bool FAST_IBAT_LOOKUP_ENABLE = true;
+	static const bool FAST_DBAT_LOOKUP_ENABLE = true;
+	static const bool FAST_ITLB_LOOKUP_ENABLE = true;
+	static const bool FAST_DTLB_LOOKUP_ENABLE = true;
 
 	// Programming model parameters
 	static const unsigned int NUM_GPRS = 32;
@@ -621,6 +736,14 @@ public:
 	// Altivec
 	static const bool HAS_ALTIVEC = true;
 	
+	// Floating point
+	static const bool HAS_FPU = true;
+	
+	// Optional floating-point sqrt
+	static const bool HAS_FLOATING_POINT_SQRT = false;
+	
+	// Optional floating-point graphics instructions
+	static const bool HAS_FLOATING_POINT_GRAPHICS_INSTRUCTIONS = true;
 };
 
 class DebugConfig : public Config
@@ -633,6 +756,7 @@ public:
 	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
 	static const bool DEBUG_DL1_ENABLE = true;
 	static const bool DEBUG_IL1_ENABLE = true;
 	static const bool DEBUG_L2_ENABLE = true;
