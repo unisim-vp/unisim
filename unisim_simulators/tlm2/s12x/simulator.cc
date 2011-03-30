@@ -531,8 +531,13 @@ void Simulator::Run() {
 
 	physical_address_t entry_point;
 
-	entry_point = loaderELF->GetEntryPoint();
 
+//**************
+	// entry_point = loaderELF->GetEntryPoint();
+
+	const unisim::util::debug::blob::Blob<uint64_t>* blob = ((Elf32Loader*) loaderELF)->GetBlob();
+	entry_point = blob->GetEntryPoint();
+//***********
 
 	address_t cpu_address;
 	uint8_t page = 0;

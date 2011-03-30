@@ -215,18 +215,26 @@ bool ECT::write(uint8_t offset, uint8_t value) {
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool ECT::Setup() {
+bool ECT::BeginSetup() {
 
-//	char buf[80];
-//
-//	sprintf(buf, "%s.ATDCTL0",name());
-//	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
+	//	char buf[80];
+	//
+	//	sprintf(buf, "%s.ATDCTL0",name());
+	//	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
 
 
-	Reset();
+		Reset();
 
-	ComputeInternalTime();
+		ComputeInternalTime();
 
+		return true;
+}
+
+bool ECT::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool ECT::EndSetup() {
 	return true;
 }
 

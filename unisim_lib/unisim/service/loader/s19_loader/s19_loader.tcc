@@ -56,8 +56,9 @@ S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	param_filename("filename", this, filename),
 	isFirstDataRec(true)
 {
-	Object::SetupDependsOn(memory_import);
-//	Object::SetupDependsOn(symbol_table_build_import); 
+
+	loader_export.SetupDependsOn(memory_import);
+
 }
 
 template <class MEMORY_ADDR>
@@ -95,10 +96,19 @@ MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetStackBase() const
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::Setup() {
-	return Load();
+bool S19_Loader<MEMORY_ADDR>::BeginSetup() {
+	return true;
 }
 
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::EndSetup() {
+	return Load();
+}
 
 template <class MEMORY_ADDR>
 bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename) {

@@ -82,7 +82,6 @@ using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
 
-
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Symbol;
@@ -91,6 +90,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Simulator;
@@ -164,8 +164,12 @@ public:
 							const std::string &str);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
 							const char *c_str);
-	virtual bool Setup();
+
 	virtual void OnDisconnect();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void Stop(int exit_status);
 
 	virtual void Run() { cerr << "PIM-Server:: start RUN " << std::endl; }

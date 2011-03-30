@@ -221,9 +221,9 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 }
 
 bool
-HCS12X ::
-Setup() {
-	if(!inherited::Setup()) {
+HCS12X ::BeginSetup() {
+
+	if(!inherited::BeginSetup()) {
 		if(debug_enabled && verbose_step)
 			*inherited::logger << DebugError
 				<< "Error while trying to set up the HCS12X cpu"
@@ -260,6 +260,17 @@ Setup() {
 	}
 
 	return true;
+
+}
+
+bool
+HCS12X ::Setup(ServiceExportBase *srv_export) {
+	return inherited::Setup(srv_export);
+}
+
+bool
+HCS12X ::EndSetup() {
+	return inherited::EndSetup();
 }
 
 void HCS12X::ComputeInternalTime() {

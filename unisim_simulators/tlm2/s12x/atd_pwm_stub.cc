@@ -73,7 +73,7 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 }
 
-bool ATD_PWM_STUB::Setup() {
+bool ATD_PWM_STUB::BeginSetup() {
 
 	if (trace_enable) {
 		atd0_output_file.open ("atd0_output.txt");
@@ -86,6 +86,14 @@ bool ATD_PWM_STUB::Setup() {
 	anx_stimulus_period_sc = new sc_time(anx_stimulus_period, SC_PS);
 	pwm_fetch_period_sc = new sc_time(pwm_fetch_period, SC_PS);
 
+	return true;
+}
+
+bool ATD_PWM_STUB::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool ATD_PWM_STUB::EndSetup() {
 	return true;
 }
 

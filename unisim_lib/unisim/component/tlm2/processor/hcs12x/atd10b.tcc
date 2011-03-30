@@ -867,8 +867,9 @@ void ATD10B<ATD_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& 
 //=====================================================================
 //=                  Client/Service setup methods                     =
 //=====================================================================
+
 template <uint8_t ATD_SIZE>
-bool ATD10B<ATD_SIZE>::Setup() {
+bool ATD10B<ATD_SIZE>::BeginSetup() {
 
 	char buf[20];
 
@@ -943,6 +944,16 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
 
+	return true;
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::EndSetup() {
 	return true;
 }
 

@@ -361,8 +361,8 @@ void XINT::Reset() {
 
 }
 
-bool XINT::Setup()
-{
+bool XINT::BeginSetup() {
+
 	char buf[80];
 
 	sprintf(buf, "%s.IVBR",name());
@@ -379,6 +379,14 @@ bool XINT::Setup()
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
 	}
 
+	return true;
+}
+
+bool XINT::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool XINT::EndSetup() {
 	return true;
 }
 

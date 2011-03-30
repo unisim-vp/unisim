@@ -126,6 +126,10 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
+unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/section64.cc \
 unisim/util/endian/endian.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
@@ -232,6 +236,8 @@ unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/endian/endian.hh \
+unisim/util/debug/blob/blob.hh \
+unisim/util/debug/blob/section.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/xml/xml.hh \
@@ -239,6 +245,7 @@ unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -315,6 +322,8 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/blob/section.tcc \
+unisim/util/debug/blob/blob.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \

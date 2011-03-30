@@ -158,7 +158,9 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
 
+// ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+
 	typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
 	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
 

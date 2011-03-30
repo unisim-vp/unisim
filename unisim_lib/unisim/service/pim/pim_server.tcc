@@ -134,8 +134,12 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, param_host("host", this, fHost)
 
 {
+/*   voir l'impact de la mise en commentaire - suite modif Gilles sur l'architecture UNISIM
 	Object::SetupDependsOn(registers_import);
-	Object::SetupDependsOn(memory_access_reporting_control_import);
+*/
+
+	memory_access_reporting_export.SetupDependsOn(memory_access_reporting_control_import);
+
 	counter = period;
 
 }
@@ -167,8 +171,8 @@ double PIMServer<ADDRESS>::GetSimTime() {
 }
 
 template <class ADDRESS>
-bool PIMServer<ADDRESS>::Setup()
-{
+bool PIMServer<ADDRESS>::BeginSetup() {
+
 	if(memory_atom_size != 1 &&
 	   memory_atom_size != 2 &&
 	   memory_atom_size != 4 &&
@@ -179,14 +183,25 @@ bool PIMServer<ADDRESS>::Setup()
 		return false;
 	}
 
-	input_buffer_size = 0;
-	input_buffer_index = 0;
-	output_buffer_size = 0;
+	// Start Simulation <-> Workbench communication
+	target = new PIMThread("pim-thread");
+	protocolHandlers.push_back(target);
 
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
-	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
+	protocolHandlers.push_back(this);
 
-	delete parser;
+	// Open Socket Stream
+	socketfd = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
+
+	socketfd->setProtocolHandlers(&protocolHandlers);
+
+	socketfd->start();
+
+
+	return true;
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 
 	if(memory_access_reporting_control_import)
 	{
@@ -195,6 +210,11 @@ bool PIMServer<ADDRESS>::Setup()
 		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 				false);
 	}
+
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
+
+	delete parser;
 
 	if(root_node)
 	{
@@ -213,20 +233,6 @@ bool PIMServer<ADDRESS>::Setup()
 			{
 				if((*root_node_property)->Name() == string("name"))
 				{
-					/*
-					const string& architecture_name = (*root_node_property)->Value();
-					if(exp->GetArchitectureName() != architecture_name)
-					{
-						if(logger_import)
-						{
-							(*logger_import) << DebugError;
-							(*logger_import) << "CPU architecture (\"" << exp->GetArchitectureName() << "\") is not \"" << architecture_name << "\"" << Endl;
-							(*logger_import) << EndDebugError;
-						}
-						delete root_node;
-						return false;
-					}
-					*/
 					has_architecture_name = true;
 				}
 				else if((*root_node_property)->Name() == string("endian"))
@@ -414,23 +420,11 @@ bool PIMServer<ADDRESS>::Setup()
 		return false;
 	}
 
+	return true;
+}
 
-// ************************
-
-	// Start Simulation <-> Workbench communication
-	target = new PIMThread("pim-thread");
-	protocolHandlers.push_back(target);
-
-	protocolHandlers.push_back(this);
-
-	// Open Socket Stream
-	socketfd = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
-
-	socketfd->setProtocolHandlers(&protocolHandlers);
-
-	socketfd->start();
-
-// ************************
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::EndSetup() {
 
 	return true;
 }
