@@ -57,11 +57,16 @@ public:
 
 	~GenericThread() {
 		if (!isTerminated()) stop();
-		pthread_detach(thid);
-		/**
-		 *  If pthread_kill(thid, 0) return 0 the thread is still running - if not equal to 0 the thread has already terminated.
-		 */
-		if (pthread_kill(thid, 0) == 0) pthread_kill(thid, kill_signo);
+		if (started && !isTerminated()) {
+
+			stop();
+
+			pthread_detach(thid);
+			/**
+			 *  If pthread_kill(thid, 0) return 0 the thread is still running - if not equal to 0 the thread has already terminated.
+			 */
+			if (pthread_kill(thid, 0) == 0) pthread_kill(thid, kill_signo);
+		}
 	}
 
 	virtual void start() { ret=pthread_create(&thid,NULL,executer,(void*)this); terminated = false; started = true; }

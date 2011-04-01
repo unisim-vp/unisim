@@ -55,7 +55,7 @@ Simulator::Simulator(int argc, char **argv)
 	, sim_time(0)
 	, host_time(0)
 	, isS19(false)
-
+	, enable_pim_server(false)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, dump_parameters(false)
@@ -271,7 +271,7 @@ Simulator::Simulator(int argc, char **argv)
 	}
 	else if (enable_pim_server)
 	{
-		// Connect gdb-server to CPU
+		// Connect pim-server to CPU
 		cpu->debug_control_import >> pim_server->debug_control_export;
 		cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;
 		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
@@ -388,11 +388,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//===                      Service run-time configuration               ===
 	//=========================================================================
 
+	//  - PIM Server run-time configuration
 	simulator->SetVariable("pim.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 	simulator->SetVariable("pim.tcp-port", 1234);
 	simulator->SetVariable("pim.filename", "pim.xml");
 
-	//  - PIM Server run-time configuration
 	simulator->SetVariable("pim-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("pim-server.architecture-description-filename", gdb_server_arch_filename);
 	simulator->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
