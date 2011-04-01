@@ -412,6 +412,8 @@ function BuildWinInstaller
 		make install prefix=${INSTALL_DIR}${PREFIX} || exit -1
 	elif [ -f 'CMakeLists.txt' ]; then
 		make install DESTDIR=${INSTALL_DIR}${PREFIX} || exit -1
+		mv ${INSTALL_DIR}${PREFIX}/mingw/* ${INSTALL_DIR}${PREFIX} || exit -1
+		rm -rf ${INSTALL_DIR}${PREFIX}/mingw
 	fi
 
 	ISS_FILENAME=${INSTALL_DIR}/${NAME}-${VERSION}.iss
@@ -455,6 +457,8 @@ function BuildWinInstaller
 		if [ -f "${INSTALL_DIR}/${FILE}" ]; then
 			STRIPPED_FILENAME=`echo ${FILE} | sed 's/\.\///g'`
 			echo "Source: \"${STRIPPED_FILENAME}\"; DestDir: \"{app}/`dirname ${STRIPPED_FILENAME}`\"; Flags: ignoreversion" >> ${ISS_FILENAME}
+		else
+			echo "WARNING! Can't find \"${INSTALL_DIR}/${FILE}\": File will not be packaged."
 		fi
 	done
 	cd "${HERE}"
@@ -480,7 +484,7 @@ function BuildWinInstaller
 	/c/Program\ Files/Inno\ Setup\ 5/ISCC.exe ${ISS_FILENAME} || exit -1
 	cp -f ${INSTALL_DIR}/dist/setup-${NAME}-${VERSION}.exe ${HERE}
 
-	rm -rf "${TOP_DIR}"
+	#rm -rf "${TOP_DIR}"
 }
 
 function BuildPackage
@@ -614,6 +618,7 @@ for PKG in "$@"; do
 				"bin/unisim-ppcemu-system-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		embedded-ppc-g4-board)
@@ -698,20 +703,27 @@ for PKG in "$@"; do
 				share/unisim-armemu-${PKG_VERSION}/INSTALL.txt \
 				share/unisim-armemu-${PKG_VERSION}/NEWS.txt \
 				share/unisim-armemu-${PKG_VERSION}/README.txt \
-				lib/libunisim-armemu.so \
-				lib/libunisim-armemu.so.0.2 \
-				lib/libunisim-armemu.so.${PKG_VERSION} \
 				share/unisim-armemu-${PKG_VERSION}/test/src/CMakeLists.txt \
 				share/unisim-armemu-${PKG_VERSION}/test/src/main.c \
 				share/unisim-armemu-${PKG_VERSION}/test/src/toolchain-armv5l.cmake \
 				share/unisim-armemu-${PKG_VERSION}/gdb_server/gdb_armv5l.xml \
-				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml" \
+				share/unisim-armemu-${PKG_VERSION}/template-default-config.xml \
+				share/applications/unisim-armemu-${PKG_VERSION}.desktop \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim.icns \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim128.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim16.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim256.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/logo_unisim32.png \
+				share/unisim-armemu-${PKG_VERSION}/logo/unisim.ico \
+				share/unisim-armemu-${PKG_VERSION}/test/install/test.armv5l" \
 				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
-				"" \
-				"" \
-				"" \
+				"share/unisim-armemu-${PKG_VERSION}/logo/unisim.ico" \
+				"bin/unisim-armemu-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true" \
 				"-Dwith_osci_systemc=${SYSTEMC}" \
-				"-Dwith_osci_tlm2=${TLM20}"
+				"-Dwith_osci_tlm2=${TLM20}" \
+				"-DCMAKE_BUILD_TYPE=RELEASE"
 			;;
 		star12x)
 			BuildPackage \

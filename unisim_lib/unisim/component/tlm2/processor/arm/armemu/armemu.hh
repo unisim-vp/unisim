@@ -49,14 +49,6 @@ namespace processor {
 namespace arm {
 namespace armemu {
 
-// using unisim::component::cxx::processor::arm::armemu::CPU;
-// using unisim::kernel::service::Parameter;
-// using unisim::kernel::service::Object;
-// using unisim::kernel::service::Client;
-// using unisim::kernel::service::Service;
-// using unisim::kernel::service::ServiceExport;
-// using unisim::kernel::service::ServiceImport;
-
 using std::string;
 
 class ARMEMU
@@ -70,7 +62,6 @@ public:
 	typedef tlm::tlm_sync_enum     sync_enum_type;
 	
 	typedef unisim::component::cxx::processor::arm::armemu::CPU inherited;
-	// typedef ARMEMU<BLOCKING> THIS_MODULE;
 
 	/**************************************************************************
 	 * Port to the bus and its virtual methods to handle                START *

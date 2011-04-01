@@ -2,7 +2,7 @@ cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
 set ( SIM_VERSION_MINOR 4 )
-set ( SIM_VERSION_PATCH 0 )
+set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION 
 	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
@@ -218,13 +218,17 @@ add_custom_target ( sim__share_python
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/python
-	COMMAND
-		${CMAKE_COMMAND} -E copy_if_different
-			${CMAKE_SOURCE_DIR}/share/python/demo.py
-			${SHARE_DIRECTORY}/python/demo.py
+#	COMMAND
+#		${CMAKE_COMMAND} -E copy_if_different
+#			${CMAKE_SOURCE_DIR}/share/python/demo.py
+#			${SHARE_DIRECTORY}/python/demo.py
 	COMMENT
 		"Setting python demos."
 	)
+
+configure_file (
+	${CMAKE_SOURCE_DIR}/share/python/demo.py.in
+	${SHARE_DIRECTORY}/python/demo.py )
 
 if ( APPLE )
 	set ( SIM_UA_UNISIM_SIM_NAME "ARM926EJS" )
@@ -326,8 +330,10 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
+	 'unisim__util__debug__blob',
 	 'unisim__util__debug__debugger_handler',
 	 'unisim__util__xml',
+	 'unisim__util__generic_peripheral_register',
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")

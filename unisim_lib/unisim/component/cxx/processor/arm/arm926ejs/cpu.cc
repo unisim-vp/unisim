@@ -174,6 +174,18 @@ CPU(const char *name, Object *parent)
 	, first_ls(0)
 	, has_sent_first_ls(false)
 	, free_ls_queue()
+	, num_data_prefetches(0)
+	, num_data_reads(0)
+	, num_data_writes(0)
+	, num_insn_reads(0)
+	, stat_num_data_prefetches("num-data-prefetches", this,	num_data_prefetches,
+			"Number of data prefetches issued to the memory system.")
+	, stat_num_data_reads("num-data-reads", this, num_data_reads,
+			"Number of data reads issued to the memory system.")
+	, stat_num_data_writes("num-data-writes", this, num_data_writes,
+			"Number of data writes issued to the memory system.")
+	, stat_num_insn_reads("num-insn-reads", this, num_insn_reads,
+			"Number of instruction reads issued to the memory system.")
 {
 	for (unsigned int i = 0; i < num_phys_gprs; i++)
 	{
@@ -971,6 +983,8 @@ ReadInsn(uint32_t address, uint32_t &val)
 	uint32_t pa = mva;
 	uint32_t cacheable = 1;
 	uint32_t bufferable = 1; // instruction cache ignores the bufferable status
+
+	num_insn_reads++;
 
 	if ( verbose & 0x04 )
 		logger << DebugInfo
@@ -2090,109 +2104,6 @@ CheckAccessPermission(bool is_read,
 	return true;
 }
 
-/** Translate address from MVA to physical address.
- *
- * @param mva the generated modified virtual address
- * @param pa the generated physicial address
- * @return true on success, false on error
- */
-bool 
-CPU::
-TranslateMVA(uint32_t mva, uint32_t &pa)
-{
-	// Build first the address of the Translation Table Base
-	uint32_t ttb_addr = 
-		cp15.GetTTB() | ((mva & 0xfff00000UL) >> 18);
-	// Get the first level descriptor
-	// Two TLB are available, the lockdown TLB and the regular TLB
-	// If the address is not found on the TLBs then perform a page walk
-	// Check first the lockdown TLB and afterwards the regular TLB
-	bool found_first_level = false;
-	uint32_t first_level = 0;
-	// bool found_second_level = false;
-	// uint32_t second_level = 0;
-	uint32_t way = 0;
-	if ( ltlb.GetWay(ttb_addr, &way) )
-	{
-		if ( ltlb.GetValid(way) )
-		{
-			first_level = ltlb.GetData(way);
-			found_first_level = true;
-		}
-	}
-	if ( !found_first_level )
-	{
-		// the entry was not found in the lockdown tlb
-		// check the main tlb
-		uint32_t tag = tlb.GetTag(ttb_addr);
-		uint32_t set = tlb.GetSet(ttb_addr);
-		if ( tlb.GetWay(tag, set, &way) )
-		{
-			if ( tlb.GetValid(set, way) )
-			{
-				first_level = tlb.GetData(set, way);
-				found_first_level = true;
-			}
-		}
-	}
-	if ( !found_first_level )
-	{
-		uint8_t first_level_data[4];
-		// oops, we are forced to perform a page walk
-		PrRead(ttb_addr, first_level_data, 4);
-		memcpy(&first_level, first_level_data, 4);
-		first_level = LittleEndian2Host(first_level);
-	}
-	// NOTE: we let the found_first_level to false to signal that the
-	//   entry was found in the memory table
-	// now we have to check that the first level entry obtained is valid
-	if ( (first_level & 0x03) == 0 )
-	{
-		// this is an invalid entry, provoke a data abort
-		logger << DebugError
-			<< "Address translation for mva 0x"
-			<< std::hex << mva << std::dec
-			<< " was not found"
-			<< EndDebugError;
-		assert("Translation fault" == 0);
-		return false;
-	}
-
-	// ok, we have a valid entry check if it needs to be added to the main tlb
-	if ( !found_first_level)
-	{
-		// this is a correct entry fill the main tlb with it
-		uint32_t tag = tlb.GetTag(ttb_addr);
-		uint32_t set = tlb.GetSet(ttb_addr);
-		uint32_t way = tlb.GetNewWay(set);
-		tlb.SetEntry(tag, set, way, first_level, 1);
-		logger << DebugInfo
-			<< "New entry created with:" << std::endl
-			<< "- tag = 0x"
-			<< std::hex << tag << std::dec << std::endl
-			<< "- set = " << set << std::endl
-			<< "- way = " << way << std::endl
-			<< "- data = 0x"
-			<< std::hex << first_level << std::dec
-			<< EndDebugInfo;
-	}
-
-	// check wether is a section page or a second access is required
-	if ( first_level & 0x02UL )
-	{
-		// the descriptor is a section descriptor
-		pa = (first_level & 0xfff00000UL) |
-			(mva & 0x000fffffUL);
-	}
-	else
-	{
-		// the page is not a section a second access to the tlb is required
-		assert("Translation fault (TODO: second level access)" == 0);
-	}
-
-	return true;
-}
-
 /** Non intrusive translate address from VA to MVA and physical address.
  *
  * @param va the virtual address to handle
@@ -2502,6 +2413,151 @@ NonIntrusiveTranslateVA(bool is_read,
 	return true;
 }
 
+/** Translate address from MVA to physical address.
+ *
+ * @param mva the generated modified virtual address
+ * @param pa the generated physicial address
+ * @return true on success, false on error
+ */
+bool 
+CPU::
+TranslateMVA(uint32_t mva, uint32_t &pa)
+{
+	// Build first the address of the Translation Table Base
+	uint32_t ttb_addr = 
+		cp15.GetTTB() | ((mva & 0xfff00000UL) >> 18);
+	if ( verbose & 0x010 )
+	{
+		logger << DebugInfo
+			<< "Translating modified virtual address:" << std::endl
+			<< " - mva = 0x" << mva << std::endl
+			<< " - ttb = 0x" << cp15.GetTTB() << std::dec
+			<< EndDebugInfo;
+	}
+
+	uint32_t first_level = 0;
+	GetTLBEntry(ttb_addr, first_level);
+
+	// check wether is a section page or a second access is required
+	if ( first_level & 0x02UL )
+	{
+		// the descriptor is a section descriptor
+		pa = (first_level & 0xfff00000UL) |
+			(mva & 0x000fffffUL);
+	}
+	else
+	{
+		// the page is not a section a second access to the tlb is required
+		assert("Translation fault (TODO: second level access)" == 0);
+	}
+
+	return true;
+}
+
+/** Get the TLB descriptor pointed by the given Translation Table Base address.
+ *
+ * This method check the logical TLB for the given Translation Table address, by
+ *   accessing first the lockdown TLB, then the main TLB or otherwise the memory
+ *   TLB.
+ *
+ * @param ttb_addr the address on the Translation Table Base to look for
+ * @param descriptor the found descriptor
+ */
+void
+CPU::
+GetTLBEntry(uint32_t ttb_addr,
+		uint32_t &descriptor)
+{
+	if ( unlikely(verbose & 0x010) )
+	{
+		logger << DebugInfo
+			<< "Looking for TLB descriptor entry with Translation Table address"
+			<< " 0x" << std::hex << ttb_addr << std::dec
+			<< EndDebugInfo;
+	}
+
+	// Get the first level descriptor
+	// Two TLB are available, the lockdown TLB and the regular TLB
+	// If the address is not found on the TLBs then perform a page walk
+	// Check first the lockdown TLB and afterwards the regular TLB
+	bool found = false;
+	uint32_t way = 0;
+	ltlb.read_accesses++;
+	if ( ltlb.GetWay(ttb_addr, &way) )
+	{
+		if ( ltlb.GetValid(way) )
+		{
+			ltlb.read_hits++;
+			descriptor = ltlb.GetData(way);
+			found = true;
+		}
+	}
+	if ( unlikely(ltlb.power_estimator_import != 0) )
+		ltlb.power_estimator_import->ReportReadAccess();
+
+	if ( !found)
+	{
+		if ( unlikely(verbose & 0x010) )
+		{
+			logger << DebugInfo
+				<< "TLB descriptor not found in the lockdown TLB,"
+				<< " checking main TLB."
+				<< EndDebugInfo;
+		}
+		// the entry was not found in the lockdown tlb
+		// check the main tlb
+		uint32_t tag = tlb.GetTag(ttb_addr);
+		uint32_t set = tlb.GetSet(ttb_addr);
+		tlb.read_accesses++;
+		if ( tlb.GetWay(tag, set, &way) )
+		{
+			if ( tlb.GetValid(set, way) )
+			{
+				tlb.read_hits++;
+				descriptor = tlb.GetData(set, way);
+				found = true;
+			}
+		}
+		if ( unlikely(tlb.power_estimator_import != 0) )
+			tlb.power_estimator_import->ReportReadAccess();
+	}
+	if ( !found )
+	{
+		if ( verbose & 0x010 )
+		{
+			logger << DebugInfo
+				<< "TLB descriptor not found in the main TLB, "
+				<< "reading it from memory."
+				<< EndDebugInfo;
+		}
+		uint8_t descriptor_data[4];
+		// oops, we are forced to perform a page walk
+		PrRead(ttb_addr, descriptor_data, 4);
+		memcpy(&descriptor, descriptor_data, 4);
+		descriptor = LittleEndian2Host(descriptor);
+	
+		// ok, we have the entry add it to the main tlb
+		uint32_t tag = tlb.GetTag(ttb_addr);
+		uint32_t set = tlb.GetSet(ttb_addr);
+		uint32_t way = tlb.GetNewWay(set);
+		if ( verbose & 0x010 )
+		{
+			logger << DebugInfo
+				<< "Filling main tlb with fetched descriptor:"
+				<< " - descriptor address = 0x" 
+				<< std::hex << ttb_addr << std::endl
+				<< " - descriptor value   = 0x"
+				<< descriptor << std::endl
+				<< " - tag = 0x" << tag << std::dec << std::endl
+				<< " - set = " << set << std::endl
+				<< " - way = " << way
+				<< EndDebugInfo;
+		}
+		tlb.write_accesses++;
+		tlb.SetEntry(tag, set, way, descriptor, 1);
+	}
+}
+
 /** Translate address from VA to MVA and physical address.
  *
  * @param va the virtual address to handle
@@ -2529,63 +2585,20 @@ TranslateVA(bool is_read,
 	if ( verbose & 0x010 )
 	{
 		logger << DebugInfo
-			<< "va = 0x" << std::hex << va 
-			<< std::endl
+			<< "Translating virtual address:" << std::endl
+			<< " - va = 0x" << std::hex << va << std::endl
 			<< " - mva = 0x" << mva << std::endl
 			<< " - ttb = 0x" << cp15.GetTTB() << std::dec
 			<< EndDebugInfo;
 	}
-	// Get the first level descriptor
-	// Two TLB are available, the lockdown TLB and the regular TLB
-	// If the address is not found on the TLBs then perform a page walk
-	// Check first the lockdown TLB and afterwards the regular TLB
-	bool found_first_level = false;
+
 	uint32_t first_level = 0;
-	bool found_second_level = false;
-	uint32_t second_level = 0;
-	uint32_t way = 0;
-	if ( ltlb.GetWay(ttb_addr, &way) )
-	{
-		first_level = ltlb.GetData(way);
-		found_first_level = true;
-	}
-	if ( !found_first_level )
-	{
-		if ( verbose & 0x010 )
-		{
-			logger << DebugInfo
-				<< " - not found in the lockdown TLB"
-				<< EndDebugInfo;
-		}
-		// the entry was not found in the lockdown tlb
-		// check the main tlb
-		uint32_t tag = tlb.GetTag(ttb_addr);
-		uint32_t set = tlb.GetSet(ttb_addr);
-		if ( tlb.GetWay(tag, set, &way) )
-		{
-			first_level = tlb.GetData(set, way);
-			found_first_level = true;
-		}
-	}
-	if ( !found_first_level )
-	{
-		if ( verbose & 0x010 )
-		{
-			logger << DebugInfo
-				<< " - not found in the main TLB"
-				<< EndDebugInfo;
-		}
-		uint8_t first_level_data[4];
-		// oops, we are forced to perform a page walk
-		PrRead(ttb_addr, first_level_data, 4);
-		memcpy(&first_level, first_level_data, 4);
-		first_level = LittleEndian2Host(first_level);
-	}
-	// NOTE: we let the found_first_level to false to signal that the
-	//   entry was found in the memory table
-	// now we have to check that the first level entry obtained is valid
+	GetTLBEntry(ttb_addr, first_level);
+
+	// check wether is a section page or a second access is required
 	if ( (first_level & 0x03UL) == 0 )
 	{
+		// fault page
 		// this is an invalid entry, provoke a data abort
 		logger << DebugError
 			<< "Address translation for 0x"
@@ -2600,30 +2613,6 @@ TranslateVA(bool is_read,
 		return false;
 	}
 
-	// ok, we have a valid entry check if it needs to be added to the main tlb
-	if ( !found_first_level)
-	{
-		if ( verbose & 0x010 )
-		{
-			logger << DebugInfo
-				<< " - filling main TLB with 0x" << std::hex
-				<< first_level << std::dec
-				<< EndDebugInfo;
-		}
-		uint32_t tag = tlb.GetTag(ttb_addr);
-		uint32_t set = tlb.GetSet(ttb_addr);
-		uint32_t way = tlb.GetNewWay(set);
-		tlb.SetEntry(tag, set, way, first_level, 1);
-	}
-
-	// check wether is a section page or a second access is required
-	if ( (first_level & 0x03UL) == 0 )
-	{
-		// fault page
-		assert("Translation fault (TODO: handle first level descriptor fault)"
-				== 0);
-	}
-
 	else if ( (first_level & 0x03UL) == 0x01UL ) // Coarse page
 	{
 		// a second level descriptor fetch is initiated
@@ -2634,6 +2623,8 @@ TranslateVA(bool is_read,
 		if ( verbose & 0x010)
 		{
 			logger << DebugInfo
+				<< "First level TLB entry was a coarse page descriptor,"
+				<< " fetching second level entry:" << std::endl
 				<< " - first level entry   = 0x" << std::hex
 				<< first_level << std::endl
 				<< " - mva                 = 0x" << mva << std::endl
@@ -2641,81 +2632,9 @@ TranslateVA(bool is_read,
 				<< coarse_addr << std::dec
 				<< EndDebugInfo;
 		}
-		uint32_t second_way = 0;
-		if ( ltlb.GetWay(coarse_addr, &second_way) )
-		{
-			second_level = ltlb.GetData(second_way);
-			found_second_level = true;
-		}
-		if ( !found_second_level )
-		{
-			if ( verbose & 0x010 )
-			{
-				logger << DebugInfo
-					<< " - not found in the lockdown TLB"
-					<< EndDebugInfo;
-			}
-			// the entry was not found in the lockdown tlb
-			// check the main tlb
-			uint32_t second_tag = tlb.GetTag(coarse_addr);
-			uint32_t second_set = tlb.GetSet(coarse_addr);
-			if ( tlb.GetWay(second_tag, second_set, &second_way) )
-			{
-				second_level = tlb.GetData(second_set, second_way);
-				found_second_level = true;
-			}
-		}
-		if ( !found_second_level )
-		{
-			if ( verbose & 0x010 )
-			{
-				logger << DebugInfo
-					<< " - not found in the main TLB"
-					<< EndDebugInfo;
-			}
-			uint8_t second_level_data[4];
-			// oops, we are forced to perform a page walk
-			PrRead(coarse_addr, second_level_data, 4);
-			memcpy(&second_level, second_level_data, 4);
-			second_level = LittleEndian2Host(second_level);
-		}
-		// NOTE: we let the found_second_level to false to signal that the
-		//   entry was found in the memory table
-		// now we can check that the second level entry obtained is valid
-		if ( (second_level & 0x03UL) == 0 )
-		{
-			// this is an invalid entry, provoke a data abort
-			logger << DebugError
-				<< "Address translation for 0x"
-				<< std::hex << va << std::dec
-				<< " was not found" << std::endl
-				<< " - mva = 0x" << std::hex << mva << std::endl
-				<< " - first_level = 0x" << first_level << std::endl
-				<< " - coarse page address = 0x" << coarse_addr << std::endl
-				<< " - second_level = 0x" << second_level
-				<< std::dec
-				<< EndDebugError;
-			assert("Translation fault (TODO: data abort)" == 0);
-			return false;
-		}
 
-		// ok, we have a valid entry check if it needs to be added to 
-		//   the main tlb
-		if ( !found_second_level )
-		{
-			if ( verbose & 0x010 )
-			{
-				logger << DebugInfo
-					<< " - filling main TLB with 0x" << std::hex
-					<< second_level << std::dec
-					<< " (second level entry)"
-					<< EndDebugInfo;
-			}
-			uint32_t second_tag = tlb.GetTag(coarse_addr);
-			uint32_t second_set = tlb.GetSet(coarse_addr);
-			uint32_t second_way = tlb.GetNewWay(second_set);
-			tlb.SetEntry(second_tag, second_set, second_way, second_level, 1);
-		}
+		uint32_t second_level = 0;
+		GetTLBEntry(coarse_addr, second_level);
 
 		// check whether is a large, small or tiny page
 		if ( (second_level & 0x03UL) == 0 )
@@ -2986,19 +2905,24 @@ PerformLoadStoreAccesses()
 		switch (memop->GetType()) 
 		{
 			case MemoryOp::PREFETCH:
+				num_data_prefetches++;
 				PerformPrefetchAccess(memop);
 				break;
 			case MemoryOp::WRITE:
+				num_data_writes++;
 				PerformWriteAccess(memop);
 				break;
 			case MemoryOp::READ:
 			case MemoryOp::USER_READ:
+				num_data_reads++;
 				PerformReadAccess(memop);
 				break;
 			case MemoryOp::READ_TO_PC_UPDATE_T:
+				num_data_reads++;
 				PerformReadToPCUpdateTAccess(memop);
 				break;
 			case MemoryOp::READ_TO_PC:
+				num_data_reads++;
 				PerformReadToPCAccess(memop);
 				break;
 		}

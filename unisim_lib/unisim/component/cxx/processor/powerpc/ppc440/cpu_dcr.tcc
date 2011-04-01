@@ -48,26 +48,26 @@ template <class CONFIG>
 void CPU<CONFIG>::MoveFromDCR(unsigned int rd, unsigned int dcrn)
 {
 	uint32_t value;
-	DCRRead(dcrn, &value, sizeof(value));
-	SetGPR(rd, unisim::util::endian::BigEndian2Host(value));
+	DCRRead(dcrn, value);
+	SetGPR(rd, value);
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::MoveToDCR(unsigned int rs, unsigned int dcrn)
 {
 	uint32_t value;
-	value = unisim::util::endian::Host2BigEndian(GetGPR(rs));
-	DCRWrite(dcrn, &value, sizeof(value));
+	value = GetGPR(rs);
+	DCRWrite(dcrn, value);
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::DCRRead(unsigned int dcrn, void *buffer, uint32_t size)
+void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 {
-	memset(buffer, 0, size);
+	value = 0;
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::DCRWrite(unsigned int dcrn, const void *buffer, uint32_t size)
+void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 {
 }
 

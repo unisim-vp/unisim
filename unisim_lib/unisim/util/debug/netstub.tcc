@@ -354,7 +354,12 @@ bool NetStub<ADDRESS>::Initialize()
 		if(protocol == protocol_af_inet)
 		{
 #endif
-			if(sonadr.sin_addr.s_addr != (in_addr_t)-1)
+#ifdef WIN32
+			u_long addr_none = INADDR_NONE;
+#else
+			in_addr_t addr_none = INADDR_NONE;
+#endif
+			if(memcmp(&sonadr.sin_addr.s_addr, &addr_none, sizeof(addr_none)) != 0)
 			{
 				//host format is xxx.yyy.zzz.ttt
 				connected = connect(sock, (struct sockaddr *) &sonadr, sizeof(sonadr)) != -1;

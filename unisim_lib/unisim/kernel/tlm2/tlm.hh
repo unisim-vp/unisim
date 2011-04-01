@@ -566,6 +566,10 @@ public:
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 private:
 	unisim::kernel::logger::Logger logger;
+	bool enable;
+	bool verbose;
+	unisim::kernel::service::Parameter<bool> param_enable;
+	unisim::kernel::service::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
@@ -574,6 +578,10 @@ InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_module_name& name, unisim
 	, sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
+	, enable(true)
+	, verbose(false)
+	, param_enable("enable", this, enable, "Enable/Disable a lazy implementation of TLM 2.0 method interface")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	master_sock(*this);
 }
@@ -581,16 +589,36 @@ InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_module_name& name, unisim
 template <unsigned int BUSWIDTH, class TYPES>
 tlm::tlm_sync_enum InitiatorStub<BUSWIDTH, TYPES>::nb_transport_bw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t)
 {
-	logger << unisim::kernel::logger::DebugError << "nb_transport_bw shall not be called" << unisim::kernel::logger::EndDebugError;
-	Object::Stop(-1);
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "nb_transport_bw has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "nb_transport_bw shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
 	return tlm::TLM_COMPLETED;
 }
 
 template <unsigned int BUSWIDTH, class TYPES>
 void InitiatorStub<BUSWIDTH, TYPES>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
-	logger << unisim::kernel::logger::DebugError << "invalidate_direct_mem_ptr shall not be called" << unisim::kernel::logger::EndDebugError;
-	Object::Stop(-1);
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "invalidate_direct_mem_ptr has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "invalidate_direct_mem_ptr shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
 }
 
 template <unsigned int BUSWIDTH = 32, class TYPES = tlm::tlm_base_protocol_types>
@@ -610,6 +638,10 @@ public:
 	virtual bool get_direct_mem_ptr(typename TYPES::tlm_payload_type& trans, tlm::tlm_dmi& dmi_data);
 private:
 	unisim::kernel::logger::Logger logger;
+	bool enable;
+	bool verbose;
+	unisim::kernel::service::Parameter<bool> param_enable;
+	unisim::kernel::service::Parameter<bool> param_verbose;
 };
 
 template <unsigned int BUSWIDTH, class TYPES>
@@ -618,6 +650,10 @@ TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_module_name& name, unisim::kern
 	, sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
+	, enable(true)
+	, verbose(false)
+	, param_enable("enable", this, enable, "Enable/Disable a lazy implementation of TLM 2.0 method interface")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	slave_sock(*this);
 }
@@ -625,31 +661,71 @@ TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_module_name& name, unisim::kern
 template <unsigned int BUSWIDTH, class TYPES>
 void TargetStub<BUSWIDTH, TYPES>::b_transport(typename TYPES::tlm_payload_type& trans, sc_core::sc_time& t)
 {
-	logger << unisim::kernel::logger::DebugError << "b_transport shall not be called" << unisim::kernel::logger::EndDebugError;
-	Object::Stop(-1);
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "b_transport has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "b_transport shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
 }
 
 template <unsigned int BUSWIDTH, class TYPES>
 tlm::tlm_sync_enum TargetStub<BUSWIDTH, TYPES>::nb_transport_fw(typename TYPES::tlm_payload_type& trans, typename TYPES::tlm_phase_type& phase, sc_core::sc_time& t)
 {
-	logger << unisim::kernel::logger::DebugError << "nb_transport_fw shall not be called" << unisim::kernel::logger::EndDebugError;
-	Object::Stop(-1);
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "nb_transport_fw shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
 	return tlm::TLM_COMPLETED;
 }
 
 template <unsigned int BUSWIDTH, class TYPES>
 unsigned int TargetStub<BUSWIDTH, TYPES>::transport_dbg(typename TYPES::tlm_payload_type& trans)
 {
-	logger << unisim::kernel::logger::DebugError << "transport_dbg shall not be called" << unisim::kernel::logger::EndDebugError;
-	Object::Stop(-1);
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "transport_dbg has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "transport_dbg shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
 	return 0;
 }
 	
 template <unsigned int BUSWIDTH, class TYPES>
 bool TargetStub<BUSWIDTH, TYPES>::get_direct_mem_ptr(typename TYPES::tlm_payload_type& trans, tlm::tlm_dmi& dmi_data)
 {
-	logger << unisim::kernel::logger::DebugError << "get_direct_mem_ptr shall not be called" << unisim::kernel::logger::EndDebugError;
-	Object::Stop(-1);
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "get_direct_mem_ptr has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "get_direct_mem_ptr shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
 	return false;
 }
 
