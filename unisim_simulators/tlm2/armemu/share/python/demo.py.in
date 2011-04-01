@@ -47,8 +47,8 @@ class SimulatorHandler(simulator.Simulator):
 	def __init__(self):
 		simulator.Simulator.__init__(self, 
 			parms={
-				"enable-power-estimation":True, 
-				"linux-os.verbose":True})
+				"enable-power-estimation":True 
+				})
 		parms = self.get_parameters()
 		self.insn_threshold = 100
 		self.traps_to_logger = True
