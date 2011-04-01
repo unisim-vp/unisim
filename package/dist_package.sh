@@ -617,6 +617,7 @@ for PKG in "$@"; do
 				"bin/unisim-ppcemu-system-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		embedded-ppc-g4-board)
