@@ -46,7 +46,7 @@ Simulator ::
 Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
 #ifdef SIM_LIBRARY
-	, unisim::kernel::service::VariableBase::Notifiable()
+	, unisim::kernel::service::VariableBaseListener()
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
@@ -88,7 +88,7 @@ Simulator(int argc, char **argv)
 	, formula_caches_total_power(0)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 #ifdef SIM_LIBRARY
-	, notif_list()
+	, variable_base_listener_list()
 	, trap_handler_context(0)
 	, trap_handler_function(0)
 #endif // SIM_LIBRARY
@@ -478,7 +478,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 
 bool
 Simulator::
-AddNotifiable (void *(*notif_function)(const char *), const char *var_name)
+AddVariableBaseListener(void *(*notif_function)(const char *), const char *var_name)
 {
 	return false;
 }
@@ -516,7 +516,7 @@ ExternalTrap (unsigned int id)
 
 void
 Simulator::
-VariableNotify(const char *name)
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
 	// use this function to check the variable that was notified
 	// NOTE: for the moment it is empty, but more to come :-P

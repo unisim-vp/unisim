@@ -150,8 +150,8 @@ ARMEMU(const sc_module_name& name, Object *parent)
 			"Display TLM information")
 {
 	inherited::param_cpu_cycle_time_ps.SetVisible(false);
-	param_cpu_cycle_time.SetNotify(this);
-	param_cpu_cycle_time.Notify();
+	param_cpu_cycle_time.AddListener(this);
+	param_cpu_cycle_time.NotifyListeners();
 
 	master_socket.bind(*this);
 	
@@ -161,11 +161,12 @@ ARMEMU(const sc_module_name& name, Object *parent)
 ARMEMU ::
 ~ARMEMU() 
 {
+	param_cpu_cycle_time.RemoveListener(this);
 }
 
 void
 ARMEMU ::
-VariableNotify(const char *name)
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
 	// no need to check the name, the only variable with notify activated is
 	//   the cpu_cycle_time

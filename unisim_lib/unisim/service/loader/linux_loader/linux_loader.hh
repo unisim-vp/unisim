@@ -73,7 +73,7 @@ public Client<Blob<T> >,
 public Client<Memory<T> >,
 public Service<Loader<T> >,
 public Service<Blob<T> >,
-public unisim::kernel::service::VariableBase::Notifiable
+public unisim::kernel::service::VariableBaseListener
 {
 public:
 	/* Import of the different services */
@@ -135,7 +135,7 @@ private:
 
 	void Log(T addr, const uint8_t *value, uint32_t size);
 
-	virtual void VariableNotify(const char *name);
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
 };
 
 } // end of linux_loader

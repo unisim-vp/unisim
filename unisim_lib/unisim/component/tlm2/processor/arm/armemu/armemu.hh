@@ -55,7 +55,7 @@ class ARMEMU
 	: public sc_module
 	, public tlm::tlm_bw_transport_if<>
 	, public unisim::component::cxx::processor::arm::armemu::CPU
-	, public unisim::kernel::service::VariableBase::Notifiable
+	, public unisim::kernel::service::VariableBaseListener
 {
 public:
 	typedef tlm::tlm_base_protocol_types::tlm_payload_type  transaction_type;
@@ -94,7 +94,7 @@ public:
 	virtual ~ARMEMU();
 
 private:
-	virtual void VariableNotify(const char *name);
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
 
 public:
 	virtual void Stop(int ret);

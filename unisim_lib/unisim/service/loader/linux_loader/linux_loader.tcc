@@ -55,7 +55,7 @@ Client<Blob<T> >(name, parent),
 Client<Memory<T> >(name, parent),
 Service<Loader<T> >(name, parent),
 Service<Blob<T> >(name, parent),
-unisim::kernel::service::VariableBase::Notifiable(),
+unisim::kernel::service::VariableBaseListener(),
 loader_import("loader_import", this),
 blob_import("blob_import", this),
 memory_import("memory_import", this),
@@ -109,6 +109,8 @@ logger(*this)
 						*(argv[i]), argv_desc.str().c_str()));
 		}
 	}
+	param_argc.AddListener(this);
+	param_argc.NotifyListeners();
 
 	param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	if ( envc )
@@ -125,6 +127,8 @@ logger(*this)
 						*(envp[i]), envp_desc.str().c_str()));
 		}
 	}
+	param_envc.AddListener(this);
+	param_envc.NotifyListeners();
 
 	loader_export.SetupDependsOn(memory_import);
 	loader_export.SetupDependsOn(loader_import);
@@ -437,7 +441,7 @@ Log(T addr, const uint8_t *value, uint32_t size)
 template<class T>
 void
 LinuxLoader<T>::
-VariableNotify(const char *name)
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
 	if ( argc != argv.size() )
 	{
