@@ -52,23 +52,33 @@ LoggerServer::
 LoggerServer() :
 	xml_writer(0),
 	opt_std_err(true),
-	param_std_err("kernel_logger.std_err", 0, opt_std_err, "Show logger output through the standard error output"),
+	param_std_err("kernel_logger.std_err", 0, opt_std_err, 
+			"Show logger output through the standard error output"),
 	opt_std_out(false),
-	param_std_out("kernel_logger.std_out", 0, opt_std_out, "Show logger output through the standard output"),
+	param_std_out("kernel_logger.std_out", 0, opt_std_out, 
+			"Show logger output through the standard output"),
 	opt_std_err_color(false),
-	param_std_err_color("kernel_logger.std_err_color", 0, opt_std_err_color, "Colorize logger output through the standard error output (only works if std_err is active)"),
+	param_std_err_color("kernel_logger.std_err_color", 0, opt_std_err_color, 
+			"Colorize logger output through the standard error output (only works if std_err is active)"),
 	opt_std_out_color(false),
-	param_std_out_color("kernel_logger.std_out_color", 0, opt_std_out_color, "Colorize logger output through the standard output (only works if std_out is active)"),
+	param_std_out_color("kernel_logger.std_out_color", 0, opt_std_out_color, 
+			"Colorize logger output through the standard output (only works if std_out is active)"),
 	opt_file(false),
-	param_file("kernel_logger.file", 0, opt_file, "Keep logger output in a file"),
+	param_file("kernel_logger.file", 0, opt_file, 
+			"Keep logger output in a file"),
 	opt_filename("logger_output.txt"),
-	param_filename("kernel_logger.filename", 0, opt_filename, "Filename to keep logger output (the option file must be activated)"),
+	param_filename("kernel_logger.filename", 0, opt_filename, 
+			"Filename to keep logger output (the option file must be activated)"),
 	opt_xml_file(false),
-	param_xml_file("kernel_logger.xml_file", 0, opt_xml_file, "Keep logger output in a file xml formatted"),
+	param_xml_file("kernel_logger.xml_file", 0, opt_xml_file, 
+			"Keep logger output in a file xml formatted"),
 	opt_xml_filename("logger_output.xml"),
-	param_xml_filename("kernel_logger.xml_filename", 0, opt_xml_filename, "Filename to keep logger xml output (the option xml_file must be activated)"),
+	param_xml_filename("kernel_logger.xml_filename", 0, opt_xml_filename, 
+			"Filename to keep logger xml output (the option xml_file must be activated)"),
 	opt_xml_file_gzipped(false),
-	param_xml_file_gzipped("kernel_logger.xml_file_gzipped", 0, opt_xml_file_gzipped, "If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option") {
+	param_xml_file_gzipped("kernel_logger.xml_file_gzipped", 0, opt_xml_file_gzipped, 
+			"If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option") 
+{
 }
 
 LoggerServer::

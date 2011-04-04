@@ -162,11 +162,9 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 		if ( type == VariableBase::VAR_VOID ||
 				type == (*var_iter).second->GetType())
 		{
-			// stupid algorithm to remove non-root variables
-			bool root_var = true;
-			for ( unsigned int i = 0; (*var_iter).first[i] != '\0'; i++ )
-				if ( (*var_iter).first[i] == '.' )
-					root_var = false;
+			// check that the variable is a root variable by checking that it
+			//   has not object owner
+			bool root_var = ((*var_iter).second->GetOwner() == 0);
 			if ( root_var )
 			{
 				rc = XmlfyVariable(writer, (*var_iter).second);
