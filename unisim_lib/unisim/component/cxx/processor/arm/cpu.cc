@@ -1223,7 +1223,7 @@ uint32_t
 CPU::
 GetSPSRIndex()
 {
-	uint32_t rm;
+	uint32_t rm = 0;
 
 	switch (cpsr & CPSR_RUNNING_MODE_MASK) 
 	{

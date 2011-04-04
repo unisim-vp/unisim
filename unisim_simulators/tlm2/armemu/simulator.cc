@@ -259,7 +259,7 @@ Run()
 #endif // !SIM_LIBRARY
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if ( ! inline_debugger )
 	{
@@ -320,7 +320,7 @@ Run(double time, sc_time_unit unit)
 	double time_start = host_time->GetTime();
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if ( ! inline_debugger )
 	{

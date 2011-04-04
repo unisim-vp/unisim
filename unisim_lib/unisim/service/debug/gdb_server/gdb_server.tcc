@@ -1534,7 +1534,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		} else {
 			separator_index++;
 			ADDRESS symbol_address;
-			ADDRESS symbol_size;
+			ADDRESS symbol_size = 0;
 			if(!ParseHex(command, separator_index, symbol_address)) {
 				PutPacket("E00");
 			} else if(command[separator_index++] != ':') {

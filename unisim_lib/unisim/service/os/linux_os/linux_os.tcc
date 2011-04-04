@@ -368,8 +368,6 @@ SetupLinuxOS()
 
 	// Set mmap_brk_point and brk_point
 	mmap_brk_point = mmap_base;
-	ADDRESS_TYPE start_addr;
-	ADDRESS_TYPE end_addr;
 
 	ADDRESS_TYPE top_addr = blob->GetStackBase() + 1;
 	
