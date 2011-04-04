@@ -1052,6 +1052,7 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 
 		string packet = "";
 		string value;
+		int count = 0;
 
 		for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
 		{
@@ -1077,14 +1078,29 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 				packet.append(":");
 				packet.append(hexName);
 
+				count = (count + 1) % 10;
+
 				if (name.compare("*") != 0) {
 					break;
+				} else {
+					if (count == 0) {
+						PutPacket(packet);
+						packet = "";
+					}
+
 				}
 			}
 
 		}
 
-		PutPacket(packet);
+		if (count > 0) {
+			PutPacket(packet);
+		}
+
+		if (name.compare("*") == 0) {
+			PutPacket("qSymbol:");
+		}
+
 
 		return true;
 
