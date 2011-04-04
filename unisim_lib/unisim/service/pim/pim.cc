@@ -14,6 +14,11 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
+#include <libxml/xmlmemory.h>
+#include <libxml/xpath.h>
+#include <libxml/parser.h>
+#include <libxml/encoding.h>
+#include <libxml/xmlwriter.h>
 
 #include <fstream>
 #include <sstream>
@@ -25,6 +30,9 @@
 namespace unisim {
 namespace service {
 namespace pim {
+
+void ParseComponent (xmlDocPtr doc, xmlNodePtr cur, component_t *component);
+xmlChar *ConvertInput(const char *in, const char *encoding);
 
 using namespace std;
 
@@ -309,7 +317,7 @@ void PIM::GeneratePimFile() {
  * Returns the converted UTF-8 string, or NULL in case of error.
  */
 xmlChar *
-PIM::ConvertInput(const char *in, const char *encoding)
+ConvertInput(const char *in, const char *encoding)
 {
     xmlChar *out;
     int ret;
@@ -405,7 +413,7 @@ int PIM::LoadPimFile() {
 
 }
 
-void PIM::ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
+void ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
 
 	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
 		cerr << "Error: Can't parse " << componentNode->name << endl;

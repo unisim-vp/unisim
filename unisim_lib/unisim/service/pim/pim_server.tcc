@@ -1472,27 +1472,6 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		}
 
 	}
-	else if (cmdPrefix.compare("stack") == 0) {
-		string packet("T05");
-
-		if(gdb_pc)
-		{
-			std::stringstream sstr;
-			string hex;
-			unsigned int reg_num = gdb_pc->GetRegNum();
-			gdb_pc->GetValue(hex);
-			sstr << std::hex << reg_num;
-			packet += sstr.str();
-			packet += ":";
-			packet += hex;
-			packet += ";";
-		}
-
-		PutPacket(packet);
-
-		ReadSymbol("*");
-
-	}
 	else if (cmdPrefix.compare("time") == 0) {
 		string packet("");
 

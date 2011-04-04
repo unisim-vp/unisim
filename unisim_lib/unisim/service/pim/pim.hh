@@ -16,12 +16,6 @@
 #include <string>
 #include <stdexcept>
 
-#include <libxml/xmlmemory.h>
-#include <libxml/xpath.h>
-#include <libxml/parser.h>
-#include <libxml/encoding.h>
-#include <libxml/xmlwriter.h>
-
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/pim/convert.hh>
@@ -88,10 +82,7 @@ private:
 	string				filename;
 	Parameter<string>	param_filename;
 
-	void ParseComponent (xmlDocPtr doc, xmlNodePtr cur, component_t *component);
 	component_t* FindComponent(const string name);
-
-	xmlChar *ConvertInput(const char *in, const char *encoding);
 
 	SocketServerThread *socketfd;
 //	SocketClientThread *socketfd;
