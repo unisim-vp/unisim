@@ -3078,7 +3078,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	uint16_t val16 = 0;
 	uint32_t val32 = 0;
 	uint8_t data8, data16[2], data32[4];
-	uint8_t *data;
+	uint8_t *data = 0;
 	uint32_t cacheable = 1;
 	uint32_t bufferable = 1;
 
@@ -3492,7 +3492,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	}
 
 	// fix the data depending on its size
-	uint32_t value;
+	uint32_t value = 0;
 	if (size == 1)
 	{
 		uint8_t val8 = *data;

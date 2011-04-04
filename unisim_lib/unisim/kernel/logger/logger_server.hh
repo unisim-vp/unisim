@@ -58,7 +58,7 @@ public:
 	/** Constructor */
 	LoggerServer();
 	/** Destructor */
-	~LoggerServer();
+	virtual ~LoggerServer();
 
 	/** Object Setup method
 	 * Implementation of the Setup method required by Object. Returns true if the initialization

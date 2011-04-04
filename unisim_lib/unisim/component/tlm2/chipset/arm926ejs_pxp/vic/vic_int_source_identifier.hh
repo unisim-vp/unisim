@@ -48,6 +48,7 @@ namespace vic {
 class VICIntSourceIdentifierInterface
 {
 public:
+	virtual ~VICIntSourceIdentifierInterface() {};
 	virtual void VICIntSourceReceived(int id, bool value) = 0;
 };
 
