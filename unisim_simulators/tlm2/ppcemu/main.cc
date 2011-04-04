@@ -435,7 +435,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("linux-os.endianness", "big-endian");
 	simulator->SetVariable("linux-os.utsname-sysname", "Linux");
 	simulator->SetVariable("linux-os.utsname-nodename", "localhost");
-	simulator->SetVariable("linux-os.utsname-release", "2.6.27.35");
+	simulator->SetVariable("linux-os.utsname-release", "2.6.31.14");
 	simulator->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
 	simulator->SetVariable("linux-os.utsname-machine", "powerpc");
 	simulator->SetVariable("linux-os.verbose", false);

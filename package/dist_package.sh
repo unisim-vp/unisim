@@ -484,7 +484,7 @@ function BuildWinInstaller
 	/c/Program\ Files/Inno\ Setup\ 5/ISCC.exe ${ISS_FILENAME} || exit -1
 	cp -f ${INSTALL_DIR}/dist/setup-${NAME}-${VERSION}.exe ${HERE}
 
-	#rm -rf "${TOP_DIR}"
+	rm -rf "${TOP_DIR}"
 }
 
 function BuildPackage
