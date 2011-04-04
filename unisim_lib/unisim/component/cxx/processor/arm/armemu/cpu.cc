@@ -457,7 +457,7 @@ StepInstruction()
 				 *   implementation.
 				 */
 				insn_size = 2;
-				assert("Thumb mode not supported" == 0);
+				assert("Thumb mode not supported" != 0);
 			}
 			else
 				insn_size = 4;
@@ -1540,6 +1540,9 @@ PerformLoadStoreAccesses()
 			case MemoryOp::READ_TO_PC:
 				PerformReadToPCAccess(memop);
 				break;
+			case MemoryOp::USER_READ:
+				assert("Not permitted operation with armemu" != 0);
+				break;
 		}
 		free_ls_queue.push(memop);
 	}
@@ -1640,7 +1643,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	uint16_t val16 = 0;
 	uint32_t val32 = 0;
 	uint8_t data8, data16[2], data32[4];
-	uint8_t *data;
+	uint8_t *data = 0;
 
 	data8 = 0;
 	memset(data16, 0, sizeof(uint8_t) * 2);
@@ -1819,7 +1822,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	}
 
 	// fix the data depending on its size
-	uint32_t value;
+	uint32_t value = 0;
 	if (size == 1)
 	{
 		uint8_t val8 = *data;
