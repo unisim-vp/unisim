@@ -30,6 +30,8 @@ if ( UNIX AND NOT APPLE )
 	message ( "**** Release = ${DISTRIB_ID}${DISTRIB_RELEASE}" )
 endif ( UNIX AND NOT APPLE )
 
+option ( BUILD_SIM_PIM_SUPPORT "Set this option if you want to compile the simulator for use with unisim-workbench." )
+
 option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
 option ( BUILD_ARMEMU_POWER_SUPPORT "Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required.")
 project ( unisim_armemu )
@@ -90,6 +92,8 @@ set ( armemu_subdirs
 	unisim/service/os/linux_os/linux_os_32
 	unisim/service/trap_handler
 	unisim/service/power
+	unisim/service/pim
+	unisim/service/pim/network
 	)
 foreach ( dir ${armemu_subdirs} )
 	unisim_include ( ${dir} )
@@ -99,6 +103,12 @@ include_directories ( ${CMAKE_SOURCE_DIR}
 	${CMAKE_BINARY_DIR} 
 	${OSCI_SYSTEMC_INCLUDE_DIR} 
 	${OSCI_TLM2_INCLUDE_DIR})
+
+if ( BUILD_SIM_PIM_SUPPORT )
+	set ( SIM_PIM_SUPPORT TRUE )
+else ( BUILD_SIM_PIM_SUPPORT )	
+	set ( SIM_PIM_SUPPORT FALSE )
+endif ( BUILD_SIM_PIM_SUPPORT )
 
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
@@ -288,6 +298,11 @@ set ( armemu__libraries
 	unisim__util__debug__debugger_handler
 	unisim__service__trap_handler
 	)
+if ( BUILD_SIM_PIM_SUPPORT )
+	list ( APPEND armemu__libraries
+		unisim__service__pim unisim__service__pim__network )
+endif ( BUILD_SIM_PIM_SUPPORT )
+
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__libraries
 		unisim__service__power )
@@ -433,6 +448,13 @@ set ( armemu__deps
 	unisim__service__os__linux_os__linux_os_32
 	unisim__service__trap_handler
 	)
+
+if ( BUILD_SIM_PIM_SUPPORT )
+	list ( APPEND armemu__deps
+		unisim__service__pim unisim__service__pim__network
+		)
+endif ( BUILD_SIM_PIM_SUPPORT )
+
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__deps
 		unisim__service__power

@@ -60,6 +60,12 @@ Simulator(int argc, char **argv)
 	, linux_os(0)
 	, trap_handler(0)
 	, simulation_spent_time(0.0)
+#ifdef SIM_PIM_SUPPORT
+	, pim_server(0)
+	, enable_pim_server(false)
+	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	, gdb_server(0)
 	, enable_gdb_server(false)
@@ -103,6 +109,12 @@ Simulator(int argc, char **argv)
 	linux_loader = new LINUX_LOADER("linux-loader");
 	linux_os = new LINUX_OS("linux-os");
 	trap_handler = new TRAP_HANDLER("trap-handler");
+
+#ifdef SIM_PIM_SUPPORT
+	//  - PIM server
+	pim_server = enable_pim_server ? new PIM_SERVER("pim-server") : 0;
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
 			"enable-gdb-server", 0,
@@ -174,6 +186,10 @@ Simulator(int argc, char **argv)
 	// irq_master_stub->out_interrupt(cpu->in_irq);
 	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
+#ifdef SIM_PIM_SUPPORT
+	EnablePimServer();
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	EnableGdbServer();
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -220,6 +236,10 @@ Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
+#ifdef SIM_PIM_SUPPORT
+	if (pim_server) { delete pim_server; pim_server = NULL; }
+#endif
+
 	if ( cpu ) delete cpu;
 	// if ( irq_master_stub ) delete irq_master_stub;
 	// if ( fiq_master_stub ) delete fiq_master_stub;
@@ -427,6 +447,21 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("trap-handler.trap-reporting-export-name[2]",
 			"cpu-irq-trap-handler");
 
+#ifdef SIM_PIM_SUPPORT
+	int gdb_server_tcp_port = 0;
+	const char *gdb_server_arch_filename = "gdb_server/gdb_armv5l.xml";
+
+	sim->SetVariable("enable-pim-server", false);
+
+	//  - PIM Server run-time configuration
+	sim->SetVariable("pim.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+	sim->SetVariable("pim.tcp-port", 1234);
+	sim->SetVariable("pim.filename", "pim.xml");
+	sim->SetVariable("pim-server.tcp-port", gdb_server_tcp_port);
+	sim->SetVariable("pim-server.architecture-description-filename", gdb_server_arch_filename);
+	sim->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	sim->SetVariable("gdb-server.architecture-description-filename",
 			"gdb_server/gdb_armv5l.xml");
@@ -523,6 +558,31 @@ VariableNotify(const char *name)
 }
 
 #endif // SIM_LIBRARY
+
+#ifdef SIM_PIM_SUPPORT
+void
+Simulator::EnablePimServer()
+{
+	if (enable_pim_server)
+	{
+		// Connect pim-server to CPU
+
+//		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		pim_server->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+
+		cpu->debug_control_import >> pim_server->debug_control_export;
+		cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;
+
+		pim_server->disasm_import >> cpu->disasm_export;
+
+		pim_server->memory_import >> cpu->memory_export;
+		pim_server->registers_import >> cpu->registers_export;
+		pim_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+
+	}
+}
+#endif
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 void
