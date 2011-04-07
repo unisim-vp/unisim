@@ -129,42 +129,50 @@ const SECTOR_ADDRESS_RANGE<AM29LV160DConfig::ADDRESS> AM29LV160DBConfig::SECTOR_
 };
 
 const uint8_t AM29LV160DConfig::MANUFACTURER_ID[MAX_IO_WIDTH] = { 0x01, 0x00 };
-const uint8_t AM29LV160DConfig::DEVICE_ID[MAX_IO_WIDTH] = { 0xc4, 0x22 };
+const AM29LV160DConfig::ADDRESS AM29LV160DConfig::DEVICE_ID_ADDR[1] = { 0x02 };
+const uint8_t AM29LV160DTConfig::DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH] = { { 0xc4, 0x22 } };
+const uint8_t AM29LV160DBConfig::DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH] = { { 0x49, 0x22 } };
 const uint8_t AM29LV160DConfig::PROTECTED[MAX_IO_WIDTH] = { 0x01, 0x00 };
 const uint8_t AM29LV160DConfig::UNPROTECTED[MAX_IO_WIDTH] = { 0x00, 0x00 };
 
 // S1-[command,addr,data/action]->S2
 const TRANSITION<AM29LV160DConfig::ADDRESS, AM29LV160DConfig::MAX_IO_WIDTH, AM29LV160DConfig::STATE> AM29LV160DConfig::FSM[AM29LV160DConfig::NUM_TRANSITIONS] = {
-	{ AM29LV160DConfig::STATE_INITIAL, 0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, STATE_INITIAL, 1, ACT_NOP }, // (I,0) -[W,AAA,AA/-]->(I,1)
-	{ AM29LV160DConfig::STATE_INITIAL, 0, CMD_READ, true, 0, true, { 0,0 }, STATE_INITIAL, 0, ACT_READ }, // (I,0) -[R,*,*/READ]->(I,0)
-	{ AM29LV160DConfig::STATE_INITIAL, 0, CMD_WRITE, true, 0, true, { 0,0 }, STATE_INITIAL, 0, ACT_NOP }, // (I,0) -[W,*,*/-]->(I,0)
-	{ AM29LV160DConfig::STATE_INITIAL, 1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, STATE_INITIAL, 2, ACT_NOP }, // (I,1) -[W,555,55/-]->(I,2)
-	{ AM29LV160DConfig::STATE_INITIAL, 1, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_NOP }, // (I,1) -[W,*,*/-]->(I,0)
-	{ AM29LV160DConfig::STATE_INITIAL, 1, CMD_READ, true, 0, true, { 0, 0 }, STATE_INITIAL, 1, ACT_READ }, // (I,1) -[R,*,*/READ]->(I,1)
-	{ AM29LV160DConfig::STATE_INITIAL, 2, CMD_WRITE, false, 0xaaa, false, { 0x90, 0x00 }, AM29LV160DConfig::STATE_AUTOSELECT, 3, ACT_NOP }, // (I,2) -[W,AAA,90/-]->(AUTOSELECT,2)
-	{ AM29LV160DConfig::STATE_INITIAL, 2, CMD_WRITE, false, 0xaaa, false, { 0xa0, 0x00 }, AM29LV160DConfig::STATE_PROGRAM, 3, ACT_NOP }, // (I,2) -[W,AAA,A0/-]->(PROGRAM,2)
-	{ AM29LV160DConfig::STATE_INITIAL, 2, CMD_WRITE, false, 0xaaa, false, { 0x20, 0x00 }, AM29LV160DConfig::STATE_UNLOCKED, 0, ACT_NOP }, // (I,2) -[W,AAA,20/-]->(UNLOCKED,0)
-	{ AM29LV160DConfig::STATE_INITIAL, 2, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, AM29LV160DConfig::STATE_ERASE, 3, ACT_NOP }, // (I,2) -[W,AAA,AA/-]->(ERASE,2)
-	{ AM29LV160DConfig::STATE_INITIAL, 2, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_NOP }, // (I,2) -[W,*,*/-]->(I,0)
-	{ AM29LV160DConfig::STATE_INITIAL, 2, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 2, ACT_READ }, // (I,2) -[R,*,*/-]->(I,2)
-	{ AM29LV160DConfig::STATE_AUTOSELECT, 3, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_READ_AUTOSELECT }, // (I,2) -[R,*,*/READ_AUTOSELECT]->(I,0)
-	{ AM29LV160DConfig::STATE_PROGRAM, 3, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_PROGRAM }, // (PROGRAM,3) -[W,*,*/PROGRAM]->(I,0)
-	{ AM29LV160DConfig::STATE_PROGRAM, 3, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_PROGRAM, 3, ACT_READ }, // (PROGRAM,3) -[R,*,*/READ]->(PROGRAM,3)
-	{ AM29LV160DConfig::STATE_UNLOCKED, 0, CMD_WRITE, true, 0, false, { 0xa0, 0x00 }, AM29LV160DConfig::STATE_UNLOCKED_PROGRAM, 1, ACT_NOP }, // (UNLOCKED,0) -[W,*,A0/-]->(UNLOCKED_PROGRAM,1)
-	{ AM29LV160DConfig::STATE_UNLOCKED, 0, CMD_WRITE, true, 0, false, { 0x90, 0x00 }, AM29LV160DConfig::STATE_UNLOCKED_RESET, 1, ACT_NOP }, // (UNLOCKED,0) -[W,*,90/-]->(UNLOCKED_RESET,1)
-	{ AM29LV160DConfig::STATE_UNLOCKED, 0, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_UNLOCKED, 0, ACT_NOP }, // (UNLOCKED,0) -[W,*,*/-]->(UNLOCKED,0)
-	{ AM29LV160DConfig::STATE_UNLOCKED, 0, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_UNLOCKED, 0, ACT_READ }, // (UNLOCKED,0) -[R,*,*/READ]->(UNLOCKED,0)
-	{ AM29LV160DConfig::STATE_UNLOCKED_PROGRAM, 1, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_UNLOCKED, 0, ACT_PROGRAM }, // (UNLOCKED_PROGRAM,1) -[W,*,*/PROGRAM]->(UNLOCKED,0)
-	{ AM29LV160DConfig::STATE_UNLOCKED_PROGRAM, 1, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_UNLOCKED_PROGRAM, 1, ACT_READ }, // (UNLOCKED_PROGRAM,1) -[R,*,*/READ]->(UNLOCKED_PROGRAM,1)
-	{ AM29LV160DConfig::STATE_UNLOCKED_RESET, 1, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_NOP }, // (UNLOCKED_RESET,1) -[W,*,*/-]->(I,0)
-	{ AM29LV160DConfig::STATE_UNLOCKED_RESET, 1, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_UNLOCKED_RESET, 1, ACT_READ }, // (UNLOCKED_RESET,1) -[R,*,*/READ]->(UNLOCKED_RESET,1)
-	{ AM29LV160DConfig::STATE_ERASE, 3, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, AM29LV160DConfig::STATE_ERASE, 4, ACT_NOP }, // (ERASE,3) -[W,555,55/-]->(ERASE,4)
-	{ AM29LV160DConfig::STATE_ERASE, 3, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_NOP }, // (ERASE,3) -[W,*,*/-]->(I,0)
-	{ AM29LV160DConfig::STATE_ERASE, 3, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_ERASE, 3, ACT_READ }, // (ERASE,3) -[R,*,*/READ]->(ERASE,3)
-	{ AM29LV160DConfig::STATE_ERASE, 4, CMD_WRITE, false, 0xaaa, false, { 0x10, 0x00 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_CHIP_ERASE }, // (ERASE,4) -[W,AAA,10/CHIP_ERASE]->(I,0)
-	{ AM29LV160DConfig::STATE_ERASE, 4, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_SECTOR_ERASE }, // (ERASE,4) -[W,*,30/SECTOR_ERASE]->(I,0)
-	{ AM29LV160DConfig::STATE_ERASE, 4, CMD_WRITE, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_INITIAL, 0, ACT_NOP }, // (ERASE,4) -[W,*,*/-]->(I,0)
-	{ AM29LV160DConfig::STATE_ERASE, 4, CMD_READ, true, 0, true, { 0, 0 }, AM29LV160DConfig::STATE_ERASE, 4, ACT_READ } // (ERASE,4) -[R,*,*/READ]->(ERASE,4)
+	{ ST_I0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_I1, ACT_NOP }, // (I0) -[W,AAA,AA/-]-> (I1)
+	{ ST_I0, CMD_READ, true, 0, true, { 0,0 }, ST_I0, ACT_READ }, // (I0) -[R,*,*/READ]->(I0)
+	{ ST_I0, CMD_WRITE, true, 0, true, { 0,0 }, ST_I0, ACT_NOP }, // (I0) -[W,*,*/-]->(I0)
+	{ ST_I1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_I2, ACT_NOP }, // (I1) -[W,555,55/-]->(I2)
+	{ ST_I1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I1) -[W,*,*/-]->(I0)
+	{ ST_I1, CMD_READ, true, 0, true, { 0, 0 }, ST_I1, ACT_READ }, // (I1) -[R,*,*/READ]->(I1)
+	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x90, 0x00 }, ST_AUTOSELECT, ACT_NOP }, // (I2) -[W,AAA,90/-]->(AUTOSELECT)
+	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0xa0, 0x00 }, ST_PROGRAM, ACT_NOP }, // (I2) -[W,AAA,A0/-]->(PROGRAM)
+	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x20, 0x00 }, ST_UNLOCKED, ACT_NOP }, // (I2) -[W,AAA,20/-]->(UNLOCKED)
+	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x80, 0x00 }, ST_ERASE0, ACT_NOP }, // (I2) -[W,AAA,80/-]->(ERASE0)
+	{ ST_I2, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I2) -[W,*,*/-]->(I0)
+	{ ST_I2, CMD_READ, true, 0, true, { 0, 0 }, ST_I2, ACT_READ }, // (I2) -[R,*,*/-]->(I2)
+	{ ST_AUTOSELECT, CMD_READ, true, 0, true, { 0, 0 }, ST_AUTOSELECT, ACT_READ_AUTOSELECT }, // (AUTOSELECT) -[R,*,*/READ_AUTOSELECT]->(AUTOSELECT)
+	{ ST_AUTOSELECT, CMD_WRITE, true, 0, false, { 0xf0, 0 }, ST_I0, ACT_NOP }, // (AUTOSELECT) -[W,*,F0/-]->(I0)
+	{ ST_PROGRAM, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_PROGRAM }, // (PROGRAM) -[W,*,*/PROGRAM]->(I0)
+	{ ST_PROGRAM, CMD_READ, true, 0, true, { 0, 0 }, ST_PROGRAM, ACT_READ }, // (PROGRAM) -[R,*,*/READ]->(PROGRAM)
+	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0xa0, 0x00 }, ST_UNLOCKED_PROGRAM, ACT_NOP }, // (UNLOCKED) -[W,*,A0/-]->(UNLOCKED_PROGRAM)
+	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0x90, 0x00 }, ST_UNLOCKED_RESET, ACT_NOP }, // (UNLOCKED) -[W,*,90/-]->(UNLOCKED_RESET)
+	{ ST_UNLOCKED, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_NOP }, // (UNLOCKED) -[W,*,*/-]->(UNLOCKED)
+	{ ST_UNLOCKED, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_READ }, // (UNLOCKED) -[R,*,*/READ]->(UNLOCKED)
+	{ ST_UNLOCKED_PROGRAM, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_PROGRAM }, // (UNLOCKED_PROGRAM) -[W,*,*/PROGRAM]->(UNLOCKED)
+	{ ST_UNLOCKED_PROGRAM, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_PROGRAM, ACT_READ }, // (UNLOCKED_PROGRAM) -[R,*,*/READ]->(UNLOCKED_PROGRAM)
+	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, false, { 0, 0 }, ST_I0, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,00/-]->(I0)
+	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED_RESET, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,*/-]->(UNLOCKED_RESET)
+	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, false, { 0x90, 0 }, ST_I0, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,90/-]->(I0)
+	{ ST_UNLOCKED_RESET, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_RESET, ACT_READ }, // (UNLOCKED_RESET) -[R,*,*/READ]->(UNLOCKED_RESET)
+	{ ST_ERASE0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_ERASE1, ACT_NOP }, // (I2) -[W,AAA,AA/-]->(ERASE1)
+	{ ST_ERASE1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_ERASE2, ACT_NOP }, // (ERASE1) -[W,555,55/-]->(ERASE2)
+	{ ST_ERASE1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (ERASE1) -[W,*,*/-]->(I0)
+	{ ST_ERASE1, CMD_READ, true, 0, true, { 0, 0 }, ST_ERASE1, ACT_READ }, // (ERASE1) -[R,*,*/READ]->(ERASE1)
+	{ ST_ERASE2, CMD_WRITE, false, 0xaaa, false, { 0x10, 0x00 }, ST_I0, ACT_CHIP_ERASE }, // (ERASE2) -[W,AAA,10/CHIP_ERASE]->(I0)
+	{ ST_ERASE2, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_I0, ACT_SECTOR_ERASE }, // (ERASE2) -[W,*,30/SECTOR_ERASE]->(I0)
+	{ ST_ERASE2, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (ERASE2) -[W,*,*/-]->(I,0)
+	{ ST_ERASE2, CMD_READ, true, 0, true, { 0, 0 }, ST_ERASE2, ACT_READ }, // (ERASE2) -[R,*,*/READ]->(ERASE2)
+	{ ST_ANY, CMD_WRITE, true, 0, false, { 0xb0, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,B0/-]-> (*)
+	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP } // (*) -[W,*,30/-]-> (*)
 };
 
 } // end of namespace am29lv

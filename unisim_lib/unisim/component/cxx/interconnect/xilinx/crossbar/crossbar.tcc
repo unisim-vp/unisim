@@ -61,6 +61,7 @@ Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	Reset();
 }
 
 template <class CONFIG>
@@ -71,6 +72,50 @@ Crossbar<CONFIG>::~Crossbar()
 template <class CONFIG>
 void Crossbar<CONFIG>::Reset()
 {
+	unsigned int i;
+	ist = 0;
+	imask = 0;
+	arb_xbc = 0;
+	fifost_xbc = 0;
+	sm_st_xbc = 0;
+	misc_xbc = 0;
+	arb_xbm = 0;
+	fifost_xbm = 0;
+	misc_xbm = 0;
+	for(i = 0; i < 4; i++) tmpl_xbar_map[i] = 0;
+	tmpl_sel_reg = 0;
+	cfg_plbs0 = 0;
+	sear_u_plbs0 = 0;
+	sear_l_plbs0 = 0;
+	sesr_plbs0 = 0;
+	misc_st_plbs0 = 0;
+	plberr_st_plbs0 = 0;
+	sm_st_plbs0 = 0;
+	misc_plbs0 = 0;
+	cmd_sniff_plbs0 = 0;
+	cmd_sniffa_plbs0 = 0;
+	for(i = 0; i < 4; i++) tmpl_plbs0_map[i] = 0;
+	cfg_plbs1 = 0;
+	sear_u_plbs1 = 0;
+	sear_l_plbs1 = 0;
+	sesr_plbs1 = 0;
+	misc_st_plbs1 = 0;
+	plberr_st_plbs1 = 0;
+	sm_st_plbs1 = 0;
+	misc_plbs1 = 0;
+	cmd_sniff_plbs1 = 0;
+	cmd_sniffa_plbs1 = 0;
+	for(i = 0; i < 4; i++) tmpl_plbs1_map[i] = 0;
+	cfg_plbm = 0;
+	fsear_u_plbm = 0;
+	fsear_l_plbm = 0;
+	fsesr_plbm = 0;
+	misc_st_plbm = 0;
+	plberr_st_plbm = 0;
+	sm_st_plbm = 0;
+	misc_plbm = 0;
+	cmd_sniff_plbm = 0;
+	cmd_sniffa_plbm = 0;
 }
 
 template <class CONFIG>

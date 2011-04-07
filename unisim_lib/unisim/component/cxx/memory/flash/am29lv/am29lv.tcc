@@ -34,6 +34,9 @@
 
 #include <string.h>
 #include <iostream>
+#include <set>
+#include <sstream>
+#include <fstream>
 #include "unisim/util/endian/endian.hh"
 
 #ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_TCC__
@@ -67,11 +70,13 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	, bytesize(BYTESIZE)
 	, endian(E_LITTLE_ENDIAN)
 	, verbose(false)
+	, fsm_to_graphviz_output_filename()
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_org("org", this, org, "flash memory base address")
 	, param_bytesize("bytesize", this, bytesize, "flash memory size in bytes")
 	, param_endian("endian", this, endian, "endianness of flash memory")
 	, param_sector_protect("sector-protect", this, sector_protect, CONFIG::NUM_SECTORS, "enable/disable sector write protection")
+	, param_fsm_to_graphviz_output_filename("fsm-to-graphviz-output-filename", this, fsm_to_graphviz_output_filename, "FSM (finite state machine) to Graphviz output filename")
 {
 	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
@@ -84,8 +89,7 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	unsigned int chip_num;
 	for(chip_num = 0; chip_num < NUM_CHIPS; chip_num++)
 	{
-		state[chip_num] = CONFIG::STATE_INITIAL;
-		cycle[chip_num] = 0;
+		state[chip_num] = (typename CONFIG::STATE) 0;
 	}
 
 	unsigned int sector_num;
@@ -95,10 +99,20 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	}
 
 	storage = new uint8_t[BYTESIZE];
-	memset(storage, 0, BYTESIZE);
+	memset(storage, 0xff, BYTESIZE);  // At reset, chip bits are all 1's
 
 	std::stringstream sstr_description;
 	sstr_description << "This module implements an " << CONFIG::DEVICE_NAME << " flash memory with the following characteristics:" << std::endl;
+	sstr_description << "Manufacturer ID: ";
+	PrintData(sstr_description, CONFIG::MANUFACTURER_ID, CONFIG::MAX_IO_WIDTH);
+	sstr_description << std::endl;
+	unsigned int device_id_word_index;
+	for(device_id_word_index = 0; device_id_word_index < CONFIG::DEVICE_ID_LENGTH; device_id_word_index++)
+	{
+		sstr_description << "Device ID word #" << device_id_word_index << ": ";
+		PrintData(sstr_description, CONFIG::DEVICE_ID[device_id_word_index], CONFIG::MAX_IO_WIDTH);
+		sstr_description << std::endl;
+	}
 	sstr_description << "Size: " << BYTESIZE << " bytes" << std::endl;
 	sstr_description << "I/O width: " << (8 * IO_WIDTH) << " bits" << std::endl;
 	sstr_description << "Number of chips: " << NUM_CHIPS << " chips" << std::endl;
@@ -128,11 +142,10 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 
 	for(chip_num = 0; chip_num < NUM_CHIPS; chip_num++)
 	{
-		state[chip_num] = CONFIG::STATE_INITIAL;
-		cycle[chip_num] = 0;
+		state[chip_num] = (typename CONFIG::STATE) 0;
 	}
 
-	memset(storage, 0, BYTESIZE);
+	memset(storage, 0xff, BYTESIZE); // At reset, chip bits are all 1's
 
 	if((IO_WIDTH / NUM_CHIPS) > CONFIG::MAX_IO_WIDTH)
 	{
@@ -150,6 +163,10 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 		return false;
 	}
 
+	if(!fsm_to_graphviz_output_filename.empty())
+	{
+		FSMToGraphviz();
+	}
 	return true;
 }
 
@@ -215,29 +232,75 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 	{
 		const TRANSITION<typename CONFIG::ADDRESS, CONFIG::MAX_IO_WIDTH, typename CONFIG::STATE> *transition = &CONFIG::FSM[i];
 
-		if(transition->initial_state == state[chip_num] &&
-		   transition->initial_cycle == cycle[chip_num] &&
+		if(((transition->initial_state == CONFIG::ST_ANY) || (transition->initial_state == state[chip_num])) &&
 		   transition->command == command &&
 		   (transition->wildcard_addr || (!transition->wildcard_addr && ((transition->addr >> config_addr_shift) == chip_addr))) &&
 		   (transition->wildcard_data || (!transition->wildcard_data && size >= CHIP_IO_WIDTH && (endian == E_LITTLE_ENDIAN ? memcmp(transition->data, data, CHIP_IO_WIDTH) == 0 : ReverseCompare(transition->data, data, CHIP_IO_WIDTH)))))
 		{
-			state[chip_num] = transition->final_state;
-			cycle[chip_num] = transition->final_cycle;
+			if(IsVerbose())
+			{
+				logger << DebugInfo;
+				logger << "Chip #" << chip_num << ": (" << GetStateName(transition->initial_state) << ") -[";
+				logger << GetCommandName(command) << ",";
+				if(transition->wildcard_addr)
+				{
+					logger << "*";
+				}
+				else
+				{
+					logger << "0x" << std::hex << (transition->addr >> config_addr_shift) << std::dec;
+				}
+				logger << ",";
+				if(transition->wildcard_data)
+				{
+					logger << "*";
+				}
+				else
+				{
+					std::stringstream sstr;
+					PrintData(sstr, transition->data, CHIP_IO_WIDTH);
+					logger << sstr.str();
+				}
+				logger << "," << GetActionName(transition->action) << "]->";
+				logger << GetStateName(transition->final_state);
+				logger << EndDebugInfo;
+			}
+
+			if(transition->final_state != CONFIG::ST_ANY)
+			{
+				state[chip_num] = transition->final_state;
+			}
 			switch(transition->action)
 			{
 				case ACT_NOP: return;
 				case ACT_READ: Read(chip_num, offset, data, size); return;
 				case ACT_READ_AUTOSELECT: ReadAutoselect(chip_num, offset, data, size); return;
+				case ACT_CFI_QUERY: CFIQuery(chip_num, offset, data, size); return;
 				case ACT_PROGRAM: Program(chip_num, offset, data, size); return;
+				case ACT_WRITE_TO_BUFFER: WriteToBuffer(chip_num, offset, data, size); return;
+				case ACT_PROGRAM_BUFFER_TO_FLASH: ProgramBufferToFlash(chip_num); return;
+				case ACT_WRITE_TO_BUFFER_ABORT_RESET: WriteToBufferAbortReset(chip_num); return;
 				case ACT_CHIP_ERASE: ChipErase(chip_num); return;
 				case ACT_SECTOR_ERASE: SectorErase(chip_num, offset); return;
+				case ACT_SECURED_SILICON_SECTOR_ENTRY: SecuredSiliconSectorEntry(chip_num); return;
+				case ACT_SECURED_SILICON_SECTOR_EXIT: SecuredSiliconSectorExit(chip_num); return;
 			}
 		}
 	}
-	logger << DebugError;
-	logger << "No transition found. You should check the FSM" << std::endl;
-	logger << EndDebugError;
-	Object::Stop(-1);
+	logger << DebugWarning;
+	logger << "No transition found:" << std::endl;
+	logger << "- command is " << GetCommandName(command) << std::endl;
+	logger << "- state is \"" << GetStateName(state[chip_num]) << "\"" << std::endl;
+	logger << "- address is 0x" << std::hex << chip_addr << std::dec << std::endl;
+	if(command == CMD_WRITE)
+	{
+		std::stringstream sstr;
+		logger << "- data is ";
+		PrintData(sstr, data, size);
+		logger << sstr.str() << std::endl;
+	}
+	logger << "No state change or action were performed. You may check the FSM" << std::endl;
+	logger << EndDebugWarning;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -281,7 +344,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 
-	switch((chip_addr & 0xff) << config_addr_shift)
+	typename CONFIG::ADDRESS chip_addr_lo = (chip_addr & 0xff) << config_addr_shift;
+	
+	switch(chip_addr_lo)
 	{
 		case CONFIG::MANUFACTURER_ID_ADDR:
 			if(unlikely(IsVerbose()))
@@ -295,18 +360,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 			else
 				ReverseCopy(data, CONFIG::MANUFACTURER_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 			return;
-		case CONFIG::DEVICE_ID_ADDR:
-			if(unlikely(IsVerbose()))
-			{
-				logger << DebugInfo;
-				logger << "Chip #" << chip_num << ": Reading Device ID" << std::endl;
-				logger << EndDebugInfo;
-			}
-			if(endian == E_LITTLE_ENDIAN)
-				memcpy(data, CONFIG::DEVICE_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
-			else
-				ReverseCopy(data, CONFIG::DEVICE_ID, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
-			return;
+	
 		case CONFIG::SECTOR_PROTECT_VERIFY_ADDR:
 			{
 				if(unlikely(IsVerbose()))
@@ -335,7 +389,32 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 			return;
 	}
 
-	Read(chip_num, addr, data, size);
+	unsigned int device_id_word_index;
+	for(device_id_word_index = 0; device_id_word_index < CONFIG::DEVICE_ID_LENGTH; device_id_word_index++)
+	{
+		if(CONFIG::DEVICE_ID_ADDR[device_id_word_index] == chip_addr_lo)
+		{
+			if(unlikely(IsVerbose()))
+			{
+				logger << DebugInfo;
+				logger << "Chip #" << chip_num << ": Reading Device ID word #" << device_id_word_index << std::endl;
+				logger << EndDebugInfo;
+			}
+			if(endian == E_LITTLE_ENDIAN)
+				memcpy(data, CONFIG::DEVICE_ID[device_id_word_index], size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
+			else
+				ReverseCopy(data, CONFIG::DEVICE_ID[device_id_word_index], size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
+			return;
+		}
+	}
+	
+	memset(data, 0, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+{
+	logger << DebugWarning << "Chip #" << chip_num << ": CFI Query command is unsupported for now" << EndDebugWarning;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -380,6 +459,24 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+{
+	logger << DebugWarning << "Chip #" << chip_num << ": Write-to-buffer command is unsupported for now" << EndDebugWarning;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_num)
+{
+	logger << DebugWarning << "Chip #" << chip_num << ": Program-buffer-to-flash (confirm) command is unsupported for now" << EndDebugWarning;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBufferAbortReset(unsigned int chip_num)
+{
+	logger << DebugWarning << "Chip #" << chip_num << ": Write-buffer-abort-reset command is unsupported for now" << EndDebugWarning;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 {
 	if(unlikely(IsVerbose()))
@@ -389,10 +486,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 		logger << EndDebugInfo;
 	}
 
+	// Erasing chip make chip bits become all 1's
 	uint32_t addr;
 	for(addr = chip_num * CHIP_IO_WIDTH; addr < BYTESIZE; addr += IO_WIDTH)
 	{
-		memset(&storage[addr], 0, CHIP_IO_WIDTH);
+		memset(&storage[addr], 0xff, CHIP_IO_WIDTH);
 	}
 }
 
@@ -426,7 +524,20 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 		logger << EndDebugInfo;
 	}
 
-	memset(&storage[CONFIG::SECTOR_MAP[sector_num].addr * IO_WIDTH], 0, IO_WIDTH * CONFIG::SECTOR_MAP[sector_num].size);
+	// Erasing sector make sector bits become all 1's
+	memset(&storage[CONFIG::SECTOR_MAP[sector_num].addr * IO_WIDTH], 0xff, IO_WIDTH * CONFIG::SECTOR_MAP[sector_num].size);
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorEntry(unsigned int chip_num)
+{
+	logger << DebugWarning << "Chip #" << chip_num << ": Secured-silicon-sector-entry command is unsupported for now" << EndDebugWarning;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorExit(unsigned int chip_num)
+{
+	logger << DebugWarning << "Chip #" << chip_num << ": Secured-silicon-sector-exit command is unsupported for now" << EndDebugWarning;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -467,6 +578,141 @@ template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::IsVerbose() const
 {
 	return verbose;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetStateName(typename CONFIG::STATE state) const
+{
+	return CONFIG::GetStateName(state);
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetCommandName(COMMAND command) const
+{
+	switch(command)
+	{
+		case CMD_READ: return "R";
+		case CMD_WRITE: return "W";
+	}
+	return "?";
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) const
+{
+	switch(action)
+	{
+		case ACT_NOP: return "-";
+		case ACT_READ: return "READ";
+		case ACT_READ_AUTOSELECT: return "READ_AUTOSELECT";
+		case ACT_CFI_QUERY: return "CFI_QUERY";
+		case ACT_PROGRAM: return "PROGRAM";
+		case ACT_WRITE_TO_BUFFER: return "WRITE_TO_BUFFER";
+		case ACT_PROGRAM_BUFFER_TO_FLASH: return "PROGRAM_BUFFER_TO_FLASH";
+		case ACT_WRITE_TO_BUFFER_ABORT_RESET: return "WRITE_TO_BUFFER_ABORT_RESET";
+		case ACT_CHIP_ERASE: return "CHIP_ERASE";
+		case ACT_SECTOR_ERASE: return "SECTOR_ERASE";
+		case ACT_SECURED_SILICON_SECTOR_ENTRY: return "SECURED_SILICON_SECTOR_ENTRY";
+		case ACT_SECURED_SILICON_SECTOR_EXIT: return "SECURED_SILICON_SECTOR_EXIT";
+	}
+	return "?";
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSMToGraphviz()
+{
+	if(IsVerbose())
+	{
+		logger << DebugInfo << "Printing FSM as Graphviz ouput format into File \"" << fsm_to_graphviz_output_filename << "\"" << EndDebugInfo;
+	}
+	
+	std::ofstream f(fsm_to_graphviz_output_filename.c_str(), std::ios::out);
+
+	f << "digraph g {" << std::endl;
+	unsigned int i;
+
+	std::set<std::string> state_names;
+	for(i = 0; i < CONFIG::NUM_TRANSITIONS; i++)
+	{
+		const TRANSITION<typename CONFIG::ADDRESS, CONFIG::MAX_IO_WIDTH, typename CONFIG::STATE> *transition = &CONFIG::FSM[i];
+		
+		std::stringstream initial_state_sstr;
+		initial_state_sstr << GetStateName(transition->initial_state);
+		
+		std::string initial_state_name(initial_state_sstr.str());
+		
+		state_names.insert(initial_state_name);
+
+		std::stringstream final_state_sstr;
+		final_state_sstr << GetStateName(transition->final_state);
+		
+		std::string final_state_name(final_state_sstr.str());
+		
+		state_names.insert(final_state_name);
+	}
+	
+	std::set<std::string>::const_iterator it;
+	for(it = state_names.begin(); it != state_names.end(); it++)
+	{
+		f << "\"" << *it << "\" [fontname=Helvetica,fontsize=12.0];" << std::endl;
+	}
+	
+	for(i = 0; i < CONFIG::NUM_TRANSITIONS; i++)
+	{
+		const TRANSITION<typename CONFIG::ADDRESS, CONFIG::MAX_IO_WIDTH, typename CONFIG::STATE> *transition = &CONFIG::FSM[i];
+
+		// S1-[command,addr,data/action]->S2
+		
+		f << "\"" << GetStateName(transition->initial_state) << "\" -> \"" << GetStateName(transition->final_state);
+		f << "\" [fontname=Helvetica,fontsize=10.0,label=\" [" << i << "] ";
+		f << GetCommandName(transition->command) << ",";
+		
+		if(transition->wildcard_addr)
+		{
+			f << "*";
+		}
+		else
+		{
+			f << "0x" << std::hex << (transition->addr >> config_addr_shift) << std::dec;
+		}
+		
+		f << ",";
+		if(transition->wildcard_data)
+		{
+			f << "*";
+		}
+		else
+		{
+			PrintData(f, transition->data, CHIP_IO_WIDTH);
+		}
+		f << "/" << GetActionName(transition->action);
+		f << "\"];" << std::endl;
+	}
+	
+	f << "}" << std::endl;
+}
+
+inline char Nibble2HexChar(uint8_t v)
+{
+	v = v & 0xf; // keep only 4-bits
+	return v < 10 ? '0' + v : 'a' + v - 10;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::PrintData(std::ostream& os, const uint8_t *data, unsigned int size)
+{
+	int i;
+	
+	os << "0x";
+	switch(endian)
+	{
+		case E_LITTLE_ENDIAN:
+			for(i = size - 1; i >= 0; i--) os << Nibble2HexChar(data[i] >> 4) << Nibble2HexChar(data[i] & 0xf);
+			break;
+		case E_BIG_ENDIAN:
+			for(i = 0; i <= (int) size; i++) os << Nibble2HexChar(data[i] >> 4) << Nibble2HexChar(data[i] & 0xf);
+			break;
+	}
 }
 
 } // end of namespace am29lv

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,62 +32,24 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
+#include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace processor {
-namespace powerpc {
-namespace ppc440 {
+namespace timer {
+namespace xilinx {
+namespace xps_timer {
 
-const uint32_t TLBELayout::TLBE0_EPN_MASK;
-const uint32_t TLBELayout::TLBE0_V_MASK;
-const uint32_t TLBELayout::TLBE0_TS_MASK;
-const uint32_t TLBELayout::TLBE0_SIZE_MASK;
-const uint32_t TLBELayout::TLBE0_TPAR_MASK;
+const bool Config::C_ONE_TIMER_ONLY;
+const bool Config::C_TRIG0_ASSERT;
+const bool Config::C_TRIG1_ASSERT;
+const bool Config::C_GEN0_ASSERT;
+const bool Config::C_GEN1_ASSERT;
 
-const uint32_t TLBELayout::TLBE1_RPN_MASK;
-const uint32_t TLBELayout::TLBE1_PAR1_MASK;
-const uint32_t TLBELayout::TLBE1_ERPN_MASK;
-
-const uint32_t TLBELayout::TLBE2_PAR2_MASK;
-const uint32_t TLBELayout::TLBE2_U0_MASK;
-const uint32_t TLBELayout::TLBE2_U1_MASK;
-const uint32_t TLBELayout::TLBE2_U2_MASK;
-const uint32_t TLBELayout::TLBE2_U3_MASK;
-const uint32_t TLBELayout::TLBE2_W_MASK;
-const uint32_t TLBELayout::TLBE2_I_MASK;
-const uint32_t TLBELayout::TLBE2_M_MASK;
-const uint32_t TLBELayout::TLBE2_G_MASK;
-const uint32_t TLBELayout::TLBE2_E_MASK;
-const uint32_t TLBELayout::TLBE2_STORAGE_ATTR_MASK;
-const uint32_t TLBELayout::TLBE2_UX_MASK;
-const uint32_t TLBELayout::TLBE2_UW_MASK;
-const uint32_t TLBELayout::TLBE2_UR_MASK;
-const uint32_t TLBELayout::TLBE2_SX_MASK;
-const uint32_t TLBELayout::TLBE2_SW_MASK;
-const uint32_t TLBELayout::TLBE2_SR_MASK;
-const uint32_t TLBELayout::TLBE2_ACCESS_CTRL_MASK;
-
-const uint32_t TLBELayout::TLBE0_TAG_MASK;
-
-const uint32_t TLBELayout::TLBE0_MASK;
-
-const uint32_t TLBELayout::TLBE1_DATA_MASK;
-
-const uint32_t TLBELayout::TLBE1_MASK;
-
-const uint32_t TLBELayout::TLBE2_DATA_MASK;
-
-const uint32_t TLBELayout::TLBE2_MASK;
-
-const unsigned int Config::IRQ_EXTERNAL_INPUT_INTERRUPT;
-const unsigned int Config::IRQ_CRITICAL_INPUT_INTERRUPT;
-
-} // end of namespace ppc440
-} // end of namespace powerpc
-} // end of namespace processor
+} // end of namespace xps_timer
+} // end of namespace xilinx
+} // end of namespace timer
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim

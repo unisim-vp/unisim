@@ -49,7 +49,7 @@
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <unisim/component/tlm2/memory/flash/am29lv/am29lv.hh>
-#include <unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh>
+#include <unisim/component/cxx/memory/flash/am29lv/s29gl256p_config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh>
 #include <unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh>
@@ -431,7 +431,7 @@ private:
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
 	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
-	typedef unisim::component::cxx::memory::flash::am29lv::AM29LV160DTConfig AM29LV_CONFIG;
+	typedef unisim::component::cxx::memory::flash::am29lv::S29GL256PConfig AM29LV_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
 
@@ -445,7 +445,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<MPLB_CONFIG> MPLB;
 	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<TIMER_CONFIG> TIMER;
-	typedef unisim::component::tlm2::memory::flash::am29lv::AM29LV<AM29LV_CONFIG, 32 * unisim::component::cxx::memory::flash::am29lv::M, CPU_CONFIG::FSB_WIDTH, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
+	typedef unisim::component::tlm2::memory::flash::am29lv::AM29LV<AM29LV_CONFIG, 32 * unisim::component::cxx::memory::flash::am29lv::M, 2, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;

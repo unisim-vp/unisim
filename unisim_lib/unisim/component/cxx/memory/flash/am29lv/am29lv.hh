@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_HH__
 
 #include <inttypes.h>
+#include <string>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -95,16 +96,17 @@ private:
 	typename CONFIG::ADDRESS org;
 	typename CONFIG::ADDRESS bytesize;
 	endian_type endian;
-	unsigned int cycle[NUM_CHIPS];
 	typename CONFIG::STATE state[NUM_CHIPS];
 	bool sector_protect[CONFIG::NUM_SECTORS];
 	uint8_t *storage;
 	bool verbose;
+	std::string fsm_to_graphviz_output_filename;
 	Parameter<bool> param_verbose;
 	Parameter<typename CONFIG::ADDRESS> param_org;
 	Parameter<typename CONFIG::ADDRESS> param_bytesize;
 	Parameter<endian_type> param_endian;
 	ParameterArray<bool> param_sector_protect;
+	Parameter<std::string> param_fsm_to_graphviz_output_filename;
 
 	bool ReverseCompare(const uint8_t *data1, const uint8_t *data2, uint32_t size);
 	void ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size);
@@ -112,9 +114,21 @@ private:
 	void FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	void CFIQuery(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data, uint32_t size);
+	void WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	void ProgramBufferToFlash(unsigned int chip_num);
+	void WriteToBufferAbortReset(unsigned int chip_num);
 	void ChipErase(unsigned int chip_num);
 	void SectorErase(unsigned int chip_num, typename CONFIG::ADDRESS addr);
+	void SecuredSiliconSectorEntry(unsigned int chip_num);
+	void SecuredSiliconSectorExit(unsigned int chip_num);
+	
+	const char *GetStateName(typename CONFIG::STATE state) const;
+	const char *GetCommandName(COMMAND command) const;
+	const char *GetActionName(ACTION action) const;
+	void FSMToGraphviz();
+	void PrintData(std::ostream& os, const uint8_t *data, unsigned int size);
 };
 
 } // end of namespace am29lv

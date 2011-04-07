@@ -70,14 +70,31 @@ public:
 	static const uint64_t SECTOR_ERASING_TIME = 700000000ULL; // in ns (0.7 s)
 	static const uint64_t CHIP_ERASING_TIME = 14000000000ULL; // in ns (14 s)
 	static const uint8_t MANUFACTURER_ID[MAX_IO_WIDTH];
-	static const uint8_t DEVICE_ID[MAX_IO_WIDTH];
 	static const uint8_t PROTECTED[MAX_IO_WIDTH];
 	static const uint8_t UNPROTECTED[MAX_IO_WIDTH];
 	static const ADDRESS MANUFACTURER_ID_ADDR = 0x00;
-	static const ADDRESS DEVICE_ID_ADDR = 0x02;
+	static const unsigned int DEVICE_ID_LENGTH = 1;
+	static const ADDRESS DEVICE_ID_ADDR[DEVICE_ID_LENGTH];
 	static const ADDRESS SECTOR_PROTECT_VERIFY_ADDR = 0x04;
-	static const unsigned NUM_TRANSITIONS = 30;
+	static const unsigned NUM_TRANSITIONS = 31;
 	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
+	
+	static const char *GetStateName(STATE state)
+	{
+		switch(state)
+		{
+			case STATE_INITIAL: return "I";
+			case STATE_AUTOSELECT: return "AUTOSELECT";
+			case STATE_PROGRAM: return "PROGRAM";
+			case STATE_UNLOCKED: return "UNLOCKED";
+			case STATE_UNLOCKED_PROGRAM: return "UNLOCKED_PROGRAM";
+			case STATE_UNLOCKED_RESET: return "UNLOCKED_RESET";
+			case STATE_ERASE: return "ERASE";
+			case STATE_CHIP_ERASE: return "CHIP_ERASE";
+			case STATE_SECTOR_ERASE: return "SECTOR_ERASE";
+		}
+		return "?";
+	}
 };
 
 // AM29LV800B (top boot device)
@@ -86,6 +103,7 @@ class AM29LV800BTConfig : public AM29LV800Config
 public:
 	static const char *DEVICE_NAME;
 	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
+	static const struct DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
 };
 
 // AM29LV800B (bottom boot device)
@@ -94,6 +112,7 @@ class AM29LV800BBConfig : public AM29LV800Config
 public:
 	static const char *DEVICE_NAME;
 	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
+	static const uint8_t DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
 };
 
 } // end of namespace am29lv
