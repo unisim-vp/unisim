@@ -414,7 +414,29 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
-	logger << DebugWarning << "Chip #" << chip_num << ": CFI Query command is unsupported for now" << EndDebugWarning;
+	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
+
+	if(IsVerbose())
+	{
+		logger << DebugWarning << "Chip #" << chip_num << ": CFI Query at 0x" << std::hex << chip_addr << std::dec << EndDebugWarning;
+	}
+	
+	unsigned int i, j;
+	for(i = 0; i < size; i++)
+	{
+		data[i] = 0;
+
+		for(j = 0; j < CONFIG::NUM_CFI_QUERIES; j++)
+		{
+			if((addr >= CONFIG::CFI_QUERIES[i].addr) && (addr < (CONFIG::CFI_QUERIES[i].addr + CONFIG::MAX_IO_WIDTH)))
+			{
+				if(endian == E_LITTLE_ENDIAN)
+					data[i] = CONFIG::CFI_QUERIES[i].data[addr - CONFIG::CFI_QUERIES[i].addr];
+				else
+					data[i] = CONFIG::CFI_QUERIES[i].data[(CONFIG::MAX_IO_WIDTH - 1) - addr + CONFIG::CFI_QUERIES[i].addr];
+			}
+		}
+	}
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>

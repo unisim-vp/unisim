@@ -315,11 +315,83 @@ const uint8_t S29GL256PConfig::DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH] = { { 0
 const uint8_t S29GL256PConfig::PROTECTED[MAX_IO_WIDTH] = { 0x01, 0x00 };
 const uint8_t S29GL256PConfig::UNPROTECTED[MAX_IO_WIDTH] = { 0x00, 0x00 };
 
+// CFI queries
+const S29GL256PConfig::CFI_QUERY S29GL256PConfig::CFI_QUERIES[NUM_CFI_QUERIES] = {
+	// CFI Query Indentification String
+	{ 0x20, { 'Q', 'Q' } },    // Query Unique ASCII string "QRY"
+	{ 0x22, { 'R', 'R' } },    // Query Unique ASCII string "QRY"
+	{ 0x24, { 'Y', 'Y' } },    // Query Unique ASCII string "QRY"
+	{ 0x26, { 0x02, 0x00 } },  // Primary OEM Command Set
+	{ 0x28, { 0x00, 0x00 } },  // Primary OEM Command Set
+	{ 0x2a, { 0x40, 0x00 } },  // Address for Primary Extended Table
+	{ 0x2c, { 0x00, 0x00 } },  // Address for Primary Extended Table
+	{ 0x2e, { 0x00, 0x00 } },  // Alternate OEM Command Set (00h = none exists)
+	{ 0x30, { 0x00, 0x00 } },  // Alternate OEM Command Set (00h = none exists)
+	{ 0x32, { 0x00, 0x00 } },  // Address for Alternate OEM Extended Table (00h = none exists)
+	{ 0x34, { 0x00, 0x00 } },  // Address for Alternate OEM Extended Table (00h = none exists)
+	{ 0x2c, { 0x00, 0x00 } },  // Address for Primary Extended Table
+	// System Interface String
+	{ 0x36, { 0x27, 0x00 } },  // Vcc Min (write/erase): D7-D4: volt, D3-D0: 100 mV
+	{ 0x38, { 0x36, 0x00 } },  // Vcc Max (write/erase): D7-D4: volt, D3-D0: 100 mV
+	{ 0x3a, { 0x00, 0x00 } },  // Vpp Min voltage (00h = no Vpp pin present)
+	{ 0x3c, { 0x00, 0x00 } },  // Vpp Max voltage (00h = no Vpp pin present)
+	{ 0x3e, { 0x06, 0x00 } },  // Typical timeout per signe byte/word 2^N us
+	{ 0x40, { 0x06, 0x00 } },  // Typical timeout for Min size buffer write 2^N us (00h = not supported)
+	{ 0x42, { 0x09, 0x00 } },  // Typical timeout per individual block erase 2^N ms
+	{ 0x44, { 0x13, 0x00 } },  // Typical timeout for full chip erase 2^N ms (00h = not suppported)
+	{ 0x46, { 0x03, 0x00 } },  // Max timeout for byte/word write 2^N times typical
+	{ 0x48, { 0x03, 0x00 } },  // Max timeout for buffer write 2^N times typical
+	{ 0x4a, { 0x03, 0x00 } },  // Max timeout per individual block erase 2^N times typical
+	{ 0x4c, { 0x02, 0x00 } },  // Max timeout for full chip erase 2^N times typical (00h = not supported)
+	// Device Geometry Definition
+	{ 0x4e, { 0x19, 0x00 } },  // Device Size = 2^N (i.e. 256 Mb)
+	{ 0x50, { 0x02, 0x00 } },  // Flash Device Interface description
+	{ 0x52, { 0x00, 0x00 } },  // Flash Device Interface description
+	{ 0x54, { 0x06, 0x00 } },  // Max number of byte in multi-byte write = 2^N (00h = not supported)
+	{ 0x56, { 0x00, 0x00 } },  // Max number of byte in multi-byte write = 2^N (00h = not supported)
+	{ 0x58, { 0x01, 0x00 } },  // Number of Erase Block Regions within device (01h = uniform device, 02h = boot device) 
+	{ 0x5a, { 0xff, 0x00 } },  // Erase Block Region 1 Information
+	{ 0x5c, { 0x00, 0x00 } },  // Erase Block Region 1 Information
+	{ 0x5e, { 0x00, 0x00 } },  // Erase Block Region 1 Information
+	{ 0x60, { 0x02, 0x00 } },  // Erase Block Region 1 Information
+	{ 0x62, { 0x00, 0x00 } },  // Erase Block Region 2 Information
+	{ 0x64, { 0x00, 0x00 } },  // Erase Block Region 2 Information
+	{ 0x66, { 0x00, 0x00 } },  // Erase Block Region 2 Information
+	{ 0x68, { 0x00, 0x00 } },  // Erase Block Region 2 Information
+	{ 0x6a, { 0x00, 0x00 } },  // Erase Block Region 3 Information
+	{ 0x6c, { 0x00, 0x00 } },  // Erase Block Region 3 Information
+	{ 0x6e, { 0x00, 0x00 } },  // Erase Block Region 3 Information
+	{ 0x70, { 0x00, 0x00 } },  // Erase Block Region 3 Information
+	{ 0x72, { 0x00, 0x00 } },  // Erase Block Region 4 Information
+	{ 0x74, { 0x00, 0x00 } },  // Erase Block Region 4 Information
+	{ 0x76, { 0x00, 0x00 } },  // Erase Block Region 4 Information
+	{ 0x78, { 0x00, 0x00 } },  // Erase Block Region 4 Information
+	// Primary Vendor-Specific Extended Query
+	{ 0x80, { 'P', 'P' } },  // Query-unique ASCII string "PRI"
+	{ 0x82, { 'R', 'R' } },  // Query-unique ASCII string "PRI"
+	{ 0x84, { 'I', 'I' } },  // Query-unique ASCII string "PRI"
+	{ 0x86, { 0x31, 0x00 } },  // Major version number, ASCII
+	{ 0x88, { 0x33, 0x00 } },  // Minor version number, ASCII
+	{ 0x8a, { 0x14, 0x00 } },  // Address Sensitive Unlock (Bits 1-0) 0 = Required, 1 = Not Required, Process Technology (Bits 7-2) 0101b = 90nm MirrorBit 
+	{ 0x8c, { 0x02, 0x00 } },  // Erase Suspend 0 = Not supported, 1 = To Read Only, 2 = To Read & Write
+	{ 0x8e, { 0x01, 0x00 } },  // Sector Protect 0 = Not supported, X = Number of section in per group
+	{ 0x90, { 0x00, 0x00 } },  // Sector Temporary Unprotect 00h = Not Supported, 01 = Supported
+	{ 0x92, { 0x08, 0x00 } },  // Sector Protect/Unprotect Scheme 0008h = Advanced Sector Protection
+	{ 0x94, { 0x00, 0x00 } },  // Simultaneous Operation 00 = Not Supported, X = Number of Sectors
+	{ 0x96, { 0x00, 0x00 } },  // Burst Mode Type 00 = Not Supported, 01 = Supported
+	{ 0x98, { 0x02, 0x00 } },  // Page Mode Type 00 = Not Supported, 01 = 4 Word Page, 02 = 8 Word Page
+	{ 0x9a, { 0xb5, 0x00 } },  // ACC (Acceleration) Supply Minimum 00h = Not Supported, D7-D4: volt, D4-D0: 100 mV
+	{ 0x9c, { 0xc5, 0x00 } },  // ACC (Acceleration) Supply Maximum 00h = Not Supported, D7-D4: volt, D4-D0: 100 mV
+	{ 0x9e, { 0x05, 0x00 } },  // WP# Protection 04h = Uniform sector bottom WP# protect, 05h = Uniform sectors top WP # protect
+	{ 0xa0, { 0x01, 0x00 } }   // Program Suspend 00h = Not Supported, 01h = Supported
+};
+
 // S1-[command,addr,data/action]->S2
 const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL256PConfig::STATE> S29GL256PConfig::FSM[S29GL256PConfig::NUM_TRANSITIONS] = {
 	{ ST_I0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_I1, ACT_NOP }, // (I0) -[W,AAA,AA/-]-> (I1)
 	{ ST_I0, CMD_READ, true, 0, true, { 0,0 }, ST_I0, ACT_READ }, // (I0) -[R,*,*/READ]->(I0)
 	{ ST_I0, CMD_WRITE, true, 0, true, { 0,0 }, ST_I0, ACT_NOP }, // (I0) -[W,*,*/-]->(I0)
+	{ ST_I0, CMD_WRITE, false, 0x55, false, { 0x98, 0 }, ST_CFI_QUERY, ACT_NOP }, // (I0)-[W,0x55,0x98/-]->(CFI_QUERY)
 	{ ST_I1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_I2, ACT_NOP }, // (I1) -[W,555,55/-]->(I2)
 	{ ST_I1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I1) -[W,*,*/-]->(I0)
 	{ ST_I1, CMD_READ, true, 0, true, { 0, 0 }, ST_I1, ACT_READ }, // (I1) -[R,*,*/READ]->(I1)
@@ -351,6 +423,8 @@ const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL2
 	{ ST_ERASE2, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_I0, ACT_SECTOR_ERASE }, // (ERASE2) -[W,*,30/SECTOR_ERASE]->(I0)
 	{ ST_ERASE2, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (ERASE2) -[W,*,*/-]->(I,0)
 	{ ST_ERASE2, CMD_READ, true, 0, true, { 0, 0 }, ST_ERASE2, ACT_READ }, // (ERASE2) -[R,*,*/READ]->(ERASE2)
+	{ ST_CFI_QUERY, CMD_READ, true, 0, true, { 0, 0 }, ST_CFI_QUERY, ACT_CFI_QUERY }, // (CFI_QUERY)-[W,*,*/CFI_QUERY]->(CFI_QUERY)
+	{ ST_CFI_QUERY, CMD_WRITE, true, 0, false, { 0xf0, 0 }, ST_I0, ACT_NOP }, // (CFI_QUERY) -[W,*,F0/-]->(I0)
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0xb0, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,B0/-]-> (*)
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP } // (*) -[W,*,30/-]-> (*)
 };

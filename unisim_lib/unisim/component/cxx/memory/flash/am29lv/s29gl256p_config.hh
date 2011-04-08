@@ -63,6 +63,7 @@ public:
 		ST_ERASE2,
 		ST_CHIP_ERASE,
 		ST_SECTOR_ERASE,
+		ST_CFI_QUERY,
 		ST_ANY = 255
 	} STATE;
 
@@ -81,12 +82,21 @@ public:
 	static const unsigned int DEVICE_ID_LENGTH = 3;
 	static const ADDRESS DEVICE_ID_ADDR[DEVICE_ID_LENGTH];
 	static const ADDRESS SECTOR_PROTECT_VERIFY_ADDR = 0x04;
-	static const unsigned NUM_TRANSITIONS = 36;
+	static const unsigned NUM_TRANSITIONS = 39;
 	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
 	static const char *DEVICE_NAME;
 	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
 	static const uint8_t DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
 
+	typedef struct
+	{
+		ADDRESS addr;
+		uint8_t data[MAX_IO_WIDTH];
+	} CFI_QUERY;
+	
+	static const unsigned int NUM_CFI_QUERIES = 63;
+	static const CFI_QUERY CFI_QUERIES[NUM_CFI_QUERIES];
+	
 	static const char *GetStateName(STATE state)
 	{
 		switch(state)
@@ -104,6 +114,7 @@ public:
 			case ST_ERASE2: return "ERASE2";
 			case ST_CHIP_ERASE: return "CHIP_ERASE";
 			case ST_SECTOR_ERASE: return "SECTOR_ERASE";
+			case ST_CFI_QUERY: return "CFI_QUERY";
 			case ST_ANY: return "*";
 		}
 		return "?";
