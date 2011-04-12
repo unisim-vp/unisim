@@ -415,7 +415,7 @@ template <class CONFIG>
 void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
 	uint16_t value;
-	EmuLoad<uint16_t, false, false>(value, ea); // reversed
+	EmuLoad<uint16_t, true, false>(value, ea); // reversed
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
 	MonitorLoad(ea, sizeof(value));
 	effective_address = ea;

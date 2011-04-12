@@ -58,12 +58,15 @@ public:
 		ST_UNLOCKED,
 		ST_UNLOCKED_PROGRAM,
 		ST_UNLOCKED_RESET,
+		ST_UNLOCKED_ERASE,
 		ST_ERASE0,
 		ST_ERASE1,
 		ST_ERASE2,
 		ST_CHIP_ERASE,
 		ST_SECTOR_ERASE,
 		ST_CFI_QUERY,
+		ST_OPENED_PAGE,
+		ST_WRITE_TO_BUFFER,
 		ST_ANY = 255
 	} STATE;
 
@@ -82,11 +85,12 @@ public:
 	static const unsigned int DEVICE_ID_LENGTH = 3;
 	static const ADDRESS DEVICE_ID_ADDR[DEVICE_ID_LENGTH];
 	static const ADDRESS SECTOR_PROTECT_VERIFY_ADDR = 0x04;
-	static const unsigned NUM_TRANSITIONS = 39;
+	static const unsigned NUM_TRANSITIONS = 47;
 	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
 	static const char *DEVICE_NAME;
 	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
 	static const uint8_t DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
+	static const unsigned int PAGE_SIZE = 32; // page size in words
 
 	typedef struct
 	{
@@ -109,12 +113,15 @@ public:
 			case ST_UNLOCKED: return "UNLOCKED";
 			case ST_UNLOCKED_PROGRAM: return "UNLOCKED_PROGRAM";
 			case ST_UNLOCKED_RESET: return "UNLOCKED_RESET";
+			case ST_UNLOCKED_ERASE: return "UNLOCKED_ERASE";
 			case ST_ERASE0: return "ERASE0";
 			case ST_ERASE1: return "ERASE1";
 			case ST_ERASE2: return "ERASE2";
 			case ST_CHIP_ERASE: return "CHIP_ERASE";
 			case ST_SECTOR_ERASE: return "SECTOR_ERASE";
 			case ST_CFI_QUERY: return "CFI_QUERY";
+			case ST_OPENED_PAGE: return "OPENED_PAGE";
+			case ST_WRITE_TO_BUFFER: return "ST_WRITE_TO_BUFFER";
 			case ST_ANY: return "*";
 		}
 		return "?";

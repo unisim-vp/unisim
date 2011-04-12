@@ -127,6 +127,9 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	sstr_description << "Sector erasing time: " << CONFIG::SECTOR_ERASING_TIME << " us" << std::endl;
 	sstr_description << "Chip erasing time: " << CONFIG::CHIP_ERASING_TIME << " us" << std::endl;
 	Object::SetDescription(sstr_description.str().c_str());
+	
+	std::cerr << sstr_description.str() << std::endl;
+	std::cerr << "addr_shift=" << addr_shift << std::endl;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -150,7 +153,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 	if((IO_WIDTH / NUM_CHIPS) > CONFIG::MAX_IO_WIDTH)
 	{
 		logger << DebugError;
-		logger << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")" << std::endl;
+		logger << "bad I/O Width (currently: " << IO_WIDTH << ", suggested: " << (NUM_CHIPS * CONFIG::MAX_IO_WIDTH) << ")";
 		logger << EndDebugError;
 		return false;
 	}
@@ -158,7 +161,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 	if(!(CONFIG::MODE_SUPPORT & (IO_WIDTH / NUM_CHIPS)))
 	{
 		logger << DebugError;
-		logger << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O: decrease or increase either BYTESIZE (" << BYTESIZE << ") or IO_WIDTH (" << IO_WIDTH << ")" << std::endl;
+		logger << "Chip does not support " << (IO_WIDTH / NUM_CHIPS) << " bits I/O: decrease or increase either BYTESIZE (" << BYTESIZE << ") or IO_WIDTH (" << IO_WIDTH << ")";
 		logger << EndDebugError;
 		return false;
 	}
@@ -211,13 +214,19 @@ int AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetSector(typename CONFIG::ADDRESS addr)
 
 	for(sector_num = 0; sector_num < CONFIG::NUM_SECTORS; sector_num++)
 	{
-		if(addr >= CONFIG::SECTOR_MAP[sector_num].addr &&
-		   addr <= CONFIG::SECTOR_MAP[sector_num].addr + CONFIG::SECTOR_MAP[sector_num].size)
+		if((addr >= CONFIG::SECTOR_MAP[sector_num].addr) &&
+		   (addr < (CONFIG::SECTOR_MAP[sector_num].addr + CONFIG::SECTOR_MAP[sector_num].size)))
 		{
 			return sector_num;
 		}
 	}
 	return -1;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+int AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetPage(typename CONFIG::ADDRESS addr)
+{
+	return addr / (CONFIG::PAGE_SIZE * CHIP_IO_WIDTH);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -227,10 +236,48 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 
 	typename CONFIG::ADDRESS offset = (addr - org) & ADDR_MASK; // keep only needed address bits.
 	typename CONFIG::ADDRESS chip_addr = offset >> addr_shift;
+	
+	if(IsVerbose())
+	{
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ": addr=0x" << std::hex << chip_addr << std::dec << ", data=";
+		std::stringstream sstr;
+		PrintData(sstr, data, CHIP_IO_WIDTH);
+		logger << sstr.str();
+		logger << EndDebugInfo;
+	}
 
 	for(i = 0; i < CONFIG::NUM_TRANSITIONS; i++)
 	{
 		const TRANSITION<typename CONFIG::ADDRESS, CONFIG::MAX_IO_WIDTH, typename CONFIG::STATE> *transition = &CONFIG::FSM[i];
+
+		if(IsVerbose())
+		{
+			logger << DebugInfo;
+			logger << "Chip #" << chip_num << ": (" << GetStateName(transition->initial_state) << ") -[";
+			logger << GetCommandName(command) << ",";
+			if(transition->wildcard_addr)
+			{
+				logger << "*";
+			}
+			else
+			{
+				logger << "0x" << std::hex << (transition->addr >> config_addr_shift) << std::dec;
+			}
+			logger << ",";
+			if(transition->wildcard_data)
+			{
+				logger << "*";
+			}
+			else
+			{
+				std::stringstream sstr;
+				PrintData(sstr, transition->data, CHIP_IO_WIDTH);
+				logger << sstr.str();
+			}
+			logger << "," << GetActionName(transition->action) << "]-> ?";
+			logger << EndDebugInfo;
+		}
 
 		if(((transition->initial_state == CONFIG::ST_ANY) || (transition->initial_state == state[chip_num])) &&
 		   transition->command == command &&
@@ -277,8 +324,10 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 				case ACT_READ_AUTOSELECT: ReadAutoselect(chip_num, offset, data, size); return;
 				case ACT_CFI_QUERY: CFIQuery(chip_num, offset, data, size); return;
 				case ACT_PROGRAM: Program(chip_num, offset, data, size); return;
+				case ACT_OPEN_PAGE: OpenPage(chip_num, offset); return;
+				case ACT_LOAD_WC: LoadWordCount(chip_num, offset, data, size); return;
 				case ACT_WRITE_TO_BUFFER: WriteToBuffer(chip_num, offset, data, size); return;
-				case ACT_PROGRAM_BUFFER_TO_FLASH: ProgramBufferToFlash(chip_num); return;
+				case ACT_PROGRAM_BUFFER_TO_FLASH: ProgramBufferToFlash(chip_num, offset); return;
 				case ACT_WRITE_TO_BUFFER_ABORT_RESET: WriteToBufferAbortReset(chip_num); return;
 				case ACT_CHIP_ERASE: ChipErase(chip_num); return;
 				case ACT_SECTOR_ERASE: SectorErase(chip_num, offset); return;
@@ -299,7 +348,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 		PrintData(sstr, data, size);
 		logger << sstr.str() << std::endl;
 	}
-	logger << "No state change or action were performed. You may check the FSM" << std::endl;
+	logger << "No state change or action were performed. You may check the FSM";
 	logger << EndDebugWarning;
 }
 
@@ -309,7 +358,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
 		logger << DebugWarning;
-		logger << "out of range address" << std::endl;
+		logger << "out of range address";
 		logger << EndDebugWarning;
 		return false;
 	}
@@ -317,7 +366,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 	if(size > IO_WIDTH)
 	{
 		logger << DebugWarning;
-		logger << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH << std::endl;
+		logger << "invalid transfer size (" << size << " bytes). Transfer size should be <= " << IO_WIDTH;
 		logger << EndDebugWarning;
 		return false;
 	}
@@ -340,6 +389,12 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Read(unsigned int chip_num, typename CO
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ResetFSM(unsigned int chip_num)
+{
+	state[chip_num] = (typename CONFIG::STATE) 0;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
@@ -351,8 +406,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 		case CONFIG::MANUFACTURER_ID_ADDR:
 			if(unlikely(IsVerbose()))
 			{
+				std::stringstream sstr;
 				logger << DebugInfo;
-				logger << "Chip #" << chip_num << ": Reading Manufacturer ID" << std::endl;
+				logger << "Chip #" << chip_num << ": Reading Manufacturer ID (";
+				PrintData(sstr, CONFIG::MANUFACTURER_ID, CHIP_IO_WIDTH);
+				logger << sstr.str() << ")";
 				logger << EndDebugInfo;
 			}
 			if(endian == E_LITTLE_ENDIAN)
@@ -366,13 +424,27 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				if(unlikely(IsVerbose()))
 				{
 					logger << DebugInfo;
-					logger << "Chip #" << chip_num << ": Sector protected verify" << std::endl;
+					logger << "Chip #" << chip_num << ": Sector protected verify";
 					logger << EndDebugInfo;
 				}
 				typename CONFIG::ADDRESS sector_addr = (chip_addr >> 8) << config_addr_shift;
 				int sector_num = GetSector(sector_addr);
+				
+				if(sector_num < 0)
+				{
+					logger << DebugWarning;
+					logger << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist";
+					logger << EndDebugWarning;
+				}
+				
 				if(sector_num >= 0 && sector_protect[sector_num])
 				{
+					if(IsVerbose())
+					{
+						logger << DebugInfo;
+						logger << "Chip #" << chip_num << ": Sector #" << sector_num << " is protected";
+						logger << EndDebugInfo;
+					}
 					if(endian == E_LITTLE_ENDIAN)
 						memcpy(data, CONFIG::PROTECTED, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 					else
@@ -380,6 +452,12 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 				}
 				else
 				{
+					if(IsVerbose())
+					{
+						logger << DebugInfo;
+						logger << "Chip #" << chip_num << ": Sector #" << sector_num << " is unprotected";
+						logger << EndDebugInfo;
+					}
 					if(endian == E_LITTLE_ENDIAN)
 						memcpy(data, CONFIG::UNPROTECTED, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 					else
@@ -396,8 +474,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 		{
 			if(unlikely(IsVerbose()))
 			{
+				std::stringstream sstr;
 				logger << DebugInfo;
-				logger << "Chip #" << chip_num << ": Reading Device ID word #" << device_id_word_index << std::endl;
+				logger << "Chip #" << chip_num << ": Reading Device ID word #" << device_id_word_index << " (";
+				PrintData(sstr, CONFIG::DEVICE_ID[device_id_word_index], CHIP_IO_WIDTH);
+				logger << sstr.str() << ")";
 				logger << EndDebugInfo;
 			}
 			if(endian == E_LITTLE_ENDIAN)
@@ -418,7 +499,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typenam
 
 	if(IsVerbose())
 	{
-		logger << DebugWarning << "Chip #" << chip_num << ": CFI Query at 0x" << std::hex << chip_addr << std::dec << EndDebugWarning;
+		logger << DebugInfo << "Chip #" << chip_num << ": CFI Query at 0x" << std::hex << chip_addr << std::dec << EndDebugInfo;
 	}
 	
 	unsigned int i, j;
@@ -428,14 +509,22 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typenam
 
 		for(j = 0; j < CONFIG::NUM_CFI_QUERIES; j++)
 		{
-			if((addr >= CONFIG::CFI_QUERIES[i].addr) && (addr < (CONFIG::CFI_QUERIES[i].addr + CONFIG::MAX_IO_WIDTH)))
+			if(((addr + i) >= CONFIG::CFI_QUERIES[j].addr) && ((addr + i) < (CONFIG::CFI_QUERIES[j].addr + CONFIG::MAX_IO_WIDTH)))
 			{
 				if(endian == E_LITTLE_ENDIAN)
-					data[i] = CONFIG::CFI_QUERIES[i].data[addr - CONFIG::CFI_QUERIES[i].addr];
+					data[i] = CONFIG::CFI_QUERIES[j].data[addr + i - CONFIG::CFI_QUERIES[j].addr];
 				else
-					data[i] = CONFIG::CFI_QUERIES[i].data[(CONFIG::MAX_IO_WIDTH - 1) - addr + CONFIG::CFI_QUERIES[i].addr];
+					data[i] = CONFIG::CFI_QUERIES[j].data[(CONFIG::MAX_IO_WIDTH - 1) - addr - i + CONFIG::CFI_QUERIES[j].addr];
 			}
 		}
+	}
+
+	if(IsVerbose())
+	{
+		std::stringstream sstr;
+		logger << DebugInfo << "Chip #" << chip_num << ": CFI Query at 0x" << std::hex << chip_addr << std::dec << " returning ";
+		PrintData(sstr, data, size);
+		logger << sstr.str() << EndDebugInfo;
 	}
 }
 
@@ -449,7 +538,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 	if(sector_num < 0)
 	{
 		logger << DebugWarning;
-		logger << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist" << std::endl;
+		logger << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist";
 		logger << EndDebugWarning;
 		return;
 	}
@@ -457,7 +546,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 	if(sector_protect[sector_num])
 	{
 		logger << DebugWarning;
-		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << std::dec << ": Attempting to program at byte address 0x" << std::hex << addr << std::dec << " while sector is protected" << std::endl;
+		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << std::dec << ": Attempting to program at byte address 0x" << std::hex << addr << std::dec << " while sector is protected";
 		logger << EndDebugWarning;
 		return;
 	}
@@ -465,31 +554,219 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 	if(unlikely(IsVerbose()))
 	{
 		logger << DebugInfo;
-		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << ": Programming ";
-		uint32_t i;
+		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << std::dec << ": Programming ";
 		uint32_t n = size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size;
-		for(i = 0; i < n; i++)
-		{
-			logger << "0x" << (unsigned int) data[i];
-			if(i < n - 1) logger << " ";
-		}
-		logger << std::dec << std::endl;
-		logger << EndDebugInfo;
+		std::stringstream sstr;
+		PrintData(sstr, data, n);
+		logger << sstr.str() << EndDebugInfo;
 	}
 
 	memcpy(storage + addr, data, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::OpenPage(unsigned int chip_num, typename CONFIG::ADDRESS addr)
 {
-	logger << DebugWarning << "Chip #" << chip_num << ": Write-to-buffer command is unsupported for now" << EndDebugWarning;
+	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
+	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
+	int sector_num = GetSector(sector_addr);
+
+	if(sector_num < 0)
+	{
+		logger << DebugWarning;
+		logger << "Sector #" << sector_num << " does not exist";
+		logger << EndDebugWarning;
+		return;
+	}
+	
+	page[chip_num] = GetPage(sector_addr);
+	
+	if(unlikely(IsVerbose()))
+	{
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ": Opening page #" << page[chip_num] << " on sector #" << sector_num;
+		logger << EndDebugInfo;
+	}
+	
+	word_count[chip_num] = 0;
+	word_index[chip_num] = 0;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_num)
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
-	logger << DebugWarning << "Chip #" << chip_num << ": Program-buffer-to-flash (confirm) command is unsupported for now" << EndDebugWarning;
+	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
+	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
+	int sector_num = GetSector(sector_addr);
+	
+	if(sector_num < 0)
+	{
+		logger << DebugWarning;
+		logger << "Sector #" << sector_num << " does not exist";
+		logger << EndDebugWarning;
+		return;
+	}
+	
+	typename CONFIG::ADDRESS req_page = GetPage(sector_addr);
+	if(page[chip_num] != req_page)
+	{
+		logger << DebugWarning;
+		logger << "Can't load word count because page #" << req_page << " is not opened";
+		logger << EndDebugWarning;
+		return;
+	}
+
+	if(unlikely(IsVerbose()))
+	{
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ": Loading word count for page #" << page[chip_num] << " on sector #" << sector_num;
+		logger << EndDebugInfo;
+	}
+
+	uint32_t n = (size > CHIP_IO_WIDTH) ? CHIP_IO_WIDTH : n;
+
+	switch(n)
+	{
+		case 1:
+			word_count[chip_num] = *data;
+			break;
+		case 2:
+			{
+				uint16_t wc;
+				memcpy(&wc, data, n);
+				word_count[chip_num] = unisim::util::endian::Target2Host(endian, wc) + 1;
+			}
+			break;
+		case 4:
+			{
+				uint32_t wc;
+				memcpy(&wc, data, n);
+				word_count[chip_num] = unisim::util::endian::Target2Host(endian, wc) + 1;
+			}
+			break;
+		case 8:
+			{
+				uint64_t wc;
+				memcpy(&wc, data, n);
+				word_count[chip_num] = unisim::util::endian::Target2Host(endian, wc) + 1;
+			}
+			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+	}
+	
+	logger << DebugInfo << "Chip #" << chip_num << ": " << word_count[chip_num] << " loaded into word count" << EndDebugInfo;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+{
+	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
+	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
+	int sector_num = GetSector(sector_addr);
+	
+	if(sector_num < 0)
+	{
+		logger << DebugWarning;
+		logger << "Sector #" << sector_num << " does not exist";
+		logger << EndDebugWarning;
+		return;
+	}
+	
+	typename CONFIG::ADDRESS req_page = GetPage(sector_addr);
+	if(page[chip_num] != req_page)
+	{
+		logger << DebugWarning;
+		logger << "Can't write into write buffer because page #" << req_page << " is not opened";
+		logger << EndDebugWarning;
+		return;
+	}
+
+	if(unlikely(IsVerbose()))
+	{
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ": Writing into write buffer for page #" << page[chip_num] << " on sector #" << sector_num;
+		logger << EndDebugInfo;
+	}
+
+	if(unlikely(IsVerbose()))
+	{
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << chip_addr << std::dec << ": Writing to write buffer ";
+		uint32_t n = size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size;
+		std::stringstream sstr;
+		PrintData(sstr, data, n);
+		logger << sstr.str() << EndDebugInfo;
+	}
+
+	if(word_index[chip_num] >= word_count[chip_num])
+	{
+		logger << DebugWarning;
+		logger << "Chip #" << chip_num << ": write buffer overflow (expecting no more than " << word_count[chip_num] << " words)";
+		logger << EndDebugWarning;
+		return;
+	}
+
+	write_buffer[chip_num][word_index[chip_num]].addr = addr;
+	memset(write_buffer[chip_num][word_index[chip_num]].data, 0, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
+	memcpy(write_buffer[chip_num][word_index[chip_num]].data, data, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
+	word_index[chip_num]++;
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_num, typename CONFIG::ADDRESS addr)
+{
+	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
+	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
+	int sector_num = GetSector(sector_addr);
+	
+	if(sector_num < 0)
+	{
+		logger << DebugWarning;
+		logger << "Sector #" << sector_num << " does not exist";
+		logger << EndDebugWarning;
+		return;
+	}
+	
+	typename CONFIG::ADDRESS req_page = GetPage(sector_addr);
+	if(page[chip_num] != req_page)
+	{
+		logger << DebugWarning;
+		logger << "Can't write into write buffer because page #" << req_page << " is not opened";
+		logger << EndDebugWarning;
+		return;
+	}
+
+	if(IsVerbose())
+	{
+		logger << DebugInfo;
+		logger << "Chip #" << chip_num << ": Programming write buffer to flash for page #" << page[chip_num] << " on sector #" << sector_num;
+		logger << EndDebugInfo;
+	}
+	
+	if(word_index[chip_num] != word_count[chip_num])
+	{
+		logger << DebugWarning;
+		logger << "Chip #" << chip_num << ": not enough words loaded into write buffer (got " << word_index[chip_num] << ", expecting " << word_count[chip_num] << ")";
+		logger << EndDebugWarning;
+		return;
+	}
+
+	unsigned int i;
+	
+	for(i = 0; i < word_count[chip_num]; i++)
+	{
+		if(unlikely(IsVerbose()))
+		{
+			logger << DebugInfo;
+			logger << "Chip #" << chip_num << ", Sector #" << sector_num << ", Addr 0x" << std::hex << write_buffer[chip_num][i].addr << std::dec << ": Programming ";
+			std::stringstream sstr;
+			PrintData(sstr, write_buffer[chip_num][i].data, CHIP_IO_WIDTH);
+			logger << sstr.str() << EndDebugInfo;
+		}
+		memcpy(storage + write_buffer[chip_num][i].addr, write_buffer[chip_num][i].data, CHIP_IO_WIDTH);
+	}
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -504,7 +781,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 	if(unlikely(IsVerbose()))
 	{
 		logger << DebugInfo;
-		logger << "Erasing Chip #" << chip_num << std::endl;
+		logger << "Erasing Chip #" << chip_num;
 		logger << EndDebugInfo;
 	}
 
@@ -526,7 +803,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 	if(sector_num < 0)
 	{
 		logger << DebugWarning;
-		logger << "Sector #" << sector_num << " does not exist" << std::endl;
+		logger << "Sector #" << sector_num << " does not exist";
 		logger << EndDebugWarning;
 		return;
 	}
@@ -534,7 +811,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 	if(sector_protect[sector_num])
 	{
 		logger << DebugWarning;
-		logger << "Attempting to erase sector #" << sector_num << " at 0x" << std::hex << addr << std::dec << " while sector is protected" << std::endl;
+		logger << "Attempting to erase sector #" << sector_num << " at 0x" << std::hex << addr << std::dec << " while sector is protected";
 		logger << EndDebugWarning;
 		return;
 	}
@@ -542,7 +819,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 	if(unlikely(IsVerbose()))
 	{
 		logger << DebugInfo;
-		logger << "Erasing sector at 0x" << std::hex << addr << std::dec << " of chip #" << chip_num << std::endl;
+		logger << "Erasing sector #" << sector_num << " at 0x" << std::hex << CONFIG::SECTOR_MAP[sector_num].addr << std::dec << " of chip #" << chip_num;
 		logger << EndDebugInfo;
 	}
 
@@ -568,7 +845,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS ad
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
 		logger << DebugWarning;
-		logger << "out of range address" << std::endl;
+		logger << "out of range address";
 		logger << EndDebugWarning;
 		return false;
 	}
@@ -585,7 +862,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS add
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
 		logger << DebugWarning;
-		logger << "out of range address" << std::endl;
+		logger << "out of range address";
 		logger << EndDebugWarning;
 		return false;
 	}
@@ -629,6 +906,8 @@ const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) con
 		case ACT_READ_AUTOSELECT: return "READ_AUTOSELECT";
 		case ACT_CFI_QUERY: return "CFI_QUERY";
 		case ACT_PROGRAM: return "PROGRAM";
+		case ACT_OPEN_PAGE: return "OPEN_PAGE";
+		case ACT_LOAD_WC: return "LOAD_WC";
 		case ACT_WRITE_TO_BUFFER: return "WRITE_TO_BUFFER";
 		case ACT_PROGRAM_BUFFER_TO_FLASH: return "PROGRAM_BUFFER_TO_FLASH";
 		case ACT_WRITE_TO_BUFFER_ABORT_RESET: return "WRITE_TO_BUFFER_ABORT_RESET";

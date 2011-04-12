@@ -310,7 +310,7 @@ const SECTOR_ADDRESS_RANGE<S29GL256PConfig::ADDRESS> S29GL256PConfig::SECTOR_MAP
 };
 
 const uint8_t S29GL256PConfig::MANUFACTURER_ID[MAX_IO_WIDTH] = { 0x01, 0x00 };
-const S29GL256PConfig::ADDRESS S29GL256PConfig::DEVICE_ID_ADDR[DEVICE_ID_LENGTH] = { 0x02, 0x0e, 0x0f };
+const S29GL256PConfig::ADDRESS S29GL256PConfig::DEVICE_ID_ADDR[DEVICE_ID_LENGTH] = { 0x02, 0x1c, 0x1e };
 const uint8_t S29GL256PConfig::DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH] = { { 0x7e, 0x22 }, { 0x22, 0x22 }, { 0x01, 0x22 } };
 const uint8_t S29GL256PConfig::PROTECTED[MAX_IO_WIDTH] = { 0x01, 0x00 };
 const uint8_t S29GL256PConfig::UNPROTECTED[MAX_IO_WIDTH] = { 0x00, 0x00 };
@@ -318,9 +318,9 @@ const uint8_t S29GL256PConfig::UNPROTECTED[MAX_IO_WIDTH] = { 0x00, 0x00 };
 // CFI queries
 const S29GL256PConfig::CFI_QUERY S29GL256PConfig::CFI_QUERIES[NUM_CFI_QUERIES] = {
 	// CFI Query Indentification String
-	{ 0x20, { 'Q', 'Q' } },    // Query Unique ASCII string "QRY"
-	{ 0x22, { 'R', 'R' } },    // Query Unique ASCII string "QRY"
-	{ 0x24, { 'Y', 'Y' } },    // Query Unique ASCII string "QRY"
+	{ 0x20, { 'Q', 0 } },    // Query Unique ASCII string "QRY"
+	{ 0x22, { 'R', 0 } },    // Query Unique ASCII string "QRY"
+	{ 0x24, { 'Y', 0 } },    // Query Unique ASCII string "QRY"
 	{ 0x26, { 0x02, 0x00 } },  // Primary OEM Command Set
 	{ 0x28, { 0x00, 0x00 } },  // Primary OEM Command Set
 	{ 0x2a, { 0x40, 0x00 } },  // Address for Primary Extended Table
@@ -390,8 +390,8 @@ const S29GL256PConfig::CFI_QUERY S29GL256PConfig::CFI_QUERIES[NUM_CFI_QUERIES] =
 const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL256PConfig::STATE> S29GL256PConfig::FSM[S29GL256PConfig::NUM_TRANSITIONS] = {
 	{ ST_I0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_I1, ACT_NOP }, // (I0) -[W,AAA,AA/-]-> (I1)
 	{ ST_I0, CMD_READ, true, 0, true, { 0,0 }, ST_I0, ACT_READ }, // (I0) -[R,*,*/READ]->(I0)
+	{ ST_I0, CMD_WRITE, false, 0xaa, false, { 0x98, 0 }, ST_CFI_QUERY, ACT_NOP }, // (I0)-[W,0x55,0x98/-]->(CFI_QUERY)
 	{ ST_I0, CMD_WRITE, true, 0, true, { 0,0 }, ST_I0, ACT_NOP }, // (I0) -[W,*,*/-]->(I0)
-	{ ST_I0, CMD_WRITE, false, 0x55, false, { 0x98, 0 }, ST_CFI_QUERY, ACT_NOP }, // (I0)-[W,0x55,0x98/-]->(CFI_QUERY)
 	{ ST_I1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_I2, ACT_NOP }, // (I1) -[W,555,55/-]->(I2)
 	{ ST_I1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I1) -[W,*,*/-]->(I0)
 	{ ST_I1, CMD_READ, true, 0, true, { 0, 0 }, ST_I1, ACT_READ }, // (I1) -[R,*,*/READ]->(I1)
@@ -399,6 +399,7 @@ const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL2
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0xa0, 0x00 }, ST_PROGRAM, ACT_NOP }, // (I2) -[W,AAA,A0/-]->(PROGRAM)
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x20, 0x00 }, ST_UNLOCKED, ACT_NOP }, // (I2) -[W,AAA,20/-]->(UNLOCKED)
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x80, 0x00 }, ST_ERASE0, ACT_NOP }, // (I2) -[W,AAA,80/-]->(ERASE0)
+	{ ST_I2, CMD_WRITE, true, 0, false, { 0x25, 0x00 }, ST_OPENED_PAGE, ACT_OPEN_PAGE }, // (I2) -[W,*,25/OPEN_PAGE]->(WRITE_TO_BUFFER)
 	{ ST_I2, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I2) -[W,*,*/-]->(I0)
 	{ ST_I2, CMD_READ, true, 0, true, { 0, 0 }, ST_I2, ACT_READ }, // (I2) -[R,*,*/-]->(I2)
 	{ ST_AUTOSELECT, CMD_READ, true, 0, true, { 0, 0 }, ST_AUTOSELECT, ACT_READ_AUTOSELECT }, // (AUTOSELECT) -[R,*,*/READ_AUTOSELECT]->(AUTOSELECT)
@@ -406,6 +407,7 @@ const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL2
 	{ ST_PROGRAM, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_PROGRAM }, // (PROGRAM) -[W,*,*/PROGRAM]->(I0)
 	{ ST_PROGRAM, CMD_READ, true, 0, true, { 0, 0 }, ST_PROGRAM, ACT_READ }, // (PROGRAM) -[R,*,*/READ]->(PROGRAM)
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0xa0, 0x00 }, ST_UNLOCKED_PROGRAM, ACT_NOP }, // (UNLOCKED) -[W,*,A0/-]->(UNLOCKED_PROGRAM)
+	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0x80, 0x00 }, ST_UNLOCKED_ERASE, ACT_NOP }, // (UNLOCKED) -[W,*,80/-]->(UNLOCKED_ERASE)
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0x90, 0x00 }, ST_UNLOCKED_RESET, ACT_NOP }, // (UNLOCKED) -[W,*,90/-]->(UNLOCKED_RESET)
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_NOP }, // (UNLOCKED) -[W,*,*/-]->(UNLOCKED)
 	{ ST_UNLOCKED, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_READ }, // (UNLOCKED) -[R,*,*/READ]->(UNLOCKED)
@@ -415,6 +417,9 @@ const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL2
 	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED_RESET, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,*/-]->(UNLOCKED_RESET)
 	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, false, { 0x90, 0 }, ST_I0, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,90/-]->(I0)
 	{ ST_UNLOCKED_RESET, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_RESET, ACT_READ }, // (UNLOCKED_RESET) -[R,*,*/READ]->(UNLOCKED_RESET)
+	{ ST_UNLOCKED_ERASE, CMD_WRITE, true, 0, false, { 0x30, 0 }, ST_UNLOCKED, ACT_SECTOR_ERASE }, // (UNLOCKED_ERASE) -[W,*,30/SECTOR_ERASE]->(UNLOCKED)
+	{ ST_UNLOCKED_ERASE, CMD_WRITE, true, 0, false, { 0x10, 0 }, ST_UNLOCKED, ACT_CHIP_ERASE }, // (UNLOCKED_ERASE) -[W,*,10/CHIP_ERASE]->(UNLOCKED)
+	{ ST_UNLOCKED_ERASE, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_ERASE, ACT_READ }, // (UNLOCKED_ERASE) -[R,*,*/READ]->(UNLOCKED_ERASE)
 	{ ST_ERASE0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_ERASE1, ACT_NOP }, // (I2) -[W,AAA,AA/-]->(ERASE1)
 	{ ST_ERASE1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_ERASE2, ACT_NOP }, // (ERASE1) -[W,555,55/-]->(ERASE2)
 	{ ST_ERASE1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (ERASE1) -[W,*,*/-]->(I0)
@@ -425,6 +430,9 @@ const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL2
 	{ ST_ERASE2, CMD_READ, true, 0, true, { 0, 0 }, ST_ERASE2, ACT_READ }, // (ERASE2) -[R,*,*/READ]->(ERASE2)
 	{ ST_CFI_QUERY, CMD_READ, true, 0, true, { 0, 0 }, ST_CFI_QUERY, ACT_CFI_QUERY }, // (CFI_QUERY)-[W,*,*/CFI_QUERY]->(CFI_QUERY)
 	{ ST_CFI_QUERY, CMD_WRITE, true, 0, false, { 0xf0, 0 }, ST_I0, ACT_NOP }, // (CFI_QUERY) -[W,*,F0/-]->(I0)
+	{ ST_OPENED_PAGE, CMD_WRITE, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER, ACT_LOAD_WC }, // (OPENED_PAGE)-[W,*,*/LOAD_WC]->(WRITE_TO_BUFFER)
+	{ ST_WRITE_TO_BUFFER, CMD_WRITE, true, 0, false, { 0x29, 0x00 }, ST_I0, ACT_PROGRAM_BUFFER_TO_FLASH }, // (WRITE_TO_BUFFER)-[W,*,29/PROGRAM_BUFFER_TO_FLASH]->(I0)
+	{ ST_WRITE_TO_BUFFER, CMD_WRITE, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER, ACT_WRITE_TO_BUFFER }, // (WRITE_TO_BUFFER)-[W,*,*/WRITE_TO_BUFFER]->(WRITE_TO_BUFFER)
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0xb0, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,B0/-]-> (*)
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP } // (*) -[W,*,30/-]-> (*)
 };

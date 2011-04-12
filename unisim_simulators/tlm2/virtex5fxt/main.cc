@@ -869,7 +869,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440 simulator with support of ELF32 binaries");
+	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs");
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
 	const char *filename = "";

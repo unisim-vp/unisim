@@ -582,7 +582,7 @@ done
 
 echo "This package contains:" > "${DEST_DIR}/README"
 echo "  - UNISIM GenISSLib: an instruction set simulator generator" >> "${DEST_DIR}/README"
-echo "  - UNISIM virtex5fxt: a user level PowerPC SystemC TLM simulator." >> "${DEST_DIR}/README"
+echo "  - UNISIM virtex5fxt: a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IPs." >> "${DEST_DIR}/README"
 echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
 
 echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
@@ -600,6 +600,7 @@ echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-deve
 echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
 echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
 echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
+echo "  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
 echo "" >> "${DEST_DIR}/INSTALL"
 echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
 echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
