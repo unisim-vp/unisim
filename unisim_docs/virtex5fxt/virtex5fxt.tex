@@ -1,6 +1,6 @@
 This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta3 on Apr  7 2011.
 \section{Introduction}
-UNISIM Virtex 5 FXT, full system PPC440 simulator with support of ELF32 binaries.\\
+UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs.\\
 Section \ref{UNISIM Virtex 5 FXT_licensing} gives licensing informations about the simulator.
 Section \ref{UNISIM Virtex 5 FXT_simulated_configuration} shows the set of modules and services that compose the simulator.
 Section \ref{UNISIM Virtex 5 FXT_using} shows how to invoke the simulator at the command line prompt.
@@ -56,7 +56,7 @@ Device ID word \#1: 0x2222\\
 Device ID word \#2: 0x2201\\
 Size: 33554432 bytes\\
 I/O width: 16 bits\\
-Number of chips: 1 chips\\
+Number of chips: 1 chip\\
 I/O width per chip: 16 bits\\
 Size per chip: 33554432 bytes\\
 Number of Sectors: 256 sectors\\
@@ -69,7 +69,6 @@ Sector erasing time: 500000000 us\\
 Chip erasing time: 128000000000 us\\
 
 \item \textbf{flash-effective-to-physical-address-translator}: this service translates memory addresses when playing with different address sizes
-\item \textbf{gdb-server}: this service implements the GDB server remote serial protocol over TCP/IP. Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application that runs within the simulator.
 \item \textbf{generate-out-stub0}
 \item \textbf{generate-out-stub1}
 \item \textbf{host-time}: this service is an abstraction layer for the host machine time
@@ -196,7 +195,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{\textbf{\Large Global}}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{enable-gdb-server}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable GDB server instantiation.}\\
@@ -580,7 +579,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{\textbf{\Large elf32-loader}}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{elf32-loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{single\_word\_programming.} \newline$\hookrightarrow$\texttt{elf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline the ELF filename to load into memory.}\\
@@ -646,7 +645,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{\textbf{\Large flash}}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{flash.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable verbosity.}\\
@@ -2206,7 +2205,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline enable/disable sector write protection.}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{flash.fsm-to-graphviz-output-} \newline$\hookrightarrow$\texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{fsm.dot}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline FSM (finite state machine) to Graphviz output filename.}\\
@@ -2216,33 +2215,6 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Cycle time.}\\
-\hline
-\hline
-\multicolumn{2}{|l|}{\textbf{\Large gdb-server}}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the smallest addressable element in memory.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{signed 32-bit integer}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-description-} \newline$\hookrightarrow$\texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{gdb\_powerpc.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large generate-out-stub0}}\\

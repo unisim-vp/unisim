@@ -111,6 +111,7 @@ private:
 		uint8_t data[CHIP_IO_WIDTH]; // data to program
 	}
 	write_buffer[NUM_CHIPS][CONFIG::PAGE_SIZE];
+	WRITE_STATUS write_status[NUM_CHIPS];
 	
 	Parameter<bool> param_verbose;
 	Parameter<typename CONFIG::ADDRESS> param_org;
@@ -121,11 +122,13 @@ private:
 
 	bool ReverseCompare(const uint8_t *data1, const uint8_t *data2, uint32_t size);
 	void ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size);
+	void Combine(uint8_t *dest, const uint8_t *source, uint32_t size);
 	int GetSector(typename CONFIG::ADDRESS addr);
 	int GetPage(typename CONFIG::ADDRESS addr);
 	void FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void ResetFSM(unsigned int chip_num);
 	void Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
+	void ReadWriteStatus(unsigned int chip_num, uint8_t *data, uint32_t size);
 	void ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void CFIQuery(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data, uint32_t size);
@@ -133,11 +136,11 @@ private:
 	void LoadWordCount(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size);
 	void ProgramBufferToFlash(unsigned int chip_num, typename CONFIG::ADDRESS addr);
-	void WriteToBufferAbortReset(unsigned int chip_num);
 	void ChipErase(unsigned int chip_num);
 	void SectorErase(unsigned int chip_num, typename CONFIG::ADDRESS addr);
 	void SecuredSiliconSectorEntry(unsigned int chip_num);
 	void SecuredSiliconSectorExit(unsigned int chip_num);
+	void AbortWriteToBuffer(unsigned int chip_num);
 	
 	const char *GetStateName(typename CONFIG::STATE state) const;
 	const char *GetCommandName(COMMAND command) const;

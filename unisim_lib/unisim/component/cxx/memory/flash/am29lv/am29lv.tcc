@@ -90,6 +90,7 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	for(chip_num = 0; chip_num < NUM_CHIPS; chip_num++)
 	{
 		state[chip_num] = (typename CONFIG::STATE) 0;
+		write_status[chip_num] = (WRITE_STATUS) 0;
 	}
 
 	unsigned int sector_num;
@@ -115,7 +116,7 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	}
 	sstr_description << "Size: " << BYTESIZE << " bytes" << std::endl;
 	sstr_description << "I/O width: " << (8 * IO_WIDTH) << " bits" << std::endl;
-	sstr_description << "Number of chips: " << NUM_CHIPS << " chips" << std::endl;
+	sstr_description << "Number of chips: " << NUM_CHIPS << " chip" << ((NUM_CHIPS > 1) ? "s" : "") << std::endl;
 	sstr_description << "I/O width per chip: " << (8 * CHIP_IO_WIDTH) << " bits" << std::endl;
 	sstr_description << "Size per chip: " << CONFIG::BYTESIZE << " bytes" << std::endl;
 	sstr_description << "Number of Sectors: " << CONFIG::NUM_SECTORS << " sectors" << std::endl;
@@ -127,9 +128,6 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 	sstr_description << "Sector erasing time: " << CONFIG::SECTOR_ERASING_TIME << " us" << std::endl;
 	sstr_description << "Chip erasing time: " << CONFIG::CHIP_ERASING_TIME << " us" << std::endl;
 	Object::SetDescription(sstr_description.str().c_str());
-	
-	std::cerr << sstr_description.str() << std::endl;
-	std::cerr << "addr_shift=" << addr_shift << std::endl;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -203,6 +201,22 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCopy(uint8_t *dest, const uint8_
 		do
 		{
 			*dst = *src;
+		} while(++dst, --src, --size);
+	}
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Combine(uint8_t *dest, const uint8_t *source, uint32_t size)
+{
+	// Do a AND between destination (flash memory content) and source (data to be programmed)
+	// A 1 can be transformed into a 0, but a zero can't be transformed into a 1
+	if(size > 0)
+	{
+		uint8_t *dst = dest;
+		const uint8_t *src = source + size - 1;
+		do
+		{
+			*dst = (*dst) & (*src);
 		} while(++dst, --src, --size);
 	}
 }
@@ -321,6 +335,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 			{
 				case ACT_NOP: return;
 				case ACT_READ: Read(chip_num, offset, data, size); return;
+				case ACT_READ_WRITE_STATUS: ReadWriteStatus(chip_num, data, size); return;
 				case ACT_READ_AUTOSELECT: ReadAutoselect(chip_num, offset, data, size); return;
 				case ACT_CFI_QUERY: CFIQuery(chip_num, offset, data, size); return;
 				case ACT_PROGRAM: Program(chip_num, offset, data, size); return;
@@ -328,7 +343,6 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 				case ACT_LOAD_WC: LoadWordCount(chip_num, offset, data, size); return;
 				case ACT_WRITE_TO_BUFFER: WriteToBuffer(chip_num, offset, data, size); return;
 				case ACT_PROGRAM_BUFFER_TO_FLASH: ProgramBufferToFlash(chip_num, offset); return;
-				case ACT_WRITE_TO_BUFFER_ABORT_RESET: WriteToBufferAbortReset(chip_num); return;
 				case ACT_CHIP_ERASE: ChipErase(chip_num); return;
 				case ACT_SECTOR_ERASE: SectorErase(chip_num, offset); return;
 				case ACT_SECURED_SILICON_SECTOR_ENTRY: SecuredSiliconSectorEntry(chip_num); return;
@@ -389,9 +403,17 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Read(unsigned int chip_num, typename CO
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadWriteStatus(unsigned int chip_num, uint8_t *data, uint32_t size)
+{
+	memset(data, 0, size);
+	*data = write_status[chip_num];
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ResetFSM(unsigned int chip_num)
 {
 	state[chip_num] = (typename CONFIG::STATE) 0;
+	write_status[chip_num] = (WRITE_STATUS) 0;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -561,7 +583,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 		logger << sstr.str() << EndDebugInfo;
 	}
 
-	memcpy(storage + addr, data, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
+	Combine(storage + addr, data, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -576,6 +598,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::OpenPage(unsigned int chip_num, typenam
 		logger << DebugWarning;
 		logger << "Sector #" << sector_num << " does not exist";
 		logger << EndDebugWarning;
+		ResetFSM(chip_num);
 		return;
 	}
 	
@@ -602,8 +625,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, ty
 	if(sector_num < 0)
 	{
 		logger << DebugWarning;
-		logger << "Sector #" << sector_num << " does not exist";
+		logger << "Sector #" << sector_num << " does not exist. Aborting write to buffer";
 		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
 		return;
 	}
 	
@@ -611,8 +635,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, ty
 	if(page[chip_num] != req_page)
 	{
 		logger << DebugWarning;
-		logger << "Can't load word count because page #" << req_page << " is not opened";
+		logger << "Can't load word count because page #" << req_page << " is not opened. Aborting write to buffer";
 		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
 		return;
 	}
 
@@ -657,6 +682,15 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, ty
 	}
 	
 	logger << DebugInfo << "Chip #" << chip_num << ": " << word_count[chip_num] << " loaded into word count" << EndDebugInfo;
+	
+	if(word_count[chip_num] > CONFIG::PAGE_SIZE)
+	{
+		logger << DebugWarning;
+		logger << "Chip #" << chip_num << ": Word count (" << word_count[chip_num] << ") is greater than page size (" << CONFIG::PAGE_SIZE << "). Aborting write to buffer";
+		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
+		return;
+	}
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -669,8 +703,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, ty
 	if(sector_num < 0)
 	{
 		logger << DebugWarning;
-		logger << "Sector #" << sector_num << " does not exist";
+		logger << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist. Aborting write to buffer";
 		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
 		return;
 	}
 	
@@ -678,7 +713,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, ty
 	if(page[chip_num] != req_page)
 	{
 		logger << DebugWarning;
-		logger << "Can't write into write buffer because page #" << req_page << " is not opened";
+		logger << "Chip #" << chip_num << ": Can't write into write buffer because page #" << req_page << " is not opened. Aborting write to buffer";
 		logger << EndDebugWarning;
 		return;
 	}
@@ -703,7 +738,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, ty
 	if(word_index[chip_num] >= word_count[chip_num])
 	{
 		logger << DebugWarning;
-		logger << "Chip #" << chip_num << ": write buffer overflow (expecting no more than " << word_count[chip_num] << " words)";
+		logger << "Chip #" << chip_num << ": write buffer overflow (expecting no more than " << word_count[chip_num] << " words). Aborting write to buffer";
 		logger << EndDebugWarning;
 		return;
 	}
@@ -724,8 +759,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_
 	if(sector_num < 0)
 	{
 		logger << DebugWarning;
-		logger << "Sector #" << sector_num << " does not exist";
+		logger << "Chip #" << chip_num << ": Sector #" << sector_num << " does not exist. Aborting write to buffer";
 		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
 		return;
 	}
 	
@@ -733,8 +769,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_
 	if(page[chip_num] != req_page)
 	{
 		logger << DebugWarning;
-		logger << "Can't write into write buffer because page #" << req_page << " is not opened";
+		logger << "Chip #" << chip_num << ": Can't write into write buffer because page #" << req_page << " is not opened. Aborting write to buffer";
 		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
 		return;
 	}
 
@@ -748,8 +785,9 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_
 	if(word_index[chip_num] != word_count[chip_num])
 	{
 		logger << DebugWarning;
-		logger << "Chip #" << chip_num << ": not enough words loaded into write buffer (got " << word_index[chip_num] << ", expecting " << word_count[chip_num] << ")";
+		logger << "Chip #" << chip_num << ": not enough words loaded into write buffer (got " << word_index[chip_num] << ", expecting " << word_count[chip_num] << "). Aborting write to buffer";
 		logger << EndDebugWarning;
+		AbortWriteToBuffer(chip_num);
 		return;
 	}
 
@@ -765,14 +803,8 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_
 			PrintData(sstr, write_buffer[chip_num][i].data, CHIP_IO_WIDTH);
 			logger << sstr.str() << EndDebugInfo;
 		}
-		memcpy(storage + write_buffer[chip_num][i].addr, write_buffer[chip_num][i].data, CHIP_IO_WIDTH);
+		Combine(storage + write_buffer[chip_num][i].addr, write_buffer[chip_num][i].data, CHIP_IO_WIDTH);
 	}
-}
-
-template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBufferAbortReset(unsigned int chip_num)
-{
-	logger << DebugWarning << "Chip #" << chip_num << ": Write-buffer-abort-reset command is unsupported for now" << EndDebugWarning;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
@@ -840,6 +872,13 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorExit(unsigned int c
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
+void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AbortWriteToBuffer(unsigned int chip_num)
+{
+	state[chip_num] = CONFIG::ST_WRITE_TO_BUFFER_ABORTED;
+	write_status[chip_num] = (WRITE_STATUS)(write_status[chip_num] | WST_WRITE_TO_BUFFER_ABORT);
+}
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
 bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size)
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
@@ -903,6 +942,7 @@ const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) con
 	{
 		case ACT_NOP: return "-";
 		case ACT_READ: return "READ";
+		case ACT_READ_WRITE_STATUS: return "READ_WRITE_STATUS";
 		case ACT_READ_AUTOSELECT: return "READ_AUTOSELECT";
 		case ACT_CFI_QUERY: return "CFI_QUERY";
 		case ACT_PROGRAM: return "PROGRAM";
@@ -910,7 +950,6 @@ const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) con
 		case ACT_LOAD_WC: return "LOAD_WC";
 		case ACT_WRITE_TO_BUFFER: return "WRITE_TO_BUFFER";
 		case ACT_PROGRAM_BUFFER_TO_FLASH: return "PROGRAM_BUFFER_TO_FLASH";
-		case ACT_WRITE_TO_BUFFER_ABORT_RESET: return "WRITE_TO_BUFFER_ABORT_RESET";
 		case ACT_CHIP_ERASE: return "CHIP_ERASE";
 		case ACT_SECTOR_ERASE: return "SECTOR_ERASE";
 		case ACT_SECURED_SILICON_SECTOR_ENTRY: return "SECURED_SILICON_SECTOR_ENTRY";

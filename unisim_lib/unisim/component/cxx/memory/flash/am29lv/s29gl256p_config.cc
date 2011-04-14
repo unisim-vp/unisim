@@ -335,7 +335,7 @@ const S29GL256PConfig::CFI_QUERY S29GL256PConfig::CFI_QUERIES[NUM_CFI_QUERIES] =
 	{ 0x38, { 0x36, 0x00 } },  // Vcc Max (write/erase): D7-D4: volt, D3-D0: 100 mV
 	{ 0x3a, { 0x00, 0x00 } },  // Vpp Min voltage (00h = no Vpp pin present)
 	{ 0x3c, { 0x00, 0x00 } },  // Vpp Max voltage (00h = no Vpp pin present)
-	{ 0x3e, { 0x06, 0x00 } },  // Typical timeout per signe byte/word 2^N us
+	{ 0x3e, { 0x06, 0x00 } },  // Typical timeout per single byte/word 2^N us
 	{ 0x40, { 0x06, 0x00 } },  // Typical timeout for Min size buffer write 2^N us (00h = not supported)
 	{ 0x42, { 0x09, 0x00 } },  // Typical timeout per individual block erase 2^N ms
 	{ 0x44, { 0x13, 0x00 } },  // Typical timeout for full chip erase 2^N ms (00h = not suppported)
@@ -388,53 +388,61 @@ const S29GL256PConfig::CFI_QUERY S29GL256PConfig::CFI_QUERIES[NUM_CFI_QUERIES] =
 
 // S1-[command,addr,data/action]->S2
 const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL256PConfig::STATE> S29GL256PConfig::FSM[S29GL256PConfig::NUM_TRANSITIONS] = {
+	// unlock cycles transitions
 	{ ST_I0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_I1, ACT_NOP }, // (I0) -[W,AAA,AA/-]-> (I1)
-	{ ST_I0, CMD_READ, true, 0, true, { 0,0 }, ST_I0, ACT_READ }, // (I0) -[R,*,*/READ]->(I0)
 	{ ST_I0, CMD_WRITE, false, 0xaa, false, { 0x98, 0 }, ST_CFI_QUERY, ACT_NOP }, // (I0)-[W,0x55,0x98/-]->(CFI_QUERY)
 	{ ST_I0, CMD_WRITE, true, 0, true, { 0,0 }, ST_I0, ACT_NOP }, // (I0) -[W,*,*/-]->(I0)
 	{ ST_I1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_I2, ACT_NOP }, // (I1) -[W,555,55/-]->(I2)
 	{ ST_I1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I1) -[W,*,*/-]->(I0)
-	{ ST_I1, CMD_READ, true, 0, true, { 0, 0 }, ST_I1, ACT_READ }, // (I1) -[R,*,*/READ]->(I1)
+	// commands after the two unclock cycles recognition transitions
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x90, 0x00 }, ST_AUTOSELECT, ACT_NOP }, // (I2) -[W,AAA,90/-]->(AUTOSELECT)
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0xa0, 0x00 }, ST_PROGRAM, ACT_NOP }, // (I2) -[W,AAA,A0/-]->(PROGRAM)
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x20, 0x00 }, ST_UNLOCKED, ACT_NOP }, // (I2) -[W,AAA,20/-]->(UNLOCKED)
 	{ ST_I2, CMD_WRITE, false, 0xaaa, false, { 0x80, 0x00 }, ST_ERASE0, ACT_NOP }, // (I2) -[W,AAA,80/-]->(ERASE0)
 	{ ST_I2, CMD_WRITE, true, 0, false, { 0x25, 0x00 }, ST_OPENED_PAGE, ACT_OPEN_PAGE }, // (I2) -[W,*,25/OPEN_PAGE]->(WRITE_TO_BUFFER)
 	{ ST_I2, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (I2) -[W,*,*/-]->(I0)
-	{ ST_I2, CMD_READ, true, 0, true, { 0, 0 }, ST_I2, ACT_READ }, // (I2) -[R,*,*/-]->(I2)
+	// autoselect transitions
 	{ ST_AUTOSELECT, CMD_READ, true, 0, true, { 0, 0 }, ST_AUTOSELECT, ACT_READ_AUTOSELECT }, // (AUTOSELECT) -[R,*,*/READ_AUTOSELECT]->(AUTOSELECT)
 	{ ST_AUTOSELECT, CMD_WRITE, true, 0, false, { 0xf0, 0 }, ST_I0, ACT_NOP }, // (AUTOSELECT) -[W,*,F0/-]->(I0)
+	// single program transitions
 	{ ST_PROGRAM, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_PROGRAM }, // (PROGRAM) -[W,*,*/PROGRAM]->(I0)
-	{ ST_PROGRAM, CMD_READ, true, 0, true, { 0, 0 }, ST_PROGRAM, ACT_READ }, // (PROGRAM) -[R,*,*/READ]->(PROGRAM)
+	// unlock bypass transitions
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0xa0, 0x00 }, ST_UNLOCKED_PROGRAM, ACT_NOP }, // (UNLOCKED) -[W,*,A0/-]->(UNLOCKED_PROGRAM)
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0x80, 0x00 }, ST_UNLOCKED_ERASE, ACT_NOP }, // (UNLOCKED) -[W,*,80/-]->(UNLOCKED_ERASE)
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, false, { 0x90, 0x00 }, ST_UNLOCKED_RESET, ACT_NOP }, // (UNLOCKED) -[W,*,90/-]->(UNLOCKED_RESET)
 	{ ST_UNLOCKED, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_NOP }, // (UNLOCKED) -[W,*,*/-]->(UNLOCKED)
-	{ ST_UNLOCKED, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_READ }, // (UNLOCKED) -[R,*,*/READ]->(UNLOCKED)
 	{ ST_UNLOCKED_PROGRAM, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED, ACT_PROGRAM }, // (UNLOCKED_PROGRAM) -[W,*,*/PROGRAM]->(UNLOCKED)
-	{ ST_UNLOCKED_PROGRAM, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_PROGRAM, ACT_READ }, // (UNLOCKED_PROGRAM) -[R,*,*/READ]->(UNLOCKED_PROGRAM)
 	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, false, { 0, 0 }, ST_I0, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,00/-]->(I0)
 	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, true, { 0, 0 }, ST_UNLOCKED_RESET, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,*/-]->(UNLOCKED_RESET)
 	{ ST_UNLOCKED_RESET, CMD_WRITE, true, 0, false, { 0x90, 0 }, ST_I0, ACT_NOP }, // (UNLOCKED_RESET) -[W,*,90/-]->(I0)
-	{ ST_UNLOCKED_RESET, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_RESET, ACT_READ }, // (UNLOCKED_RESET) -[R,*,*/READ]->(UNLOCKED_RESET)
 	{ ST_UNLOCKED_ERASE, CMD_WRITE, true, 0, false, { 0x30, 0 }, ST_UNLOCKED, ACT_SECTOR_ERASE }, // (UNLOCKED_ERASE) -[W,*,30/SECTOR_ERASE]->(UNLOCKED)
 	{ ST_UNLOCKED_ERASE, CMD_WRITE, true, 0, false, { 0x10, 0 }, ST_UNLOCKED, ACT_CHIP_ERASE }, // (UNLOCKED_ERASE) -[W,*,10/CHIP_ERASE]->(UNLOCKED)
-	{ ST_UNLOCKED_ERASE, CMD_READ, true, 0, true, { 0, 0 }, ST_UNLOCKED_ERASE, ACT_READ }, // (UNLOCKED_ERASE) -[R,*,*/READ]->(UNLOCKED_ERASE)
+	// single erase transitions
 	{ ST_ERASE0, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_ERASE1, ACT_NOP }, // (I2) -[W,AAA,AA/-]->(ERASE1)
 	{ ST_ERASE1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_ERASE2, ACT_NOP }, // (ERASE1) -[W,555,55/-]->(ERASE2)
 	{ ST_ERASE1, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (ERASE1) -[W,*,*/-]->(I0)
-	{ ST_ERASE1, CMD_READ, true, 0, true, { 0, 0 }, ST_ERASE1, ACT_READ }, // (ERASE1) -[R,*,*/READ]->(ERASE1)
 	{ ST_ERASE2, CMD_WRITE, false, 0xaaa, false, { 0x10, 0x00 }, ST_I0, ACT_CHIP_ERASE }, // (ERASE2) -[W,AAA,10/CHIP_ERASE]->(I0)
 	{ ST_ERASE2, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_I0, ACT_SECTOR_ERASE }, // (ERASE2) -[W,*,30/SECTOR_ERASE]->(I0)
 	{ ST_ERASE2, CMD_WRITE, true, 0, true, { 0, 0 }, ST_I0, ACT_NOP }, // (ERASE2) -[W,*,*/-]->(I,0)
-	{ ST_ERASE2, CMD_READ, true, 0, true, { 0, 0 }, ST_ERASE2, ACT_READ }, // (ERASE2) -[R,*,*/READ]->(ERASE2)
+	// CFI query transitions
 	{ ST_CFI_QUERY, CMD_READ, true, 0, true, { 0, 0 }, ST_CFI_QUERY, ACT_CFI_QUERY }, // (CFI_QUERY)-[W,*,*/CFI_QUERY]->(CFI_QUERY)
 	{ ST_CFI_QUERY, CMD_WRITE, true, 0, false, { 0xf0, 0 }, ST_I0, ACT_NOP }, // (CFI_QUERY) -[W,*,F0/-]->(I0)
+	// Write to buffer transitions
 	{ ST_OPENED_PAGE, CMD_WRITE, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER, ACT_LOAD_WC }, // (OPENED_PAGE)-[W,*,*/LOAD_WC]->(WRITE_TO_BUFFER)
 	{ ST_WRITE_TO_BUFFER, CMD_WRITE, true, 0, false, { 0x29, 0x00 }, ST_I0, ACT_PROGRAM_BUFFER_TO_FLASH }, // (WRITE_TO_BUFFER)-[W,*,29/PROGRAM_BUFFER_TO_FLASH]->(I0)
 	{ ST_WRITE_TO_BUFFER, CMD_WRITE, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER, ACT_WRITE_TO_BUFFER }, // (WRITE_TO_BUFFER)-[W,*,*/WRITE_TO_BUFFER]->(WRITE_TO_BUFFER)
+	{ ST_WRITE_TO_BUFFER_ABORTED, CMD_WRITE, false, 0xaaa, false, { 0xaa, 0x00 }, ST_WRITE_TO_BUFFER_ABORTED, ACT_NOP }, // (WRITE_TO_BUFFER_ABORTED) -[W,AAA,AA/-]-> (WRITE_TO_BUFFER_ABORTED1)
+	{ ST_WRITE_TO_BUFFER_ABORTED, CMD_READ, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER_ABORTED, ACT_READ_WRITE_STATUS }, // (WRITE_TO_BUFFER_ABORTED) -[R,*,*/READ_WRITE_STATUS]-> (WRITE_TO_BUFFER_ABORTED)
+	{ ST_WRITE_TO_BUFFER_ABORTED1, CMD_WRITE, false, 0x555, false, { 0x55, 0x00 }, ST_WRITE_TO_BUFFER_ABORTED2, ACT_NOP }, // (WRITE_TO_BUFFER_ABORTED1) -[W,555,55/-]-> (WRITE_TO_BUFFER_ABORTED2)
+	{ ST_WRITE_TO_BUFFER_ABORTED1, CMD_READ, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER_ABORTED1, ACT_READ_WRITE_STATUS }, // (WRITE_TO_BUFFER_ABORTED1) -[R,*,*/READ_WRITE_STATUS]-> (WRITE_TO_BUFFER_ABORTED1)
+	{ ST_WRITE_TO_BUFFER_ABORTED2, CMD_WRITE, false, 0x555, false, { 0xf0, 0x00 }, ST_I0, ACT_NOP }, // (WRITE_TO_BUFFER_ABORT2) -[W,555,F0/-]-> (ST_I0)
+	{ ST_WRITE_TO_BUFFER_ABORTED2, CMD_READ, true, 0, true, { 0, 0 }, ST_WRITE_TO_BUFFER_ABORTED2, ACT_READ_WRITE_STATUS }, // (WRITE_TO_BUFFER_ABORTED2) -[R,*,*/READ_WRITE_STATUS]-> (WRITE_TO_BUFFER_ABORTED2)
+	// Suspend/Resume transitions
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0xb0, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,B0/-]-> (*)
-	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP } // (*) -[W,*,30/-]-> (*)
+	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,30/-]-> (*)
+	// Fallback transitions
+	{ ST_ANY, CMD_READ, true, 0, true, { 0,0 }, ST_ANY, ACT_NOP }, // (*) -[W,*,*/-]->(*)
+	{ ST_ANY, CMD_READ, true, 0, true, { 0,0 }, ST_ANY, ACT_READ }, // (*) -[R,*,*/READ]->(*)
 };
 
 } // end of namespace am29lv
