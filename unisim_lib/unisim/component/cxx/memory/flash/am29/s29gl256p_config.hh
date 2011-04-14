@@ -32,17 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_S29GL256P_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_S29GL256P_CONFIG_HH__
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_S29GL256P_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_S29GL256P_CONFIG_HH__
 
-#include "unisim/component/cxx/memory/flash/am29lv/types.hh"
+#include "unisim/component/cxx/memory/flash/am29/types.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 class S29GL256PConfig
 {
@@ -134,11 +134,11 @@ public:
 	}
 };
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_S29GL256P_CONFIG_HH__
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_S29GL256P_CONFIG_HH__

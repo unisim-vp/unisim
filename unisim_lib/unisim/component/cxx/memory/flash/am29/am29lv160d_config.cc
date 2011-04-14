@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29lv160d_config.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 //                                           AM29LV160D Configuration
@@ -175,7 +175,7 @@ const TRANSITION<AM29LV160DConfig::ADDRESS, AM29LV160DConfig::MAX_IO_WIDTH, AM29
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP } // (*) -[W,*,30/-]-> (*)
 };
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx

@@ -31,23 +31,62 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_HH__
+#define __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_HH__
 
-#include "unisim/component/tlm2/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/s29gl256p_config.hh"
-#include "unisim/component/tlm2/memory/flash/am29lv/am29lv.tcc"
+#include <systemc.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/tlm2/tlm.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29.hh"
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::S29GL256PConfig, 32 * unisim::component::cxx::memory::flash::am29lv::M, 2, 128>; // 32 MB/16 bits over 128-bit bus
+using unisim::kernel::tlm2::PayloadFabric;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::Parameter;
 
-} // end of namespace am29lv
+typedef uint64_t DEFAULT_ADDRESS;
+const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
+
+template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH = DEFAULT_BUSWIDTH>
+class AM29 :
+	public sc_module,
+	public unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>,
+	public tlm::tlm_fw_transport_if<>
+{
+public:
+	typedef unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH> inherited;
+
+	tlm::tlm_target_socket<BUSWIDTH> slave_sock;
+
+	AM29(const sc_module_name& name, Object *parent = 0);
+	virtual ~AM29();
+
+	virtual bool BeginSetup();
+	
+	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
+	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
+	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
+	
+private:
+	sc_time cycle_time;
+	Parameter<sc_time> param_cycle_time;
+};
+
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
-} // end of namespace tlm
+} // end of namespace tlm2
 } // end of namespace component
-} // end of namespace unisim 
+} // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_HH__ 

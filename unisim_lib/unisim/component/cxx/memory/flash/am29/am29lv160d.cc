@@ -32,61 +32,22 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29LV_AM29LV_HH__
-#define __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29LV_AM29LV_HH__
-
-#include <systemc.h>
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
-#include <inttypes.h>
+#include "unisim/component/cxx/memory/flash/am29/am29.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29lv160d_config.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29.tcc"
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
+namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-using unisim::kernel::tlm2::PayloadFabric;
-using unisim::kernel::service::Object;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
+template class AM29<AM29LV160DTConfig, 32 * M, 16>; // 32 MB/128 bits
 
-typedef uint64_t DEFAULT_ADDRESS;
-const unsigned int DEFAULT_BUSWIDTH = 32; // 32-bit bus
-
-template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH = DEFAULT_BUSWIDTH>
-class AM29LV :
-	public sc_module,
-	public unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>,
-	public tlm::tlm_fw_transport_if<>
-{
-public:
-	typedef unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH> inherited;
-
-	tlm::tlm_target_socket<BUSWIDTH> slave_sock;
-
-	AM29LV(const sc_module_name& name, Object *parent = 0);
-	virtual ~AM29LV();
-
-	virtual bool BeginSetup();
-	
-	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
-	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
-	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-	
-private:
-	sc_time cycle_time;
-	Parameter<sc_time> param_cycle_time;
-};
-
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
-} // end of namespace tlm2
+} // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29LV_AM29LV_HH__ 

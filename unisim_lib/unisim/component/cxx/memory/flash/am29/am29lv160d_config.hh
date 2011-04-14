@@ -32,43 +32,48 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV800B_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV800B_CONFIG_HH__
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29LV160D_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29LV160D_CONFIG_HH__
 
-#include "unisim/component/cxx/memory/flash/am29lv/types.hh"
+#include "unisim/component/cxx/memory/flash/am29/types.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-class AM29LV800BConfig
+class AM29LV160DConfig
 {
 public:
-	typedef uint32_t ADDRESS;
+	typedef uint64_t ADDRESS;
 	typedef enum
 	{
-		STATE_INITIAL,
-		STATE_AUTOSELECT,
-		STATE_PROGRAM,
-		STATE_UNLOCKED,
-		STATE_UNLOCKED_PROGRAM,
-		STATE_UNLOCKED_RESET,
-		STATE_ERASE,
-		STATE_CHIP_ERASE,
-		STATE_SECTOR_ERASE
+		ST_I0 = 0,
+		ST_I1,
+		ST_I2,
+		ST_AUTOSELECT,
+		ST_PROGRAM,
+		ST_UNLOCKED,
+		ST_UNLOCKED_PROGRAM,
+		ST_UNLOCKED_RESET,
+		ST_ERASE0,
+		ST_ERASE1,
+		ST_ERASE2,
+		ST_CHIP_ERASE,
+		ST_SECTOR_ERASE,
+		ST_ANY = 255
 	} STATE;
 
-	static const uint32_t BYTESIZE = 1048576; // 8 Mbits / 1 MBytes
-	static const unsigned int NUM_SECTORS = 19;
+	static const uint32_t BYTESIZE = 2097152; // 16 Mbits / 2 MBytes
+	static const unsigned int NUM_SECTORS = 35;
 	static const unsigned int MAX_IO_WIDTH = 2; // 16-bit I/O
 	static const MODE MODE_SUPPORT = MODE_X8_X16; // x8/x16
 	static const uint64_t ACCESS_TIME = 70ULL; // in ns (70 ns)
 	static const uint64_t PROGRAMMING_TIME[MAX_IO_WIDTH]; // in ns
 	static const uint64_t SECTOR_ERASING_TIME = 700000000ULL; // in ns (0.7 s)
-	static const uint64_t CHIP_ERASING_TIME = 14000000000ULL; // in ns (14 s)
+	static const uint64_t CHIP_ERASING_TIME = 25000000000ULL; // in ns (25 s)
 	static const uint8_t MANUFACTURER_ID[MAX_IO_WIDTH];
 	static const uint8_t PROTECTED[MAX_IO_WIDTH];
 	static const uint8_t UNPROTECTED[MAX_IO_WIDTH];
@@ -76,38 +81,34 @@ public:
 	static const unsigned int DEVICE_ID_LENGTH = 1;
 	static const ADDRESS DEVICE_ID_ADDR[DEVICE_ID_LENGTH];
 	static const ADDRESS SECTOR_PROTECT_VERIFY_ADDR = 0x04;
-	static const unsigned NUM_TRANSITIONS = 31;
+	static const unsigned NUM_TRANSITIONS = 36;
 	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
-	
+
 	static const char *GetStateName(STATE state)
 	{
 		switch(state)
 		{
-			case STATE_INITIAL: return "I";
-			case STATE_AUTOSELECT: return "AUTOSELECT";
-			case STATE_PROGRAM: return "PROGRAM";
-			case STATE_UNLOCKED: return "UNLOCKED";
-			case STATE_UNLOCKED_PROGRAM: return "UNLOCKED_PROGRAM";
-			case STATE_UNLOCKED_RESET: return "UNLOCKED_RESET";
-			case STATE_ERASE: return "ERASE";
-			case STATE_CHIP_ERASE: return "CHIP_ERASE";
-			case STATE_SECTOR_ERASE: return "SECTOR_ERASE";
+			case ST_I0: return "I0";
+			case ST_I1: return "I1";
+			case ST_I2: return "I2";
+			case ST_AUTOSELECT: return "AUTOSELECT";
+			case ST_PROGRAM: return "PROGRAM";
+			case ST_UNLOCKED: return "UNLOCKED";
+			case ST_UNLOCKED_PROGRAM: return "UNLOCKED_PROGRAM";
+			case ST_UNLOCKED_RESET: return "UNLOCKED_RESET";
+			case ST_ERASE0: return "ERASE0";
+			case ST_ERASE1: return "ERASE1";
+			case ST_ERASE2: return "ERASE2";
+			case ST_CHIP_ERASE: return "CHIP_ERASE";
+			case ST_SECTOR_ERASE: return "SECTOR_ERASE";
+			case ST_ANY: return "*";
 		}
 		return "?";
 	}
 };
 
-// AM29LV800B (top boot device)
-class AM29LV800BTConfig : public AM29LV800Config
-{
-public:
-	static const char *DEVICE_NAME;
-	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
-	static const struct DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
-};
-
-// AM29LV800B (bottom boot device)
-class AM29LV800BBConfig : public AM29LV800Config
+// AM29LV160D (top boot device)
+class AM29LV160DTConfig : public AM29LV160DConfig
 {
 public:
 	static const char *DEVICE_NAME;
@@ -115,11 +116,20 @@ public:
 	static const uint8_t DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
 };
 
-} // end of namespace am29lv
+// AM29LV160D (bottom boot device)
+class AM29LV160DBConfig : public AM29LV160DConfig
+{
+public:
+	static const char *DEVICE_NAME;
+	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
+	static const uint8_t DEVICE_ID[DEVICE_ID_LENGTH][MAX_IO_WIDTH];
+};
+
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV800B_CONFIG_HH__
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29LV160D_CONFIG_HH__

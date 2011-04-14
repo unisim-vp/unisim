@@ -39,15 +39,15 @@
 #include <fstream>
 #include "unisim/util/endian/endian.hh"
 
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_TCC__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__
+#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 using namespace std;
 using unisim::util::endian::E_LITTLE_ENDIAN;
@@ -61,7 +61,7 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
+AM29<CONFIG, BYTESIZE, IO_WIDTH>::AM29(const char *name, Object *parent)
 	: Object(name, parent, "AM29LVxxx flash memory")
 	, Service<Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, memory_export("memory-export", this)
@@ -131,13 +131,13 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AM29LV(const char *name, Object *parent)
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::~AM29LV()
+AM29<CONFIG, BYTESIZE, IO_WIDTH>::~AM29()
 {
 	delete[] storage;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 {
 	unsigned int chip_num;
 
@@ -172,12 +172,12 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::BeginSetup()
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Reset()
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::Reset()
 {
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCompare(const uint8_t *data1, const uint8_t *data2, uint32_t size)
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCompare(const uint8_t *data1, const uint8_t *data2, uint32_t size)
 {
 	if(size > 0)
 	{
@@ -192,7 +192,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCompare(const uint8_t *data1, co
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCopy(uint8_t *dest, const uint8_t *source, uint32_t size)
 {
 	if(size > 0)
 	{
@@ -206,7 +206,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReverseCopy(uint8_t *dest, const uint8_
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Combine(uint8_t *dest, const uint8_t *source, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::Combine(uint8_t *dest, const uint8_t *source, uint32_t size)
 {
 	// Do a AND between destination (flash memory content) and source (data to be programmed)
 	// A 1 can be transformed into a 0, but a zero can't be transformed into a 1
@@ -222,7 +222,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Combine(uint8_t *dest, const uint8_t *s
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-int AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetSector(typename CONFIG::ADDRESS addr)
+int AM29<CONFIG, BYTESIZE, IO_WIDTH>::GetSector(typename CONFIG::ADDRESS addr)
 {
 	unsigned int sector_num;
 
@@ -238,13 +238,13 @@ int AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetSector(typename CONFIG::ADDRESS addr)
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-int AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetPage(typename CONFIG::ADDRESS addr)
+int AM29<CONFIG, BYTESIZE, IO_WIDTH>::GetPage(typename CONFIG::ADDRESS addr)
 {
 	return addr / (CONFIG::PAGE_SIZE * CHIP_IO_WIDTH);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	unsigned int i;
 
@@ -268,7 +268,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 		if(IsVerbose())
 		{
 			logger << DebugInfo;
-			logger << "Chip #" << chip_num << ": (" << GetStateName(transition->initial_state) << ") -[";
+			logger << "Chip #" << chip_num << ": looking at transition (" << GetStateName(transition->initial_state) << ") -[";
 			logger << GetCommandName(command) << ",";
 			if(transition->wildcard_addr)
 			{
@@ -289,7 +289,8 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 				PrintData(sstr, transition->data, CHIP_IO_WIDTH);
 				logger << sstr.str();
 			}
-			logger << "," << GetActionName(transition->action) << "]-> ?";
+			logger << "," << GetActionName(transition->action) << "]->";
+			logger << GetStateName(transition->final_state);
 			logger << EndDebugInfo;
 		}
 
@@ -301,7 +302,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 			if(IsVerbose())
 			{
 				logger << DebugInfo;
-				logger << "Chip #" << chip_num << ": (" << GetStateName(transition->initial_state) << ") -[";
+				logger << "Chip #" << chip_num << ": selecting transition (" << GetStateName(transition->initial_state) << ") -[";
 				logger << GetCommandName(command) << ",";
 				if(transition->wildcard_addr)
 				{
@@ -367,7 +368,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(unsigned int chip_num, COMMAND comm
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
@@ -397,27 +398,27 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSM(COMMAND command, typename CONFIG::A
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::Read(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	memcpy(data, storage + addr, size > CHIP_IO_WIDTH ? CHIP_IO_WIDTH : size);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadWriteStatus(unsigned int chip_num, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReadWriteStatus(unsigned int chip_num, uint8_t *data, uint32_t size)
 {
 	memset(data, 0, size);
 	*data = write_status[chip_num];
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ResetFSM(unsigned int chip_num)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ResetFSM(unsigned int chip_num)
 {
 	state[chip_num] = (typename CONFIG::STATE) 0;
 	write_status[chip_num] = (WRITE_STATUS) 0;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 
@@ -515,7 +516,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadAutoselect(unsigned int chip_num, t
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 
@@ -551,7 +552,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::CFIQuery(unsigned int chip_num, typenam
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename CONFIG::ADDRESS addr, const uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -587,7 +588,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::Program(unsigned int chip_num, typename
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::OpenPage(unsigned int chip_num, typename CONFIG::ADDRESS addr)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::OpenPage(unsigned int chip_num, typename CONFIG::ADDRESS addr)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -616,7 +617,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::OpenPage(unsigned int chip_num, typenam
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -694,7 +695,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, ty
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, typename CONFIG::ADDRESS addr, uint8_t *data, uint32_t size)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -750,7 +751,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteToBuffer(unsigned int chip_num, ty
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_num, typename CONFIG::ADDRESS addr)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_num, typename CONFIG::ADDRESS addr)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -808,7 +809,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ProgramBufferToFlash(unsigned int chip_
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 {
 	if(unlikely(IsVerbose()))
 	{
@@ -826,7 +827,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ChipErase(unsigned int chip_num)
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, typename CONFIG::ADDRESS addr)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, typename CONFIG::ADDRESS addr)
 {
 	typename CONFIG::ADDRESS chip_addr = addr >> addr_shift;
 	typename CONFIG::ADDRESS sector_addr = chip_addr << config_addr_shift;
@@ -860,26 +861,26 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SectorErase(unsigned int chip_num, type
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorEntry(unsigned int chip_num)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorEntry(unsigned int chip_num)
 {
 	logger << DebugWarning << "Chip #" << chip_num << ": Secured-silicon-sector-entry command is unsupported for now" << EndDebugWarning;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorExit(unsigned int chip_num)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::SecuredSiliconSectorExit(unsigned int chip_num)
 {
 	logger << DebugWarning << "Chip #" << chip_num << ": Secured-silicon-sector-exit command is unsupported for now" << EndDebugWarning;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::AbortWriteToBuffer(unsigned int chip_num)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::AbortWriteToBuffer(unsigned int chip_num)
 {
 	state[chip_num] = CONFIG::ST_WRITE_TO_BUFFER_ABORTED;
 	write_status[chip_num] = (WRITE_STATUS)(write_status[chip_num] | WST_WRITE_TO_BUFFER_ABORT);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size)
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size)
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
@@ -896,7 +897,7 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::WriteMemory(typename CONFIG::ADDRESS ad
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
 {
 	if(addr < org || (addr + size - 1) > (org + bytesize - 1) || (addr + size) < addr)
 	{
@@ -913,19 +914,19 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::ReadMemory(typename CONFIG::ADDRESS add
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::IsVerbose() const
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH>::IsVerbose() const
 {
 	return verbose;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetStateName(typename CONFIG::STATE state) const
+const char *AM29<CONFIG, BYTESIZE, IO_WIDTH>::GetStateName(typename CONFIG::STATE state) const
 {
 	return CONFIG::GetStateName(state);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetCommandName(COMMAND command) const
+const char *AM29<CONFIG, BYTESIZE, IO_WIDTH>::GetCommandName(COMMAND command) const
 {
 	switch(command)
 	{
@@ -936,7 +937,7 @@ const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetCommandName(COMMAND command) 
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) const
+const char *AM29<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) const
 {
 	switch(action)
 	{
@@ -959,7 +960,7 @@ const char *AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::GetActionName(ACTION action) con
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::FSMToGraphviz()
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::FSMToGraphviz()
 {
 	if(IsVerbose())
 	{
@@ -1039,7 +1040,7 @@ inline char Nibble2HexChar(uint8_t v)
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::PrintData(std::ostream& os, const uint8_t *data, unsigned int size)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH>::PrintData(std::ostream& os, const uint8_t *data, unsigned int size)
 {
 	int i;
 	
@@ -1055,11 +1056,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH>::PrintData(std::ostream& os, const uint8
 	}
 }
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_TCC__
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__

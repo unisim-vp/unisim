@@ -158,9 +158,9 @@ unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/cxx/timer/xilinx/xps_timer/config.cc \
-unisim/component/cxx/memory/flash/am29lv/am29lv.cc \
-unisim/component/cxx/memory/flash/am29lv/s29gl256p.cc \
-unisim/component/cxx/memory/flash/am29lv/s29gl256p_config.cc \
+unisim/component/cxx/memory/flash/am29/am29.cc \
+unisim/component/cxx/memory/flash/am29/s29gl256p.cc \
+unisim/component/cxx/memory/flash/am29/s29gl256p_config.cc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
@@ -172,7 +172,7 @@ unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
-unisim/component/tlm2/memory/flash/am29lv/s29gl256p.cc \
+unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
 "
@@ -303,9 +303,9 @@ unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh \
 unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh \
 unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh \
 unisim/component/cxx/timer/xilinx/xps_timer/config.hh \
-unisim/component/cxx/memory/flash/am29lv/types.hh \
-unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
-unisim/component/cxx/memory/flash/am29lv/s29gl256p_config.hh \
+unisim/component/cxx/memory/flash/am29/types.hh \
+unisim/component/cxx/memory/flash/am29/am29.hh \
+unisim/component/cxx/memory/flash/am29/s29gl256p_config.hh \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh \
@@ -318,7 +318,7 @@ unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
-unisim/component/tlm2/memory/flash/am29lv/am29lv.hh \
+unisim/component/tlm2/memory/flash/am29/am29.hh \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh \
 "
@@ -371,7 +371,7 @@ unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
 unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.tcc \
 unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
-unisim/component/cxx/memory/flash/am29lv/am29lv.tcc \
+unisim/component/cxx/memory/flash/am29/am29.tcc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
@@ -380,7 +380,7 @@ unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
-unisim/component/tlm2/memory/flash/am29lv/am29lv.tcc \
+unisim/component/tlm2/memory/flash/am29/am29.tcc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc \
 "

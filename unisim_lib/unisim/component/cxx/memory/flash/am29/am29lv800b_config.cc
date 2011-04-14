@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv800b_config.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 //                                           AM29LV800B Configuration
@@ -138,7 +138,7 @@ const TRANSITION<AM29LV800BConfig::ADDRESS, AM29LV800BConfig::MAX_IO_WIDTH, AM29
 	{ AM29LV800BConfig::STATE_ERASE, 4, CMD_READ, true, 0, true, { 0, 0 }, AM29LV800BConfig::STATE_ERASE, 4, ACT_READ } // (ERASE,4) -[R,*,*/READ]->(ERASE,4)
 };
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx

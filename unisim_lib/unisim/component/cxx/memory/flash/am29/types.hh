@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,22 +32,81 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/s29gl256p_config.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.tcc"
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_TYPES_HH__
+#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_TYPES_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-template class AM29LV<S29GL256PConfig, 32 * M, 2>; // 32 MB/16 bits
+typedef enum { MODE_X8 = 1, MODE_X16 = 2, MODE_X8_X16 = 3 } MODE;
 
-} // end of namespace am29lv
+typedef enum
+{
+	CMD_READ = 0,
+	CMD_WRITE = 1
+} COMMAND;
+
+typedef enum
+{
+	ACT_NOP,
+	ACT_READ,
+	ACT_READ_WRITE_STATUS,
+	ACT_READ_AUTOSELECT,
+	ACT_CFI_QUERY,
+	ACT_PROGRAM,
+	ACT_OPEN_PAGE,
+	ACT_LOAD_WC,
+	ACT_WRITE_TO_BUFFER,
+	ACT_PROGRAM_BUFFER_TO_FLASH,
+	ACT_CHIP_ERASE,
+	ACT_SECTOR_ERASE,
+	ACT_SECURED_SILICON_SECTOR_ENTRY,
+	ACT_SECURED_SILICON_SECTOR_EXIT
+} ACTION;
+
+template <class ADDRESS>
+class SECTOR_ADDRESS_RANGE
+{
+public:
+	ADDRESS addr;
+	uint32_t size;
+};
+
+template <typename ADDRESS, unsigned int IO_WIDTH, typename STATE>
+class TRANSITION
+{
+public:
+	STATE initial_state;
+	COMMAND command;
+	bool wildcard_addr;
+	ADDRESS addr;
+	bool wildcard_data;
+	uint8_t data[IO_WIDTH];
+	STATE final_state;
+	ACTION action;
+};
+
+typedef enum
+{
+	WST_DATA_POLLING = 1 << 7,
+	WST_TOGGLE_BIT1 = 1 << 6,
+	WST_EXCEEDED_TIMING_LIMITS = 1 << 5,
+	WST_SECTOR_ERASE_TIMEOUT_STATE_INDICATOR = 1 << 3,
+	WST_TOGGLE_BIT2 = 1 << 2,
+	WST_WRITE_TO_BUFFER_ABORT = 1 << 1
+} WRITE_STATUS;
+
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+
+#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_TYPES_HH__

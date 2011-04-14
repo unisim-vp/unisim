@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29LV_AM29LV_TCC__
-#define __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29LV_AM29LV_TCC__
+#ifndef __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_TCC__
+#define __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_TCC__
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
@@ -42,7 +42,7 @@ namespace component {
 namespace tlm2 {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 using unisim::kernel::logger::Logger;
 using unisim::kernel::logger::DebugInfo;
@@ -53,10 +53,10 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::AM29LV(const sc_module_name& name, Object *parent)
+AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::AM29(const sc_module_name& name, Object *parent)
 	: Object(name, parent)
 	, sc_module(name)
-	, unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>(name, parent)
+	, unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>(name, parent)
 	, cycle_time(SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 {
@@ -64,24 +64,24 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::AM29LV(const sc_module_name& name,
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::~AM29LV()
+AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::~AM29()
 {
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::BeginSetup()
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::BeginSetup()
 {
 	return inherited::BeginSetup();
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
 	return false;
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-unsigned int AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& payload)
+unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_generic_payload& payload)
 {
 	payload.set_dmi_allowed(false);
 
@@ -137,7 +137,7 @@ unsigned int AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tl
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-tlm::tlm_sync_enum AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
@@ -168,7 +168,7 @@ tlm::tlm_sync_enum AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw
 								<< EndDebugInfo;
 						}
 
-						status = inherited::FSM(unisim::component::cxx::memory::flash::am29lv::CMD_READ, addr, (uint8_t *) data_ptr, data_length);
+						status = inherited::FSM(unisim::component::cxx::memory::flash::am29::CMD_READ, addr, (uint8_t *) data_ptr, data_length);
 						
 						if(!status) memset(data_ptr, 0, data_length);
 						break;
@@ -183,7 +183,7 @@ tlm::tlm_sync_enum AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw
 								<< EndDebugInfo;
 						}
 
-						status = inherited::FSM(unisim::component::cxx::memory::flash::am29lv::CMD_WRITE, addr, (uint8_t *) data_ptr, data_length);
+						status = inherited::FSM(unisim::component::cxx::memory::flash::am29::CMD_WRITE, addr, (uint8_t *) data_ptr, data_length);
 						break;
 					case tlm::TLM_IGNORE_COMMAND:
 						inherited::logger << DebugError << LOCATION
@@ -216,13 +216,13 @@ tlm::tlm_sync_enum AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, unsigned int BUSWIDTH>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+void AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	nb_transport_fw(payload, phase, t);
 }
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace tlm2
@@ -231,4 +231,4 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::b_transport(tlm::tlm_generic_
 
 #undef LOCATION
 
-#endif // __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29LV_AM29LV_TCC__
+#endif // __UNISIM_COMPONENT_TLM2_MEMORY_FLASH_AM29_AM29_TCC__

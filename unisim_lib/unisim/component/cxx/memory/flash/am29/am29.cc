@@ -33,15 +33,15 @@
  */
 
 #include "unisim/kernel/service/service.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/types.hh"
+#include "unisim/component/cxx/memory/flash/am29/types.hh"
 
 namespace unisim {
 namespace kernel {
 namespace service {
 
-using unisim::component::cxx::memory::flash::am29lv::MODE;
-using unisim::component::cxx::memory::flash::am29lv::MODE_X8;
-using unisim::component::cxx::memory::flash::am29lv::MODE_X16;
+using unisim::component::cxx::memory::flash::am29::MODE;
+using unisim::component::cxx::memory::flash::am29::MODE_X8;
+using unisim::component::cxx::memory::flash::am29::MODE_X16;
 
 template <> Variable<MODE>::Variable(const char *_name, Object *_object, MODE& _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)

@@ -31,23 +31,23 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.tcc"
+
+#include "unisim/component/tlm2/memory/flash/am29/am29lv.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29lv160d_config.hh"
+#include "unisim/component/tlm2/memory/flash/am29/am29lv.tcc"
 
 namespace unisim {
 namespace component {
-namespace cxx {
+namespace tlm2 {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-template class AM29LV<AM29LV160DTConfig, 32 * M, 16>; // 32 MB/128 bits
+template class AM29<unisim::component::cxx::memory::flash::am29::AM29LV160DTConfig, 32 * unisim::component::cxx::memory::flash::am29::M, 16, 128>; // 32 MB/128 bits
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
-} // end of namespace cxx
+} // end of namespace tlm
 } // end of namespace component
-} // end of namespace unisim
+} // end of namespace unisim 

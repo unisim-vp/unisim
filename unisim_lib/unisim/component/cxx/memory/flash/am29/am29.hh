@@ -32,15 +32,15 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_HH__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_AM29LV_HH__
+#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_HH__
+#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_HH__
 
 #include <inttypes.h>
 #include <string>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/logger/logger.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/types.hh"
+#include "unisim/component/cxx/memory/flash/am29/types.hh"
 #include "unisim/util/endian/endian.hh"
 
 namespace unisim {
@@ -48,7 +48,7 @@ namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 using unisim::service::interfaces::Memory;
 using unisim::kernel::logger::Logger;
@@ -66,7 +66,7 @@ static const uint32_t M = 1024 * K;
 static const uint32_t G = 1024 * M;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH>
-class AM29LV :
+class AM29 :
 	public Service<Memory<typename CONFIG::ADDRESS> >
 {
 public:
@@ -76,8 +76,8 @@ public:
 
 	ServiceExport<Memory<typename CONFIG::ADDRESS> > memory_export;
 
-	AM29LV(const  char *name, Object *parent = 0);
-	virtual ~AM29LV();
+	AM29(const  char *name, Object *parent = 0);
+	virtual ~AM29();
 	
 	virtual void Reset();
 	virtual bool BeginSetup();
@@ -149,7 +149,7 @@ private:
 	void PrintData(std::ostream& os, const uint8_t *data, unsigned int size);
 };
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx

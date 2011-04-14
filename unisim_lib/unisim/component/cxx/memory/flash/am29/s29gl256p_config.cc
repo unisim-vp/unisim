@@ -32,18 +32,20 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/memory/flash/am29lv/s29gl256p_config.hh"
+#include "unisim/component/cxx/memory/flash/am29/s29gl256p_config.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 //-----------------------------------------------------------------------------------------------------------------------------------
 //                                            S29GL256P Configuration
 //-----------------------------------------------------------------------------------------------------------------------------------
+
+const unsigned int S29GL256PConfig::PAGE_SIZE;
 
 const char *S29GL256PConfig::DEVICE_NAME = "S29GL256P";
 
@@ -441,11 +443,11 @@ const TRANSITION<S29GL256PConfig::ADDRESS, S29GL256PConfig::MAX_IO_WIDTH, S29GL2
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0xb0, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,B0/-]-> (*)
 	{ ST_ANY, CMD_WRITE, true, 0, false, { 0x30, 0x00 }, ST_ANY, ACT_NOP }, // (*) -[W,*,30/-]-> (*)
 	// Fallback transitions
-	{ ST_ANY, CMD_READ, true, 0, true, { 0,0 }, ST_ANY, ACT_NOP }, // (*) -[W,*,*/-]->(*)
+	{ ST_ANY, CMD_WRITE, true, 0, true, { 0,0 }, ST_ANY, ACT_NOP }, // (*) -[W,*,*/-]->(*)
 	{ ST_ANY, CMD_READ, true, 0, true, { 0,0 }, ST_ANY, ACT_READ }, // (*) -[R,*,*/READ]->(*)
 };
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace cxx

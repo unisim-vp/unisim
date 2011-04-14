@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011,
+ *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,23 +31,24 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-#include "unisim/component/tlm2/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh"
-#include "unisim/component/tlm2/memory/flash/am29lv/am29lv.tcc"
+ 
+#include "unisim/component/cxx/memory/flash/am29/am29.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29.tcc"
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
+namespace cxx {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV160DTConfig, 32 * unisim::component::cxx::memory::flash::am29lv::M, 16, 128>; // 32 MB/128 bits
+template class AM29<AM29LV800BTConfig, 4 * M, 8>; // 4 MB/64 bits
+template class AM29<AM29LV800BTConfig, 8 * M, 8>; // 8 MB/64 bits
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
-} // end of namespace tlm
+} // end of namespace cxx
 } // end of namespace component
-} // end of namespace unisim 
+} // end of namespace unisim
