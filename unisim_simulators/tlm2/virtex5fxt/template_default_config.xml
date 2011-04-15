@@ -65,16 +65,22 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="random-seed">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>-123456</value>
+			<description>Seed for the random generator</description>
+		</variable>
 		<variable name="random-period-min">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x50</value>
+			<value>80</value>
 			<description>Minimum period in cycles of randomized output</description>
 		</variable>
 		<variable name="random-period-max">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x50</value>
+			<value>399</value>
 			<description>Maximum period in cycles of randomized output</description>
 		</variable>
 	</object>
@@ -121,16 +127,22 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="random-seed">
+			<type>parameter</type>
+			<data_type>signed 32-bit integer</data_type>
+			<value>-123456</value>
+			<description>Seed for the random generator</description>
+		</variable>
 		<variable name="random-period-min">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x50</value>
+			<value>80</value>
 			<description>Minimum period in cycles of randomized output</description>
 		</variable>
 		<variable name="random-period-max">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x50</value>
+			<value>399</value>
 			<description>Maximum period in cycles of randomized output</description>
 		</variable>
 	</object>
