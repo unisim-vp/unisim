@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <limits>
 #if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
@@ -625,7 +626,11 @@ template <class TYPE> Variable<TYPE>::operator string () const
 			sstr << "0x" << hex << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
-			sstr << dec << (unsigned long long) *storage;
+			sstr << dec;
+			if(std::numeric_limits<TYPE>::is_signed)
+				sstr << (long long) *storage;
+			else
+				sstr << (unsigned long long) *storage;
 			break;
 	}
 	return sstr.str();

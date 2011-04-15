@@ -165,6 +165,7 @@ unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
+unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -315,6 +316,7 @@ unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh \
+unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \

@@ -45,6 +45,7 @@
 #include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
+#include <unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
@@ -67,7 +68,6 @@
 
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
-#include <unisim/util/random/random.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -144,272 +144,6 @@ typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
 typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
 static const unsigned int TIMER_IRQ = 3;
 
-#if 0
-class IRQStub
-	: public sc_module
-	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
-{
-public:
-	tlm::tlm_initiator_socket<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> irq_master_sock;
-	
-	IRQStub(const sc_module_name& name);
-
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-};
-
-IRQStub::IRQStub(const sc_module_name& name)
-	: sc_module(name)
-	, irq_master_sock("irq-master-sock")
-{
-	irq_master_sock(*this);
-}
-
-tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
-
-class CaptureTriggerStub
-	: public Object
-	, public sc_module
-	, tlm::tlm_bw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes>
-{
-public:
-	tlm::tlm_initiator_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> capture_trigger_master_sock;
-	
-	CaptureTriggerStub(const sc_module_name& name, Object *parent = 0);
-
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	
-	void Process();
-private:
-	unisim::kernel::logger::Logger logger;
-	unisim::util::random::Random random;
-	unisim::kernel::tlm2::PayloadFabric<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload> capture_trigger_payload_fabric;
-	sc_time cycle_time;
-	sc_time nice_time;
-	sc_time time;
-	bool verbose;
-	Parameter<sc_time> param_cycle_time;
-	Parameter<sc_time> param_nice_time;
-	Parameter<bool> param_verbose;
-};
-
-CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
-	, sc_module(name)
-	, capture_trigger_master_sock("capture-trigger-master-sock")
-	, logger(*this)
-	, random(-34525, +96489, -57430854, +786329085)
-	, capture_trigger_payload_fabric()
-	, cycle_time(SC_ZERO_TIME)
-	, nice_time(sc_time(1, SC_MS))
-	, time(SC_ZERO_TIME)
-	, verbose(false)
-	, param_cycle_time("cycle-time", this, cycle_time, "cycle time")
-	, param_nice_time("nice-time", this, nice_time, "nice time")
-	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-{
-	capture_trigger_master_sock(*this);
-	
-	SC_HAS_PROCESS(CaptureTriggerStub);
-	
-	SC_THREAD(Process);
-}
-
-tlm::tlm_sync_enum CaptureTriggerStub::nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	switch(phase)
-	{
-		case tlm::END_REQ:
-			return tlm::TLM_ACCEPTED;
-		case tlm::BEGIN_RESP:
-			return tlm::TLM_COMPLETED;
-		default:
-			logger << unisim::kernel::logger::DebugError << "protocol error" << unisim::kernel::logger::EndDebugError;
-			Object::Stop(-1);
-			break;
-	}
-	
-	return tlm::TLM_COMPLETED;
-}
-
-void CaptureTriggerStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
-
-void CaptureTriggerStub::Process()
-{
-	bool output_level = false;
-	int32_t p = 0;   // period in cycles
-	int32_t d = 0;   // duty in cycles
-	sc_time period(SC_ZERO_TIME);
-	sc_time duty(SC_ZERO_TIME);
-	sc_time delay(SC_ZERO_TIME);
-	
-	while(1)
-	{
-		// Compute next output
-		if(output_level)
-		{
-			d = random.Generate((p / 2) - 1) + (p / 2);
-			// d is in [1; p - 2]
-			if(d < 1 || d > (p - 1))
-			{
-				logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
-				Object::Stop(-1);
-			}
-			duty = cycle_time;
-			duty *= d;
-			if(verbose)
-			{
-				logger << unisim::kernel::logger::DebugInfo << "Duty = " << duty << unisim::kernel::logger::EndDebugInfo;
-			}
-			// duty is in [cycle_time; period - 2 * cycle_time] */
-			delay = duty;
-		}
-		else
-		{
-			delay = period - duty;
-
-			p = random.Generate(160) + 160 + 80;
-			// p is in [80; 399]
-			if(p < 80 || p > 399)
-			{
-				logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
-				Object::Stop(-1);
-			}
-			period = cycle_time;
-			period *= p;
-			if(verbose)
-			{
-				logger << unisim::kernel::logger::DebugInfo << "Period = " << period << unisim::kernel::logger::EndDebugInfo;
-			}
-			// period is in [80; 399] cycles ([400; 1995] nanoseconds with a 5 nanoseconds cycle time) */
-		}
-		
-		output_level = !output_level;
-		
-		time += delay;
-		
-		if(verbose)
-		{
-			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (output_level ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
-		}
-		
-		unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload *capture_trigger_payload = capture_trigger_payload_fabric.allocate();
-		
-		capture_trigger_payload->SetValue(output_level);
-		
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		capture_trigger_master_sock->nb_transport_fw(*capture_trigger_payload, phase, time);
-		
-		capture_trigger_payload->release();
-		
-		if(time >= nice_time)
-		{
-			wait(nice_time);
-			time -= nice_time;
-		}
-	}
-}
-
-class PWMStub
-	: public sc_module
-	, tlm::tlm_fw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes>
-{
-public:
-	tlm::tlm_target_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> pwm_slave_sock;
-	
-	PWMStub(const sc_module_name& name);
-
-	virtual void b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, sc_core::sc_time& t);
-
-	virtual tlm::tlm_sync_enum nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual unsigned int transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans);
-	
-	virtual bool get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_dmi& dmi_data);
-};
-
-PWMStub::PWMStub(const sc_module_name& name)
-	: sc_module(name)
-	, pwm_slave_sock("pwm-slave-sock")
-{
-	pwm_slave_sock(*this);
-}
-
-void PWMStub::b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, sc_core::sc_time& t)
-{
-}
-
-tlm::tlm_sync_enum PWMStub::nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-unsigned int PWMStub::transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans)
-{
-	return 0;
-}
-	
-bool PWMStub::get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_dmi& dmi_data)
-{
-	return false;
-}
-
-class GenerateOutStub
-	: public sc_module
-	, tlm::tlm_fw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes>
-{
-public:
-	tlm::tlm_target_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> generate_out_slave_sock;
-	
-	GenerateOutStub(const sc_module_name& name);
-
-	virtual void b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, sc_core::sc_time& t);
-
-	virtual tlm::tlm_sync_enum nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual unsigned int transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans);
-	
-	virtual bool get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_dmi& dmi_data);
-};
-
-GenerateOutStub::GenerateOutStub(const sc_module_name& name)
-	: sc_module(name)
-	, generate_out_slave_sock("generate-out-slave-sock")
-{
-	generate_out_slave_sock(*this);
-}
-
-void GenerateOutStub::b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, sc_core::sc_time& t)
-{
-}
-
-tlm::tlm_sync_enum GenerateOutStub::nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-unsigned int GenerateOutStub::transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans)
-{
-	return 0;
-}
-	
-bool GenerateOutStub::get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_dmi& dmi_data)
-{
-	return false;
-}
-#endif
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -450,7 +184,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> CAPTURE_TRIGGER_STUB;
+	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::InterruptProtocolTypes> IRQ_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB0_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB1_STUB;
@@ -1082,22 +816,12 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		std::cerr << "WARNING! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " should not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
 	}
 	
-	// Build the Linux OS arguments from the command line arguments
-	
+	// Optionally get the program to load from the command line arguments
 	VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
 		SetVariable("elf32-loader.filename", ((string)(*cmd_args)[0]).c_str());
-/*		SetVariable("linux-loader.argc", cmd_args_length);
-		
-		unsigned int i;
-		for(i = 0; i < cmd_args_length; i++)
-		{
-			std::stringstream sstr;
-			sstr << "linux-loader.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
-		}*/
 	}
 
 	return unisim::kernel::service::Simulator::Setup();
