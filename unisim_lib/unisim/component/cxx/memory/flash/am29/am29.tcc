@@ -682,7 +682,10 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, type
 			Object::Stop(-1);
 	}
 	
-	logger << DebugInfo << "Chip #" << chip_num << ": " << word_count[chip_num] << " loaded into word count" << EndDebugInfo;
+	if(IsVerbose())
+	{
+		logger << DebugInfo << "Chip #" << chip_num << ": " << word_count[chip_num] << " loaded into word count" << EndDebugInfo;
+	}
 	
 	if(word_count[chip_num] > CONFIG::PAGE_SIZE)
 	{
