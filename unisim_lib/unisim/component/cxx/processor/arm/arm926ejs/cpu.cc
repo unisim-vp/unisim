@@ -140,8 +140,8 @@ CPU(const char *name, Object *parent)
 	, trap_on_exception(false)
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
-	, param_cpu_cycle_time("cpu-cycle-time", this,
-			cpu_cycle_time,
+	, param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
+			cpu_cycle_time_ps,
 			"The processor cycle time in picoseconds.")
 	, param_voltage("voltage", this,
 			voltage,
@@ -225,7 +225,7 @@ CPU(const char *name, Object *parent)
 	SetCPSR_F();
 
 	// Set the right format for various of the variables
-	param_cpu_cycle_time.SetFormat(
+	param_cpu_cycle_time_ps.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	param_voltage.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
@@ -289,7 +289,7 @@ BeginSetup()
 			<< EndDebugInfo;
 	SetGPR(15, init_pc);
 
-	if ( cpu_cycle_time == 0 )
+	if ( cpu_cycle_time_ps == 0 )
 	{
 		// we can't provide a valid cpu cycle time configuration
 		//   automatically
@@ -358,10 +358,10 @@ EndSetup()
 
 	if ( min_cycle_time > 0 )
 	{
-		if ( cpu_cycle_time < min_cycle_time )
+		if ( cpu_cycle_time_ps < min_cycle_time )
 		{
 			logger << DebugWarning;
-			logger << "A cycle time of " << cpu_cycle_time
+			logger << "A cycle time of " << cpu_cycle_time_ps
 				<< " ps is too low for the simulated"
 				<< " hardware !" << endl;
 			logger << "cpu cycle time should be >= "
@@ -397,15 +397,15 @@ EndSetup()
 	}
 	
 	if ( icache.power_mode_import )
-		icache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+		icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 	if ( dcache.power_mode_import )
-		dcache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+		dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 
 	if ( verbose )
 	{
 		logger << DebugInfo
 			<< "Setting cpu cycle time to "
-			<< cpu_cycle_time
+			<< cpu_cycle_time_ps
 			<< " ps."
 			<< EndDebugInfo;
 		logger << DebugInfo
