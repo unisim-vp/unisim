@@ -634,7 +634,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM Virtex 5 FXT Simulator Package], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -741,7 +741,7 @@ fi
 
 if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "Generating virtex5fxt configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt-core])" > "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM Virtex 5 FXT Standalone simulator], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt-core])" > "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
