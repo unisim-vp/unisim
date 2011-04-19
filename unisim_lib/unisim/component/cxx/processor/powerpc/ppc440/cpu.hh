@@ -232,7 +232,7 @@ private:
 template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>,
-	public Client<Loader<typename CONFIG::address_t> >,
+	public Client<Loader>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
@@ -260,7 +260,7 @@ public:
 	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<Loader<typename CONFIG::address_t> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,40 +30,70 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
-#define __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <inttypes.h>
+#ifndef __UNISIM_SERVICE_TEE_LOADER_TEE_TCC__
+#define __UNISIM_SERVICE_TEE_LOADER_TEE_TCC__
+
+#include <string>
+#include <sstream>
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace tee {
+namespace loader {
 
-template <class ADDRESS>
-class MemoryAccessReporting
+using std::stringstream;
+using std::string;
+
+template <unsigned int MAX_IMPORTS>
+Tee<MAX_IMPORTS>::Tee(const char *name, Object *parent)
+	: Object(name, parent)
+	, Client<Loader>(name, parent)
+	, Service<Loader>(name, parent)
+	, loader_export("loader-export", this)
 {
-public:
-	virtual ~MemoryAccessReporting() {}
-	typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
-	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		stringstream sstr;
+		sstr << "loader-import[" << i << "]";
+		string import_name = sstr.str();
+		loader_import[i] = new ServiceImport<Loader>(import_name.c_str(), this);
+	}
+}
 
-	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
-	virtual void ReportFinishedInstruction(ADDRESS next_addr) = 0;
-};
-
-class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
+template <unsigned int MAX_IMPORTS>
+Tee<MAX_IMPORTS>::~Tee()
 {
-public:
-	virtual void RequiresMemoryAccessReporting(bool report) = 0;
-	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
-};
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		delete loader_import[i];
+	}
+}
 
-} // end of namespace interfaces
+template <unsigned int MAX_IMPORTS>
+bool Tee<MAX_IMPORTS>::Load()
+{
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(loader_import[i])
+		{
+			if(*loader_import[i])
+			{
+				if(!(*loader_import[i])->Load()) return false;
+			}
+		}
+	}
+	return true;
+}
+
+} // end of namespace loader
+} // end of namespace tee
 } // end of namespace service
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_SERVICE_TEE_LOADER_TEE_TCC__

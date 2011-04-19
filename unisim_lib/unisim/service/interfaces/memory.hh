@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_HH__
 #define __UNISIM_SERVICE_INTERFACES_MEMORY_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -42,12 +43,9 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class Memory
+class Memory : public unisim::kernel::service::ServiceInterface
 {
 public:
-	Memory(){}
-	virtual ~Memory(){}
-
 	virtual void Reset() = 0;
 	virtual bool ReadMemory(ADDRESS addr, void *buffer, uint32_t size) = 0;
 	virtual bool WriteMemory(ADDRESS addr, const void *buffer, uint32_t size) = 0;

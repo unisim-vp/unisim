@@ -62,7 +62,7 @@ template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "this module implements a PPC440 CPU core")
 	, unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>()
-	, Client<Loader<typename CONFIG::address_t> >(name,  parent)
+	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)

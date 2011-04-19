@@ -35,13 +35,14 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_KEYBOARD_HH__
 #define __UNISIM_SERVICE_INTERFACES_KEYBOARD_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <inttypes.h>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Keyboard
+class Keyboard : public unisim::kernel::service::ServiceInterface
 {
 public:
 	typedef struct

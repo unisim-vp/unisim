@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,40 +30,46 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
-#define __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
 
-#include <unisim/kernel/service/service.hh>
+#ifndef __UNISIM_SERVICE_TEE_LOADER_TEE_HH__
+#define __UNISIM_SERVICE_TEE_LOADER_TEE_HH__
+
 #include <inttypes.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/service/interfaces/loader.hh"
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace tee {
+namespace loader {
 
-template <class ADDRESS>
-class MemoryAccessReporting
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceImport;
+using unisim::service::interfaces::Loader;
+
+template <unsigned int MAX_IMPORTS = 16>
+class Tee :
+	public Client<Loader>,
+	public Service<Loader>
 {
 public:
-	virtual ~MemoryAccessReporting() {}
-	typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
-	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
-
-	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
-	virtual void ReportFinishedInstruction(ADDRESS next_addr) = 0;
+	ServiceImport<Loader> *loader_import[MAX_IMPORTS];
+	ServiceExport<Loader> loader_export;
+	
+	Tee(const char *name, Object *parent = 0);
+	virtual ~Tee();
+	virtual bool Load();
+private:
 };
 
-class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
-{
-public:
-	virtual void RequiresMemoryAccessReporting(bool report) = 0;
-	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
-};
-
-} // end of namespace interfaces
+} // end of namespace loader
+} // end of namespace tee
 } // end of namespace service
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_SERVICE_TEE_LOADER_TEE_HH__

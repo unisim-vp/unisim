@@ -729,6 +729,134 @@ bool TargetStub<BUSWIDTH, TYPES>::get_direct_mem_ptr(typename TYPES::tlm_payload
 	return false;
 }
 
+template <unsigned int BUSWIDTH>
+class TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>
+	: public virtual unisim::kernel::service::Object
+	, public sc_module
+	, tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
+{
+public:
+	tlm::tlm_target_socket<BUSWIDTH, tlm::tlm_base_protocol_types> slave_sock;
+	
+	TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent = 0);
+
+	virtual void b_transport(typename tlm::tlm_generic_payload& trans, sc_core::sc_time& t);
+	virtual tlm::tlm_sync_enum nb_transport_fw(typename tlm::tlm_generic_payload& trans, typename tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual unsigned int transport_dbg(typename tlm::tlm_generic_payload& trans);
+	virtual bool get_direct_mem_ptr(typename tlm::tlm_generic_payload& trans, tlm::tlm_dmi& dmi_data);
+private:
+	unisim::kernel::logger::Logger logger;
+	bool enable;
+	bool verbose;
+	unisim::kernel::service::Parameter<bool> param_enable;
+	unisim::kernel::service::Parameter<bool> param_verbose;
+};
+
+template <unsigned int BUSWIDTH>
+TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
+	: unisim::kernel::service::Object(name, parent)
+	, sc_module(name)
+	, slave_sock("slave-sock")
+	, logger(*this)
+	, enable(true)
+	, verbose(false)
+	, param_enable("enable", this, enable, "Enable/Disable a lazy implementation of TLM 2.0 method interface")
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+{
+	slave_sock(*this);
+}
+
+template <unsigned int BUSWIDTH>
+void TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::b_transport(typename tlm::tlm_generic_payload& trans, sc_core::sc_time& t)
+{
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "b_transport has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+		if(trans.get_command() == tlm::TLM_READ_COMMAND)
+		{
+			memset(trans.get_data_ptr(), 0, trans.get_data_length());
+		}
+		trans.set_dmi_allowed(false);
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "b_transport shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
+}
+
+template <unsigned int BUSWIDTH>
+tlm::tlm_sync_enum TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::nb_transport_fw(typename tlm::tlm_generic_payload& trans, typename tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+		if(trans.get_command() == tlm::TLM_READ_COMMAND)
+		{
+			memset(trans.get_data_ptr(), 0, trans.get_data_length());
+		}
+		trans.set_dmi_allowed(false);
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "nb_transport_fw shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template <unsigned int BUSWIDTH>
+unsigned int TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::transport_dbg(typename tlm::tlm_generic_payload& trans)
+{
+	unsigned int length = 0;
+	
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "transport_dbg has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+		length = trans.get_data_length();
+		if(trans.get_command() == tlm::TLM_READ_COMMAND)
+		{
+			memset(trans.get_data_ptr(), 0, length);
+		}
+		trans.set_dmi_allowed(false);
+		trans.set_response_status(tlm::TLM_OK_RESPONSE);
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "transport_dbg shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
+	return length;
+}
+	
+template <unsigned int BUSWIDTH>
+bool TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::get_direct_mem_ptr(typename tlm::tlm_generic_payload& trans, tlm::tlm_dmi& dmi_data)
+{
+	if(enable)
+	{
+		if(verbose)
+		{
+			logger << unisim::kernel::logger::DebugInfo << "get_direct_mem_ptr has been called" << unisim::kernel::logger::EndDebugInfo;
+		}
+	}
+	else
+	{
+		logger << unisim::kernel::logger::DebugError << "get_direct_mem_ptr shall not be called" << unisim::kernel::logger::EndDebugError;
+		Object::Stop(-1);
+	}
+	return false;
+}
 
 } // end of namespace tlm2
 } // end of namespace kernel

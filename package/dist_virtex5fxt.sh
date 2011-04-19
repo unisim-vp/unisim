@@ -145,6 +145,8 @@ unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/translator/memory_address/memory/translator.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -291,6 +293,8 @@ unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/translator/memory_address/memory/translator.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
@@ -358,6 +362,8 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/translator/memory_address/memory/translator.tcc \
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \

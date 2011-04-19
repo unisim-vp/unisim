@@ -87,7 +87,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, Client<Memory<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<Loader<ADDRESS> >(_name, _parent)
+	, Client<Loader>(_name, _parent)
 	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, InlineDebuggerBase()
 	, debug_control_export("debug-control-export", this)
@@ -159,14 +159,14 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	if(num_loaders)
 	{
 		unsigned int i;
-		typedef ServiceImport<Loader<ADDRESS> > *PLoaderImport;
+		typedef ServiceImport<Loader> *PLoaderImport;
 		loader_import = new PLoaderImport[num_loaders];
 		
 		for(i = 0; i < num_loaders; i++)
 		{
 			std::stringstream sstr_name;
 			sstr_name << "loader-import[" << i << "]";
-			loader_import[i] = new ServiceImport<Loader<ADDRESS> >(sstr_name.str().c_str(), this);
+			loader_import[i] = new ServiceImport<Loader>(sstr_name.str().c_str(), this);
 		}
 
 		typedef ServiceImport<SymbolTableLookup<ADDRESS> > *PSymbolTableLookupImport;
@@ -1555,7 +1555,7 @@ void InlineDebugger<ADDRESS>::DumpAvailableLoaders()
 		unsigned int i;
 		for(i = 0; i < num_loaders; i++)
 		{
-			ServiceImport<Loader<ADDRESS> > *import = loader_import[i];
+			ServiceImport<Loader> *import = loader_import[i];
 			if(*import)
 			{
 				Object *service = import->GetService();
@@ -1576,7 +1576,7 @@ void InlineDebugger<ADDRESS>::Load(const char *loader_name)
 		unsigned int i;
 		for(i = 0; i < num_loaders; i++)
 		{
-			ServiceImport<Loader<ADDRESS> > *import = loader_import[i];
+			ServiceImport<Loader> *import = loader_import[i];
 			if(*import)
 			{
 				Object *service = import->GetService();
