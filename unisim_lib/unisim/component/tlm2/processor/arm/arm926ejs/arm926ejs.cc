@@ -244,6 +244,7 @@ Sync()
 {
 	wait(quantum_time);
 	cpu_time = sc_time_stamp();
+	stat_cpu_time.NotifyListeners();
 	quantum_time = SC_ZERO_TIME;
 }
 
@@ -263,6 +264,7 @@ BusSynchronize() {
 	//      (cpu_time + quantum_time);while ( bus_time < (cpu_time + quantum_time) )
 	while ( bus_time < (cpu_time + quantum_time) )
 		bus_time += bus_cycle_time;
+	stat_bus_time.NotifyListeners();
 	quantum_time = bus_time - cpu_time;
 	if (quantum_time > nice_time)
 		Sync();
