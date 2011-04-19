@@ -525,6 +525,7 @@ StepInstruction()
 		exception_occurred = HandleException();
 	
 	instruction_counter++;
+	stat_instruction_counter.NotifyListeners();
 	if ( unlikely((trap_on_instruction_counter == instruction_counter)
 				&& instruction_counter_trap_reporting_import) )
 		instruction_counter_trap_reporting_import->ReportTrap(*this);
