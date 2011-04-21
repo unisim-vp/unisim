@@ -1,96 +1,11 @@
 /*
- *  Copyright (c) 2008,
- *  Commissariat a l'Energie Atomique (CEA)
- *  All rights reserved.
+ * simulator.cc
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *
- *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Authors: Reda Nouacer (reda.nouacer@cea.fr)
+ *  Created on: 15 mars 2011
+ *      Author: rnouacer
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
-#include <iostream>
-#include <getopt.h>
-#include <stdlib.h>
-#include <stdexcept>
-
-#include <unisim/kernel/service/service.hh>
-
-#include <unisim/service/debug/gdb_server/gdb_server.hh>
-#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-
-#include <unisim/service/interfaces/loader.hh>
-
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.tcc>
-#include <unisim/service/loader/s19_loader/s19_loader.hh>
-
-#include <unisim/service/tee/registers/registers_tee.hh>
-#include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
-
-#include <unisim/service/time/sc_time/time.hh>
-#include <unisim/service/time/host_time/time.hh>
-
-#include <unisim/component/cxx/processor/hcs12x/types.hh>
-
-#include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
-#include <unisim/component/tlm2/processor/hcs12x/xint.hh>
-#include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
-#include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
-#include <unisim/component/tlm2/processor/hcs12x/pwm.hh>
-#include <unisim/component/tlm2/processor/hcs12x/crg.hh>
-#include <unisim/component/tlm2/processor/hcs12x/ect.hh>
-
-#include <unisim/component/tlm2/memory/ram/memory.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
-
-#include <unisim/util/garbage_collector/garbage_collector.hh>
-
-//#include <unisim/service/pim/pim.hh>
-
-#include "xml_atd_pwm_stub.hh"
-
-#ifdef HAVE_RTBCOB
-#include "rtb_unisim.hh"
-#endif
-
-#include <signal.h>
-
-#ifdef WIN32
-
-#include <windows.h>
-#include <winsock2.h>
-
-#endif
-
+#include <simulator.hh>
 
 bool debug_enabled = false;
 
@@ -110,150 +25,6 @@ void SigIntHandler(int signum)
 	sc_stop();
 }
 
-using unisim::component::cxx::processor::hcs12x::ADDRESS;
-using namespace std;
-
-using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::util::garbage_collector::GarbageCollector;
-
-using unisim::component::tlm2::processor::hcs12x::XINT;
-using unisim::component::tlm2::processor::hcs12x::CRG;
-using unisim::component::tlm2::processor::hcs12x::ECT;
-using unisim::service::loader::s19_loader::S19_Loader;
-using unisim::service::debug::gdb_server::GDBServer;
-using unisim::service::debug::inline_debugger::InlineDebugger;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::Client;
-using unisim::kernel::service::Parameter;
-using unisim::kernel::service::VariableBase;
-using unisim::service::interfaces::Loader;
-
-//using unisim::service::pim::PIM;
-
-class Simulator : public unisim::kernel::service::Simulator
-{
-public:
-	Simulator(int argc, char **argv);
-	virtual ~Simulator();
-	virtual void Stop(Object *object, int _exit_status);
-
-	void Run();
-protected:
-private:
-	//=========================================================================
-	//===                       Constants definitions                       ===
-	//=========================================================================
-
-	typedef unisim::component::cxx::processor::hcs12x::physical_address_t CPU_ADDRESS_TYPE;
-	typedef uint64_t MEMORY_ADDRESS_TYPE;
-	typedef unisim::component::cxx::processor::hcs12x::service_address_t SERVICE_ADDRESS_TYPE;
-
-	//=========================================================================
-	//===                     Aliases for components classes                ===
-	//=========================================================================
-
-	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
-
-	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
-
-	class InternalRouterConfig {
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 7;
-		static const unsigned int MAX_NUM_MAPPINGS = 7; //256;
-		static const unsigned int BUSWIDTH = 32;
-		typedef tlm::tlm_base_protocol_types TYPES;
-		static const bool VERBOSE = false;
-	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<InternalRouterConfig> INTERNAL_ROUTER;
-
-	class ExternalRouterConfig {
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1; //256;
-		static const unsigned int BUSWIDTH = 32;
-		typedef tlm::tlm_base_protocol_types TYPES;
-		static const bool VERBOSE = false;
-	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<ExternalRouterConfig> EXTERNAL_ROUTER;
-
-	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
-
-	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
-	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
-	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
-
-	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
-	typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
-	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
-
-	//=========================================================================
-	//===                     Component instantiations                      ===
-	//=========================================================================
-	//  - 68HCS12X processor
-
-	CPU *cpu;
-
-	MMC *mmc;
-
-	CRG  *crg;
-	ECT  *ect;
-
-	ATD1 *atd1;
-	ATD0 *atd0;
-
-	PWM *pwm;
-
-	//  - tlm2 router
-	EXTERNAL_ROUTER	*external_router;
-	INTERNAL_ROUTER	*internal_router;
-
-	//  - Memories
-	MEMORY *internal_memory;
-	MEMORY *external_memory;
-
-	// - Interrupt controller
-	XINT *s12xint;
-
-	RegistersTee* registersTee;
-
-	MemoryImportExportTee* memoryImportExportTee;
-
-#ifdef HAVE_RTBCOB
-	RTBStub *rtbStub;
-#else
-	XML_ATD_PWM_STUB *xml_atd_pwm_stub;
-#endif
-
-	//=========================================================================
-	//===                         Service instantiations                    ===
-	//=========================================================================
-
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19;
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF;
-
-//	PIM *pim;
-
-	//  - GDB server
-	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
-	//  - Inline debugger
-	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger;
-	//  - SystemC Time
-	unisim::service::time::sc_time::ScTime *sim_time;
-	//  - Host Time
-	unisim::service::time::host_time::HostTime *host_time;
-
-	bool enable_gdb_server;
-	bool enable_inline_debugger;
-	string filename;
-	Parameter<bool> param_enable_gdb_server;
-	Parameter<bool> param_enable_inline_debugger;
-	int exit_status;
-	bool isS19;
-
-	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
-};
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
@@ -278,15 +49,26 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 	, loaderS19(0)
 	, loaderELF(0)
+	, pim_server(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
 	, host_time(0)
+	, isS19(false)
+	, enable_pim_server(false)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
+	, dump_parameters(false)
+	, dump_formulas(false)
+	, dump_statistics(true)
+
+	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
-	, isS19(false)
+	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
+	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
+	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
+
 {
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -337,7 +119,7 @@ Simulator::Simulator(int argc, char **argv)
 #else
 	xml_atd_pwm_stub = new XML_ATD_PWM_STUB("atd-pwm-stub"/*, fsb_cycle_time*/);
 #endif
-	
+
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
@@ -352,7 +134,8 @@ Simulator::Simulator(int argc, char **argv)
 		loaderELF = new Elf32Loader("elf32-loader");
 	}
 
-//	pim = new PIM("PIM", this, 1234);
+	//  - PIM server
+	pim_server = enable_pim_server ? new PIMServer<SERVICE_ADDRESS_TYPE>("pim-server") : 0;
 
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
@@ -484,8 +267,26 @@ Simulator::Simulator(int argc, char **argv)
 		gdb_server->memory_import >> cpu->memory_export;
 
 		gdb_server->registers_import >> registersTee->registers_export;
-//		gdb_server->registers_import >> cpu->registers_export;
 		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+	}
+	else if (enable_pim_server)
+	{
+		// Connect pim-server to CPU
+		cpu->debug_control_import >> pim_server->debug_control_export;
+		cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;
+		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		pwm->trap_reporting_import >> pim_server->trap_reporting_export;
+		atd0->trap_reporting_import >> pim_server->trap_reporting_export;
+		atd1->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		mmc->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		pim_server->disasm_import >> cpu->disasm_export;
+		pim_server->memory_import >> cpu->memory_export;
+
+		pim_server->registers_import >> registersTee->registers_export;
+		pim_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
 
 	if (isS19) {
@@ -501,9 +302,14 @@ Simulator::Simulator(int argc, char **argv)
 		{
 			*inline_debugger->symbol_table_lookup_import[0] >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 			*inline_debugger->stmt_lookup_import[0] >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
-		} else if(gdb_server)
+		}
+		else if (gdb_server)
 		{
 			gdb_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+		}
+		else if (pim_server)
+		{
+			pim_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
 		}
 	}
 
@@ -511,7 +317,8 @@ Simulator::Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
-//	if (pim) { delete pim; pim = NULL; }
+
+	if (pim_server) { delete pim_server; pim_server = NULL; }
 
 	if (registersTee) { delete registersTee; registersTee = NULL; }
 	if (memoryImportExportTee) { delete memoryImportExportTee; memoryImportExportTee = NULL; }
@@ -547,18 +354,6 @@ Simulator::~Simulator()
 	if(cpu) { delete cpu; cpu = NULL; }
 }
 
-void Simulator::Stop(Object *object, int _exit_status)
-{
-	exit_status = _exit_status;
-	if(object)
-	{
-		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
-	}
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
-	wait();
-}
-
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
@@ -569,22 +364,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications");
 
+	simulator->SetVariable("enable-pim-server", false);
+	simulator->SetVariable("enable-gdb-server", false);
+	simulator->SetVariable("enable-inline-debugger", false);
+	simulator->SetVariable("dump-parameters", false);
+	simulator->SetVariable("dump-formulas", false);
+	simulator->SetVariable("dump-statistics", true);
+
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
 	const char *filename = "";
 	const char *symbol_filename = "";
 
-//	double cpu_frequency = 4.0; // in Mhz
-
-//	uint8_t cpu_clock_multiplier = 1;
-//	uint8_t xgate_clock_multiplier = 2;
-//	double cpu_ipc = 1.0; // in instructions per cycle
-//	uint64_t cpu_cycle_time = (uint64_t)(1e6 / cpu_frequency); // in picoseconds
-//	uint64_t fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
-//	uint32_t mem_cycle_time = fsb_cycle_time;
 	bool force_use_virtual_address = true;
-
-//	ADDRESS::ENCODING address_encoding = ADDRESS::BANKED;
 
 	//=========================================================================
 	//===                     Component run-time configuration              ===
@@ -596,9 +388,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//===                      Service run-time configuration               ===
 	//=========================================================================
 
+	//  - PIM Server run-time configuration
+	simulator->SetVariable("pim.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+	simulator->SetVariable("pim.tcp-port", 1234);
+	simulator->SetVariable("pim.filename", "pim.xml");
+
+	simulator->SetVariable("pim-server.tcp-port", gdb_server_tcp_port);
+	simulator->SetVariable("pim-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	simulator->SetVariable("gdb-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
 
 	simulator->SetVariable("S19_Loader.filename", filename);
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
@@ -613,6 +415,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
+	simulator->SetVariable("atd-pwm-stub.stub-enabled", false);
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
@@ -620,6 +423,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
 	simulator->SetVariable("ATD0.vrh", 5.120000e+00);
 	simulator->SetVariable("ATD0.debug-enabled", false);
+	simulator->SetVariable("ATD0.use-atd-stub", false);
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
@@ -629,6 +433,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
 	simulator->SetVariable("ATD1.vrh", 5.120000e+00);
 	simulator->SetVariable("ATD1.debug-enabled", false);
+	simulator->SetVariable("ATD1.use-atd-stub", false);
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
@@ -698,13 +503,25 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
 	simulator->SetVariable("XINT.debug-enabled", false);
-	
+
 	// Inline debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
-void Simulator::Run()
+void Simulator::Stop(Object *object, int _exit_status)
 {
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
+}
+
+void Simulator::Run() {
+
 	// If no filename has been specified, abort simulation
 	if(filename.empty())
 	{
@@ -714,13 +531,13 @@ void Simulator::Run()
 
 	physical_address_t entry_point;
 
-	if (isS19) {
-		entry_point = loaderS19->GetEntryPoint();
-		std::cerr << "entry_point=0x" << std::hex << entry_point << std::dec << std::endl;
-	}
-	else{
-		entry_point = loaderELF->GetEntryPoint();
-	}
+
+//**************
+	// entry_point = loaderELF->GetEntryPoint();
+
+	const unisim::util::debug::blob::Blob<uint64_t>* blob = ((Elf32Loader*) loaderELF)->GetBlob();
+	entry_point = blob->GetEntryPoint();
+//***********
 
 	address_t cpu_address;
 	uint8_t page = 0;
@@ -745,15 +562,13 @@ void Simulator::Run()
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 	}
 
-//	pim->start();
-
 	try
 	{
 		sc_start();
 	}
 	catch(std::runtime_error& e)
 	{
-		cerr << "FATAL ERROR! an abnormal error occured during simulation. Bailing out..." << endl;
+		cerr << "FATAL ERROR! an abnormal error occurred during simulation. Bailing out..." << endl;
 		cerr << e.what() << endl;
 	}
 
@@ -762,61 +577,40 @@ void Simulator::Run()
 		signal(SIGINT, prev_sig_int_handler);
 	}
 
-	cerr << "Simulation finished" << endl;
+	cerr << "Simulation finished" << endl << endl;
 
-	double time_stop = host_time->GetTime();
-	double spent_time = time_stop - time_start;
-
-	cerr << "Simulation run-time parameters:" << endl;
-	DumpParameters(cerr);
-	cerr << endl;
-	cerr << "Simulation formulas:" << endl;
-	DumpFormulas(cerr);
-	cerr << endl;
-	cerr << "Simulation statistics:" << endl;
-	DumpStatistics(cerr);
-	cerr << endl;
-
-	cerr << "simulation time: " << spent_time << " seconds" << endl;
-	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-}
-
-int sc_main(int argc, char *argv[])
-{
-#ifdef WIN32
-	// Loads the winsock2 dll
-	WORD wVersionRequested = MAKEWORD( 2, 2 );
-	WSADATA wsaData;
-	if(WSAStartup(wVersionRequested, &wsaData) != 0)
-	{
-		cerr << "WSAStartup failed" << endl;
-		return -1;
-	}
-#endif
-	Simulator *simulator = new Simulator(argc, argv);
-
-	switch(simulator->Setup())
-	{
-		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-			break;
-		case unisim::kernel::service::Simulator::ST_WARNING:
-			cerr << "Some warnings occurred during setup" << endl;
-		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
-			simulator->Run();
-			break;
-		case unisim::kernel::service::Simulator::ST_ERROR:
-			cerr << "Can't start simulation because of previous errors" << endl;
-			break;
+	if (dump_parameters) {
+		cerr << "Simulation run-time parameters:" << endl;
+		DumpParameters(cerr);
+		cerr << endl;
 	}
 
-	if(simulator) delete simulator;
-#ifdef WIN32
-	// releases the winsock2 resources
-	WSACleanup();
-#endif
+	if (dump_formulas) {
+		cerr << "Simulation formulas:" << endl;
+		DumpFormulas(cerr);
+		cerr << endl;
+	}
 
-	return 0;
+	if (dump_statistics) {
+		double time_stop = host_time->GetTime();
+		double spent_time = time_stop - time_start;
+
+		cerr << "Simulation statistics:" << endl;
+		DumpStatistics(cerr);
+		cerr << endl;
+
+		cerr << "load ratio  : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "store ratio : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		cerr << endl;
+
+		cerr << "simulation time: " << spent_time << " seconds" << endl;
+		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
+		cerr << "time expansion: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		cerr << endl;
+
+	}
+
 }
+

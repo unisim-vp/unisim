@@ -124,6 +124,7 @@ CPU(const char *name, Object *parent)
 	, dcache("dcache", this)
 	, arm32_decoder()
 	, instruction_counter(0)
+	, voltage(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
 	, default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
@@ -893,8 +894,11 @@ Disasm(uint64_t addr, uint64_t &next_addr)
 			insn = BigEndian2Host(insn);
 		else
 			insn = LittleEndian2Host(insn);
+
 		op = arm32_decoder.Decode(addr, insn);
 		op->disasm(*this, buffer);
+
+		next_addr = addr + 4;
 	}
 
 	return buffer.str();

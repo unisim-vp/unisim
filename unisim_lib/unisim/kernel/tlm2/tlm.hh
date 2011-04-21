@@ -295,6 +295,7 @@ public:
 		{
 			payload = free_list.front();
 			free_list.pop();
+			assert(payload->get_ref_count() == 0);
 			payload->acquire();
 			return payload;
 		}

@@ -87,6 +87,9 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),
 
+	use_atd_stub(false),
+	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
+
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
 	vih(3.25),
@@ -99,10 +102,11 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 {
 	
 	for (uint8_t i=0; i<ATD_SIZE; i++) {
-
+		analog_signal[i] = vrl;
 		analog_signal_reg[i].SetMutable(true);
 	}
 	
+
 	anx_socket(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
@@ -151,6 +155,7 @@ unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t) {
+	payload.acquire();
 	input_anx_payload_queue.notify(payload, t);
 }
 
@@ -173,6 +178,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 		case BEGIN_REQ:
 			// accepts analog signals modeled by payload
 			phase = END_REQ; // update the phase
+			payload.acquire();
 			input_anx_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
@@ -211,9 +217,11 @@ void ATD10B<ATD_SIZE>::Process()
 			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
 		}
 
-		wait(input_anx_payload_queue.get_event());
+		if (use_atd_stub) {
+			wait(input_anx_payload_queue.get_event());
 
-		InputANx(analog_signal);
+			InputANx(analog_signal);
+		}
 
 		RunScanMode();
 
@@ -238,6 +246,9 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 	do
 	{
+		if (last_payload) {
+			last_payload->release();
+		}
 		last_payload = payload;
 		payload = input_anx_payload_queue.get_next_transaction();
 
@@ -257,6 +268,7 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 		for (int i=0; i<ATD_SIZE; i++) {
 			anValue[i] = payload->anPort[i];
 		}
+		payload->release();
 	}
 
 }
@@ -360,7 +372,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 			 * - check sign and justification,
 			 * - and store in atddrhl_register[i] register
 			 */
-			double anSignal;
+			double anSignal = vrl;
 			const uint8_t scMask = 0x01;
 			// is Special Channel Select enabled ?
 			if ((atdtest1_register & scMask) != 0) {
@@ -460,6 +472,8 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 	sc_time local_time = quantumkeeper.get_local_time();
 
 	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	payload->release();
 
 	switch(ret)
 	{
@@ -853,8 +867,9 @@ void ATD10B<ATD_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& 
 //=====================================================================
 //=                  Client/Service setup methods                     =
 //=====================================================================
+
 template <uint8_t ATD_SIZE>
-bool ATD10B<ATD_SIZE>::Setup() {
+bool ATD10B<ATD_SIZE>::BeginSetup() {
 
 	char buf[20];
 
@@ -929,6 +944,16 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
 
+	return true;
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::EndSetup() {
 	return true;
 }
 

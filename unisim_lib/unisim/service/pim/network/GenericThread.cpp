@@ -36,7 +36,7 @@ void* executer(void* param) {
    TObject *obj=(TObject*)param;
    obj->Run();
 
-   return obj;
+   return NULL;
 }
 
 } // network 

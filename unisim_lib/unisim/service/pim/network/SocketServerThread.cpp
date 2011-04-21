@@ -35,20 +35,15 @@ namespace service {
 namespace pim {
 namespace network {
 
-SocketServerThread::SocketServerThread(char* host, uint16_t port, uint8_t connection_req_nb) :
-	SocketThread(host, port)
+SocketServerThread::SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb) :
+	SocketThread(host, port, _blocking)
 {
 	request_nbre = connection_req_nb;
-}
 
-void SocketServerThread::Run() {
+	struct sockaddr_in serv_addr;
 
-	int newsockfd;
-
-	struct sockaddr_in serv_addr, cli_addr;
-
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
+	primary_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (primary_sockfd < 0) {
 		error("ERROR opening socket");
 	}
 
@@ -56,8 +51,8 @@ void SocketServerThread::Run() {
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(hostport);
 	serv_addr.sin_addr.s_addr = hostname;
-	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-		int array[] = {sockfd};
+	if (bind(primary_sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+		int array[] = {primary_sockfd};
         error(array, "ERROR on binding");
 	}
 
@@ -66,33 +61,24 @@ void SocketServerThread::Run() {
 	 * N connection requests will be queued before further requests are refused.
 	 * Returns 0 on success, -1 for errors.  */
 
-	if (listen(sockfd,request_nbre) < 0) {
-		int array[] = {sockfd};
+	if (listen(primary_sockfd,request_nbre) < 0) {
+		int array[] = {primary_sockfd};
 		error(array, "listen failed");
 	}
 
+}
+
+SocketServerThread::~SocketServerThread() {
+
 #ifdef WIN32
-
-	u_long NonBlock = 1;
-	if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-		int array[] = {sockfd};
-		error(array, "ioctlsocket failed");
-	}
-
+		closesocket(primary_sockfd);
 #else
-
-	int flags = fcntl(sockfd, F_GETFL, 0);
-	if (flags < 0)	{
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
-
-	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
-
+		close(primary_sockfd);
 #endif
+
+}
+
+void SocketServerThread::Run() {
 
 #ifdef WIN32
 		int cli_addr_len;
@@ -100,26 +86,108 @@ void SocketServerThread::Run() {
 		socklen_t cli_addr_len;
 #endif
 
+	int nbHandlers = protocolHandlers->size();
+	int connected = 0;
+	struct sockaddr_in cli_addr;
+
     cli_addr_len = sizeof(cli_addr);
-    do {
-        newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
-    } while (newsockfd < 0);
+
+	do {
+
+		int sockfdTmp = -1;
+
+		// client connected
+		sockfdTmp = accept(primary_sockfd, (struct sockaddr *) &cli_addr, &cli_addr_len);
+
+		if (sockfdTmp >= 0) {
+
+			// *** This option is used to disable the Nagle TCP algorithm (disable buffering) ***
+			int opt = 1;
+			if (setsockopt(sockfdTmp, IPPROTO_TCP, TCP_NODELAY, (char*)&opt, sizeof(opt)) < 0) {
+				int array[] = {sockfdTmp};
+				error(array, "setsockopt <IPPROTO_TCP, TCP_NODELAY> failed");
+			}
 
 #ifdef WIN32
-	closesocket(sockfd);
+
+			u_long NonBlock = 1;
+			if(ioctlsocket(sockfdTmp, FIONBIO, &NonBlock) != 0) {
+				int array[] = {sockfdTmp};
+				error(array, "ioctlsocket <FIONBIO, NonBlock> failed");
+			}
+
 #else
-	close(sockfd);
+
+			int flags = fcntl(sockfdTmp, F_GETFL, 0);
+			if (flags < 0)	{
+				int array[] = {sockfdTmp};
+				error(array, "fcntl <F_GETFL> failed");
+			}
+
+			if (fcntl(sockfdTmp, F_SETFL, flags | O_NONBLOCK) < 0) {
+				int array[] = {sockfdTmp};
+				error(array, "fcntl <F_SETFL, flags | O_NONBLOCK> failed");
+			}
+
 #endif
 
-	sockfd = newsockfd;
+			SetSockfd(sockfdTmp);
 
-	writer = new SocketWriter(sockfd);
-	writer->start();
+			if (bindHandler(sockfdTmp)) {
+				connected++;
+			}
+		}
 
-	reader = new SocketReader(sockfd);
-	reader->start();
+	} while ((connected < protocolHandlers->size()) && !isTerminated());
 
 }
+
+bool SocketServerThread::bindHandler(int sockfd) {
+
+	string who("WHO");
+	string ack("ACK");
+	string nack("NACK");
+
+	PutPacket(who, true);
+	if (!FlushOutput()) {
+		cerr << "SocketServerThread:: unable to send <WHO>" << endl;
+		return false;
+	}
+
+	string protocol;
+	GetPacket(protocol, true);
+
+	bool found = false;
+	for (int i=0; i < protocolHandlers->size(); i++) {
+
+		if ((*protocolHandlers)[i]) cerr << "";
+
+		if ((*protocolHandlers)[i]->getProtocol().compare(protocol) == 0) {
+			PutPacket(ack, true);
+			if (!FlushOutput()) {
+				cerr << "SocketServerThread:: unable to send <ACK for protocol>" << endl;
+				return false;
+			}
+
+			(*protocolHandlers)[i]->Start(sockfd, blocking);
+
+			found = true;
+			break;
+		}
+
+	}
+
+	if (!found) {
+		PutPacket(nack, true);
+		if (!FlushOutput()) {
+			cerr << "SocketServerThread:: unable to send <NACK for protocol>" << endl;
+			return false;
+		}
+	}
+
+	return true;
+}
+
 
 } // network 
 } // end pim 

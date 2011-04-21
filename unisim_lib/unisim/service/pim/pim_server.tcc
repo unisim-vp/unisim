@@ -31,10 +31,11 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Reda   Nouacer      (reda.nouacer@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
-#define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_TCC__
+#ifndef __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
+#define __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 
 #include <unisim/util/xml/xml.hh>
 
@@ -66,8 +67,7 @@
 
 namespace unisim {
 namespace service {
-namespace debug {
-namespace gdb_server {
+namespace pim {
 
 using std::cerr;
 using std::endl;
@@ -82,12 +82,14 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
+using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::Statistic;
+
+using unisim::service::pim::PIMThread;
+
 template <class ADDRESS>
-GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
-	: Object(_name, _parent,
-		"this service implements the GDB server remote serial protocol over TCP/IP. "
-		"Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application "
-		"that runs within the simulator.")
+PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
+	: Object(_name, _parent, "GDB Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
@@ -96,6 +98,7 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, Client<Disassembly<ADDRESS> >(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
+	, SocketThread()
 	, debug_control_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
@@ -107,7 +110,6 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
-	, sock(-1)
 	, gdb_registers()
 	, gdb_pc(0)
 	, killed(false)
@@ -129,29 +131,48 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_tcp_port("tcp-port", this, tcp_port, "TCP/IP port to listen waiting for a GDB client connection")
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_host("host", this, fHost)
+
 {
+/*   voir l'impact de la mise en commentaire - suite modif Gilles sur l'architecture UNISIM
+	Object::SetupDependsOn(registers_import);
+*/
+
+	memory_access_reporting_export.SetupDependsOn(memory_access_reporting_control_import);
+
 	counter = period;
+
 }
 
 template <class ADDRESS>
-GDBServer<ADDRESS>::~GDBServer()
+PIMServer<ADDRESS>::~PIMServer()
 {
-	if(sock >= 0)
+	if(sockfd >= 0)
 	{
 		string packet("W00");
 		PutPacket(packet);
 #ifdef WIN32
-		closesocket(sock);
+		closesocket(sockfd);
 #else
-		close(sock);
+		close(sockfd);
 #endif
-		sock = -1;
+		sockfd = -1;
 	}
+
+	if (socketfd) { delete socketfd; socketfd = NULL;}
+	if (target) { delete target; target = NULL; }
+	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
+
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::EndSetup()
-{
+double PIMServer<ADDRESS>::GetSimTime() {
+	return Object::GetSimulator()->GetSimTime();
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::BeginSetup() {
+
 	if(memory_atom_size != 1 &&
 	   memory_atom_size != 2 &&
 	   memory_atom_size != 4 &&
@@ -162,14 +183,25 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
-	input_buffer_size = 0;
-	input_buffer_index = 0;
-	output_buffer_size = 0;
+	// Start Simulation <-> Workbench communication
+	target = new PIMThread("pim-thread");
+	protocolHandlers.push_back(target);
 
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
-	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
+	protocolHandlers.push_back(this);
 
-	delete parser;
+	// Open Socket Stream
+	socketfd = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
+
+	socketfd->setProtocolHandlers(&protocolHandlers);
+
+	socketfd->start();
+
+
+	return true;
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 
 	if(memory_access_reporting_control_import)
 	{
@@ -178,6 +210,11 @@ bool GDBServer<ADDRESS>::EndSetup()
 		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 				false);
 	}
+
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
+
+	delete parser;
 
 	if(root_node)
 	{
@@ -196,20 +233,6 @@ bool GDBServer<ADDRESS>::EndSetup()
 			{
 				if((*root_node_property)->Name() == string("name"))
 				{
-					/*
-					const string& architecture_name = (*root_node_property)->Value();
-					if(exp->GetArchitectureName() != architecture_name)
-					{
-						if(logger_import)
-						{
-							(*logger_import) << DebugError;
-							(*logger_import) << "CPU architecture (\"" << exp->GetArchitectureName() << "\") is not \"" << architecture_name << "\"" << Endl;
-							(*logger_import) << EndDebugError;
-						}
-						delete root_node;
-						return false;
-					}
-					*/
 					has_architecture_name = true;
 				}
 				else if((*root_node_property)->Name() == string("endian"))
@@ -397,147 +420,31 @@ bool GDBServer<ADDRESS>::EndSetup()
 		return false;
 	}
 
-	struct sockaddr_in addr;
-	int server_sock;
+	return true;
+}
 
-	server_sock = socket(AF_INET, SOCK_STREAM, 0);
-
-	if(server_sock < 0)
-	{
-		logger << DebugError << "socket failed" << EndDebugError;
-		return false;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(tcp_port);
-	addr.sin_addr.s_addr = INADDR_ANY;
-	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
-	{
-		logger << DebugError << "Bind failed. TCP Port #" << tcp_port << " may be already in use. Please specify another port in " << param_tcp_port.GetName() << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-#else
-		close(server_sock);
-#endif
-		return false;
-	}
-
-	if(listen(server_sock, 1))
-	{
-		logger << DebugError << "Listen failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-#else
-		close(server_sock);
-#endif
-		return false;
-	}
-
-#ifdef WIN32
-		int addr_len;
-#else
-		socklen_t addr_len;
-#endif
-
-	if(verbose)
-	{
-		logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
-	}
-	addr_len = sizeof(addr);
-	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
-
-	if(sock < 0)
-	{
-		logger << DebugError << "accept failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-#else
-		close(server_sock);
-#endif
-		return false;
-	}
-
-	if(verbose)
-	{
-		logger << DebugInfo << "Connection with GDB client established" << EndDebugInfo;
-	}
-
-    /* set short latency */
-    int opt = 1;
-    if(setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, (char *) &opt, sizeof(opt)) < 0)
-	{
-		if(verbose)
-		{
-			logger << DebugWarning << "setsockopt failed requesting short latency" << EndDebugWarning;
-		}
-	}
-
-
-#ifdef WIN32
-	u_long NonBlock = 1;
-	if(ioctlsocket(sock, FIONBIO, &NonBlock) != 0)
-	{
-		logger << DebugError << "ioctlsocket failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-		closesocket(sock);
-#else
-		close(server_sock);
-		close(sock);
-#endif
-		sock = -1;
-		return false;
-	}
-#else
-	int socket_flag = fcntl(sock, F_GETFL, 0);
-
-	if(socket_flag < 0)
-	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-		closesocket(sock);
-#else
-		close(server_sock);
-		close(sock);
-#endif
-		sock = -1;
-		return false;
-	}
-
-	/* Ask for non-blocking reads on socket */
-	if(fcntl(sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
-	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-		closesocket(sock);
-#else
-		close(server_sock);
-		close(sock);
-#endif
-		sock = -1;
-		return false;
-	}
-#endif
-
-#ifdef WIN32
-	closesocket(server_sock);
-#else
-	close(server_sock);
-#endif
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::EndSetup() {
 
 	return true;
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::OnDisconnect()
+void PIMServer<ADDRESS>::Stop(int exit_status) {
+
+	if (socketfd) { socketfd->stop();}
+	if (target) { target->stop();}
+	if (pimServerThread) { pimServerThread->stop();}
+
+}
+
+template <class ADDRESS>
+void PIMServer<ADDRESS>::OnDisconnect()
 {
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& value)
+bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& value)
 {
 	unsigned int len = s.length();
 	unsigned int n = 0;
@@ -557,7 +464,7 @@ bool GDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
@@ -567,7 +474,7 @@ void GDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRE
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -577,7 +484,7 @@ void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportTrap()
+void PIMServer<ADDRESS>::ReportTrap()
 {
 	trap = true;
 	synched = false;
@@ -585,7 +492,7 @@ void GDBServer<ADDRESS>::ReportTrap()
 
 template <class ADDRESS>
 void
-GDBServer<ADDRESS>::
+PIMServer<ADDRESS>::
 ReportTrap(const unisim::kernel::service::Object &obj)
 {
 	ReportTrap();
@@ -593,7 +500,7 @@ ReportTrap(const unisim::kernel::service::Object &obj)
 
 template <class ADDRESS>
 void
-GDBServer<ADDRESS>::
+PIMServer<ADDRESS>::
 ReportTrap(const unisim::kernel::service::Object &obj,
 		   const std::string &str)
 {
@@ -602,7 +509,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 
 template <class ADDRESS>
 void
-GDBServer<ADDRESS>::
+PIMServer<ADDRESS>::
 ReportTrap(const unisim::kernel::service::Object &obj,
 		   const char *c_str)
 {
@@ -610,7 +517,7 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 }
 
 template <class ADDRESS>
-typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
+typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
 	ADDRESS addr;
 	ADDRESS size;
@@ -688,21 +595,19 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'G':
-				if(!WriteRegisters(packet.substr(1)))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
+				if(WriteRegisters(packet.substr(1)))
+					PutPacket("OK");
+				else
+					PutPacket("E00");
 				break;
 
 			case 'P':
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
-				if(!WriteRegister(reg_num, packet.substr(pos)))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
+				if(WriteRegister(reg_num, packet.substr(pos)))
+					PutPacket("OK");
+				else
+					PutPacket("E00");
 				break;
 
 			case 'm':
@@ -722,11 +627,10 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
-				if(!WriteMemory(addr, packet.substr(pos), size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
+				if(WriteMemory(addr, packet.substr(pos), size))
+					PutPacket("OK");
+				else
+					PutPacket("E00");
 				break;
 
 			case 's':
@@ -801,11 +705,10 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, addr)) break;
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
-				if(!SetBreakpointWatchpoint(type, addr, size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
+				if(SetBreakpointWatchpoint(type, addr, size))
+					PutPacket("OK");
+				else
+					PutPacket("E00");
 				break;
 
 			case 'z':
@@ -814,18 +717,22 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, addr)) break;
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
-				if(!RemoveBreakpointWatchpoint(type, addr, size))
-				{
-					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
-				}
+				if(RemoveBreakpointWatchpoint(type, addr, size))
+					PutPacket("OK");
+				else
+					PutPacket("E00");
 				break;
 
 			default:
 
-				if(packet == "qSymbol" || packet == "qSymbol::")
+				if(packet.substr(0, 9) == "qSymbol::")
 				{
-					PutPacket("OK");
+					PutPacket("qSymbol::");
+
+					if (!HandleSymbolLookup()) {
+						Object::Stop(0);
+						return DebugControl<ADDRESS>::DBG_KILL;
+					}
 				}
 				else if(packet == "vCont?")
 				{
@@ -855,63 +762,15 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					PutPacket("");
 				}
 		} // end of switch
+
 	}
 	Object::Stop(0);
 	return DebugControl<ADDRESS>::DBG_KILL;
 }
 
-template <class ADDRESS>
-bool GDBServer<ADDRESS>::GetChar(char& c, bool blocking)
-{
-	if(input_buffer_size == 0)
-	{
-		do
-		{
-#ifdef WIN32
-			int r = recv(sock, input_buffer, sizeof(input_buffer), 0);
-			if(r == 0 || r == SOCKET_ERROR)
-#else
-			ssize_t r = read(sock, input_buffer, sizeof(input_buffer));
-			if(r <= 0)
-#endif
-			{
-#ifdef WIN32
-				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-#else
-				if(r < 0 && errno == EAGAIN)
-#endif
-				{
-					if(blocking)
-					{
-#ifdef WIN32
-						Sleep(1); // sleep for 10ms
-#else
-						usleep(1000); // sleep for 10ms
-#endif
-						continue;
-					}
-					else
-					{
-						return false;
-					}
-				}
-
-				logger << DebugError << "can't read from socket" << EndDebugError;
-				return false;
-			}
-			input_buffer_index = 0;
-			input_buffer_size = r;
-			break;
-		} while(1);
-	}
-
-	c = input_buffer[input_buffer_index++];
-	input_buffer_size--;
-	return true;
-}
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::FlushOutput()
+bool PIMServer<ADDRESS>::FlushOutput()
 {
 	if(output_buffer_size > 0)
 	{
@@ -920,10 +779,10 @@ bool GDBServer<ADDRESS>::FlushOutput()
 		do
 		{
 #ifdef WIN32
-			int r = send(sock, output_buffer + index, output_buffer_size, 0);
+			int r = send(sockfd, output_buffer + index, output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
-			ssize_t r = write(sock, output_buffer + index, output_buffer_size);
+			ssize_t r = write(sockfd, output_buffer + index, output_buffer_size);
 			if(r <= 0)
 #endif
 			{
@@ -942,7 +801,7 @@ bool GDBServer<ADDRESS>::FlushOutput()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::PutChar(char c)
+bool PIMServer<ADDRESS>::PutChar(char c)
 {
 	if(output_buffer_size >= sizeof(output_buffer))
 	{
@@ -954,7 +813,7 @@ bool GDBServer<ADDRESS>::PutChar(char c)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
+bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
 {
 	uint8_t checksum;
 	uint8_t received_checksum;
@@ -1025,7 +884,7 @@ bool GDBServer<ADDRESS>::GetPacket(string& s, bool blocking)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::PutPacket(const string& s)
+bool PIMServer<ADDRESS>::PutPacket(const string& s)
 {
 	uint8_t checksum;
 	unsigned int pos;
@@ -1059,25 +918,22 @@ bool GDBServer<ADDRESS>::PutPacket(const string& s)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::OutputText(const char *s, int count)
+bool PIMServer<ADDRESS>::OutputText(const char *s, int count)
 {
-	int i;
-	uint8_t packet[1 + 2 * count + 1];
-	uint8_t *p = packet;
+	string packet = "";
+	string tmpPacket;
 
-	*p = 'O';
-	p++;
-	for(i = 0; i < count; i++, p += 2)
-	{
-		p[0] = Nibble2HexChar((uint8_t) s[i] >> 4);
-		p[1] = Nibble2HexChar((uint8_t) s[i] & 0xf);
-	}
-	*p = 0;
-	return PutPacket((const char *) packet);
+	TextToHex(s, count, tmpPacket);
+
+	packet.append("O");
+
+	packet.append(tmpPacket);
+
+	return PutPacket(packet);
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReadRegisters()
+bool PIMServer<ADDRESS>::ReadRegisters()
 {
 	string packet;
 	vector<GDBRegister>::const_iterator gdb_reg;
@@ -1092,26 +948,21 @@ bool GDBServer<ADDRESS>::ReadRegisters()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteRegisters(const string& hex)
+bool PIMServer<ADDRESS>::WriteRegisters(const string& hex)
 {
-	bool write_error = false;
 	vector<GDBRegister>::iterator gdb_reg;
 	unsigned int pos = 0;
 
 	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); pos += gdb_reg->GetHexLength(), gdb_reg++)
 	{
-		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength())))
-		{
-			write_error = true;
-			break;
-		}
+		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength()))) return false;
 	}
 
-	return write_error ? PutPacket("E00") : PutPacket("OK");
+	return true;
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
+bool PIMServer<ADDRESS>::ReadRegister(unsigned int regnum)
 {
 	if(regnum >= gdb_registers.size()) return false;
 	const GDBRegister& gdb_reg = gdb_registers[regnum];
@@ -1121,19 +972,149 @@ bool GDBServer<ADDRESS>::ReadRegister(unsigned int regnum)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
+bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 {
 	if(regnum >= gdb_registers.size()) return false;
 	GDBRegister& gdb_reg = gdb_registers[regnum];
-	return gdb_reg.SetValue(hex) ? PutPacket("OK") : PutPacket("E00");
+	return gdb_reg.SetValue(hex);
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+bool PIMServer<ADDRESS>::HandleSymbolLookup() {
+
+	while (true) {
+
+		string packet;
+		bool	found_error = false;
+
+		if(!GetPacket(packet, true))
+		{
+			return false;
+		}
+
+		if (packet.compare("OK") == 0) {
+			break;
+		} else if (packet.substr(0, 8).compare("qSymbol:") == 0) {
+			vector<string> segments;
+
+			StringSplit(packet, ":", segments);
+
+			string name;
+			string value;
+
+			if (segments.size() == 2) // read request
+			{
+				HexToText(segments[1].c_str(), segments[1].size(), name);
+
+				ReadSymbol(name);
+
+			}
+			else if (segments.size() == 3) // write_symbol request
+			{
+				HexToText(segments[2].c_str(), segments[2].size(), name);
+
+				WriteSymbol(name, segments[1]);
+			}
+			else {
+				found_error = true;
+			}
+
+		} else {
+			found_error = true;
+		}
+
+		if (found_error) {
+			if(verbose)
+			{
+				logger << DebugWarning << "HandleSymbolLookup:: unknown command (" << packet << ")" << EndDebugWarning;
+			}
+		}
+	}
+
+	return true;
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hex) {
+
+	return false;
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::ReadSymbol(const string name)
+{
+
+	const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+
+	if (symbol_registries != 0) {
+
+		typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
+
+		string packet = "";
+		string value;
+		int count = 0;
+
+		for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
+		{
+
+			if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
+
+				value = "";
+
+				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+				{
+					if(verbose)
+					{
+						logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
+					}
+				}
+
+				string hexName;
+
+				TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
+
+				packet.append("qSymbol:");
+				packet.append(value);
+				packet.append(":");
+				packet.append(hexName);
+
+				count = (count + 1) % 10;
+
+				if (name.compare("*") != 0) {
+					break;
+				} else {
+					if (count == 0) {
+						PutPacket(packet);
+						packet = "";
+					}
+
+				}
+			}
+
+		}
+
+		if (count > 0) {
+			PutPacket(packet);
+		}
+
+		if (name.compare("*") == 0) {
+			PutPacket("qSymbol:");
+		}
+
+
+		return true;
+
+	}
+
+	return false;
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string& packet)
 {
 	bool read_error = false;
 	bool overwrapping = false;
-	string packet;
+
 	char ch[2];
 	ch[1] = 0;
 
@@ -1160,17 +1141,31 @@ bool GDBServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 
 	if(read_error)
 	{
+		return false;
+	}
+
+	return true;
+}
+
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
+{
+	string packet;
+
+	if(!InternalReadMemory(addr, size, packet))
+	{
 		if(verbose)
 		{
 			logger << DebugWarning << memory_import.GetName() << "->ReadMemory has reported an error" << EndDebugWarning;
 		}
 	}
 
-	return read_error ? PutPacket("E00") : PutPacket(packet); //PutPacket(packet);
+	return PutPacket(packet);
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t size)
+bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t size)
 {
 	bool write_error = false;
 	bool overwrapping = false;
@@ -1202,31 +1197,31 @@ bool GDBServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		}
 	}
 
-	return write_error ? PutPacket("E00") :  PutPacket("OK");
+	return true;
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Kill()
+void PIMServer<ADDRESS>::Kill()
 {
-	if(sock >= 0)
+	if(sockfd >= 0)
 	{
 #ifdef WIN32
-		closesocket(sock);
+		closesocket(sockfd);
 #else
-		close(sock);
+		close(sockfd);
 #endif
-		sock = -1;
+		sockfd = -1;
 	}
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReportProgramExit()
+bool PIMServer<ADDRESS>::ReportProgramExit()
 {
 	return PutPacket("W00");
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
+bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	char packet[4];
 	sprintf(packet, "S%02x", signum);
@@ -1234,7 +1229,7 @@ bool GDBServer<ADDRESS>::ReportSignal(unsigned int signum)
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::ReportTracePointTrap()
+bool PIMServer<ADDRESS>::ReportTracePointTrap()
 {
 	string packet("T05");
 	vector<GDBRegister>::const_iterator gdb_reg;
@@ -1256,7 +1251,7 @@ bool GDBServer<ADDRESS>::ReportTracePointTrap()
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
 {
 	uint32_t i;
 
@@ -1271,32 +1266,32 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.SetBreakpoint(addr + i)) return PutPacket("E00");
+				if(!breakpoint_registry.SetBreakpoint(addr + i)) return false;
 			}
 			if(memory_access_reporting_control_import)
 				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 						breakpoint_registry.HasBreakpoints());
-			return PutPacket("OK");
+			return true;
 		case 2:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return PutPacket("OK");
+				return true;
 			}
 			else
-				return PutPacket("E00");
+				return false;
 		case 3:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return PutPacket("OK");
+				return true;
 			}
 			else
-				return PutPacket("E00");
+				return false;
 
 		case 4:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1306,22 +1301,22 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 							watchpoint_registry.HasWatchpoints());
 			}
 			else
-				return PutPacket("E00");
+				return false;
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return PutPacket("OK");
+				return true;
 			}
 			else
-				return PutPacket("E00");
+				return false;
 	}
-	return PutPacket("E00");
+	return false;
 }
 
 template <class ADDRESS>
-bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
+bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr, uint32_t size)
 {
 	uint32_t i;
 
@@ -1336,12 +1331,12 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return PutPacket("E00");
+				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return false;
 			}
 			if(memory_access_reporting_control_import)
 				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 						breakpoint_registry.HasBreakpoints());
-			return PutPacket("OK");
+			return true;
 
 		case 2:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1349,20 +1344,20 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return PutPacket("OK");
+				return true;
 			}
 			else
-				return PutPacket("E00");
+				return false;
 		case 3:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return PutPacket("OK");
+				return true;
 			}
 			else
-				return PutPacket("E00");
+				return false;
 		case 4:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
@@ -1371,26 +1366,25 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 							breakpoint_registry.HasBreakpoints());
 			}
 			else
-				return PutPacket("E00");
+				return false;
 			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return PutPacket("OK");
+				return true;
 			}
 			else
-				return PutPacket("E00");
+				return false;
 	}
-	return PutPacket("E00");
+	return false;
 }
 
 // *** Start ************ REDA ADDED CODE ****************
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::HandleQRcmd(string command) {
+void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
-//	size_t separator_index = command.find_first_of(':');
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {
@@ -1416,7 +1410,6 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
 			{
-				strstm << "O";
 				strstm << (*symbol_iter)->GetName();
 
 				strstm << ":" << std::hex;
@@ -1427,7 +1420,8 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 				strstm << ":" << "FUNCTION";
 
-				PutPacket(strstm.str());
+				string str = strstm.str();
+				OutputText(str.c_str(), str.size());
 
 				strstm.str(std::string());
 			}
@@ -1435,7 +1429,6 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
 			{
 
-				strstm << "O";
 				strstm << (*symbol_iter)->GetName();
 
 				strstm << ":" << std::hex;
@@ -1446,7 +1439,8 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 				strstm << ":" << "VARIABLE";
 
-				PutPacket(strstm.str());
+				string str = strstm.str();
+				OutputText(str.c_str(), str.size());
 
 				strstm.str(std::string());
 
@@ -1474,7 +1468,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		} else {
 			separator_index++;
 			ADDRESS symbol_address;
-			ADDRESS symbol_size = 0;
+			ADDRESS symbol_size;
 			if(!ParseHex(command, separator_index, symbol_address)) {
 				PutPacket("E00");
 			} else if(command[separator_index++] != ':') {
@@ -1485,21 +1479,50 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 				PutPacket("E00");
 			}
 
-			Disasm(symbol_address, symbol_size);
+			if (disasm_import) {
+				Disasm(symbol_address, symbol_size);
+			}
 
 			PutPacket("T05");
 
 		}
 
 	}
-	else {
+	else if (cmdPrefix.compare("time") == 0) {
+		string packet("");
+
+		std::stringstream sstr;
+		sstr << GetSimTime();
+		packet += sstr.str();
+
+		PutPacket(packet);
+
+	}
+	else if (cmdPrefix.compare("statistics") == 0) {
+
+		list<VariableBase *> lst;
+		list<VariableBase *>::iterator iter;
+
+		Object::GetSimulator()->GetStatistics(lst);
+		std::stringstream sstr;
+		sstr << "simulated time" << ":" << GetSimTime()*1000 << " ms";
+
+		for (iter = lst.begin(); iter != lst.end(); iter++) {
+			sstr << ";" << (*iter)->GetName() << ":" << (string) *(*iter);
+		}
+
+		string str = sstr.str();
+
+		OutputText(str.c_str(), str.size());
+
+	} else {
 		PutPacket("E00");
 	}
 
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
+void PIMServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size)
 {
 
 	ADDRESS current_address = symbol_address;
@@ -1517,14 +1540,15 @@ void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size
 			break;
 		}
 
-		strstm << "O" << hex << current_address << ":";
+		strstm << hex << current_address << ":";
 
 		strstm << hex;
 		strstm.width(8);
 		strstm << (current_address / memory_atom_size) << ":" << dec << dis << endl;
 		strstm.fill(' ');
 
-		PutPacket(strstm.str());
+		string str = strstm.str();
+		OutputText(str.c_str(), str.size());
 
 		disassembled_size += next_address - current_address;
 		current_address = next_address;
@@ -1536,8 +1560,7 @@ void GDBServer<ADDRESS>::Disasm(ADDRESS symbol_address, unsigned int symbol_size
 // *** End ************ REDA ADDED CODE ****************
 
 
-} // end of namespace gdb_server
-} // end of namespace debug
+} // end of namespace pim
 } // end of namespace service
 } // end of namespace unisim
 

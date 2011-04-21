@@ -65,6 +65,7 @@ using namespace tlm_utils;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ServiceExportBase;
 
 using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
@@ -109,7 +110,10 @@ public:
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~ATD_PWM_STUB();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -139,6 +143,9 @@ protected:
 
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
+
+	bool	enabled;
+	Parameter<bool>		param_enabled;
 
 private:
 	Parameter<double>	param_anx_stimulus_period;

@@ -81,6 +81,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExportBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -166,7 +167,11 @@ public:
 	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	virtual void Reset();
-	virtual bool Setup();
+
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 

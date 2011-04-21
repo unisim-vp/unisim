@@ -280,8 +280,10 @@ public:
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
+	virtual double GetSimTime()	{ return 0;	}
+
 	bool IsWarningEnabled() const;
-	
+
 private:
 	friend class Object;
 	friend class VariableBase;
