@@ -174,8 +174,6 @@ public:
 
 	virtual void Run() { cerr << "PIM-Server:: start RUN " << std::endl; }
 
-	virtual string getProtocol() { return "GDB"; }
-
 	uint16_t GetTCPPort() { return tcp_port;}
 	string GetHost() { return fHost; }
 
@@ -184,7 +182,7 @@ public:
 protected:
 	vector<SocketThread*> protocolHandlers;
 
-	SocketServerThread *socketfd;
+	SocketServerThread *socketServer;
 
 	SocketThread *target;
 	SocketThread *pimServerThread;
