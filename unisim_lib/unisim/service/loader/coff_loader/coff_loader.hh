@@ -196,14 +196,14 @@ private:
 template <class MEMORY_ADDR>
 class CoffLoader :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Service<Loader<MEMORY_ADDR> >,
+	public Service<Loader>,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
 	public Service<Blob<MEMORY_ADDR> >,
 	public OutputInterface<MEMORY_ADDR>
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 

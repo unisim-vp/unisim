@@ -1164,7 +1164,7 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 		cout << hex; cout.fill('0'); cout.width(2 * sizeof(addr)); cout << (addr / memory_atom_size) << " "; cout.fill(' ');
 		for(j = 0; j < 16; j++, addr++)
 		{
-			uint8_t value;
+			uint8_t value = 0;
 			memory_import->ReadMemory(addr, &value, 1);
 			cout << (uint32_t)(value >> 4);
 			cout << (uint32_t)(value & 15);
@@ -1174,7 +1174,7 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 		cout << dec << "  ";
 		for(j = 0; j < 16; j++, addr++)
 		{
-			uint8_t value;
+			uint8_t value = 0;
 			memory_import->ReadMemory(addr, &value, 1);
 			cout << (char)((value >= ' ' && value < 128) ? value : '.');
 		}

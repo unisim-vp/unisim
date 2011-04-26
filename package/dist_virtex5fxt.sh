@@ -147,6 +147,7 @@ unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/raw_loader/raw_loader32.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
 unisim/service/loader/multiloader/multiloader.cc \
 unisim/service/loader/multiloader/multiloader32.cc \
 unisim/service/translator/memory_address/memory/translator.cc \
@@ -295,6 +296,8 @@ unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/raw_loader/raw_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/coff_loader/ti/ti.hh \
 unisim/service/loader/multiloader/multiloader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -376,6 +379,8 @@ unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/loader/multiloader/multiloader.tcc \
 unisim/service/translator/memory_address/memory/translator.tcc \
 unisim/service/tee/loader/tee.tcc \

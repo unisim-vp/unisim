@@ -56,7 +56,7 @@ template <class MEMORY_ADDR>
 CoffLoader<MEMORY_ADDR>::CoffLoader(const char *name, Object *parent)
 	: Object(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
-	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<Loader>(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
