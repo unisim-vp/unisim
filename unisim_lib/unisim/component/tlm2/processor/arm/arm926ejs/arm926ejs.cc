@@ -227,7 +227,7 @@ void
 ARM926EJS ::
 Sync() 
 {
-	wait(cpu_time - sc_time_stamp());
+	wait(quantum_time);
 	cpu_time = sc_time_stamp();
 	quantum_time = SC_ZERO_TIME;
 }
@@ -239,19 +239,18 @@ Sync()
 void 
 ARM926EJS :: 
 BusSynchronize() {
-	quantum_time += 
-		(((cpu_time / bus_cycle_time) + 1) * bus_cycle_time) -
-		cpu_time;
+	// Note: this needs to be better tested, but in order to avoid 
+	//   multiplications and divisions with sc_time we do a loop expecting
+	//   it will not loop too much. An idea of the operation to perform to
+	//   avoid the loop:
+	// quantum_time += 
+	//      ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+	//      (cpu_time + quantum_time);while ( bus_time < (cpu_time + quantum_time) )
+	while ( bus_time < (cpu_time + quantum_time) )
+		bus_time += bus_cycle_time;
+	quantum_time = bus_time - cpu_time;
 	if (quantum_time > nice_time)
-	{
-		wait(quantum_time);
-		cpu_time = sc_time_stamp();
-		quantum_time = SC_ZERO_TIME;
-	}
-	else
-	{
-		cpu_time = sc_time_stamp() + quantum_time;
-	}
+		Sync();
 	
 	return;
 }
@@ -270,15 +269,9 @@ Run()
 	while (1)
 	{
 		StepInstruction();
-		cpu_time += time_per_instruction;
 		quantum_time += time_per_instruction;
 		if (quantum_time > nice_time)
-		{
-			sc_time old_time = sc_time_stamp();
-			wait(quantum_time);
-			quantum_time = SC_ZERO_TIME;
-			cpu_time = sc_time_stamp();
-		}
+			Sync();
 	}
 }
 
@@ -544,9 +537,8 @@ PrRead(uint32_t addr,
 		
 	// 3 - send the transaction
 	master_socket->b_transport(*trans, quantum_time);
-	cpu_time = sc_time_stamp() + quantum_time;
-	if (quantum_time > nice_time)
-		wait(quantum_time);
+	if ( quantum_time > nice_time )
+		Sync();
 		
 	// 4 - release the transaction
 	trans->release();
@@ -578,9 +570,8 @@ PrWrite(uint32_t addr,
 
 	// 3 - send the transaction
 	master_socket->b_transport(*trans, quantum_time);
-	cpu_time = sc_time_stamp() + quantum_time;
-	if (quantum_time > nice_time)
-		wait(quantum_time);
+	if ( quantum_time > nice_time )
+		Sync();
 
 	// 4 - release the transaction
 	trans->release();

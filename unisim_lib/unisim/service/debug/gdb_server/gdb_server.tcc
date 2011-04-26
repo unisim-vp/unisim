@@ -759,6 +759,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'k':
+
 				if(!extended_mode)
 				{
 					Kill();
@@ -829,71 +830,6 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				else if(packet.substr(0, 6) == "qRcmd,")
 				{
 					HandleQRcmd(packet.substr(6));
-
-//					pos += 5;
-//					if(pos < len)
-//					{
-//						char ch[2];
-//						string variable_name;
-//						string variable_value;
-//						ch[1] = 0;
-//						// skip white characters
-//						do
-//						{
-//							ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
-//							if(ch[0] != ' ') break;
-//							pos += 2;
-//						} while(pos < len);
-//
-//						if(pos < len)
-//						{
-//							unisim::kernel::service::VariableBase *variable = 0;
-//
-//							// fill-in parameter name
-//							do
-//							{
-//								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
-//								pos += 2;
-//								if(ch[0] == '=') break;
-//								variable_name += ch;
-//							} while(pos < len);
-//
-//							variable = unisim::kernel::service::ServiceManager::FindVariable(variable_name.c_str());
-//							if(variable == &unisim::kernel::service::ServiceManager::void_variable)
-//							{
-//								string msg("unknown variable\n");
-//								OutputText(msg.c_str(), msg.length());
-//								PutPacket("OK");
-//								break;
-//							}
-//
-//							if(pos >= len)
-//							{
-//								// it's a get!
-//								string msg(variable_name + "=" + ((string) *variable) + "\n");
-//								OutputText(msg.c_str(), msg.length());
-//								PutPacket("OK");
-//								break;
-//							}
-//
-//							// fill-in parameter value and remove trailing space
-//							while(pos < len)
-//							{
-//								ch[0] = (HexChar2Nibble(packet[pos]) << 4) | HexChar2Nibble(packet[pos + 1]);
-//								if(ch[0] == ' ') break;
-//								pos += 2;
-//								variable_value += ch;
-//							}
-//
-//							string msg(variable_name + "<-" + variable_value + "\n");
-//							OutputText(msg.c_str(), msg.length());
-//							*variable = variable_value.c_str();
-//							PutPacket("OK");
-//							break;
-//						}
-//					}
-//
-//					PutPacket("E00");
 				}
 				else
 				{
@@ -1501,6 +1437,10 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			}
 
+			PutPacket("T05");
+
+		} else {
+			PutPacket("E00");
 		}
 
 	}
@@ -1510,7 +1450,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		 *
 		 * return "O<next_address>
          *        "O<disassembled code>"
-         *        "OK"
+         *        "T05"
 		 *
 		 */
 
@@ -1519,7 +1459,7 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		} else {
 			separator_index++;
 			ADDRESS symbol_address;
-			ADDRESS symbol_size;
+			ADDRESS symbol_size = 0;
 			if(!ParseHex(command, separator_index, symbol_address)) {
 				PutPacket("E00");
 			} else if(command[separator_index++] != ':') {
@@ -1532,14 +1472,14 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
 			Disasm(symbol_address, symbol_size);
 
+			PutPacket("T05");
+
 		}
 
 	}
 	else {
 		PutPacket("E00");
 	}
-
-	PutPacket("OK");
 
 }
 

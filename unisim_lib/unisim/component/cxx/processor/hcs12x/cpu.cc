@@ -117,13 +117,24 @@ CPU::CPU(const char *name, Object *parent):
 	syscall_interrupt(false),
 	spurious_interrupt(false),
 	instruction_counter(0),
+	cycles_counter(0),
+	load_counter(0),
+	store_counter(0),
 	max_inst((uint64_t) -1),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
+	stat_cycles_counter("cycles-counter", this, cycles_counter),
+	stat_load_counter("load-counter", this, load_counter),
+	stat_store_counter("store-counter", this, store_counter),
 	param_max_inst("max-inst",this,max_inst)
 
 {
-	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_cycles_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
     ccr = new CCR_t();
 
@@ -337,6 +348,8 @@ uint8_t CPU::Step()
 		op->execute(this);
 
 		opCycles = op->getCycles();
+
+		cycles_counter += opCycles;
 
 		VerboseDumpRegsEnd();
 
@@ -844,8 +857,8 @@ void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool CPU::Setup()
-{
+bool CPU::BeginSetup() {
+
 	/* check verbose settings */
 	if(debug_enabled && verbose_all) {
 		verbose_setup = true;
@@ -884,41 +897,6 @@ bool CPU::Setup()
 
 	char buf[80];
 
-/*
-	sprintf(buf, "%s.A", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
-
-	sprintf(buf, "%s.B", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
-
-	sprintf(buf, "%s.D", GetName());
-	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
-
-	sprintf(buf, "%s.X", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
-
-	sprintf(buf, "%s.Y", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
-
-	sprintf(buf, "%s.SP", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
-
-	sprintf(buf, "%s.PC", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
-
-	sprintf(buf, "%s.%s", GetName(), ccr->GetName());
-	registers_registry[buf] = ccr;
-
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	sprintf(buf, "%s.%s", GetName(), ccrl->GetName());
-	registers_registry[buf] = ccrl;
-
-
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	sprintf(buf, "%s.%s", GetName(), ccrh->GetName());
-	registers_registry[buf] = ccrh;
-*/
-
 	sprintf(buf, "A");
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
 
@@ -952,13 +930,20 @@ bool CPU::Setup()
 	sprintf(buf, "%s", ccrh->GetName());
 	registers_registry[buf] = ccrh;
 
+	return true;
+}
+
+bool CPU::Setup(ServiceExportBase *srv_export) {
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
 
+	return true;
+}
 
+bool CPU::EndSetup() {
 	return true;
 }
 

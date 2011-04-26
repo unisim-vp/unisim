@@ -150,7 +150,7 @@ DualTimer(const sc_module_name &name, Object *parent)
 			&DualTimer::bus_target_transport_dbg);
 
 	// init the registers values
-	memset(regs, 0, 256);
+	memset(regs, 0, 0x01000);
 	uint32_t val = Host2LittleEndian((uint32_t)0xffffffffUL);
 	memcpy(&regs[0x04], &val, 4);
 	regs[0x08] = (uint8_t)0x20;
@@ -927,7 +927,7 @@ UpdateStatus(sc_core::sc_time &delay)
 	delay = SC_ZERO_TIME;
 
 	// update timer 1
-	uint32_t old_timer;
+	uint32_t old_timer = 0;
 	if ( VERBOSE(V0, V_STATUS) )
 		old_timer = GetRegister(TIMER1VALUE);
 	UpdateTime(TIMER1CONTROL, TIMER1VALUE, timclken1_in_port, t1_update_time);

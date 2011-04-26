@@ -93,7 +93,7 @@ private:
 	void OutputUpdate();
 
 	/** Registers storage */
-	uint8_t regs[256];
+	uint8_t regs[0x01000];
 	/** Timer 1 last update time */
 	sc_time t1_update_time;
 	/** Timer 2 last update time */

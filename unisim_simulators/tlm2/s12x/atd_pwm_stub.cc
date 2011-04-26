@@ -51,7 +51,12 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	trace_enable(false),
 	param_trace_enable("trace-enable", this, trace_enable),
 
+	enabled(false),
+	param_enabled("stub-enabled", this, enabled),
+
+	anx_stimulus_period_sc(0),
 	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period),
+	pwm_fetch_period_sc(0),
 	param_pwm_fetch_period("pwm-fetch-period", this, pwm_fetch_period)
 
 
@@ -68,7 +73,7 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 }
 
-bool ATD_PWM_STUB::Setup() {
+bool ATD_PWM_STUB::BeginSetup() {
 
 	if (trace_enable) {
 		atd0_output_file.open ("atd0_output.txt");
@@ -84,6 +89,14 @@ bool ATD_PWM_STUB::Setup() {
 	return true;
 }
 
+bool ATD_PWM_STUB::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool ATD_PWM_STUB::EndSetup() {
+	return true;
+}
+
 ATD_PWM_STUB::~ATD_PWM_STUB() {
 
 	if (trace_enable) {
@@ -92,6 +105,8 @@ ATD_PWM_STUB::~ATD_PWM_STUB() {
 		pwm_output_file.close();
 	}
 
+	if (anx_stimulus_period_sc) { delete anx_stimulus_period_sc; anx_stimulus_period_sc = NULL; }
+	if (pwm_fetch_period_sc) { delete pwm_fetch_period_sc; pwm_fetch_period_sc = NULL; }
 }
 
 // Slave methods
@@ -112,6 +127,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm
 	if(phase == BEGIN_REQ)
 	{
 		phase = END_REQ; // update the phase
+		payload.acquire();
 		input_payload_queue.notify(payload, t); // queue the payload and the associative time
 		return TLM_UPDATED;
 	}
@@ -122,6 +138,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm
 
 void ATD_PWM_STUB::b_transport( PWM_Payload<PWM_SIZE>& payload, sc_core::sc_time& t)
 {
+	payload.acquire();
 	input_payload_queue.notify(payload, t);
 }
 
@@ -160,7 +177,9 @@ void ATD_PWM_STUB::Input(bool pwmValue[PWM_SIZE])
 
 	do
 	{
-
+		if (last_payload) {
+			last_payload->release();
+		}
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
@@ -175,6 +194,8 @@ void ATD_PWM_STUB::Input(bool pwmValue[PWM_SIZE])
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
 	}
+
+	payload->release();
 
 	pwm_quantumkeeper.inc(*pwm_fetch_period_sc);
 	if (pwm_quantumkeeper.need_sync()) pwm_quantumkeeper.sync();

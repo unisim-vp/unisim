@@ -130,31 +130,29 @@ ARMEMU(const sc_module_name& name, Object *parent)
 	, end_read_rsp_event()
 	, payload_fabric()
 	, tmp_time()
-	, cpu_cycle_time()
-	, bus_cycle_time()
-	, cpu_time()
-	, bus_time()
-	, quantum_time()
-	, last_cpu_time()
-	, nice_time()
-	, next_nice_time()
-	, nice_time_int(10)
+	, cpu_time(SC_ZERO_TIME)
+	, bus_time(SC_ZERO_TIME)
+	, quantum_time(SC_ZERO_TIME)
+	, cpu_cycle_time(62500.0, SC_PS)
+	, bus_cycle_time(62500.0, SC_PS)
+	, nice_time(1.0, SC_MS)
 	, ipc(1.0)
-	, bus_cycle_time_int(0)
-	, param_nice_time("nice-time", this, nice_time_int,
-			"Maximum time between systemc waits in picoseconds.")
+	, param_cpu_cycle_time("cpu-cycle-time", this, cpu_cycle_time,
+			"The processor cycle time.")
+	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time,
+			"The processor bus cycle time.")
+	, param_nice_time("nice-time", this, nice_time,
+			"Maximum time between SystemC waits.")
 	, param_ipc("ipc", this, ipc,
 			"Instructions per cycle performance.")
-	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int,
-			"The processor bus cycle time in picoseconds.")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose-tlm", this, verbose_tlm, 
 			"Display TLM information")
 {
-	param_nice_time.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	param_bus_cycle_time.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
+	inherited::param_cpu_cycle_time_ps.SetVisible(false);
+	param_cpu_cycle_time.AddListener(this);
+	param_cpu_cycle_time.NotifyListeners();
+
 	master_socket.bind(*this);
 	
 	SC_THREAD(Run);
@@ -163,6 +161,19 @@ ARMEMU(const sc_module_name& name, Object *parent)
 ARMEMU ::
 ~ARMEMU() 
 {
+	param_cpu_cycle_time.RemoveListener(this);
+}
+
+void
+ARMEMU ::
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+{
+	// no need to check the name, the only variable with notify activated is
+	//   the cpu_cycle_time
+	uint64_t cycle_time_ps = cpu_cycle_time.value();
+	uint64_t ps = sc_time(1.0, SC_PS).value();
+	cycle_time_ps = cycle_time_ps * ps;
+	(*this)["cpu-cycle-time-ps"] = cycle_time_ps;
 }
 
 /** Initialization of the module
@@ -185,9 +196,7 @@ EndSetup()
 
 	cpu_time = SC_ZERO_TIME;
 	bus_time = SC_ZERO_TIME;
-	cpu_cycle_time = sc_time((double)inherited::cpu_cycle_time, SC_PS);
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-	nice_time = sc_time((double)nice_time_int, SC_PS);
+	// cpu_cycle_time = sc_time((double)inherited::cpu_cycle_time, SC_PS);
 	if ( verbose_tlm ) 
 	{
 		inherited::logger << DebugInfo

@@ -410,7 +410,8 @@ void CRG::restart_cop_timeout() {
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool CRG::Setup() {
+bool CRG::BeginSetup() {
+
 
 	char buf[80];
 
@@ -457,6 +458,14 @@ bool CRG::Setup() {
 	compute_clock();
 
 	return true;
+}
+
+bool CRG::Setup(ServiceExportBase *srv_export) {
+
+}
+
+bool CRG::EndSetup() {
+
 }
 
 Register* CRG::GetRegister(const char *name)

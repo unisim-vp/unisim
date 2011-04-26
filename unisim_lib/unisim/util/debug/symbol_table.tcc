@@ -155,6 +155,7 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(
 template <class T>
 void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size)
 {
+
 	Symbol<T> *symbol = new Symbol<T>(name, addr, size, type, memory_atom_size);
 	symbol_registries[type].push_back(symbol);
 }

@@ -145,6 +145,7 @@ unsigned int XINT::transport_dbg(XINT_Payload& payload)
 }
 
 void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
+	payload.acquire();
 	input_payload_queue.notify(payload, t);
 }
 
@@ -160,6 +161,7 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			// accepts an interrupt request modeled by payload
 			phase = END_REQ; // update the phase
 
+			payload.acquire();
 			input_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
@@ -309,6 +311,7 @@ void XINT::Run()
 					hasVisibleInterrupt = true;
 				}
 
+				payload->release();
 			}
 
 		} while(payload);
@@ -358,8 +361,8 @@ void XINT::Reset() {
 
 }
 
-bool XINT::Setup()
-{
+bool XINT::BeginSetup() {
+
 	char buf[80];
 
 	sprintf(buf, "%s.IVBR",name());
@@ -376,6 +379,14 @@ bool XINT::Setup()
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
 	}
 
+	return true;
+}
+
+bool XINT::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool XINT::EndSetup() {
 	return true;
 }
 

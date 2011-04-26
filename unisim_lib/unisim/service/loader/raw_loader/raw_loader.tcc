@@ -137,7 +137,7 @@ SetupBlob()
 		std::string location =
 			Object::GetSimulator()->SearchSharedDataFile(filename.c_str());
 			
-		if(verbose)
+		if ( verbose )
 		{
 			logger << DebugInfo << "Opening \"" << location << "\"" << EndDebugInfo;
 		}
@@ -152,7 +152,7 @@ SetupBlob()
 			return false;
 		}
 		
-		if(is.seekg(0, std::ios::end).fail())
+		if ( is.seekg(0, std::ios::end).fail() )
 		{
 			logger << DebugError
 				<< "Can't seek into file \"" << location << "\""
@@ -162,7 +162,7 @@ SetupBlob()
 		
 		std::streampos file_size = is.tellg();
 		
-		if(file_size < 0)
+		if ( file_size < 0 )
 		{
 			logger << DebugError
 				<< "Can't get size of file \"" << location << "\""
@@ -170,7 +170,7 @@ SetupBlob()
 			return false;
 		}
 		
-		if(is.seekg(0, std::ios::beg).fail())
+		if ( is.seekg(0, std::ios::beg).fail() )
 		{
 			logger << DebugError
 				<< "Can't seek into file \"" << location << "\""
@@ -178,11 +178,11 @@ SetupBlob()
 			return false;
 		}
 		
-		if(!size) size = file_size;
+		if ( !size ) size = file_size;
 
 		void *raw_data = calloc(size, 1);
 		
-		if(!raw_data)
+		if ( !raw_data )
 		{
 			logger << DebugError
 				<< "Out of memory"
@@ -190,14 +190,16 @@ SetupBlob()
 			return false;
 		}
 		
-		std::streampos read_size = (file_size > size) ? (std::streampos) size : file_size;
+		std::streampos read_size = 
+			((MEMORY_ADDR)file_size > size) ? (std::streampos) size : file_size;
 		
-		if(verbose)
+		if ( verbose )
 		{
-			logger << DebugInfo << "Loading " << read_size << " bytes of raw data" << EndDebugInfo;
+			logger << DebugInfo << "Loading " << read_size 
+				<< " bytes of raw data" << EndDebugInfo;
 		}
 
-		if(is.read((char *) raw_data, read_size).fail())
+		if ( is.read((char *) raw_data, read_size).fail() )
 		{
 			logger << DebugError
 				<< "Input/Ouput error while reading file \"" << location << "\""
@@ -211,16 +213,17 @@ SetupBlob()
 		
 		blob->SetFilename(location.c_str());
 
-		unisim::util::debug::blob::Section<MEMORY_ADDR> *section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-			unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
-			unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A,
-			"",
-			0,
-			0,
-			base_addr,
-			size,
-			raw_data
-		);
+		unisim::util::debug::blob::Section<MEMORY_ADDR> *section = 
+			new unisim::util::debug::blob::Section<MEMORY_ADDR>(
+					unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN,
+					unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A,
+					"",
+					0,
+					0,
+					base_addr,
+					size,
+					raw_data
+					);
 
 		blob->AddSection(section);
 	}

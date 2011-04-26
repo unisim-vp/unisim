@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from armemu042 import simulator
+from @SIM_PYTHON_IMPORT_NAME@ import simulator
 
 class SimulatorHandler(simulator.Simulator):
 	def trap_handler(self, context, id):
@@ -13,6 +13,8 @@ class SimulatorHandler(simulator.Simulator):
 			self.debugger.set_step_mode()
 			print("      Setting trap-on-instruction-counter to 200")
 			parms['cpu.trap-on-instruction-counter'].value = 200
+			# print("      Calling stop")
+			# self.stop()
 		elif parms['cpu.trap-on-instruction-counter'].value is 200:
 			print("      Setting debugger to continue mode")
 			self.debugger.set_continue_mode()
@@ -43,7 +45,10 @@ class SimulatorHandler(simulator.Simulator):
 			self.debugger.delete_breakpoint(addr)
 
 	def __init__(self):
-		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
+		simulator.Simulator.__init__(self, 
+			parms={
+				"enable-power-estimation":True 
+				})
 		parms = self.get_parameters()
 		self.insn_threshold = 100
 		self.traps_to_logger = True
@@ -82,7 +87,7 @@ class SimulatorHandler(simulator.Simulator):
 	def dump_params(self):
 		print("Dumping parameters:")
 		parms = self.get_parameters()
-		for k, v in parms.items():
+		for k, v in sorted(parms.items()):
 			print("- %s = %s" % (k, v.str) )
 
 	def dump_statistics(self):

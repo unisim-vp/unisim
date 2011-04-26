@@ -122,7 +122,8 @@ void MMC::Reset() {
 
 }
 
-bool MMC::Setup() {
+bool MMC::BeginSetup() {
+
 
 	char buf[80];
 
@@ -162,6 +163,14 @@ bool MMC::Setup() {
 	sprintf(buf, "%s.RAMSHU", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
 
+	return true;
+}
+
+bool MMC::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool MMC::EndSetup() {
 	return true;
 }
 

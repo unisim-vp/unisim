@@ -52,43 +52,40 @@ void SocketClientThread::Run() {
 	do {
 		err = connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 		if (err < 0) {
-			sleep(1);
+#ifdef WIN32
+			Sleep(1);
+#else
+			usleep(1000);
+#endif
 		}
 	} while (err < 0);
 
-//	if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
-//		int array[] = {sockfd};
-//        error(array, "ERROR on Connecting");
-//    }
+
+	if (!blocking) {
 
 #ifdef WIN32
 
-	u_long NonBlock = 1;
-	if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
-		int array[] = {sockfd};
-		error(array, "ioctlsocket failed");
-	}
+		u_long NonBlock = 1;
+		if(ioctlsocket(sockfd, FIONBIO, &NonBlock) != 0) {
+			int array[] = {sockfd};
+			error(array, "ioctlsocket failed");
+		}
 
 #else
 
-	int flags = fcntl(sockfd, F_GETFL, 0);
-	if (flags < 0)	{
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
+		int flags = fcntl(sockfd, F_GETFL, 0);
+		if (flags < 0)	{
+			int array[] = {sockfd};
+			error(array, "fcntl failed");
+		}
 
-	if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
-		int array[] = {sockfd};
-		error(array, "fcntl failed");
-	}
+		if (fcntl(sockfd, F_SETFL, flags | O_NONBLOCK) < 0) {
+			int array[] = {sockfd};
+			error(array, "fcntl failed");
+		}
 
 #endif
-
-	writer = new SocketWriter(sockfd);
-	writer->start();
-
-	reader = new SocketReader(sockfd);
-	reader->start();
+	}
 
 }
 

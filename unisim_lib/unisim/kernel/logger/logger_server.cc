@@ -52,23 +52,33 @@ LoggerServer::
 LoggerServer() :
 	xml_writer(0),
 	opt_std_err(true),
-	param_std_err("kernel_logger.std_err", 0, opt_std_err, "Show logger output through the standard error output"),
+	param_std_err("kernel_logger.std_err", 0, opt_std_err, 
+			"Show logger output through the standard error output"),
 	opt_std_out(false),
-	param_std_out("kernel_logger.std_out", 0, opt_std_out, "Show logger output through the standard output"),
+	param_std_out("kernel_logger.std_out", 0, opt_std_out, 
+			"Show logger output through the standard output"),
 	opt_std_err_color(false),
-	param_std_err_color("kernel_logger.std_err_color", 0, opt_std_err_color, "Colorize logger output through the standard error output (only works if std_err is active)"),
+	param_std_err_color("kernel_logger.std_err_color", 0, opt_std_err_color, 
+			"Colorize logger output through the standard error output (only works if std_err is active)"),
 	opt_std_out_color(false),
-	param_std_out_color("kernel_logger.std_out_color", 0, opt_std_out_color, "Colorize logger output through the standard output (only works if std_out is active)"),
+	param_std_out_color("kernel_logger.std_out_color", 0, opt_std_out_color, 
+			"Colorize logger output through the standard output (only works if std_out is active)"),
 	opt_file(false),
-	param_file("kernel_logger.file", 0, opt_file, "Keep logger output in a file"),
+	param_file("kernel_logger.file", 0, opt_file, 
+			"Keep logger output in a file"),
 	opt_filename("logger_output.txt"),
-	param_filename("kernel_logger.filename", 0, opt_filename, "Filename to keep logger output (the option file must be activated)"),
+	param_filename("kernel_logger.filename", 0, opt_filename, 
+			"Filename to keep logger output (the option file must be activated)"),
 	opt_xml_file(false),
-	param_xml_file("kernel_logger.xml_file", 0, opt_xml_file, "Keep logger output in a file xml formatted"),
+	param_xml_file("kernel_logger.xml_file", 0, opt_xml_file, 
+			"Keep logger output in a file xml formatted"),
 	opt_xml_filename("logger_output.xml"),
-	param_xml_filename("kernel_logger.xml_filename", 0, opt_xml_filename, "Filename to keep logger xml output (the option xml_file must be activated)"),
+	param_xml_filename("kernel_logger.xml_filename", 0, opt_xml_filename, 
+			"Filename to keep logger xml output (the option xml_file must be activated)"),
 	opt_xml_file_gzipped(false),
-	param_xml_file_gzipped("kernel_logger.xml_file_gzipped", 0, opt_xml_file_gzipped, "If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option") {
+	param_xml_file_gzipped("kernel_logger.xml_file_gzipped", 0, opt_xml_file_gzipped, 
+			"If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option") 
+{
 }
 
 LoggerServer::
@@ -271,29 +281,43 @@ LoggerServer::
 DebugInfo(const unisim::kernel::service::Object &obj, const char *buffer) {
 	if (opt_std_out) 
 	{
-		if (opt_std_out_color) 
+		if ( opt_std_out_color ) std::cout << "\033[36m";
+
+		std::cout << obj.GetName() << ": ";
+		int prefix_length = strlen(obj.GetName()) + 2;
+		std::string prefix(prefix_length, ' ');
+		const char *b = buffer;
+		for ( const char *p = strchr(b, '\n');
+				p != NULL;
+				p = strchr(b, '\n') )
 		{
-			std::cout << "\033[36m";
- 			std::cout << obj.GetName() << ": " << buffer << endl;
-			std::cout << "\033[0m";
+			std::cout.write(b, p - b);
+			std::cout << std::endl << prefix;
+			b = p + 1;
 		}
-		else 
-		{
-			std::cout << obj.GetName() << ":" << buffer << endl;
-		}
+		std::cout << b << std::endl;
+		
+		if ( opt_std_out_color ) std::cout << "\033[0m";
 	}
-	if (opt_std_err)
+	if ( opt_std_err )
 	{
-		if (opt_std_err_color)
+		if ( opt_std_err_color ) std::cerr << "\033[36m";
+
+		std::cerr << obj.GetName() << ": ";
+		int prefix_length = strlen(obj.GetName()) + 2;
+		std::string prefix(prefix_length, ' ');
+		const char *b = buffer;
+		for ( const char *p = strchr(b, '\n');
+				p != NULL;
+				p = strchr(b, '\n') )
 		{
-			std::cerr << "\033[36m";
- 			std::cerr << obj.GetName() << ": " << buffer << endl;
-			std::cerr << "\033[0m";
+			std::cerr.write(b, p - b);
+			std::cerr << std::endl << prefix;
+			b = p + 1;
 		}
-		else 
-		{
-			std::cerr << obj.GetName() << ": " << buffer << endl;
-		}
+		std::cerr << b << std::endl;
+		
+		if ( opt_std_err_color ) std::cerr << "\033[0m";
 	}
 	if (opt_xml_file) 
 	{
@@ -310,29 +334,43 @@ LoggerServer::
 DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer) {
 	if (opt_std_out) 
 	{
-		if (opt_std_out_color) 
+		if ( opt_std_out_color ) std::cout << "\033[33m";
+
+		std::cout << obj.GetName() << ": WARNING! ";
+		int prefix_length = strlen(obj.GetName()) + 2;
+		std::string prefix(prefix_length, ' ');
+		const char *b = buffer;
+		for ( const char *p = strchr(b, '\n');
+				p != NULL;
+				p = strchr(b, '\n') )
 		{
-			std::cout << "\033[33m";
-			std::cout << obj.GetName() << ": WARNING! " << buffer << endl;
-			std::cout << "\033[0m";
-		} 
-		else
-		{
-			std::cout << obj.GetName() << ": WARNING! " << buffer << endl;
+			std::cout.write(b, p - b);
+			std::cout << std::endl << prefix;
+			b = p + 1;
 		}
+		std::cout << b << std::endl;
+		
+		if ( opt_std_out_color ) std::cout << "\033[0m";
 	}
-	if (opt_std_err)
+	if ( opt_std_err )
 	{
-		if(opt_std_err_color)
+		if ( opt_std_err_color ) std::cerr << "\033[33m";
+
+		std::cerr << obj.GetName() << ": WARNING! ";
+		int prefix_length = strlen(obj.GetName()) + 2;
+		std::string prefix(prefix_length, ' ');
+		const char *b = buffer;
+		for ( const char *p = strchr(b, '\n');
+				p != NULL;
+				p = strchr(b, '\n') )
 		{
-			std::cerr << "\033[33m";
-			std::cerr << obj.GetName() << ": WARNING! " << buffer << endl;
-			std::cerr << "\033[0m";
+			std::cerr.write(b, p - b);
+			std::cerr << std::endl << prefix;
+			b = p + 1;
 		}
-		else
-		{
-			std::cerr << obj.GetName() << ": WARNING! " << buffer << endl;
-		}
+		std::cerr << b << std::endl;
+		
+		if ( opt_std_err_color ) std::cerr << "\033[0m";
 	}
 	if (opt_xml_file)
 	{
@@ -347,31 +385,45 @@ DebugWarning(const unisim::kernel::service::Object &obj, const char *buffer) {
 void 
 LoggerServer::
 DebugError(const unisim::kernel::service::Object &obj, const char *buffer) {
-	if (opt_std_out)
+	if (opt_std_out) 
 	{
-		if (opt_std_out_color) 
+		if ( opt_std_out_color ) std::cout << "\033[31m";
+
+		std::cout << obj.GetName() << ": ERROR! ";
+		int prefix_length = strlen(obj.GetName()) + 2;
+		std::string prefix(prefix_length, ' ');
+		const char *b = buffer;
+		for ( const char *p = strchr(b, '\n');
+				p != NULL;
+				p = strchr(b, '\n') )
 		{
-			std::cout << "\033[31m";
-			std::cout << obj.GetName() << " : ERROR! " << buffer << endl;
-			std::cout << "\033[0m";
+			std::cout.write(b, p - b);
+			std::cout << std::endl << prefix;
+			b = p + 1;
 		}
-		else
-		{
-			std::cout << obj.GetName() << ": ERROR! " << buffer << endl;
-		}
+		std::cout << b << std::endl;
+		
+		if ( opt_std_out_color ) std::cout << "\033[0m";
 	}
-	if (opt_std_err) 
+	if ( opt_std_err )
 	{
-		if (opt_std_err_color) 
+		if ( opt_std_err_color ) std::cerr << "\033[31m";
+
+		std::cerr << obj.GetName() << ": ERROR! ";
+		int prefix_length = strlen(obj.GetName()) + 2;
+		std::string prefix(prefix_length, ' ');
+		const char *b = buffer;
+		for ( const char *p = strchr(b, '\n');
+				p != NULL;
+				p = strchr(b, '\n') )
 		{
-			std::cerr << "\033[31m";
-			std::cerr << obj.GetName() << ": ERROR! " << buffer << endl;
-			std::cerr << "\033[0m";
+			std::cerr.write(b, p - b);
+			std::cerr << std::endl << prefix;
+			b = p + 1;
 		}
-		else
-		{
-			std::cerr << obj.GetName() << ": ERROR! " << buffer << endl;
-		}
+		std::cerr << b << std::endl;
+		
+		if ( opt_std_err_color ) std::cerr << "\033[0m";
 	}
 	if (opt_xml_file) 
 	{

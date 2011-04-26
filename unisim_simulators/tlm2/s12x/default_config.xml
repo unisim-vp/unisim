@@ -1,65 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <variables>
-	<object name="atd-pwm-stub">
-		<variable name="trace-enable">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="anx-stimulus-period">
-			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>8e+07</value>
-			<description></description>
-		</variable>
-		<variable name="pwm-fetch-period">
-			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>1e+09</value>
-			<description></description>
-		</variable>
-		<variable name="atd0-anx-stimulus-file">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>ATD.xml</value>
-			<description></description>
-		</variable>
-		<variable name="atd0-anx-start-channel">
-			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x0</value>
-			<description></description>
-		</variable>
-		<variable name="atd0-anx-wrap-around-channel">
-			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x0</value>
-			<description></description>
-		</variable>
-		<variable name="atd1-anx-stimulus-file">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>ATD.xml</value>
-			<description></description>
-		</variable>
-		<variable name="atd1-anx-start-channel">
-			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x0</value>
-			<description></description>
-		</variable>
-		<variable name="atd1-anx-wrap-around-channel">
-			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0x0</value>
-			<description></description>
-		</variable>
-	</object>
 	<object name="ATD0">
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
@@ -94,7 +34,17 @@
 		<variable name="debug-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="use-atd-stub">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -158,7 +108,17 @@
 		<variable name="debug-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="use-atd-stub">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -456,14 +416,6 @@
 			<description></description>
 		</variable>
 	</object>
-	<object name="PIM">
-		<variable name="filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>pim.xml</value>
-			<description></description>
-		</variable>
-	</object>
 	<object name="PWM">
 		<variable name="debug-enabled">
 			<type>parameter</type>
@@ -504,6 +456,76 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+	</object>
+	<object name="atd-pwm-stub">
+		<variable name="trace-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="stub-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="anx-stimulus-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>8e+07</value>
+			<description></description>
+		</variable>
+		<variable name="pwm-fetch-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1e+09</value>
+			<description></description>
+		</variable>
+		<variable name="atd0-anx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>ATD.xml</value>
+			<description></description>
+		</variable>
+		<variable name="atd0-anx-start-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="atd0-anx-wrap-around-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="atd1-anx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>ATD.xml</value>
+			<description></description>
+		</variable>
+		<variable name="atd1-anx-start-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
+		</variable>
+		<variable name="atd1-anx-wrap-around-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x0</value>
+			<description></description>
 		</variable>
 	</object>
 	<object name="elf32-loader">
@@ -571,9 +593,21 @@
 		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x3d090</value>
-			<description>memory cycle time in picoseconds</description>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
 		</variable>
 		<variable name="verbose">
 			<type>parameter</type>
@@ -621,9 +655,21 @@
 		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x3d090</value>
-			<description>memory cycle time in picoseconds</description>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
 		</variable>
 		<variable name="verbose">
 			<type>parameter</type>
@@ -794,6 +840,36 @@
 		<value>UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications</value>
 		<description>Description</description>
 	</variable>
+	<variable name="dump-formulas">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description></description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dump-parameters">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description></description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dump-statistics">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description></description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -809,6 +885,16 @@
 		<data_type>boolean</data_type>
 		<value>false</value>
 		<description>Enable/Disable inline debugger instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-pim-server">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable PIM server instantiation</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>

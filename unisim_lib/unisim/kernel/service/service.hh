@@ -118,6 +118,17 @@ template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
 //=============================================================================
+//=                          VariableBaseListener                             =
+//=============================================================================
+
+class VariableBaseListener
+{
+public:
+	virtual void VariableBaseNotify(const VariableBase *var) = 0;
+	virtual ~VariableBaseListener() {};
+};
+
+//=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
 
@@ -193,15 +204,9 @@ public:
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
 
-	class Notifiable
-	{
-	public:
-		virtual void VariableNotify(const char *name) = 0;
-		virtual ~Notifiable() {};
-	};
-	void SetNotify(Notifiable *notifiable);
-	void RemoveNotify(Notifiable *notifiable);
- 	void Notify();
+	void AddListener(VariableBaseListener *listener);
+	void RemoveListener(VariableBaseListener *listener);
+ 	void NotifyListeners();
 
 private:
 	string name;
@@ -215,7 +220,7 @@ private:
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
-	list<Notifiable *> notifiable_list;
+	list<VariableBaseListener *> listener_list;
 };
 
 //=============================================================================
@@ -275,8 +280,10 @@ public:
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
+	virtual double GetSimTime()	{ return 0;	}
+
 	bool IsWarningEnabled() const;
-	
+
 private:
 	friend class Object;
 	friend class VariableBase;

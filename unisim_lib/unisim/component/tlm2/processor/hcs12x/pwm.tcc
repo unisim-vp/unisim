@@ -677,8 +677,10 @@ void PWM<PWM_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& del
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
+
 template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::Setup() {
+bool PWM<PWM_SIZE>::BeginSetup() {
+
 
 	char buf[80];
 
@@ -746,7 +748,21 @@ bool PWM<PWM_SIZE>::Setup() {
 	ComputeInternalTime();
 
 	return true;
+
 }
+
+template <uint8_t PWM_SIZE>
+bool PWM<PWM_SIZE>::Setup(ServiceExportBase *srv_export) {
+
+	return true;
+}
+
+template <uint8_t PWM_SIZE>
+bool PWM<PWM_SIZE>::EndSetup() {
+
+	return true;
+}
+
 
 /**
  * Gets a register interface to the register specified by name.
