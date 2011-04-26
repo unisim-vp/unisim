@@ -941,7 +941,8 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
-	ServiceImport<SERVICE_IF>::DisconnectService();
+	//ServiceImport<SERVICE_IF>::DisconnectService();
+	ServiceImport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1121,6 +1122,20 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 		}
 	}
 
+	if(!actual_imports.empty())
+	{
+		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	
+		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
+		{
+			if((*import_iter)->alias_import == this)
+			{
+				(*import_iter)->alias_import = 0;
+			}
+		}
+		actual_imports.clear();
+	}
+
 	if(srv_export)
 	{
 		srv_export->Unbind(*this);
@@ -1256,7 +1271,8 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
-	ServiceExport<SERVICE_IF>::DisconnectClient();
+	//ServiceExport<SERVICE_IF>::DisconnectClient();
+	ServiceExport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1365,6 +1381,20 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 #endif
 
 	DisconnectClient();
+	
+	if(actual_export)
+	{
+		typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	
+		for(export_iter = actual_export->alias_exports.begin(); export_iter != actual_export->alias_exports.end(); export_iter++)
+		{
+			if(*export_iter == this)
+			{
+				actual_export->alias_exports.erase(export_iter);
+				this->actual_export = 0;
+			}
+		}
+	}
 
 	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 

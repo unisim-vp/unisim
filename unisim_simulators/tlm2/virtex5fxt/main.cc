@@ -60,7 +60,7 @@
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/loader/elf_loader/elf32_loader.hh>
+#include <unisim/service/loader/multiloader/multiloader.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -109,7 +109,7 @@ void SigIntHandler(int signum)
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::elf_loader::Elf32Loader;
+using unisim::service::loader::multiloader::MultiLoader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
@@ -246,10 +246,8 @@ private:
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	//  - ELF32 loaders
-	Elf32Loader<CPU_ADDRESS_TYPE> *ram_loader;
-	Elf32Loader<CPU_ADDRESS_TYPE> *flash_loader;
-	Elf32Loader<CPU_ADDRESS_TYPE> *rom_loader;
+	//  - Multiformat loader
+	MultiLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -268,9 +266,6 @@ private:
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *ram_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *flash_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *rom_effective_to_physical_address_translator;
-	//  - some tees
-	unisim::service::tee::loader::Tee<> *tee_loader;
-	unisim::service::tee::symbol_table_lookup::Tee<CPU_ADDRESS_TYPE> *tee_symbol_table_lookup;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
@@ -308,6 +303,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dmac2_dcr_stub(0)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
+	, loader(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -320,7 +316,6 @@ Simulator::Simulator(int argc, char **argv)
 	, ram_effective_to_physical_address_translator(0)
 	, flash_effective_to_physical_address_translator(0)
 	, rom_effective_to_physical_address_translator(0)
-	, tee_loader(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, estimate_power(false)
@@ -401,10 +396,8 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	//  - ELF32 loaders
-	ram_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("ram-loader");
-	flash_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("flash-loader");
-	rom_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("rom-loader");
+	//  - Multiformat loader
+	loader = new MultiLoader<CPU_ADDRESS_TYPE>("loader");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -423,9 +416,6 @@ Simulator::Simulator(int argc, char **argv)
 	ram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("ram-effective-to-physical-address-translator");
 	flash_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
 	rom_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("rom-effective-to-physical-address-translator");
-	//  - some tees
-	tee_loader = new unisim::service::tee::loader::Tee<>("tee-loader");
-	tee_symbol_table_lookup = new unisim::service::tee::symbol_table_lookup::Tee<CPU_ADDRESS_TYPE>("tee-symbol-table-lookup");
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -495,10 +485,7 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->memory_import[1]) >> timer->memory_export;
 	(*mplb->memory_import[2]) >> flash->memory_export;
 	(*mplb->memory_import[3]) >> rom->memory_export;
-	cpu->loader_import >> tee_loader->loader_export;
-	*tee_loader->loader_import[0] >> ram_loader->loader_export;
-	*tee_loader->loader_import[1] >> rom_loader->loader_export;
-	*tee_loader->loader_import[2] >> flash_loader->loader_export;
+	cpu->loader_import >> loader->loader_export;
 	
 	if(enable_inline_debugger)
 	{
@@ -511,15 +498,9 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->memory_access_reporting_control_import >>
 			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> ram_loader->loader_export;
-		*inline_debugger->loader_import[1] >> rom_loader->loader_export;
-		*inline_debugger->loader_import[2] >> flash_loader->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> ram_loader->stmt_lookup_export;
-		*inline_debugger->stmt_lookup_import[1] >> rom_loader->stmt_lookup_export;
-		*inline_debugger->stmt_lookup_import[2] >> flash_loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> ram_loader->symbol_table_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[1] >> rom_loader->symbol_table_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[2] >> flash_loader->symbol_table_lookup_export;
+		*inline_debugger->loader_import[0] >> loader->loader_export;
+		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
+		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -557,13 +538,10 @@ Simulator::Simulator(int argc, char **argv)
 	ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
 	flash_effective_to_physical_address_translator->memory_import >> flash->memory_export;
 	rom_effective_to_physical_address_translator->memory_import >> rom->memory_export;
-	ram_loader->memory_import >> ram_effective_to_physical_address_translator->memory_export;
-	rom_loader->memory_import >> rom_effective_to_physical_address_translator->memory_export;
-	flash_loader->memory_import >> flash_effective_to_physical_address_translator->memory_export;
-	cpu->symbol_table_lookup_import >> tee_symbol_table_lookup->in;
-	*tee_symbol_table_lookup->out[0] >> ram_loader->symbol_table_lookup_export;
-	*tee_symbol_table_lookup->out[1] >> rom_loader->symbol_table_lookup_export;
-	*tee_symbol_table_lookup->out[2] >> flash_loader->symbol_table_lookup_export;
+	*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
+	*loader->memory_import[1] >> rom_effective_to_physical_address_translator->memory_export;
+	*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
+	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 }
 
 Simulator::~Simulator()
@@ -611,14 +589,10 @@ Simulator::~Simulator()
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(utlb_power_estimator) delete utlb_power_estimator;
 	if(sim_time) delete sim_time;
-	if(ram_loader) delete ram_loader;
-	if(rom_loader) delete rom_loader;
-	if(flash_loader) delete flash_loader;
+	if(loader) delete loader;
 	if(ram_effective_to_physical_address_translator) delete ram_effective_to_physical_address_translator;
 	if(rom_effective_to_physical_address_translator) delete rom_effective_to_physical_address_translator;
 	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
-	if(tee_loader) delete tee_loader;
-	if(tee_symbol_table_lookup) delete tee_symbol_table_lookup;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -671,15 +645,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x41200000\" range_end=\"0x4120ffff\" output_port=\"0\" translation=\"0x41200000\""); // XPS IntC
 	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
-	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 16 * 16 Mbits AM29LV160DT flash memory chips)
+	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
+	
+	// - Loader memory router
+	simulator->SetVariable("loader.memory-router.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,rom-effective-to-physical-address-translator:0xff800000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 8 MB ROM / 32 MB Flash memory
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("memory.org", 0x00000000UL);
-	simulator->SetVariable("memory.bytesize", 256 * 1024 * 1024); // 256 MB
+	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("ram.org", 0x00000000UL);
+	simulator->SetVariable("ram.bytesize", 256 * 1024 * 1024); // 256 MB
 
 	//  - ROM
 	simulator->SetVariable("rom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());

@@ -78,7 +78,7 @@ using unisim::service::interfaces::Loader;
 template <class MEMORY_ADDR>
 class S19_Loader :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Service<Loader<MEMORY_ADDR> >
+	public Service<Loader>
 {
 public:
 
@@ -99,7 +99,7 @@ public:
 	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
 
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Loader> loader_export;
 
 	virtual void OnDisconnect();
 	virtual bool Setup();

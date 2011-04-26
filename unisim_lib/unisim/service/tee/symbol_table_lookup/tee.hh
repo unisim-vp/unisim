@@ -58,8 +58,8 @@ class Tee :
 	public Service<SymbolTableLookup<ADDRESS> >
 {
 public:
-	ServiceExport<SymbolTableLookup<ADDRESS> > in;
-	ServiceImport<SymbolTableLookup<ADDRESS> > *out[MAX_IMPORTS];
+	ServiceExport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_export;
+	ServiceImport<SymbolTableLookup<ADDRESS> > *symbol_table_lookup_import[MAX_IMPORTS];
 	
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
