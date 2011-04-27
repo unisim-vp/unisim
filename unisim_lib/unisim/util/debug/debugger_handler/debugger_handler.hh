@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DEBUGGER_HANDLER_DEBUGGER_HANDLER_HH__
 
 #include <inttypes.h>
+#include "unisim/kernel/service/service.hh"
 
 namespace unisim {
 namespace util {
@@ -45,7 +46,7 @@ namespace debugger_handler {
 class DebuggerHandler
 {
 public:
-	DebuggerHandler();
+	DebuggerHandler(unisim::kernel::service::Object *obj);
 	virtual ~DebuggerHandler();
 	virtual bool SetStepMode() = 0;
 	virtual bool SetContinueMode() = 0;
@@ -76,11 +77,14 @@ public:
 	virtual bool SetBreakpointHandler(void (*function)(void *, uint64_t));
 	virtual bool SetWatchpointHandler(void (*function)(void *, uint64_t, bool));
 
+	unisim::kernel::service::Object *GetParentObject();
+
 protected:
 	void CallBreakpointHandler(uint64_t addr);
 	void CallWatchpointHandler(uint64_t addr, bool read);
 
 private:
+	unisim::kernel::service::Object *debuggerhandler_parent_object;
 	void *handler_context;
 	void (*breakpoint_handler_function)(void *, uint64_t);
 	void (*watchpoint_handler_function)(void *, uint64_t, bool);
