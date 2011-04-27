@@ -79,6 +79,7 @@ Simulator::Simulator(int argc, char **argv)
 	if(cmd_args_length > 0)
 	{
 		filename = (string)(*cmd_args)[0];
+
 		std::cerr << "filename=\"" << filename << "\"" << std::endl;
 	}
 
