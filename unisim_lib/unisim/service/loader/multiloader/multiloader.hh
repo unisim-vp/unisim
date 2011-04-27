@@ -94,7 +94,9 @@ public:
 protected:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
+	bool verbose_parser;
 	bool IsVerbose() const;
+	bool IsVerboseParser() const;
 private:
 	unisim::service::tee::loader::Tee<> *tee_loader;
 	unisim::service::tee::blob::Tee<MEMORY_ADDR> *tee_blob;
@@ -105,6 +107,7 @@ private:
 	
 	typedef enum
 	{
+		FFMT_UNKNOWN,
 		FFMT_ELF32,
 		FFMT_ELF64,
 		FFMT_S19,
@@ -159,6 +162,7 @@ private:
 	std::vector<CoffLoader<MEMORY_ADDR> *> coff_loaders;
 	
 	Parameter<bool> param_verbose;
+	Parameter<bool> param_verbose_parser;
 	Parameter<std::string> param_filename;
 	
 	unsigned int ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value);
@@ -166,6 +170,7 @@ private:
 	LoadStatementOptionType GetOptionType(const std::string& opt_name);
 	FileFormat GuessFileFormat(const std::string& filename_to_guess_file_format);
 	const char *GetFileFormatName(FileFormat file_fmt);
+	bool IsFileFormat(const char *name) const;
 	FileFormat GetFileFormat(const char *name);
 	LoadStatement *ParseLoadStatement(const std::string& s, unsigned int& pos);
 	LoadStatementOption *ParseLoadStatementOption(const std::string& s, unsigned int& pos, unsigned int opt_idx);
@@ -238,7 +243,9 @@ public:
 protected:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
+	bool verbose_parser;
 	bool IsVerbose() const;
+	bool IsVerboseParser() const;
 private:
 	typedef enum
 	{
@@ -287,6 +294,7 @@ private:
 	std::vector<Mapping<MEMORY_ADDR> *> mapping_table;
 
 	Parameter<bool> param_verbose;
+	Parameter<bool> param_verbose_parser;
 	Parameter<std::string> param_mapping;
 	
 	unsigned int ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value, MEMORY_ADDR& tok_addr_value);

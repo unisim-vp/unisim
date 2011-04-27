@@ -119,6 +119,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 	, stmt_lookup_export("stmt-lookup-export", this)
 	, logger(*this)
 	, verbose(false)
+	, verbose_parser(false)
 	, tee_loader(0)
 	, tee_blob(0)
 	, tee_symbol_table_lookup(0)
@@ -129,6 +130,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 	, elf32_loaders()
 	, elf64_loaders()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
 	, param_filename("filename", this, filename, "List of files to load. Syntax: [[(filename=]<filename1>[:[format=]<format1>]][,[(filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
 {
 	positional_option_types.push_back(OPT_FILENAME);
@@ -215,7 +217,15 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 			
 			if(ld_stmt_opt_format)
 			{
-				file_fmt = GetFileFormat(ld_stmt_opt_format->value.c_str());
+				const std::string& file_format_name = ld_stmt_opt_format->value;
+				file_fmt = GetFileFormat(file_format_name.c_str());
+				if(file_fmt == FFMT_UNKNOWN)
+				{
+					logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", at character #" << (ld_stmt_opt_format->pos + 1) << ", specified file format ('" << file_format_name << "') for File \"" << filename_to_load << "\" is unknown" << EndDebugWarning;
+					PrettyPrintSyntaxErrorLocation(filename.c_str(), ld_stmt_opt_format->pos);
+					file_fmt = FFMT_RAW;
+					break;
+				}
 			}
 			else
 			{
@@ -227,13 +237,13 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 				file_fmt = GuessFileFormat(filename_to_load);
 				if(verbose)
 				{
-					logger << DebugInfo << "File \"" << filename_to_load << "\" looks like " << GetFileFormatName(file_fmt) << EndDebugInfo;
+					logger << DebugInfo << "File format of File \"" << filename_to_load << "\" seems " << GetFileFormatName(file_fmt) << EndDebugInfo;
 				}
 			}
 			
 			if(verbose)
 			{
-				logger << DebugInfo << "File \"" << filename_to_load << " is " << GetFileFormatName(file_fmt) << EndDebugInfo;
+				logger << DebugInfo << "Assuming " << GetFileFormatName(file_fmt) << " file format for File \"" << filename_to_load << "\"" << EndDebugInfo;
 			}
 			
 			std::stringstream sstr_loader_name;
@@ -301,6 +311,10 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 						coff_loader->memory_import >> memory_router->memory_export;
 					}
 					break;
+				default:
+					logger << DebugError << "Internal error" << EndDebugError;
+					Object::Stop(-1);
+					break;
 			}
 		}
 	}
@@ -362,6 +376,12 @@ template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::IsVerbose() const
 {
 	return verbose;
+}
+
+template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
+bool MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::IsVerboseParser() const
+{
+	return verbose_parser;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
@@ -447,6 +467,7 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiLoade
 					{
 						if(opt_idx < positional_option_types.size())
 						{
+							
 							ld_stmt_opt = new LoadStatementOption(positional_option_types[opt_idx], pos, tok_value);
 						}
 						else
@@ -507,7 +528,7 @@ unsigned int MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string
 	{
 		tok_value += c;
 		tok = TOK_EQUAL;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -518,7 +539,7 @@ unsigned int MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string
 	{
 		tok_value = c;
 		tok = TOK_COMMA;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -529,7 +550,7 @@ unsigned int MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string
 	{
 		tok_value = c;
 		tok = TOK_COLON;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -548,7 +569,7 @@ unsigned int MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string
 	
 	tok = TOK_STRING;
 	
-	if(IsVerbose())
+	if(IsVerboseParser())
 	{
 		logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 	}
@@ -611,12 +632,6 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiLoader<MEMORY_A
 		return FFMT_RAW;
 	}
 	
-	unsigned int i;
-	for(i = 0; i < size; i++)
-	{
-		std::cerr << "magic[" << i << "]=0x" << std::hex << (unsigned int) magic[i] << std::dec << std::endl;
-	}
-	
 	if(size >= 5)
 	{
 		if((magic[0] == 0x7f) && (magic[1] == 'E') && (magic[2] == 'L') && (magic[3] == 'F'))
@@ -656,6 +671,7 @@ const char *MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetFileFormatName(FileFormat
 {
 	switch(file_fmt)
 	{
+		case FFMT_UNKNOWN: return "unknown";
 		case FFMT_ELF32: return "ELF32";
 		case FFMT_ELF64: return "ELF64";
 		case FFMT_RAW: return "raw";
@@ -672,7 +688,8 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiLoader<MEMORY_A
 	if((strcmp(name, "elf64") == 0) || (strcmp(name, "ELF64") == 0)) return FFMT_ELF64;
 	if((strcmp(name, "s19") == 0) || (strcmp(name, "S19") == 0)) return FFMT_S19;
 	if((strcmp(name, "coff") == 0) || (strcmp(name, "COFF") == 0)) return FFMT_COFF;
-	return FFMT_RAW;
+	if((strcmp(name, "raw") == 0) || (strcmp(name, "RAW") == 0)) return FFMT_RAW;
+	return FFMT_UNKNOWN;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
@@ -770,9 +787,11 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MemoryRouter(const char *name, Object *
 	, memory_export("memory-export", this)
 	, logger(*this)
 	, verbose(false)
+	, verbose_parser(false)
 	, mapping()
 	, mapping_table()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
 	, param_mapping("mapping", this, mapping, "Memory mapping. Syntax: [[(memory=]<memory1>[:[range=]<low1-high1>]][,[(memory=]<memory2>[:[range=]<low2-high2>]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff)")
 {
 	positional_option_types.push_back(OPT_MEMORY);
@@ -869,13 +888,13 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 								memory_num = FindMemory(memory_name.c_str());
 								if(memory_num < 0)
 								{
-									logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", memory '" << memory_name << "' is unknown or disconnected" << EndDebugWarning;
+									logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", Memory '" << memory_name << "' is unknown or disconnected" << EndDebugWarning;
 									PrettyPrintSyntaxErrorLocation(mapping.c_str(), mapping_stmt_opt->pos);
 								}
 							}
 							else
 							{
-								logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected memory '" << memory_name << "' at specified character #" << (mapping_stmt_opt->pos + 1) << " because a memory was already specified" << EndDebugWarning;
+								logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected Memory '" << memory_name << "' specified at character #" << (mapping_stmt_opt->pos + 1) << " because a memory was already specified" << EndDebugWarning;
 								PrettyPrintSyntaxErrorLocation(mapping.c_str(), mapping_stmt_opt->pos);
 							}
 						}
@@ -948,6 +967,12 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::IsVerbose() const
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
+bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::IsVerboseParser() const
+{
+	return verbose_parser;
+}
+
+template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value, MEMORY_ADDR& tok_addr_value)
 {
 	unsigned int n;
@@ -968,7 +993,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 	{
 		tok_value += c;
 		tok = TOK_EQUAL;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -979,7 +1004,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 	{
 		tok_value = c;
 		tok = TOK_COMMA;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -990,7 +1015,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 	{
 		tok_value = c;
 		tok = TOK_COLON;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -1001,7 +1026,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 	{
 		tok_value = c;
 		tok = TOK_MINUS;
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -1074,7 +1099,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 		
 		tok = TOK_ADDRESS;
 
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
@@ -1093,7 +1118,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 	
 		tok = TOK_STRING;
 		
-		if(IsVerbose())
+		if(IsVerboseParser())
 		{
 			logger << DebugInfo << "At character #" << (pos + 1) << ", got " << GetTokenName(tok, tok_value) << " (" << n << " characters length )" << EndDebugInfo;
 		}
