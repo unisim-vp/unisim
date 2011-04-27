@@ -48,7 +48,7 @@ extern "C" {
 /* C API functions */
 #define PyDebugger_NewDebugger_NUM 0
 #define PyDebugger_NewDebugger_RETURN PyObject *
-#define PyDebugger_NewDebugger_PROTO (const char *, PyObject *sim_obj)
+#define PyDebugger_NewDebugger_PROTO (unisim::util::debug::debugger_handler::DebuggerHandler *debugger, PyObject *sim_obj)
 
 /* Total number of C API pointers */
 #define PyDebugger_API_pointers 1

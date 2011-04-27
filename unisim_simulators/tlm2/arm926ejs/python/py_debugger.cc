@@ -832,7 +832,7 @@ PyInit_debugger(void)
 }
 
 static PyObject *
-PyDebugger_NewDebugger (const char *name, PyObject *sim_obj)
+PyDebugger_NewDebugger (unisim::util::debug::debugger_handler::DebuggerHandler *debugger, PyObject *sim_obj)
 {
 	if ( import_simulator_api() < 0 )
 		return NULL;
@@ -841,25 +841,22 @@ PyDebugger_NewDebugger (const char *name, PyObject *sim_obj)
 	if ( *sim == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"No reference found to the simulator when creating debugger.'%s'.",
-				name);
+				"No reference found to the simulator when creating debugger.");
 		return NULL;
 	}
 
-	unisim::util::debug::debugger_handler::DebuggerHandler *debugger =
-			(*sim)->GetDebugger(name);
 	if ( debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"No debugger named '%s' found in simulator.",
-				name);
+				"No debugger available when creating PyDebugger.");
 		return NULL;
 	}
 
 	debugger_DebuggerObject *self;
 	self = (debugger_DebuggerObject *)debugger_DebuggerType.tp_alloc(
 			&debugger_DebuggerType, 0);
-	self->name = new std::string(name);
+	unisim::kernel::service::Object *obj = debugger->GetParentObject();
+	self->name = new std::string(obj->GetName());
 	self->simulator = sim;
 	self->debugger = debugger;
 	self->debug_context = 0;

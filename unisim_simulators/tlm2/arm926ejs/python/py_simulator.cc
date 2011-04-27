@@ -91,7 +91,6 @@ static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 }
 
 extern "C" {
-// static Simulator *__current_simulator;
 
 typedef struct {
     PyObject_HEAD
@@ -605,18 +604,39 @@ simulator_remove_trap_handler (armemu_SimulatorObject *self)
 }
 
 static PyObject *
-simulator_get_debugger (armemu_SimulatorObject *self, PyObject *args)
+simulator_has_debugger (armemu_SimulatorObject *self)
+{
+	bool found = false;
+
+	// PySys_WriteStdout("Checking for the existence of debugger:\n");
+
+	found = self->sim->HasAPI<unisim::util::debug::debugger_handler::DebuggerHandler>();
+
+	if ( found )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
+}
+
+static PyObject *
+simulator_get_debuggers (armemu_SimulatorObject *self, PyObject *args)
 {
 	PyObject *result = 0;
 
-	const char *debugger_name = 0;
-	if ( !PyArg_ParseTuple(args, "s", &debugger_name) )
+	// create the list of debuggers
+	result = PyList_New(0);
+
+
+	std::list<unisim::util::debug::debugger_handler::DebuggerHandler *> 
+		list_debuggers = self->sim->GetAPI<unisim::util::debug::debugger_handler::DebuggerHandler>();
+
+
+	for ( std::list<unisim::util::debug::debugger_handler::DebuggerHandler *>::iterator it = list_debuggers.begin();
+			it != list_debuggers.end();
+			it++ )
 	{
-		PyErr_SetString(PyExc_TypeError, "parameters must be the name of the desired debugger");
-		return NULL;
+		PyList_Append(result, PyDebugger_NewDebugger(*it, (PyObject *)self));
 	}
-	// the name of the debugger should be checked before its creation
-	result = PyDebugger_NewDebugger(debugger_name, (PyObject *)self);
+
 	return result;
 }
 
@@ -652,8 +672,10 @@ static PyMethodDef simulator_methods[] =
 			"Set the external trap handler"},
 	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
 			"Remove the external trap handler"},
-	{"get_debugger", (PyCFunction)simulator_get_debugger, METH_VARARGS,
-					"Get a handler of the given name debugger"},
+	{"has_debugger", (PyCFunction)simulator_has_debugger, METH_NOARGS,
+			"Indicates if the simulator provides some kind of debugging interface"},
+	{"get_debuggers", (PyCFunction)simulator_get_debuggers, METH_NOARGS,
+			"Get a list of the available debuggers in the system"},
 	{NULL}
 };
 
