@@ -316,6 +316,41 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 	tlm::tlm_generic_payload *payload = event->GetPayload();
 	
 	uint32_t addr = payload->get_address();
+	unsigned int data_length = payload->get_data_length();
+	unsigned int byte_enable_length = payload->get_byte_enable_length();
+	unsigned int streaming_width = payload->get_streaming_width();
+	
+	if((addr & 3) != 0)
+	{
+		// only 32-bit aligned accesses are supported
+		inherited::logger << DebugError << event->GetTimeStamp()
+			<< ": DCR address 0x" << std::hex << addr << std::dec << " is not 32-bit aligned"
+			<< EndDebugError;
+		Object::Stop(-1);
+		return false;
+	}
+	
+	if(data_length != 4)
+	{
+		inherited::logger << DebugError << "data length of " << data_length << " bytes is unsupported" << EndDebugError;
+		Object::Stop(-1);
+		return false;
+	}
+	
+	if(byte_enable_length)
+	{
+		inherited::logger << DebugError << "byte enable is unsupported" << EndDebugError;
+		Object::Stop(-1);
+		return false;
+	}
+	
+	if(streaming_width && (streaming_width != data_length))
+	{
+		inherited::logger << DebugError << "streaming width of " << data_length << " bytes is unsupported" << EndDebugError;
+		Object::Stop(-1);
+		return false;
+	}
+
 	uint32_t dcrn = addr / 4;
 	
 	switch(dcrn)
@@ -350,7 +385,7 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 						}
 						break;
 					default:
-						inherited::logger << DebugError << "protocol error: unexpected phase" << EndDebugError;
+						inherited::logger << DebugError << "protocol error: unexpected command" << EndDebugError;
 						Object::Stop(-1);
 				}
 

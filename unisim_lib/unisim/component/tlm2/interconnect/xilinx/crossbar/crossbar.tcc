@@ -434,9 +434,11 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 		{
 			case inherited::IF_MPLB:
 				mplb_master_sock->b_transport(*payload, t);
+				CheckResponseStatus(src_if, dst_if, payload);
 				break;
 			case inherited::IF_MCI:
 				mci_master_sock->b_transport(*payload, t);
+				CheckResponseStatus(src_if, dst_if, payload);
 				break;
 			default:
 				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for b_transport" << EndDebugError;
@@ -450,17 +452,49 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 		return_if.insert(std::pair<tlm::tlm_generic_payload *, typename inherited::Interface>(payload, src_if));
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
 		
+		tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
+		
 		switch(dst_if)
 		{
 			case inherited::IF_MPLB:
-				mplb_master_sock->nb_transport_fw(*payload, phase, t);
+				sync = mplb_master_sock->nb_transport_fw(*payload, phase, t);
 				break;
 			case inherited::IF_MCI:
-				mci_master_sock->nb_transport_fw(*payload, phase, t);
+				sync = mci_master_sock->nb_transport_fw(*payload, phase, t);
 				break;
 			default:
 				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for nb_transport_fw" << EndDebugError;
 				Object::Stop(-1);
+		}
+		
+		if(sync == tlm::TLM_COMPLETED)
+		{
+			CheckResponseStatus(src_if, dst_if, payload);
+			
+			phase = tlm::BEGIN_RESP;
+			
+			switch(src_if)
+			{
+				case inherited::IF_ICURD_PLB:
+					icurd_plb_slave_sock->nb_transport_bw(*payload, phase, t);
+					break;
+				case inherited::IF_DCUWR_PLB:
+					dcuwr_plb_slave_sock->nb_transport_bw(*payload, phase, t);
+					break;
+				case inherited::IF_DCURD_PLB:
+					dcurd_plb_slave_sock->nb_transport_bw(*payload, phase, t);
+					break;
+				case inherited::IF_SPLB0:
+					splb0_slave_sock->nb_transport_bw(*payload, phase, t);
+					break;
+				case inherited::IF_SPLB1:
+					splb1_slave_sock->nb_transport_bw(*payload, phase, t);
+					break;
+					break;
+				default:
+					inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid source interface for nb_transport_bw" << EndDebugError;
+					Object::Stop(-1);
+			}
 		}
 	}
 }
@@ -481,6 +515,8 @@ void Crossbar<CONFIG>::ProcessBackwardEvent(Event *event)
 	typename inherited::Interface dst_if = (*it).second;
 	return_if.erase(it);
 	
+	CheckResponseStatus(dst_if, event->GetInterface(), payload);
+
 	sc_time t(cycle_time);
 	tlm::tlm_phase phase = tlm::BEGIN_RESP;
 	
@@ -529,46 +565,45 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 		if((addr & 3) != 0)
 		{
 			// only 32-bit aligned accesses are supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << event->GetTimeStamp()
-					<< ": DCR address 0x" << std::hex << addr << std::dec << " is not 32-bit aligned"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_ADDRESS_ERROR_RESPONSE;
+			inherited::logger << DebugError << event->GetTimeStamp()
+				<< ": DCR address 0x" << std::hex << addr << std::dec << " is not 32-bit aligned"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
 		}
-		else if((data_length != 4) || (streaming_width && (streaming_width != 4)))
+		else if(data_length != 4)
 		{
-			// streaming is not supported
 			// only data length of 4 bytes is supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << event->GetTimeStamp()
-					<< ": data length of " << data_length << " bytes and streaming are unsupported"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_BURST_ERROR_RESPONSE;
+			inherited::logger << DebugError << event->GetTimeStamp()
+				<< ": data length of " << data_length << " bytes are unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
 		}
-		else if(!inherited::IsMappedDCR(dcrn))
+		else if(streaming_width && (streaming_width != data_length))
 		{
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << event->GetTimeStamp()
-					<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_ADDRESS_ERROR_RESPONSE;
+			// streaming is not supported if different from data length
+			inherited::logger << DebugError << event->GetTimeStamp()
+					<< ": data length of " << data_length << " bytes and streaming are unsupported"
+					<< EndDebugError;
+			Object::Stop(-1);
+			return;
 		}
 		else if(byte_enable_length)
 		{
 			// byte enable is not supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << event->GetTimeStamp()
-					<< ": byte enable is unsupported"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE;
+			inherited::logger << DebugError << event->GetTimeStamp()
+				<< ": byte enable is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
+		}
+		else if(!inherited::IsMappedDCR(dcrn))
+		{
+			inherited::logger << DebugWarning << event->GetTimeStamp()
+				<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
+				<< EndDebugWarning;
+			status = tlm::TLM_ADDRESS_ERROR_RESPONSE;
 		}
 	}
 	
@@ -591,7 +626,7 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 				break;
 			case tlm::TLM_IGNORE_COMMAND:
 				inherited::logger << DebugError << event->GetTimeStamp() 
-						<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
+						<< " : received an unexpected TLM_IGNORE_COMMAND command in payload at 0x"
 						<< std::hex << addr << std::dec
 						<< EndDebugError;
 				Object::Stop(-1);
@@ -641,6 +676,15 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for nb_transport_bw" << EndDebugError;
 				Object::Stop(-1);
 		}
+	}
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::CheckResponseStatus(typename inherited::Interface master_if, typename inherited::Interface slave_if, tlm::tlm_generic_payload *payload)
+{
+	if(payload->get_response_status() != tlm::TLM_OK_RESPONSE)
+	{
+		inherited::Error(master_if, slave_if, payload->get_address(), payload->get_command() == tlm::TLM_READ_COMMAND, payload->get_data_length());
 	}
 }
 

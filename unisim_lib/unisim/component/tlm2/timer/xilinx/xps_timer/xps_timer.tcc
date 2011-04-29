@@ -142,8 +142,15 @@ XPS_Timer<CONFIG>::XPS_Timer(const sc_module_name& name, Object *parent)
 	interrupt_master_sock(*interrupt_redirector);
 	
 	SC_HAS_PROCESS(XPS_Timer);
-	
-	SC_THREAD(Process);
+
+	if(threaded_model)
+	{
+		SC_THREAD(Process);
+	}
+	else
+	{
+		SC_METHOD(Process);
+	}
 }
 
 template <class CONFIG>
@@ -203,7 +210,7 @@ unsigned int XPS_Timer<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string()
+					<< sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -219,7 +226,7 @@ unsigned int XPS_Timer<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string()
+					<< sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -233,7 +240,7 @@ unsigned int XPS_Timer<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
 			inherited::logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string() 
+					<< sc_time_stamp() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -262,7 +269,7 @@ tlm::tlm_sync_enum XPS_Timer<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& 
 				if(cmd == tlm::TLM_IGNORE_COMMAND)
 				{
 					inherited::logger << DebugError << LOCATION
-							<< ":" << (sc_time_stamp() + t).to_string() 
+							<< (sc_time_stamp() + t)
 							<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 							<< EndDebugError;
 					Object::Stop(-1);
@@ -297,7 +304,7 @@ void XPS_Timer<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::
 	if(cmd == tlm::TLM_IGNORE_COMMAND)
 	{
 		inherited::logger << DebugError << LOCATION
-				<< ":" << (sc_time_stamp() + t).to_string() 
+				<< (sc_time_stamp() + t)
 				<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 				<< EndDebugError;
 		Object::Stop(-1);
@@ -474,74 +481,85 @@ void XPS_Timer<CONFIG>::interrupt_invalidate_direct_mem_ptr(unsigned int channel
 }
 
 template <class CONFIG>
+void XPS_Timer<CONFIG>::ProcessEvents()
+{
+	time_stamp = sc_time_stamp();
+	if(inherited::IsVerbose())
+	{
+		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+	}
+	RunCounters(); // Compute the timer/counter values at the event time stamp
+	
+	Event *event = schedule.GetNextEvent();
+	
+	if(event)
+	{
+		do
+		{
+			if(event->GetTimeStamp() != time_stamp)
+			{
+				inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
+				Object::Stop(-1);
+			}
+			if((time_stamp.value() % cycle_time.value()) != 0)
+			{
+				inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
+				Object::Stop(-1);
+			}
+
+			switch(event->GetType())
+			{
+				case Event::EV_WAKE_UP:
+					// Nothing to do
+					schedule.FreeEvent(event);
+					break;
+				case Event::EV_LOAD:
+					ProcessLoadEvent(event);
+					schedule.FreeEvent(event);
+					break;
+				case Event::EV_CAPTURE_TRIGGER:
+					ProcessCaptureTriggerEvent(event);
+					schedule.FreeEvent(event);
+					break;
+				case Event::EV_CPU:
+					if(time_stamp >= ready_time_stamp)
+					{
+						ProcessCPUEvent(event);
+						schedule.FreeEvent(event);
+					}
+					else
+					{
+						// delay the CPU event later
+						// Note: this doesn't work if more than one CPU event is scheduled
+						event->SetTimeStamp(ready_time_stamp);
+						schedule.Notify(event);
+					}
+					break;
+			}
+			
+		}
+		while((event = schedule.GetNextEvent()) != 0);
+	}
+		
+	Update();              // Update state
+	GenerateOutput();      // Generate "generate out", PWM and interrupt signals
+}
+
+template <class CONFIG>
 void XPS_Timer<CONFIG>::Process()
 {
-	RunCounters(); // Compute the timer/counter values at the event time stamp
-	GenerateOutput();      // Generate "generate out", PWM and interrupt signals
-	Update(); // Update state and post events
-	while(1)
+	if(threaded_model)
 	{
-		wait(schedule.GetKernelEvent());
-		time_stamp = sc_time_stamp();
-		if(inherited::IsVerbose())
+		while(1)
 		{
-			inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+			wait(schedule.GetKernelEvent());
+			ProcessEvents();
 		}
-		RunCounters(); // Compute the timer/counter values at the event time stamp
-		
-		Event *event = schedule.GetNextEvent();
-		
-		if(event)
-		{
-			do
-			{
-				if(event->GetTimeStamp() != time_stamp)
-				{
-					inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-					Object::Stop(-1);
-				}
-				if((time_stamp.value() % cycle_time.value()) != 0)
-				{
-					inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
-					Object::Stop(-1);
-				}
-	
-				switch(event->GetType())
-				{
-					case Event::EV_WAKE_UP:
-						// Nothing to do
-						schedule.FreeEvent(event);
-						break;
-					case Event::EV_LOAD:
-						ProcessLoadEvent(event);
-						schedule.FreeEvent(event);
-						break;
-					case Event::EV_CAPTURE_TRIGGER:
-						ProcessCaptureTriggerEvent(event);
-						schedule.FreeEvent(event);
-						break;
-					case Event::EV_CPU:
-						if(time_stamp >= ready_time_stamp)
-						{
-							ProcessCPUEvent(event);
-							schedule.FreeEvent(event);
-						}
-						else
-						{
-							// delay the CPU event later
-							// Note: this doesn't work if more than one CPU event is scheduled
-							event->SetTimeStamp(ready_time_stamp);
-							schedule.Notify(event);
-						}
-						break;
-				}
-				
-			}
-			while((event = schedule.GetNextEvent()) != 0);
-		}
-		
-		Update();              // Update state
-		GenerateOutput();      // Generate "generate out", PWM and interrupt signals
+	}
+	else
+	{
+		ProcessEvents();
+		next_trigger(schedule.GetKernelEvent());
 	}
 }
 
@@ -606,39 +624,40 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		if(!inherited::IsMapped(addr, data_length))
 		{
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ":" << time_stamp.to_string()
-					<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
-					<< EndDebugInfo;
-			}
+			inherited::logger << DebugWarning << LOCATION
+				<< time_stamp
+				<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
+				<< EndDebugWarning;
 			status = tlm::TLM_ADDRESS_ERROR_RESPONSE;
 		}
-		else if((data_length != 4) || (streaming_width && (streaming_width != 4)))
+		else if(streaming_width && (streaming_width != data_length))
 		{
 			// streaming is not supported
-			// only data length of 4 bytes is supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ":" << time_stamp.to_string()
-					<< ": data length of " << data_length << " bytes and streaming are unsupported"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_BURST_ERROR_RESPONSE;
+			inherited::logger << DebugError << LOCATION
+				<< time_stamp
+				<< ": streaming width of " << streaming_width << " bytes is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
 		}
 		else if(byte_enable_length)
 		{
 			// byte enable is not supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< time_stamp
-					<< ": byte enable is unsupported"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE;
+			inherited::logger << DebugError << LOCATION
+				<< time_stamp
+				<< ": byte enable is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
+		}
+		else if((data_length != 4))
+		{
+			// only data length of 4 bytes is supported
+			inherited::logger << DebugWarning << LOCATION
+				<< time_stamp
+				<< ": data length of " << data_length << " bytes is unsupported"
+				<< EndDebugWarning;
+			status = tlm::TLM_BURST_ERROR_RESPONSE;
 		}
 	}
 	
@@ -729,7 +748,10 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 			pwm_payload->SetValue(true);
 			
 			sc_time t(SC_ZERO_TIME);
-			pwm_master_sock->b_transport(*pwm_payload, t);
+			//pwm_master_sock->b_transport(*pwm_payload, t);
+			
+			tlm::tlm_phase phase = tlm::BEGIN_REQ;
+			pwm_master_sock->nb_transport_fw(*pwm_payload, phase, t);
 			
 			pwm_payload->release();
 			
@@ -747,7 +769,9 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 			pwm_payload->SetValue(false);
 			
 			sc_time t(SC_ZERO_TIME);
-			pwm_master_sock->b_transport(*pwm_payload, t);
+			//pwm_master_sock->b_transport(*pwm_payload, t);
+			tlm::tlm_phase phase = tlm::BEGIN_REQ;
+			pwm_master_sock->nb_transport_fw(*pwm_payload, phase, t);
 			
 			pwm_payload->release();
 			

@@ -74,6 +74,8 @@ class XPS_Timer
 	, public tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
 {
 public:
+	static const bool threaded_model = false;
+	
 	typedef unisim::component::cxx::timer::xilinx::xps_timer::XPS_Timer<CONFIG> inherited;
 	typedef tlm::tlm_target_socket<0, CaptureTriggerProtocolTypes> capture_trigger_slave_socket;
 	typedef tlm::tlm_initiator_socket<0, GenerateOutProtocolTypes> generate_out_master_socket;
@@ -315,6 +317,7 @@ private:
 	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 	Schedule<Event> schedule;
 	
+	void ProcessEvents();
 	void ProcessLoadEvent(Event *event);
 	void ProcessCaptureTriggerEvent(Event *event);
 	void ProcessCPUEvent(Event *event);

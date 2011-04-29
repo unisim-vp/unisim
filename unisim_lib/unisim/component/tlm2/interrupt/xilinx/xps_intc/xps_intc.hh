@@ -69,6 +69,8 @@ public:
 	typedef tlm::tlm_target_socket<0, InterruptProtocolTypes> irq_slave_socket;
 	typedef tlm::tlm_initiator_socket<0, InterruptProtocolTypes> irq_master_socket;
 	
+	static const bool threaded_model = false;
+	
 	// PLB slave interface
 	tlm::tlm_target_socket<CONFIG::C_SPLB_DWITH> slave_sock;
 	
@@ -272,6 +274,7 @@ private:
 	
 	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 
+	void ProcessEvents();
 	void ProcessCPUEvent(Event *event);
 	void ProcessIRQEvent(Event *event);
 };

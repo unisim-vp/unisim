@@ -94,13 +94,37 @@ unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_
 	unsigned int streaming_width = payload.get_streaming_width();
 	bool status = false;
 
+	if(cmd != tlm::TLM_IGNORE_COMMAND)
+	{
+		if(streaming_width && (streaming_width != data_length))
+		{
+			// streaming is not supported
+			inherited::logger << DebugError << LOCATION
+				<< sc_time_stamp()
+				<< ": streaming width of " << streaming_width << " bytes is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return 0;
+		}
+		else if(byte_enable_length)
+		{
+			// byte enable is not supported
+			inherited::logger << DebugError << LOCATION
+				<< sc_time_stamp()
+				<< ": byte enable is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return 0;
+		}
+	}
+	
 	switch(cmd)
 	{
 		case tlm::TLM_READ_COMMAND:
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string()
+					<< sc_time_stamp()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -113,7 +137,7 @@ unsigned int AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::transport_dbg(tlm::tlm_
 			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
-					<< ":" << sc_time_stamp().to_string()
+					<< sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
 					<< " of " << data_length << " bytes in length" << std::endl
@@ -153,6 +177,31 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 				unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
 				unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
 				unsigned int streaming_width = payload.get_streaming_width();
+				
+				if(cmd != tlm::TLM_IGNORE_COMMAND)
+				{
+					if(streaming_width && (streaming_width != data_length))
+					{
+						// streaming is not supported
+						inherited::logger << DebugError << LOCATION
+							<< (sc_time_stamp() + t)
+							<< ": streaming width of " << streaming_width << " bytes is unsupported"
+							<< EndDebugError;
+						Object::Stop(-1);
+						return tlm::TLM_COMPLETED;
+					}
+					else if(byte_enable_length)
+					{
+						// byte enable is not supported
+						inherited::logger << DebugError << LOCATION
+							<< (sc_time_stamp() + t)
+							<< ": byte enable is unsupported"
+							<< EndDebugError;
+						Object::Stop(-1);
+						return tlm::TLM_COMPLETED;
+					}
+				}
+				
 				bool status = false;
 
 				switch(cmd)
@@ -161,7 +210,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 						if(inherited::IsVerbose())
 						{
 							inherited::logger << DebugInfo << LOCATION
-								<< ":" << sc_time_stamp().to_string()
+								<< sc_time_stamp().to_string()
 								<< ": received a TLM_READ_COMMAND payload at 0x"
 								<< std::hex << addr << std::dec
 								<< " of " << data_length << " bytes in length" << std::endl
@@ -176,7 +225,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 						if(inherited::IsVerbose())
 						{
 							inherited::logger << DebugInfo << LOCATION
-								<< ":" << sc_time_stamp().to_string()
+								<< sc_time_stamp().to_string()
 								<< ": received a TLM_WRITE_COMMAND payload at 0x"
 								<< std::hex << addr << std::dec
 								<< " of " << data_length << " bytes in length" << std::endl
@@ -187,7 +236,7 @@ tlm::tlm_sync_enum AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::nb_transport_fw(t
 						break;
 					case tlm::TLM_IGNORE_COMMAND:
 						inherited::logger << DebugError << LOCATION
-								<< ":" << (sc_time_stamp() + t).to_string() 
+								<< (sc_time_stamp() + t).to_string() 
 								<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 								<< EndDebugError;
 						Object::Stop(-1);

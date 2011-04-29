@@ -240,6 +240,7 @@ private:
 	void ProcessForwardEvent(Event *event);
 	void ProcessBackwardEvent(Event *event);
 	void ProcessDCREvent(Event *event);
+	void CheckResponseStatus(typename inherited::Interface master_if, typename inherited::Interface slave_if, tlm::tlm_generic_payload *payload);
 };
 
 } // end of namespace crossbar
