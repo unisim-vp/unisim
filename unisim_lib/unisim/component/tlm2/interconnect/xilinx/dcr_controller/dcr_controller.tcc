@@ -401,6 +401,10 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 					tlm::tlm_phase phase = tlm::BEGIN_RESP;
 					
 					(*dcr_slave_sock[num_master])->nb_transport_bw(*payload, phase, t);
+					if(src_if < 0)
+					{
+						payload->release(); // Payload has been acquired by BindIndirectAccess
+					}
 				}
 			}
 			return true;
@@ -437,6 +441,8 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 					inherited::logger << DebugWarning << "indirect access to DCR #0x" << std::hex << dcrn << std::dec << " is illegal" << EndDebugWarning;
 					DoTimeOutAccess(num_master, event->GetCompletionEvent(), payload);
 				}
+				
+				indirect_payload->release();
 			}
 			return true;
 	}
