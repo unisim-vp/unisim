@@ -583,12 +583,14 @@ Simulator::~Simulator()
 		if(generate_out_stub[channel]) delete generate_out_stub[channel];
 	}
 	if(pwm_stub) delete pwm_stub;
+	if(dcr_controller) delete dcr_controller;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(utlb_power_estimator) delete utlb_power_estimator;
 	if(sim_time) delete sim_time;
+	if(host_time) delete host_time;
 	if(loader) delete loader;
 	if(ram_effective_to_physical_address_translator) delete ram_effective_to_physical_address_translator;
 	if(rom_effective_to_physical_address_translator) delete rom_effective_to_physical_address_translator;

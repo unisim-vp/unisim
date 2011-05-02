@@ -63,22 +63,24 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugInfo;
 	
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& _logger)
-	: endianness(blob->GetEndian())
-	, address_size(blob->GetAddressSize())
-	, debug_line_section(blob->FindSection(".debug_line"))
-	, debug_info_section(blob->FindSection(".debug_info"))
-	, debug_abbrev_section(blob->FindSection(".debug_abbrev"))
-	, debug_aranges_section(blob->FindSection(".debug_aranges"))
-	, debug_pubnames_section(blob->FindSection(".debug_pubnames"))
-	, debug_pubtypes_section(blob->FindSection(".debug_pubtypes"))
-	, debug_macinfo_section(blob->FindSection(".debug_macinfo"))
-	, debug_frame_section(blob->FindSection(".debug_frame"))
-	, debug_str_section(blob->FindSection(".debug_str"))
-	, debug_loc_section(blob->FindSection(".debug_loc"))
-	, debug_ranges_section(blob->FindSection(".debug_ranges"))
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, unisim::kernel::logger::Logger& _logger)
+	: endianness(_blob->GetEndian())
+	, address_size(_blob->GetAddressSize())
+	, debug_line_section(_blob->FindSection(".debug_line"))
+	, debug_info_section(_blob->FindSection(".debug_info"))
+	, debug_abbrev_section(_blob->FindSection(".debug_abbrev"))
+	, debug_aranges_section(_blob->FindSection(".debug_aranges"))
+	, debug_pubnames_section(_blob->FindSection(".debug_pubnames"))
+	, debug_pubtypes_section(_blob->FindSection(".debug_pubtypes"))
+	, debug_macinfo_section(_blob->FindSection(".debug_macinfo"))
+	, debug_frame_section(_blob->FindSection(".debug_frame"))
+	, debug_str_section(_blob->FindSection(".debug_str"))
+	, debug_loc_section(_blob->FindSection(".debug_loc"))
+	, debug_ranges_section(_blob->FindSection(".debug_ranges"))
 	, logger(_logger)
+	, blob(_blob)
 {
+	if(blob) blob->Catch();
 	if(debug_line_section) debug_line_section->Catch();
 	if(debug_info_section) debug_info_section->Catch();
 	if(debug_abbrev_section) debug_abbrev_section->Catch();
@@ -205,6 +207,8 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 	if(debug_str_section) debug_str_section->Release();
 	if(debug_loc_section) debug_loc_section->Release();
 	if(debug_ranges_section) debug_ranges_section->Release();
+	
+	if(blob) blob->Release();
 }
 
 template <class MEMORY_ADDR>
@@ -236,7 +240,8 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	unsigned int i;
 	if(!debug_str_section)
 	{
-		logger << DebugWarning << "No DWARF v2/v3 debugging informations" << EndDebugWarning;
+		logger << DebugWarning << "No DWARF v2/v3 debugging informations";
+		if(blob->GetFilename()) logger << " in File \"" << blob->GetFilename() << "\"" << EndDebugWarning;
 		return; // We can't continue
 	}
 
@@ -560,6 +565,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		dw_prev_loc_list_entry = dw_loc_list_entry;
 	}
 	
+	BuildStatementMatrix();
 	//std::ofstream f("out.xml", std::ios::out);
 	//to_XML(f);
 }
@@ -692,7 +698,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	index << "</style>" << std::endl;
 	index << "</head>" << std::endl;
 	index << "<body>" << std::endl;
-	index << "<h1>DWARF v2/v3 navigation</h1>" << std::endl;
+	index << "<h1><a href=\"http://dwarfstd.org\"/>DWARF</a> v2/v3 navigation</h1>" << std::endl;
 	index << "<table>" << std::endl;
 	index << "<tr><th>Section</th><th>Description</th></tr>" << std::endl;
 	index << "<tr>" << std::endl;
@@ -2140,6 +2146,21 @@ const DWARF_CIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCIE(uint64_t debug
 	
 	return dw_cie_iter != dw_cies.end() ? (*dw_cie_iter).second : 0;
 }
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::BuildStatementMatrix()
+{
+	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::iterator dw_cu_iter;
+	
+	for(dw_cu_iter = dw_cus.begin(); dw_cu_iter != dw_cus.end(); dw_cu_iter++)
+	{
+		DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = (*dw_cu_iter).second;
+
+		dw_cu->BuildStatementMatrix(stmt_matrix);
+	}
+}
+
+
 
 } // end of namespace dwarf
 } // end of namespace debug

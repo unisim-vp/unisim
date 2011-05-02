@@ -196,9 +196,10 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 		while(1);
 		
 		// For each load statement, instantiate a loader
+		unsigned int num_load_stmts = ld_stmts.size();
 		unsigned int stmt_idx;
 		
-		for(stmt_idx = 0; stmt_idx < ld_stmts.size(); stmt_idx++)
+		for(stmt_idx = 0; stmt_idx < num_load_stmts; stmt_idx++)
 		{
 			LoadStatement *ld_stmt = ld_stmts[stmt_idx];
 			
@@ -316,6 +317,12 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 					Object::Stop(-1);
 					break;
 			}
+		}
+		for(stmt_idx = 0; stmt_idx < num_load_stmts; stmt_idx++)
+		{
+			LoadStatement *ld_stmt = ld_stmts[stmt_idx];
+			
+			delete ld_stmt;
 		}
 	}
 	
@@ -816,11 +823,30 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::~MemoryRouter()
 	{
 		delete memory_import[i];
 	}
+	
+	unsigned int num_mappings = mapping_table.size();
+	for(i = 0; i < num_mappings; i++)
+	{
+		Mapping<MEMORY_ADDR> *mapping = mapping_table[i];
+		
+		delete mapping;
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 {
+	unsigned int num_mappings = mapping_table.size();
+	unsigned int i;
+	for(i = 0; i < num_mappings; i++)
+	{
+		Mapping<MEMORY_ADDR> *mapping = mapping_table[i];
+		
+		delete mapping;
+	}
+	
+	mapping_table.clear();
+
 	if(!mapping.empty())
 	{
 		std::vector<MappingStatement *> mapping_stmts;
@@ -863,7 +889,7 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 		while(1);
 		
 		unsigned int num_mapping_stmts = mapping_stmts.size();
-		unsigned int i, j;
+		unsigned int j;
 		
 		for(i = 0; i < num_mapping_stmts; i++)
 		{
@@ -934,6 +960,13 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 					PrettyPrintSyntaxErrorLocation(mapping.c_str(), mapping_stmt->pos);
 				}
 			}
+		}
+		
+		for(i = 0; i < num_mapping_stmts; i++)
+		{
+			MappingStatement *mapping_stmt = mapping_stmts[i];
+			
+			delete mapping_stmt;
 		}
 	}
 	

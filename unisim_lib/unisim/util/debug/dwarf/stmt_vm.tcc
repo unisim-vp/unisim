@@ -63,12 +63,17 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 template <class MEMORY_ADDR>
 bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 {
-	// filename starts '/' or 'drive letter':\ or 'driver letter':/
+#ifdef WIN32
+	// filename starts with '/' or 'drive letter':\ or 'driver letter':/
 	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
+#else
+	// filename starts with '/'
+	return (*filename == '/');
+#endif
 }
 
 template <class MEMORY_ADDR>
-void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& matrix)
+void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
 	const DWARF_Filename *dw_filename = (file >= 1 && file <= filenames.size()) ? &filenames[file - 1] : 0;
 	const char *filename = dw_filename ? dw_filename->GetFilename() : 0;
@@ -79,17 +84,64 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		{
 			const DWARF_LEB128& leb128_dir = dw_filename->GetDirectoryIndex();
 			unsigned int dir = (unsigned int) leb128_dir;
-			dirname = (dir >= 1 && dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
+			if(dir != 0) // current directory of the compilation ?
+			{
+				dirname = (dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
+				if(!dirname)
+				{
+					std::cerr << "WARNING! Invalid directory index in statement program" << std::endl;
+					return;
+				}
+			}
 		}
 	}
-	if(matrix.find(address) != matrix.end())
+	// At this point, if dirname is null we know that source filename is an absolute path or it is relative to the current directory of the compilation
+	
+	// Check that there's no duplicated entry in the statement matrix
+	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
+	if(stmt_matrix_iter != stmt_matrix.end())
 	{
-		//std::cerr << "Row for address 0x" << std::hex << address << std::dec << " already exists" << std::endl;
+		Statement<MEMORY_ADDR> *prev_stmt = (*stmt_matrix_iter).second;
+		
+		if((prev_stmt->GetAddress() == address) &&
+		   (prev_stmt->IsBeginningOfBasicBlock() == basic_block) &&
+		   (prev_stmt->GetLineNo() == line) &&
+		   (prev_stmt->GetColNo() == column))
+		{
+			std::string prev_filename;
+			std::string cur_filename;
+		
+			if(prev_stmt->GetSourceDirname())
+			{
+				prev_filename += prev_stmt->GetSourceDirname();
+				prev_filename += '/';
+			}
+			
+			if(prev_stmt->GetSourceFilename())
+			{
+				prev_filename += prev_stmt->GetSourceFilename();
+			}
+
+			if(dirname)
+			{
+				cur_filename += dirname;
+				cur_filename += '/';
+			}
+			if(filename)
+			{
+				cur_filename += filename;
+			}
+
+			if(prev_filename.compare(cur_filename) == 0)
+			{
+				std::cerr << "WARNING! A different row for address 0x" << std::hex << address << std::dec << " already exists" << std::endl;
+			}
+		}
 		return;
 	}
 	
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
-	matrix.insert(std::pair<MEMORY_ADDR, Statement<MEMORY_ADDR> *>(address, stmt));
+	stmt_matrix.insert(std::pair<MEMORY_ADDR, Statement<MEMORY_ADDR> *>(address, stmt));
 }
 
 template <class MEMORY_ADDR>

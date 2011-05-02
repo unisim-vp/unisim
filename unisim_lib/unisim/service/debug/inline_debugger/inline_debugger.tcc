@@ -1898,6 +1898,7 @@ bool InlineDebugger<ADDRESS>::GetLine(char *line, int size)
 
 	strcpy(line, line_read);
 
+	free(line_read);
 	return true;
 #else
 	cout << prompt;
