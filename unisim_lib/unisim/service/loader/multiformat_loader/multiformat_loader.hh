@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_LOADER_MULTILOADER_HH__
-#define __UNISIM_SERVICE_LOADER_MULTILOADER_HH__
+#ifndef __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_HH__
+#define __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_HH__
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
@@ -55,7 +55,7 @@
 namespace unisim {
 namespace service {
 namespace loader {
-namespace multiloader {
+namespace multiformat_loader {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
@@ -75,10 +75,10 @@ using unisim::service::loader::raw_loader::RawLoader;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::loader::coff_loader::CoffLoader;
 	
-template <class MEMORY_ADDR, unsigned int MAX_MEMORIES> class MemoryRouter;
+template <class MEMORY_ADDR, unsigned int MAX_MEMORIES> class MemoryMapper;
 	
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES = 16>
-class MultiLoader
+class MultiFormatLoader
 	: public Object
 {
 public:
@@ -89,8 +89,8 @@ public:
 	
 	ServiceImport<Memory<MEMORY_ADDR> > *memory_import[MAX_MEMORIES];
 	
-	MultiLoader(const char *name, Object *parent = 0);
-	virtual ~MultiLoader();
+	MultiFormatLoader(const char *name, Object *parent = 0);
+	virtual ~MultiFormatLoader();
 protected:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
@@ -102,7 +102,7 @@ private:
 	unisim::service::tee::blob::Tee<MEMORY_ADDR> *tee_blob;
 	unisim::service::tee::symbol_table_lookup::Tee<MEMORY_ADDR> *tee_symbol_table_lookup;
 	unisim::service::tee::stmt_lookup::Tee<MEMORY_ADDR> *tee_stmt_lookup;
-	MemoryRouter<MEMORY_ADDR, MAX_MEMORIES> *memory_router;
+	MemoryMapper<MEMORY_ADDR, MAX_MEMORIES> *memory_mapper;
 	std::string filename;
 	
 	typedef enum
@@ -223,7 +223,7 @@ public:
 };
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-class MemoryRouter
+class MemoryMapper
 	: public Service<Memory<MEMORY_ADDR> >
 	, public Client<Memory<MEMORY_ADDR> >
 {
@@ -231,8 +231,8 @@ public:
 	ServiceExport<Memory<MEMORY_ADDR> > memory_export;
 	ServiceImport<Memory<MEMORY_ADDR> > *memory_import[MAX_MEMORIES];
 	
-	MemoryRouter(const char *name, Object *parent);
-	virtual ~MemoryRouter();
+	MemoryMapper(const char *name, Object *parent);
+	virtual ~MemoryMapper();
 
 	virtual bool BeginSetup();
 	
@@ -307,9 +307,9 @@ private:
 	void PrettyPrintSyntaxErrorLocation(const char *s, unsigned int pos);
 };
 
-} // end of namespace multiloader
+} // end of namespace multiformat_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_SERVICE_LOADER_MULTILOADER_HH__
+#endif // __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_HH__

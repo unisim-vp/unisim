@@ -32,14 +32,14 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/service/loader/multiloader/multiloader.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 
 namespace unisim {
 namespace service {
 namespace loader {
-namespace multiloader {
+namespace multiformat_loader {
 
-} // end of namespace multiloader
+} // end of namespace multiformat_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim

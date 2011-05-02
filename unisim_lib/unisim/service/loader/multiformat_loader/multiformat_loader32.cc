@@ -32,19 +32,19 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/service/loader/multiloader/multiloader.hh>
-#include <unisim/service/loader/multiloader/multiloader.tcc>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.tcc>
 #include <inttypes.h>
 #include <limits>
 
 namespace unisim {
 namespace service {
 namespace loader {
-namespace multiloader {
+namespace multiformat_loader {
 
-template class MultiLoader<uint32_t>;
+template class MultiFormatLoader<uint32_t>;
 
-} // end of namespace multiloader
+} // end of namespace multiformat_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim
@@ -53,7 +53,7 @@ namespace unisim {
 namespace kernel {
 namespace service {
 
-typedef unisim::service::loader::multiloader::AddressRange<uint32_t> AddressRange32;
+typedef unisim::service::loader::multiformat_loader::AddressRange<uint32_t> AddressRange32;
 	
 template <> Variable<AddressRange32 >::Variable(const char *_name, Object *_object, AddressRange32 & _storage, Type type, const char *_description) :
 	VariableBase(_name, _object, type, _description), storage(&_storage)

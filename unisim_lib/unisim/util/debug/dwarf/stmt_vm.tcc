@@ -99,45 +99,12 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 	
 	// Check that there's no duplicated entry in the statement matrix
 	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
+	
+	// If there's already a row, I suppose that overwritting it is the correct behavior
 	if(stmt_matrix_iter != stmt_matrix.end())
 	{
-		Statement<MEMORY_ADDR> *prev_stmt = (*stmt_matrix_iter).second;
-		
-		if((prev_stmt->GetAddress() == address) &&
-		   (prev_stmt->IsBeginningOfBasicBlock() == basic_block) &&
-		   (prev_stmt->GetLineNo() == line) &&
-		   (prev_stmt->GetColNo() == column))
-		{
-			std::string prev_filename;
-			std::string cur_filename;
-		
-			if(prev_stmt->GetSourceDirname())
-			{
-				prev_filename += prev_stmt->GetSourceDirname();
-				prev_filename += '/';
-			}
-			
-			if(prev_stmt->GetSourceFilename())
-			{
-				prev_filename += prev_stmt->GetSourceFilename();
-			}
-
-			if(dirname)
-			{
-				cur_filename += dirname;
-				cur_filename += '/';
-			}
-			if(filename)
-			{
-				cur_filename += filename;
-			}
-
-			if(prev_filename.compare(cur_filename) == 0)
-			{
-				std::cerr << "WARNING! A different row for address 0x" << std::hex << address << std::dec << " already exists" << std::endl;
-			}
-		}
-		return;
+		delete (*stmt_matrix_iter).second;
+		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
@@ -345,14 +312,16 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						end_sequence = true;
 						// Add a row to matrix
 						if(matrix) AddRow(dw_stmt_prog, *matrix);
-						// Reset machine state
+						// Reset machine state but end_sequence !
 						address = 0;
 						file = 1;
 						line = 1;
 						column = 0;
 						is_stmt = dw_stmt_prog->default_is_stmt;
 						basic_block = false;
-						end_sequence = false;
+						prologue_end = false;
+						prologue_begin = false;
+						isa = 0;
 						if(os) (*os) << "End of Sequence";
 						break;
 					case DW_LNE_set_address:

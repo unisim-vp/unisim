@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_LOADER_MULTILOADER_MULTILOADER_TCC__
-#define __UNISIM_SERVICE_LOADER_MULTILOADER_MULTILOADER_TCC__
+#ifndef __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_MULTIFORMAT_LOADER_TCC__
+#define __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_MULTIFORMAT_LOADER_TCC__
 
 #include <unisim/kernel/debug/debug.hh>
 #include <string.h>
@@ -44,7 +44,7 @@
 namespace unisim {
 namespace service {
 namespace loader {
-namespace multiloader {
+namespace multiformat_loader {
 
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::EndDebugInfo;
@@ -58,7 +58,7 @@ using unisim::kernel::logger::EndDebugWarning;
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption::LoadStatementOption(LoadStatementOptionType _type, unsigned int _pos, const std::string& _value)
+MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption::LoadStatementOption(LoadStatementOptionType _type, unsigned int _pos, const std::string& _value)
 	: type(_type)
 	, pos(_pos)
 	, value(_value)
@@ -70,13 +70,13 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption::LoadStatementOption
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::LoadStatement(unsigned int _pos)
+MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::LoadStatement(unsigned int _pos)
 	: pos(_pos)
 {
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::~LoadStatement()
+MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::~LoadStatement()
 {
 	typename std::vector<LoadStatementOption *>::iterator iter;
 	for(iter = opts.begin(); iter != opts.end(); iter++)
@@ -86,13 +86,13 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::~LoadStatement()
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::AddOption(LoadStatementOption *opt)
+void MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::AddOption(LoadStatementOption *opt)
 {
 	opts.push_back(opt);
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::FindOption(LoadStatementOptionType opt_type)
+typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement::FindOption(LoadStatementOptionType opt_type)
 {
 	typename std::vector<LoadStatementOption *>::iterator opt_iter;
 	
@@ -106,12 +106,12 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiLoade
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//                                        MultiLoader                                    //
+//                                        MultiFormatLoader                                    //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *parent)
+MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name, Object *parent)
 	: Object(name, parent)
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
@@ -123,7 +123,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 	, tee_loader(0)
 	, tee_blob(0)
 	, tee_symbol_table_lookup(0)
-	, memory_router(0)
+	, memory_mapper(0)
 	, filename()
 	, positional_option_types()
 	, raw_loaders()
@@ -151,7 +151,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 	tee_symbol_table_lookup = new unisim::service::tee::symbol_table_lookup::Tee<MEMORY_ADDR>("tee-symbol-table-lookup", this);
 	tee_stmt_lookup = new unisim::service::tee::stmt_lookup::Tee<MEMORY_ADDR>("tee-stmt-lookup", this);
 	
-	memory_router = new MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>("memory-router", this);
+	memory_mapper = new MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>("memory-mapper", this);
 	
 	if(!filename.empty())
 	{
@@ -267,7 +267,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 						raw_loaders.push_back(raw_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> raw_loader->loader_export;
-						raw_loader->memory_import >> memory_router->memory_export;
+						raw_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;
 				case FFMT_ELF32:
@@ -279,7 +279,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 						*tee_blob->blob_import[stmt_idx] >> elf32_loader->blob_export;
 						*tee_symbol_table_lookup->symbol_table_lookup_import[stmt_idx] >> elf32_loader->symbol_table_lookup_export;
 						*tee_stmt_lookup->stmt_lookup_import[stmt_idx] >> elf32_loader->stmt_lookup_export;
-						elf32_loader->memory_import >> memory_router->memory_export;
+						elf32_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;
 				case FFMT_ELF64:
@@ -291,7 +291,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 						*tee_blob->blob_import[stmt_idx] >> elf64_loader->blob_export;
 						*tee_symbol_table_lookup->symbol_table_lookup_import[stmt_idx] >> elf64_loader->symbol_table_lookup_export;
 						*tee_stmt_lookup->stmt_lookup_import[stmt_idx] >> elf64_loader->stmt_lookup_export;
-						elf64_loader->memory_import >> memory_router->memory_export;
+						elf64_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;
 				case FFMT_S19:
@@ -300,7 +300,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 						s19_loaders.push_back(s19_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> s19_loader->loader_export;
-						s19_loader->memory_import >> memory_router->memory_export;
+						s19_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;
 				case FFMT_COFF:
@@ -309,7 +309,7 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 						coff_loaders.push_back(coff_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> coff_loader->loader_export;
-						coff_loader->memory_import >> memory_router->memory_export;
+						coff_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;
 				default:
@@ -333,12 +333,12 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiLoader(const char *name, Object *pa
 	
 	for(i = 0; i < MAX_MEMORIES; i++)
 	{
-		*memory_router->memory_import[i] >> *memory_import[i];
+		*memory_mapper->memory_import[i] >> *memory_import[i];
 	}
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::~MultiLoader()
+MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::~MultiFormatLoader()
 {
 	unsigned int i;
 	
@@ -376,23 +376,23 @@ MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::~MultiLoader()
 	if(tee_blob) delete tee_blob;
 	if(tee_symbol_table_lookup) delete tee_symbol_table_lookup;
 	if(tee_stmt_lookup) delete tee_stmt_lookup;
-	if(memory_router) delete memory_router;
+	if(memory_mapper) delete memory_mapper;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::IsVerbose() const
+bool MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::IsVerbose() const
 {
 	return verbose;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::IsVerboseParser() const
+bool MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::IsVerboseParser() const
 {
 	return verbose_parser;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement *MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ParseLoadStatement(const std::string& s, unsigned int& pos)
+typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement *MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ParseLoadStatement(const std::string& s, unsigned int& pos)
 {
 	unsigned opt_idx = 0;
 	LoadStatement *ld_stmt = new LoadStatement(pos);
@@ -435,7 +435,7 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatement *MultiLoader<MEMO
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ParseLoadStatementOption(const std::string& s, unsigned int& pos, unsigned int opt_idx)
+typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ParseLoadStatementOption(const std::string& s, unsigned int& pos, unsigned int opt_idx)
 {
 	LoadStatementOption *ld_stmt_opt = 0;
 	Token tok;
@@ -515,7 +515,7 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *MultiLoade
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-unsigned int MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value)
+unsigned int MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value)
 {
 	unsigned int n;
 	tok_value.clear();
@@ -584,7 +584,7 @@ unsigned int MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-std::string MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, const std::string& tok_value)
+std::string MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, const std::string& tok_value)
 {
 	std::stringstream sstr;
 	switch(tok)
@@ -609,7 +609,7 @@ std::string MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, cons
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOptionType MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetOptionType(const std::string& opt_name)
+typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOptionType MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GetOptionType(const std::string& opt_name)
 {
 	if(opt_name.compare("filename") == 0) return OPT_FILENAME;
 	if(opt_name.compare("format") == 0) return OPT_FORMAT;
@@ -617,7 +617,7 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOptionType MultiLo
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GuessFileFormat(const std::string& filename_to_guess_file_format)
+typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GuessFileFormat(const std::string& filename_to_guess_file_format)
 {
 	uint8_t magic[8];
 	
@@ -674,7 +674,7 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiLoader<MEMORY_A
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-const char *MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetFileFormatName(FileFormat file_fmt)
+const char *MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GetFileFormatName(FileFormat file_fmt)
 {
 	switch(file_fmt)
 	{
@@ -689,7 +689,7 @@ const char *MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetFileFormatName(FileFormat
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::GetFileFormat(const char *name)
+typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::GetFileFormat(const char *name)
 {
 	if((strcmp(name, "elf32") == 0) || (strcmp(name, "ELF32") == 0)) return FFMT_ELF32;
 	if((strcmp(name, "elf64") == 0) || (strcmp(name, "ELF64") == 0)) return FFMT_ELF64;
@@ -700,7 +700,7 @@ typename MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiLoader<MEMORY_A
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MultiLoader<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(const char *s, unsigned int pos)
+void MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(const char *s, unsigned int pos)
 {
 	logger << DebugWarning << s << EndDebugWarning;
 	logger << DebugWarning;
@@ -725,7 +725,7 @@ AddressRange<MEMORY_ADDR>::AddressRange()
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, const std::string& _value)
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, const std::string& _value)
 	: type(_type)
 	, pos(_pos)
 	, value(_value)
@@ -734,7 +734,7 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatemen
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, const AddressRange<MEMORY_ADDR>& _range)
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatementOption(MappingStatementOptionType _type, unsigned int _pos, const AddressRange<MEMORY_ADDR>& _range)
 	: type(_type)
 	, pos(_pos)
 	, value()
@@ -747,13 +747,13 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption::MappingStatemen
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::MappingStatement(unsigned int _pos)
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::MappingStatement(unsigned int _pos)
 	: pos(_pos)
 {
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::~MappingStatement()
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::~MappingStatement()
 {
 	typename std::vector<MappingStatementOption *>::iterator iter;
 	for(iter = opts.begin(); iter != opts.end(); iter++)
@@ -763,13 +763,13 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::~MappingStatement()
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::AddOption(MappingStatementOption *opt)
+void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::AddOption(MappingStatementOption *opt)
 {
 	opts.push_back(opt);
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::FindOption(MappingStatementOptionType opt_type)
+typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement::FindOption(MappingStatementOptionType opt_type)
 {
 	typename std::vector<MappingStatementOption *>::iterator opt_iter;
 	
@@ -783,11 +783,11 @@ typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
-//                                      MemoryRouter                                     //
+//                                      MemoryMapper                                     //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MemoryRouter(const char *name, Object *parent)
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MemoryMapper(const char *name, Object *parent)
 	: Object(name, parent)
 	, Service<Memory<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
@@ -815,7 +815,7 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MemoryRouter(const char *name, Object *
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::~MemoryRouter()
+MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::~MemoryMapper()
 {
 	unsigned int i;
 	
@@ -834,7 +834,7 @@ MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::~MemoryRouter()
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 {
 	unsigned int num_mappings = mapping_table.size();
 	unsigned int i;
@@ -974,7 +974,7 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::FindMemory(const char *name)
+int MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::FindMemory(const char *name)
 {
 	unsigned int i;
 	
@@ -994,19 +994,19 @@ int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::FindMemory(const char *name)
 
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::IsVerbose() const
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::IsVerbose() const
 {
 	return verbose;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::IsVerboseParser() const
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::IsVerboseParser() const
 {
 	return verbose_parser;
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value, MEMORY_ADDR& tok_addr_value)
+unsigned int MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::string& s, unsigned int pos, Token& tok, std::string& tok_value, MEMORY_ADDR& tok_addr_value)
 {
 	unsigned int n;
 	tok_value.clear();
@@ -1160,7 +1160,7 @@ unsigned int MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadToken(const std::strin
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-std::string MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, const std::string& tok_value)
+std::string MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, const std::string& tok_value)
 {
 	std::stringstream sstr;
 	switch(tok)
@@ -1191,7 +1191,7 @@ std::string MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::GetTokenName(Token tok, con
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressRange(const std::string& s, unsigned int& pos, AddressRange<MEMORY_ADDR>& addr_range)
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressRange(const std::string& s, unsigned int& pos, AddressRange<MEMORY_ADDR>& addr_range)
 {
 	Token tok;
 	std::string tok_value;
@@ -1238,7 +1238,7 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressRange(const std::strin
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ParseMappingStatementOption(const std::string& s, unsigned int& pos, unsigned int opt_idx)
+typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseMappingStatementOption(const std::string& s, unsigned int& pos, unsigned int opt_idx)
 {
 	MappingStatementOption *mapping_stmt_opt = 0;
 	Token tok;
@@ -1322,7 +1322,7 @@ typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement *MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ParseMappingStatement(const std::string& s, unsigned int& pos)
+typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement *MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseMappingStatement(const std::string& s, unsigned int& pos)
 {
 	unsigned opt_idx = 0;
 	MappingStatement *mapping_stmt = new MappingStatement(pos);
@@ -1366,7 +1366,7 @@ typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatement *MemoryRouter
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOptionType MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::GetOptionType(const std::string& opt_name)
+typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOptionType MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::GetOptionType(const std::string& opt_name)
 {
 	if(opt_name.compare("memory") == 0) return OPT_MEMORY;
 	if(opt_name.compare("range") == 0) return OPT_RANGE;
@@ -1374,7 +1374,7 @@ typename MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOptionType Mem
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(const char *s, unsigned int pos)
+void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(const char *s, unsigned int pos)
 {
 	logger << DebugWarning << s << EndDebugWarning;
 	logger << DebugWarning;
@@ -1384,7 +1384,7 @@ void MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::PrettyPrintSyntaxErrorLocation(con
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-void MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::Reset()
+void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
 {
 	unsigned int i;
 	
@@ -1398,7 +1398,7 @@ void MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::Reset()
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size)
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
 	MEMORY_ADDR low = addr;
 	MEMORY_ADDR high = addr + size - 1;
@@ -1445,7 +1445,7 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void 
 }
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
-bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size)
+bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size)
 {
 	MEMORY_ADDR low = addr;
 	MEMORY_ADDR high = addr + size - 1;
@@ -1490,10 +1490,10 @@ bool MemoryRouter<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, cons
 	return true;
 }
 
-} // end of namespace multiloader
+} // end of namespace multiformat_loader
 } // end of namespace loader
 } // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_SERVICE_LOADER_MULTILOADER_TCC__
+#endif // __UNISIM_SERVICE_LOADER_MULTIFORMAT_LOADER_TCC__
 

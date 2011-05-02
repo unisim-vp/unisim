@@ -60,7 +60,7 @@
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/loader/multiloader/multiloader.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
@@ -109,7 +109,7 @@ void SigIntHandler(int signum)
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::multiloader::MultiLoader;
+using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
@@ -247,7 +247,7 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Multiformat loader
-	MultiLoader<CPU_ADDRESS_TYPE> *loader;
+	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -397,7 +397,7 @@ Simulator::Simulator(int argc, char **argv)
 	//===                         Service instantiations                    ===
 	//=========================================================================
 	//  - Multiformat loader
-	loader = new MultiLoader<CPU_ADDRESS_TYPE>("loader");
+	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -651,7 +651,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
 	
 	// - Loader memory router
-	simulator->SetVariable("loader.memory-router.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,rom-effective-to-physical-address-translator:0xff800000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 8 MB ROM / 32 MB Flash memory
+	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,rom-effective-to-physical-address-translator:0xff800000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 8 MB ROM / 32 MB Flash memory
 
 	//  - RAM
 	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
