@@ -113,7 +113,7 @@ create_simulator(char *xml_file, std::vector<std::string> *parms)
 		argv_size += (parms->size() * 2);
 	argv = (char **)malloc(sizeof(char *) * (argv_size + 1));
 	int index = 0;
-	argv[index++] = (char *)ARMEMU_EXEC_LOCATION;
+	argv[index++] = (char *)SIM_EXEC_LOCATION;
 	argv[index++] = (char *)"-p";
 	argv[index++] = (char *)PYTHON_LIB_TO_SHARED_DATA_PATH;
 	argv[index++] = (char *)"-w";
@@ -738,7 +738,6 @@ static PyTypeObject armemu_SimulatorType =
 static PyModuleDef simulatormodule = {
     PyModuleDef_HEAD_INIT,
     "simulator",
-	//SIM_PYTHON_MODULE_NAME,
     "UNISIM python simulator module.",
     -1,
     NULL, NULL, NULL, NULL, NULL
@@ -746,7 +745,6 @@ static PyModuleDef simulatormodule = {
 
 PyMODINIT_FUNC
 PyInit_simulator(void)
-// PyInit_ARMEMU_DECLARATION
 {
     PyObject* m;
     static void *PySimulator_API[PySimulator_API_pointers];

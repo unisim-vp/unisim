@@ -12,8 +12,6 @@ set ( SIM_PROGRAM_NAME "UNISIM PB-ARM926EJS Emulator" )
 set ( SIM_COPYRIGHT "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique" )
 set ( SIM_LICENSE "BSD (See file COPYING)" )
 set ( SIM_DESCRIPTION "UNISIM PB-ARM926EJS Simulator" )
-set ( SIM_PYTHON_MODULE_NAME "arm926ejs" )
-set ( SIM_PYTHON_IMPORT_NAME "arm926ejs${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
 if ( UNIX AND NOT APPLE )
 	find_file ( LSB_RELEASE_FILE lsb-release /etc )
@@ -37,11 +35,6 @@ include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/FindOSCISystemC.cmake )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
-include ( FindPythonInterp )
-message ( "The following python executable `${PYTHON_EXECUTABLE}' will be used
-	to create a python module of the UNISIM arm926ejs simulator. If you want to use
-	another python version please launch cmake with the following option:
-	-DPYTHON_EXECUTABLE=<path to the python interpreter>" )
 
 set ( SIM_EXEC_NAME unisim-arm926ejs-${SIM_VERSION} )
 set ( SIM_LIB_NAME unisim-arm926ejs )
@@ -225,10 +218,6 @@ add_custom_target ( sim__share_python
 		"Setting python demos."
 	)
 
-configure_file (
-	${CMAKE_SOURCE_DIR}/share/python/demo.py.in
-	${SHARE_DIRECTORY}/python/demo.py )
-
 if ( APPLE )
 	set ( SIM_UA_UNISIM_SIM_NAME "ARM926EJS" )
 	configure_file ( 
@@ -300,70 +289,12 @@ if ( WIN32 )
 		wsock32 )
 endif ( WIN32 )
 
-set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${SIM_EXEC_NAME}" )
-set ( PYTHON__SIM__INCLUDE_DIRS
-	"'${CMAKE_SOURCE_DIR}',
-	 '${CMAKE_BINARY_DIR}',
-	 '${OSCI_SYSTEMC_INCLUDE_DIR}',
-	 '${OSCI_TLM2_INCLUDE_DIR}'")
-set ( PYTHON__SIM__LIB_DIRS
-	"'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
-foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
-	get_filename_component( lib_path ${lib}
-		PATH )
-	set ( PYTHON__SIM__LIB_DIRS
-		"${PYTHON__SIM__LIB_DIRS},
-		 '${lib_path}'")
-endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
-set ( PYTHON__SIM__LIBS
-	"'simulatorlib',
-	 'unisim__component__tlm2__memory__ram',
-	 'unisim__component__tlm2__processor__arm__arm926ejs',
-	 'unisim__component__tlm2__chipset__arm926ejs_pxp',
-	 'unisim__component__cxx__processor__arm__arm926ejs',
-	 'unisim__component__cxx__memory__ram',
-	 'unisim__service__time__host_time',
-	 'unisim__service__time__sc_time',
-	 'unisim__service__loader__elf_loader',
-	 'unisim__service__loader__raw_loader',
-	 'unisim__service__debug__gdb_server',
-	 'unisim__service__debug__inline_debugger',
-	 'unisim__service__debug__sim_debugger',
-	 'unisim__service__trap_handler',
-	 'unisim__util__random',
-	 'unisim__util__debug',
-	 'unisim__util__debug__dwarf',
-	 'unisim__util__debug__blob',
-	 'unisim__util__debug__debugger_handler',
-	 'unisim__util__xml',
-	 'unisim__util__generic_peripheral_register',
-	 'unisim__kernel',
-	 'xml2',
-	 'systemc'")
-if ( BUILD_POWER_SUPPORT )
-	get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
-		PATH )
-	set ( PYTHON__SIM__LIB_DIRS
-		"${PYTHON__SIM__LIB_DIRS},
-		 '${lib_path}'")
-	get_filename_component ( lib_name ${CACTI_4_2_LIBRARY}
-		NAME_WE )
-	string ( REGEX REPLACE "^lib" "" lib_name ${lib_name} )
-	set ( PYTHON__SIM__LIBS
-		"${PYTHON__SIM__LIBS},
-		'unisim__service__power',
-		'${lib_name}'" )
-endif ( BUILD_POWER_SUPPORT )
-	 
+
 set ( CMAKE_REQUIRED_FLAGS "-include stdio.h" )
 check_include_file ( editline/readline.h HAVE_editline_readline_H )
 if ( HAVE_editline_readline_H )
 	find_library ( LIBEDIT
 		edit )
-	if ( LIBEDIT )
-		set ( PYTHON__SIM__LIBS
-			"${PYTHON__SIM__LIBS},'edit'" )
-	endif ( LIBEDIT )
 endif ( HAVE_editline_readline_H )
 
 configure_file ( 
@@ -436,17 +367,13 @@ set ( sim__deps
 	unisim__service__loader__raw_loader
 	unisim__service__trap_handler
 	)
+
 if ( BUILD_POWER_SUPPORT )
 	list ( APPEND armemu__deps
 		unisim__service__power
 		)
 endif ( BUILD_POWER_SUPPORT )
-# add_dependencies ( simulator
-# 	${armemu__deps}
-# 	)
-# add_dependencies ( ${ARMEMU_LIB_TARGET}
-# 	${armemu__deps}
-# 	)
+
 add_dependencies ( ${SIM_EXEC_TARGET}
 	${sim__deps}
 	)
@@ -465,64 +392,73 @@ add_custom_command (
 	)
 
 if ( BUILD_PYTHON_MODULE )
+	set ( PYTHON__SIM__MODULE_NAME "arm926ejs" )
+	set ( PYTHON__SIM__IMPORT_NAME "arm926ejs${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}" )
+	set ( PYTHON__SIM__EXTRA_COMPILE_FLAGS "-DSIM_LIBRARY" )
+	set ( PYTHON__SIM__SIM_EXEC_NAME ${SIM_EXEC_NAME} )
+	set ( PYTHON__SIM__INCLUDE_DIRS
+		"'${CMAKE_SOURCE_DIR}',
+		 '${CMAKE_BINARY_DIR}',
+		 '${OSCI_SYSTEMC_INCLUDE_DIR}',
+		 '${OSCI_TLM2_INCLUDE_DIR}'")
+	set ( PYTHON__SIM__LIB_DIRS
+		"'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
+	foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+		get_filename_component( lib_path ${lib}
+			PATH )
+		set ( PYTHON__SIM__LIB_DIRS
+			"${PYTHON__SIM__LIB_DIRS},
+			 '${lib_path}'")
+	endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+	set ( PYTHON__SIM__LIBS
+		"'simulatorlib',
+		 'unisim__component__tlm2__memory__ram',
+		 'unisim__component__tlm2__processor__arm__arm926ejs',
+		 'unisim__component__tlm2__chipset__arm926ejs_pxp',
+		 'unisim__component__cxx__processor__arm__arm926ejs',
+		 'unisim__component__cxx__memory__ram',
+		 'unisim__service__time__host_time',
+		 'unisim__service__time__sc_time',
+		 'unisim__service__loader__elf_loader',
+		 'unisim__service__loader__raw_loader',
+		 'unisim__service__debug__gdb_server',
+		 'unisim__service__debug__inline_debugger',
+		 'unisim__service__debug__sim_debugger',
+		 'unisim__service__trap_handler',
+		 'unisim__util__random',
+		 'unisim__util__debug',
+		 'unisim__util__debug__dwarf',
+		 'unisim__util__debug__blob',
+		 'unisim__util__debug__debugger_handler',
+		 'unisim__util__xml',
+		 'unisim__util__generic_peripheral_register',
+		 'unisim__kernel',
+		 'xml2',
+		 'systemc'")
+	if ( BUILD_POWER_SUPPORT )
+		get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
+			PATH )
+		set ( PYTHON__SIM__LIB_DIRS
+			"${PYTHON__SIM__LIB_DIRS},
+			 '${lib_path}'")
+		get_filename_component ( lib_name ${CACTI_4_2_LIBRARY}
+			NAME_WE )
+		string ( REGEX REPLACE "^lib" "" lib_name ${lib_name} )
+		set ( PYTHON__SIM__LIBS
+			"${PYTHON__SIM__LIBS},
+			'unisim__service__power',
+			'${lib_name}'" )
+	endif ( BUILD_POWER_SUPPORT )
+	if ( LIBEDIT )
+		set ( PYTHON__SIM__LIBS
+			"${PYTHON__SIM__LIBS},'edit'" )
+	endif ( LIBEDIT )
+
+	include ( python/UnisimPython.cmake )
+
 	configure_file (
-		${CMAKE_SOURCE_DIR}/python/setup.py.in
-		${CMAKE_BINARY_DIR}/python/setup.py )
-	configure_file (
-		${CMAKE_SOURCE_DIR}/python/python_config.hh.in
-		${CMAKE_BINARY_DIR}/python/python_config.hh )
-
-	add_custom_command (
-		OUTPUT
-			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
-			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
-			lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
-		COMMAND
-			${CMAKE_COMMAND} -E make_directory python
-		COMMAND
-			${PYTHON_EXECUTABLE} python/setup.py build -t python --build-lib lib
-		DEPENDS
-			${CMAKE_BINARY_DIR}/config.hh
-			${CMAKE_BINARY_DIR}/python/setup.py
-			${CMAKE_BINARY_DIR}/python/python_config.hh
-			${CMAKE_SOURCE_DIR}/python/py_simulator.hh
-			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
-			${CMAKE_SOURCE_DIR}/python/py_variable.hh
-			${CMAKE_SOURCE_DIR}/python/py_variable.cc
-			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
-			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
-			simulatorlib
-			${sim__deps}
-		COMMENT
-			"Building python extension."
-		)
-
-	if ( ${PYTHONINTERP_FOUND} )
-		add_custom_target ( ${SIM_LIB_TARGET}-python
-			ALL
-			DEPENDS
-				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
-				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
-				lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
-			COMMENT
-				"Python target."
-		)
-	endif ( ${PYTHONINTERP_FOUND} )
-
-	if ( ${PYTHONINTERP_FOUND} )
-		install (
-			FILES
-				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
-			DESTINATION
-				lib
-			)
-	endif ( ${PYTHONINTERP_FOUND} )
+		${CMAKE_SOURCE_DIR}/share/python/demo.py.in
+		${SHARE_DIRECTORY}/python/demo.py )
 endif ( BUILD_PYTHON_MODULE )
 
 install ( TARGETS ${SIM_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}
@@ -612,12 +548,12 @@ elseif ( UNIX )
 			${CMAKE_SOURCE_DIR}/share/linux/find_deb_dependencies.sh
 				${CMAKE_BINARY_DIR}/bin/${SIM_EXEC_NAME}
 				${CMAKE_BINARY_DIR}/lib/${SIM_LIB_NAME}
-				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+				${CMAKE_BINARY_DIR}/lib/${PYTHON__SIM__IMPORT_NAME}.so
 				> ${CMAKE_BINARY_DIR}/deps.deb
 		DEPENDS
 			${SIM_EXEC_TARGET}
 			${SIM_LIB_TARGET}
-			${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+			${CMAKE_BINARY_DIR}/lib/${PYTHON__SIM__IMPORT_NAME}.so
 		COMMENT
 			"Computing simulator Debian dependencies."
 		)

@@ -27,6 +27,7 @@
 			<file>share/linux/sim.desktop.in</file>
 			<file>share/linux/find_deb_dependencies.sh</file>
 			<file>share/python/demo.py.in</file>
+			<file>python/UnisimPython.cmake</file>
 			<file>python/py_simulator.hh</file>
 			<file>python/py_simulator.cc</file>
 			<file>python/py_variable.hh</file>
