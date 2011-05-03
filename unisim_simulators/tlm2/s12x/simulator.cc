@@ -600,15 +600,19 @@ void Simulator::Run() {
 		DumpStatistics(cerr);
 		cerr << endl;
 
-		cerr << "load ratio  : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
-		cerr << "store ratio : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << "%" << endl;
+		cerr << "simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["bus-cycle-time"] * 1000000)  << " MHz" << endl;
+		cerr << "Target speed           : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << " MIPS" << endl;
+		cerr << "Target speed           : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << " MHz" << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
+		cerr << "load ratio             : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << " %" << endl;
+		cerr << "store ratio            : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << " %" << endl;
 		cerr << endl;
 
-		cerr << "simulation time: " << spent_time << " seconds" << endl;
-		cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
-		cerr << "time expansion: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+		cerr << "simulation time        : " << spent_time << " seconds" << endl;
+		cerr << "host simulation speed  : " << (((double) (*cpu)["instruction-counter"] / spent_time) / 1000000.0) << " MIPS" << endl;
+
+		cerr << "time dilation          : " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 		cerr << endl;
 
 	}

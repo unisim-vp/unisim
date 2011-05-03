@@ -465,10 +465,11 @@ bool CRG::BeginSetup() {
 
 bool CRG::Setup(ServiceExportBase *srv_export) {
 
+	return true;
 }
 
 bool CRG::EndSetup() {
-
+	return true;
 }
 
 Register* CRG::GetRegister(const char *name)
