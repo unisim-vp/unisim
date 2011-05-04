@@ -62,6 +62,8 @@ public:
 	typedef tlm::tlm_initiator_socket<CONFIG::MCI_WIDTH * 8> mci_master_socket;
 	typedef tlm::tlm_target_socket<4> dcr_slave_socket;
 	
+	static const bool threaded_model = false;
+	
 	plb_slave_socket icurd_plb_slave_sock;    // Instruction Cache Unit Read PLB interface
 	plb_slave_socket dcuwr_plb_slave_sock;    // Data Cache Unit Write PLB interface
 	plb_slave_socket dcurd_plb_slave_sock;    // Data Cache Unit Read PLB interface
@@ -223,7 +225,7 @@ private:
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule;
 	
-	std::map<tlm::tlm_generic_payload *, typename inherited::Interface> return_if;
+	std::map<tlm::tlm_generic_payload *, Event *> pending_requests;
 	
 	sc_time cycle_time;
 	Parameter<sc_time> param_cycle_time;
@@ -237,6 +239,7 @@ private:
 	tlm::tlm_sync_enum nb_transport_bw(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	
+	void ProcessEvents();
 	void ProcessForwardEvent(Event *event);
 	void ProcessBackwardEvent(Event *event);
 	void ProcessDCREvent(Event *event);

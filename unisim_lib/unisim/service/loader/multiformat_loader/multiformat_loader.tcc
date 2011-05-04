@@ -131,7 +131,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, elf64_loaders()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
-	, param_filename("filename", this, filename, "List of files to load. Syntax: [[(filename=]<filename1>[:[format=]<format1>]][,[(filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
+	, param_filename("filename", this, filename, "List of files to load. Syntax: [[filename=]<filename1>[:[format=]<format1>]][,[filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
 {
 	positional_option_types.push_back(OPT_FILENAME);
 	positional_option_types.push_back(OPT_FORMAT);
