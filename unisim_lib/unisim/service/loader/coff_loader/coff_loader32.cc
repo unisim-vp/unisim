@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2009,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,65 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_TYPES_HH__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_TYPES_HH__
-
-#include <inttypes.h>
+#include <unisim/service/loader/coff_loader/coff_loader.hh>
+#include <unisim/service/loader/coff_loader/coff_loader.tcc>
 
 namespace unisim {
-namespace component {
-namespace cxx {
-namespace memory {
-namespace flash {
-namespace am29lv {
+namespace service {
+namespace loader {
+namespace coff_loader {
 
-typedef enum { MODE_X8 = 1, MODE_X16 = 2, MODE_X8_X16 = 3 } MODE;
+template class CoffLoader<uint32_t>;
 
-typedef enum
-{
-	CMD_READ = 0,
-	CMD_WRITE = 1
-} COMMAND;
-
-typedef enum
-{
-	ACT_NOP,
-	ACT_READ,
-	ACT_READ_AUTOSELECT,
-	ACT_PROGRAM,
-	ACT_CHIP_ERASE,
-	ACT_SECTOR_ERASE
-} ACTION;
-
-template <class ADDRESS>
-class SECTOR_ADDRESS_RANGE
-{
-public:
-	ADDRESS addr;
-	uint32_t size;
-};
-
-template <typename ADDRESS, unsigned int IO_WIDTH, typename STATE>
-class TRANSITION
-{
-public:
-	STATE initial_state;
-	unsigned int initial_cycle;
-	COMMAND command;
-	bool wildcard_addr;
-	ADDRESS addr;
-	bool wildcard_data;
-	uint8_t data[IO_WIDTH];
-	STATE final_state;
-	unsigned int final_cycle;
-	ACTION action;
-};
-
-} // end of namespace am29lv
-} // end of namespace flash
-} // end of namespace memory
-} // end of namespace cxx
-} // end of namespace component
+} // end of namespace coff_loader
+} // end of namespace loader
+} // end of namespace service
 } // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_TYPES_HH__

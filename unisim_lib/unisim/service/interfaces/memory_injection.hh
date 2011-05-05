@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_INJECTION_HH__
 #define __UNISIM_SERVICE_INTERFACES_MEMORY_INJECTION_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -42,12 +43,9 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class MemoryInjection
+class MemoryInjection : public unisim::kernel::service::ServiceInterface
 {
 public:
-	MemoryInjection(){}
-	virtual ~MemoryInjection(){}
-
 	virtual bool InjectReadMemory(ADDRESS addr, void *buffer, uint32_t size) = 0;
 	virtual bool InjectWriteMemory(ADDRESS addr, const void *buffer, uint32_t size) = 0;
 };

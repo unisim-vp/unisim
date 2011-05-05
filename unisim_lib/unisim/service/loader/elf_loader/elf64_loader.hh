@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_LOADER_HH__
-#define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_LOADER_HH__
+#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF64_LOADER_HH__
+#define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF64_LOADER_HH__
 
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 

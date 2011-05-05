@@ -450,7 +450,7 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 						logger << DebugInfo << "DL1: evicting dirty block at 0x" << std::hex << l1_block_to_evict.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 					}
 					// dirty DL1 block eviction into memory
-					if(unlikely(!BusWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+					if(unlikely(!PLBDataWrite(l1_block_to_evict.GetBaseAddr(), &l1_block_to_evict[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
 						throw DataAsynchronousMachineCheckException<CONFIG>();
 					}
@@ -464,7 +464,7 @@ inline void CPU<CONFIG>::EmuEvictDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l
 						logger << DebugInfo << "DL1: evicting dirty 64-bit word at 0x" << std::hex << (l1_block_to_evict.GetBaseAddr() + dirty_dword_offset) << std::dec << " into memory" << endl << EndDebugInfo;
 					}
 					// dirty DL1 64-word eviction into memory
-					if(unlikely(!BusWrite(l1_block_to_evict.GetBaseAddr() + dirty_dword_offset, &l1_block_to_evict[dirty_dword_offset], 8)))
+					if(unlikely(!PLBDataWrite(l1_block_to_evict.GetBaseAddr() + dirty_dword_offset, &l1_block_to_evict[dirty_dword_offset], 8)))
 					{
 						throw DataAsynchronousMachineCheckException<CONFIG>();
 					}
@@ -629,7 +629,7 @@ inline void CPU<CONFIG>::EmuFillDL1(CacheAccess<typename CONFIG::DL1_CONFIG>& l1
 		logger << DebugInfo << "DL1: filling block at 0x" << std::hex << l1_access.block_base_addr << std::dec << endl << EndDebugInfo;
 	}
 	// DL1 block fill from memory
-	if(unlikely(!BusRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
+	if(unlikely(!PLBDataRead(l1_access.block_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
 	{
 		throw DataAsynchronousMachineCheckException<CONFIG>();
 	}
@@ -655,7 +655,7 @@ inline void CPU<CONFIG>::EmuFillIL1(CacheAccess<typename CONFIG::IL1_CONFIG>& l1
 	typename CONFIG::physical_address_t block_physical_base_addr = mmu_access.physical_addr & (~(CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE - 1));
 	
 	// DL1 block fill from memory
-	if(unlikely(!BusRead(block_physical_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
+	if(unlikely(!PLBInsnRead(block_physical_base_addr, &(*l1_access.block)[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE, l1_access.storage_attr)))
 	{
 		throw InstructionAsynchronousMachineCheckException<CONFIG>();
 	}
@@ -717,7 +717,7 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 						logger << DebugInfo << "DL1: flushing dirty block at 0x" << std::hex << l1_block_to_flush.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 					}
 					// dirty DL1 block eviction into memory
-					if(unlikely(!BusWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+					if(unlikely(!PLBDataWrite(l1_block_to_flush.GetBaseAddr(), &l1_block_to_flush[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
 						throw DataAsynchronousMachineCheckException<CONFIG>();
 					}
@@ -731,7 +731,7 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 						logger << DebugInfo << "DL1: flushing dirty 64-bit word at 0x" << std::hex << (l1_block_to_flush.GetBaseAddr() + dirty_dword_offset) << std::dec << " into memory" << endl << EndDebugInfo;
 					}
 					// dirty DL1 64-word eviction into memory
-					if(unlikely(!BusWrite(l1_block_to_flush.GetBaseAddr() + dirty_dword_offset, &l1_block_to_flush[dirty_dword_offset], 8)))
+					if(unlikely(!PLBDataWrite(l1_block_to_flush.GetBaseAddr() + dirty_dword_offset, &l1_block_to_flush[dirty_dword_offset], 8)))
 					{
 						throw DataAsynchronousMachineCheckException<CONFIG>();
 					}
@@ -825,7 +825,7 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 						logger << DebugInfo << "DL1: copy back dirty block at 0x" << std::hex << l1_block_to_copy_back.GetBaseAddr() << std::dec << " into memory" << endl << EndDebugInfo;
 					}
 					// dirty DL1 block eviction into memory
-					if(unlikely(!BusWrite(l1_block_to_copy_back.GetBaseAddr(), &l1_block_to_copy_back[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
+					if(unlikely(!PLBDataWrite(l1_block_to_copy_back.GetBaseAddr(), &l1_block_to_copy_back[0], CacheBlock<class CONFIG::DL1_CONFIG>::SIZE)))
 					{
 						throw DataAsynchronousMachineCheckException<CONFIG>();
 					}
@@ -839,7 +839,7 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 						logger << DebugInfo << "DL1: copy back dirty 64-bit word at 0x" << std::hex << (l1_block_to_copy_back.GetBaseAddr() + dirty_dword_offset) << std::dec << " into memory" << endl << EndDebugInfo;
 					}
 					// dirty DL1 64-word eviction into memory
-					if(unlikely(!BusWrite(l1_block_to_copy_back.GetBaseAddr() + dirty_dword_offset, &l1_block_to_copy_back[dirty_dword_offset], 8)))
+					if(unlikely(!PLBDataWrite(l1_block_to_copy_back.GetBaseAddr() + dirty_dword_offset, &l1_block_to_copy_back[dirty_dword_offset], 8)))
 					{
 						throw DataAsynchronousMachineCheckException<CONFIG>();
 					}
@@ -904,7 +904,7 @@ void CPU<CONFIG>::Dcbz(typename CONFIG::address_t addr)
 		// just in case we don't have a data cache
 		uint8_t zero[32];
 		memset(zero, 0, sizeof(zero));
-		if(unlikely(!BusWrite(mmu_access.physical_addr & (~31), zero, sizeof(zero))))
+		if(unlikely(!PLBDataWrite(mmu_access.physical_addr & (~31), zero, sizeof(zero))))
 		{
 			throw DataAsynchronousMachineCheckException<CONFIG>();
 		}

@@ -46,6 +46,13 @@ namespace interrupt {
 namespace xilinx {
 namespace xps_intc {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class CONFIG>
 XPS_IntC<CONFIG>::XPS_IntC(const char *name, Object *parent)
 	: Object(name, parent)
@@ -56,7 +63,16 @@ XPS_IntC<CONFIG>::XPS_IntC(const char *name, Object *parent)
 	, ier(0)
 	, ivr(0xffffffffUL)
 	, mer(0)
+	, verbose(false)
+	, c_baseaddr(CONFIG::C_BASEADDR)
+	, c_highaddr(CONFIG::C_HIGHADDR)
+	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, param_c_baseaddr("c-baseaddr", this, c_baseaddr, "Base address (C_BASEADDR design parameter)")
+	, param_c_highaddr("c-highaddr", this, c_highaddr, "High address (C_HIGHADDR design parameter)")
 {
+	param_c_baseaddr.SetMutable(false);
+	param_c_highaddr.SetMutable(false);
+
 	intr[0] = 0;
 	intr[1] = 0;
 
@@ -64,7 +80,6 @@ XPS_IntC<CONFIG>::XPS_IntC(const char *name, Object *parent)
 	sstr_description << "This module implements a Xilinx XPS Interrupt Controller (v2.01a). It has the following characteristics:" << std::endl;
 	sstr_description << "PLB data width: " << CONFIG::C_SPLB_DWITH << " bits" << std::endl;
 	sstr_description << "Number of interrupt inputs: " << CONFIG::C_NUM_INTR_INPUTS << " interrupt inputs" << std::endl;
-	sstr_description << "Address range: 0x" << std::hex << CONFIG::C_BASEADDR << "-0x" << CONFIG::C_HIGHADDR << std::dec << std::endl;
 	sstr_description << "IPR support: " << (CONFIG::C_HAS_IPR ? "yes" : "no") << std::endl;
 	sstr_description << "SIE support: " << (CONFIG::C_HAS_SIE ? "yes" : "no") << std::endl;
 	sstr_description << "CIE support: " << (CONFIG::C_HAS_CIE ? "yes" : "no") << std::endl;
@@ -147,16 +162,29 @@ void XPS_IntC<CONFIG>::Reset()
 }
 
 template <class CONFIG>
+bool XPS_IntC<CONFIG>::IsVerbose() const
+{
+	return verbose;
+}
+
+template <class CONFIG>
+bool XPS_IntC<CONFIG>::IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const
+{
+	return (addr >= c_baseaddr) && ((addr + size - 1) <= c_highaddr);
+}
+
+template <class CONFIG>
 bool XPS_IntC<CONFIG>::ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
 	if(size > 0)
 	{
+		if(!IsMapped(addr, size)) return false;
 		uint8_t *dst = (uint8_t *) buffer;
 		
 		do
 		{
 			uint32_t value;
-			if(!Read(addr, value)) return false;
+			Read(addr, value);
 			if(size >= 4)
 			{
 				memcpy(dst, &value, 4);
@@ -180,6 +208,7 @@ bool XPS_IntC<CONFIG>::WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void
 {
 	if(size > 0)
 	{
+		if(!IsMapped(addr, size)) return false;
 		const uint8_t *src = (const uint8_t *) buffer;
 		
 		do
@@ -194,11 +223,11 @@ bool XPS_IntC<CONFIG>::WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void
 			}
 			else
 			{
-				if(!Read(addr, value)) return false;
+				Read(addr, value);
 				memcpy(&value, src, size);
 				size = 0;
 			}
-			if(!Write(addr, value)) return false;
+			Write(addr, value);
 		}
 		while(size);
 	}
@@ -218,42 +247,71 @@ bool XPS_IntC<CONFIG>::WriteMemory(typename CONFIG::MEMORY_ADDR addr, const void
 }
 
 template <class CONFIG>
-bool XPS_IntC<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint32_t& value)
+void XPS_IntC<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint32_t& value)
 {
-	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
+	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
+	uint32_t reg_value;
 	switch(offset)
 	{
-		case CONFIG::ISR: value = GetISR(); break;
-		case CONFIG::IPR: value = GetIPR(); break;
-		case CONFIG::IER: value = GetIER(); break;
-		case CONFIG::IVR: value = GetIVR(); break;
-		case CONFIG::MER: value = GetMER(); break;
-		default: return false;
+		case CONFIG::ISR: reg_value = GetISR(); break;
+		case CONFIG::IPR: reg_value = GetIPR(); break;
+		case CONFIG::IER: reg_value = GetIER(); break;
+		case CONFIG::IVR: reg_value = GetIVR(); break;
+		case CONFIG::MER: reg_value = GetMER(); break;
+		default: reg_value = 0;
 	}
 	
-	value = unisim::util::endian::Host2BigEndian(value);
-	
-	return true;
+	if(verbose)
+	{
+		logger << DebugInfo << "Reading 0x" << std::hex << reg_value << " from register 0x" << offset << std::dec << " (";
+		switch(offset)
+		{
+			case CONFIG::ISR: logger << "isr"; break;
+			case CONFIG::IPR: logger << "ipr"; break;
+			case CONFIG::IER: logger << "ier"; break;
+			case CONFIG::IVR: logger << "ivr"; break;
+			case CONFIG::MER: logger << "mer"; break;
+			default: logger << "?"; break;
+		}
+		logger << ")" << EndDebugInfo;
+	}
+
+	value = unisim::util::endian::Host2BigEndian(reg_value);
 }
 
 template <class CONFIG>
-bool XPS_IntC<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, uint32_t value)
+void XPS_IntC<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, uint32_t value)
 {
-	value = unisim::util::endian::BigEndian2Host(value);
+	uint32_t reg_value = unisim::util::endian::BigEndian2Host(value);
 
-	typename CONFIG::MEMORY_ADDR offset = addr - CONFIG::C_BASEADDR;
-	switch(offset)
+	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
+
+	if(IsVerbose())
 	{
-		case CONFIG::ISR: if(!GetMER_HIE()) SetISR(value); break;
-		case CONFIG::IER: SetIER(value); break;
-		case CONFIG::IAR: SetIAR(value); break;
-		case CONFIG::SIE: SetSIE(value); break;
-		case CONFIG::CIE: SetCIE(value); break;
-		case CONFIG::MER: SetMER(value); break;
-		default: return false;
+		logger << DebugInfo << "Writing 0x" << std::hex << reg_value << " in register 0x" << offset << std::dec << " (";
+		switch(offset)
+		{
+			case CONFIG::ISR: logger << "isr"; break;
+			case CONFIG::IER: logger << "ier"; break;
+			case CONFIG::IAR: logger << "iar"; break;
+			case CONFIG::SIE: logger << "sie"; break;
+			case CONFIG::CIE: logger << "cie"; break;
+			case CONFIG::MER: logger << "mer"; break;
+			default: logger << "?"; break;
+		}
+		logger << ")" << EndDebugInfo;
 	}
 	
-	return true;
+	switch(offset)
+	{
+		case CONFIG::ISR: if(!GetMER_HIE()) SetISR(reg_value); break;
+		case CONFIG::IER: SetIER(reg_value); break;
+		case CONFIG::IAR: SetIAR(reg_value); break;
+		case CONFIG::SIE: SetSIE(reg_value); break;
+		case CONFIG::CIE: SetCIE(reg_value); break;
+		case CONFIG::MER: SetMER(reg_value); break;
+		default: break;
+	}
 }
 
 template <class CONFIG>
@@ -283,7 +341,7 @@ uint32_t XPS_IntC<CONFIG>::GetIVR() const
 template <class CONFIG>
 uint32_t XPS_IntC<CONFIG>::GetMER() const
 {
-	return isr & CONFIG::MER_MASK;
+	return mer & CONFIG::MER_MASK;
 }
 
 template <class CONFIG>
@@ -313,7 +371,7 @@ void XPS_IntC<CONFIG>::SetIER(uint32_t value)
 template <class CONFIG>
 void XPS_IntC<CONFIG>::SetIAR(uint32_t value)
 {
-	ier = (isr & ~value) & CONFIG::MASK;
+	isr = (isr & ~value) & CONFIG::MASK;
 }
 
 template <class CONFIG>
@@ -354,6 +412,11 @@ void XPS_IntC<CONFIG>::DetectInterruptInput()
 {
 	if(GetMER_HIE()) // Hardware interrupts enabled ?
 	{
+		if(IsVerbose())
+		{
+			logger << DebugInfo << "Hardware interrupts enabled" << EndDebugInfo;
+			logger << DebugInfo << "Detecting interrupt input" << EndDebugInfo;
+		}
 		unsigned int irq;
 		for(irq = 0; irq < CONFIG::C_NUM_INTR_INPUTS; irq++)
 		{
@@ -365,12 +428,26 @@ void XPS_IntC<CONFIG>::DetectInterruptInput()
 				if(CONFIG::C_KIND_OF_EDGE & mask)
 				{
 					// Rising
-					if(!(intr[0] & mask) && (intr[1] & mask)) SetISR(GetISR() | mask);
+					if(!(intr[0] & mask) && (intr[1] & mask))
+					{
+						if(IsVerbose())
+						{
+							logger << DebugInfo << "IRQ #" << irq << " rising edge detected" << EndDebugInfo;
+						}
+						SetISR(GetISR() | mask);
+					}
 				}
 				else
 				{
 					// Falling
-					if((intr[0] & mask) && !(intr[1] & mask)) SetISR(GetISR() | mask);
+					if((intr[0] & mask) && !(intr[1] & mask))
+					{
+						if(IsVerbose())
+						{
+							logger << DebugInfo << "IRQ #" << irq << " falling edge detected" << EndDebugInfo;
+						}
+						SetISR(GetISR() | mask);
+					}
 				}
 			}
 			else
@@ -379,14 +456,35 @@ void XPS_IntC<CONFIG>::DetectInterruptInput()
 				if(CONFIG::C_KIND_OF_LVL & mask)
 				{
 					// High
-					if(intr[1] & mask) SetISR(GetISR() | mask);
+					if(intr[1] & mask)
+					{
+						if(IsVerbose())
+						{
+							logger << DebugInfo << "IRQ #" << irq << " high level detected" << EndDebugInfo;
+						}
+						SetISR(GetISR() | mask);
+					}
 				}
 				else
 				{
 					// Low
-					if(!(intr[1] & mask)) SetISR(GetISR() | mask);
+					if(!(intr[1] & mask))
+					{
+						if(IsVerbose())
+						{
+							logger << DebugInfo << "IRQ #" << irq << " low level detected" << EndDebugInfo;
+						}
+						SetISR(GetISR() | mask);
+					}
 				}
 			}
+		}
+	}
+	else
+	{
+		if(IsVerbose())
+		{
+			logger << DebugInfo << "Software interrupts enabled" << EndDebugInfo;
 		}
 	}
 	
@@ -401,7 +499,15 @@ void XPS_IntC<CONFIG>::GenerateRequest()
 		unsigned int irq = 0;
 		if(unisim::util::arithmetic::BitScanForward(irq, isr & ier))
 		{
-			// Request generation
+			// Pending IRQ, Request generation
+			if(IsVerbose())
+			{
+				logger << DebugInfo << "Generating request for IRQ #" << irq << EndDebugInfo;
+			}
+			if(CONFIG::C_HAS_IVR)
+			{
+				ivr = irq;
+			}
 			if(CONFIG::C_IRQ_IS_LEVEL)
 			{
 				// Level
@@ -412,12 +518,30 @@ void XPS_IntC<CONFIG>::GenerateRequest()
 				// Edge
 				SetOutputEdge(CONFIG::C_IRQ_ACTIVE);
 			}
+			
+			return;
 		}
+	}
 
-		if(CONFIG::C_HAS_IVR)
-		{
-			ivr = 0;
-		}
+	if(IsVerbose())
+	{
+		logger << DebugInfo << "No pending IRQ: ISR=0x" << std::hex << GetISR() << ", IER=0x" << GetIER() << std::dec << EndDebugInfo;
+	}
+	
+	// no pending IRQ
+	if(CONFIG::C_HAS_IVR)
+	{
+		ivr = 0;
+	}
+	if(CONFIG::C_IRQ_IS_LEVEL)
+	{
+		// Level
+		SetOutputLevel(!CONFIG::C_IRQ_ACTIVE);
+	}
+	else
+	{
+		// Edge
+		SetOutputEdge(!CONFIG::C_IRQ_ACTIVE);
 	}
 }
 

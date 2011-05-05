@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,20 +30,22 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * 
  */
- 
-#include <unisim/service/loader/coff_loader/coff_loader.hh>
-#include <unisim/service/loader/coff_loader/coff_loader.tcc>
+
+#include <inttypes.h>
+#include "unisim/service/tee/stmt_lookup/tee.hh"
+#include "unisim/service/tee/stmt_lookup/tee.tcc"
 
 namespace unisim {
 namespace service {
-namespace loader {
-namespace coff_loader {
+namespace tee {
+namespace stmt_lookup {
 
-template class CoffLoader<uint32_t>;
-template class CoffLoader<uint64_t>;
+template
+class Tee<uint64_t>;
 
-} // end of namespace coff_loader
-} // end of namespace loader
+} // end of namespace stmt_lookup
+} // end of namespace tee
 } // end of namespace service
 } // end of namespace unisim

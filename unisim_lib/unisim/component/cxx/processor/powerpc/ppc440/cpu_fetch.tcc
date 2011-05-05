@@ -120,7 +120,7 @@ void CPU<CONFIG>::EmuFetch(typename CONFIG::address_t addr, void *buffer, uint32
 	else
 	{
 		// DL1 disabled
-		if(unlikely(!BusRead(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
+		if(unlikely(!PLBInsnRead(mmu_access.physical_addr, buffer, size, mmu_access.storage_attr)))
 		{
 			throw InstructionAsynchronousMachineCheckException<CONFIG>();
 		}

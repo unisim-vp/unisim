@@ -22,7 +22,7 @@ function usage
 {
 	echo "Usage: `basename $0` <OS> <systemc> <tlm2.0> [<pkg name>-<version>...]"
 	echo "OS: deb | rpm | mingw"
-	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu | star12x"
+	echo "pkg name: genisslib | ppcemu | ppcemu-system | embedded-ppc-g4-board | tms320c3x | armemu | star12x | virtex5fxt"
 }
 
 function BuildRPM
@@ -484,7 +484,7 @@ function BuildWinInstaller
 	/c/Program\ Files/Inno\ Setup\ 5/ISCC.exe ${ISS_FILENAME} || exit -1
 	cp -f ${INSTALL_DIR}/dist/setup-${NAME}-${VERSION}.exe ${HERE}
 
-	#rm -rf "${TOP_DIR}"
+	rm -rf "${TOP_DIR}"
 }
 
 function BuildPackage
@@ -525,8 +525,8 @@ if [ -z "${OS}" ] || \
 fi
 
 for PKG in "$@"; do
-	PKG_NAME=$(echo ${PKG} | sed -n 's/^\(.*\)-\([0-9][0-9]*\(\.[0-9][0-9]*\)*\)$/\1/p')
-	PKG_VERSION=$(echo ${PKG} | sed -n 's/^\(.*\)-\([0-9][0-9]*\(\.[0-9][0-9]*\)*\)$/\2/p')
+	PKG_NAME=$(echo ${PKG} | sed -n 's/^\(.*\)-\([0-9][0-9]*\(\.[0-9][0-9]*\)*.*\)$/\1/p')
+	PKG_VERSION=$(echo ${PKG} | sed -n 's/^\(.*\)-\([0-9][0-9]*\(\.[0-9][0-9]*.*\)*\)$/\2/p')
 
 	if [ -z ${PKG_NAME} ] || [ -z "${PKG_VERSION}" ]; then
 		echo "ERROR! Malformed package name \"${PKG}\""
@@ -617,6 +617,7 @@ for PKG in "$@"; do
 				"bin/unisim-ppcemu-system-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		embedded-ppc-g4-board)
@@ -750,6 +751,39 @@ for PKG in "$@"; do
 				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
 				"share/unisim-star12x-${PKG_VERSION}/unisim.ico" \
 				"bin/unisim-star12x-${PKG_VERSION}${EXE_SUFFIX}" \
+				"-s enable-press-enter-at-exit=true" \
+				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
+				"CXXFLAGS=-O3 -g"
+			;;
+		virtex5fxt)
+			BuildPackage \
+				"${OS}" \
+				"unisim-virtex5fxt" \
+				"${PKG_VERSION}" \
+				"http://www.unisim-vp.com" \
+				"BSD" \
+				"UNISIM ppcemu" \
+				"UNISIM Virtex 5 FXT simulator is a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IP." \
+				"Emulators" \
+				"Development;Emulator;ConsoleOnly" \
+				"Gilles Mouchard <gilles.mouchard@cea.fr>" \
+				"bin/unisim-virtex5fxt-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-virtex5fxt-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-virtex5fxt-wfpu-${PKG_VERSION}${EXE_SUFFIX} \
+				bin/unisim-virtex5fxt-wfpu-debug-${PKG_VERSION}${EXE_SUFFIX} \
+				share/unisim-virtex5fxt-${PKG_VERSION}/AUTHORS \
+				share/unisim-virtex5fxt-${PKG_VERSION}/COPYING \
+				share/unisim-virtex5fxt-${PKG_VERSION}/ChangeLog \
+				share/unisim-virtex5fxt-${PKG_VERSION}/INSTALL \
+				share/unisim-virtex5fxt-${PKG_VERSION}/NEWS \
+				share/unisim-virtex5fxt-${PKG_VERSION}/README \
+				share/unisim-virtex5fxt-${PKG_VERSION}/gdb_powerpc.xml \
+				share/unisim-virtex5fxt-${PKG_VERSION}/template_default_config.xml \
+				share/unisim-virtex5fxt-${PKG_VERSION}/unisim.ico" \
+				"/bin/libgcc_s_dw2-1.dll /bin/libxml2-2.dll" \
+				"share/unisim-virtex5fxt-${PKG_VERSION}/unisim.ico" \
+				"bin/unisim-virtex5fxt-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
 				"--with-tlm20=${TLM20}" \

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010-2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,60 +32,22 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_CONFIG_HH__
-
-#include "unisim/component/cxx/memory/flash/am29lv/types.hh"
+#include <unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh>
+#include <unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.tcc>
+#include <unisim/component/cxx/interconnect/xilinx/crossbar/config.hh>
 
 namespace unisim {
 namespace component {
 namespace cxx {
-namespace memory {
-namespace flash {
-namespace am29lv {
+namespace interconnect {
+namespace xilinx {
+namespace crossbar {
 
-class AM29LV800BConfig
-{
-public:
-	typedef uint32_t ADDRESS;
-	typedef enum
-	{
-		STATE_INITIAL,
-		STATE_AUTOSELECT,
-		STATE_PROGRAM,
-		STATE_UNLOCKED,
-		STATE_UNLOCKED_PROGRAM,
-		STATE_UNLOCKED_RESET,
-		STATE_ERASE,
-		STATE_CHIP_ERASE,
-		STATE_SECTOR_ERASE
-	} STATE;
+template class Crossbar<Config>;
 
-	static const uint32_t BYTESIZE = 1048576; // 8 Mbits / 1 MBytes
-	static const unsigned int NUM_SECTORS = 19;
-	static const unsigned int MAX_IO_WIDTH = 2; // 16-bit I/O
-	static const MODE MODE_SUPPORT = MODE_X8_X16; // x8/x16
-	static const uint64_t ACCESS_TIME = 70ULL; // in ns (70 ns)
-	static const uint64_t PROGRAMMING_TIME[MAX_IO_WIDTH]; // in ns
-	static const uint64_t SECTOR_ERASING_TIME = 700000000ULL; // in ns (0.7 s)
-	static const uint64_t CHIP_ERASING_TIME = 14000000000ULL; // in ns (14 s)
-	static const SECTOR_ADDRESS_RANGE<ADDRESS> SECTOR_MAP[NUM_SECTORS];
-	static const uint8_t MANUFACTURER_ID[MAX_IO_WIDTH];
-	static const uint8_t DEVICE_ID[MAX_IO_WIDTH];
-	static const uint8_t PROTECTED[MAX_IO_WIDTH];
-	static const uint8_t UNPROTECTED[MAX_IO_WIDTH];
-	static const ADDRESS MANUFACTURER_ID_ADDR = 0x00;
-	static const ADDRESS DEVICE_ID_ADDR = 0x02;
-	static const ADDRESS SECTOR_PROTECT_VERIFY_ADDR = 0x04;
-	static const unsigned NUM_TRANSITIONS = 30;
-	static const TRANSITION<ADDRESS, MAX_IO_WIDTH, STATE> FSM[NUM_TRANSITIONS];
-};
-
-} // end of namespace am29lv
-} // end of namespace flash
-} // end of namespace memory
+} // end of namespace crossbar
+} // end of namespace xilinx
+} // end of namespace interconnect
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
-#endif // __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29LV_CONFIG_HH__
