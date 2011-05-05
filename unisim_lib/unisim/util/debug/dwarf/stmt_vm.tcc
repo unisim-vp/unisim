@@ -318,11 +318,12 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						line = 1;
 						column = 0;
 						is_stmt = dw_stmt_prog->default_is_stmt;
+						end_sequence = false;
 						basic_block = false;
 						prologue_end = false;
 						prologue_begin = false;
 						isa = 0;
-						if(os) (*os) << "End of Sequence";
+						if(os) (*os) << "End of Sequence" << std::endl;
 						break;
 					case DW_LNE_set_address:
 						{
@@ -379,7 +380,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				if(os) (*os) << std::endl;
 			}
 		}
-		while(count && !end_sequence);
+		while(count);
 	}
 	return true;
 }
