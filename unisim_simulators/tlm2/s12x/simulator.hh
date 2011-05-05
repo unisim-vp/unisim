@@ -206,8 +206,8 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderS19;
-	Service<Loader<SERVICE_ADDRESS_TYPE> > *loaderELF;
+	Service<Loader > *loaderS19;
+	Service<Loader > *loaderELF;
 
 
 	//  - GDB server

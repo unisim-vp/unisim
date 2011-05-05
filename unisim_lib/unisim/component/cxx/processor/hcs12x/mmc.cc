@@ -266,6 +266,8 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 		}
 	}
 
+//	if (addr <= REG_HIGH_OFFSET) return true;
+
 	if (isPaged(cpu_address, page, false, true)) {
 		if (external_memory_import) {
 			return external_memory_import->WriteMemory(addr, (uint8_t *) buffer, size);

@@ -76,6 +76,7 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled)
+
 {
 
 	interrupt_request(*this);
@@ -236,6 +237,7 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 			compute_clock();
 			UpdateBusClock();
+
 		} break;
 		case REFDV: {
 			if ((clksel_register & 0x80) != 0) return true; // if (PLLSEL == 1) then return;
@@ -282,6 +284,7 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 			clksel_register = value;
 			compute_clock();
 			UpdateBusClock();
+
 		} break;
 		case PLLCTL: {
 			uint8_t cme_bit = pllctl_register & 0x80;
@@ -462,10 +465,11 @@ bool CRG::BeginSetup() {
 
 bool CRG::Setup(ServiceExportBase *srv_export) {
 
+	return true;
 }
 
 bool CRG::EndSetup() {
-
+	return true;
 }
 
 Register* CRG::GetRegister(const char *name)
