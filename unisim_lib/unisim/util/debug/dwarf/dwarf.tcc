@@ -231,19 +231,19 @@ const DWARF_Abbrev *DWARF_Handler<MEMORY_ADDR>::FindAbbrev(uint64_t debug_abbrev
 template <class MEMORY_ADDR>
 const char *DWARF_Handler<MEMORY_ADDR>::GetString(uint64_t debug_str_offset) const
 {
-	return (debug_str_offset < debug_str_section->GetSize()) ? (const char *) debug_str_section->GetData() + debug_str_offset : 0;
+	return (debug_str_section && (debug_str_offset < debug_str_section->GetSize())) ? (const char *) debug_str_section->GetData() + debug_str_offset : 0;
 }
 
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::Parse()
 {
 	unsigned int i;
-	if(!debug_str_section)
-	{
-		logger << DebugWarning << "No DWARF v2/v3 debugging informations";
-		if(blob->GetFilename()) logger << " in File \"" << blob->GetFilename() << "\"" << EndDebugWarning;
-		return; // We can't continue
-	}
+//	if(!debug_str_section)
+//	{
+//		logger << DebugWarning << "No DWARF v2/v3 debugging informations";
+//		if(blob->GetFilename()) logger << " in File \"" << blob->GetFilename() << "\"" << EndDebugWarning;
+//		return; // We can't continue
+//	}
 
 /*	if(debug_line_section)
 	{
