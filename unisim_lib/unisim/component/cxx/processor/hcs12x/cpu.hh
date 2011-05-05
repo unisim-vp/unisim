@@ -600,8 +600,8 @@ private:
 	/** the instruction counter */
 	uint64_t instruction_counter;
 	uint64_t cycles_counter;
-	uint64_t load_counter;
-	uint64_t store_counter;
+	uint64_t data_load_counter;
+	uint64_t data_store_counter;
 	uint64_t	max_inst;
 
 	Statistic<uint64_t> stat_instruction_counter;
@@ -619,7 +619,7 @@ private:
 
 inline void CPU::MonitorLoad(address_t ea, uint32_t size)
 {
-	load_counter++;
+	data_load_counter++;
 
 	// Memory access reporting
 	if(requires_memory_access_reporting && memory_access_reporting_import)
@@ -630,7 +630,7 @@ inline void CPU::MonitorLoad(address_t ea, uint32_t size)
 
 inline void CPU::MonitorStore(address_t ea, uint32_t size)
 {
-	store_counter++;
+	data_store_counter++;
 
 	// Memory access reporting
 	if(requires_memory_access_reporting && memory_access_reporting_import)

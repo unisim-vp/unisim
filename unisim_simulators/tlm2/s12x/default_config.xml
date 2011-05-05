@@ -44,7 +44,7 @@
 		<variable name="use-atd-stub">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -118,7 +118,7 @@
 		<variable name="use-atd-stub">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -270,7 +270,7 @@
 		<variable name="enable-fine-timing">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -472,7 +472,7 @@
 		<variable name="stub-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>

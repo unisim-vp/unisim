@@ -605,8 +605,12 @@ void Simulator::Run() {
 		cerr << "Target speed           : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << " MIPS" << endl;
 		cerr << "Target speed           : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << " MHz" << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;
-		cerr << "load ratio             : " << (double) ((uint64_t) (*cpu)["load-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << " %" << endl;
-		cerr << "store ratio            : " << (double) ((uint64_t) (*cpu)["store-counter"])/((uint64_t) (*cpu)["instruction-counter"])*100 << " %" << endl;
+
+		uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
+		uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+
+		cerr << "data-load ratio             : " << (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100 << " %" << endl;
+		cerr << "data-store ratio            : " << (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100 << " %" << endl;
 		cerr << endl;
 
 		cerr << "simulation time        : " << spent_time << " seconds" << endl;
