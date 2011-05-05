@@ -425,7 +425,6 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 				if(src_if < 0)
 				{
 					payload->release(); // Payload has been acquired by BindIndirectAccess
-					std::cerr << "(4): " << payload << "->release: ref count = " << payload->get_ref_count() << std::endl;
 				}
 				
 				schedule.FreeEvent(event);
@@ -466,7 +465,6 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 				}
 				
 				indirect_payload->release();
-				std::cerr << "(5): " << indirect_payload << "->release: ref count = " << indirect_payload->get_ref_count() << std::endl;
 			}
 			schedule.FreeEvent(event);
 			return;
@@ -506,7 +504,7 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 				<< num_slave << ", DCR #0x" << std::hex << dcrn << std::dec << ")" << EndDebugInfo;
 		}
 	}
-	
+
 	sc_time t(cycle_time);
 
 	sc_event *ev_completed = event->GetCompletionEvent();
@@ -521,7 +519,6 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 		{
 			// indirect access
 			tlm::tlm_generic_payload *original_payload = ResolveIndirectAccess(payload, num_master);
-			inherited::ResetALOCK(num_master);
 
 			if(payload->get_response_status() != tlm::TLM_OK_RESPONSE)
 			{
@@ -560,7 +557,6 @@ void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 	else
 	{
 		payload->acquire();
-		std::cerr << "(1): " << payload << "->acquire: ref count = " << payload->get_ref_count() << std::endl;
 		pending_requests.insert(std::pair<tlm::tlm_generic_payload *, Event *>(payload, event));
 	}
 }
@@ -594,8 +590,7 @@ void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 		
 		payload->set_response_status(status);
 		
-		//payload->release(); // Payload has been acquired by BindIndirectAccess
-		//std::cerr << "(6): " << payload << "->release: ref count = " << payload->get_ref_count() << std::endl;
+		inherited::ResetALOCK(num_master);
 	}
 
 	if(payload->get_response_status() != tlm::TLM_OK_RESPONSE)
@@ -618,7 +613,6 @@ void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 	}
 	
 	payload->release(); // payload has been acquired by ProcessForwardEvent
-	std::cerr << "(7): " << payload << "->release: ref count = " << payload->get_ref_count() << std::endl;
 	
 	schedule.FreeEvent(event);
 }
@@ -666,11 +660,8 @@ void DCRController<CONFIG>::DoTimeOutAccess(unsigned int num_master, sc_event *e
 template <class CONFIG>
 void DCRController<CONFIG>::BindIndirectAccess(tlm::tlm_generic_payload *original_payload, tlm::tlm_generic_payload *payload, unsigned int num_master)
 {
-	//std::cerr << "(2): " << payload << "->acquire: ref count = " << payload->get_ref_count() << std::endl;
-	//payload->acquire();
 	indirect_access_master.insert(std::pair<tlm::tlm_generic_payload *, unsigned int>(payload, num_master));
 	original_payload->acquire();
-	std::cerr << "(3): " << original_payload << "->acquire: ref count = " << original_payload->get_ref_count() << std::endl;
 	indirect_access_payload_binding.insert(std::pair<tlm::tlm_generic_payload *, tlm::tlm_generic_payload *>(payload, original_payload));
 }
 

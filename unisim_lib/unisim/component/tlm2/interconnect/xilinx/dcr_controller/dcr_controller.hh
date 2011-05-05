@@ -147,7 +147,6 @@ private:
 		void Initialize(tlm::tlm_generic_payload *_payload, int intf, const sc_time& time_stamp, sc_event *_ev_completed = 0)
 		{
 			_payload->acquire();
-			std::cerr << "(8): " << _payload << "->acquire: ref count = " << _payload->get_ref_count() << std::endl;
 			key.Initialize(time_stamp, intf);
 			payload = _payload;
 			ev_completed = _ev_completed;
@@ -158,7 +157,6 @@ private:
 			if(payload)
 			{
 				payload->release();
-				std::cerr << "(9): " << payload << "->release: ref count = " << payload->get_ref_count() << std::endl;
 			}
 			key.Clear();
 			payload = 0;
