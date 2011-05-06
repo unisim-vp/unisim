@@ -62,26 +62,26 @@ using unisim::service::interfaces::Blob;
 
 template <class MEMORY_ADDR>
 class PPCUBoot
-	: public Service<Loader<MEMORY_ADDR> >
+	: public Service<Loader>
 	, public Service<Blob<MEMORY_ADDR> >
 	, public Client<Registers>
 	, public Client<Memory<MEMORY_ADDR> >
-	, public Client<Loader<MEMORY_ADDR> >
+	, public Client<Loader>
 	, public Client<Blob<MEMORY_ADDR> >
 {
 public:
 	PPCUBoot(const char *name, Object *parent = 0);
 	virtual ~PPCUBoot();
 	
-	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceImport<Loader<MEMORY_ADDR> > kernel_loader_import;
+	ServiceImport<Loader> kernel_loader_import;
 	ServiceImport<Blob<MEMORY_ADDR> > kernel_blob_import;
-	ServiceImport<Loader<MEMORY_ADDR> > device_tree_loader_import;
+	ServiceImport<Loader> device_tree_loader_import;
 	ServiceImport<Blob<MEMORY_ADDR> > device_tree_blob_import;
-	ServiceImport<Loader<MEMORY_ADDR> > initrd_loader_import;
+	ServiceImport<Loader> initrd_loader_import;
 	ServiceImport<Blob<MEMORY_ADDR> > initrd_blob_import;
 	
 	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;

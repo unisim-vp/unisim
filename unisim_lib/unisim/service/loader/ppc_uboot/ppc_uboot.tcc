@@ -50,11 +50,11 @@ using unisim::kernel::logger::EndDebugError;
 template <class MEMORY_ADDR>
 PPCUBoot<MEMORY_ADDR>::PPCUBoot(const char *name, Object *parent)
 	: Object(name, parent)
-	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Client<Registers>(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
-	, Client<Loader<MEMORY_ADDR> >(name, parent)
+	, Client<Loader>(name, parent)
 	, Client<Blob<MEMORY_ADDR> >(name, parent)
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
