@@ -645,7 +645,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x41200000\" range_end=\"0x4120ffff\" output_port=\"0\" translation=\"0x41200000\""); // XPS IntC
+	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
 	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
 	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
