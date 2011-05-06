@@ -33,7 +33,7 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Flash Memory family am29lv TLM Component Library], [1.0])
+AC_INIT([UNISIM Flash Memory family am29 TLM Component Library], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD

@@ -156,8 +156,9 @@ unisim/component/cxx/pci/video/display_32.cc \
 unisim/component/cxx/pci/macio/heathrow_32.cc \
 unisim/component/cxx/bridge/pci_isa/bridge_32.cc \
 unisim/component/cxx/isa/i8042/i8042.cc \
-unisim/component/cxx/memory/flash/am29lv/am29lv.cc \
-unisim/component/cxx/memory/flash/am29lv/config.cc \
+unisim/component/cxx/memory/flash/am29/am29.cc \
+unisim/component/cxx/memory/flash/am29/am29lv800b.cc \
+unisim/component/cxx/memory/flash/am29/am29lv800b_config.cc \
 unisim/component/cxx/chipset/mpc107/address_map_entry.cc \
 unisim/component/cxx/chipset/mpc107/config_regs.cc \
 unisim/component/cxx/chipset/mpc107/address_maps.cc \
@@ -197,7 +198,7 @@ unisim/component/tlm/chipset/mpc107/mpc107_fsb32_pci32_debug.cc \
 unisim/component/tlm/fsb/snooping_bus/bus_addr32_size32_procs1.cc \
 unisim/component/tlm/memory/ram/memory_32.cc \
 unisim/component/tlm/memory/ram/memory_32_debug.cc \
-unisim/component/tlm/memory/flash/am29lv/am29lv.cc"
+unisim/component/tlm/memory/flash/am29/am29lv800b.cc"
 
 UNISIM_LIB_PPCEMU_SYSTEM_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/isa/altivec.isa \
@@ -323,7 +324,9 @@ unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
-unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
+unisim/component/cxx/memory/flash/am29/am29.hh \
+unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh \
+unisim/component/cxx/memory/flash/am29/types.hh \
 unisim/component/cxx/chipset/mpc107/address_maps.hh \
 unisim/component/cxx/chipset/mpc107/address_map_entry.hh \
 unisim/component/cxx/chipset/mpc107/config_regs.hh \
@@ -353,15 +356,13 @@ unisim/component/cxx/pci/macio/heathrow.hh \
 unisim/component/cxx/bridge/pci_isa/bridge.hh \
 unisim/component/cxx/isa/types.hh \
 unisim/component/cxx/isa/i8042/i8042.hh \
-unisim/component/cxx/memory/flash/am29lv/types.hh \
-unisim/component/cxx/memory/flash/am29lv/config.hh \
 unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm/message/snooping_fsb.hh \
 unisim/component/tlm/message/interrupt.hh \
 unisim/component/tlm/debug/transaction_spy.hh \
 unisim/component/tlm/message/memory.hh \
 unisim/component/tlm/memory/ram/memory.hh \
-unisim/component/tlm/memory/flash/am29lv/am29lv.hh \
+unisim/component/tlm/memory/flash/am29/am29.hh \
 unisim/component/tlm/fsb/snooping_bus/bus.hh \
 unisim/component/tlm/chipset/mpc107/mpc107.hh \
 unisim/component/tlm/chipset/mpc107/epic/epic.hh \
@@ -431,7 +432,7 @@ unisim/component/tlm/pci/ide/pci_dev.tcc \
 unisim/component/tlm/pci/ide/pci_ide_module.tcc \
 unisim/component/cxx/pci/macio/heathrow.tcc \
 unisim/component/cxx/bridge/pci_isa/bridge.tcc \
-unisim/component/cxx/memory/flash/am29lv/am29lv.tcc \
+unisim/component/cxx/memory/flash/am29/am29.tcc \
 unisim/component/cxx/chipset/mpc107/address_maps.tcc \
 unisim/component/cxx/chipset/mpc107/pci_controller.tcc \
 unisim/component/cxx/chipset/mpc107/atu/atu.tcc \
@@ -446,7 +447,7 @@ unisim/component/tlm/pci/video/display.tcc \
 unisim/component/tlm/chipset/mpc107/mpc107.tcc \
 unisim/component/tlm/fsb/snooping_bus/bus.tcc \
 unisim/component/tlm/pci/macio/heathrow.tcc \
-unisim/component/tlm/memory/flash/am29lv/am29lv.tcc"
+unisim/component/tlm/memory/flash/am29/am29.tcc"
 
 UNISIM_LIB_PPCEMU_SYSTEM_M4_FILES="\
 m4/times.m4 \

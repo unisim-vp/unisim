@@ -32,22 +32,23 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/tlm/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/tlm/memory/flash/am29lv/am29lv.tcc"
+#include "unisim/component/tlm/memory/flash/am29/am29.hh"
+#include "unisim/component/tlm/memory/flash/am29/am29.tcc"
+#include "unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh"
 
 namespace unisim {
 namespace component {
 namespace tlm {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig, 
-	4 * unisim::component::cxx::memory::flash::am29lv::M, 8, 32>; // 4 MB/64 bits
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig, 
-	8 * unisim::component::cxx::memory::flash::am29lv::M, 8, 32>; // 8 MB/64 bits
+template class AM29<unisim::component::cxx::memory::flash::am29::AM29LV800BTConfig, 
+	4 * unisim::component::cxx::memory::flash::am29::M, 8, 32>; // 4 MB/64 bits
+template class AM29<unisim::component::cxx::memory::flash::am29::AM29LV800BTConfig, 
+	8 * unisim::component::cxx::memory::flash::am29::M, 8, 32>; // 8 MB/64 bits
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace tlm
