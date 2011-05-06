@@ -126,13 +126,17 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
+unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/section64.cc \
 unisim/util/endian/endian.cc \
-unisim/service/debug/inline_debugger/inline_debugger.cc \
-unisim/service/debug/inline_debugger/inline_debugger_32.cc \
-unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
+unisim/service/debug/inline_debugger/inline_debugger.cc \
+unisim/service/debug/inline_debugger/inline_debugger_32.cc \
+unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
@@ -158,13 +162,15 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/service/pim/pim.cc \
+unisim/service/pim/pim_server_32.cc \
+unisim/service/pim/pim_server_64.cc \
+unisim/service/pim/pim_server.cc \
+unisim/service/pim/pim_thread.cc \
 unisim/service/pim/network/BlockingQueue.cpp \
 unisim/service/pim/network/GenericThread.cpp \
 unisim/service/pim/network/SocketClientThread.cpp \
-unisim/service/pim/network/SocketReader.cpp \
 unisim/service/pim/network/SocketServerThread.cpp \
-unisim/service/pim/network/SocketThread.cpp \
-unisim/service/pim/network/SocketWriter.cpp"
+unisim/service/pim/network/SocketThread.cpp"
 
 
 UNISIM_LIB_STAR12X_ISA_FILES="\
@@ -230,6 +236,8 @@ unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/endian/endian.hh \
+unisim/util/debug/blob/blob.hh \
+unisim/util/debug/blob/section.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
 unisim/util/xml/xml.hh \
@@ -237,6 +245,7 @@ unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
+unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
@@ -248,8 +257,8 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
@@ -280,15 +289,15 @@ unisim/component/tlm2/processor/hcs12x/atd10b.hh \
 unisim/component/tlm2/processor/hcs12x/crg.hh \
 unisim/component/tlm2/processor/hcs12x/ect.hh \
 unisim/service/pim/pim.hh \
+unisim/service/pim/pim_server.hh \
+unisim/service/pim/pim_thread.hh \
 unisim/service/pim/convert.hh \
 unisim/service/pim/network/BlockingQueue.hpp \
 unisim/service/pim/network/BlockingQueue.tcc \
 unisim/service/pim/network/GenericThread.hpp \
 unisim/service/pim/network/SocketClientThread.hpp \
-unisim/service/pim/network/SocketReader.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \
-unisim/service/pim/network/SocketThread.hpp \
-unisim/service/pim/network/SocketWriter.hpp"
+unisim/service/pim/network/SocketThread.hpp"
 
 UNISIM_LIB_STAR12X_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
@@ -313,8 +322,10 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
-unisim/service/debug/inline_debugger/inline_debugger.tcc \
+unisim/util/debug/blob/section.tcc \
+unisim/util/debug/blob/blob.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
+unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
@@ -322,7 +333,8 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
-unisim/component/tlm2/processor/hcs12x/atd10b.tcc"
+unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
+unisim/service/pim/pim_server.tcc "
 
 UNISIM_LIB_STAR12X_M4_FILES="\
 m4/cxxabi.m4 \
@@ -376,11 +388,13 @@ vector \
 
 UNISIM_SIMULATORS_STAR12X_SOURCE_FILES="\
 main_pim.cc \
+simulator.cc \
 atd_pwm_stub.cc \
 xml_atd_pwm_stub.cc \
 rtb_unisim.cc \
 "
 UNISIM_SIMULATORS_STAR12X_HEADER_FILES="\
+simulator.hh \
 atd_pwm_stub.hh \
 xml_atd_pwm_stub.hh \
 rtb_unisim.hh \
@@ -700,12 +714,12 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_ZLIB" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_LIBXML2" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_CXXABI" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_PTHREAD" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_RTBCOB" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PTHREAD" >> "${STAR12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-star12x-${STAR12X_VERSION}\"], [path of shared data relative to bin directory])" >> "${STAR12X_CONFIGURE_AC}"

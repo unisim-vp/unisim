@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_TCC__
 
+#include <sstream>
 #include <iostream>
 #include <stdlib.h>
 
@@ -49,11 +50,12 @@ using namespace unisim::kernel::logger;
 template<class T>
 LinuxLoader<T>::LinuxLoader(const char *name, Object *parent) :
 Object(name, parent),
-Client<Loader<T> >(name, parent),
+Client<Loader>(name, parent),
 Client<Blob<T> >(name, parent),
 Client<Memory<T> >(name, parent),
-Service<Loader<T> >(name, parent),
+Service<Loader>(name, parent),
 Service<Blob<T> >(name, parent),
+unisim::kernel::service::VariableBaseListener(),
 loader_import("loader_import", this),
 blob_import("blob_import", this),
 memory_import("memory_import", this),
@@ -63,9 +65,9 @@ endianness(E_LITTLE_ENDIAN),
 stack_base(0),
 max_environ(0),
 argc(0),
-argv(0),
+argv(),
 envc(0),
-envp(0),
+envp(),
 blob(0),
 stack_blob(0),
 verbose(false),
@@ -83,19 +85,52 @@ param_argc("argc", this, argc,
 		" which is the name of the program executed). The different tokens"
 		" can be set up with the parameters argv[<n>] where <n> can go up to"
 		" argc - 1."),
-param_argv(0),
+param_argv(),
 param_envc("envc", this, envc,
 		"Number of environment variables defined for the program execution."
 		" The different variables can be set up with the parameters envp[<n>]"
 		" where <n> can go up to envc - 1."),
-param_envp(0),
+param_envp(),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
 	param_max_environ.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	if ( argc )
+	{
+		for ( unsigned int i = 0; i < argc; i++ )
+		{
+			std::stringstream argv_name, argv_desc, argv_val;
+			argv_name << "argv[" << i << "]";
+			argv_desc << "The '" << i << "' token in the command line.";
+			argv_val << "Undefined argv[" << i << "] value";
+			argv.push_back(new string(argv_val.str().c_str()));
+			param_argv.push_back(
+					new Parameter<string>(argv_name.str().c_str(), this, 
+						*(argv[i]), argv_desc.str().c_str()));
+		}
+	}
+	param_argc.AddListener(this);
+	param_argc.NotifyListeners();
+
 	param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	
+	if ( envc )
+	{
+		for ( unsigned int i = 0; i < envc; i++ )
+		{
+			std::stringstream envp_name, envp_desc, envp_val;
+			envp_name << "envp[" << i << "]";
+			envp_desc << "The '" << i << "' token in the environment.";
+			envp_val << "Undefined envp[" << i << "] value";
+			envp.push_back(new string(envp_val.str().c_str()));
+			param_envp.push_back(
+					new Parameter<string>(envp_name.str().c_str(), this,
+						*(envp[i]), envp_desc.str().c_str()));
+		}
+	}
+	param_envc.AddListener(this);
+	param_envc.NotifyListeners();
+
 	loader_export.SetupDependsOn(memory_import);
 	loader_export.SetupDependsOn(loader_import);
 	loader_export.SetupDependsOn(blob_import);
@@ -103,10 +138,32 @@ logger(*this)
 
 template<class T>
 LinuxLoader<T>::~LinuxLoader() {
-	if ( argv ) delete [] argv;
-	if ( param_argv ) delete param_argv;
-	if ( envp ) delete [] envp;
-	if ( param_envp ) delete param_envp;
+	for ( ;
+			!argv.empty();
+			argv.erase(argv.begin()) )
+	{
+		delete *argv.begin();
+	}
+	for ( ;
+			!param_argv.empty();
+			param_argv.erase(param_argv.begin()) )
+	{
+		delete *param_argv.begin();
+	}
+
+	for ( ;
+			!envp.empty();
+			envp.erase(envp.begin()) )
+	{
+		delete *envp.begin();
+	}
+	for ( ;
+			!param_envp.empty();
+			param_envp.erase(param_envp.begin()) )
+	{
+		delete *param_envp.begin();
+	}
+	
 	if(blob)
 	{
 		blob->Release();
@@ -126,17 +183,6 @@ template<class T>
 bool
 LinuxLoader<T>::BeginSetup()
 {
-	if ( argv )
-	{
-		delete [] argv;
-		argv = 0;
-	}
-	if ( envp )
-	{
-		delete [] envp;
-		envp = 0;
-	}
-
 	if(blob)
 	{
 		blob->Release();
@@ -169,19 +215,6 @@ LinuxLoader<T>::BeginSetup()
 			endianness = E_BIG_ENDIAN;
 	}
 
-	if ( argc && !argv && !param_argv)
-	{
-		argv = new string[argc];
-		param_argv = new ParameterArray<string>("argv", this, argv, argc,
-				"The ordered list of tokens in the command line.");
-	}
-	if ( envc && !envc && !param_envp )
-	{
-		envp = new string[envc];
-		param_envp = new ParameterArray<string>("envp", this, envp, envc,
-				"The different environment variables defined.");
-	}
-	
 	return true;
 }
 
@@ -227,11 +260,11 @@ LinuxLoader<T>::SetupBlob()
 	stack_size += 2 * size;                 // 16 to account for the AUX_VECTOR
 	for(unsigned int i = 0; i < argc; i++)
 	{
-		stack_size += argv[i].length() + 1; // account for null terminated string argv[i]
+		stack_size += argv[i]->length() + 1; // account for null terminated string argv[i]
 	}
 	for(unsigned int i = 0; i < envc; i++)
 	{
-		stack_size += envp[i].length() + 1; // account for null terminated string envp[i]
+		stack_size += envp[i]->length() + 1; // account for null terminated string envp[i]
 	}
 	
 	/* checking stack overflow */
@@ -274,26 +307,26 @@ LinuxLoader<T>::SetupBlob()
 	for(unsigned int i = 0; i < argc; i++) {
 		T target_argv = Host2Target(endianness, stack_address + stack_ptr);
 		memcpy(stack_data + (arg_address + (i * size)), &target_argv, size);
-		memcpy(stack_data + stack_ptr, argv[i].c_str(), argv[i].length() + 1);
+		memcpy(stack_data + stack_ptr, argv[i]->c_str(), argv[i]->length() + 1);
 		if ( verbose )
 		{
 			Log(stack_address + arg_address + i * size, (uint8_t *)&target_argv, size);
-			Log(stack_address + stack_ptr, (uint8_t *)argv[i].c_str(), argv[i].length());
+			Log(stack_address + stack_ptr, (uint8_t *)argv[i]->c_str(), argv[i]->length());
 		}
-		stack_ptr += argv[i].length() + 1;
+		stack_ptr += argv[i]->length() + 1;
 	}
 
 	/* write env to stack */
 	for(unsigned int i = 0; i < envc; i++) {
 		T target_envp = Host2Target(endianness, stack_address + stack_ptr);
 		memcpy(stack_data + (env_address + (i * size)), &target_envp, size);
-		memcpy(stack_data + stack_ptr, envp[i].c_str(), envp[i].length() + 1);
+		memcpy(stack_data + stack_ptr, envp[i]->c_str(), envp[i]->length() + 1);
 		if ( verbose )
 		{
 			Log(stack_address + env_address + i * size, (uint8_t *)&target_envp, size);
-			Log(stack_address + stack_ptr, (uint8_t *)envp[i].c_str(), envp[i].length());
+			Log(stack_address + stack_ptr, (uint8_t *)envp[i]->c_str(), envp[i]->length());
 		}
-		stack_ptr += envp[i].length() + 1;
+		stack_ptr += envp[i]->length() + 1;
 	}
 	
 	/* The following two words on the stack are needed on Linux for IA64 !!!! */
@@ -404,6 +437,84 @@ Log(T addr, const uint8_t *value, uint32_t size)
 	for (uint32_t i = 0; i < size; i++)
 		logger << " " << (unsigned short int)value[i];
 	logger << std::dec << EndDebugInfo;
+}
+
+template<class T>
+void
+LinuxLoader<T>::
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
+{
+	if ( argc != argv.size() )
+	{
+		if ( argc < argv.size() )
+		{
+			// we have to delete entries on argv vector
+			for ( ;
+					param_argv.size() != argc;
+					param_argv.pop_back() )
+			{
+				delete *param_argv.rbegin();
+			}
+			for ( ;
+					argv.size() != argc;
+					argv.pop_back() )
+			{
+				delete *argv.rbegin();
+			}
+		}
+		else
+		{
+			// we have to add entries on the argv vector
+			while ( argv.size() != argc )
+			{
+				unsigned int i = argv.size();
+				std::stringstream argv_name, argv_desc, argv_val;
+				argv_name << "argv[" << i << "]";
+				argv_desc << "The '" << i << "' token in the command line.";
+				argv_val << "Undefined argv[" << i << "] value";
+				argv.push_back(new string(argv_val.str().c_str()));
+				param_argv.push_back(
+						new Parameter<string>(argv_name.str().c_str(), this, 
+							*(argv[i]), argv_desc.str().c_str()));
+			}
+		}
+	}
+
+	if ( envc != envp.size() )
+	{
+		if ( envc < envp.size() )
+		{
+			// we have to delete entries on envp vector
+			for ( ;
+					param_envp.size() != argc;
+					param_envp.pop_back() )
+			{
+				delete *param_envp.rbegin();
+			}
+			for ( ;
+					envp.size() != argc;
+					envp.pop_back() )
+			{
+				delete *envp.rbegin();
+			}
+		}
+		else
+		{
+			// we have to add entries on the envp vector
+			while ( envp.size() != envc )
+			{
+				unsigned int i = envp.size();
+				std::stringstream envp_name, envp_desc, envp_val;
+				envp_name << "envp[" << i << "]";
+				envp_desc << "The '" << i << "' token in the environment.";
+				envp_val << "Undefined envp[" << i << "] value";
+				envp.push_back(new string(envp_val.str().c_str()));
+				param_envp.push_back(
+						new Parameter<string>(envp_name.str().c_str(), this,
+							*(envp[i]), envp_desc.str().c_str()));
+			}
+		}
+	}
 }
 
 } // end of linux_loader

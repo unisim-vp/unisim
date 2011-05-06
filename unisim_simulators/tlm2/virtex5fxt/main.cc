@@ -45,11 +45,12 @@
 #include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
 #include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
+#include <unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
-#include <unisim/component/tlm2/memory/flash/am29lv/am29lv.hh>
-#include <unisim/component/cxx/memory/flash/am29lv/am29lv160d_config.hh>
+#include <unisim/component/tlm2/memory/flash/am29/am29.hh>
+#include <unisim/component/cxx/memory/flash/am29/s29gl256p_config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh>
 #include <unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh>
@@ -59,15 +60,16 @@
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
-#include <unisim/service/loader/elf_loader/elf32_loader.hh>
+#include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/translator/memory_address/memory/translator.hh>
+#include <unisim/service/tee/loader/tee.hh>
+#include <unisim/service/tee/symbol_table_lookup/tee.hh>
 
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
-#include <unisim/util/random/random.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -107,7 +109,7 @@ void SigIntHandler(int signum)
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
-using unisim::service::loader::elf_loader::Elf32Loader;
+using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
@@ -144,272 +146,6 @@ typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
 typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
 static const unsigned int TIMER_IRQ = 3;
 
-#if 0
-class IRQStub
-	: public sc_module
-	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
-{
-public:
-	tlm::tlm_initiator_socket<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> irq_master_sock;
-	
-	IRQStub(const sc_module_name& name);
-
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-};
-
-IRQStub::IRQStub(const sc_module_name& name)
-	: sc_module(name)
-	, irq_master_sock("irq-master-sock")
-{
-	irq_master_sock(*this);
-}
-
-tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
-
-class CaptureTriggerStub
-	: public Object
-	, public sc_module
-	, tlm::tlm_bw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes>
-{
-public:
-	tlm::tlm_initiator_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> capture_trigger_master_sock;
-	
-	CaptureTriggerStub(const sc_module_name& name, Object *parent = 0);
-
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	
-	void Process();
-private:
-	unisim::kernel::logger::Logger logger;
-	unisim::util::random::Random random;
-	unisim::kernel::tlm2::PayloadFabric<unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload> capture_trigger_payload_fabric;
-	sc_time cycle_time;
-	sc_time nice_time;
-	sc_time time;
-	bool verbose;
-	Parameter<sc_time> param_cycle_time;
-	Parameter<sc_time> param_nice_time;
-	Parameter<bool> param_verbose;
-};
-
-CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
-	, sc_module(name)
-	, capture_trigger_master_sock("capture-trigger-master-sock")
-	, logger(*this)
-	, random(-34525, +96489, -57430854, +786329085)
-	, capture_trigger_payload_fabric()
-	, cycle_time(SC_ZERO_TIME)
-	, nice_time(sc_time(1, SC_MS))
-	, time(SC_ZERO_TIME)
-	, verbose(false)
-	, param_cycle_time("cycle-time", this, cycle_time, "cycle time")
-	, param_nice_time("nice-time", this, nice_time, "nice time")
-	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-{
-	capture_trigger_master_sock(*this);
-	
-	SC_HAS_PROCESS(CaptureTriggerStub);
-	
-	SC_THREAD(Process);
-}
-
-tlm::tlm_sync_enum CaptureTriggerStub::nb_transport_bw(unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	switch(phase)
-	{
-		case tlm::END_REQ:
-			return tlm::TLM_ACCEPTED;
-		case tlm::BEGIN_RESP:
-			return tlm::TLM_COMPLETED;
-		default:
-			logger << unisim::kernel::logger::DebugError << "protocol error" << unisim::kernel::logger::EndDebugError;
-			Object::Stop(-1);
-			break;
-	}
-	
-	return tlm::TLM_COMPLETED;
-}
-
-void CaptureTriggerStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
-
-void CaptureTriggerStub::Process()
-{
-	bool output_level = false;
-	int32_t p = 0;   // period in cycles
-	int32_t d = 0;   // duty in cycles
-	sc_time period(SC_ZERO_TIME);
-	sc_time duty(SC_ZERO_TIME);
-	sc_time delay(SC_ZERO_TIME);
-	
-	while(1)
-	{
-		// Compute next output
-		if(output_level)
-		{
-			d = random.Generate((p / 2) - 1) + (p / 2);
-			// d is in [1; p - 2]
-			if(d < 1 || d > (p - 1))
-			{
-				logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
-				Object::Stop(-1);
-			}
-			duty = cycle_time;
-			duty *= d;
-			if(verbose)
-			{
-				logger << unisim::kernel::logger::DebugInfo << "Duty = " << duty << unisim::kernel::logger::EndDebugInfo;
-			}
-			// duty is in [cycle_time; period - 2 * cycle_time] */
-			delay = duty;
-		}
-		else
-		{
-			delay = period - duty;
-
-			p = random.Generate(160) + 160 + 80;
-			// p is in [80; 399]
-			if(p < 80 || p > 399)
-			{
-				logger << unisim::kernel::logger::DebugError << "Internal error in random generator" << unisim::kernel::logger::EndDebugError;
-				Object::Stop(-1);
-			}
-			period = cycle_time;
-			period *= p;
-			if(verbose)
-			{
-				logger << unisim::kernel::logger::DebugInfo << "Period = " << period << unisim::kernel::logger::EndDebugInfo;
-			}
-			// period is in [80; 399] cycles ([400; 1995] nanoseconds with a 5 nanoseconds cycle time) */
-		}
-		
-		output_level = !output_level;
-		
-		time += delay;
-		
-		if(verbose)
-		{
-			logger << unisim::kernel::logger::DebugInfo << (sc_time_stamp() + time) << ": Output goes " << (output_level ? "high" : "low") << " after " << delay << unisim::kernel::logger::EndDebugInfo;
-		}
-		
-		unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerPayload *capture_trigger_payload = capture_trigger_payload_fabric.allocate();
-		
-		capture_trigger_payload->SetValue(output_level);
-		
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		capture_trigger_master_sock->nb_transport_fw(*capture_trigger_payload, phase, time);
-		
-		capture_trigger_payload->release();
-		
-		if(time >= nice_time)
-		{
-			wait(nice_time);
-			time -= nice_time;
-		}
-	}
-}
-
-class PWMStub
-	: public sc_module
-	, tlm::tlm_fw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes>
-{
-public:
-	tlm::tlm_target_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> pwm_slave_sock;
-	
-	PWMStub(const sc_module_name& name);
-
-	virtual void b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, sc_core::sc_time& t);
-
-	virtual tlm::tlm_sync_enum nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual unsigned int transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans);
-	
-	virtual bool get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_dmi& dmi_data);
-};
-
-PWMStub::PWMStub(const sc_module_name& name)
-	: sc_module(name)
-	, pwm_slave_sock("pwm-slave-sock")
-{
-	pwm_slave_sock(*this);
-}
-
-void PWMStub::b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, sc_core::sc_time& t)
-{
-}
-
-tlm::tlm_sync_enum PWMStub::nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-unsigned int PWMStub::transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans)
-{
-	return 0;
-}
-	
-bool PWMStub::get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::PWMPayload& trans, tlm::tlm_dmi& dmi_data)
-{
-	return false;
-}
-
-class GenerateOutStub
-	: public sc_module
-	, tlm::tlm_fw_transport_if<unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes>
-{
-public:
-	tlm::tlm_target_socket<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> generate_out_slave_sock;
-	
-	GenerateOutStub(const sc_module_name& name);
-
-	virtual void b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, sc_core::sc_time& t);
-
-	virtual tlm::tlm_sync_enum nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual unsigned int transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans);
-	
-	virtual bool get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_dmi& dmi_data);
-};
-
-GenerateOutStub::GenerateOutStub(const sc_module_name& name)
-	: sc_module(name)
-	, generate_out_slave_sock("generate-out-slave-sock")
-{
-	generate_out_slave_sock(*this);
-}
-
-void GenerateOutStub::b_transport(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, sc_core::sc_time& t)
-{
-}
-
-tlm::tlm_sync_enum GenerateOutStub::nb_transport_fw(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-unsigned int GenerateOutStub::transport_dbg(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans)
-{
-	return 0;
-}
-	
-bool GenerateOutStub::get_direct_mem_ptr(unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutPayload& trans, tlm::tlm_dmi& dmi_data)
-{
-	return false;
-}
-#endif
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -431,7 +167,7 @@ private:
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
 	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
-	typedef unisim::component::cxx::memory::flash::am29lv::AM29LV160DTConfig AM29LV_CONFIG;
+	typedef unisim::component::cxx::memory::flash::am29::S29GL256PConfig AM29_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
 
@@ -439,18 +175,18 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> ROM;
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<CPU_CONFIG> CPU;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<MPLB_CONFIG> MPLB;
 	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<TIMER_CONFIG> TIMER;
-	typedef unisim::component::tlm2::memory::flash::am29lv::AM29LV<AM29LV_CONFIG, 32 * unisim::component::cxx::memory::flash::am29lv::M, CPU_CONFIG::FSB_WIDTH, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
+	typedef unisim::component::tlm2::memory::flash::am29::AM29<AM29_CONFIG, 32 * unisim::component::cxx::memory::flash::am29::M, 2, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
-	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerProtocolTypes> CAPTURE_TRIGGER_STUB;
+	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::InterruptProtocolTypes> IRQ_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB0_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB1_STUB;
@@ -469,7 +205,7 @@ private:
 	//  - PowerPC processor
 	CPU *cpu;
 	//  - RAM
-	MEMORY *memory;
+	RAM *ram;
 	//  - ROM
 	ROM *rom;
 	// - IRQ stubs
@@ -510,10 +246,8 @@ private:
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	//  - ELF32 loader
-	Elf32Loader<CPU_ADDRESS_TYPE> *elf32_loader;
-	//  - ROM loader (ELF32)
-	Elf32Loader<CPU_ADDRESS_TYPE> *rom_loader;
+	//  - Multiformat loader
+	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
@@ -529,7 +263,7 @@ private:
 	CachePowerEstimator *dtlb_power_estimator;
 	CachePowerEstimator *utlb_power_estimator;
 	//  - memory address translator from effective address to physical address
-	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *memory_effective_to_physical_address_translator;
+	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *ram_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *flash_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *rom_effective_to_physical_address_translator;
 
@@ -549,7 +283,7 @@ private:
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
-	, memory(0)
+	, ram(0)
 	, rom(0)
 	, critical_input_interrupt_stub(0)
 	, mplb(0)
@@ -569,6 +303,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dmac2_dcr_stub(0)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
+	, loader(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -578,7 +313,7 @@ Simulator::Simulator(int argc, char **argv)
 	, itlb_power_estimator(0)
 	, dtlb_power_estimator(0)
 	, utlb_power_estimator(0)
-	, memory_effective_to_physical_address_translator(0)
+	, ram_effective_to_physical_address_translator(0)
 	, flash_effective_to_physical_address_translator(0)
 	, rom_effective_to_physical_address_translator(0)
 	, enable_gdb_server(false)
@@ -598,7 +333,7 @@ Simulator::Simulator(int argc, char **argv)
 	//  - PowerPC processor
 	cpu = new CPU("cpu");
 	//  - RAM
-	memory = new MEMORY("memory");
+	ram = new RAM("ram");
 	//  - ROM
 	rom = new ROM("rom");
 	//  - IRQ Stubs
@@ -661,10 +396,8 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//===                         Service instantiations                    ===
 	//=========================================================================
-	//  - ELF32 loader
-	elf32_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("elf32-loader");
-	//  - ROM Loader
-	rom_loader = new Elf32Loader<CPU_ADDRESS_TYPE>("rom-loader");
+	//  - Multiformat loader
+	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -680,7 +413,7 @@ Simulator::Simulator(int argc, char **argv)
 	dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 	utlb_power_estimator = estimate_power ? new CachePowerEstimator("utlb-power-estimator") : 0;
 	//  - memory address translator from effective address to physical address
-	memory_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("memory-effective-to-physical-address-translator");
+	ram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("ram-effective-to-physical-address-translator");
 	flash_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
 	rom_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("rom-effective-to-physical-address-translator");
 	
@@ -707,7 +440,7 @@ Simulator::Simulator(int argc, char **argv)
 	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::EXTERNAL_SLAVE_NUM])(external_slave_dcr_stub->slave_sock);
 	
 	crossbar->mplb_master_sock(*mplb->targ_socket[0]);   // crossbar>MPLB <-> MPLB
-	crossbar->mci_master_sock(memory->slave_sock);       // crossbar>MCI <-> RAM
+	crossbar->mci_master_sock(ram->slave_sock);       // crossbar>MCI <-> RAM
 	
 	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
 	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
@@ -746,13 +479,13 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->memory_import >> crossbar->memory_export;
 	
-	crossbar->mci_memory_import >> memory->memory_export;
+	crossbar->mci_memory_import >> ram->memory_export;
 	crossbar->mplb_memory_import >> mplb->memory_export;
 	(*mplb->memory_import[0]) >> intc->memory_export;
 	(*mplb->memory_import[1]) >> timer->memory_export;
 	(*mplb->memory_import[2]) >> flash->memory_export;
 	(*mplb->memory_import[3]) >> rom->memory_export;
-	cpu->loader_import >> elf32_loader->loader_export;
+	cpu->loader_import >> loader->loader_export;
 	
 	if(enable_inline_debugger)
 	{
@@ -765,9 +498,9 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->registers_import >> cpu->registers_export;
 		inline_debugger->memory_access_reporting_control_import >>
 			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> elf32_loader->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> elf32_loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> elf32_loader->symbol_table_lookup_export;
+		*inline_debugger->loader_import[0] >> loader->loader_export;
+		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
+		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -802,12 +535,13 @@ Simulator::Simulator(int argc, char **argv)
 		utlb_power_estimator->time_import >> sim_time->time_export;
 	}
 
-	memory_effective_to_physical_address_translator->memory_import >> memory->memory_export;
+	ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
 	flash_effective_to_physical_address_translator->memory_import >> flash->memory_export;
 	rom_effective_to_physical_address_translator->memory_import >> rom->memory_export;
-	elf32_loader->memory_import >> memory_effective_to_physical_address_translator->memory_export;
-	rom_loader->memory_import >> rom_effective_to_physical_address_translator->memory_export;
-	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+	*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
+	*loader->memory_import[1] >> rom_effective_to_physical_address_translator->memory_export;
+	*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
+	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 }
 
 Simulator::~Simulator()
@@ -815,7 +549,7 @@ Simulator::~Simulator()
 	unsigned int irq;
 	unsigned int channel;
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
-	if(memory) delete memory;
+	if(ram) delete ram;
 	if(rom) delete rom;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
@@ -849,16 +583,18 @@ Simulator::~Simulator()
 		if(generate_out_stub[channel]) delete generate_out_stub[channel];
 	}
 	if(pwm_stub) delete pwm_stub;
+	if(dcr_controller) delete dcr_controller;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(utlb_power_estimator) delete utlb_power_estimator;
 	if(sim_time) delete sim_time;
-	if(elf32_loader) delete elf32_loader;
-	if(rom_loader) delete rom_loader;
-	if(memory_effective_to_physical_address_translator) delete memory_effective_to_physical_address_translator;
+	if(host_time) delete host_time;
+	if(loader) delete loader;
+	if(ram_effective_to_physical_address_translator) delete ram_effective_to_physical_address_translator;
 	if(rom_effective_to_physical_address_translator) delete rom_effective_to_physical_address_translator;
+	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -869,7 +605,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
-	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440 simulator with support of ELF32 binaries");
+	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs");
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
 	const char *filename = "";
@@ -909,17 +645,20 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x41200000\" range_end=\"0x4120ffff\" output_port=\"0\" translation=\"0x41200000\""); // XPS IntC
+	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
 	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
-	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 16 * 16 Mbits AM29LV160DT flash memory chips)
+	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
+	
+	// - Loader memory router
+	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,rom-effective-to-physical-address-translator:0xff800000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 8 MB ROM / 32 MB Flash memory
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("memory.org", 0x00000000UL);
-	simulator->SetVariable("memory.bytesize", 256 * 1024 * 1024); // 256 MB
+	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("ram.org", 0x00000000UL);
+	simulator->SetVariable("ram.bytesize", 256 * 1024 * 1024); // 256 MB
 
 	//  - ROM
 	simulator->SetVariable("rom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
@@ -1024,7 +763,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("utlb-power-estimator.access-mode", "fast");
 
 	// Inline debugger
-	simulator->SetVariable("inline-debugger.num-loaders", 1);
+	simulator->SetVariable("inline-debugger.num-loaders", 4);
 }
 
 void Simulator::Run()
@@ -1082,22 +821,12 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		std::cerr << "WARNING! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " should not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
 	}
 	
-	// Build the Linux OS arguments from the command line arguments
-	
+	// Optionally get the program to load from the command line arguments
 	VariableBase *cmd_args = FindVariable("cmd-args");
 	unsigned int cmd_args_length = cmd_args->GetLength();
 	if(cmd_args_length > 0)
 	{
 		SetVariable("elf32-loader.filename", ((string)(*cmd_args)[0]).c_str());
-/*		SetVariable("linux-loader.argc", cmd_args_length);
-		
-		unsigned int i;
-		for(i = 0; i < cmd_args_length; i++)
-		{
-			std::stringstream sstr;
-			sstr << "linux-loader.argv[" << i << "]";
-			SetVariable(sstr.str().c_str(), ((string)(*cmd_args)[i]).c_str());
-		}*/
 	}
 
 	return unisim::kernel::service::Simulator::Setup();

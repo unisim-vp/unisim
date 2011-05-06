@@ -44,6 +44,7 @@
 #include "unisim/kernel/logger/logger.hh"
 
 #include <string>
+#include <vector>
 
 namespace unisim {
 namespace service {
@@ -67,19 +68,20 @@ using unisim::kernel::logger::Logger;
 
 template<class T>
 class LinuxLoader :
-public Client<Loader<T> >,
+public Client<Loader>,
 public Client<Blob<T> >,
 public Client<Memory<T> >,
-public Service<Loader<T> >,
-public Service<Blob<T> >
+public Service<Loader>,
+public Service<Blob<T> >,
+public unisim::kernel::service::VariableBaseListener
 {
 public:
 	/* Import of the different services */
-	ServiceImport<Loader<T> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<Blob<T> > blob_import;
 	ServiceImport<Memory<T> > memory_import;
 	/* Exported services */
-	ServiceExport<Loader<T> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<T> > blob_export;
 
 	/* Constructor/Destructor */
@@ -101,9 +103,9 @@ protected:
 	T stack_base;
 	T max_environ;
 	unsigned int argc;
-	string *argv;
+	std::vector<std::string *> argv;
 	unsigned int envc;
-	string *envp;
+	std::vector<std::string *> envp;
 	unisim::util::debug::blob::Blob<T> *blob;
 	unisim::util::debug::blob::Blob<T> *stack_blob;
 	
@@ -124,14 +126,16 @@ private:
 	Parameter<T> param_stack_base;
 	Parameter<T> param_max_environ;
 	Parameter<unsigned int> param_argc;
-	ParameterArray<string> *param_argv;
+	std::vector<Parameter<string> *> param_argv;
 	Parameter<unsigned int> param_envc;
-	ParameterArray<string> *param_envp;
+	std::vector<Parameter<string> *> param_envp;
 
 	Parameter<bool> param_verbose;
 	Logger logger;
 
 	void Log(T addr, const uint8_t *value, uint32_t size);
+
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
 };
 
 } // end of linux_loader

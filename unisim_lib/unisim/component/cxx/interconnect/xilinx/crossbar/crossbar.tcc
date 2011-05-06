@@ -61,6 +61,7 @@ Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	Reset();
 }
 
 template <class CONFIG>
@@ -71,6 +72,58 @@ Crossbar<CONFIG>::~Crossbar()
 template <class CONFIG>
 void Crossbar<CONFIG>::Reset()
 {
+	ist = CONFIG::IST_RESET_VALUE;
+	imask = CONFIG::IMASK_RESET_VALUE;
+	arb_xbc = CONFIG::ARB_XBC_RESET_VALUE;
+	fifost_xbc = CONFIG::FIFOST_XBC_RESET_VALUE;
+	sm_st_xbc = CONFIG::SM_ST_XBC_RESET_VALUE;
+	misc_xbc = CONFIG::MISC_XBC_RESET_VALUE;
+	arb_xbm = CONFIG::ARB_XBM_RESET_VALUE;
+	fifost_xbm = CONFIG::FIFOST_XBM_RESET_VALUE;
+	misc_xbm = CONFIG::MISC_XBM_RESET_VALUE;
+	tmpl_xbar_map[0] = CONFIG::TMPL0_XBAR_MAP_RESET_VALUE;
+	tmpl_xbar_map[1] = CONFIG::TMPL1_XBAR_MAP_RESET_VALUE;
+	tmpl_xbar_map[2] = CONFIG::TMPL2_XBAR_MAP_RESET_VALUE;
+	tmpl_xbar_map[3] = CONFIG::TMPL3_XBAR_MAP_RESET_VALUE;
+	tmpl_sel_reg = CONFIG::TMPL_SEL_REG_RESET_VALUE;
+	cfg_plbs0 = CONFIG::CFG_PLBS0_RESET_VALUE;
+	sear_u_plbs0 = CONFIG::SEAR_U_PLBS0_RESET_VALUE;
+	sear_l_plbs0 = CONFIG::SEAR_L_PLBS0_RESET_VALUE;
+	sesr_plbs0 = CONFIG::SESR_PLBS0_RESET_VALUE;
+	misc_st_plbs0 = CONFIG::MISC_ST_PLBS0_RESET_VALUE;
+	plberr_st_plbs0 = CONFIG::PLBERR_ST_PLBS0_RESET_VALUE;
+	sm_st_plbs0 = CONFIG::SM_ST_PLBS0_RESET_VALUE;
+	misc_plbs0 = CONFIG::MISC_PLBS0_RESET_VALUE;
+	cmd_sniff_plbs0 = CONFIG::CMD_SNIFF_PLBS0_RESET_VALUE;
+	cmd_sniffa_plbs0 = CONFIG::CMD_SNIFFA_PLBS0_RESET_VALUE;
+	tmpl_plbs0_map[0] = CONFIG::TMPL0_PLBS0_MAP_RESET_VALUE;
+	tmpl_plbs0_map[1] = CONFIG::TMPL1_PLBS0_MAP_RESET_VALUE;
+	tmpl_plbs0_map[2] = CONFIG::TMPL2_PLBS0_MAP_RESET_VALUE;
+	tmpl_plbs0_map[3] = CONFIG::TMPL3_PLBS0_MAP_RESET_VALUE;
+	cfg_plbs1 = CONFIG::CFG_PLBS1_RESET_VALUE;
+	sear_u_plbs1 = CONFIG::SEAR_U_PLBS1_RESET_VALUE;
+	sear_l_plbs1 = CONFIG::SEAR_L_PLBS1_RESET_VALUE;
+	sesr_plbs1 = CONFIG::SESR_PLBS1_RESET_VALUE;
+	misc_st_plbs1 = CONFIG::MISC_ST_PLBS1_RESET_VALUE;
+	plberr_st_plbs1 = CONFIG::PLBERR_ST_PLBS1_RESET_VALUE;
+	sm_st_plbs1 = CONFIG::SM_ST_PLBS1_RESET_VALUE;
+	misc_plbs1 = CONFIG::MISC_PLBS1_RESET_VALUE;
+	cmd_sniff_plbs1 = CONFIG::CMD_SNIFF_PLBS1_RESET_VALUE;
+	cmd_sniffa_plbs1 = CONFIG::CMD_SNIFFA_PLBS1_RESET_VALUE;
+	tmpl_plbs1_map[0] = CONFIG::TMPL0_PLBS1_MAP_RESET_VALUE;
+	tmpl_plbs1_map[1] = CONFIG::TMPL1_PLBS1_MAP_RESET_VALUE;
+	tmpl_plbs1_map[2] = CONFIG::TMPL2_PLBS1_MAP_RESET_VALUE;
+	tmpl_plbs1_map[3] = CONFIG::TMPL3_PLBS1_MAP_RESET_VALUE;
+	cfg_plbm = CONFIG::CFG_PLBM_RESET_VALUE;
+	fsear_u_plbm = CONFIG::FSEAR_U_PLBM_RESET_VALUE;
+	fsear_l_plbm = CONFIG::FSEAR_U_PLBM_RESET_VALUE;
+	fsesr_plbm = CONFIG::FSESR_PLBM_RESET_VALUE;
+	misc_st_plbm = CONFIG::MISC_ST_PLBM_RESET_VALUE;
+	plberr_st_plbm = CONFIG::PLBERR_ST_PLBM_RESET_VALUE;
+	sm_st_plbm = CONFIG::SM_ST_PLBM_RESET_VALUE;
+	misc_plbm = CONFIG::MISC_PLBM_RESET_VALUE;
+	cmd_sniff_plbm = CONFIG::CMD_SNIFF_PLBM_RESET_VALUE;
+	cmd_sniffa_plbm = CONFIG::CMD_SNIFFA_PLBM_RESET_VALUE;
 }
 
 template <class CONFIG>
@@ -212,7 +265,6 @@ void Crossbar<CONFIG>::WriteDCR(unsigned int dcrn, uint32_t value)
 		case CONFIG::IMASK: SetIMASK(value); break;
 		case CONFIG::ARB_XBC: SetARB_XBC(value); break;
 		case CONFIG::FIFOST_XBC: SetFIFOST_XBC(value); break;
-		case CONFIG::SM_ST_XBC: SetSM_ST_XBC(value); break;
 		case CONFIG::MISC_XBC: SetMISC_XBC(value); break;
 		case CONFIG::ARB_XBM: SetARB_XBM(value); break;
 		case CONFIG::FIFOST_XBM: SetFIFOST_XBM(value); break;
@@ -228,12 +280,9 @@ void Crossbar<CONFIG>::WriteDCR(unsigned int dcrn, uint32_t value)
 			break;
 		case CONFIG::TMPL_SEL_REG: SetTMPL_SEL_REG(value); break;
 		case CONFIG::CFG_PLBS0: SetCFG_PLBS0(value); break;
-		case CONFIG::SEAR_U_PLBS0: SetSEAR_U_PLBS0(value); break;
-		case CONFIG::SEAR_L_PLBS0: SetSEAR_L_PLBS0(value); break;
 		case CONFIG::SESR_PLBS0: SetSESR_PLBS0(value); break;
 		case CONFIG::MISC_ST_PLBS0: SetMISC_ST_PLBS0(value); break;
 		case CONFIG::PLBERR_ST_PLBS0: SetPLBERR_ST_PLBS0(value); break;
-		case CONFIG::SM_ST_PLBS0: SetSM_ST_PLBS0(value); break;
 		case CONFIG::MISC_PLBS0: SetMISC_PLBS0(value); break;
 		case CONFIG::CMD_SNIFF_PLBS0: SetCMD_SNIFF_PLBS0(value); break;
 		case CONFIG::CMD_SNIFFA_PLBS0: SetCMD_SNIFFA_PLBS0(value); break;
@@ -247,12 +296,9 @@ void Crossbar<CONFIG>::WriteDCR(unsigned int dcrn, uint32_t value)
 			}
 			break;
 		case CONFIG::CFG_PLBS1: SetCFG_PLBS1(value); break;
-		case CONFIG::SEAR_U_PLBS1: SetSEAR_U_PLBS1(value); break;
-		case CONFIG::SEAR_L_PLBS1: SetSEAR_L_PLBS1(value); break;
 		case CONFIG::SESR_PLBS1: SetSESR_PLBS1(value); break;
 		case CONFIG::MISC_ST_PLBS1: SetMISC_ST_PLBS1(value); break;
 		case CONFIG::PLBERR_ST_PLBS1: SetPLBERR_ST_PLBS1(value); break;
-		case CONFIG::SM_ST_PLBS1: SetSM_ST_PLBS1(value); break;
 		case CONFIG::MISC_PLBS1: SetMISC_PLBS1(value); break;
 		case CONFIG::CMD_SNIFF_PLBS1: SetCMD_SNIFF_PLBS1(value); break;
 		case CONFIG::CMD_SNIFFA_PLBS1: SetCMD_SNIFFA_PLBS1(value); break;
@@ -269,14 +315,13 @@ void Crossbar<CONFIG>::WriteDCR(unsigned int dcrn, uint32_t value)
 		case CONFIG::FSEAR_U_PLBM: SetFSEAR_U_PLBM(value); break;
 		case CONFIG::FSEAR_L_PLBM: SetFSEAR_L_PLBM(value); break;
 		case CONFIG::FSESR_PLBM: SetFSESR_PLBM(value); break;
-		case CONFIG::MISC_ST_PLBM: SetMISC_ST_PLBM(value); break;
 		case CONFIG::PLBERR_ST_PLBM: SetPLBERR_ST_PLBM(value); break;
 		case CONFIG::SM_ST_PLBM: SetSM_ST_PLBM(value); break;
 		case CONFIG::MISC_PLBM: SetMISC_PLBM(value); break;
 		case CONFIG::CMD_SNIFF_PLBM: SetCMD_SNIFF_PLBM(value); break;
 		case CONFIG::CMD_SNIFFA_PLBM: SetCMD_SNIFFA_PLBM(value); break;
 		default:
-			logger << DebugWarning << "Writing an unmapped DCR #0x" << std::hex << dcrn << std::dec << EndDebugWarning;
+			logger << DebugWarning << "Writing an unmapped or read only DCR #0x" << std::hex << dcrn << std::dec << EndDebugWarning;
 	}
 }
 
@@ -316,6 +361,126 @@ typename Crossbar<CONFIG>::Interface Crossbar<CONFIG>::Route(Interface intf, typ
 	}
 	
 	return (map & (1 << (31 - abus_0_4))) ? IF_MCI : IF_MPLB;
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::MPLBError(Interface master_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length)
+{
+	uint32_t mid = 0;
+	uint32_t ssize = 2; // 128-bit slave size ?
+	uint32_t type = 0; // memory access
+	uint32_t size = (length <= CONFIG::PLB_WIDTH) ? 0 : 0x6;
+	uint32_t be = 0xffff;
+	
+	switch(master_if)
+	{
+		case IF_ICURD_PLB:
+			mid = 0;
+			break;
+		case IF_DCUWR_PLB:
+			mid = 1;
+			break;
+		case IF_DCURD_PLB:
+			mid = 2;
+			break;
+		case IF_SPLB0:
+			mid = 3;
+			break;
+		case IF_SPLB1:
+			mid = 4;
+			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+			return;
+	}
+	
+	fsesr_plbm = fsesr_plbm | CONFIG::FSESR_PLBM_VLD_MASK;
+	fsesr_plbm = fsesr_plbm & ~CONFIG::FSESR_PLBM_LOCKERR_MASK;
+	fsesr_plbm = fsesr_plbm & ~CONFIG::FSESR_PLBM_PLBS_DMA_MASK;
+	fsesr_plbm = (fsesr_plbm & ~CONFIG::FSESR_PLBM_MID_MASK) | ((mid << CONFIG::FSESR_PLBM_MID_OFFSET) & CONFIG::FSESR_PLBM_MID_MASK);
+	fsesr_plbm = (fsesr_plbm & ~CONFIG::FSESR_PLBM_SSIZE_MASK) | ((ssize << CONFIG::FSESR_PLBM_SSIZE_OFFSET) & CONFIG::FSESR_PLBM_SSIZE_MASK);
+	fsesr_plbm = (fsesr_plbm & ~CONFIG::FSESR_PLBM_TYPE_MASK) | ((type << CONFIG::FSESR_PLBM_TYPE_OFFSET) & CONFIG::FSESR_PLBM_TYPE_MASK);
+	fsesr_plbm = (fsesr_plbm & ~CONFIG::FSESR_PLBM_RNW_MASK) | (rnw ? CONFIG::FSESR_PLBM_RNW_MASK : 0);
+	fsesr_plbm = (fsesr_plbm & ~CONFIG::FSESR_PLBM_SIZE_MASK) | ((size << CONFIG::FSESR_PLBM_SIZE_OFFSET) & CONFIG::FSESR_PLBM_SIZE_MASK);
+	fsesr_plbm = (fsesr_plbm & ~CONFIG::FSESR_PLBM_BE_MASK) | ((be << CONFIG::FSESR_PLBM_BE_OFFSET) & CONFIG::FSESR_PLBM_BE_MASK);
+	
+	fsear_u_plbm = (addr >> 4) & CONFIG::FSEAR_U_PLBM_MASK;
+	fsear_l_plbm = addr & CONFIG::FSEAR_L_PLBM_MASK;
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::SPLBError(Interface master_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length)
+{
+	uint32_t mid = 0; // ?
+	uint32_t msize = 2; // 128-bit master size ?
+	uint32_t type = 0; // memory access
+	uint32_t size = (length <= CONFIG::PLB_WIDTH) ? 0 : 0x6;
+	uint32_t be = 0xffff;
+	
+	switch(master_if)
+	{
+		case IF_SPLB0:
+			sesr_plbs0 = sesr_plbs0 | CONFIG::SESR_PLBS0_VLD_MASK;
+			sesr_plbs0 = sesr_plbs0 & ~CONFIG::SESR_PLBS0_LOCKERR_MASK;
+			sesr_plbs0 = (sesr_plbs0 & ~CONFIG::SESR_PLBS0_MID_MASK) | ((mid << CONFIG::SESR_PLBS0_MID_OFFSET) & CONFIG::SESR_PLBS0_MID_MASK);
+			sesr_plbs0 = (sesr_plbs0 & ~CONFIG::SESR_PLBS0_MSIZE_MASK) | ((msize << CONFIG::SESR_PLBS0_MSIZE_OFFSET) & CONFIG::SESR_PLBS0_MSIZE_MASK);
+			sesr_plbs0 = (sesr_plbs0 & ~CONFIG::SESR_PLBS0_TYPE_MASK) | ((type << CONFIG::SESR_PLBS0_TYPE_OFFSET) & CONFIG::SESR_PLBS0_TYPE_MASK);
+			sesr_plbs0 = (sesr_plbs0 & ~CONFIG::SESR_PLBS0_RNW_MASK) | (rnw ? CONFIG::SESR_PLBS0_RNW_MASK : 0);
+			sesr_plbs0 = (sesr_plbs0 & ~CONFIG::SESR_PLBS0_SIZE_MASK) | ((size << CONFIG::SESR_PLBS0_SIZE_OFFSET) & CONFIG::SESR_PLBS0_SIZE_MASK);
+			sesr_plbs0 = (sesr_plbs0 & ~CONFIG::SESR_PLBS0_BE_MASK) | ((be << CONFIG::SESR_PLBS0_BE_OFFSET) & CONFIG::SESR_PLBS0_BE_MASK);
+			sear_u_plbs0 = (addr >> 4) & CONFIG::SEAR_U_PLBS0_MASK;
+			sear_l_plbs0 = addr & CONFIG::SEAR_L_PLBS0_MASK;
+			break;
+		case IF_SPLB1:
+			sesr_plbs1 = sesr_plbs1 | CONFIG::SESR_PLBS1_VLD_MASK;
+			sesr_plbs1 = sesr_plbs1 & ~CONFIG::SESR_PLBS1_LOCKERR_MASK;
+			sesr_plbs1 = (sesr_plbs1 & ~CONFIG::SESR_PLBS1_MID_MASK) | ((mid << CONFIG::SESR_PLBS1_MID_OFFSET) & CONFIG::SESR_PLBS1_MID_MASK);
+			sesr_plbs1 = (sesr_plbs1 & ~CONFIG::SESR_PLBS1_MSIZE_MASK) | ((msize << CONFIG::SESR_PLBS1_MSIZE_OFFSET) & CONFIG::SESR_PLBS1_MSIZE_MASK);
+			sesr_plbs1 = (sesr_plbs1 & ~CONFIG::SESR_PLBS1_TYPE_MASK) | ((type << CONFIG::SESR_PLBS1_TYPE_OFFSET) & CONFIG::SESR_PLBS1_TYPE_MASK);
+			sesr_plbs1 = (sesr_plbs1 & ~CONFIG::SESR_PLBS1_RNW_MASK) | (rnw ? CONFIG::SESR_PLBS1_RNW_MASK : 0);
+			sesr_plbs1 = (sesr_plbs1 & ~CONFIG::SESR_PLBS1_SIZE_MASK) | ((size << CONFIG::SESR_PLBS1_SIZE_OFFSET) & CONFIG::SESR_PLBS1_SIZE_MASK);
+			sesr_plbs1 = (sesr_plbs1 & ~CONFIG::SESR_PLBS1_BE_MASK) | ((be << CONFIG::SESR_PLBS1_BE_OFFSET) & CONFIG::SESR_PLBS1_BE_MASK);
+			sear_u_plbs1 = (addr >> 4) & CONFIG::SEAR_U_PLBS1_MASK;
+			sear_l_plbs1 = addr & CONFIG::SEAR_L_PLBS1_MASK;
+			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+			return;
+	}
+	
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::Error(Interface master_if, Interface slave_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length)
+{
+	logger << DebugWarning << "Transfer at @0x" << std::hex << addr << std::dec << " (" << (rnw ? "read" : "write")
+		<< " of " << length << " bytes) from " << GetInterfaceName(master_if) << " to "
+		<< GetInterfaceName(slave_if) << " failed" << EndDebugWarning;
+
+	switch(slave_if)
+	{
+		case IF_MPLB:
+			MPLBError(master_if, addr, rnw, length);
+			break;
+		case IF_MCI:
+			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+			return;
+	}
+	
+	switch(master_if)
+	{
+		case IF_SPLB0:
+		case IF_SPLB1:
+			SPLBError(master_if, addr, rnw, length);
+			break;
+		default:
+			break;
+	}
 }
 
 template <class CONFIG>
@@ -377,7 +542,7 @@ uint32_t Crossbar<CONFIG>::GetSM_ST_XBC() const
 template <class CONFIG>
 uint32_t Crossbar<CONFIG>::GetMISC_XBC() const
 {
-	return misc_xbc;
+	return misc_xbc & ~CONFIG::MISC_XBC_WRITE_ONLY_MASK;
 }
 
 template <class CONFIG>
@@ -395,7 +560,7 @@ uint32_t Crossbar<CONFIG>::GetFIFOST_XBM() const
 template <class CONFIG>
 uint32_t Crossbar<CONFIG>::GetMISC_XBM() const
 {
-	return misc_xbm;
+	return misc_xbm & ~CONFIG::MISC_XBM_WRITE_ONLY_MASK;
 }
 
 template <class CONFIG>
@@ -435,8 +600,10 @@ uint32_t Crossbar<CONFIG>::GetSESR_PLBS0() const
 }
 
 template <class CONFIG>
-uint32_t Crossbar<CONFIG>::GetMISC_ST_PLBS0() const
+uint32_t Crossbar<CONFIG>::GetMISC_ST_PLBS0()
 {
+	// Reading this register, clears bits IST[INT_CFG_ERR_S0] and IST[INT_FIFO_ERR_S0]
+	ist = ist & ~(CONFIG::IST_INT_CFG_ERR_S0_MASK | CONFIG::IST_INT_FIFO_ERR_S0_MASK);
 	return misc_st_plbs0;
 }
 
@@ -455,7 +622,7 @@ uint32_t Crossbar<CONFIG>::GetSM_ST_PLBS0() const
 template <class CONFIG>
 uint32_t Crossbar<CONFIG>::GetMISC_PLBS0() const
 {
-	return misc_plbs0;
+	return misc_plbs0 & ~CONFIG::MISC_PLBS0_WRITE_ONLY_MASK;
 }
 
 template <class CONFIG>
@@ -501,8 +668,10 @@ uint32_t Crossbar<CONFIG>::GetSESR_PLBS1() const
 }
 
 template <class CONFIG>
-uint32_t Crossbar<CONFIG>::GetMISC_ST_PLBS1() const
+uint32_t Crossbar<CONFIG>::GetMISC_ST_PLBS1()
 {
+	// Reading this register, clears bit IST[INT_CFG_ERR_S1] and IST[INT_FIFO_ERR_S1]
+	ist = ist & ~(CONFIG::IST_INT_CFG_ERR_S1_MASK | CONFIG::IST_INT_FIFO_ERR_S1_MASK);
 	return misc_st_plbs1;
 }
 
@@ -521,7 +690,7 @@ uint32_t Crossbar<CONFIG>::GetSM_ST_PLBS1() const
 template <class CONFIG>
 uint32_t Crossbar<CONFIG>::GetMISC_PLBS1() const
 {
-	return misc_plbs1;
+	return misc_plbs1 & ~CONFIG::MISC_PLBS1_WRITE_ONLY_MASK;
 }
 
 template <class CONFIG>
@@ -567,8 +736,10 @@ uint32_t Crossbar<CONFIG>::GetFSESR_PLBM() const
 }
 
 template <class CONFIG>
-uint32_t Crossbar<CONFIG>::GetMISC_ST_PLBM() const
+uint32_t Crossbar<CONFIG>::GetMISC_ST_PLBM()
 {
+	// Reading this register, clears bits IST[INT_CFG_ERR_M] and IST[INT_FIFO_ERR_M]
+	ist = ist & ~(CONFIG::IST_INT_CFG_ERR_M_MASK | CONFIG::IST_INT_FIFO_ERR_M_MASK);
 	return misc_st_plbm;
 }
 
@@ -587,7 +758,7 @@ uint32_t Crossbar<CONFIG>::GetSM_ST_PLBM() const
 template <class CONFIG>
 uint32_t Crossbar<CONFIG>::GetMISC_PLBM() const
 {
-	return misc_plbm;
+	return misc_plbm & ~CONFIG::MISC_PLBM_WRITE_ONLY_MASK;
 }
 
 template <class CONFIG>
@@ -605,7 +776,8 @@ uint32_t Crossbar<CONFIG>::GetCMD_SNIFFA_PLBM() const
 template <class CONFIG>
 void Crossbar<CONFIG>::SetIST(uint32_t value)
 {
-	ist = value;
+	// Clear on write to bit
+	ist = ist & ~(value & CONFIG::IST_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
@@ -617,13 +789,14 @@ void Crossbar<CONFIG>::SetIMASK(uint32_t value)
 template <class CONFIG>
 void Crossbar<CONFIG>::SetARB_XBC(uint32_t value)
 {
-	arb_xbc = value;
+	arb_xbc = (arb_xbc & ~CONFIG::ARB_XBC_WRITE_MASK) | (value & CONFIG::ARB_XBC_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetFIFOST_XBC(uint32_t value)
 {
-	fifost_xbc = value;
+	// Clear on write to bit
+	fifost_xbc = fifost_xbc & ~(value & CONFIG::FIFOST_XBC_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
@@ -635,25 +808,28 @@ void Crossbar<CONFIG>::SetSM_ST_XBC(uint32_t value)
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_XBC(uint32_t value)
 {
-	misc_xbc = value;
+	// Clear on write to bit
+	misc_xbc = misc_xbc & ~(value & CONFIG::MISC_XBC_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetARB_XBM(uint32_t value)
 {
-	arb_xbm = value;
+	arb_xbm = (arb_xbm & ~CONFIG::ARB_XBM_WRITE_MASK) | (value & CONFIG::ARB_XBM_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetFIFOST_XBM(uint32_t value)
 {
-	fifost_xbm = value;
+	// Clear on write to bit
+	fifost_xbm = fifost_xbm & ~(value & CONFIG::FIFOST_XBM_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_XBM(uint32_t value)
 {
-	misc_xbm = value;
+	// clear bits on write
+	misc_xbm = misc_xbm & ~value;
 }
 
 template <class CONFIG>
@@ -671,55 +847,75 @@ void Crossbar<CONFIG>::SetTMPL_SEL_REG(uint32_t value)
 template <class CONFIG>
 void Crossbar<CONFIG>::SetCFG_PLBS0(uint32_t value)
 {
-	cfg_plbs0 = value;
+	cfg_plbs0 = (cfg_plbs0 & ~CONFIG::CFG_PLBS0_WRITE_MASK) | (value & CONFIG::CFG_PLBS0_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSEAR_U_PLBS0(uint32_t value)
 {
-	sear_u_plbs0 = value;
+	// this register is cleared when writing to register SESR_PLBS0
+	if(!(cfg_plbs0 & CONFIG::CFG_PLBS0_LOCK_SESR_MASK))
+	{
+		sear_u_plbs0 = (sear_u_plbs0 & ~CONFIG::SEAR_U_PLBS0_WRITE_MASK) | (value & CONFIG::SEAR_U_PLBS0_WRITE_MASK);
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSEAR_L_PLBS0(uint32_t value)
 {
-	sear_l_plbs0 = value;
+	// this register is cleared when writing to register SESR_PLBS0
+	if(!(cfg_plbs0 & CONFIG::CFG_PLBS0_LOCK_SESR_MASK))
+	{
+		sear_l_plbs0 = (sear_l_plbs0 & ~CONFIG::SEAR_L_PLBS0_WRITE_MASK) | (value & CONFIG::SEAR_L_PLBS0_WRITE_MASK);
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSESR_PLBS0(uint32_t value)
 {
-	sesr_plbs0 = value;
+	if(!(cfg_plbs0 & CONFIG::CFG_PLBS0_LOCK_SESR_MASK))
+	{
+		// Clear bits on write
+		sesr_plbs0 = sesr_plbs0 & ~(value & CONFIG::SESR_PLBS0_CLEAR_ON_WRITE_MASK);
+		// Writing to this register also clears SEAR_U_PLBS0 and SEAR_L_PLBS0
+		sear_u_plbs0 = sear_u_plbs0 & ~CONFIG::SEAR_U_PLBS0_MASK;
+		sear_l_plbs0 = sear_l_plbs0 & ~CONFIG::SEAR_L_PLBS0_MASK;
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_ST_PLBS0(uint32_t value)
 {
-	misc_st_plbs0 = value;
+	// clear bits on write
+	misc_st_plbs0 = misc_st_plbs0 & ~(value & CONFIG::MISC_ST_PLBS0_CLEAR_ON_WRITE_MASK);
+	// Write zero's to this register makes IST[INT_CFG_ERR_S0] become zero
+	if(!(misc_st_plbs0 & CONFIG::MISC_ST_PLBS0_MASK)) ist = ist & ~CONFIG::IST_INT_CFG_ERR_S0_MASK;
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetPLBERR_ST_PLBS0(uint32_t value)
 {
-	plberr_st_plbs0 = value;
+	// clear bits on write
+	plberr_st_plbs0 = plberr_st_plbs0 & ~(value & CONFIG::PLBERR_ST_PLBS0_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSM_ST_PLBS0(uint32_t value)
 {
-	sm_st_plbs0 = value;
+	// register is reserved
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_PLBS0(uint32_t value)
 {
-	misc_plbs0 = value;
+	// clear bits on write
+	misc_plbs0 = misc_plbs0 & ~(value & CONFIG::MISC_PLBS0_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetCMD_SNIFF_PLBS0(uint32_t value)
 {
-	cmd_sniff_plbs0 = value;
+	cmd_sniff_plbs0 = (cmd_sniff_plbs0 & ~CONFIG::CMD_SNIFF_PLBS0_WRITE_MASK) | (value & CONFIG::CMD_SNIFF_PLBS0_WRITE_MASK);
 }
 
 template <class CONFIG>
@@ -737,55 +933,75 @@ void Crossbar<CONFIG>::SetTMPL_PLBS0_MAP(unsigned int reg_num, uint32_t value)
 template <class CONFIG>
 void Crossbar<CONFIG>::SetCFG_PLBS1(uint32_t value)
 {
-	cfg_plbs1 = value;
+	cfg_plbs1 = (cfg_plbs1 & ~CONFIG::CFG_PLBS1_WRITE_MASK) | (value & CONFIG::CFG_PLBS1_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSEAR_U_PLBS1(uint32_t value)
 {
-	sear_u_plbs1 = value;
+	// this register is cleared when writing to register SESR_PLBS1
+	if(!(cfg_plbs1 & CONFIG::CFG_PLBS1_LOCK_SESR_MASK))
+	{
+		sear_u_plbs1 = (sear_u_plbs1 & ~CONFIG::SEAR_U_PLBS1_WRITE_MASK) | (value & CONFIG::SEAR_U_PLBS1_WRITE_MASK);
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSEAR_L_PLBS1(uint32_t value)
 {
-	sear_l_plbs1 = value;
+	// this register is cleared when writing to register SESR_PLBS1
+	if(!(cfg_plbs1 & CONFIG::CFG_PLBS1_LOCK_SESR_MASK))
+	{
+		sear_l_plbs1 = (sear_l_plbs1 & ~CONFIG::SEAR_L_PLBS1_WRITE_MASK) | (value & CONFIG::SEAR_L_PLBS1_WRITE_MASK);
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSESR_PLBS1(uint32_t value)
 {
-	sesr_plbs1 = value;
+	if(!(cfg_plbs1 & CONFIG::CFG_PLBS1_LOCK_SESR_MASK))
+	{
+		// Clear bits on write
+		sesr_plbs1 = sesr_plbs1 & ~(value & CONFIG::SESR_PLBS1_CLEAR_ON_WRITE_MASK);
+		// Writing to this register also clears SEAR_U_PLBS1 and SEAR_L_PLBS1
+		sear_u_plbs1 = sear_u_plbs1 & ~CONFIG::SEAR_U_PLBS1_MASK;
+		sear_l_plbs1 = sear_l_plbs1 & ~CONFIG::SEAR_L_PLBS1_MASK;
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_ST_PLBS1(uint32_t value)
 {
-	misc_st_plbs1 = value;
+	// clear bits on write
+	misc_st_plbs1 = misc_st_plbs1 & ~(value & CONFIG::MISC_ST_PLBS1_CLEAR_ON_WRITE_MASK);
+	// Write zero's to this register makes IST[INT_CFG_ERR_S1] become zero
+	if(!(misc_st_plbs1 & CONFIG::MISC_ST_PLBS1_MASK)) ist = ist & ~CONFIG::IST_INT_CFG_ERR_S1_MASK;
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetPLBERR_ST_PLBS1(uint32_t value)
 {
-	plberr_st_plbs1 = value;
+	// clear bits on write
+	plberr_st_plbs1 = plberr_st_plbs1 & ~(value & CONFIG::PLBERR_ST_PLBS1_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSM_ST_PLBS1(uint32_t value)
 {
-	sm_st_plbs1 = value;
+	// register is reserved
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_PLBS1(uint32_t value)
 {
-	misc_plbs1 = value;
+	// clear bits on write
+	misc_plbs1 = misc_plbs1 & ~(value & CONFIG::MISC_PLBS1_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetCMD_SNIFF_PLBS1(uint32_t value)
 {
-	cmd_sniff_plbs1 = value;
+	cmd_sniff_plbs1 = (cmd_sniff_plbs1 & ~CONFIG::CMD_SNIFF_PLBS1_WRITE_MASK) | (value & CONFIG::CMD_SNIFF_PLBS1_WRITE_MASK);
 }
 
 template <class CONFIG>
@@ -803,55 +1019,75 @@ void Crossbar<CONFIG>::SetTMPL_PLBS1_MAP(unsigned int reg_num, uint32_t value)
 template <class CONFIG>
 void Crossbar<CONFIG>::SetCFG_PLBM(uint32_t value)
 {
-	cfg_plbm = value;
+	cfg_plbm = (cfg_plbm & ~CONFIG::CFG_PLBM_WRITE_MASK) | (value & CONFIG::CFG_PLBM_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetFSEAR_U_PLBM(uint32_t value)
 {
-	fsear_u_plbm = value;
+	// this register is cleared when writing to register SESR_PLBM
+	if(!(cfg_plbm & CONFIG::CFG_PLBM_LOCK_SESR_MASK))
+	{
+		fsear_u_plbm = (fsear_u_plbm & ~CONFIG::FSEAR_U_PLBM_WRITE_MASK) | (value & CONFIG::FSEAR_U_PLBM_WRITE_MASK);
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetFSEAR_L_PLBM(uint32_t value)
 {
-	fsear_l_plbm = value;
+	// this register is cleared when writing to register SESR_PLBM
+	if(!(cfg_plbm & CONFIG::CFG_PLBM_LOCK_SESR_MASK))
+	{
+		fsear_l_plbm = (fsear_l_plbm & ~CONFIG::FSEAR_L_PLBM_WRITE_MASK) | (value & CONFIG::FSEAR_L_PLBM_WRITE_MASK);
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetFSESR_PLBM(uint32_t value)
 {
-	fsesr_plbm = value;
+	if(!(cfg_plbm & CONFIG::CFG_PLBM_LOCK_SESR_MASK))
+	{
+		// Clear bits on write
+		fsesr_plbm = fsesr_plbm & ~(value & CONFIG::FSESR_PLBM_CLEAR_ON_WRITE_MASK);
+		// Writing to this register also clears FSEAR_U_PLBM and FSEAR_L_PLBM
+		fsear_u_plbm = fsear_u_plbm & ~CONFIG::FSEAR_U_PLBM_MASK;
+		fsear_l_plbm = fsear_l_plbm & ~CONFIG::FSEAR_L_PLBM_MASK;
+	}
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_ST_PLBM(uint32_t value)
 {
-	misc_st_plbm = value;
+	// clear bits on write
+	misc_st_plbm = misc_st_plbm & ~(value & CONFIG::MISC_ST_PLBM_CLEAR_ON_WRITE_MASK);
+	// Write zero's to this register makes IST[INT_CFG_ERR_M] become zero
+	if(!(misc_st_plbm & CONFIG::MISC_ST_PLBM_MASK)) ist = ist & ~CONFIG::IST_INT_CFG_ERR_M_MASK;
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetPLBERR_ST_PLBM(uint32_t value)
 {
-	plberr_st_plbm = value;
+	// clear bits on write
+	plberr_st_plbm = plberr_st_plbm & ~(value & CONFIG::PLBERR_ST_PLBM_CLEAR_ON_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetSM_ST_PLBM(uint32_t value)
 {
-	sm_st_plbm = value;
+	// register is reserved
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetMISC_PLBM(uint32_t value)
 {
-	misc_plbm = value;
+	// clear bits on write for some bits, and write to some other bits
+	misc_plbm = (misc_plbm & ~CONFIG::MISC_PLBM_WRITE_MASK & ~(value & CONFIG::MISC_PLBM_CLEAR_ON_WRITE_MASK)) | (value & CONFIG::MISC_PLBM_WRITE_MASK);
 }
 
 template <class CONFIG>
 void Crossbar<CONFIG>::SetCMD_SNIFF_PLBM(uint32_t value)
 {
-	cmd_sniff_plbm = value;
+	cmd_sniff_plbm = (cmd_sniff_plbm & ~CONFIG::CMD_SNIFF_PLBM_WRITE_MASK) | (value & CONFIG::CMD_SNIFF_PLBM_WRITE_MASK);
 }
 
 template <class CONFIG>
@@ -859,7 +1095,6 @@ void Crossbar<CONFIG>::SetCMD_SNIFFA_PLBM(uint32_t value)
 {
 	cmd_sniffa_plbm = value;
 }
-
 
 } // end of namespace crossbar
 } // end of namespace xilinx

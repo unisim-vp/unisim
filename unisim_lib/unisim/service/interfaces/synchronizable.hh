@@ -37,12 +37,13 @@
 #define __UNISIM_SERVICE_INTERFACES_SYNCHRONIZABLE_HH__
 
 #include <inttypes.h>
+#include <unisim/kernel/service/service.hh>
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class Synchronizable
+class Synchronizable : public unisim::kernel::service::ServiceInterface
 {
 public:
 	virtual void Synchronize() = 0;

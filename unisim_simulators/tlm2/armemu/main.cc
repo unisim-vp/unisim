@@ -61,6 +61,9 @@ int main(int argc, char *argv[]) {
 		ret = -1;
 		break;
 	case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+#ifdef SIM_PIM_SUPPORT
+		simulator->GeneratePim();
+#endif
 		cerr << "Successfully configured the simulator." << endl;
 		ret = 0;
 		break;

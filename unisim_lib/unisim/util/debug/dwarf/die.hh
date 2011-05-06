@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_DIE_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/stmt.hh>
 
 namespace unisim {
 namespace util {
@@ -70,6 +71,7 @@ public:
 	std::ostream& to_XML(std::ostream& os);
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_die);
+	void BuildStatementMatrix(std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix);
 private:
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;

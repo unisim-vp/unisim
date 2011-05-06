@@ -124,6 +124,7 @@ CPU(const char *name, Object *parent)
 	, dcache("dcache", this)
 	, arm32_decoder()
 	, instruction_counter(0)
+	, voltage(0)
 	, verbose(0)
 	, trap_on_instruction_counter(0)
 	, default_endianness_string(default_endianness == E_BIG_ENDIAN ? 
@@ -134,8 +135,8 @@ CPU(const char *name, Object *parent)
 			default_endianness_string,
 			"The processor default/boot endianness. Available values are: "
 			"little-endian and big-endian.")
-	, param_cpu_cycle_time("cpu-cycle-time", this,
-			cpu_cycle_time,
+	, param_cpu_cycle_time_ps("cpu-cycle-time-ps", this,
+			cpu_cycle_time_ps,
 			"The processor cycle time in picoseconds.")
 	, param_voltage("voltage", this,
 			voltage,
@@ -199,7 +200,7 @@ CPU(const char *name, Object *parent)
 	SetCPSR_Mode(USER_MODE);
 
 	// Set the right format for various of the variables
-	param_cpu_cycle_time.SetFormat(
+	param_cpu_cycle_time_ps.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	param_voltage.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
@@ -274,12 +275,12 @@ EndSetup()
 				E_LITTLE_ENDIAN : E_BIG_ENDIAN);
 	}
 
-	if ( cpu_cycle_time == 0 )
+	if ( cpu_cycle_time_ps == 0 )
 	{
 		// we can't provide a valid cpu cycle time configuration
 		//   automatically
 		logger << DebugError
-			<< "cpu-cycle-time should be bigger than 0"
+			<< "cpu-cycle-time-ps should be bigger than 0"
 			<< EndDebugError;
 		return false;
 	}
@@ -308,10 +309,10 @@ EndSetup()
 
 	if ( min_cycle_time > 0 )
 	{
-		if ( cpu_cycle_time < min_cycle_time )
+		if ( cpu_cycle_time_ps < min_cycle_time )
 		{
 			logger << DebugWarning;
-			logger << "A cycle time of " << cpu_cycle_time
+			logger << "A cycle time of " << cpu_cycle_time_ps
 				<< " ps is too low for the simulated"
 				<< " hardware !" << endl;
 			logger << "cpu cycle time should be >= "
@@ -347,15 +348,15 @@ EndSetup()
 	}
 	
 	if ( icache.power_mode_import )
-		icache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+		icache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 	if ( dcache.power_mode_import )
-		dcache.power_mode_import->SetPowerMode(cpu_cycle_time, voltage);
+		dcache.power_mode_import->SetPowerMode(cpu_cycle_time_ps, voltage);
 
 	if ( verbose )
 	{
 		logger << DebugInfo
 			<< "Setting cpu cycle time to "
-			<< cpu_cycle_time
+			<< cpu_cycle_time_ps
 			<< " ps."
 			<< EndDebugInfo;
 		logger << DebugInfo
@@ -457,7 +458,7 @@ StepInstruction()
 				 *   implementation.
 				 */
 				insn_size = 2;
-				assert("Thumb mode not supported" == 0);
+				assert("Thumb mode not supported" != 0);
 			}
 			else
 				insn_size = 4;
@@ -893,8 +894,11 @@ Disasm(uint64_t addr, uint64_t &next_addr)
 			insn = BigEndian2Host(insn);
 		else
 			insn = LittleEndian2Host(insn);
+
 		op = arm32_decoder.Decode(addr, insn);
 		op->disasm(*this, buffer);
+
+		next_addr = addr + 4;
 	}
 
 	return buffer.str();
@@ -1540,6 +1544,9 @@ PerformLoadStoreAccesses()
 			case MemoryOp::READ_TO_PC:
 				PerformReadToPCAccess(memop);
 				break;
+			case MemoryOp::USER_READ:
+				assert("Not permitted operation with armemu" != 0);
+				break;
 		}
 		free_ls_queue.push(memop);
 	}
@@ -1640,7 +1647,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	uint16_t val16 = 0;
 	uint32_t val32 = 0;
 	uint8_t data8, data16[2], data32[4];
-	uint8_t *data;
+	uint8_t *data = 0;
 
 	data8 = 0;
 	memset(data16, 0, sizeof(uint8_t) * 2);
@@ -1819,7 +1826,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	}
 
 	// fix the data depending on its size
-	uint32_t value;
+	uint32_t value = 0;
 	if (size == 1)
 	{
 		uint8_t val8 = *data;

@@ -74,6 +74,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::RegisterArray;
@@ -155,7 +156,10 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void OnDisconnect();
 	virtual void Reset();
 
@@ -227,6 +231,9 @@ private:
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	bool	use_atd_stub;
+	Parameter<bool>		param_use_atd_stub;
 
 	RegisterArray<double> analog_signal_reg;
 

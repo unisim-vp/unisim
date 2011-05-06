@@ -73,7 +73,7 @@
 class Simulator
 	: public unisim::kernel::service::Simulator
 #ifdef SIM_LIBRARY
-	, public unisim::kernel::service::VariableBase::Notifiable
+	, public unisim::kernel::service::VariableBaseListener
 	, public unisim::service::trap_handler::ExternalTrapHandlerInterface
 #endif // SIM_LIBRARY
 {
@@ -86,7 +86,7 @@ public:
 	bool SimulationStarted() const;
 	bool SimulationFinished() const;
 #ifdef SIM_LIBRARY
-	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
+	bool AddVariableBaseListener(void *(*notif_function)(const char *), const char *var_name);
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
 	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
 #endif // SIM_LIBRARY
@@ -170,7 +170,7 @@ private:
 
 #ifdef SIM_LIBRARY
 	std::map < std::string, std::vector<void * (*)(const char *)> * > notif_list;
-	virtual void VariableNotify(const char *name);
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *name);
 	void *trap_handler_context;
 	void (*trap_handler_function)(void *, unsigned int);
 	virtual void ExternalTrap(unsigned int id);

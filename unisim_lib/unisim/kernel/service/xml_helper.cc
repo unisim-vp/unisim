@@ -128,31 +128,22 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 		return false;
 	}
 
-//	list<VariableBase *> var_list;
-//	list<VariableBase *>::iterator var_iter;
-//	Simulator::GetVariables(var_list, type);
-//	for(var_iter = var_list.begin();
-//			var_iter != var_list.end();
-//			var_iter++) {
-//		rc = XmlfyVariable(writer, *var_iter);
-//		if(rc < 0) {
-//			cerr << "Error(Simulator::XmlfyVariables): "
-//				<< "error writing variable"
-//				<< endl;
-//			return false;
-//		}
-//	}
+	/* First the variables of the different objects contained in the simulator
+	 * are xmlfied, respecting the tree structure of the objects.
+	 * Afterwards the simulator level variables (those that are directly 
+	 * attached to the simulator).
+	 */
 	list<Object *> obj_list;
 	list<Object *>::iterator obj_iter;
 	Simulator::simulator->GetRootObjects(obj_list);
-	for (obj_iter = obj_list.begin();
+	for ( obj_iter = obj_list.begin();
 			obj_iter != obj_list.end();
-			obj_iter++)
+			obj_iter++ )
 	{
-		if (HasVariable(*obj_iter, type))
+		if ( HasVariable(*obj_iter, type) )
 		{
 			rc = XmlfyVariables(writer, *obj_iter, type);
-			if (rc < 0)
+			if ( rc < 0 )
 			{
 				cerr << "Error(ServiceManage::XmlfyVariables): "
 					<< "error writing root object"
@@ -171,11 +162,9 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 		if ( type == VariableBase::VAR_VOID ||
 				type == (*var_iter).second->GetType())
 		{
-			// stupid algorithm to remove non-root variables
-			bool root_var = true;
-			for ( unsigned int i = 0; (*var_iter).first[i] != '\0'; i++ )
-				if ( (*var_iter).first[i] == '.' )
-					root_var = false;
+			// check that the variable is a root variable by checking that it
+			//   has not object owner
+			bool root_var = ((*var_iter).second->GetOwner() == 0);
 			if ( root_var )
 			{
 				rc = XmlfyVariable(writer, (*var_iter).second);

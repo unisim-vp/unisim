@@ -141,6 +141,21 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
+	if(icurd_plb_redirector)
+	{
+		delete icurd_plb_redirector;
+	}
+	
+	if(dcuwr_plb_redirector)
+	{
+		delete dcuwr_plb_redirector;
+	}
+	
+	if(dcurd_plb_redirector)
+	{
+		delete dcurd_plb_redirector;
+	}
+	
 	if(critical_input_interrupt_redirector)
 	{
 		delete critical_input_interrupt_redirector;
@@ -149,6 +164,11 @@ CPU<CONFIG>::~CPU()
 	if(external_input_interrupt_redirector)
 	{
 		delete external_input_interrupt_redirector;
+	}
+	
+	if(dcr_redirector)
+	{
+		delete dcr_redirector;
 	}
 }
 

@@ -135,6 +135,8 @@ class Simulator : public unisim::kernel::service::Simulator
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
+	virtual void Stop(Object *object, int _exit_status);
+
 	void Run();
 protected:
 private:
@@ -247,7 +249,7 @@ private:
 	string filename;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
-	
+	int exit_status;
 	bool isS19;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
@@ -545,6 +547,18 @@ Simulator::~Simulator()
 	if(cpu) { delete cpu; cpu = NULL; }
 }
 
+void Simulator::Stop(Object *object, int _exit_status)
+{
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	wait();
+}
+
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
@@ -648,18 +662,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.debug-enabled", false);
 	simulator->SetVariable("external-memory.org", 0x0);
 	simulator->SetVariable("external-memory.bytesize", 0x800000);
-	simulator->SetVariable("external-memory.cycle-time", "250000 ps");
-	simulator->SetVariable("external-memory.read-latency", "250000 ps");
-	simulator->SetVariable("external-memory.write-latency", "0 ps");
+	simulator->SetVariable("external-memory.cycle-time", 250000);
 	simulator->SetVariable("external-memory.verbose", false);
 	simulator->SetVariable("external_router.cycle_time", 250000);
 	simulator->SetVariable("external_router.port_buffer_size", 0x0);
 	simulator->SetVariable("external_router.mapping_0", "range_start=\"0x800\" range_end=\"0x7fffff\" output_port=\"0\" translation=\"800\"");
 	simulator->SetVariable("internal-memory.org", 0x0);
 	simulator->SetVariable("internal-memory.bytesize", 0x10000);
-	simulator->SetVariable("internal-memory.cycle-time", "250000 ps");
-	simulator->SetVariable("internal-memory.read-latency", "250000 ps");
-	simulator->SetVariable("internal-memory.write-latency", "0 ps");
+	simulator->SetVariable("internal-memory.cycle-time", 250000);
 	simulator->SetVariable("internal-memory.verbose", false);
 	simulator->SetVariable("internal_router.cycle_time", 250000);
 	simulator->SetVariable("internal_router.port_buffer_size", 0x0);

@@ -117,7 +117,7 @@ class InlineDebugger :
 	public Client<Memory<ADDRESS> >,
 	public Client<Registers>,
 	public Client<SymbolTableLookup<ADDRESS> >,
-	public Client<Loader<ADDRESS> >,
+	public Client<Loader>,
 	public Client<StatementLookup<ADDRESS> >,
 	public InlineDebuggerBase
 {
@@ -130,7 +130,7 @@ public:
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > **symbol_table_lookup_import;
-	ServiceImport<Loader<ADDRESS> > **loader_import;
+	ServiceImport<Loader> **loader_import;
 	ServiceImport<StatementLookup<ADDRESS> > **stmt_lookup_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);

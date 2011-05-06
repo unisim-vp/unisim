@@ -96,6 +96,10 @@ protected:
 	bool IsVerbose() const;
 	Interface Route(Interface intf, typename CONFIG::ADDRESS addr);
 	const char *GetInterfaceName(Interface intf) const;
+	
+	void MPLBError(Interface master_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length);
+	void SPLBError(Interface master_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length);
+	void Error(Interface master_if, Interface slave_if, typename CONFIG::ADDRESS addr, bool rnw, unsigned int length);
 private:
 	//////////////////////////////////////////////////////////////////////////
 	//////////////////////////////// Crossbar ////////////////////////////////
@@ -214,7 +218,7 @@ private:
 	uint32_t GetSEAR_U_PLBS0() const;
 	uint32_t GetSEAR_L_PLBS0() const;
 	uint32_t GetSESR_PLBS0() const;
-	uint32_t GetMISC_ST_PLBS0() const;
+	uint32_t GetMISC_ST_PLBS0();
 	uint32_t GetPLBERR_ST_PLBS0() const;
 	uint32_t GetSM_ST_PLBS0() const;
 	uint32_t GetMISC_PLBS0() const;
@@ -225,7 +229,7 @@ private:
 	uint32_t GetSEAR_U_PLBS1() const;
 	uint32_t GetSEAR_L_PLBS1() const;
 	uint32_t GetSESR_PLBS1() const;
-	uint32_t GetMISC_ST_PLBS1() const;
+	uint32_t GetMISC_ST_PLBS1();
 	uint32_t GetPLBERR_ST_PLBS1() const;
 	uint32_t GetSM_ST_PLBS1() const;
 	uint32_t GetMISC_PLBS1() const;
@@ -236,7 +240,7 @@ private:
 	uint32_t GetFSEAR_U_PLBM() const;
 	uint32_t GetFSEAR_L_PLBM() const;
 	uint32_t GetFSESR_PLBM() const;
-	uint32_t GetMISC_ST_PLBM() const;
+	uint32_t GetMISC_ST_PLBM();
 	uint32_t GetPLBERR_ST_PLBM() const;
 	uint32_t GetSM_ST_PLBM() const;
 	uint32_t GetMISC_PLBM() const;

@@ -39,6 +39,15 @@ namespace unisim {
 namespace util {
 namespace random {
 
+Random::Random()
+	: x(1)
+	, y(2)
+	, z(4)
+	, w(8)
+	, carry(0)
+{
+}
+
 Random::Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w)
 	: x(seed_x)
 	, y(seed_y)
@@ -46,6 +55,15 @@ Random::Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w)
 	, w(seed_w)
 	, carry(0)
 {
+}
+
+void Random::Seed(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w)
+{
+	x = seed_x;
+	y = seed_y;
+	z = seed_z;
+	w = seed_w;
+	carry = 0;
 }
 
 int32_t Random::Generate()

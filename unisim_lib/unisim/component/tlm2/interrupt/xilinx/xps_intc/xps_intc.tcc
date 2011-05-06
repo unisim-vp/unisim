@@ -96,7 +96,14 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 	
 	SC_HAS_PROCESS(XPS_IntC);
 	
-	SC_THREAD(Process);
+	if(threaded_model)
+	{
+		SC_THREAD(Process);
+	}
+	else
+	{
+		SC_METHOD(Process);
+	}
 }
 
 template <class CONFIG>
@@ -140,6 +147,7 @@ unsigned int XPS_IntC<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
 	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
 	unsigned int streaming_width = payload.get_streaming_width();
+	
 	bool status = false;
 
 	switch(cmd)
@@ -220,7 +228,8 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 				Event *event = schedule.AllocEvent();
 				event->InitializeCPUEvent(&payload, notify_time_stamp);
 				schedule.Notify(event);
-				return tlm::TLM_ACCEPTED;
+				phase = tlm::END_REQ;
+				return tlm::TLM_UPDATED;
 			}
 			break;
 		case tlm::END_RESP:
@@ -375,39 +384,40 @@ void XPS_IntC<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		if(!inherited::IsMapped(addr, data_length))
 		{
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ":" << time_stamp.to_string()
-					<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
-					<< EndDebugInfo;
-			}
+			inherited::logger << DebugWarning << LOCATION
+				<< time_stamp
+				<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
+				<< EndDebugWarning;
 			status = tlm::TLM_ADDRESS_ERROR_RESPONSE;
 		}
-		else if((data_length != 4) || (streaming_width && (streaming_width != 4)))
+		else if(data_length != 4)
+		{
+			// only data length of 4 bytes is supported
+			inherited::logger << DebugWarning << LOCATION
+				<< time_stamp
+				<< ": data length of " << data_length << " bytes is unsupported"
+				<< EndDebugWarning;
+			status = tlm::TLM_BURST_ERROR_RESPONSE;
+		}
+		else if(streaming_width && (streaming_width != data_length))
 		{
 			// streaming is not supported
-			// only data length of 4 bytes is supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ":" << time_stamp.to_string()
-					<< ": data length of " << data_length << " bytes and streaming are unsupported"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_BURST_ERROR_RESPONSE;
+			inherited::logger << DebugError << LOCATION
+				<< time_stamp
+				<< ": streaming width of " << streaming_width << " bytes is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
 		}
 		else if(byte_enable_length)
 		{
 			// byte enable is not supported
-			if(inherited::IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
+			inherited::logger << DebugError << LOCATION
 					<< time_stamp
 					<< ": byte enable is unsupported"
-					<< EndDebugInfo;
-			}
-			status = tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE;
+					<< EndDebugError;
+			Object::Stop(-1);
+			return;
 		}
 	}
 	
@@ -493,55 +503,69 @@ void XPS_IntC<CONFIG>::ProcessIRQEvent(Event *event)
 }
 
 template <class CONFIG>
+void XPS_IntC<CONFIG>::ProcessEvents()
+{
+	time_stamp = sc_time_stamp();
+	if(inherited::IsVerbose())
+	{
+		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+	}
+	
+	Event *event = schedule.GetNextEvent();
+	
+	if(event)
+	{
+		do
+		{
+			if((event->GetTimeStamp() != time_stamp) || ((time_stamp.value() % cycle_time.value()) != 0))
+			{
+				inherited::logger << DebugError << "Internal error" << EndDebugError;
+				Object::Stop(-1);
+			}
+
+			switch(event->GetType())
+			{
+				case Event::EV_IRQ:
+					ProcessIRQEvent(event);
+					schedule.FreeEvent(event);
+					break;
+				case Event::EV_CPU:
+					if(time_stamp >= ready_time_stamp)
+					{
+						ProcessCPUEvent(event);
+						schedule.FreeEvent(event);
+					}
+					else
+					{
+						// delay the CPU event later
+						// Note: this doesn't work if more than one CPU event is scheduled
+						event->SetTimeStamp(ready_time_stamp);
+						schedule.Notify(event);
+					}
+					break;
+			}
+		}
+		while((event = schedule.GetNextEvent()) != 0);
+	}
+	inherited::DetectInterruptInput();
+	inherited::GenerateRequest();
+}
+
+template <class CONFIG>
 void XPS_IntC<CONFIG>::Process()
 {
-	while(1)
+	if(threaded_model)
 	{
-		wait(schedule.GetKernelEvent());
-		time_stamp = sc_time_stamp();
-		if(inherited::IsVerbose())
+		while(1)
 		{
-			inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+			wait(schedule.GetKernelEvent());
+			ProcessEvents();
 		}
-		
-		Event *event = schedule.GetNextEvent();
-		
-		if(event)
-		{
-			do
-			{
-				if((event->GetTimeStamp() != time_stamp) || ((time_stamp.value() % cycle_time.value()) != 0))
-				{
-					inherited::logger << DebugError << "Internal error" << EndDebugError;
-					Object::Stop(-1);
-				}
-	
-				switch(event->GetType())
-				{
-					case Event::EV_IRQ:
-						ProcessIRQEvent(event);
-						schedule.FreeEvent(event);
-						break;
-					case Event::EV_CPU:
-						if(time_stamp >= ready_time_stamp)
-						{
-							ProcessCPUEvent(event);
-							schedule.FreeEvent(event);
-						}
-						else
-						{
-							// delay the CPU event later
-							// Note: this doesn't work if more than one CPU event is scheduled
-							event->SetTimeStamp(ready_time_stamp);
-							schedule.Notify(event);
-						}
-						break;
-				}
-			}
-			while((event = schedule.GetNextEvent()) != 0);
-		}
-		inherited::DetectInterruptInput();
-		inherited::GenerateRequest();
+	}
+	else
+	{
+		ProcessEvents();
+		next_trigger(schedule.GetKernelEvent());
 	}
 }
 

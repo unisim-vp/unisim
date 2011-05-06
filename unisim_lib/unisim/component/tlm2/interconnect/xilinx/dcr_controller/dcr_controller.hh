@@ -57,6 +57,8 @@ class DCRController
 	, public sc_module
 {
 public:
+	static const bool threaded_model = false;
+	
 	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::DCRController<CONFIG> inherited;
 	typedef tlm::tlm_initiator_socket<4> dcr_master_socket;
 	typedef tlm::tlm_target_socket<4> dcr_slave_socket;
@@ -152,7 +154,10 @@ private:
 
 		void Clear()
 		{
-			if(payload) payload->release();
+			if(payload)
+			{
+				payload->release();
+			}
 			key.Clear();
 			payload = 0;
 			ev_completed = 0;
@@ -195,9 +200,11 @@ private:
 	
 	unisim::kernel::tlm2::Schedule<Event> schedule;
 	
-	std::map<tlm::tlm_generic_payload *, int> return_if;
+//	std::map<tlm::tlm_generic_payload *, int> return_if;
 	std::map<tlm::tlm_generic_payload *, unsigned int> indirect_access_master;
 	std::map<tlm::tlm_generic_payload *, tlm::tlm_generic_payload *> indirect_access_payload_binding;
+	
+	std::map<tlm::tlm_generic_payload *, Event *> pending_requests;
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	
@@ -214,7 +221,8 @@ private:
 	tlm::tlm_sync_enum nb_transport_bw(unsigned int num_slave, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void invalidate_direct_mem_ptr(unsigned int num_slave, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
-	bool ProcessForwardEvent(Event *event);
+	void ProcessEvents();
+	void ProcessForwardEvent(Event *event);
 	void ProcessBackwardEvent(Event *event);
 	void DoTimeOutAccess(unsigned int num_master, sc_event *ev_completed, tlm::tlm_generic_payload *payload);
 	void BindIndirectAccess(tlm::tlm_generic_payload *original_payload, tlm::tlm_generic_payload *payload, unsigned int num_master);

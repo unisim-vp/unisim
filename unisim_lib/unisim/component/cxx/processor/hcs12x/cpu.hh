@@ -83,6 +83,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
@@ -449,7 +450,10 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void OnDisconnect();
 	virtual void Reset();
 
@@ -595,8 +599,16 @@ private:
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
+	uint64_t cycles_counter;
+	uint64_t data_load_counter;
+	uint64_t data_store_counter;
 	uint64_t	max_inst;
+
 	Statistic<uint64_t> stat_instruction_counter;
+	Statistic<uint64_t> stat_cycles_counter;
+	Statistic<uint64_t> stat_load_counter;
+	Statistic<uint64_t> stat_store_counter;
+
 	Parameter<uint64_t>	   param_max_inst;
 
 };
@@ -607,6 +619,8 @@ private:
 
 inline void CPU::MonitorLoad(address_t ea, uint32_t size)
 {
+	data_load_counter++;
+
 	// Memory access reporting
 	if(requires_memory_access_reporting && memory_access_reporting_import)
 	{
@@ -616,6 +630,8 @@ inline void CPU::MonitorLoad(address_t ea, uint32_t size)
 
 inline void CPU::MonitorStore(address_t ea, uint32_t size)
 {
+	data_store_counter++;
+
 	// Memory access reporting
 	if(requires_memory_access_reporting && memory_access_reporting_import)
 	{
