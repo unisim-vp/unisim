@@ -2952,7 +2952,11 @@ void Simulator::GetVariables(list<VariableBase *>& lst, VariableBase::Type type)
 	{
 		if((*variable_iter).second->IsVisible() && (type == VariableBase::VAR_VOID || (*variable_iter).second->GetType() == type))
 		{
+			std::cerr << "-> var_name = "
+				<< (*variable_iter).second->GetName() << std::endl;
 			lst.push_back((*variable_iter).second);
+			std::cerr << "<- var_name = "
+				<< (*variable_iter).second->GetName() << std::endl;
 		}
 	}
 }
