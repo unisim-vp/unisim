@@ -88,7 +88,7 @@ int main()
 		DestroyVariable(var_list[index]);
 		index++;
 	}
-	num_vars = index - 1;
+	num_vars = index;
 	std::cerr << "Found " << (index - 1) << " variables" << std::endl;
 	free(var_list);
 
@@ -96,50 +96,108 @@ int main()
 	std::cerr << "Testing multiple registers:" << std::endl;
 	var_list = GetVariablesWithType(sim, UNIVAR_REGISTER);
 	index = 0;
-	int num_regs, num_parms, num_stats, num_forms;
-	while ( var_list[index] != 0 )
+	int num_regs, num_parms, num_stats, num_forms, num_arrays;
+	while ( (var_list != 0 ) && (var_list[index] != 0) )
 	{
 		DestroyVariable(var_list[index]);
 		index++;
 	}
-	num_regs = index - 1;
+	num_regs = index;
 	std::cerr << "- found " << num_regs << " registers" << std::endl;
 	free(var_list);
 	var_list = GetVariablesWithType(sim, UNIVAR_PARAMETER);
 	index = 0;
-	while ( var_list[index] != 0 )
+	while ( (var_list != 0 ) && (var_list[index] != 0) )
 	{
 		DestroyVariable(var_list[index]);
 		index++;
 	}
-	num_parms = index - 1;
+	num_parms = index;
 	std::cerr << "- found " << num_parms << " parameters" << std::endl;
 	free(var_list);
 	var_list = GetVariablesWithType(sim, UNIVAR_STATISTIC);
 	index = 0;
-	while ( var_list[index] != 0 )
+	while ( (var_list != 0 ) && (var_list[index] != 0) )
 	{
 		DestroyVariable(var_list[index]);
 		index++;
 	}
-	num_stats = index - 1;
+	num_stats = index;
 	std::cerr << "- found " << num_stats << " statistics" << std::endl;
 	free(var_list);
 	var_list = GetVariablesWithType(sim, UNIVAR_FORMULA);
 	index = 0;
-	while ( var_list[index] != 0 )
+	while ( (var_list != 0 ) && (var_list[index] != 0) )
 	{
 		DestroyVariable(var_list[index]);
 		index++;
 	}
-	num_forms = index - 1;
+	num_forms = index;
 	std::cerr << "- found " << num_forms << " formulas" << std::endl;
 	free(var_list);
+	var_list = GetVariablesWithType(sim, UNIVAR_ARRAY);
+	index = 0;
+	while ( (var_list != 0 ) && (var_list[index] != 0) )
+	{
+		DestroyVariable(var_list[index]);
+	}
+	num_arrays = index;
+	std::cerr << "- found " << num_arrays << " arrays" << std::endl;
+	free(var_list);
 	std::cerr << "- found a total of "
-		<< (num_forms + num_stats + num_parms + num_regs)
+		<< (num_forms + num_stats + num_parms + num_regs + num_arrays)
 		<< " variables (from a total of "
 		<< num_vars << " variables)"
 		<< std::endl;
+
+	// checking variables that are not registers, parameters, statistics or formulas
+	std::cerr << "Checking non typed variables:" << std::endl;
+	int num_void = 0;
+	var_list = GetVariables(sim);
+	index = 0;
+	while ( (var_list != 0) && (var_list[index] != 0) )
+	{
+		UniVariable cur = var_list[index];
+		UniVariable found;
+		found = GetVariableWithType(sim, GetName(cur), UNIVAR_REGISTER);
+		if ( found == 0 )
+		{
+			found = GetVariableWithType(sim, GetName(cur), UNIVAR_PARAMETER);
+		}
+		if ( found == 0 )
+		{
+			found = GetVariableWithType(sim, GetName(cur), UNIVAR_STATISTIC);
+		}
+		if ( found == 0 )
+		{
+			found = GetVariableWithType(sim, GetName(cur), UNIVAR_FORMULA);
+		}
+		if ( found == 0 )
+		{
+			found = GetVariableWithType(sim, GetName(cur), UNIVAR_ARRAY);
+		}
+		if ( found == 0 )
+		{
+			num_void++;
+			std::cerr << " - " << num_void << " "
+				<< GetName(cur) << "("
+				<< (IsMutable(cur) ? "M" : "")
+				<< (IsSerializable(cur) ? "S" : "")
+				<< (IsVisible(cur) ? "V" : "")
+				<< "): " << GetValueAsString(cur) << std::endl;
+		}
+		else
+		{
+			DestroyVariable(found);
+		}
+		cur = 0;
+		DestroyVariable(var_list[index]); 
+		index++;
+	}
+	free(var_list);
+	std::cerr << "- found a total of " << num_void
+		<< " non typed variables (from a total of "
+		<< num_vars << " variables)" << std::endl;
 
 	// destroying the simulator
 	bool st = DestroySimulator(sim);

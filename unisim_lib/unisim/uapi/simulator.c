@@ -259,7 +259,7 @@ UniVariable GetVariableWithType(UniSimulator sim, const char *varname,
 
 	unisim::kernel::service::VariableBase *var =
 		sim->sim->FindVariable(varname, vartype);
-	if ( var == 0 ) return 0;
+	if ( var == sim->sim->void_variable ) return 0;
 
 	UniVariable univar = CreateVariable(var);
 	if ( univar == 0 ) return 0;
