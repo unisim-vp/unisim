@@ -279,13 +279,13 @@ UniVariable *GetVariables(UniSimulator sim)
 
 	if ( var_list.size() == 0 ) return 0;
 
-	ret_list = (UniVariable *)malloc(sizeof(UniVariable) * var_list.size());
+	ret_list = (UniVariable *)malloc(sizeof(UniVariable) * (var_list.size() + 1));
 	
 	if ( ret_list == 0 ) return 0;
 
 	ret_list = (UniVariable *)memset(ret_list, 
 			0, 
-			sizeof(UniVariable) * var_list.size());
+			sizeof(UniVariable) * (var_list.size() + 1));
 
 	std::list<unisim::kernel::service::VariableBase *>::iterator it;
 	int index;
@@ -333,13 +333,13 @@ UniVariable *GetVariablesWithType(UniSimulator sim, VariableType type)
 
 	if ( var_list.size() == 0 ) return 0;
 
-	ret_list = (UniVariable *)malloc(sizeof(UniVariable) * var_list.size());
+	ret_list = (UniVariable *)malloc(sizeof(UniVariable) * (var_list.size() + 1));
 	
 	if ( ret_list == 0 ) return 0;
 
 	ret_list = (UniVariable *)memset(ret_list, 
 			0, 
-			sizeof(UniVariable) * var_list.size());
+			sizeof(UniVariable) * (var_list.size() + 1));
 
 	std::list<unisim::kernel::service::VariableBase *>::iterator it;
 	int index;
