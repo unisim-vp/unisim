@@ -85,6 +85,8 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Statistic;
 
+using unisim::util::debug::Statement;
+
 using unisim::service::pim::PIMThread;
 
 template <class ADDRESS>
@@ -97,6 +99,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, Client<Memory<ADDRESS> >(_name, _parent)
 	, Client<Disassembly<ADDRESS> >(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
 	, SocketThread()
 	, debug_control_export("debug-control-export", this)
@@ -107,6 +110,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, registers_import("cpu-registers-import", this)
 	, disasm_import("disasm-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
+	, stmt_lookup_import("stmt-lookup-import", this)
+
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
@@ -1508,6 +1513,56 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		packet += sstr.str();
 
 		PutPacket(packet);
+
+	}
+	else if (cmdPrefix.compare("stack") == 0) {
+		string packet("");
+
+		vector<GDBRegister>::const_iterator gdb_reg;
+
+		if(gdb_pc)
+		{
+			std::stringstream sstr;
+			string hex;
+			unsigned int reg_num = gdb_pc->GetRegNum();
+
+			const Statement<ADDRESS> *stmt = 0;
+			ADDRESS addr = 0;
+			gdb_pc->GetValue(&addr);
+			unsigned int i;
+			if(stmt_lookup_import)
+			{
+				stmt = stmt_lookup_import->FindStatement(addr);
+			}
+
+			if(stmt)
+			{
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					packet += "file:" + string(source_filename);
+
+					unsigned int lineno = stmt->GetLineNo();
+					unsigned int colno = stmt->GetColNo();
+					std::string source_path;
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
+					{
+						packet += ";folder:" + string(source_dirname);
+
+						source_path += source_dirname;
+						source_path += '/';
+					}
+					source_path += source_filename;
+
+	//				DumpSource(source_path.c_str(), lineno, colno, 1);
+				}
+			}
+		}
+
+		packet += ";";
+
+		OutputText(packet.c_str(), packet.length());
 
 	}
 	else if (cmdPrefix.compare("statistics") == 0) {

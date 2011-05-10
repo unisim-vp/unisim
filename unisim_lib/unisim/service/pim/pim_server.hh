@@ -45,6 +45,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/time.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
 #include <unisim/service/pim/network/SocketThread.hpp>
@@ -81,6 +82,7 @@ using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
+using unisim::service::interfaces::StatementLookup;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
@@ -138,6 +140,7 @@ class PIMServer :
 	public Client<Memory<ADDRESS> >,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
+	public Client<StatementLookup<ADDRESS> >,
 	public Client<Registers>,
 	public SocketThread
 {
@@ -151,6 +154,7 @@ public:
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
 
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();

@@ -311,6 +311,7 @@ Simulator::Simulator(int argc, char **argv)
 		else if (pim_server)
 		{
 			pim_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+			pim_server->stmt_lookup_import >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
 		}
 	}
 
