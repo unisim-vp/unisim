@@ -13,6 +13,20 @@ set ( SIM_COPYRIGHT "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique"
 set ( SIM_LICENSE "BSD (See file COPYING)" )
 set ( SIM_DESCRIPTION "UNISIM PB-ARM926EJS Simulator" )
 
+# this is a patch to allow the linking of static libraries into
+#   a dynamic library. We could solve the problem partially by
+#   adding all the code directly to the dynamic library (UAPI),
+#   but there are issues with external libraries, specially the
+#   glorious SystemC
+# if ( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" )
+# 	set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
+# 	set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC" )
+# 	set ( CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fPIC" )
+# 	set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC" )
+# 	set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fPIC" )
+	# set_property ( GLOBAL APPEND PROPERTY COMPILE_FLAGS "-fPIC" )
+# endif ( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" )
+
 if ( UNIX AND NOT APPLE )
 	find_file ( LSB_RELEASE_FILE lsb-release /etc )
 	if ( LSB_RELEASE_FILE )
@@ -355,9 +369,12 @@ add_library ( libuapi SHARED
 	${api_sources}
 	)
 target_link_libraries ( libuapi
-	simulatorlib
 	${sim__libraries}
+	simulatorlib
 	)
+set_target_properties ( libuapi
+	PROPERTIES
+		COMPILE_DEFINITIONS SIM_LIBRARY )
 add_executable ( api_test
 	${CMAKE_SOURCE_DIR}/api_test.cc
 	)
