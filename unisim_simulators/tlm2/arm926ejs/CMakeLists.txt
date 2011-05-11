@@ -311,7 +311,7 @@ configure_file (
 # 	PROPERTIES
 # 		COMPILE_DEFINITIONS SIM_EXECUTABLE
 # 	)
-add_library ( simulatorlib
+add_library ( simulatorlib 
 	${sim__sources}
 	)
 target_link_libraries ( simulatorlib
@@ -338,25 +338,34 @@ configure_file (
 	${CMAKE_SOURCE_DIR}/unisim/uapi/config.h.in
 	${CMAKE_BINARY_DIR}/unisim/uapi/config.h )
 set ( api_sources
+	${CMAKE_SOURCE_DIR}/unisim/uapi/uapi.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator_priv.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.c
-	# ${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.h
-	# ${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
 	)
 set_source_files_properties ( ${api_sources}
 	PROPERTIES
 		LANGUAGE CXX
 	)
+add_library ( libuapi SHARED
+	${api_sources}
+	)
+target_link_libraries ( libuapi
+	simulatorlib
+	${sim__libraries}
+	)
 add_executable ( api_test
 	${CMAKE_SOURCE_DIR}/api_test.cc
-	${api_sources}
-	${sim_sources}
 	)
 set_target_properties ( api_test
 	PROPERTIES
 		COMPILE_DEFINITIONS SIM_LIBRARY )
 target_link_libraries ( api_test
-	simulatorlib
+	libuapi
 	)
 	
 # add_library ( ${ARMEMU_LIB_TARGET}
