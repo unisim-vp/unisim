@@ -15,14 +15,6 @@
 **                                                                         **
 *****************************************************************************
 
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 5/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
-
 */
 
 #ifndef __UNISIM__UAPI__INCLUDED

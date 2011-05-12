@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : variable.c                                                  **
 ** version   : 1                                                           **
-** date      : 4/5/2011                                                    **
+** date      : 12/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -14,14 +14,6 @@
 ** All rights reserved.                                                    **
 **                                                                         **
 *****************************************************************************
-
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 4/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
 
 */
 
@@ -34,7 +26,6 @@ Description : Original version.
 /****************************************************************************/
 
 #include <string>
-#include "simulator.hh"
 
 #include "unisim/uapi/uapi_priv.h"
 
@@ -50,9 +41,9 @@ Description : Original version.
 /**                                                                        **/
 /****************************************************************************/
 
-struct _UniVariable
+struct _UnisimVariable
 {
-	unisim::kernel::service::VariableBase *var;
+	unisim::kernel::service::VariableBase *variable;
 };
 
 /****************************************************************************/
@@ -80,92 +71,92 @@ struct _UniVariable
 /****************************************************************************/
 
 /****************************************************************************/
-void DestroyVariable(UniVariable var)
+void usDestroyVariable(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return;
+	if ( variable == 0 ) return;
 
-	var->var = 0;
-	free(var);
+	variable->variable = 0;
+	free(variable);
 }
 
 /****************************************************************************/
-VariableType GetType(UniVariable var)
+UnisimVariableType usVariableGetType(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0) return UNIVAR_NONE;
+	if ( variable == 0) return UNISIM_VARIABLE_TYPE_NONE;
 
-	switch ( var->var->GetType() )
+	switch ( variable->variable->GetType() )
 	{
 		case unisim::kernel::service::VariableBase::VAR_VOID:
-			return UNIVAR_VOID;
+			return UNISIM_VARIABLE_TYPE_VOID;
 			break;
 		case unisim::kernel::service::VariableBase::VAR_ARRAY:
-			return UNIVAR_ARRAY;
+			return UNISIM_VARIABLE_TYPE_ARRAY;
 			break;
 		case unisim::kernel::service::VariableBase::VAR_PARAMETER:
-			return UNIVAR_PARAMETER;
+			return UNISIM_VARIABLE_TYPE_PARAMETER;
 			break;
 		case unisim::kernel::service::VariableBase::VAR_STATISTIC:
-			return UNIVAR_STATISTIC;
+			return UNISIM_VARIABLE_TYPE_STATISTIC;
 			break;
 		case unisim::kernel::service::VariableBase::VAR_REGISTER:
-			return UNIVAR_REGISTER;
+			return UNISIM_VARIABLE_TYPE_REGISTER;
 			break;
 		case unisim::kernel::service::VariableBase::VAR_FORMULA:
-			return UNIVAR_FORMULA;
+			return UNISIM_VARIABLE_TYPE_FORMULA;
 			break;
 		default:
-			return UNIVAR_NONE;
+			return UNISIM_VARIABLE_TYPE_NONE;
 			break;
 	}
 
-	return UNIVAR_NONE;
+	return UNISIM_VARIABLE_TYPE_NONE;
 }
 
 /****************************************************************************/
-const char *GetName(UniVariable var)
+const char *usVariableGetName(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return 0;
+	if ( variable == 0 ) return 0;
 
-	return var->var->GetName();
+	return variable->variable->GetName();
 }
 
 /****************************************************************************/
-bool IsVisible(UniVariable var)
+bool usVariableVisible(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return 0;
+	if ( variable == 0 ) return 0;
 
-	return var->var->IsVisible();
+	return variable->variable->IsVisible();
 }
 
 /****************************************************************************/
-bool IsMutable(UniVariable var)
+bool usVariableMutable(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return 0;
+	if ( variable == 0 ) return 0;
 
-	return var->var->IsMutable();
+	return variable->variable->IsMutable();
 }
 
 /****************************************************************************/
-bool IsSerializable(UniVariable var)
+bool usVariableSerializable(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return 0;
+	if ( variable == 0 ) return 0;
 
-	return var->var->IsSerializable();
+	return variable->variable->IsSerializable();
 }
 
 /****************************************************************************/
-const char *GetValueAsString(UniVariable var)
+const char *usVariableGetValueAsString(UnisimVariable variable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return 0;
+	if ( variable == 0 ) return 0;
 
-	const char *value = ((std::string)*(var->var)).c_str();
+	const char *value = ((std::string)*(variable->variable)).c_str();
 	return value;
 }
 
@@ -176,16 +167,17 @@ const char *GetValueAsString(UniVariable var)
 /****************************************************************************/
 
 /****************************************************************************/
-UniVariable CreateVariable(unisim::kernel::service::VariableBase *var)
+UnisimVariable usCreateVariable(unisim::kernel::service::VariableBase 
+		*unisimVariable)
 /****************************************************************************/
 {
-	if ( var == 0 ) return 0;
+	if ( unisimVariable == 0 ) return 0;
 
-	UniVariable univar = (UniVariable)malloc(sizeof(_UniVariable));
-	if ( univar == 0 ) return 0;
+	UnisimVariable variable = (UnisimVariable)malloc(sizeof(_UnisimVariable));
+	if ( variable == 0 ) return 0;
 
-	univar->var = var;
-	return univar;
+	variable->variable = unisimVariable;
+	return variable;
 }
 
 /****************************************************************************/

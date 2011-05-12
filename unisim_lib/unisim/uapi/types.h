@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **  
 ** filename  : types.h                                                     ** 
 ** version   : 1                                                           ** 
-** date      : 4/5/2011                                                    ** 
+** date      : 12/5/2011                                                   ** 
 **                                                                         ** 
 ***************************************************************************** 
 **                                                                         ** 
@@ -15,16 +15,6 @@
 **                                                                         ** 
 ***************************************************************************** 
  
-VERSION HISTORY: 
----------------- 
-
-Version     : 1
-Date        : 4/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
-              * Defined simulator type.
-			  * Defined variable type.
-
 */
 
 #ifndef __UNISIM__UAPI__TYPES_H__
@@ -32,9 +22,9 @@ Description : Original version.
 
 extern "C"
 {
-	typedef struct _UniSimulator *UniSimulator;
+	typedef struct _UnisimSimulator *UnisimSimulator;
 
-	typedef struct _UniVariable *UniVariable;
+	typedef struct _UnisimVariable *UnisimVariable;
 }
 
 #endif // __UNISIM__UAPI__TYPES_H__

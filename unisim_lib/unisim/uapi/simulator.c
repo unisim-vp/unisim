@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : simulator.c                                                 **
 ** version   : 1                                                           **
-** date      : 4/5/2011                                                    **
+** date      : 12/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -15,14 +15,6 @@
 **                                                                         **
 *****************************************************************************
 
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 4/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
-              * Defined basic simulator interface.
 */
 
 #define __UNISIM__UAPI__SIMULATOR__C_SRC
@@ -34,7 +26,6 @@ Description : Original version.
 /****************************************************************************/
 
 #include <string>
-#include "simulator.hh"
 
 #include "unisim/uapi/uapi_priv.h"
 
@@ -50,10 +41,10 @@ Description : Original version.
 /**                                                                        **/
 /****************************************************************************/
 
-struct _UniSimulator
+struct _UnisimSimulator
 {
-	Simulator *sim;
-	UniSimulatorStatus status;
+	Simulator *simulator;
+	UnisimSimulatorStatus simulatorStatus;
 };
 
 /****************************************************************************/
@@ -63,8 +54,9 @@ struct _UniSimulator
 /****************************************************************************/
 
 /****************************************************************************/
-bool VariableTypeToVariableBaseType(VariableType type,
-		unisim::kernel::service::VariableBase::Type &vartype);
+bool TransformVariableTypeToUnisimVariableBaseType(
+		UnisimVariableType variableType,
+		unisim::kernel::service::VariableBase::Type &unisimVariableBasetype);
 /****************************************************************************/
 
 /****************************************************************************/
@@ -86,288 +78,269 @@ bool VariableTypeToVariableBaseType(VariableType type,
 /****************************************************************************/
 
 /****************************************************************************/
-UniSimulator CreateSimulator(char *xml_file, char **options)
+UnisimSimulator usCreateSimulator(char *configurationXmlFile, 
+		char **optionList)
 /****************************************************************************/
 {
-	_UniSimulator *usim;
+	_UnisimSimulator *simulator;
 	char **argv;
-	int argv_size = 4; // default number of parameters
+	int argvSize = 2; //4; // default number of parameters
 
-	usim = (_UniSimulator *)malloc(sizeof(_UniSimulator));
-	if ( usim == 0 ) return 0;
-	usim->sim = 0;
-	usim->status = NONE;
+	simulator = (_UnisimSimulator *)malloc(sizeof(_UnisimSimulator));
+	if ( simulator == 0 ) return 0;
+	simulator->simulator = 0;
+	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_NONE;
 
-	if ( xml_file != 0 )
+	if ( configurationXmlFile != 0 )
 	{
-		argv_size += 2;
+		argvSize += 2;
 	}
 
-	int options_size;
-	options_size = 0;
-	while ( (options != 0) && (options[options_size] != 0) ) options_size++;
-	argv_size += options_size * 2;
+	int optionListSize;
+	optionListSize = 0;
+	while ( (optionList != 0) && (optionList[optionListSize] != 0) ) 
+		optionListSize++;
+	argvSize += optionListSize * 2;
 
-	int index;
-	index = 0;
-	argv = (char **)malloc(sizeof(char *) * (argv_size + 1));
+	int optionListIndex;
+	optionListIndex = 0;
+	argv = (char **)malloc(sizeof(char *) * (argvSize + 1));
 	if ( argv == 0 ) 
 	{
-		free(usim);
+		free(simulator);
 		return 0;
 	}
-	argv[index++] = (char *)API__SIM_EXEC_LOCATION;
-	argv[index++] = (char *)"-p";
-	argv[index++] = (char *)API__LIB_TO_SHARED_DATA_PATH;
-	argv[index++] = (char *)"-w";
-	if ( xml_file != 0 )
-		argv[index++] = xml_file;
-	if ( options_size != 0 )
+	// the following lines are probably not needed
+	argv[optionListIndex++] = (char *)"IDontCare";// API__SIM_EXEC_LOCATION;
+	// argv[optionListIndex++] = (char *)"-p";
+	// argv[optionListIndex++] = (char *)API__LIB_TO_SHARED_DATA_PATH;
+	// end of not needed lines
+	argv[optionListIndex++] = (char *)"-w";
+	if ( configurationXmlFile != 0 )
+		argv[optionListIndex++] = configurationXmlFile;
+	if ( optionListSize != 0 )
 	{
-		while ( options_size != 0 )
+		while ( optionListSize != 0 )
 		{
-			argv[index++] = (char *)"-s";
-			argv[index++] = options[options_size - 1];
-			options_size--;
+			argv[optionListIndex++] = (char *)"-s";
+			argv[optionListIndex++] = optionList[optionListSize - 1];
+			optionListSize--;
 		}
 	}
-	argv[index] = 0;
+	argv[optionListIndex] = 0;
 
-	usim->sim = new Simulator(argv_size, argv);
-	if ( usim->sim == 0 ) 
+	//	unisimSimulator->sim = init_func(argvSize, argv);
+	// unisimSimulator->sim = NewSimulator(argvSize, argv);
+	simulator->simulator = new Simulator(argvSize, argv);
+	if ( simulator->simulator == 0 ) 
 	{
 		free(argv);
-		free(usim);
+		free(simulator);
 		return 0;
 	}
 
-	usim->status = CREATED;
-	return usim;
+	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_CREATED;
+	return simulator;
 }
 
 /****************************************************************************/
-bool DestroySimulator(UniSimulator sim)
+bool usDestroySimulator(UnisimSimulator simulator)
 /****************************************************************************/
 {
-	if ( sim == 0 ) return true;
+	if ( simulator == 0 ) return true;
 
-	if ( sim->status == RUNNING ) return false;
+	
+	if ( simulator->simulatorStatus == UNISIM_SIMULATOR_STATUS_RUNNING ) 
+		return false;
 
-	delete(sim->sim);
-	sim->sim = 0;
-	free(sim);
-	sim = 0;
+	delete(simulator->simulator);
+	simulator->simulator = 0;
+	free(simulator);
+	simulator = 0;
 	return true;
 }
 
 /****************************************************************************/
-UniSimulatorStatus GetSimulatorStatus(UniSimulator sim)
+UnisimSimulatorStatus usSimulatorGetStatus(UnisimSimulator simulator)
 /****************************************************************************/
 {
-	UniSimulatorStatus status;
+	UnisimSimulatorStatus simulatorStatus;
 
-	if ( sim == 0 ) status = NONE;
-	else status = sim->status;
+	if ( simulator == 0 ) simulatorStatus = UNISIM_SIMULATOR_STATUS_NONE;
+	else simulatorStatus = simulator->simulatorStatus;
 
-	return status;
+	return simulatorStatus;
 }
 
 /****************************************************************************/
-UniSimulatorSetupStatus Setup(UniSimulator sim)
+UnisimSimulatorSetupStatus usSimulatorSetup(UnisimSimulator simulator)
 /****************************************************************************/
 {
-	if ( sim == 0 ) return ERROR;
+	if ( simulator == 0 ) return UNISIM_SIMULATOR_SETUP_STATUS_ERROR;
 
 	// this constraint maybe relaxed in the future, but for the moment it
 	// is safer to just allow the execution of setup once in the simulator
 	// lifetime
-	if ( sim->status != CREATED )
+	if ( simulator->simulatorStatus != UNISIM_SIMULATOR_STATUS_CREATED )
 	{
-		return ERROR;
+		return UNISIM_SIMULATOR_SETUP_STATUS_ERROR;
 	}
 
 	unisim::kernel::service::Simulator::SetupStatus status;
-	UniSimulatorSetupStatus ret_status;
-	status = sim->sim->Setup();
+	UnisimSimulatorSetupStatus simulatorStatus;
+	status = simulator->simulator->Setup();
 	switch ( status )
 	{
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
-			sim->status = SETUP;
-			ret_status = OK;
+			simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_SETUP;
+			simulatorStatus = UNISIM_SIMULATOR_SETUP_STATUS_OK;
 			break;
 		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
-			sim->status = FINISHED;
-			ret_status = OK;
+			simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_FINISHED;
+			simulatorStatus = UNISIM_SIMULATOR_SETUP_STATUS_OK;
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
-			sim->status = CREATED;
-			ret_status = WARNING;
+			simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_CREATED;
+			simulatorStatus = UNISIM_SIMULATOR_SETUP_STATUS_WARNING;
 			break;
 		case unisim::kernel::service::Simulator::ST_ERROR:
-			sim->status = CREATED;
-			ret_status = ERROR;
+			simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_CREATED;
+			simulatorStatus = UNISIM_SIMULATOR_SETUP_STATUS_ERROR;
 			break;
 		default:
-			sim->status = FINISHED;
-			ret_status = ERROR;
+			simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_FINISHED;
+			simulatorStatus = UNISIM_SIMULATOR_SETUP_STATUS_ERROR;
 			break;
 	}
 
-	return ret_status;
+	return simulatorStatus;
 }
 
 /****************************************************************************/
-const char *Version(UniSimulator sim)
+const char *usSimulatorGetVersion(UnisimSimulator simulator)
 /****************************************************************************/
 {
-	if ( sim == 0 ) return 0;
+	if ( simulator == 0 ) return 0;
 
-	std::string version = (std::string)*sim->sim->FindVariable("version");
-	return version.c_str();
+	std::string simulatorVersion = 
+		(std::string)*simulator->simulator->FindVariable("version");
+	return simulatorVersion.c_str();
 }
 
 /****************************************************************************/
-bool Run(UniSimulator sim)
+bool usSimulatorRun(UnisimSimulator simulator)
 /****************************************************************************/
 {
 	return false;
 }
 
 /****************************************************************************/
-void Stop(UniSimulator sim)
+void usSimulatorStop(UnisimSimulator simulator)
 /****************************************************************************/
 {
 }
 
 /****************************************************************************/
-UniVariable GetVariable(UniSimulator sim, const char *varname)
+UnisimVariable usSimulatorGetVariable(UnisimSimulator simulator, 
+		const char *variableName)
 /****************************************************************************/
 {
-	return GetVariableWithType(sim, varname, UNIVAR_VOID);
+	return usSimulatorGetVariableWithType(simulator, variableName, 
+			UNISIM_VARIABLE_TYPE_VOID);
 }
 
 /****************************************************************************/
-UniVariable GetVariableWithType(UniSimulator sim, const char *varname,
-		VariableType type)
+UnisimVariable usSimulatorGetVariableWithType(UnisimSimulator simulator,
+		const char *variableName,
+		UnisimVariableType variableType)
 /****************************************************************************/
 {
-	if ( sim == 0 ) return 0;
+	if ( simulator == 0 ) return 0;
 
-	unisim::kernel::service::VariableBase::Type vartype;
-	if ( !VariableTypeToVariableBaseType(type, vartype) )
+	unisim::kernel::service::VariableBase::Type unisimVariableBaseType;
+	if ( !TransformVariableTypeToUnisimVariableBaseType(variableType, 
+				unisimVariableBaseType) )
 		return 0;
 
-	unisim::kernel::service::VariableBase *var =
-		sim->sim->FindVariable(varname, vartype);
-	if ( var == sim->sim->void_variable ) return 0;
+	unisim::kernel::service::VariableBase *unisimVariable =
+		simulator->simulator->FindVariable(
+				variableName, unisimVariableBaseType);
+	if ( unisimVariable == simulator->simulator->void_variable ) return 0;
 
-	UniVariable univar = CreateVariable(var);
-	if ( univar == 0 ) return 0;
-	return univar;
+	UnisimVariable variable = usCreateVariable(unisimVariable);
+	if ( variable == 0 ) return 0;
+	return variable;
 }
 
 /****************************************************************************/
-UniVariable *GetVariables(UniSimulator sim)
+UnisimVariable *usSimulatorGetVariableList(UnisimSimulator simulator)
 /****************************************************************************/
 {
-	std::list<unisim::kernel::service::VariableBase *> var_list;
-	UniVariable *ret_list;
+	return usSimulatorGetVariableListWithType(simulator,
+			UNISIM_VARIABLE_TYPE_VOID);
+}
 
-	if ( sim == 0 ) return 0;
+/****************************************************************************/
+UnisimVariable *usSimulatorGetVariableListWithType(UnisimSimulator simulator,
+		UnisimVariableType variableType)
+/****************************************************************************/
+{
+	std::list<unisim::kernel::service::VariableBase *> unisimVariableBaseList;
+	UnisimVariable *variableList;
 
-	sim->sim->GetVariables(var_list);
+	if ( simulator == 0 ) return 0;
 
-	if ( var_list.size() == 0 ) return 0;
+	unisim::kernel::service::VariableBase::Type unisimVariableBaseType;
+	if ( !TransformVariableTypeToUnisimVariableBaseType(variableType,
+				unisimVariableBaseType) )
+		return 0;
 
-	ret_list = (UniVariable *)malloc(sizeof(UniVariable) * (var_list.size() + 1));
+	simulator->simulator->GetVariables(unisimVariableBaseList,
+			unisimVariableBaseType);
+
+	if ( unisimVariableBaseList.size() == 0 ) return 0;
+
+	variableList = (UnisimVariable *)malloc(sizeof(UnisimVariable) * 
+			(unisimVariableBaseList.size() + 1));
 	
-	if ( ret_list == 0 ) return 0;
+	if ( variableList == 0 ) return 0;
 
-	ret_list = (UniVariable *)memset(ret_list, 
+	variableList = (UnisimVariable *)memset(variableList, 
 			0, 
-			sizeof(UniVariable) * (var_list.size() + 1));
+			sizeof(UnisimVariable) * (unisimVariableBaseList.size() + 1));
 
-	std::list<unisim::kernel::service::VariableBase *>::iterator it;
-	int index;
+	std::list<unisim::kernel::service::VariableBase *>::iterator 
+		unisimVariableBaseListIterator;
+	int variableListIndex;
 	bool error;
-	index = 0;
+	variableListIndex = 0;
 	error = false;
-	for ( it = var_list.begin(); 
-			(!error) && (it != var_list.end());
-			it++ )
+	for ( unisimVariableBaseListIterator = unisimVariableBaseList.begin(); 
+			(!error) && 
+			(unisimVariableBaseListIterator != unisimVariableBaseList.end());
+			unisimVariableBaseListIterator++ )
 	{
-		UniVariable univar = CreateVariable(*it);
-		if ( univar == 0 ) error = true;
-		else ret_list[index] = univar;
-		index++;
+		UnisimVariable variable = 
+			usCreateVariable(*unisimVariableBaseListIterator);
+		if ( variable == 0 ) error = true;
+		else variableList[variableListIndex] = variable;
+		variableListIndex++;
 	}
 
 	if ( error )
 	{
-		for ( index = 0; ret_list[index] != 0; index++ )
+		for ( variableListIndex = 0; 
+				variableList[variableListIndex] != 0; 
+				variableListIndex++ )
 		{
-			DestroyVariable(ret_list[index]);
-			ret_list[index] = 0;
+			usDestroyVariable(variableList[variableListIndex]);
+			variableList[variableListIndex] = 0;
 		}
-		free(ret_list);
+		free(variableList);
 		return 0;
 	}
 	
-	return ret_list;
-}
-
-/****************************************************************************/
-UniVariable *GetVariablesWithType(UniSimulator sim, VariableType type)
-/****************************************************************************/
-{
-	std::list<unisim::kernel::service::VariableBase *> var_list;
-	UniVariable *ret_list;
-
-	if ( sim == 0 ) return 0;
-
-	unisim::kernel::service::VariableBase::Type vartype;
-	if ( !VariableTypeToVariableBaseType(type, vartype) )
-		return 0;
-
-	sim->sim->GetVariables(var_list, vartype);
-
-	if ( var_list.size() == 0 ) return 0;
-
-	ret_list = (UniVariable *)malloc(sizeof(UniVariable) * (var_list.size() + 1));
-	
-	if ( ret_list == 0 ) return 0;
-
-	ret_list = (UniVariable *)memset(ret_list, 
-			0, 
-			sizeof(UniVariable) * (var_list.size() + 1));
-
-	std::list<unisim::kernel::service::VariableBase *>::iterator it;
-	int index;
-	bool error;
-	index = 0;
-	error = false;
-	for ( it = var_list.begin(); 
-			(!error) && (it != var_list.end());
-			it++ )
-	{
-		UniVariable univar = CreateVariable(*it);
-		if ( univar == 0 ) error = true;
-		else ret_list[index] = univar;
-		index++;
-	}
-
-	if ( error )
-	{
-		for ( index = 0; ret_list[index] != 0; index++ )
-		{
-			DestroyVariable(ret_list[index]);
-			ret_list[index] = 0;
-		}
-		free(ret_list);
-		return 0;
-	}
-	
-	return ret_list;
+	return variableList;
 }
 
 /****************************************************************************/
@@ -377,29 +350,30 @@ UniVariable *GetVariablesWithType(UniSimulator sim, VariableType type)
 /****************************************************************************/
 
 /****************************************************************************/
-bool VariableTypeToVariableBaseType(VariableType type,
-		unisim::kernel::service::VariableBase::Type &vartype)
+bool TransformVariableTypeToUnisimVariableBaseType(
+		UnisimVariableType variableType,
+		unisim::kernel::service::VariableBase::Type &unisimVariableBaseType)
 /****************************************************************************/
 {
-	switch ( type )
+	switch ( variableType )
 	{
-		case UNIVAR_VOID: 
-			vartype = unisim::kernel::service::VariableBase::VAR_VOID; 
+		case UNISIM_VARIABLE_TYPE_VOID: 
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_VOID; 
 			break;
-		case UNIVAR_ARRAY:
-			vartype = unisim::kernel::service::VariableBase::VAR_ARRAY;
+		case UNISIM_VARIABLE_TYPE_ARRAY:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_ARRAY;
 			break;
-		case UNIVAR_PARAMETER:
-			vartype = unisim::kernel::service::VariableBase::VAR_PARAMETER;
+		case UNISIM_VARIABLE_TYPE_PARAMETER:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_PARAMETER;
 			break;
-		case UNIVAR_STATISTIC:
-			vartype = unisim::kernel::service::VariableBase::VAR_STATISTIC;
+		case UNISIM_VARIABLE_TYPE_STATISTIC:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_STATISTIC;
 			break;
-		case UNIVAR_REGISTER:
-			vartype = unisim::kernel::service::VariableBase::VAR_REGISTER;
+		case UNISIM_VARIABLE_TYPE_REGISTER:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_REGISTER;
 			break;
-		case UNIVAR_FORMULA:
-			vartype = unisim::kernel::service::VariableBase::VAR_FORMULA;
+		case UNISIM_VARIABLE_TYPE_FORMULA:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_FORMULA;
 			break;
 		default:
 			return false;

@@ -15,14 +15,6 @@
 **                                                                         **
 *****************************************************************************
 
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 5/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
-
 */
 
 #ifndef __UNISIM__UAPI__PRIV__INCLUDED
@@ -34,6 +26,7 @@ Description : Original version.
 /**                                                                        **/
 /****************************************************************************/
 
+#include "simulator.hh"
 #include "unisim/uapi/uapi.h"
 #include "unisim/uapi/config.h"
 #include "unisim/uapi/simulator_priv.h"

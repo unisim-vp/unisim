@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : variable.h                                                  **
 ** version   : 1                                                           **
-** date      : 4/5/2011                                                    **
+** date      : 12/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -14,14 +14,6 @@
 ** All rights reserved.                                                    **
 **                                                                         **
 *****************************************************************************
-
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 4/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
 
 */
 
@@ -53,14 +45,14 @@ extern "C"
 
 typedef enum
 {
-	UNIVAR_NONE,
-	UNIVAR_VOID,
-	UNIVAR_ARRAY,
-	UNIVAR_PARAMETER,
-	UNIVAR_STATISTIC,
-	UNIVAR_REGISTER,
-	UNIVAR_FORMULA
-} VariableType;
+	UNISIM_VARIABLE_TYPE_NONE,
+	UNISIM_VARIABLE_TYPE_VOID,
+	UNISIM_VARIABLE_TYPE_ARRAY,
+	UNISIM_VARIABLE_TYPE_PARAMETER,
+	UNISIM_VARIABLE_TYPE_STATISTIC,
+	UNISIM_VARIABLE_TYPE_REGISTER,
+	UNISIM_VARIABLE_TYPE_FORMULA
+} UnisimVariableType;
 
 /****************************************************************************/
 /**                                                                        **/
@@ -78,7 +70,7 @@ typedef enum
 /****************************************************************************/
 
 /****************************************************************************/
-void DestroyVariable(UniVariable var);
+void usDestroyVariable(UnisimVariable variable);
 /****************************************************************************/
 /*
  * Destroys the given variable handler
@@ -90,7 +82,7 @@ void DestroyVariable(UniVariable var);
  */
 
 /****************************************************************************/
-VariableType GetType(UniVariable var);
+UnisimVariableType usVariableGetType(UnisimVariable variable);
 /****************************************************************************/
 /*
  * Gets the type of the variable as defined by VariableType.
@@ -102,7 +94,7 @@ VariableType GetType(UniVariable var);
  */
 
 /****************************************************************************/
-const char *GetName(UniVariable var);
+const char *usVariableGetName(UnisimVariable variable);
 /****************************************************************************/
 /*
  * Gets the name of the given variable handler.
@@ -114,7 +106,7 @@ const char *GetName(UniVariable var);
  */
 
 /****************************************************************************/
-bool IsVisible(UniVariable var);
+bool usVariableVisible(UnisimVariable variable);
 /****************************************************************************/
 /*
  * Is the variable visible.
@@ -127,7 +119,7 @@ bool IsVisible(UniVariable var);
  */
 
 /****************************************************************************/
-bool IsMutable(UniVariable var);
+bool usVariableMutable(UnisimVariable varable);
 /****************************************************************************/
 /*
  * Is the variable mutable.
@@ -140,7 +132,7 @@ bool IsMutable(UniVariable var);
  */
 
 /****************************************************************************/
-bool IsSerializable(UniVariable var);
+bool usVariableSerializable(UnisimVariable variable);
 /****************************************************************************/
 /*
  * Is the variable serializable.
@@ -153,7 +145,7 @@ bool IsSerializable(UniVariable var);
  */
 
 /****************************************************************************/
-const char *GetValueAsString(UniVariable var);
+const char *usVariableGetValueAsString(UnisimVariable variable);
 /****************************************************************************/
 /*
  * Gets the value of the given variable as a null terminated string.

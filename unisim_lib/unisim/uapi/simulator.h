@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : simulator.h                                                 **
 ** version   : 1                                                           **
-** date      : 4/5/2011                                                    **
+** date      : 12/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -14,15 +14,6 @@
 ** All rights reserved.                                                    **
 **                                                                         **
 *****************************************************************************
-
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 4/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
-              * Defined basic simulator interface.
 
 */
 
@@ -55,20 +46,22 @@ extern "C"
 
 typedef enum
 {
-	OK,
-	WARNING,
-	ERROR
-} UniSimulatorSetupStatus;
+	UNISIM_SIMULATOR_SETUP_STATUS_OK,
+	UNISIM_SIMULATOR_SETUP_STATUS_WARNING,
+	UNISIM_SIMULATOR_SETUP_STATUS_ERROR
+} UnisimSimulatorSetupStatus;
 
 typedef enum
 {
-	NONE,       // the simulator has not been created
-	CREATED,    // the simulator has been created
-	SETUP,      // the setup phase has been successfully done
-	RUNNING,    // the simulator is running (within Run method)
-	STOPPED,    // the simulator is stopped
-	FINISHED    // the simulation has finished
-} UniSimulatorStatus;
+	UNISIM_SIMULATOR_STATUS_NONE,       // the simulator has not been created
+	UNISIM_SIMULATOR_STATUS_CREATED,    // the simulator has been created
+	UNISIM_SIMULATOR_STATUS_SETUP,      // the setup phase has been successfully
+										//   done
+	UNISIM_SIMULATOR_STATUS_RUNNING,    // the simulator is running (within Run
+										//   method)
+	UNISIM_SIMULATOR_STATUS_STOPPED,    // the simulator is stopped
+	UNISIM_SIMULATOR_STATUS_FINISHED    // the simulation has finished
+} UnisimSimulatorStatus;
 
 /****************************************************************************/
 /**                                                                        **/
@@ -86,7 +79,8 @@ typedef enum
 /****************************************************************************/
 
 /****************************************************************************/
-UniSimulator CreateSimulator(char *xml_file, char **options);
+UnisimSimulator usCreateSimulator(char *configurationXmlFile, 
+		char **optionList);
 /****************************************************************************/
 /*
  * Creates a simulator.
@@ -103,7 +97,7 @@ UniSimulator CreateSimulator(char *xml_file, char **options);
  */
 
 /****************************************************************************/
-bool DestroySimulator(UniSimulator sim);
+bool usDestroySimulator(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Destroy the simulator by freeing the simulator resources. Note that this
@@ -118,7 +112,7 @@ bool DestroySimulator(UniSimulator sim);
  */
 
 /****************************************************************************/
-UniSimulatorStatus GetSimulatorStatus(UniSimulator sim);
+UnisimSimulatorStatus usSimulatorGetStatus(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Get the status of the simulator.
@@ -130,7 +124,7 @@ UniSimulatorStatus GetSimulatorStatus(UniSimulator sim);
  */
 
 /****************************************************************************/
-UniSimulatorSetupStatus Setup(UniSimulator sim);
+UnisimSimulatorSetupStatus usSimulatorSetup(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Performs the setup of face of the simulator to initialize the different
@@ -148,7 +142,7 @@ UniSimulatorSetupStatus Setup(UniSimulator sim);
  */
 
 /****************************************************************************/
-const char *Version(UniSimulator sim);
+const char *usSimulatorGetVersion(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Returns the version description of the handled simulator.
@@ -161,7 +155,7 @@ const char *Version(UniSimulator sim);
  */
 
 /****************************************************************************/
-bool Run(UniSimulator sim);
+bool usSimulatorRun(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Run the simulator. This method should just be called once at the beginning
@@ -176,7 +170,7 @@ bool Run(UniSimulator sim);
  */
 
 /****************************************************************************/
-void Stop(UniSimulator sim);
+void usSimulatorStop(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Stop the simulator. This method can be called once the Run method has
@@ -190,7 +184,8 @@ void Stop(UniSimulator sim);
  */
 
 /****************************************************************************/
-UniVariable GetVariable(UniSimulator sim, const char *varname);
+UnisimVariable usSimulatorGetVariable(UnisimSimulator simulator, 
+		const char *variableName);
 /****************************************************************************/
 /*
  * Returns a variable handler to the variable requested from the given
@@ -204,8 +199,8 @@ UniVariable GetVariable(UniSimulator sim, const char *varname);
  */
 
 /****************************************************************************/
-UniVariable GetVariableWithType(UniSimulator sim, const char *varname, 
-		VariableType type);
+UnisimVariable usSimulatorGetVariableWithType(UnisimSimulator simulator,
+		const char *variableName, UnisimVariableType variableType);
 /****************************************************************************/
 /*
  * Returns a variable handler to the requested parameter from the given
@@ -220,7 +215,7 @@ UniVariable GetVariableWithType(UniSimulator sim, const char *varname,
  */
 
 /****************************************************************************/
-UniVariable *GetVariables(UniSimulator sim);
+UnisimVariable *usSimulatorGetVariableList(UnisimSimulator simulator);
 /****************************************************************************/
 /*
  * Returns a list of all the variables (in the form of variable handlers)
@@ -233,7 +228,8 @@ UniVariable *GetVariables(UniSimulator sim);
  */
 
 /****************************************************************************/
-UniVariable *GetVariablesWithType(UniSimulator sim, VariableType type);
+UnisimVariable *usSimulatorGetVariableListWithType(UnisimSimulator simulator,
+		UnisimVariableType variableType);
 /****************************************************************************/
 /*
  * Returns a list of all the variables (in the form of variable handlers)

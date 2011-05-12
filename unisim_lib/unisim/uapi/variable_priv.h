@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : variable_priv.h                                             **
 ** version   : 1                                                           **
-** date      : 5/5/2011                                                    **
+** date      : 12/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -14,14 +14,6 @@
 ** All rights reserved.                                                    **
 **                                                                         **
 *****************************************************************************
-
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 5/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
 
 */
 
@@ -68,7 +60,8 @@ extern "C"
 /****************************************************************************/
 
 /****************************************************************************/
-UniVariable CreateVariable(unisim::kernel::service::VariableBase *var);
+UnisimVariable usCreateVariable(unisim::kernel::service::VariableBase 
+		*unisimVariable);
 /****************************************************************************/
 /*
  * Creates an api compliant variable from the given variable.
