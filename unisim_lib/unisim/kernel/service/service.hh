@@ -241,7 +241,8 @@ public:
 	static Simulator *simulator;
 	VariableBase *void_variable;
 
-	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
+	Simulator(int argc, char **argv,
+			void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);

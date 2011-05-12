@@ -1974,7 +1974,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
-	// parse command line arguments
+	// parse command line arguments (first pass)
 	int state = 0;
 	char **arg;
 	for(arg = argv + 1; *arg != 0 && state != -1;)
@@ -2078,20 +2078,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-			//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+			// std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+			// std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 			if ( GetSharePath(bin_dir, shared_data_dir) )
 			{
-				//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+				// std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 			}
 			else
 			{
+				// std::cerr << "Could not resolve share data dir path" << std::endl;
 				warn_get_share_path = true;
 			}
 		}
 		else
 		{
+			// std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
 			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
@@ -2099,11 +2101,18 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	else
 	{
 		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
+		{
+			// std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
+		}
+		else
+		{
+			// std::cerr << "Resolved data dir path: " << shared_data_dir
+			// 	<< std::endl;
+		}
 	}
-	// parse command line arguments
-	// int state = 0;
-	// char **arg;
+
+	// parse command line arguments (second pass)
 	state = 0;
 	
 	for(arg = argv + 1; *arg != 0 && state != -1;)
