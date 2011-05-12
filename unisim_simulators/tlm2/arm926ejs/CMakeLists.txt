@@ -325,7 +325,7 @@ configure_file (
 # 	PROPERTIES
 # 		COMPILE_DEFINITIONS SIM_EXECUTABLE
 # 	)
-add_library ( simulatorlib 
+add_library ( simulatorlib
 	${sim__sources}
 	)
 target_link_libraries ( simulatorlib
@@ -369,7 +369,6 @@ add_library ( libuapi SHARED
 	${api_sources}
 	)
 target_link_libraries ( libuapi
-	${sim__libraries}
 	simulatorlib
 	)
 set_target_properties ( libuapi
@@ -378,11 +377,13 @@ set_target_properties ( libuapi
 add_executable ( api_test
 	${CMAKE_SOURCE_DIR}/api_test.cc
 	)
-set_target_properties ( api_test
-	PROPERTIES
-		COMPILE_DEFINITIONS SIM_LIBRARY )
+# set_target_properties ( api_test
+#	PROPERTIES
+#		COMPILE_DEFINITIONS SIM_LIBRARY )
 target_link_libraries ( api_test
-	libuapi
+	dl
+	# libuapi
+	# simulatorlib
 	)
 	
 # add_library ( ${ARMEMU_LIB_TARGET}
