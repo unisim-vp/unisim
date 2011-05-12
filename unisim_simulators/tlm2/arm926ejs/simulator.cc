@@ -42,10 +42,14 @@ void SigIntHandler(int signum) {
 
 using namespace std;
 
+#ifndef SIM_LIBRARY
 Simulator ::
 Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
-#ifdef SIM_LIBRARY
+#else // SIM_LIBRARY
+Simulator ::
+Simulator(int argc, char **argv)
+	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
 	, unisim::kernel::service::VariableBaseListener()
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
@@ -247,32 +251,17 @@ Simulator(int argc, char **argv)
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
-	// In Linux mode, the system is not entirely simulated.
-	// This mode allows to run Linux applications without simulating all the peripherals.
-
 	cpu->master_socket(devchip->cpu_target_socket);
 	devchip->ssmc0_init_socket(nor_flash_2->slave_sock);
 	devchip->ssmc1_init_socket(nor_flash_1->slave_sock);
 	devchip->mpmc0_init_socket(memory->slave_sock);
 	cpu->nirq(devchip->nvicirq_signal);
 	cpu->nfiq(devchip->nvicfiq_signal);
-	// cpu->master_socket(memory->slave_sock);
-	// irq_master_stub->out_interrupt(cpu->in_irq);
-	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
 	raw_kernel_loader->memory_import >> memory->memory_export;
 	raw_fs_loader->memory_import >> memory->memory_export;
-	//linux_loader->memory_import >> memory->memory_export;
-	//linux_loader->loader_import >> elf32_loader->loader_export;
-	//cpu->linux_os_import >> linux_os->linux_os_export;
-	//linux_os->memory_import >> cpu->memory_export;
-	//linux_os->memory_injection_import >> cpu->memory_injection_export;
-	//linux_os->registers_import >> cpu->registers_export;
-	//linux_os->loader_import >> linux_loader->loader_export;
-	//cpu->exception_trap_reporting_import >> 
-	//	*trap_handler->trap_reporting_export[0];
 #ifndef SIM_INLINE_DEBUGGER_SUPPORT
 	cpu->instruction_counter_trap_reporting_import >> 
 		*trap_handler->trap_reporting_export[0];
@@ -321,8 +310,6 @@ Simulator(int argc, char **argv)
 Simulator::~Simulator()
 {
 	if ( cpu ) delete cpu;
-	// if ( irq_master_stub ) delete irq_master_stub;
-	// if ( fiq_master_stub ) delete fiq_master_stub;
 	if ( devchip ) delete devchip;
 	if ( memory ) delete memory;
 	if ( nor_flash_2 ) delete nor_flash_2;
