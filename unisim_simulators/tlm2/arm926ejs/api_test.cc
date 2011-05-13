@@ -4,47 +4,6 @@
 #include <dlfcn.h>
 #include "unisim/uapi/uapi.h"
 
-#if 0
-
-std::string VariableString(UniVariable var)
-{
-	std::stringstream str;
-	str << GetName(var) << " (";
-	switch ( GetType(var) )
-	{
-		case UNIVAR_VOID:
-			str << "VOID";
-			break;
-		case UNIVAR_ARRAY:
-			str << "ARRAY";
-			break;
-		case UNIVAR_PARAMETER:
-			str << "PARAMETER";
-			break;
-		case UNIVAR_STATISTIC:
-			str << "STATISTIC";
-			break;
-		case UNIVAR_REGISTER:
-			str << "REGISTER";
-			break;
-		case UNIVAR_FORMULA:
-			str << "FORMULA";
-			break;
-		default:
-			str << "NONE";
-			break;
-	}
-	str << ","
-		<< (IsVisible(var) ? "V" : "")
-		<< (IsMutable(var) ? "M" : "")
-		<< (IsSerializable(var) ? "S" : "")
-		<< ") = "
-		<< GetValueAsString(var);
-
-	return str.str();
-}
-#endif
-
 void *simlib;
 
 // simulator methods
