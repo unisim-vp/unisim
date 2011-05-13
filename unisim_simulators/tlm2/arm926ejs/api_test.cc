@@ -279,7 +279,10 @@ int test()
 			_usDestroyVariable(found);
 		}
 		currentVariable = 0;
-		_usDestroyVariable(variableList[variableListIndex]); 
+		// here we should destroy the variable because it would never be used
+		//   again, but we let it undestroyed to test that the simulator
+		//   correctly deletes generated variables when destroyed
+		// _usDestroyVariable(variableList[variableListIndex]); 
 		variableListIndex++;
 	}
 	free(variableList);

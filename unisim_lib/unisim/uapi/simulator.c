@@ -26,6 +26,7 @@
 /****************************************************************************/
 
 #include <string>
+#include <map>
 
 #include "unisim/uapi/uapi_priv.h"
 
@@ -45,6 +46,7 @@ struct _UnisimSimulator
 {
 	Simulator *simulator;
 	UnisimSimulatorStatus simulatorStatus;
+	std::map<UnisimVariable, UnisimVariable> variablesRegistered;
 };
 
 /****************************************************************************/
@@ -55,8 +57,8 @@ struct _UnisimSimulator
 
 /****************************************************************************/
 bool TransformVariableTypeToUnisimVariableBaseType(
-		UnisimVariableType variableType,
-		unisim::kernel::service::VariableBase::Type &unisimVariableBasetype);
+		UnisimVariableType,
+		unisim::kernel::service::VariableBase::Type &);
 /****************************************************************************/
 
 /****************************************************************************/
@@ -86,7 +88,7 @@ UnisimSimulator usCreateSimulator(char *configurationXmlFile,
 	char **argv;
 	int argvSize = 2; //4; // default number of parameters
 
-	simulator = (_UnisimSimulator *)malloc(sizeof(_UnisimSimulator));
+	simulator = new _UnisimSimulator();
 	if ( simulator == 0 ) return 0;
 	simulator->simulator = 0;
 	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_NONE;
@@ -152,6 +154,17 @@ bool usDestroySimulator(UnisimSimulator simulator)
 	
 	if ( simulator->simulatorStatus == UNISIM_SIMULATOR_STATUS_RUNNING ) 
 		return false;
+
+	std::map<UnisimVariable, UnisimVariable>::iterator
+		variablesRegisteredIterator;
+	for ( variablesRegisteredIterator = simulator->variablesRegistered.begin();
+			variablesRegisteredIterator != simulator->variablesRegistered.end();
+			variablesRegisteredIterator = simulator->variablesRegistered.begin())
+	{
+		usSimulatorUnregisterVariable(simulator, 
+				variablesRegisteredIterator->second);
+		usDestroyUnregisteredVariable(variablesRegisteredIterator->second);
+	}
 
 	delete(simulator->simulator);
 	simulator->simulator = 0;
@@ -267,7 +280,7 @@ UnisimVariable usSimulatorGetVariableWithType(UnisimSimulator simulator,
 				variableName, unisimVariableBaseType);
 	if ( unisimVariable == simulator->simulator->void_variable ) return 0;
 
-	UnisimVariable variable = usCreateVariable(unisimVariable);
+	UnisimVariable variable = usCreateVariable(simulator, unisimVariable);
 	if ( variable == 0 ) return 0;
 	return variable;
 }
@@ -321,7 +334,7 @@ UnisimVariable *usSimulatorGetVariableListWithType(UnisimSimulator simulator,
 			unisimVariableBaseListIterator++ )
 	{
 		UnisimVariable variable = 
-			usCreateVariable(*unisimVariableBaseListIterator);
+			usCreateVariable(simulator, *unisimVariableBaseListIterator);
 		if ( variable == 0 ) error = true;
 		else variableList[variableListIndex] = variable;
 		variableListIndex++;
@@ -380,6 +393,74 @@ bool TransformVariableTypeToUnisimVariableBaseType(
 			break;
 	}
 	return true;
+}
+
+/****************************************************************************/
+void usSimulatorRegisterVariable(UnisimSimulator simulator, 
+		UnisimVariable variable)
+/****************************************************************************/
+{
+	std::map<UnisimVariable, UnisimVariable>::iterator variableIterator;
+
+	if ( simulator == 0 )
+	{
+		std::cerr << "Warning!!!: trying to register variable without"
+			<< " handling simulator '" << usVariableGetName(variable) << "'"
+			<< std::endl;
+	}
+	if ( variable == 0 )
+	{
+		std::cerr << "Warning!!!: trying to register variable without"
+			<< " handling variable"
+			<< std::endl;
+	}
+	if ( (simulator == 0) || (variable == 0) ) 
+		return;
+
+	variableIterator = simulator->variablesRegistered.find(variable);
+	if ( variableIterator != simulator->variablesRegistered.end() )
+	{
+		std::cerr << "Warning!!!: trying to register a variable multiple"
+			<< " times '" << usVariableGetName(variable) << "'"
+			<< std::endl;
+		return;
+	}
+
+	simulator->variablesRegistered[variable] = variable;
+}
+
+/****************************************************************************/
+void usSimulatorUnregisterVariable(UnisimSimulator simulator,
+		UnisimVariable variable)
+/****************************************************************************/
+{
+	std::map<UnisimVariable, UnisimVariable>::iterator variableIterator;
+
+	if ( simulator == 0 )
+	{
+		std::cerr << "Warning!!!: trying to register variable without"
+			<< " handling simulator '" << usVariableGetName(variable) << "'"
+			<< std::endl;
+	}
+	if ( variable == 0 )
+	{
+		std::cerr << "Warning!!!: trying to register variable without"
+			<< " handling variable"
+			<< std::endl;
+	}
+	if ( (simulator == 0) || (variable == 0) ) 
+		return;
+
+	variableIterator = simulator->variablesRegistered.find(variable);
+	if ( variableIterator == simulator->variablesRegistered.end() )
+	{
+		std::cerr << "Warning!!!: trying to unregister a variable that was"
+			<< " not registered '" << usVariableGetName(variable)  << "'"
+			<< std::endl;
+		return;
+	}
+
+	simulator->variablesRegistered.erase(variableIterator);
 }
 
 /****************************************************************************/

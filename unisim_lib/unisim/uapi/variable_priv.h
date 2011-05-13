@@ -60,8 +60,8 @@ extern "C"
 /****************************************************************************/
 
 /****************************************************************************/
-UnisimVariable usCreateVariable(unisim::kernel::service::VariableBase 
-		*unisimVariable);
+UnisimVariable usCreateVariable(UnisimSimulator simulator,
+		unisim::kernel::service::VariableBase *unisimVariable);
 /****************************************************************************/
 /*
  * Creates an api compliant variable from the given variable.
@@ -70,6 +70,18 @@ UnisimVariable usCreateVariable(unisim::kernel::service::VariableBase
  *   - var: the variable from which an api compliant variable must be created.
  *
  * Returns: An api compliant variable.
+ */
+
+/****************************************************************************/
+void usDestroyUnregisteredVariable(UnisimVariable variable);
+/****************************************************************************/
+/*
+ * Destroy a variable without unregistering it from the simulator.
+ *
+ * Parameters:
+ *   - var: the variable to destroy.
+ *
+ * Returns: None. 
  */
 
 }

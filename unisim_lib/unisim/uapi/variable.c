@@ -44,6 +44,7 @@
 struct _UnisimVariable
 {
 	unisim::kernel::service::VariableBase *variable;
+	UnisimSimulator simulator;
 };
 
 /****************************************************************************/
@@ -76,7 +77,9 @@ void usDestroyVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
+	usSimulatorUnregisterVariable(variable->simulator, variable);
 	variable->variable = 0;
+	variable->simulator = 0;
 	free(variable);
 }
 
@@ -167,17 +170,31 @@ const char *usVariableGetValueAsString(UnisimVariable variable)
 /****************************************************************************/
 
 /****************************************************************************/
-UnisimVariable usCreateVariable(unisim::kernel::service::VariableBase 
-		*unisimVariable)
+UnisimVariable usCreateVariable(UnisimSimulator simulator,
+		unisim::kernel::service::VariableBase *unisimVariable)
 /****************************************************************************/
 {
+	if ( simulator == 0 ) return 0;
 	if ( unisimVariable == 0 ) return 0;
 
 	UnisimVariable variable = (UnisimVariable)malloc(sizeof(_UnisimVariable));
 	if ( variable == 0 ) return 0;
 
+	variable->simulator = simulator;
 	variable->variable = unisimVariable;
+	usSimulatorRegisterVariable(simulator, variable);
 	return variable;
+}
+
+/****************************************************************************/
+void usDestroyUnregisteredVariable(UnisimVariable variable)
+/****************************************************************************/
+{
+	if ( variable == 0 ) return;
+
+	variable->variable = 0;
+	variable->simulator = 0;
+	free(variable);
 }
 
 /****************************************************************************/
