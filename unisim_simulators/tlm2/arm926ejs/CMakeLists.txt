@@ -13,19 +13,26 @@ set ( SIM_COPYRIGHT "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique"
 set ( SIM_LICENSE "BSD (See file COPYING)" )
 set ( SIM_DESCRIPTION "UNISIM PB-ARM926EJS Simulator" )
 
-# this is a patch to allow the linking of static libraries into
-#   a dynamic library. We could solve the problem partially by
-#   adding all the code directly to the dynamic library (UAPI),
-#   but there are issues with external libraries, specially the
-#   glorious SystemC
-# if ( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" )
-# 	set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
-# 	set ( CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fPIC" )
-# 	set ( CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} -fPIC" )
-# 	set ( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC" )
-# 	set ( CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} -fPIC" )
-	# set_property ( GLOBAL APPEND PROPERTY COMPILE_FLAGS "-fPIC" )
-# endif ( CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64" )
+# all the libraries need to be compiled with -fPIC otherwise dynamic linking
+#   might not work properly
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_CXX_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH ${FLAGS} )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
+endif ( FPIC_MATCH )
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_C_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH ${FLAGS} )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC" )
+endif ( FPIC_MATCH )
 
 if ( UNIX AND NOT APPLE )
 	find_file ( LSB_RELEASE_FILE lsb-release /etc )
