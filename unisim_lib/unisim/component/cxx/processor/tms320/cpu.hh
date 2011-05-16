@@ -137,7 +137,7 @@ class CPU :
 	public Service<Memory<uint64_t> >,
 	public Client<Memory<uint64_t> >,
 	public Client<TI_C_IO>,
-	public Client<Loader<uint64_t> >
+	public Client<Loader>
 {
 protected:
 	typedef typename CONFIG::address_t address_t;
