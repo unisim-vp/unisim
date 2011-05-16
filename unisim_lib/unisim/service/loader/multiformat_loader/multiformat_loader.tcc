@@ -1400,12 +1400,14 @@ void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
+	if(!size) return true;
+	
 	MEMORY_ADDR low = addr;
 	MEMORY_ADDR high = addr + size - 1;
 	
 	if(low > high) // out of address space ?
 	{
-		logger << DebugWarning << "Access out of address space" << EndDebugWarning;
+		logger << DebugWarning << "Access out of address space (@0x" << std::hex << low << std::dec << "-0x" << std::hex << high << std::dec << ")" << EndDebugWarning;
 		memset((uint8_t *) buffer, 0, size);
 		high = std::numeric_limits<MEMORY_ADDR>::max();
 	}
@@ -1447,12 +1449,15 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size)
 {
+	if(!size) return true;
+
 	MEMORY_ADDR low = addr;
 	MEMORY_ADDR high = addr + size - 1;
 	
 	if(low > high) // out of address space ?
 	{
-		logger << DebugWarning << "Access out of address space" << EndDebugWarning;
+		std::cerr << "size=" << size << std::endl;
+		logger << DebugWarning << "Access out of address space (@0x" << std::hex << low << std::dec << "-0x" << std::hex << high << std::dec << ")" << EndDebugWarning;
 		high = std::numeric_limits<MEMORY_ADDR>::max();
 	}
 	

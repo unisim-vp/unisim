@@ -1091,7 +1091,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 	{
 		if(service)
 		{
-			service->OnDisconnect();
+			//service->OnDisconnect(); // Gilles: That's dangerous
 #ifdef DEBUG_SERVICE
 			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
 #endif
@@ -1481,7 +1481,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 
 	if(client)
 	{
-		client->OnDisconnect();
+		//client->OnDisconnect(); // Gilles: that's dangerous
 #ifdef DEBUG_SERVICE
 		cerr << GetName() << ": Unresolving client " << client->GetName() << endl;
 #endif
