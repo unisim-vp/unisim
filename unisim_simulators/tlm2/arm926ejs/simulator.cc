@@ -46,13 +46,11 @@ Simulator ::
 Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
 #ifdef SIM_LIBRARY
-	, unisim::kernel::service::VariableBase::Notifiable()
+	, unisim::kernel::service::VariableBaseListener()
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
 	, devchip(0)
-	//, irq_master_stub(0)
-	//, fiq_master_stub(0)
 	, memory(0)
 	, nor_flash_2(0)
 	, nor_flash_1(0)
@@ -81,6 +79,8 @@ Simulator(int argc, char **argv)
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	, il1_power_estimator(0)
 	, dl1_power_estimator(0)
+	, ltlb_power_estimator(0)
+	, tlb_power_estimator(0)
 	, enable_power_estimation(false)
 	, param_enable_power_estimation("enable-power-estimation", 0,
 			enable_power_estimation,
@@ -89,6 +89,14 @@ Simulator(int argc, char **argv)
 	, formula_caches_total_dynamic_power(0)
 	, formula_caches_total_leakage_power(0)
 	, formula_caches_total_power(0)
+	, formula_tlbs_total_dynamic_energy(0)
+	, formula_tlbs_total_dynamic_power(0)
+	, formula_tlbs_total_leakage_power(0)
+	, formula_tlbs_total_power(0)
+	, formula_total_dynamic_energy(0)
+	, formula_total_dynamic_power(0)
+	, formula_total_leakage_power(0)
+	, formula_total_power(0)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 #ifdef SIM_LIBRARY
 	, notif_list()
@@ -138,6 +146,8 @@ Simulator(int argc, char **argv)
 	{
 		il1_power_estimator = new POWER_ESTIMATOR("il1-power-estimator");
 		dl1_power_estimator = new POWER_ESTIMATOR("dl1-power-estimator");
+		ltlb_power_estimator = new POWER_ESTIMATOR("ltlb-power-estimator");
+		tlb_power_estimator = new POWER_ESTIMATOR("tlb-power-estimator");
 		formula_caches_total_dynamic_energy =
 				new unisim::kernel::service::Formula<double> (
 						"caches-total-dynamic-energy", 0,
@@ -170,6 +180,70 @@ Simulator(int argc, char **argv)
 						formula_caches_total_leakage_power,
 						0,
 						"caches total (dynamic+leakage) power (in J)");
+		formula_tlbs_total_dynamic_energy =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-dynamic-energy", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*ltlb_power_estimator)["dynamic-energy"],
+						&(*tlb_power_estimator)["dynamic-energy"],
+						0,
+						"combined tlb's total dynamic energy (in J)");
+		formula_tlbs_total_dynamic_power =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-dynamic-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*ltlb_power_estimator)["dynamic-power"],
+						&(*tlb_power_estimator)["dynamic-power"],
+						0,
+						"combined tlb's total dynamic power (in J)");
+		formula_tlbs_total_leakage_power =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-leakage-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						&(*ltlb_power_estimator)["leakage-power"],
+						&(*tlb_power_estimator)["leakage-power"],
+						0,
+						"combined tlb's total leakage power (in J)");
+		formula_tlbs_total_power =
+				new unisim::kernel::service::Formula<double> (
+						"tlbs-total-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_tlbs_total_dynamic_power,
+						formula_tlbs_total_leakage_power,
+						0,
+						"combined tlb's total (dynamic+leakage) power (in J)");
+		formula_total_dynamic_energy =
+				new unisim::kernel::service::Formula<double> (
+						"total-dynamic-energy", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_dynamic_energy,
+						formula_tlbs_total_dynamic_energy,
+						0,
+						"total dynamic energy (in J)");
+		formula_total_dynamic_power =
+				new unisim::kernel::service::Formula<double> (
+						"total-dynamic-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_dynamic_power,
+						formula_tlbs_total_dynamic_power,
+						0,
+						"total dynamic power (in J)");
+		formula_total_leakage_power =
+				new unisim::kernel::service::Formula<double> (
+						"total-leakage-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_leakage_power,
+						formula_tlbs_total_leakage_power,
+						0,
+						"total leakage power (in J)");
+		formula_total_power =
+				new unisim::kernel::service::Formula<double> (
+						"total-power", 0,
+						unisim::kernel::service::Formula<double>::OP_ADD,
+						formula_caches_total_power,
+						formula_tlbs_total_power,
+						0,
+						"total (dynamic+leakage) power (in J)");
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
@@ -180,19 +254,11 @@ Simulator(int argc, char **argv)
 	devchip->ssmc0_init_socket(nor_flash_2->slave_sock);
 	devchip->ssmc1_init_socket(nor_flash_1->slave_sock);
 	devchip->mpmc0_init_socket(memory->slave_sock);
+	cpu->nirq(devchip->nvicirq_signal);
+	cpu->nfiq(devchip->nvicfiq_signal);
 	// cpu->master_socket(memory->slave_sock);
 	// irq_master_stub->out_interrupt(cpu->in_irq);
 	// fiq_master_stub->out_interrupt(cpu->in_fiq);
-
-#ifdef SIM_GDB_SERVER_SUPPORT
-	EnableGdbServer();
-#endif // SIM_GDB_SERVER_SUPPORT
-#ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	EnableInlineDebugger();
-#endif // SIM_INLINE_DEBUGGER_SUPPORT
-#ifdef SIM_SIM_DEBUGGER_SUPPORT
-	EnableSimDebugger();
-#endif // SIM_SIM_DEBUGGER_SUPPORT
 
 	// Connect everything
 	elf32_loader->memory_import >> memory->memory_export;
@@ -207,8 +273,12 @@ Simulator(int argc, char **argv)
 	//linux_os->loader_import >> linux_loader->loader_export;
 	//cpu->exception_trap_reporting_import >> 
 	//	*trap_handler->trap_reporting_export[0];
+#ifndef SIM_INLINE_DEBUGGER_SUPPORT
 	cpu->instruction_counter_trap_reporting_import >> 
 		*trap_handler->trap_reporting_export[0];
+	cpu->exception_trap_reporting_import >>
+		*trap_handler->trap_reporting_export[1];
+#endif
 	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
@@ -220,15 +290,32 @@ Simulator(int argc, char **argv)
 		cpu->dcache.power_estimator_import >> 
 			dl1_power_estimator->power_estimator_export;
 		cpu->dcache.power_mode_import >> dl1_power_estimator->power_mode_export;
+		cpu->ltlb.power_estimator_import >>
+			ltlb_power_estimator->power_estimator_export;
+		cpu->ltlb.power_mode_import >> ltlb_power_estimator->power_mode_export;
+		cpu->tlb.power_estimator_import >>
+			tlb_power_estimator->power_estimator_export;
+		cpu->tlb.power_mode_import >> tlb_power_estimator->power_mode_export;
 
 		il1_power_estimator->time_import >> time->time_export;
 		dl1_power_estimator->time_import >> time->time_export;
+		ltlb_power_estimator->time_import >> time->time_export;
+		tlb_power_estimator->time_import >> time->time_export;
 	}
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 	cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 	// bridge->memory_import >> memory->memory_export;
-	
+
+#ifdef SIM_GDB_SERVER_SUPPORT
+	EnableGdbServer();
+#endif // SIM_GDB_SERVER_SUPPORT
+#ifdef SIM_INLINE_DEBUGGER_SUPPORT
+	EnableInlineDebugger();
+#endif // SIM_INLINE_DEBUGGER_SUPPORT
+#ifdef SIM_SIM_DEBUGGER_SUPPORT
+	EnableSimDebugger();
+#endif // SIM_SIM_DEBUGGER_SUPPORT
 }
 
 Simulator::~Simulator()
@@ -259,8 +346,34 @@ Simulator::~Simulator()
 	if ( sim_debugger ) delete sim_debugger;
 #endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
+	if ( formula_caches_total_dynamic_energy )
+		delete formula_caches_total_dynamic_energy;
+	if ( formula_caches_total_dynamic_power )
+		delete formula_caches_total_dynamic_power;
+	if ( formula_caches_total_leakage_power )
+		delete formula_caches_total_leakage_power;
+	if ( formula_caches_total_power )
+		delete formula_caches_total_power;
+	if ( formula_tlbs_total_dynamic_energy )
+		delete formula_tlbs_total_dynamic_energy;
+	if ( formula_tlbs_total_dynamic_power )
+		delete formula_tlbs_total_dynamic_power;
+	if ( formula_tlbs_total_leakage_power )
+		delete formula_tlbs_total_leakage_power;
+	if ( formula_tlbs_total_power )
+		delete formula_tlbs_total_power;
+	if ( formula_total_dynamic_energy )
+		delete formula_total_dynamic_energy;
+	if ( formula_total_dynamic_power )
+		delete formula_total_dynamic_power;
+	if ( formula_total_leakage_power )
+		delete formula_total_leakage_power;
+	if ( formula_total_power )
+		delete formula_total_power;
 	if ( il1_power_estimator ) delete il1_power_estimator;
 	if ( dl1_power_estimator ) delete dl1_power_estimator;
+	if ( ltlb_power_estimator ) delete ltlb_power_estimator;
+	if ( tlb_power_estimator ) delete tlb_power_estimator;
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
@@ -268,6 +381,7 @@ int
 Simulator ::
 Run()
 {
+	/* TODO: remove this code and add it to a loader (raw loader???) */
 	static uint32_t bootloader[] = {
 		0xe3a00000,
 		0xe3a01083,
@@ -279,6 +393,8 @@ Run()
 	};
 
 	memory->WriteMemory(0, bootloader, sizeof(bootloader));
+	/* END TODO */
+
 	if ( unlikely(SimulationFinished()) ) return 0;
 
 #ifndef SIM_LIBRARY
@@ -286,7 +402,7 @@ Run()
 #endif // !SIM_LIBRARY
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if ( ! inline_debugger )
 	{
@@ -348,7 +464,7 @@ Run(double time, sc_time_unit unit)
 	double time_start = host_time->GetTime();
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if ( ! inline_debugger )
 	{
@@ -409,7 +525,20 @@ void
 Simulator ::
 Stop(unisim::kernel::service::Object *object, int exit_status)
 {
+	if ( object )
+		std::cerr
+			<< "Calling sc_stop" << std::endl
+			<< " - object = " << object->GetName() << std::endl
+			<< " - exit status = " << exit_status 
+			<< std::endl;
+	else
+		std::cerr
+			<< "Calling sc_stop" << std::endl
+			<< " - object = <unknown>" << std::endl
+			<< " - exit status = " << exit_status
+			<< std::endl;
 	sc_stop();
+	wait();
 }
 
 void
@@ -434,11 +563,13 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
-	sim->SetVariable("memory.cycle-time",        "13332ps");
+	sim->SetVariable("memory.cycle-time",        "31250 ps");
+	sim->SetVariable("memory.read-latency",      "31250 ps");
+	sim->SetVariable("memory.write-latency",     "0 ps");
 	sim->SetVariable("nor-flash-2.bytesize",     0xffffffffUL); 
-	sim->SetVariable("nor-flash-2.cycle-time",   "13332ps");
+	sim->SetVariable("nor-flash-2.cycle-time",   "31250 ps");
 	sim->SetVariable("nor-flash-1.bytesize",     0xffffffffUL); 
-	sim->SetVariable("nor-flash-1.cycle-time",   "13332ps");
+	sim->SetVariable("nor-flash-1.cycle-time",   "31250 ps");
 	sim->SetVariable("elf-loader.filename",      "test/install/u-boot");
 	sim->SetVariable("elf-loader.force-base-addr",
 												 true);
@@ -459,6 +590,10 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 			"cpu-instruction-counter-trap-handler");
 	sim->SetVariable("trap-handler.trap-reporting-export-name[2]",
 			"cpu-irq-trap-handler");
+
+	sim->SetVariable("pxp.uart0.enable-telnet", true);
+	sim->SetVariable("pxp.uart1.enable-logger", true);
+	sim->SetVariable("pxp.uart2.enable-logger", true);
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	sim->SetVariable("gdb-server.architecture-description-filename",
@@ -487,7 +622,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("il1-power-estimator.banks", 1);
 	sim->SetVariable("il1-power-estimator.tech-node", 130); // in nm
 	sim->SetVariable("il1-power-estimator.output-width", 32 * 8);
-	sim->SetVariable("il1-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("il1-power-estimator.tag-width", 32);
 	sim->SetVariable("il1-power-estimator.access-mode", "fast");
 	sim->SetVariable("il1-power-estimator.verbose", false);
 
@@ -501,9 +636,37 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("dl1-power-estimator.banks", 1);
 	sim->SetVariable("dl1-power-estimator.tech-node", 130); // in nm
 	sim->SetVariable("dl1-power-estimator.output-width", 32 * 8);
-	sim->SetVariable("dl1-power-estimator.tag-width", 32); // to fix
+	sim->SetVariable("dl1-power-estimator.tag-width", 32);
 	sim->SetVariable("dl1-power-estimator.access-mode", "fast");
 	sim->SetVariable("dl1-power-estimator.verbose", false);
+	
+	sim->SetVariable("ltlb-power-estimator.cache-size", 4 * 2 * 8);
+	sim->SetVariable("ltlb-power-estimator.line-size", 4 * 2);
+	sim->SetVariable("ltlb-power-estimator.associativity", 0);
+	sim->SetVariable("ltlb-power-estimator.rw-ports", 1);
+	sim->SetVariable("ltlb-power-estimator.excl-read-ports", 0);
+	sim->SetVariable("ltlb-power-estimator.excl-write-ports", 0);
+	sim->SetVariable("ltlb-power-estimator.single-ended-read-ports", 0);
+	sim->SetVariable("ltlb-power-estimator.banks", 1);
+	sim->SetVariable("ltlb-power-estimator.tech-node", 130); // in nm
+	sim->SetVariable("ltlb-power-estimator.output-width", 4 * 8);
+	sim->SetVariable("ltlb-power-estimator.tag-width", 32);
+	sim->SetVariable("ltlb-power-estimator.access-mode", "fast");
+	sim->SetVariable("ltlb-power-estimator.verbose", false);
+
+	sim->SetVariable("tlb-power-estimator.cache-size", 4 * 64);
+	sim->SetVariable("tlb-power-estimator.line-size", 4);
+	sim->SetVariable("tlb-power-estimator.associativity", 2);
+	sim->SetVariable("tlb-power-estimator.rw-ports", 1);
+	sim->SetVariable("tlb-power-estimator.excl-read-ports", 0);
+	sim->SetVariable("tlb-power-estimator.excl-write-ports", 0);
+	sim->SetVariable("tlb-power-estimator.single-ended-read-ports", 0);
+	sim->SetVariable("tlb-power-estimator.banks", 1);
+	sim->SetVariable("tlb-power-estimator.tech-node", 130); // in nm
+	sim->SetVariable("tlb-power-estimator.output-width", 4 * 8);
+	sim->SetVariable("tlb-power-estimator.tag-width", 32);
+	sim->SetVariable("tlb-power-estimator.access-mode", "fast");
+	sim->SetVariable("tlb-power-estimator.verbose", false);
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 }
 
@@ -511,7 +674,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 
 bool
 Simulator::
-AddNotifiable (void *(*notif_function)(const char *), const char *var_name)
+AddVariableBaseListener (void *(*notif_function)(const char *), const char *var_name)
 {
 	return false;
 }
@@ -549,7 +712,7 @@ ExternalTrap (unsigned int id)
 
 void
 Simulator::
-VariableNotify(const char *name)
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
 	// use this function to check the variable that was notified
 	// NOTE: for the moment it is empty, but more to come :-P
@@ -585,6 +748,8 @@ EnableInlineDebugger()
 		// connect the inline debugger to other components
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->instruction_counter_trap_reporting_import >> inline_debugger->trap_reporting_export;
+		cpu->exception_trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;

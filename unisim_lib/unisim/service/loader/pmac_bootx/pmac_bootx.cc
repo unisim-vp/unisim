@@ -843,9 +843,9 @@ const unisim::util::debug::blob::Blob<uint32_t> *BootInfos::GetBlob() const
 
 PMACBootX::PMACBootX(const char *name, Object *parent) :
 	Object(name, parent, "This service is a PowerMac BootX loader emulator. It allows bootloading a PowerMac Linux kernel with its initial ramdisk and device tree"),
-	Service<Loader<uint32_t> >(name, parent),
+	Service<Loader>(name, parent),
 	Service<Blob<uint32_t> >(name, parent),
-	Client<Loader<uint32_t> >(name, parent),
+	Client<Loader>(name, parent),
 	Client<Blob<uint32_t> >(name, parent),
 	Client<Memory<uint32_t> >(name, parent),
 	Client<Registers>(name, parent),

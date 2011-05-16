@@ -1,17 +1,17 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 0 )
-set ( SIM_VERSION_PATCH 0 )
+set ( SIM_VERSION_MINOR 4 )
+set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION 
 	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "Punch" )
+set ( SIM_VERSION_CODENAME "Sants-Montjuic" )
 set ( SIM_AUTHOR "Daniel Gracia Perez (daniel.gracia-perez@cea.fr)" )
-set ( SIM_PROGRAM_NAME "UNISIM ARM926EJS Emulator" )
-set ( SIM_COPYRIGHT "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique" )
+set ( SIM_PROGRAM_NAME "UNISIM PB-ARM926EJS Emulator" )
+set ( SIM_COPYRIGHT "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique" )
 set ( SIM_LICENSE "BSD (See file COPYING)" )
-set ( SIM_DESCRIPTION "UNISIM ARM926EJS Simulator" )
+set ( SIM_DESCRIPTION "UNISIM PB-ARM926EJS Simulator" )
 set ( SIM_PYTHON_MODULE_NAME "arm926ejs" )
 set ( SIM_PYTHON_IMPORT_NAME "arm926ejs${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
@@ -54,7 +54,6 @@ set_property ( GLOBAL
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${SIM_EXEC_NAME}" )
 
 set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-# set ( CMAKE_CXX_FLAGS "-fPIC" )
 set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
 set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${SIM_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
 set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
@@ -218,13 +217,17 @@ add_custom_target ( sim__share_python
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/python
-	COMMAND
-		${CMAKE_COMMAND} -E copy_if_different
-			${CMAKE_SOURCE_DIR}/share/python/demo.py
-			${SHARE_DIRECTORY}/python/demo.py
+#	COMMAND
+#		${CMAKE_COMMAND} -E copy_if_different
+#			${CMAKE_SOURCE_DIR}/share/python/demo.py
+#			${SHARE_DIRECTORY}/python/demo.py
 	COMMENT
 		"Setting python demos."
 	)
+
+configure_file (
+	${CMAKE_SOURCE_DIR}/share/python/demo.py.in
+	${SHARE_DIRECTORY}/python/demo.py )
 
 if ( APPLE )
 	set ( SIM_UA_UNISIM_SIM_NAME "ARM926EJS" )
@@ -292,6 +295,10 @@ if ( BUILD_POWER_SUPPORT )
 	list ( APPEND sim__libraries
 		unisim__service__power )
 endif ( BUILD_POWER_SUPPORT )
+if ( WIN32 )
+	list ( APPEND sim__libraries
+		wsock32 )
+endif ( WIN32 )
 
 set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${SIM_EXEC_NAME}" )
 set ( PYTHON__SIM__INCLUDE_DIRS
@@ -313,6 +320,7 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__component__tlm2__memory__ram',
 	 'unisim__component__tlm2__processor__arm__arm926ejs',
 	 'unisim__component__tlm2__chipset__arm926ejs_pxp',
+	 'unisim__component__cxx__processor__arm__arm926ejs',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
@@ -325,8 +333,10 @@ set ( PYTHON__SIM__LIBS
 	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
+	 'unisim__util__debug__blob',
 	 'unisim__util__debug__debugger_handler',
 	 'unisim__util__xml',
+	 'unisim__util__generic_peripheral_register',
 	 'unisim__kernel',
 	 'xml2',
 	 'systemc'")

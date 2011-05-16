@@ -35,12 +35,14 @@
 #ifndef UNISIM_SERVICE_INTERFACES_ALLOCATOR_HH
 #define UNISIM_SERVICE_INTERFACES_ALLOCATOR_HH
 
+#include <unisim/kernel/service/service.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template<class ADDRESS, class SIZE>
-struct Allocator
+struct Allocator : public unisim::kernel::service::ServiceInterface
 {
 	virtual ADDRESS Alloc(SIZE s) = 0;
 	virtual void Free(ADDRESS a) = 0;

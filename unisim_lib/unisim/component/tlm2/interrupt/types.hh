@@ -44,19 +44,8 @@ namespace component {
 namespace tlm2 {
 namespace interrupt {
 
-class TLMInterruptPayload :
-		public unisim::kernel::tlm2::ManagedPayload 
-{
-public:
-	bool level;
-};
-
-class InterruptProtocolTypes
-{
-public:
-	typedef TLMInterruptPayload 	tlm_payload_type;
-	typedef tlm::tlm_phase			tlm_phase_type;
-};
+typedef unisim::kernel::tlm2::SimplePayload<bool> InterruptPayload;
+typedef unisim::kernel::tlm2::SimpleProtocolTypes<bool> InterruptProtocolTypes;
 
 } // end of namespace interrupt
 } // end of namespace tlm2

@@ -61,15 +61,12 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 	, unisim::component::cxx::interrupt::xilinx::xps_intc::XPS_IntC<CONFIG>(name, parent)
 	, slave_sock("slave-sock")
 	, irq_master_sock("irq-master-sock")
-	, verbose(false)
 	, cycle_time()
-	, read_latency()
-	, write_latency()
-	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
+	, time_stamp(SC_ZERO_TIME)
+	, ready_time_stamp(SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
-	, param_read_latency("read-latency", this, read_latency, "Latency for reading an interrupt controller register")
-	, param_write_latency("write-latency", this, write_latency, "Latency for writing an interrupt controller register")
-	, unified_payload_queue("unified-payload-queue")
+	, output_level(false)
+	, schedule()
 {
 	slave_sock(*this); // Bind socket to implementer of interface
 	irq_master_sock(*this); // Bind socket to implementer of interface
@@ -82,14 +79,31 @@ XPS_IntC<CONFIG>::XPS_IntC(const sc_module_name& name, Object *parent)
 		
 		irq_slave_sock[irq] = new irq_slave_socket(irq_slave_sock_name_sstr.str().c_str());
 
-		irq_forwarder[irq] = new IRQForwarder(irq, this);
+		irq_redirector[irq] = 
+			new unisim::kernel::tlm2::FwRedirector<XPS_IntC<CONFIG>, InterruptProtocolTypes>(
+				irq,
+				this,
+				&XPS_IntC<CONFIG>::interrupt_nb_transport_fw,
+				&XPS_IntC<CONFIG>::interrupt_b_transport,
+				&XPS_IntC<CONFIG>::interrupt_transport_dbg,
+				&XPS_IntC<CONFIG>::interrupt_get_direct_mem_ptr
+			);
 		
-		(*irq_slave_sock[irq])(*irq_forwarder[irq]); // Bind socket to implementer of interface
+		(*irq_slave_sock[irq])(*irq_redirector[irq]); // Bind socket to implementer of interface
+		
+		interrupt_input[irq] = false;
 	}
 	
 	SC_HAS_PROCESS(XPS_IntC);
 	
-	SC_THREAD(Process);
+	if(threaded_model)
+	{
+		SC_THREAD(Process);
+	}
+	else
+	{
+		SC_METHOD(Process);
+	}
 }
 
 template <class CONFIG>
@@ -99,8 +113,20 @@ XPS_IntC<CONFIG>::~XPS_IntC()
 	for(irq = 0; irq < CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
 		delete irq_slave_sock[irq];
-		delete irq_forwarder[irq];
+		delete irq_redirector[irq];
 	}
+}
+
+template <class CONFIG>
+void XPS_IntC<CONFIG>::AlignToClock(sc_time& t)
+{
+	sc_dt::uint64 time_tu = t.value();
+	sc_dt::uint64 cycle_time_tu = cycle_time.value();
+	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
+	if(!modulo) return; // already aligned
+
+	time_tu += cycle_time_tu - modulo;
+	t = sc_time(time_tu, false);
 }
 
 template <class CONFIG>
@@ -121,12 +147,13 @@ unsigned int XPS_IntC<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 	unsigned char *byte_enable_ptr = payload.get_byte_enable_ptr();
 	unsigned int byte_enable_length = byte_enable_ptr ? payload.get_byte_enable_length() : 0;
 	unsigned int streaming_width = payload.get_streaming_width();
+	
 	bool status = false;
 
 	switch(cmd)
 	{
 		case tlm::TLM_READ_COMMAND:
-			if(IsVerbose())
+			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
 					<< ":" << sc_time_stamp().to_string()
@@ -142,7 +169,7 @@ unsigned int XPS_IntC<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
 			break;
 		case tlm::TLM_WRITE_COMMAND:
-			if(IsVerbose())
+			if(inherited::IsVerbose())
 			{
 				inherited::logger << DebugInfo << LOCATION
 					<< ":" << sc_time_stamp().to_string()
@@ -183,62 +210,32 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 	{
 		case tlm::BEGIN_REQ:
 			{
-				payload.set_dmi_allowed(false);
-
 				tlm::tlm_command cmd = payload.get_command();
-				unsigned int data_length = payload.get_data_length();
-				unsigned int byte_enable_length = payload.get_byte_enable_ptr() ? payload.get_byte_enable_length() : 0;
-				unsigned int streaming_width = payload.get_streaming_width();
 				
-				if(cmd != tlm::TLM_IGNORE_COMMAND)
+				if(cmd == tlm::TLM_IGNORE_COMMAND)
 				{
-					if((data_length != 4) || (streaming_width && (streaming_width != 4)))
-					{
-						// streaming is not supported
-						// only data length of 4 bytes is supported
-						if(IsVerbose())
-						{
-							inherited::logger << DebugInfo << LOCATION
-								<< ":" << (sc_time_stamp() + t).to_string()
-								<< ": data length of " << data_length << " bytes and streaming are unsupported"
-								<< EndDebugInfo;
-						}
-						payload.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
-						return tlm::TLM_COMPLETED;
-					}
-					
-					if(byte_enable_length)
-					{
-						// byte enable is not supported
-						if(IsVerbose())
-						{
-							inherited::logger << DebugInfo << LOCATION
-								<< ":" << (sc_time_stamp() + t).to_string()
-								<< ": byte enable is unsupported"
-								<< EndDebugInfo;
-						}
-						payload.set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
-						return tlm::TLM_COMPLETED;
-					}
+					inherited::logger << DebugError << LOCATION
+							<< ":" << (sc_time_stamp() + t).to_string() 
+							<< " : received an unexpected TLM_IGNORE_COMMAND payload"
+							<< EndDebugError;
+					Object::Stop(-1);
+					return tlm::TLM_COMPLETED;
 				}
-
-				UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
 				
+				sc_time notify_time_stamp(sc_time_stamp());
+				notify_time_stamp += t;
+				AlignToClock(notify_time_stamp);
+				Event *event = schedule.AllocEvent();
+				event->InitializeCPUEvent(&payload, notify_time_stamp);
+				schedule.Notify(event);
 				phase = tlm::END_REQ;
-
-				payload.acquire();
-				unified_payload->SetPayload(&payload);
-				unified_payload->SetNonBlocking();
-				unified_payload_queue.notify(*unified_payload, t);
-				
 				return tlm::TLM_UPDATED;
 			}
 			break;
+		case tlm::END_RESP:
+			return tlm::TLM_COMPLETED;
 		default:
-			inherited::logger << DebugError << LOCATION
-				<< ":" << (sc_time_stamp() + t).to_string()
-				<< ": unexpected phase " << (unsigned int) phase
-				<< EndDebugError;
+			inherited::logger << DebugError << "protocol error" << EndDebugError;
 			Object::Stop(-1);
 			break;
 	}
@@ -249,59 +246,31 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 template <class CONFIG>
 void XPS_IntC<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
-	payload.set_dmi_allowed(false);
-
 	tlm::tlm_command cmd = payload.get_command();
-	unsigned int data_length = payload.get_data_length();
-	unsigned int byte_enable_length = payload.get_byte_enable_ptr() ? payload.get_byte_enable_length() : 0;
-	unsigned int streaming_width = payload.get_streaming_width();
-	
-	if(cmd != tlm::TLM_IGNORE_COMMAND)
+			
+	if(cmd == tlm::TLM_IGNORE_COMMAND)
 	{
-		if((data_length != 4) || (streaming_width && (streaming_width != 4)))
-		{
-			// streaming is not supported
-			// only data length of 4 bytes is supported
-			if(IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
-					<< ": data length of " << data_length << " bytes and streaming are unsupported"
-					<< EndDebugInfo;
-			}
-			payload.set_response_status(tlm::TLM_BURST_ERROR_RESPONSE);
-			return;
-		}
-		
-		if(byte_enable_length)
-		{
-			// byte enable is not supported
-			if(IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ":" << (sc_time_stamp() + t).to_string()
-					<< ": byte enable is unsupported"
-					<< EndDebugInfo;
-			}
-			payload.set_response_status(tlm::TLM_BYTE_ENABLE_ERROR_RESPONSE);
-			return;
-		}
+		inherited::logger << DebugError << LOCATION
+				<< ":" << (sc_time_stamp() + t).to_string() 
+				<< " : received an unexpected TLM_IGNORE_COMMAND payload"
+				<< EndDebugError;
+		Object::Stop(-1);
+		return;
 	}
 
-	UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
 	sc_event ev_completed;
-
-	payload.acquire();
-	unified_payload->SetPayload(&payload);
-	unified_payload->SetBlocking(&ev_completed);
-	unified_payload_queue.notify(*unified_payload, t);
-	
-	t = local_time = SC_ZERO_TIME;
+	sc_time notify_time_stamp(sc_time_stamp());
+	notify_time_stamp += t;
+	AlignToClock(notify_time_stamp);
+	Event *event = schedule.AllocEvent();
+	event->InitializeCPUEvent(&payload, notify_time_stamp, &ev_completed);
+	schedule.Notify(event);
 	wait(ev_completed);
+	t = SC_ZERO_TIME;
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_bw(TLMInterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_bw(InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	return tlm::TLM_COMPLETED;
 }
@@ -313,44 +282,73 @@ void XPS_IntC<CONFIG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_d
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::b_transport(unsigned int irq, TLMInterruptPayload& payload, sc_core::sc_time& t)
+void XPS_IntC<CONFIG>::interrupt_b_transport(unsigned int irq, InterruptPayload& payload, sc_core::sc_time& t)
 {
-	UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
-	sc_event ev_completed;
+	if(irq < CONFIG::C_NUM_INTR_INPUTS)
+	{
+		bool level = payload.GetValue();
+		if(interrupt_input[irq] != level)
+		{
+			// capture event
+			sc_time notify_time_stamp(sc_time_stamp());
+			notify_time_stamp += t;
 
-	payload.acquire();
-	unified_payload->SetPayload(&payload);
-	unified_payload->SetBlocking(&ev_completed);
-	unified_payload_queue.notify(*unified_payload, t);
-	
-	t = local_time = SC_ZERO_TIME;
-	wait(ev_completed);
+			AlignToClock(notify_time_stamp);
+			Event *event = schedule.AllocEvent();
+			event->InitializeIRQEvent(irq, level, notify_time_stamp);
+			schedule.Notify(event);
+			
+			interrupt_input[irq] = level;
+		}
+	}
+	else
+	{
+		inherited::logger << DebugError << "protocol error (invalid IRQ number)" << EndDebugError;
+		Object::Stop(-1);
+	}
 }
 
 template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(unsigned int irq, TLMInterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum XPS_IntC<CONFIG>::interrupt_nb_transport_fw(unsigned int irq, InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	switch(phase)
 	{
 		case tlm::BEGIN_REQ:
 			{
-				UnifiedPayload *unified_payload = unified_payload_fabric.allocate();
-				sc_event ev_completed;
+				if(irq < CONFIG::C_NUM_INTR_INPUTS)
+				{
+					bool level = payload.GetValue();
+					if(interrupt_input[irq] != level)
+					{
+						if(inherited::IsVerbose())
+						{
+							inherited::logger << DebugInfo << "IRQ #" << irq << " goes " << (level ? "high" : "low") << EndDebugInfo;
+						}
+						sc_time notify_time_stamp(sc_time_stamp());
+						notify_time_stamp += t;
 
-				payload.acquire();
-				unified_payload->SetPayload(&payload);
-				unified_payload->SetNonBlocking();
-				unified_payload_queue.notify(*unified_payload, t);
+						AlignToClock(notify_time_stamp);
+						Event *event = schedule.AllocEvent();
+						event->InitializeIRQEvent(irq, level, notify_time_stamp);
+						schedule.Notify(event);
+						
+						interrupt_input[irq] = level;
+					}
+				}
+				else
+				{
+					inherited::logger << DebugError << "protocol error (invalid IRQ number)" << EndDebugError;
+					Object::Stop(-1);
+				}
 				
 				phase = tlm::END_REQ;
-				return tlm::TLM_UPDATED;
+				return tlm::TLM_COMPLETED;
 			}
 			break;
+		case tlm::END_RESP:
+			return tlm::TLM_COMPLETED;
 		default:
-			inherited::logger << DebugError << LOCATION
-				<< ":" << (sc_time_stamp() + t).to_string()
-				<< ": unexpected phase" << (unsigned int) phase
-				<< EndDebugError;
+			inherited::logger << DebugError << "protocol error" << EndDebugError;
 			Object::Stop(-1);
 			break;
 	}
@@ -358,175 +356,216 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(unsigned int irq, TLMInterr
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::ProcessCPUPayload(UnifiedPayload *unified_payload)
+unsigned int XPS_IntC<CONFIG>::interrupt_transport_dbg(unsigned int, InterruptPayload& trans)
 {
-	tlm::tlm_generic_payload *payload = unified_payload->cpu_payload;
-	typename CONFIG::MEMORY_ADDR addr = payload->get_address();
-	switch(payload->get_command())
-	{
-		case tlm::TLM_READ_COMMAND:
-			{
-				if(IsVerbose())
-				{
-					inherited::logger << DebugInfo << LOCATION
-						<< ": processing a TLM_READ_COMMAND payload at 0x"
-						<< std::hex << addr << std::dec
-						<< EndDebugInfo;
-				}
+	return 0;
+}
 
-				uint32_t value;
-				if(inherited::Read(addr, value))
+template <class CONFIG>
+bool XPS_IntC<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& payload, tlm::tlm_dmi& dmi_data)
+{
+	return false;
+}
+
+template <class CONFIG>
+void XPS_IntC<CONFIG>::ProcessCPUEvent(Event *event)
+{
+	tlm::tlm_generic_payload *payload = event->GetCPUPayload();
+	tlm::tlm_command cmd = payload->get_command();
+	unsigned char *data_ptr = payload->get_data_ptr();
+	unsigned int data_length = payload->get_data_length();
+	unsigned int byte_enable_length = payload->get_byte_enable_ptr() ? payload->get_byte_enable_length() : 0;
+	unsigned int streaming_width = payload->get_streaming_width();
+	typename CONFIG::MEMORY_ADDR addr = payload->get_address();
+
+	tlm::tlm_response_status status = tlm::TLM_OK_RESPONSE;
+	
+	if(cmd != tlm::TLM_IGNORE_COMMAND)
+	{
+		if(!inherited::IsMapped(addr, data_length))
+		{
+			inherited::logger << DebugWarning << LOCATION
+				<< time_stamp
+				<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
+				<< EndDebugWarning;
+			status = tlm::TLM_ADDRESS_ERROR_RESPONSE;
+		}
+		else if(data_length != 4)
+		{
+			// only data length of 4 bytes is supported
+			inherited::logger << DebugWarning << LOCATION
+				<< time_stamp
+				<< ": data length of " << data_length << " bytes is unsupported"
+				<< EndDebugWarning;
+			status = tlm::TLM_BURST_ERROR_RESPONSE;
+		}
+		else if(streaming_width && (streaming_width != data_length))
+		{
+			// streaming is not supported
+			inherited::logger << DebugError << LOCATION
+				<< time_stamp
+				<< ": streaming width of " << streaming_width << " bytes is unsupported"
+				<< EndDebugError;
+			Object::Stop(-1);
+			return;
+		}
+		else if(byte_enable_length)
+		{
+			// byte enable is not supported
+			inherited::logger << DebugError << LOCATION
+					<< time_stamp
+					<< ": byte enable is unsupported"
+					<< EndDebugError;
+			Object::Stop(-1);
+			return;
+		}
+	}
+	
+	if(status == tlm::TLM_OK_RESPONSE)
+	{
+		switch(cmd)
+		{
+			case tlm::TLM_READ_COMMAND:
 				{
-					memcpy(payload->get_data_ptr(), &value, 4);
-					payload->set_response_status(tlm::TLM_OK_RESPONSE);
-				}
-				else
-				{
-					payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-				}
-				
-				if(unified_payload->blocking)
-				{
-					unified_payload->ev_completed->notify(read_latency);
-				}
-				else
-				{
-					tlm::tlm_phase phase = tlm::BEGIN_RESP;
-					tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, local_time);
-					
-					switch(sync)
+					if(inherited::IsVerbose())
 					{
-						case tlm::TLM_ACCEPTED:
-						case tlm::TLM_UPDATED:
-							wait(local_time);
-							local_time = SC_ZERO_TIME;
-							payload->release();
-							break;
-						case tlm::TLM_COMPLETED:
-							payload->release();
-							break;
+						inherited::logger << DebugInfo << LOCATION
+							<< time_stamp
+							<< ": processing a TLM_READ_COMMAND payload at 0x"
+							<< std::hex << addr << std::dec
+							<< EndDebugInfo;
 					}
+
+					uint32_t value;
+					inherited::Read(addr, value);
+					memcpy(data_ptr, &value, 4);
 				}
-			}
-			break;
-		case tlm::TLM_WRITE_COMMAND:
-			{
-				if(IsVerbose())
+				break;
+			case tlm::TLM_WRITE_COMMAND:
+				{
+					if(inherited::IsVerbose())
+					{
+						inherited::logger << DebugInfo << LOCATION
+							<< time_stamp
+							<< ": processing a TLM_WRITE_COMMAND payload at 0x"
+							<< std::hex << addr << std::dec
+							<< EndDebugInfo;
+					}
+					
+					uint32_t value;
+					memcpy(&value, data_ptr, 4);
+					inherited::Write(addr, value);
+				}
+				break;
+			case tlm::TLM_IGNORE_COMMAND:
+				if(inherited::IsVerbose())
 				{
 					inherited::logger << DebugInfo << LOCATION
-						<< ": processing a TLM_WRITE_COMMAND payload at 0x"
+						<< time_stamp
+						<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 						<< std::hex << addr << std::dec
 						<< EndDebugInfo;
 				}
-				
-				uint32_t value;
-				memcpy(&value, payload->get_data_ptr(), 4);
-				if(!inherited::Write(addr, value))
-				{
-					payload->set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-				}
-				
-				if(unified_payload->blocking)
-				{
-					unified_payload->ev_completed->notify(write_latency);
-				}
-				else
-				{
-					tlm::tlm_phase phase = tlm::BEGIN_RESP;
-					tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, local_time);
-					
-					switch(sync)
-					{
-						case tlm::TLM_ACCEPTED:
-						case tlm::TLM_UPDATED:
-							wait(local_time);
-							local_time = SC_ZERO_TIME;
-							payload->release();
-							break;
-						case tlm::TLM_COMPLETED:
-							payload->release();
-							break;
-					}
-				}
-			}
-			break;
-		case tlm::TLM_IGNORE_COMMAND:
-			if(IsVerbose())
-			{
-				inherited::logger << DebugInfo << LOCATION
-					<< ": received a TLM_IGNORE_COMMAND payload at 0x"
-					<< std::hex << addr << std::dec
-					<< EndDebugInfo;
-			}
-			break;
+				break;
+		}
+	}
+	
+	payload->set_response_status(status);
+	payload->set_dmi_allowed(false);
+
+	ready_time_stamp = time_stamp;
+	ready_time_stamp += cycle_time;
+
+	sc_event *ev_completed = event->GetCompletionEvent();
+	if(ev_completed)
+	{
+		ev_completed->notify(cycle_time);
+	}
+	else
+	{
+		sc_time t(cycle_time);
+		tlm::tlm_phase phase = tlm::BEGIN_RESP;
+		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 }
 
 template <class CONFIG>
-void XPS_IntC<CONFIG>::ProcessIntrPayload(UnifiedPayload *unified_payload)
+void XPS_IntC<CONFIG>::ProcessIRQEvent(Event *event)
 {
-	TLMInterruptPayload *payload = unified_payload->intr_payload;
+	unsigned int irq = event->GetIRQ();
+	bool level = event->GetLevel();
 	
-	inherited::SetInterruptInput(unified_payload->irq, payload->level);
-	
-	if(unified_payload->blocking)
+	if(inherited::IsVerbose())
 	{
-		unified_payload->ev_completed->notify(SC_ZERO_TIME);
+		inherited::logger << DebugInfo << "Processing an IRQ event (irq #" << irq << " goes " << (level ? "high" : "low") << ")" << EndDebugInfo;
 	}
-	else
+	inherited::SetInterruptInput(irq, level);
+}
+
+template <class CONFIG>
+void XPS_IntC<CONFIG>::ProcessEvents()
+{
+	time_stamp = sc_time_stamp();
+	if(inherited::IsVerbose())
 	{
-		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = (*irq_slave_sock[unified_payload->irq])->nb_transport_bw(*payload, phase, local_time);
-		
-		switch(sync)
+		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+	}
+	
+	Event *event = schedule.GetNextEvent();
+	
+	if(event)
+	{
+		do
 		{
-			case tlm::TLM_ACCEPTED:
-			case tlm::TLM_UPDATED:
-				wait(local_time);
-				local_time = SC_ZERO_TIME;
-				payload->release();
-				break;
-			case tlm::TLM_COMPLETED:
-				payload->release();
-				break;
+			if((event->GetTimeStamp() != time_stamp) || ((time_stamp.value() % cycle_time.value()) != 0))
+			{
+				inherited::logger << DebugError << "Internal error" << EndDebugError;
+				Object::Stop(-1);
+			}
+
+			switch(event->GetType())
+			{
+				case Event::EV_IRQ:
+					ProcessIRQEvent(event);
+					schedule.FreeEvent(event);
+					break;
+				case Event::EV_CPU:
+					if(time_stamp >= ready_time_stamp)
+					{
+						ProcessCPUEvent(event);
+						schedule.FreeEvent(event);
+					}
+					else
+					{
+						// delay the CPU event later
+						// Note: this doesn't work if more than one CPU event is scheduled
+						event->SetTimeStamp(ready_time_stamp);
+						schedule.Notify(event);
+					}
+					break;
+			}
 		}
+		while((event = schedule.GetNextEvent()) != 0);
 	}
+	inherited::DetectInterruptInput();
+	inherited::GenerateRequest();
 }
 
 template <class CONFIG>
 void XPS_IntC<CONFIG>::Process()
 {
-	while(1)
+	if(threaded_model)
 	{
-		wait(unified_payload_queue.get_event());
-		local_time = SC_ZERO_TIME;
-		
-		UnifiedPayload *unified_payload = unified_payload_queue.get_next_transaction();
-		if(unified_payload)
+		while(1)
 		{
-			do
-			{
-				switch(unified_payload->type)
-				{
-					case UnifiedPayload::CPU_PAYLOAD:
-						ProcessCPUPayload(unified_payload);
-						unified_payload->cpu_payload->release();
-						unified_payload->cpu_payload = 0;
-						break;
-					case UnifiedPayload::INTR_PAYLOAD:
-						ProcessIntrPayload(unified_payload);
-						unified_payload->intr_payload->release();
-						unified_payload->intr_payload = 0;
-						break;
-				}
-				
-				unified_payload->release();
-			}
-			while((unified_payload = unified_payload_queue.get_next_transaction()) != 0);
-			
-			inherited::DetectInterruptInput();
-			inherited::GenerateRequest();
+			wait(schedule.GetKernelEvent());
+			ProcessEvents();
 		}
+	}
+	else
+	{
+		ProcessEvents();
+		next_trigger(schedule.GetKernelEvent());
 	}
 }
 
@@ -535,121 +574,67 @@ void XPS_IntC<CONFIG>::SetOutputLevel(bool level)
 {
 	if(output_level == level) return;
 
-	TLMInterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
+	sc_time t(SC_ZERO_TIME);
+
+	if(inherited::IsVerbose())
+	{
+		inherited::logger << DebugInfo << (time_stamp + t) << ": Interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
+	}
+
+	InterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
 	
-	intr_payload->level = level;
+	intr_payload->SetValue(level);
 	
-	irq_master_sock->b_transport(*intr_payload, local_time);
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	tlm::tlm_sync_enum sync = irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
 	
 	intr_payload->release();
+	
+	output_level = level;
 }
 
 template <class CONFIG>
 void XPS_IntC<CONFIG>::SetOutputEdge(bool final_level)
 {
+	sc_time t(SC_ZERO_TIME);
+	
 	if(output_level == final_level)
 	{
-		TLMInterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
+		if(inherited::IsVerbose())
+		{
+			inherited::logger << DebugInfo << (time_stamp + t) << ": Interrupt signal goes " << (final_level ? "low" : "high") << EndDebugInfo;
+		}
 		
-		intr_payload->level = !final_level;
+		InterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
 		
-		irq_master_sock->b_transport(*intr_payload, local_time);
+		intr_payload->SetValue(!final_level);
+		
+		tlm::tlm_phase phase = tlm::BEGIN_REQ;
+		
+		tlm::tlm_sync_enum sync = irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
 		
 		intr_payload->release();
 	}
 	
-	local_time += cycle_time;
+	t += cycle_time;
 
-	TLMInterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
+	if(inherited::IsVerbose())
+	{
+		inherited::logger << DebugInfo << (time_stamp + t) << ": Interrupt signal goes " << (final_level ? "high" : "low") << EndDebugInfo;
+	}
+
+	InterruptPayload *intr_payload = interrupt_payload_fabric.allocate();
 	
-	intr_payload->level = final_level;
+	intr_payload->SetValue(final_level);
 	
-	irq_master_sock->b_transport(*intr_payload, local_time);
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+
+	tlm::tlm_sync_enum sync = irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
 	
 	intr_payload->release();
+	
+	output_level = final_level;
 }
-
-template <class CONFIG>
-bool XPS_IntC<CONFIG>::IsVerbose() const
-{
-	return verbose;
-}
-
-template <class CONFIG>
-XPS_IntC<CONFIG>::IRQForwarder::IRQForwarder(unsigned int _irq, XPS_IntC<CONFIG> *_xps_intc)
-	: irq(_irq)
-	, xps_intc(_xps_intc)
-{
-}
-
-template <class CONFIG>
-void XPS_IntC<CONFIG>::IRQForwarder::b_transport(TLMInterruptPayload& trans, sc_core::sc_time& t)
-{
-	xps_intc->b_transport(irq, trans, t);
-}
-
-template <class CONFIG>
-tlm::tlm_sync_enum XPS_IntC<CONFIG>::IRQForwarder::nb_transport_fw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return xps_intc->nb_transport_fw(irq, trans, phase, t);
-}
-
-template <class CONFIG>
-unsigned int XPS_IntC<CONFIG>::IRQForwarder::transport_dbg(TLMInterruptPayload& trans)
-{
-	return 0;
-}
-
-template <class CONFIG>
-bool XPS_IntC<CONFIG>::IRQForwarder::get_direct_mem_ptr(TLMInterruptPayload& trans, tlm::tlm_dmi&  dmi_data)
-{
-	return false;
-}
-
-template <class CONFIG>
-XPS_IntC<CONFIG>::UnifiedPayload::UnifiedPayload()
-	: type(CPU_PAYLOAD)
-	, blocking(false)
-	, cpu_payload(0)
-	, intr_payload(0)
-	, irq(0)
-	, ev_completed(0)
-{
-}
-
-template <class CONFIG>
-XPS_IntC<CONFIG>::UnifiedPayload::~UnifiedPayload()
-{
-}
-
-template <class CONFIG>
-void XPS_IntC<CONFIG>::UnifiedPayload::SetPayload(tlm::tlm_generic_payload *_cpu_payload)
-{
-	type = CPU_PAYLOAD;
-	cpu_payload = _cpu_payload;
-}
-
-template <class CONFIG>
-void XPS_IntC<CONFIG>::UnifiedPayload::SetPayload(TLMInterruptPayload *_intr_payload)
-{
-	type = INTR_PAYLOAD;
-	intr_payload = _intr_payload;
-}
-
-template <class CONFIG>
-void XPS_IntC<CONFIG>::UnifiedPayload::SetNonBlocking()
-{
-	blocking = false;
-}
-
-template <class CONFIG>
-void XPS_IntC<CONFIG>::UnifiedPayload::SetBlocking(sc_event *_ev_completed)
-{
-	blocking = true;
-	ev_completed = _ev_completed;
-}
-
-
 
 } // end of namespace xps_intc
 } // end of namespace xilinx

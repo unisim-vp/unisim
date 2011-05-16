@@ -73,7 +73,7 @@
 class Simulator
 	: public unisim::kernel::service::Simulator
 #ifdef SIM_LIBRARY
-	, public unisim::kernel::service::VariableBase::Notifiable
+	, public unisim::kernel::service::VariableBaseListener
 	, public unisim::service::trap_handler::ExternalTrapHandlerInterface
 #endif // SIM_LIBRARY
 {
@@ -86,7 +86,7 @@ public:
 	bool SimulationStarted() const;
 	bool SimulationFinished() const;
 #ifdef SIM_LIBRARY
-	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
+	bool AddVariableBaseListener(void *(*notif_function)(const char *), const char *var_name);
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
 	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
 #endif // SIM_LIBRARY
@@ -100,7 +100,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> MEMORY;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> FLASH;
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
-	typedef unisim::service::loader::raw_loader::RawLoader RAW_LOADER;
+	typedef unisim::service::loader::raw_loader::RawLoader64 RAW_LOADER;
 	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
 #ifdef SIM_GDB_SERVER_SUPPORT
 	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
@@ -150,17 +150,27 @@ private:
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	POWER_ESTIMATOR *il1_power_estimator;
 	POWER_ESTIMATOR *dl1_power_estimator;
+	POWER_ESTIMATOR *ltlb_power_estimator;
+	POWER_ESTIMATOR *tlb_power_estimator;
 	bool enable_power_estimation;
 	unisim::kernel::service::Parameter<bool> param_enable_power_estimation;
 	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_energy;
 	unisim::kernel::service::Formula<double> *formula_caches_total_dynamic_power;
 	unisim::kernel::service::Formula<double> *formula_caches_total_leakage_power;
 	unisim::kernel::service::Formula<double> *formula_caches_total_power;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_dynamic_energy;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_dynamic_power;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_leakage_power;
+	unisim::kernel::service::Formula<double> *formula_tlbs_total_power;
+	unisim::kernel::service::Formula<double> *formula_total_dynamic_energy;
+	unisim::kernel::service::Formula<double> *formula_total_dynamic_power;
+	unisim::kernel::service::Formula<double> *formula_total_leakage_power;
+	unisim::kernel::service::Formula<double> *formula_total_power;
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 #ifdef SIM_LIBRARY
 	std::map < std::string, std::vector<void * (*)(const char *)> * > notif_list;
-	virtual void VariableNotify(const char *name);
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *name);
 	void *trap_handler_context;
 	void (*trap_handler_function)(void *, unsigned int);
 	virtual void ExternalTrap(unsigned int id);

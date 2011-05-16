@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2010-2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -232,7 +232,7 @@ private:
 template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>,
-	public Client<Loader<typename CONFIG::address_t> >,
+	public Client<Loader>,
 	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
 	public Client<DebugControl<typename CONFIG::address_t> >,
 	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
@@ -260,7 +260,7 @@ public:
 	ServiceExport<Synchronizable> synchronizable_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<Loader<typename CONFIG::address_t> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
 	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
@@ -341,6 +341,9 @@ public:
 	void Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
 	void Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea);
 	void IntStoreMSBFirst(unsigned int rs, typename CONFIG::address_t ea, uint32_t size);
+	
+	void MoveFromDCR(unsigned int rd, unsigned int dcrn);
+	void MoveToDCR(unsigned int rs, unsigned int dcrn);
 
 	//=====================================================================
 	//=             memory access reporting control interface methods     =
@@ -812,9 +815,11 @@ protected:
 	//=                      Bus access methods                           =
 	//=====================================================================
 
-	virtual bool BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
-	virtual bool BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
-
+	virtual bool PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual void DCRRead(unsigned int dcrn, uint32_t& value);
+	virtual void DCRWrite(unsigned int dcrn, uint32_t value);
 	
 	//=====================================================================
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =

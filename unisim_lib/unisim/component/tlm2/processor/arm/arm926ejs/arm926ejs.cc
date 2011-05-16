@@ -127,6 +127,8 @@ ARM926EJS(const sc_module_name& name, Object *parent)
 	, sc_module(name)
 	, unisim::component::cxx::processor::arm::arm926ejs::CPU(name, parent)
 	, master_socket("master_socket")
+	, nirq("nirq_port")
+	, nfiq("nfiq_port")
 	, end_read_rsp_event()
 	, payload_fabric()
 	, tmp_time()
@@ -147,6 +149,8 @@ ARM926EJS(const sc_module_name& name, Object *parent)
 			"Instructions per cycle performance.")
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time_int,
 			"The processor bus cycle time in picoseconds.")
+	, param_cpu_time("cpu-time", this, cpu_time,
+			"The processor time")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose_tlm", this, verbose_tlm, 
 			"Display TLM information")
@@ -158,6 +162,10 @@ ARM926EJS(const sc_module_name& name, Object *parent)
 	master_socket.bind(*this);
 	
 	SC_THREAD(Run);
+	SC_METHOD(IRQHandler);
+	sensitive << nirq;
+	SC_METHOD(FIQHandler);
+	sensitive << nfiq;
 }
 
 ARM926EJS ::
@@ -172,9 +180,9 @@ ARM926EJS ::
  */
 bool 
 ARM926EJS:: 
-Setup() 
+BeginSetup() 
 {
-	if (!inherited::Setup()) 
+	if (!inherited::BeginSetup()) 
 	{
 		inherited::logger << DebugError
 			<< "Error while trying to set up the ARM cpu" << endl
@@ -219,7 +227,7 @@ void
 ARM926EJS ::
 Sync() 
 {
-	wait(cpu_time - sc_time_stamp());
+	wait(quantum_time);
 	cpu_time = sc_time_stamp();
 	quantum_time = SC_ZERO_TIME;
 }
@@ -231,19 +239,18 @@ Sync()
 void 
 ARM926EJS :: 
 BusSynchronize() {
-	quantum_time += 
-		(((cpu_time / bus_cycle_time) + 1) * bus_cycle_time) -
-		cpu_time;
+	// Note: this needs to be better tested, but in order to avoid 
+	//   multiplications and divisions with sc_time we do a loop expecting
+	//   it will not loop too much. An idea of the operation to perform to
+	//   avoid the loop:
+	// quantum_time += 
+	//      ((((cpu_time + quantum_time) / bus_cycle_time) + 1) * bus_cycle_time) -
+	//      (cpu_time + quantum_time);while ( bus_time < (cpu_time + quantum_time) )
+	while ( bus_time < (cpu_time + quantum_time) )
+		bus_time += bus_cycle_time;
+	quantum_time = bus_time - cpu_time;
 	if (quantum_time > nice_time)
-	{
-		wait(quantum_time);
-		cpu_time = sc_time_stamp();
-		quantum_time = SC_ZERO_TIME;
-	}
-	else
-	{
-		cpu_time = sc_time_stamp() + quantum_time;
-	}
+		Sync();
 	
 	return;
 }
@@ -262,15 +269,9 @@ Run()
 	while (1)
 	{
 		StepInstruction();
-		cpu_time += time_per_instruction;
 		quantum_time += time_per_instruction;
 		if (quantum_time > nice_time)
-		{
-			sc_time old_time = sc_time_stamp();
-			wait(quantum_time);
-			quantum_time = SC_ZERO_TIME;
-			cpu_time = sc_time_stamp();
-		}
+			Sync();
 	}
 }
 
@@ -280,13 +281,14 @@ Reset()
 {
 }
 	
-/**
- * Virtual method implementation to handle backward path of transactions sent 
- * through the master_port
+/** Non blocking backward method
+ *
+ * Virtual method implementation to handle backward path of transactions 
+ * sent through the master_port
  *
  * @param trans the transcation to handle
- * @param phase the state of the transaction to handle (should only be END_REQ
- *        or BEGIN_RESP)
+ * @param phase the state of the transaction to handle (should only be 
+ *        END_REQ or BEGIN_RESP)
  * @param time  the relative time at which the call is being done
  *
  * @return      the synchronization status
@@ -387,11 +389,13 @@ nb_transport_bw (transaction_type &trans,
 	return ret;
 }
 
-/**
- * Virtual method implementation to handle backward path of dmi requests sent through the
- * master port.
- * We do not use the dmi option in our simulator, so this method is unnecessary. However,
- * we have to declare it in order to be able to compile the simulator.
+/** Invalidate direct memory pointer
+ *
+ * Virtual method implementation to handle backward path of dmi requests 
+ * sent through the master port.
+ * We do not use the dmi option in our simulator, so this method is 
+ * unnecessary. However, we have to declare it in order to be able to 
+ * compile the simulator.
  *
  * @param start_range the start address of the memory range to remove
  * @param end_range   the end address of the memory range to remove
@@ -401,6 +405,28 @@ ARM926EJS ::
 invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) 
 {
 	// nothing to do, we are not using dmi
+}
+	
+/** nIRQ port handler */
+void 
+ARM926EJS ::
+IRQHandler()
+{
+	if ( nirq )
+		exception &= ~unisim::component::cxx::processor::arm::exception::IRQ;
+	else
+		exception |= unisim::component::cxx::processor::arm::exception::IRQ;
+}
+
+/** nFIQ port handler */
+void 
+ARM926EJS ::
+FIQHandler()
+{
+	if ( nfiq )
+		exception &= ~unisim::component::cxx::processor::arm::exception::FIQ;
+	else
+		exception |= unisim::component::cxx::processor::arm::exception::FIQ;
 }
 	
 /**
@@ -511,9 +537,8 @@ PrRead(uint32_t addr,
 		
 	// 3 - send the transaction
 	master_socket->b_transport(*trans, quantum_time);
-	cpu_time = sc_time_stamp() + quantum_time;
-	if (quantum_time > nice_time)
-		wait(quantum_time);
+	if ( quantum_time > nice_time )
+		Sync();
 		
 	// 4 - release the transaction
 	trans->release();
@@ -545,9 +570,8 @@ PrWrite(uint32_t addr,
 
 	// 3 - send the transaction
 	master_socket->b_transport(*trans, quantum_time);
-	cpu_time = sc_time_stamp() + quantum_time;
-	if (quantum_time > nice_time)
-		wait(quantum_time);
+	if ( quantum_time > nice_time )
+		Sync();
 
 	// 4 - release the transaction
 	trans->release();

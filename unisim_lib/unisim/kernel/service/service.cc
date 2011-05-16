@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <limits>
 #if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
@@ -237,6 +238,37 @@ static std::string string_to_latex(const char *s, unsigned int cut = 0, const ch
 	return out;
 }
 
+bool ResolvePath(const std::string& prefix_dir,
+		const std::string& suffix_dir,
+		std::string& out_dir) 
+{
+	std::string unresolved_dir = prefix_dir;
+	unresolved_dir += '/';
+	unresolved_dir += suffix_dir;
+	char resolved_dir_buf[PATH_MAX + 1];
+
+#if defined(linux) || defined(__APPLE_CC__)
+	if ( realpath(unresolved_dir.c_str(), 
+				resolved_dir_buf) )
+	{
+		out_dir = resolved_dir_buf;
+		return true;
+	}
+#elif defined(WIN32)
+	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
+			PATH_MAX + 1, 
+			resolved_dir_buf, 
+			0);
+	if(length > 0)
+	{
+		resolved_dir_buf[length] = 0;
+		out_dir = resolved_dir_buf;
+		return true;
+	}
+#endif
+	return false;
+}
+
 //=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
@@ -254,7 +286,7 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	, is_mutable(true)
 	, is_visible(true)
 	, is_serializable(true)
-	, notifiable_list()
+	, listener_list()
 {
 	if(_owner)
 	{
@@ -276,7 +308,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 	, is_mutable(true)
 	, is_visible(true)
 	, is_serializable(true)
-	, notifiable_list()
+	, listener_list()
 {
 	Simulator::simulator->Register(this);
 }
@@ -289,7 +321,7 @@ VariableBase()
 	, description()
 	, type(VAR_VOID)
 	, fmt(FMT_DEFAULT)
-	, notifiable_list()
+	, listener_list()
 {
 }
 
@@ -432,25 +464,25 @@ void VariableBase::SetSerializable(bool _is_serializable)
 	is_serializable = _is_serializable;
 }
 
-void VariableBase::SetNotify(VariableBase::Notifiable *notifiable)
+void VariableBase::AddListener(VariableBaseListener *listener)
 {
-	notifiable_list.push_back(notifiable);
-	notifiable_list.unique(); // remove doubles
+	listener_list.push_back(listener);
+	listener_list.unique(); // remove doubles
 }
 
-void VariableBase::RemoveNotify(VariableBase::Notifiable *notifiable)
+void VariableBase::RemoveListener(VariableBaseListener *listener)
 {
-	notifiable_list.remove(notifiable);
+	listener_list.remove(listener);
 }
 
-void VariableBase::Notify()
+void VariableBase::NotifyListeners()
 {
-	list<VariableBase::Notifiable *>::iterator iter;
+	list<VariableBaseListener *>::iterator iter;
 	if ( IsMutable() )
-		for ( iter = notifiable_list.begin();
-				iter != notifiable_list.end();
+		for ( iter = listener_list.begin();
+				iter != listener_list.end();
 				iter++)
-			(*iter)->VariableNotify(name.c_str());
+			(*iter)->VariableBaseNotify(this);
 }
 
 VariableBase::operator bool () const { return false; }
@@ -468,20 +500,20 @@ VariableBase::operator float () const { return (double) *this; }
 VariableBase::operator double () const { return 0.0; }
 VariableBase::operator string () const { return string(); }
 
-VariableBase& VariableBase::operator = (bool value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (bool value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (char value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (short value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (int value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (long value) { *this = (long long) value; return *this; }
-VariableBase& VariableBase::operator = (long long value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (long long value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned long long value) { return *this; }
 VariableBase& VariableBase::operator = (float value) { *this = (double) value; return *this; }
-VariableBase& VariableBase::operator = (double value) { Notify(); return *this; }
-VariableBase& VariableBase::operator = (const char *value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (double value) { NotifyListeners(); return *this; }
+VariableBase& VariableBase::operator = (const char *value) { NotifyListeners(); return *this; }
 
 VariableBase& VariableBase::operator [] (unsigned int index)
 {
@@ -594,7 +626,11 @@ template <class TYPE> Variable<TYPE>::operator string () const
 			sstr << "0x" << hex << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
-			sstr << dec << (unsigned long long) *storage;
+			sstr << dec;
+			if(std::numeric_limits<TYPE>::is_signed)
+				sstr << (long long) *storage;
+			else
+				sstr << (unsigned long long) *storage;
 			break;
 	}
 	return sstr.str();
@@ -604,7 +640,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
 	if ( IsMutable() )
 		*storage = value ? 1 : 0;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -612,7 +648,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
 	if ( IsMutable() )
 		*storage = value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -620,7 +656,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long lo
 {
 	if ( IsMutable() )
 		*storage = value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -628,7 +664,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
 	if ( IsMutable() )
 		*storage = (TYPE) value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -648,6 +684,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
@@ -662,6 +699,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = 0;
@@ -676,6 +714,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child;
 	childs[1] = 0;
 	childs[2] = 0;
@@ -1228,91 +1267,91 @@ template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<char>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<double>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -1326,7 +1365,7 @@ template <> VariableBase& Variable<string>::operator = (bool value)
 {
 	if ( IsMutable() )
 		*storage = value ? "true" : "false";
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (long long value)
@@ -1337,7 +1376,7 @@ template <> VariableBase& Variable<string>::operator = (long long value)
 		sstr << "0x" << hex << value;
 		*storage = sstr.str();
 	}
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (unsigned long long value)
@@ -1348,7 +1387,7 @@ template <> VariableBase& Variable<string>::operator = (unsigned long long value
 		sstr << "0x" << hex << value;
 		*storage = sstr.str();
 	}
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (double value)
@@ -1359,14 +1398,14 @@ template <> VariableBase& Variable<string>::operator = (double value)
 		sstr << value;
 		*storage = sstr.str();
 	}
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -1741,6 +1780,14 @@ void Object::SetDescription(const char *_description)
 }
 
 //=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+ServiceInterface::~ServiceInterface()
+{
+}
+
+//=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
 
@@ -1875,12 +1922,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, description()
 	, version()
     , license()
+    , schematic()
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
 	, var_description(0)
 	, var_version(0)
 	, var_license(0)
+	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
 	, command_line_options()
 	, objects()
@@ -1900,7 +1949,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
 	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
-	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory", "path"));
+	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory (absolute path)", "path"));
 	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
 	
 	if(LoadBuiltInConfig)
@@ -1940,6 +1989,11 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	var_license->SetMutable(false);
 	var_license->SetVisible(false);
 	var_license->SetSerializable(false);
+
+	var_schematic = new Parameter<string>("schematic", 0, schematic, "path to simulator schematic");
+	var_schematic->SetMutable(false);
+	var_schematic->SetVisible(false);
+	var_schematic->SetSerializable(false);
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
@@ -2043,28 +2097,33 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		}
 	}
 
-	if(GetBinPath(argv[0], bin_dir, program_binary))
+	if ( !has_share_data_dir_hint )
 	{
-		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
-
-		if(has_share_data_dir_hint ?
-				GetSharePath(bin_dir, shared_data_dir, shared_data_dir_hint) :
-				GetSharePath(bin_dir, shared_data_dir))
+		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+			//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+
+			if ( GetSharePath(bin_dir, shared_data_dir) )
+			{
+				//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			}
+			else
+			{
+				warn_get_share_path = true;
+			}
 		}
 		else
 		{
+			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
 	}
 	else
 	{
-		warn_get_bin_path = true;
-		warn_get_share_path = true;
+		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
+			warn_get_share_path = true;
 	}
-
 	// parse command line arguments
 	// int state = 0;
 	// char **arg;
@@ -2269,6 +2328,11 @@ Simulator::~Simulator()
 		delete var_license;
 	}
 	
+	if(var_schematic)
+	{
+		delete var_schematic;
+	}
+
 	if(var_description)
 	{
 		delete var_description;
@@ -2486,6 +2550,8 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			break;
 	}*/
 	
+	unsigned int max_name_column_width = 64;
+	unsigned int max_value_column_width = 32;
 	unsigned int max_variable_name_length = 0;
 	unsigned int max_variable_value_length = 0;
 	
@@ -2507,6 +2573,9 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			if(variable_value_length > max_variable_value_length) max_variable_value_length = variable_value_length;
 		}
 	}
+	
+	if(max_variable_name_length < max_name_column_width) max_name_column_width = max_variable_name_length;
+	if(max_variable_value_length < max_value_column_width) max_value_column_width = max_variable_value_length;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -2521,10 +2590,16 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 //			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
-			sstr_name.width(max_variable_name_length);
+			if(strlen(name) <= max_name_column_width)
+			{
+				sstr_name.width(max_name_column_width);
+			}
 			sstr_name.setf(std::ios::left);
 			sstr_name << name;
-			sstr_value.width(max_variable_value_length);
+			if(value.length() <= max_value_column_width)
+			{
+				sstr_value.width(max_value_column_width);
+			}
 			sstr_value.setf(std::ios::left);
 			sstr_value << value;
 			os << sstr_name.str() << " " << sstr_value.str();
@@ -3072,36 +3147,40 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	return false;
 }
 
-bool Simulator::GetSharePath(const std::string& bin_dir,
-		std::string& out_share_dir,
-		const std::string& share_dir_relative_path) const
+/* bool Simulator::ResolvePath(const std::string& prefix_dir,
+		const std::string& suffix_dir,
+		std::string& out_dir) const
 {
-	std::string unresolved_shared_data_dir = bin_dir;
-	unresolved_shared_data_dir += '/';
-	unresolved_shared_data_dir += share_dir_relative_path;
-	char resolved_shared_data_dir_buf[PATH_MAX + 1];
+	std::string unresolved_dir = prefix_dir;
+	unresolved_dir += '/';
+	unresolved_dir += suffix_dir;
+	char resolved_dir_buf[PATH_MAX + 1];
 
 #if defined(linux) || defined(__APPLE_CC__)
-	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
+	if ( realpath(unresolved_dir.c_str(), 
+				resolved_dir_buf) )
 	{
-		out_share_dir = resolved_shared_data_dir_buf;
+		out_dir = resolved_dir_buf;
 		return true;
 	}
 #elif defined(WIN32)
-	DWORD length = GetFullPathName(unresolved_shared_data_dir.c_str(), PATH_MAX + 1, resolved_shared_data_dir_buf, 0);
+	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
+			PATH_MAX + 1, 
+			resolved_dir_buf, 
+			0);
 	if(length > 0)
 	{
-		resolved_shared_data_dir_buf[length] = 0;
-		out_share_dir = resolved_shared_data_dir_buf;
+		resolved_dir_buf[length] = 0;
+		out_dir = resolved_dir_buf;
 		return true;
 	}
 #endif
 	return false;
-}
+} */
 
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
-	return GetSharePath(bin_dir, out_share_dir, string(BIN_TO_SHARED_DATA_PATH));
+	return ResolvePath(bin_dir, string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
 }
 
 string Simulator::SearchSharedDataFile(const char *filename) const
@@ -3257,6 +3336,16 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	os << "\\section{Simulated configuration}" << endl;
 	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
+	
+	if(!schematic.empty())
+	{
+		os << "\\begin{figure}[!ht]" << endl;
+		os << "\t\\begin{center}" << endl;
+		os << "\t\t\\includegraphics[width=\\textwidth]{" << schematic << "}" << endl;
+		os << "\t\\end{center}" << endl;
+		os << "\t\\caption{" << program_name << " simulator schematic.}" << endl;
+		os << "\\end{figure}" << endl;
+	}
 	
 	os << "\\noindent The " << string_to_latex(program_name.c_str()) << " simulator is composed of the following modules and services:" << endl;
 	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << endl;

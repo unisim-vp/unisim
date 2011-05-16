@@ -56,16 +56,16 @@ public:
 	ServiceExport<TrapReporting> trap_reporting_export;
 
 	TrapHandlerIdentifier(int id,
-			TrapHandlerIdentifierInterface *interface,
+			TrapHandlerIdentifierInterface *intf,
 			const char *name,
 			Object *parent = 0);
 	virtual ~TrapHandlerIdentifier();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	int id;
-	TrapHandlerIdentifierInterface *interface;
+	TrapHandlerIdentifierInterface *intf;
 
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);

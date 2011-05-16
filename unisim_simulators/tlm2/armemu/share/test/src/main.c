@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/utsname.h>
 
 void uname_test()
@@ -47,7 +48,7 @@ void rec_fibonnaci_test()
 "***********************************************************************\n"
 );
 	printf(
-"START TEST: 'recursive fibonnaci' system call translation *************\n"
+"START TEST: 'recursive fibonnaci' *************************************\n"
 );
 	printf("Computing fibonnaci of %d recursively.\n", goal);
 	printf("Progress: ");
@@ -55,12 +56,78 @@ void rec_fibonnaci_test()
 	printf("\n");
 	printf("Fibonnaci(%d) = %d\n", goal, result);
 	printf(
-"END TEST: 'recursive fibonnaci' system call translation ****************\n"
+"END TEST: 'recursive fibonnaci' ***************************************\n"
 );
 	printf(
-"************************************************************************\n"
+"***********************************************************************\n"
 );
 
+}
+
+void matrix_test()
+{
+	unsigned long long int **matrix_a;
+	int i, j, k;
+	unsigned long long int sum;
+	unsigned int size = 200;
+
+	printf(
+"***********************************************************************\n"
+);
+	printf(
+"START TEST: 'matrix test' *********************************************\n"
+);
+
+	printf("Initializing matrix");
+	matrix_a = (unsigned long long int **)malloc(sizeof(unsigned long long int) * size);
+	for ( i = 0; i < size; i++ )
+	{
+		matrix_a[i] = (unsigned long long int *)malloc(sizeof(unsigned long long int) * size);
+		for ( j = 0; j < size; j++ )
+		{
+			matrix_a[i][j] = 0;
+		}
+		printf(".");
+	}
+	matrix_a[0][0] = 1;
+	printf("\n");
+	
+
+	printf("Computing result");
+	for ( i = 0; i < size; i++ )
+	{
+		for ( j = 0; j < size; j++ )
+		{
+			sum = 0;
+			for ( k = 1; k < i; k++ )
+			{
+				sum += matrix_a[k][j];
+			}
+			for ( k = 1; k < j; k++ )
+			{
+				sum += matrix_a[i][k];
+			}
+			if ( (i != 0) || (j != 0) )
+				matrix_a[i][j] = sum;
+		}
+		printf(".");
+		fflush(stdout);
+	}
+	printf("\n");
+	printf("Releasing matrix");
+	for ( i = 0; i < size; i++ )
+	{
+		free(matrix_a[i]);
+		printf(".");
+	}
+	free(matrix_a);
+	printf("\n");
+	printf(
+"END TEST: 'matrix test' ***********************************************\n"
+);
+	printf(
+"***********************************************************************\n"
+);
 }
 
 int main(int argc, char *argv[])
@@ -79,6 +146,10 @@ int main(int argc, char *argv[])
 
 	rec_fibonnaci_test();
 	printf("\n");
+
+	matrix_test();
+	printf("\n");
+
 	printf(
 "End of ARMEmu simulator selftest ======================================\n"
 );

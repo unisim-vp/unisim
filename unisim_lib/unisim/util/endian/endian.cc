@@ -42,7 +42,6 @@ namespace service {
 using unisim::util::endian::endian_type;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::E_BIG_ENDIAN;
-//  namespace full_system::memories::endian_type;
 
 //   template <> Variable<endian_type>::Variable(const char *_name, Configurable *_configurable, endian_type& _storage) :
 //     VariableBase(_name, _configurable), storage(&_storage)

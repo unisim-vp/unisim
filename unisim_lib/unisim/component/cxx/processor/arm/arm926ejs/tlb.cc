@@ -47,8 +47,6 @@
 using namespace std;
 #endif
 
-using unisim::service::interfaces::CachePowerEstimator;
-using unisim::service::interfaces::PowerMode;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using std::endl;
@@ -73,42 +71,32 @@ namespace arm926ejs {
 TLB::
 TLB(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::CachePowerEstimator>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::PowerMode>(name,  parent)
 	, power_estimator_import("power-estimator-import", this)
 	, power_mode_import("power-mode-import", this)
-	, accesses(0)
 	, read_accesses(0)
 	, write_accesses(0)
-	, hits(0)
 	, read_hits(0)
-	, write_hits(0)
 	, logger(*this)
 	, rand(1, -1, rand.Max, rand.Min)
 	, stat_read_accesses("read-accesses", this,
 			read_accesses,
-			"Number of read accesses to the cache.")
+			"Number of read accesses to the TLB.")
 	, stat_write_accesses("write-accesses", this,
 			write_accesses,
-			"Number of write accesses to the cache.")
+			"Number of write accesses to the TLB.")
 	, form_accesses("accesses", this,
-			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
+			unisim::kernel::service::Formula<uint64_t>::OP_ADD,
 			&stat_read_accesses, &stat_write_accesses, 0,
-			"Number of accesses to the cache.")
+			"Number of accesses to the TLB.")
 	, stat_read_hits("read-hits", this,
 			read_hits,
-			"Number of read hit accesses to the cache.")
-	, stat_write_hits("write-hits", this,
-			write_hits,
-			"Number of write hit accesses to the cache.")
-	, form_hits("hits", this,
-			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
-			&stat_read_hits, &stat_write_hits, 0,
-			"Number of hit accesses to the cache.")
-	, form_hit_rate("hit-rate", this,
+			"Number of read hit accesses to the TLB.")
+	, form_hit_rate("read-hit-rate", this,
 			unisim::kernel::service::Formula<double>::OP_DIV,
-			&form_hits, &form_accesses, 0,
-			"Cache hit rate.")
+			&stat_read_hits, &stat_read_accesses, 0,
+			"TLB hit rate.")
 {
 	for (uint32_t set = 0; set < m_sets_; set++)
 	{
@@ -118,6 +106,7 @@ TLB(const char *name, unisim::kernel::service::Object *parent)
 			m_data[set][way] = 0;
 			m_valid[set][way] = false;
 		}
+		m_last_accessed_way[set] = 0;
 		m_replacement_history[set] = 0;
 	}
 	stat_read_accesses.SetFormat(
@@ -128,9 +117,7 @@ TLB(const char *name, unisim::kernel::service::Object *parent)
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_read_hits.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_write_hits.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	form_hits.SetFormat(
+	form_hit_rate.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
@@ -142,7 +129,7 @@ TLB::
 
 bool
 TLB::
-Setup()
+BeginSetup()
 {
 	return true;
 }
@@ -188,20 +175,32 @@ GetSet(uint32_t addr) const
  */
 bool 
 TLB::
-GetWay(uint32_t tag, uint32_t set, uint32_t *way) const
+GetWay(uint32_t tag, uint32_t set, uint32_t *way)
 {
 	bool found = false;
+	uint32_t current_way = 0;
 
-	for ( unsigned int i = 0; !false && (i < m_associativity_); i++ )
+	current_way = m_last_accessed_way[set];
+	if ( (m_tag[set][current_way] == tag) && m_valid[set][current_way] )
 	{
-		if ( m_tag[set][i] == tag )
-		{
-			*way = i;
-			found = true;
-		}
+		*way = current_way;
+		return true;
 	}
 
-	return found;
+	current_way = 0;
+	while (current_way < m_associativity_)
+	{
+		found = (m_tag[set][current_way] == tag) && m_valid[set][current_way];
+		if ( found )
+		{
+			*way = current_way;
+			m_last_accessed_way[set] = current_way;
+			return true;
+		}
+		current_way++;
+	}
+	*way = 0;
+	return false;
 }
 
 /** Get a new way where a new entry can be placed.

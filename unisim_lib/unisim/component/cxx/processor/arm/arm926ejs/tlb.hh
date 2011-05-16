@@ -79,7 +79,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 	/** Cache power estimator service import. */
 	unisim::kernel::service::ServiceImport<
@@ -112,7 +112,7 @@ public:
 	 * @param way the way in which the tag was found
 	 * @return true if found, false otherwise
 	 */
-	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way) const;
+	bool GetWay(uint32_t tag, uint32_t set, uint32_t *way);
 	/** Get a new way where a new entry can be placed.
 	 *
 	 * @param set the set to which the entry should be placed
@@ -146,20 +146,14 @@ public:
 			uint32_t data,
 			uint32_t valid);
 
-private:
-	/** Cache access counter. */
-	uint32_t accesses;
-	/** Cache read access counter. */
-	uint32_t read_accesses;
-	/** Cache write access counter. */
-	uint32_t write_accesses;
-	/** Cache hit access counter. */
-	uint32_t hits;
-	/** Cache read hit access counter. */
-	uint32_t read_hits;
-	/** Cache write hit access counter. */
-	uint32_t write_hits;
+	/** Read access counter. */
+	uint64_t read_accesses;
+	/** Write access counter. */
+	uint64_t write_accesses;
+	/** Read hit access counter. */
+	uint64_t read_hits;
 
+private:
 	/** Unisim logging services. */
 	unisim::kernel::logger::Logger logger;
 	
@@ -176,6 +170,7 @@ private:
 	uint32_t m_tag_shift;
 	uint32_t m_set_mask;
 	uint32_t m_tag[m_sets_][m_associativity_];
+	uint32_t m_last_accessed_way[m_sets_];
 	uint32_t m_data[m_sets_][m_associativity_];
 	uint8_t m_valid[m_sets_][m_associativity_];
 	uint32_t m_replacement_history[m_sets_];
@@ -183,23 +178,17 @@ private:
 	/** UNISIM Statistic of the number of read accesses to the 
 	 * cache.
 	 */
-	unisim::kernel::service::Statistic<uint32_t> stat_read_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_read_accesses;
 	/** UNISIM Statistic of the number of write accesses to the 
 	 * cache.
 	 */
-	unisim::kernel::service::Statistic<uint32_t> stat_write_accesses;
+	unisim::kernel::service::Statistic<uint64_t> stat_write_accesses;
 	/** UNISIM Formula of the number of accesses to the cache.
 	 */
-	unisim::kernel::service::Formula<uint32_t> form_accesses;
+	unisim::kernel::service::Formula<uint64_t> form_accesses;
 	/** UNISIM Statistic of the number of read hits to the cache.
 	 */
-	unisim::kernel::service::Statistic<uint32_t> stat_read_hits;
-	/** UNISIM Statistic of the number of write hits to the cache.
-	 */
-	unisim::kernel::service::Statistic<uint32_t> stat_write_hits;
-	/** UNISIM Formula of the number of hits to the cache.
-	 */
-	unisim::kernel::service::Formula<uint32_t> form_hits;
+	unisim::kernel::service::Statistic<uint64_t> stat_read_hits;
 	/** UNISIM Formula for the hit rate of the cache.
 	 */
 	unisim::kernel::service::Formula<double> form_hit_rate;

@@ -35,15 +35,15 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_POWER_MODE_HH__
 #define __UNISIM_SERVICE_INTERFACES_POWER_MODE_HH__
 
+#include <unisim/kernel/service/service.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class PowerMode
+class PowerMode : public unisim::kernel::service::ServiceInterface
 {
 public:
-	PowerMode() {}
-	virtual ~PowerMode() {}
 	virtual void SetPowerMode(unsigned int cycle_time, unsigned int voltage) = 0;	// in ps/mV
 	virtual unsigned int GetMinCycleTime() = 0; // in ps
 	virtual unsigned int GetDefaultVoltage() = 0; // in mV

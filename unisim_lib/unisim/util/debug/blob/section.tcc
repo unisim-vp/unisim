@@ -73,14 +73,20 @@ Section<MEMORY_ADDR>::Section(const Section<MEMORY_ADDR>& section)
 	refcount = new unsigned int();
 	*refcount = 0;
 
-	data = malloc(size);
-	memcpy(data, section.data, size);
+	if(section.data)
+	{
+		data = malloc(size);
+		memcpy(data, section.data, size);
+	}
 }
 
 template <class MEMORY_ADDR>
 Section<MEMORY_ADDR>::~Section()
 {
-	free(data);
+	if(data)
+	{
+		free(data);
+	}
 	delete refcount;
 }
 

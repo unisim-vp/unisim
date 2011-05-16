@@ -176,7 +176,7 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_EXTERNAL_INPUT));
 
-	ResetIRQ(CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT);
+	//ResetIRQ(CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
@@ -211,7 +211,7 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_CRITICAL_INPUT));
 
-	ResetIRQ(CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT);
+	//ResetIRQ(CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{

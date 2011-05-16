@@ -26,6 +26,7 @@ if ( NOT UNISIM__SERVICE__LOADER__COFF_LOADER_DEFINED )
 		unisim/service/interfaces/memory
 		unisim/service/interfaces/loader
 		unisim/service/interfaces/symbol_table_lookup
+		unisim/service/interfaces/blob
 		unisim/util/endian
 		unisim/util/debug
 		unisim/kernel/service

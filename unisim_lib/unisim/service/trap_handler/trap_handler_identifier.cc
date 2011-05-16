@@ -51,16 +51,16 @@ TrapHandlerIdentifier::TrapHandlerIdentifier(int _id,
 	, Service<TrapReporting>(name, parent)
 	, trap_reporting_export("trap_reporting_import", this)
 	, id(_id)
-	, interface(_interface)
+	, intf(_interface)
 	, logger(*this)
 {}
 
-TrapHandlerIdentifier::~TrapHandlerIdentifier() { id = 0; interface = 0; }
+TrapHandlerIdentifier::~TrapHandlerIdentifier() { id = 0; intf = 0; }
 
 bool
-TrapHandlerIdentifier::Setup()
+TrapHandlerIdentifier::BeginSetup()
 {
-	if ( interface == 0 )
+	if ( intf == 0 )
 	{
 		logger << DebugError
 				<< "Could not initialize trap handler identifier because no"
@@ -75,28 +75,28 @@ void
 TrapHandlerIdentifier::
 ReportTrap()
 {
-	interface->ReportTrap(id);
+	intf->ReportTrap(id);
 }
 
 void
 TrapHandlerIdentifier::
 ReportTrap(const unisim::kernel::service::Object &obj)
 {
-	interface->ReportTrap(id, obj);
+	intf->ReportTrap(id, obj);
 }
 
 void
 TrapHandlerIdentifier::ReportTrap(const unisim::kernel::service::Object &obj,
 						const std::string &str)
 {
-	interface->ReportTrap(id, obj, str);
+	intf->ReportTrap(id, obj, str);
 }
 
 void
 TrapHandlerIdentifier::ReportTrap(const unisim::kernel::service::Object &obj,
 						const char *c_str)
 {
-	interface->ReportTrap(id, obj, c_str);
+	intf->ReportTrap(id, obj, c_str);
 }
 
 } // end of namespace trap_handler

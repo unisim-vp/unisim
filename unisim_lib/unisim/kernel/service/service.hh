@@ -118,6 +118,17 @@ template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
 //=============================================================================
+//=                          VariableBaseListener                             =
+//=============================================================================
+
+class VariableBaseListener
+{
+public:
+	virtual void VariableBaseNotify(const VariableBase *var) = 0;
+	virtual ~VariableBaseListener() {};
+};
+
+//=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
 
@@ -193,15 +204,9 @@ public:
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
 
-	class Notifiable
-	{
-	public:
-		virtual void VariableNotify(const char *name) = 0;
-		virtual ~Notifiable() {};
-	};
-	void SetNotify(Notifiable *notifiable);
-	void RemoveNotify(Notifiable *notifiable);
- 	void Notify();
+	void AddListener(VariableBaseListener *listener);
+	void RemoveListener(VariableBaseListener *listener);
+ 	void NotifyListeners();
 
 private:
 	string name;
@@ -215,7 +220,7 @@ private:
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
-	list<Notifiable *> notifiable_list;
+	list<VariableBaseListener *> listener_list;
 };
 
 //=============================================================================
@@ -271,13 +276,14 @@ public:
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
-	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir, const std::string& share_dir_relative_path) const;
 	string SearchSharedDataFile(const char *filename) const;
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
+	virtual double GetSimTime()	{ return 0;	}
+
 	bool IsWarningEnabled() const;
-	
+
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -307,12 +313,14 @@ private:
 	string description;
 	string version;
 	string license;
+	string schematic;
 	Parameter<string> *var_program_name;
 	Parameter<string> *var_authors;
 	Parameter<string> *var_copyright;
 	Parameter<string> *var_description;
 	Parameter<string> *var_version;
 	Parameter<string> *var_license;
+	Parameter<string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
 	
 	void Version(ostream& os) const;
@@ -749,6 +757,16 @@ private:
 };
 
 //=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+class ServiceInterface
+{
+public:
+	virtual ~ServiceInterface();
+};
+
+//=============================================================================
 //=                            Service<SERVICE_IF>                            =
 //=============================================================================
 
@@ -930,7 +948,11 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
-	ServiceImport<SERVICE_IF>::DisconnectService();
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceImport()" << endl;
+#endif
+	//ServiceImport<SERVICE_IF>::DisconnectService();
+	ServiceImport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1069,7 +1091,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 	{
 		if(service)
 		{
-			service->OnDisconnect();
+			//service->OnDisconnect(); // Gilles: That's dangerous
 #ifdef DEBUG_SERVICE
 			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
 #endif
@@ -1105,9 +1127,24 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 			if(*import_iter == this)
 			{
 				alias_import->actual_imports.erase(import_iter);
-				this->alias_import = 0;
+				break;
 			}
 		}
+		alias_import = 0;
+	}
+
+	if(!actual_imports.empty())
+	{
+		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	
+		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
+		{
+			if((*import_iter)->alias_import == this)
+			{
+				(*import_iter)->alias_import = 0;
+			}
+		}
+		actual_imports.clear();
 	}
 
 	if(srv_export)
@@ -1245,7 +1282,11 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
-	ServiceExport<SERVICE_IF>::DisconnectClient();
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceExport()" << endl;
+#endif
+	//ServiceExport<SERVICE_IF>::DisconnectClient();
+	ServiceExport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1354,6 +1395,21 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 #endif
 
 	DisconnectClient();
+	
+	if(actual_export)
+	{
+		typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	
+		for(export_iter = actual_export->alias_exports.begin(); export_iter != actual_export->alias_exports.end(); export_iter++)
+		{
+			if(*export_iter == this)
+			{
+				actual_export->alias_exports.erase(export_iter);
+				break;
+			}
+		}
+		actual_export = 0;
+	}
 
 	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
@@ -1425,7 +1481,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 
 	if(client)
 	{
-		client->OnDisconnect();
+		//client->OnDisconnect(); // Gilles: that's dangerous
 #ifdef DEBUG_SERVICE
 		cerr << GetName() << ": Unresolving client " << client->GetName() << endl;
 #endif

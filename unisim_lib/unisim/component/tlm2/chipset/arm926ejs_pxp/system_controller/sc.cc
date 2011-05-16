@@ -46,6 +46,10 @@ namespace chipset {
 namespace arm926ejs_pxp {
 namespace system_controller {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using unisim::util::endian::Host2LittleEndian;
@@ -55,6 +59,11 @@ SystemController ::
 SystemController(const sc_module_name &name, Object *parent)
 	: unisim::kernel::service::Object(name, parent)
 	, sc_module(name)
+	, refclk_out_port("refclk_out_port")
+	, timclken0_out_port("timclken0_out_port")
+	, timclken1_out_port("timclken1_out_port")
+	, timclken2_out_port("timclken2_out_port")
+	, timclken3_out_port("timclken3_out_port")
 	, bus_target_socket("bus_target_socket")
 	, base_addr(0)
 	, param_base_addr("base-addr", this, base_addr,
@@ -65,6 +74,9 @@ SystemController(const sc_module_name &name, Object *parent)
 	, timclk(1000000)
 	, param_timclk("timclk", this, timclk,
 			"Timer module clock (TIMCLK) period in picoseconds.")
+	, verbose(0)
+	, param_verbose("verbose", this, verbose,
+			"Verbose (0 no verbose, different verbose).")
 	, logger(*this)
 {
 	bus_target_socket.register_nb_transport_fw(this,
@@ -89,10 +101,13 @@ SystemController ::
 
 bool 
 SystemController::
-Setup()
+BeginSetup()
 {
-	refclk_out_port = refclk;
-	timclken0_out_port = refclk;
+	refclk_out_port.initialize(refclk);
+	timclken0_out_port.initialize(refclk);
+	timclken1_out_port.initialize(refclk);
+	timclken2_out_port.initialize(refclk);
+	timclken3_out_port.initialize(refclk);
 	return true;
 }
 
@@ -121,19 +136,10 @@ bus_target_b_transport(transaction_type &trans,
 	bool is_read = trans.is_read();
 	bool handled = false;
 
-	logger << DebugError
-		<< (is_read ? "Reading" : "Writing") << " 0x" 
-		<< std::hex << addr
-		<< " (0x"
-		<< trans.get_address() << std::dec
-		<< ") of " << size << " bits"
-		<< EndDebugError;
-
 	if ( is_read )
 	{
 		handled = true;
 		memcpy(data, &regs[addr], size);
-		trans.set_response_status(tlm::TLM_OK_RESPONSE);
 	}
 	else // writing
 	{
@@ -150,15 +156,12 @@ bus_target_b_transport(transaction_type &trans,
 			uint32_t unmod_value = new_value;
 			new_value = (new_value & ~0xff000ef8UL) | 
 				(prev_value & 0xff000ef8UL);
-			logger << DebugError
-				<< "Writing 0x"
-				<< std::hex << new_value
-				<< " (previous value 0x"
-				<< prev_value
-				<< ", received 0x"
-				<< unmod_value << std::dec
-				<< ")"
-				<< EndDebugError;
+			if ( unmod_value != new_value )
+				logger << DebugWarning
+					<< "Trying to modify system controller SCCTRL register"
+					<< " with 0x" << std::hex << unmod_value << ", fixed the"
+					<< " value to 0x" << new_value << std::dec
+					<< EndDebugWarning;
 			// update timers if necessary
 			bool timeren3sel = false;
 			bool timeren2sel = false;
@@ -168,40 +171,76 @@ bus_target_b_transport(transaction_type &trans,
 			if ( new_value & (((uint32_t)1) << 19) ) timeren2sel = true;
 			if ( new_value & (((uint32_t)1) << 17) ) timeren1sel = true;
 			if ( new_value & (((uint32_t)1) << 15) ) timeren0sel = true;
-			// TODO:
-			// if ( timeren3sel ) timclken3_out_port = timclk;
-			// else timclken3_out_port = refclk;
-			// if ( timeren2sel ) timclken2_out_port = timclk;
-			// else timclken2_out_port = refclk;
-			// END TODO
+			if ( VERBOSE(V0, V_STATUS) )
+			{
+				logger << DebugInfo
+					<< "Setting timers enable selection to:" << std::endl
+					<< " - timeren0sel = " << timeren0sel
+					<< " (" << (timeren0sel ? timclk : refclk) << ")" 
+					<< std::endl
+					<< " - timeren1sel = " << timeren1sel
+					<< " (" << (timeren1sel ? timclk : refclk) << ")" 
+					<< std::endl
+					<< " - timeren2sel = " << timeren2sel
+					<< " (" << (timeren2sel ? timclk : refclk) << ")" 
+					<< std::endl
+					<< " - timeren3sel = " << timeren3sel
+					<< " (" << (timeren3sel ? timclk : refclk) << ")" 
+					<< EndDebugInfo;
+			}
+			if ( timeren3sel ) timclken3_out_port = timclk;
+			else timclken3_out_port = refclk;
+			if ( timeren2sel ) timclken2_out_port = timclk;
+			else timclken2_out_port = refclk;
 			if ( timeren1sel ) timclken1_out_port = timclk;
 			else timclken1_out_port = refclk;
 			if ( timeren0sel ) timclken0_out_port = timclk;
 			else timclken0_out_port = refclk;
-			logger << DebugError
-				<< "timeren0sel = " << timeren0sel << std::endl
-				<< "timeren1sel = " << timeren1sel << std::endl
-				<< "timeren2sel = " << timeren2sel << std::endl
-				<< "timeren3sel = " << timeren3sel << std::endl
-				<< EndDebugError;
 			// store the new value in the register file
 			new_value = Host2LittleEndian(new_value);
 			memcpy(&regs[addr & ~(uint32_t)0x03], &new_value, 4);
 			trans.set_response_status(tlm::TLM_OK_RESPONSE);
 		}
-		else
-		{
-			logger << DebugError
-				<< "Writing 0x"
-				<< std::hex << new_value
-				<< " (previous value 0x"
-				<< prev_value << std::dec
-				<< ")"
-				<< EndDebugError;
-		}
 	}
+
+	// if not handled stop the simulation
 	if ( !handled )
-		assert("TODO" == 0);
+	{
+		logger << DebugError
+			<< "Access to system controller:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size;
+		if ( !is_read )
+		{
+			logger << std::endl
+				<< " - data =" << std::hex;
+			for ( unsigned int i = 0; i < size; i++ )
+				logger << " " << (unsigned int)data[i];
+			logger << std::dec;
+		}
+		logger << EndDebugError;
+		unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
+	}
+
+	// everything went fine, set the ok status response
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+
+	// any verbosity required?
+	if ( (is_read && VERBOSE(V0, V_READ)) ||
+			(!is_read && VERBOSE(V0, V_WRITE)) )
+	{
+		logger << DebugInfo
+			<< "Access to system controller:" << std::endl
+			<< " - read = " << is_read << std::endl
+			<< " - addr = 0x" << std::hex << addr << std::dec << std::endl
+			<< " - size = " << size << std::endl
+			<< " - data =" << std::hex;
+		for ( unsigned int i = 0; i < size; i++ )
+			logger << " " << (unsigned int)data[i];
+		logger << std::dec
+			<< EndDebugInfo;
+	}
 }
 
 bool 

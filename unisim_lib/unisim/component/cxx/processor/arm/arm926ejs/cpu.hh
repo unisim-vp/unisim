@@ -55,7 +55,7 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
-// #include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include <string>
@@ -140,10 +140,14 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::SymbolTableLookup<uint64_t> > 
 		symbol_table_lookup_import;
-	/** Trap reporting service import. */
+	/** Instruction counter trap reporting service import. */
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting> 
 		instruction_counter_trap_reporting_import;
+	/** Exception trap reporting service import. */
+	unisim::kernel::service::ServiceImport<
+		unisim::service::interfaces::TrapReporting>
+		exception_trap_reporting_import;
 
 	//=====================================================================
 	//=                       Logger                                      =
@@ -171,13 +175,20 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	/** Object setup method.
+	/** Object begin setup method.
 	 * This method is required for all UNISIM objects and will be called during
-	 *   the setup phase.
+	 *   the begin setup phase.
 	 * 
 	 * @return true on success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	/** Object end setup method.
+	 * This method is required for all UNISIM objects and will be called during
+	 *   the end setup phase.
+	 * 
+	 * @return true on success, false otherwise
+	 */
+	virtual bool EndSetup();
 	/** Object disconnect method.
 	 * This method is called when this UNISIM object is disconnected from other
 	 *   UNISIM objects.
@@ -403,6 +414,23 @@ public:
 	 * @param reg the register to store the resulting read
 	 */
 	void Read32toGPRAligned(uint32_t address, uint32_t reg);
+	/** 32bits memory read into one of the user general purpose registers.
+	 * This method reads 32bits from memory and stores the result into
+	 *   the user general purpose register indicated by the input reg
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the user register to store the resulting read
+	 */
+	void Read32toUserGPR(uint32_t address, uint32_t reg);
+	/** 32bits aligned memory read into one of the user general purpose registers.
+	 * This method reads 32bits from memory and stores the result into
+	 *   the user general purpose register indicated by the input reg. Note that
+	 *   this read methods supposes that the address is 32bits aligned.
+	 * 
+	 * @param address the base address of the 32bits read
+	 * @param reg the user register to store the resulting read
+	 */
+	void Read32toUserGPRAligned(uint32_t address, uint32_t reg);
 	/** 16bits aligned memory read into one of the general purpose registers.
 	 * This method reads 16bits from memory and stores the result into
 	 *   the general purpose register indicated by the input reg. Note that this
@@ -565,10 +593,33 @@ public:
 	/* cp15 to cpu interface                           START      */
 	/**************************************************************/
 
+	/** Get caches info
+	 *
+	 */
+	void GetCacheInfo(bool &unified, 
+			uint32_t &isize, uint32_t &iassoc, uint32_t &ilen,
+			uint32_t &dsize, uint32_t &dassoc, uint32_t &dlen);
 	/** Drain write buffer.
 	 * Perform a memory barrier by draining the write buffer.
 	 */
 	void DrainWriteBuffer();
+	/** Invalidate ICache single entry using MVA
+	 *
+	 * Perform an invalidation of a single entry in the ICache using the
+	 *   given address in MVA format.
+	 *
+	 * @param mva the address to invalidate
+	 */
+	void InvalidateICacheSingleEntryWithMVA(uint32_t mva);
+	/** Clean DCache single entry using MVA
+	 *
+	 * Perform a clean of a single entry in the DCache using the given
+	 *   address in MVA format.
+	 *
+	 * @param mva the address to clean
+ 	 * @param invalidate true if the line needs to be also invalidated
+	 */
+	void CleanDCacheSingleEntryWithMVA(uint32_t mva, bool invalidate);
 	/** Invalidate the caches.
 	 * Perform a complete invalidation of the instruction cache and/or the 
 	 *   data cache.
@@ -626,11 +677,16 @@ protected:
 		unisim::component::cxx::processor::arm::arm926ejs::CPU>
 		thumb_decoder;
 
+	/** The exceptions that have occured */
+	uint32_t exception;
+
 	/** CP15 */
 	CP15 cp15;
 
 	/** Instruction counter */
 	uint64_t instruction_counter;
+	/** Current instruction address */
+	uint32_t cur_instruction_address;
 	
 	/** CPU cycle time in picoseconds.
 	 */
@@ -649,6 +705,9 @@ protected:
 	/** Trap when reaching the number of instructions indicated.
 	 */
 	uint64_t trap_on_instruction_counter;
+	/** Trap when handling an exception
+	 */
+	bool trap_on_exception;
 	
 	/** Indicates if the memory accesses require to be reported.
 	 */
@@ -656,7 +715,22 @@ protected:
 	/** Indicates if the finished instructions require to be reported.
 	 */
 	bool requires_finished_instruction_reporting;
-		
+
+	/************************************************************************/
+	/* Exception handling                                             START */
+	/************************************************************************/
+
+	/** Process exceptions
+	 *
+	 * Returns true if there is an exception to handle.
+	 * @return true if an exception handling begins
+	 */
+	bool HandleException();
+
+	/************************************************************************/
+	/* Exception handling                                               END */
+	/************************************************************************/
+
 	/************************************************************************/
 	/* UNISIM parameters, statistics and registers                    START */
 	/************************************************************************/
@@ -674,10 +748,18 @@ protected:
 	 */
 	unisim::kernel::service::Parameter<uint64_t> 
 		param_trap_on_instruction_counter;
+	/** UNISIM Parameter to set traps on exception.
+	 */
+	unisim::kernel::service::Parameter<bool> 
+		param_trap_on_exception;
+	
 	
 	/** UNISIM Statistic of the number of instructions executed.
 	 */
 	unisim::kernel::service::Statistic<uint64_t> stat_instruction_counter;
+	/** UNISIM Statistic with the address of the current instruction.
+	 */
+	unisim::kernel::service::Statistic<uint32_t> stat_cur_instruction_address;
 
 	/** UNISIM registers for the physical registers.
 	 */
@@ -734,6 +816,17 @@ protected:
 	/** Performs the load/stores present in the queue of memory operations.
 	 */
 	void PerformLoadStoreAccesses();
+	/** Check access permission and domain bits.
+	 *
+	 * @param is_read true if the access is a read
+	 * @param ap the access permission bits
+	 * @param domain the domain being used
+	 * 
+	 * @return true if correct, false otherwise
+	 */
+	bool CheckAccessPermission(bool is_read,
+			uint32_t ap,
+			uint32_t domain);
 	/** Translate address from MVA to physical address.
 	 *
 	 * @param mva the generated modified virtual address
@@ -741,6 +834,16 @@ protected:
 	 * @return true on success, false on error
 	 */
 	bool TranslateMVA(uint32_t mva, uint32_t &pa);
+	/** Get the TLB descriptor at the given Translation Table Base address.
+	 *
+	 * This method check the logical TLB for the given Translation Table 
+	 *   address, by accessing first the lockdown TLB, then the main TLB or 
+	 *   otherwise the memory TLB.
+	 *
+	 * @param ttb_addr the address on the Translation Table Base to look for
+	 * @param descriptor the found descriptor
+	 */
+	void GetTLBEntry(uint32_t ttb_addr, uint32_t &descriptor);
 	/** Translate address from VA to MVA and physical address.
 	 *
 	 * @param is_read the type of access (read/write)
@@ -794,6 +897,24 @@ protected:
 	 */
 	void PerformReadToPCUpdateTAccess(
 			unisim::component::cxx::processor::arm::MemoryOp *memop);
+	
+	/************************************************************************/
+	/* Memory statistics                                              START */
+	/************************************************************************/
+	
+	uint64_t num_data_prefetches;
+	uint64_t num_data_reads;
+	uint64_t num_data_writes;
+	uint64_t num_insn_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_prefetches;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_reads;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_data_writes;
+	unisim::kernel::service::Statistic<uint64_t> stat_num_insn_reads;
+
+	/************************************************************************/
+	/* Memory statistics                                                END */
+	/************************************************************************/
+
 };
 
 } // end of namespace arm926ejs

@@ -1,1 +1,1 @@
-A debug session using UNISIM Toolbox over UNISIM Star12X virtual platform
+A debug session using UNISIM Workbench over UNISIM Star12X virtual platform

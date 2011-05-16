@@ -46,7 +46,7 @@ Simulator ::
 Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, Simulator::DefaultConfiguration)
 #ifdef SIM_LIBRARY
-	, unisim::kernel::service::VariableBase::Notifiable()
+	, unisim::kernel::service::VariableBaseListener()
 	, unisim::service::trap_handler::ExternalTrapHandlerInterface()
 #endif // SIM_LIBRARY
 	, cpu(0)
@@ -60,6 +60,12 @@ Simulator(int argc, char **argv)
 	, linux_os(0)
 	, trap_handler(0)
 	, simulation_spent_time(0.0)
+#ifdef SIM_PIM_SUPPORT
+	, pim_server(0)
+	, enable_pim_server(false)
+	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	, gdb_server(0)
 	, enable_gdb_server(false)
@@ -88,7 +94,7 @@ Simulator(int argc, char **argv)
 	, formula_caches_total_power(0)
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 #ifdef SIM_LIBRARY
-	, notif_list()
+	, variable_base_listener_list()
 	, trap_handler_context(0)
 	, trap_handler_function(0)
 #endif // SIM_LIBRARY
@@ -103,6 +109,12 @@ Simulator(int argc, char **argv)
 	linux_loader = new LINUX_LOADER("linux-loader");
 	linux_os = new LINUX_OS("linux-os");
 	trap_handler = new TRAP_HANDLER("trap-handler");
+
+#ifdef SIM_PIM_SUPPORT
+	//  - PIM server
+	pim_server = enable_pim_server ? new PIM_SERVER("pim-server") : 0;
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	param_enable_gdb_server = new unisim::kernel::service::Parameter<bool>(
 			"enable-gdb-server", 0,
@@ -174,6 +186,10 @@ Simulator(int argc, char **argv)
 	// irq_master_stub->out_interrupt(cpu->in_irq);
 	// fiq_master_stub->out_interrupt(cpu->in_fiq);
 
+#ifdef SIM_PIM_SUPPORT
+	EnablePimServer();
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	EnableGdbServer();
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -188,13 +204,17 @@ Simulator(int argc, char **argv)
 	elf32_loader->memory_import >> memory->memory_export;
 	linux_loader->memory_import >> memory->memory_export;
 	linux_loader->loader_import >> elf32_loader->loader_export;
+	linux_loader->blob_import >> elf32_loader->blob_export;
 	cpu->linux_os_import >> linux_os->linux_os_export;
 	linux_os->memory_import >> cpu->memory_export;
 	linux_os->memory_injection_import >> cpu->memory_injection_export;
 	linux_os->registers_import >> cpu->registers_export;
 	linux_os->loader_import >> linux_loader->loader_export;
+	linux_os->blob_import >> linux_loader->blob_export;
 	// cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+#ifndef SIM_INLINE_DEBUGGER_SUPPORT
 	cpu->instruction_counter_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
+#endif
 	// cpu->irq_trap_reporting_import >> *trap_handler->trap_reporting_export[2];
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	// connecting power estimator
@@ -216,6 +236,10 @@ Simulator(int argc, char **argv)
 
 Simulator::~Simulator()
 {
+#ifdef SIM_PIM_SUPPORT
+	if (pim_server) { delete pim_server; pim_server = NULL; }
+#endif
+
 	if ( cpu ) delete cpu;
 	// if ( irq_master_stub ) delete irq_master_stub;
 	// if ( fiq_master_stub ) delete fiq_master_stub;
@@ -255,7 +279,7 @@ Run()
 #endif // !SIM_LIBRARY
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if ( ! inline_debugger )
 	{
@@ -316,7 +340,7 @@ Run(double time, sc_time_unit unit)
 	double time_start = host_time->GetTime();
 
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
 	if ( ! inline_debugger )
 	{
@@ -378,6 +402,7 @@ Simulator ::
 Stop(unisim::kernel::service::Object *object, int exit_status)
 {
 	sc_stop();
+	wait();
 }
 
 void
@@ -395,20 +420,22 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
 	sim->SetVariable("cpu.default-endianness",   "little-endian");
-	sim->SetVariable("cpu.cpu-cycle-time",       31250UL); // 32Mhz
-	sim->SetVariable("cpu.bus-cycle-time",       31250UL); // 32Mhz
+	sim->SetVariable("cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
+	sim->SetVariable("cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
 	sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
 	sim->SetVariable("cpu.dcache.size",          0x020000); // 128 KB
-	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
+	sim->SetVariable("cpu.nice-time",            "1 ms"); // 1ms
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
-	sim->SetVariable("memory.cycle-time",        1000000UL);
+	sim->SetVariable("memory.cycle-time",        "31250 ps");
+	sim->SetVariable("memory.read-latency",      "31250 ps");
+	sim->SetVariable("memory.write-latency",     "0 ps");
 	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
 	sim->SetVariable("linux-loader.endianness",  "little-endian");
 	sim->SetVariable("linux-loader.argc",        1);
 	sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
-	sim->SetVariable("linux-os.system",          "arm");
+	sim->SetVariable("linux-os.system",          "arm-eabi");
 	sim->SetVariable("linux-os.endianness",      "little-endian");
 	sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
 
@@ -419,6 +446,21 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 			"cpu-instruction-counter-trap-handler");
 	sim->SetVariable("trap-handler.trap-reporting-export-name[2]",
 			"cpu-irq-trap-handler");
+
+#ifdef SIM_PIM_SUPPORT
+	int gdb_server_tcp_port = 0;
+	const char *gdb_server_arch_filename = "gdb_server/gdb_armv5l.xml";
+
+	sim->SetVariable("enable-pim-server", false);
+
+	//  - PIM Server run-time configuration
+	sim->SetVariable("pim.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+	sim->SetVariable("pim.tcp-port", 1234);
+	sim->SetVariable("pim.filename", "pim.xml");
+	sim->SetVariable("pim-server.tcp-port", gdb_server_tcp_port);
+	sim->SetVariable("pim-server.architecture-description-filename", gdb_server_arch_filename);
+	sim->SetVariable("pim-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+#endif
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	sim->SetVariable("gdb-server.architecture-description-filename",
@@ -471,7 +513,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 
 bool
 Simulator::
-AddNotifiable (void *(*notif_function)(const char *), const char *var_name)
+AddVariableBaseListener(void *(*notif_function)(const char *), const char *var_name)
 {
 	return false;
 }
@@ -509,13 +551,38 @@ ExternalTrap (unsigned int id)
 
 void
 Simulator::
-VariableNotify(const char *name)
+VariableBaseNotify(const unisim::kernel::service::VariableBase *var)
 {
 	// use this function to check the variable that was notified
 	// NOTE: for the moment it is empty, but more to come :-P
 }
 
 #endif // SIM_LIBRARY
+
+#ifdef SIM_PIM_SUPPORT
+void
+Simulator::EnablePimServer()
+{
+	if (enable_pim_server)
+	{
+		// Connect pim-server to CPU
+
+//		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
+
+		pim_server->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+
+		cpu->debug_control_import >> pim_server->debug_control_export;
+		cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;
+
+		pim_server->disasm_import >> cpu->disasm_export;
+
+		pim_server->memory_import >> cpu->memory_export;
+		pim_server->registers_import >> cpu->registers_export;
+		pim_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+
+	}
+}
+#endif
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 void
@@ -545,6 +612,7 @@ EnableInlineDebugger()
 		// connect the inline debugger to other components
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
+		cpu->instruction_counter_trap_reporting_import >> inline_debugger->trap_reporting_export;
 		inline_debugger->disasm_import >> cpu->disasm_export;
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;

@@ -18,6 +18,7 @@
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::memory_injection</dep>
 			<dep>unisim::service::interfaces::registers</dep>
+			<dep>unisim::service::interfaces::blob</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::debug</dep>
 			<dep>stl_map</dep>

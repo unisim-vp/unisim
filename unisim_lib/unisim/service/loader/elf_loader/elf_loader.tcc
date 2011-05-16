@@ -56,7 +56,7 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent)
 	: Object(name, parent, "this service implements an ELF Loader")
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
-	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
@@ -127,6 +127,8 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load()
 {
+	if(!memory_import) return false;
+
 	if(!blob) return false;
 	
 	bool success = true;
@@ -136,7 +138,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	{
 		const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
 		
-		if((section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL) && (section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A))
+		if((section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL) &&
+		   (section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS) &&
+		   (section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A))
 		{
 			if(unlikely(verbose))
 			{
@@ -401,7 +405,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				logger << EndDebugInfo;
 			}
 
-			void *sh_data = sh_size ? calloc(sh_size + 1, 1) : 0; // Allocate one additional byte for zero-terminated strings
+			void *sh_data = (sh_size && (sh_type != SHT_NOBITS)) ? calloc(sh_size + 1, 1) : 0; // Allocate one additional byte for zero-terminated strings
 			
 			if((sh_type != SHT_NULL) && (sh_type != SHT_NOBITS))
 			{
@@ -593,7 +597,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::EndSetup()
 {
-	return Load();
+
+	if (memory_import) {
+		return Load();
+	}
+	return true;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

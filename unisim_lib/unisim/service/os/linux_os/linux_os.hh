@@ -92,25 +92,25 @@ using unisim::util::debug::Register;
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class LinuxOS :
 	public Service<unisim::service::interfaces::LinuxOS>,
-	public Service<unisim::service::interfaces::Loader<ADDRESS_TYPE> >,
+	public Service<unisim::service::interfaces::Loader>,
 	public Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >,
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<MemoryInjection<ADDRESS_TYPE> >,
 	public Client<Registers>,
-	public Client<Loader<ADDRESS_TYPE> >,
+	public Client<Loader>,
 	public Client<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
 {
 public:
     /* Exported services */
 	ServiceExport<unisim::service::interfaces::LinuxOS> linux_os_export;
-	ServiceExport<unisim::service::interfaces::Loader<ADDRESS_TYPE> > loader_export;
+	ServiceExport<unisim::service::interfaces::Loader> loader_export;
 	ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> > blob_export;
 
 	/* Imported services */
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
 	ServiceImport<MemoryInjection<ADDRESS_TYPE> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
-	ServiceImport<Loader<ADDRESS_TYPE> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<Blob<ADDRESS_TYPE> > blob_import;
 
     /* Constructor/Destructor */
@@ -142,12 +142,20 @@ private:
 	bool SetupLinuxOS();
 	bool ARMSetup();
 	bool PPCSetup();
+
+	/*
+	 * The following methods are just here for printf debugging purposes,
+	 * otherwise they are unused
+	 */
+	void DumpBlob();
+	void DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level);
 	
 	bool ReadMem(ADDRESS_TYPE, void *buffer, uint32_t size);
 	bool WriteMem(ADDRESS_TYPE, const void *buffer, uint32_t size);
 	
 	int GetSyscallNumber(int id);
 	int ARMGetSyscallNumber(int id);
+	int ARMEABIGetSyscallNumber(int id);
 	int PPCGetSyscallNumber(int id);
 	ADDRESS_TYPE GetMmapBase() const;
 	void SetMmapBase(ADDRESS_TYPE base);
@@ -157,9 +165,11 @@ private:
 	void SetBrkPoint(ADDRESS_TYPE brk_point);
 	PARAMETER_TYPE GetSystemCallParam(int id);
 	PARAMETER_TYPE ARMGetSystemCallParam(int id);
+	PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
 	PARAMETER_TYPE PPCGetSystemCallParam(int id);
 	void SetSystemCallStatus(int ret, bool error);
 	void ARMSetSystemCallStatus(int ret, bool error);
+	void ARMEABISetSystemCallStatus(int ret, bool error);
 	void PPCSetSystemCallStatus(int ret, bool error);
 	
 	endian_type GetEndianess();

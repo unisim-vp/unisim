@@ -47,8 +47,6 @@
 using namespace std;
 #endif
 
-using unisim::service::interfaces::CachePowerEstimator;
-using unisim::service::interfaces::PowerMode;
 using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 using std::endl;
@@ -73,16 +71,13 @@ namespace arm926ejs {
 LockdownTLB::
 LockdownTLB(const char *name, unisim::kernel::service::Object *parent) 
 	: unisim::kernel::service::Object(name, parent)
-	, Client<CachePowerEstimator>(name,  parent)
-	, Client<PowerMode>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::CachePowerEstimator>(name,  parent)
+	, unisim::kernel::service::Client<unisim::service::interfaces::PowerMode>(name,  parent)
 	, power_estimator_import("power-estimator-import", this)
 	, power_mode_import("power-mode-import", this)
-	, accesses(0)
 	, read_accesses(0)
 	, write_accesses(0)
-	, hits(0)
 	, read_hits(0)
-	, write_hits(0)
 	, logger(*this)
 	, rand(1, -1, rand.Max, rand.Min)
 	, stat_read_accesses("read-accesses", this,
@@ -92,22 +87,15 @@ LockdownTLB(const char *name, unisim::kernel::service::Object *parent)
 			write_accesses,
 			"Number of write accesses to the lockdown TLB.")
 	, form_accesses("accesses", this,
-			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
+			unisim::kernel::service::Formula<uint64_t>::OP_ADD,
 			&stat_read_accesses, &stat_write_accesses, 0,
 			"Number of accesses to the lockdown TLB.")
 	, stat_read_hits("read-hits", this,
 			read_hits,
 			"Number of read hit accesses to the lockdown TLB.")
-	, stat_write_hits("write-hits", this,
-			write_hits,
-			"Number of write hit accesses to the lockdown TLB.")
-	, form_hits("hits", this,
-			unisim::kernel::service::Formula<uint32_t>::OP_ADD,
-			&stat_read_hits, &stat_write_hits, 0,
-			"Number of hit accesses to the lockdown TLB.")
 	, form_hit_rate("hit-rate", this,
 			unisim::kernel::service::Formula<double>::OP_DIV,
-			&form_hits, &form_accesses, 0,
+			&stat_read_hits, &stat_read_accesses, 0,
 			"Lockdown TLB hit rate.")
 {
 	for (uint32_t way = 0; way < m_associativity_; way++)
@@ -126,9 +114,7 @@ LockdownTLB(const char *name, unisim::kernel::service::Object *parent)
 			unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_read_hits.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_write_hits.SetFormat(
-			unisim::kernel::service::VariableBase::FMT_DEC);
-	form_hits.SetFormat(
+	form_hit_rate.SetFormat(
 			unisim::kernel::service::VariableBase::FMT_DEC);
 }
 
@@ -140,7 +126,7 @@ LockdownTLB::
 
 bool
 LockdownTLB::
-Setup()
+BeginSetup()
 {
 	return true;
 }
@@ -167,7 +153,7 @@ GetWay(uint32_t tag, uint32_t *way) const
 			!found && (i < m_associativity_); 
 			i++ )
 	{
-		if ( m_tag[i] == tag )
+		if ( (m_tag[i] == tag) && GetValid(i) )
 		{
 			found = true;
 			*way = i;

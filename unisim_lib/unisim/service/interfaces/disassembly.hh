@@ -35,6 +35,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_DISASSEMBLY_HH__
 #define __UNISIM_SERVICE_INTERFACES_DISASSEMBLY_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <string>
 
 namespace unisim {
@@ -42,10 +43,9 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class Disassembly
+class Disassembly : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual ~Disassembly() {}
 	virtual std::string Disasm(ADDRESS addr, ADDRESS& next_addr) = 0;
 };
 

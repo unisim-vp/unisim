@@ -71,10 +71,18 @@
 #include "unisim/service/power/cache_power_estimator.hh"
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
+#ifdef SIM_PIM_SUPPORT
+#include <unisim/service/pim/pim.hh>
+#include <unisim/service/pim/pim_server.hh>
+
+using unisim::service::pim::PIM;
+using unisim::service::pim::PIMServer;
+#endif
+
 class Simulator
 	: public unisim::kernel::service::Simulator
 #ifdef SIM_LIBRARY
-	, public unisim::kernel::service::VariableBase::Notifiable
+	, public unisim::kernel::service::VariableBaseListener
 	, public unisim::service::trap_handler::ExternalTrapHandlerInterface
 #endif // SIM_LIBRARY
 {
@@ -87,7 +95,7 @@ public:
 	bool SimulationStarted() const;
 	bool SimulationFinished() const;
 #ifdef SIM_LIBRARY
-	bool AddNotifiable(void *(*notif_function)(const char *), const char *var_name);
+	bool AddVariableBaseListener(void *(*notif_function)(const char *), const char *var_name);
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
 	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
 #endif // SIM_LIBRARY
@@ -102,6 +110,11 @@ private:
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
 	typedef unisim::service::os::linux_os::linux_os_32::LinuxOS32 LINUX_OS;
 	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
+
+#ifdef SIM_PIM_SUPPORT
+	typedef unisim::service::pim::PIMServer<uint64_t> PIM_SERVER;
+#endif
+
 #ifdef SIM_GDB_SERVER_SUPPORT
 	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
 #endif // SIM_GDB_SERVER_SUPPORT
@@ -125,6 +138,28 @@ private:
 	TRAP_HANDLER *trap_handler;
 
 	double simulation_spent_time;
+
+#ifdef SIM_PIM_SUPPORT
+	bool enable_pim_server;
+	unisim::kernel::service::Parameter<bool> param_enable_pim_server;
+
+	// PIM server
+	unisim::service::pim::PIMServer<uint64_t> *pim_server;
+
+	void EnablePimServer();
+
+	virtual double GetSimTime()	{ if (time) { return time->GetTime(); } else { return 0; }	}
+
+public:
+	void GeneratePim() {
+		PIM *pim = new PIM("pim");
+		pim->GeneratePimFile();
+		if (pim) { delete pim; pim = NULL; }
+	};
+
+private:
+
+#endif // SIM_PIM_SUPPORT
 
 #ifdef SIM_GDB_SERVER_SUPPORT
 	GDB_SERVER *gdb_server;
@@ -156,8 +191,8 @@ private:
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
 #ifdef SIM_LIBRARY
-	std::map < std::string, std::vector<void * (*)(const char *)> * > notif_list;
-	virtual void VariableNotify(const char *name);
+	std::map < std::string, std::vector<void * (*)(const char *)> * > variable_base_listener_list;
+	virtual void VariableBaseNotify(const unisim::kernel::service::VariableBase *var);
 	void *trap_handler_context;
 	void (*trap_handler_function)(void *, unsigned int);
 	virtual void ExternalTrap(unsigned int id);

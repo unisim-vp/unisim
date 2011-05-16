@@ -131,6 +131,7 @@ unisim/util/debug/blob/section32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
+unisim/util/random/random.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -143,7 +144,17 @@ unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
+unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
 unisim/service/translator/memory_address/memory/translator.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -154,12 +165,28 @@ unisim/component/cxx/processor/powerpc/ppc440/config.cc \
 unisim/component/cxx/processor/powerpc/ppc440/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.cc \
+unisim/component/cxx/timer/xilinx/xps_timer/config.cc \
+unisim/component/cxx/memory/flash/am29/am29.cc \
+unisim/component/cxx/memory/flash/am29/s29gl256p.cc \
+unisim/component/cxx/memory/flash/am29/s29gl256p_config.cc \
+unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
+unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
+unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
+unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
+unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
-unisim/component/tlm2/memory/ram/memory_debug.cc"
+unisim/component/tlm2/memory/ram/memory_debug.cc \
+unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
+unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
+unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
+unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
+"
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/isa/altivec.isa \
@@ -241,6 +268,8 @@ unisim/util/simfloat/floating.hh \
 unisim/util/simfloat/integer.hh \
 unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
+unisim/util/random/random.hh \
+unisim/util/allocator/allocator.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
@@ -264,6 +293,12 @@ unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/coff_loader/ti/ti.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/service/power/cache_power_estimator.hh \
@@ -272,6 +307,10 @@ unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/translator/memory_address/memory/translator.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
@@ -281,9 +320,30 @@ unisim/component/cxx/processor/powerpc/ppc440/exception.hh \
 unisim/component/cxx/processor/powerpc/ppc440/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.hh \
+unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.hh \
+unisim/component/cxx/timer/xilinx/xps_timer/config.hh \
+unisim/component/cxx/memory/flash/am29/types.hh \
+unisim/component/cxx/memory/flash/am29/am29.hh \
+unisim/component/cxx/memory/flash/am29/s29gl256p_config.hh \
+unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.hh \
+unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh \
+unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh \
+unisim/component/cxx/interconnect/xilinx/crossbar/config.hh \
 unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
-unisim/component/tlm2/memory/ram/memory.hh"
+unisim/component/tlm2/memory/ram/memory.hh \
+unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh \
+unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh \
+unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.hh \
+unisim/component/tlm2/interconnect/generic_router/router.hh \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.hh \
+unisim/component/tlm2/interconnect/generic_router/config.hh \
+unisim/component/tlm2/memory/flash/am29/am29.hh \
+unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh \
+unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh \
+"
 
 UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
@@ -317,7 +377,16 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
+unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/coff_loader/ti/ti.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/translator/memory_address/memory/translator.tcc \
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \
@@ -327,11 +396,25 @@ unisim/component/cxx/processor/powerpc/ppc440/cpu_exception_handling.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_fetch.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_load_store.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
+unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.tcc \
+unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
+unisim/component/cxx/memory/flash/am29/am29.tcc \
+unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
+unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
-unisim/component/tlm2/memory/ram/memory.tcc"
+unisim/component/tlm2/memory/ram/memory.tcc \
+unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
+unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.tcc \
+unisim/component/tlm2/interconnect/generic_router/router.tcc \
+unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
+unisim/component/tlm2/memory/flash/am29/am29.tcc \
+unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
+unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc \
+"
 
 UNISIM_LIB_VIRTEX5FXT_M4_FILES="\
 m4/times.m4 \
@@ -530,7 +613,7 @@ done
 
 echo "This package contains:" > "${DEST_DIR}/README"
 echo "  - UNISIM GenISSLib: an instruction set simulator generator" >> "${DEST_DIR}/README"
-echo "  - UNISIM virtex5fxt: a user level PowerPC SystemC TLM simulator." >> "${DEST_DIR}/README"
+echo "  - UNISIM virtex5fxt: a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IPs." >> "${DEST_DIR}/README"
 echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
 
 echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
@@ -548,6 +631,7 @@ echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-deve
 echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
 echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
 echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
+echo "  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
 echo "" >> "${DEST_DIR}/INSTALL"
 echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
 echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
@@ -579,7 +663,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM Virtex 5 FXT Simulator Package], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -686,7 +770,7 @@ fi
 
 if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "Generating virtex5fxt configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt-core])" > "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM Virtex 5 FXT Standalone simulator], [${VIRTEX5FXT_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-virtex5fxt-core])" > "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${VIRTEX5FXT_CONFIGURE_AC}"

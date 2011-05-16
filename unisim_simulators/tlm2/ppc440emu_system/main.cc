@@ -42,9 +42,18 @@
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
 #include <unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh>
+#include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
+#include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
+#include <unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/config.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
+#include <unisim/component/tlm2/memory/flash/am29/am29.hh>
+#include <unisim/component/cxx/memory/flash/am29/s29gl256p_config.hh>
+#include <unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh>
+#include <unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh>
+#include <unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh>
+#include <unisim/component/cxx/interconnect/xilinx/crossbar/config.hh>
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
@@ -106,61 +115,32 @@ using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Object;
 
 #ifdef DEBUG_PPC440EMU_SYSTEM
-class RouterDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
+class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 2;
-	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 4;
+	static const unsigned int MAX_NUM_MAPPINGS = 4;
 	static const unsigned int BUSWIDTH = 128;
 };
 
-typedef RouterDebugConfig ROUTER_CONFIG;
+typedef MPLBDebugConfig MPLB_CONFIG;
 #else
-class RouterConfig : public unisim::component::tlm2::interconnect::generic_router::Config
+class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router::Config
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 2;
-	static const unsigned int MAX_NUM_MAPPINGS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 4;
+	static const unsigned int MAX_NUM_MAPPINGS = 4;
 	static const unsigned int BUSWIDTH = 128;
 };
 
-typedef RouterConfig ROUTER_CONFIG;
+typedef MPLBConfig MPLB_CONFIG;
 #endif
 
 typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
-
-class IRQStub
-	: public sc_module
-	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
-{
-public:
-	tlm::tlm_initiator_socket<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> irq_master_sock;
-	
-	IRQStub(const sc_module_name& name);
-
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-};
-
-IRQStub::IRQStub(const sc_module_name& name)
-	: sc_module(name)
-	, irq_master_sock("irq-master-sock")
-{
-	irq_master_sock(*this);
-}
-
-tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
-
+typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
+static const unsigned int TIMER_IRQ = 3;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -182,15 +162,37 @@ private:
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
 	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
+	typedef unisim::component::cxx::memory::flash::am29::S29GL256PConfig AM29_CONFIG;
+	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
+	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> ROM;
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<CPU_CONFIG> CPU;
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<ROUTER_CONFIG> ROUTER;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<MPLB_CONFIG> MPLB;
 	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
+	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<TIMER_CONFIG> TIMER;
+	typedef unisim::component::tlm2::memory::flash::am29::AM29<AM29_CONFIG, 32 * unisim::component::cxx::memory::flash::am29::M, 2, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
+	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
+	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
+	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
+	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::InterruptProtocolTypes> IRQ_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB0_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB1_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<4> MASTER1_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> APU_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> MCI_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> DMAC0_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> DMAC1_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> DMAC2_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> DMAC3_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> EXTERNAL_SLAVE_DCR_STUB;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -198,15 +200,43 @@ private:
 	//  - PowerPC processor
 	CPU *cpu;
 	//  - RAM
-	MEMORY *memory;
+	RAM *ram;
+	//  - ROM
+	ROM *rom;
 	// - IRQ stubs
-	IRQStub *input_interrupt_stub[INTC_CONFIG::C_NUM_INTR_INPUTS];
-	//IRQStub *external_input_interrupt_stub;
-	IRQStub *critical_input_interrupt_stub;
-	// - Router
-	ROUTER *router;
+	IRQ_STUB *input_interrupt_stub[INTC_CONFIG::C_NUM_INTR_INPUTS];
+	IRQ_STUB *critical_input_interrupt_stub;
+	// - MPLB
+	MPLB *mplb;
+	// - SPLB0
+	SPLB0_STUB *splb0_stub;
+	// - SPLB1
+	SPLB1_STUB *splb1_stub;
 	// - Interrupt controller
 	INTC *intc;
+	// - Timer
+	TIMER *timer;
+	// - Flash memory
+	FLASH *flash;
+	// - Capture trigger stubs
+	CAPTURE_TRIGGER_STUB *capture_trigger_stub[TIMER_CONFIG::NUM_TIMERS];
+	// - GenerateOutStub
+	GENERATE_OUT_STUB *generate_out_stub[TIMER_CONFIG::NUM_TIMERS];
+	// - PWM stub
+	PWM_STUB *pwm_stub;
+	// - DCR controller
+	DCR_CONTROLLER *dcr_controller;
+	// - Crossbar
+	CROSSBAR *crossbar;
+	// - DCR stubs
+	MASTER1_DCR_STUB *master1_dcr_stub;
+	APU_DCR_STUB *apu_dcr_stub;
+	MCI_DCR_STUB *mci_dcr_stub;
+	DMAC0_DCR_STUB *dmac0_dcr_stub;
+	DMAC1_DCR_STUB *dmac1_dcr_stub;
+	DMAC2_DCR_STUB *dmac2_dcr_stub;
+	DMAC3_DCR_STUB *dmac3_dcr_stub;
+	EXTERNAL_SLAVE_DCR_STUB *external_slave_dcr_stub;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -230,7 +260,9 @@ private:
 	CachePowerEstimator *dtlb_power_estimator;
 	CachePowerEstimator *utlb_power_estimator;
 	//  - memory address translator from effective address to physical address
-	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *effective_to_physical_address_translator;
+	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *ram_effective_to_physical_address_translator;
+	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *flash_effective_to_physical_address_translator;
+	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *rom_effective_to_physical_address_translator;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
@@ -248,11 +280,26 @@ private:
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
-	, memory(0)
-	//, external_input_interrupt_stub(0)
+	, ram(0)
+	, rom(0)
 	, critical_input_interrupt_stub(0)
-	, router(0)
+	, mplb(0)
+	, splb0_stub(0)
+	, splb1_stub(0)
 	, intc(0)
+	, timer(0)
+	, flash(0)
+	, pwm_stub(0)
+	, dcr_controller(0)
+	, crossbar(0)
+	, master1_dcr_stub(0)
+	, apu_dcr_stub(0)
+	, mci_dcr_stub(0)
+	, dmac0_dcr_stub(0)
+	, dmac1_dcr_stub(0)
+	, dmac2_dcr_stub(0)
+	, dmac3_dcr_stub(0)
+	, external_slave_dcr_stub(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -262,7 +309,9 @@ Simulator::Simulator(int argc, char **argv)
 	, itlb_power_estimator(0)
 	, dtlb_power_estimator(0)
 	, utlb_power_estimator(0)
-	, effective_to_physical_address_translator(0)
+	, ram_effective_to_physical_address_translator(0)
+	, flash_effective_to_physical_address_translator(0)
+	, rom_effective_to_physical_address_translator(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, estimate_power(false)
@@ -272,6 +321,7 @@ Simulator::Simulator(int argc, char **argv)
 	, exit_status(0)
 {
 	unsigned int irq;
+	unsigned int channel;
 	
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -279,20 +329,65 @@ Simulator::Simulator(int argc, char **argv)
 	//  - PowerPC processor
 	cpu = new CPU("cpu");
 	//  - RAM
-	memory = new MEMORY("memory");
+	ram = new RAM("ram");
+	//  - ROM
+	rom = new ROM("rom");
 	//  - IRQ Stubs
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
-		std::stringstream input_interrupt_stub_name_sstr;
-		input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
-		input_interrupt_stub[irq] = new IRQStub(input_interrupt_stub_name_sstr.str().c_str());
+		if(irq == TIMER_IRQ)
+		{
+			input_interrupt_stub[irq] = 0;
+		}
+		else
+		{
+			std::stringstream input_interrupt_stub_name_sstr;
+			input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
+			input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str());
+		}
 	}
-	//external_input_interrupt_stub = new IRQStub("external-input-interrupt-stub");
-	critical_input_interrupt_stub = new IRQStub("critical-input-interrupt-stub");
-	// - Router
-	router = new ROUTER("router");
+	critical_input_interrupt_stub = new IRQ_STUB("critical-input-interrupt-stub");
+	// - MPLB
+	mplb = new MPLB("mplb");
+	// - SPLB0
+	splb0_stub = new SPLB0_STUB("splb0-stub");
+	// - SPLB1
+	splb1_stub = new SPLB0_STUB("splb1-stub");
 	// - Interrupt controller
 	intc = new INTC("intc");
+	// - Timer
+	timer = new TIMER("timer");
+	// - Flash memory
+	flash = new FLASH("flash");
+	// - Capture trigger stubs
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		std::stringstream capture_trigger_stub_name_sstr;
+		capture_trigger_stub_name_sstr << "capture-trigger-stub" << channel;
+		capture_trigger_stub[channel] = new CAPTURE_TRIGGER_STUB(capture_trigger_stub_name_sstr.str().c_str());
+	}
+	// - Generate out stubs
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		std::stringstream generate_out_stub_name_sstr;
+		generate_out_stub_name_sstr << "generate-out-stub" << channel;
+		generate_out_stub[channel] = new GENERATE_OUT_STUB(generate_out_stub_name_sstr.str().c_str());
+	}
+	// - PWM stub
+	pwm_stub = new PWM_STUB("pwm-stub");
+	// - DCR controller
+	dcr_controller = new DCR_CONTROLLER("dcr-controller");
+	// - Crossbar
+	crossbar = new CROSSBAR("crossbar");
+	// - DCR stubs
+	master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub");
+	apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub");
+	mci_dcr_stub = new MCI_DCR_STUB("mci-dcr-stub");
+	dmac0_dcr_stub = new DMAC0_DCR_STUB("dma0-dcr-stub");
+	dmac1_dcr_stub = new DMAC1_DCR_STUB("dma1-dcr-stub");
+	dmac2_dcr_stub = new DMAC2_DCR_STUB("dma2-dcr-stub");
+	dmac3_dcr_stub = new DMAC3_DCR_STUB("dma3-dcr-stub");
+	external_slave_dcr_stub = new EXTERNAL_SLAVE_DCR_STUB("external-slave-dcr-stub");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -316,29 +411,78 @@ Simulator::Simulator(int argc, char **argv)
 	dtlb_power_estimator = estimate_power ? new CachePowerEstimator("dtlb-power-estimator") : 0;
 	utlb_power_estimator = estimate_power ? new CachePowerEstimator("utlb-power-estimator") : 0;
 	//  - memory address translator from effective address to physical address
-	effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("effective-to-physical-address-translator");
+	ram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("ram-effective-to-physical-address-translator");
+	flash_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
+	rom_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("rom-effective-to-physical-address-translator");
 	
 	//=========================================================================
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->bus_master_sock(*router->targ_socket[0]); // CPU <-> PLB
-	(*router->init_socket[0])(memory->slave_sock); // PLB <-> RAM
-	//cpu->bus_master_sock(memory->slave_sock); // CPU <-> RAM
-	(*router->init_socket[1])(intc->slave_sock); // PLB <-> INTC
+	cpu->icurd_plb_master_sock(crossbar->icurd_plb_slave_sock); // CPU>ICURD <-> ICURD<Crossbar
+	cpu->dcuwr_plb_master_sock(crossbar->dcuwr_plb_slave_sock); // CPU>DCUWR <-> DCUWR<Crossbar
+	cpu->dcurd_plb_master_sock(crossbar->dcurd_plb_slave_sock); // CPU>DCURD <-> DCURD<Crossbar
+	cpu->dcr_master_sock(*dcr_controller->dcr_slave_sock[0]); // (master 0) CPU>DCR <-> DCR controller
+	master1_dcr_stub->master_sock(*dcr_controller->dcr_slave_sock[1]); // master 1>DCR <-> DCR controller
+	
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::APU_SLAVE_NUM])(apu_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::MCI_SLAVE_NUM])(mci_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::CROSSBAR_SLAVE_NUM])(crossbar->crossbar_dcr_slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS0_SLAVE_NUM])(crossbar->plbs0_dcr_slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS1_SLAVE_NUM])(crossbar->plbs1_dcr_slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBM_SLAVE_NUM])(crossbar->plbm_dcr_slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC0_SLAVE_NUM])(dmac0_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC1_SLAVE_NUM])(dmac1_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC2_SLAVE_NUM])(dmac2_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::DMAC3_SLAVE_NUM])(dmac3_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::EXTERNAL_SLAVE_NUM])(external_slave_dcr_stub->slave_sock);
+	
+	crossbar->mplb_master_sock(*mplb->targ_socket[0]);   // crossbar>MPLB <-> MPLB
+	crossbar->mci_master_sock(ram->slave_sock);       // crossbar>MCI <-> RAM
+	
+	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
+	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
+	
+	(*mplb->init_socket[0])(intc->slave_sock);   // MPLB <-> INTC
+	(*mplb->init_socket[1])(timer->slave_sock);  // MPLB <-> TIMER
+	(*mplb->init_socket[2])(flash->slave_sock);  // MPLB <-> FLASH
+	(*mplb->init_socket[3])(rom->slave_sock);    // MPLB <-> ROM
+	
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
-		(input_interrupt_stub[irq]->irq_master_sock)(*intc->irq_slave_sock[irq]); // INTC <-> IRQ stub
+		if(irq == TIMER_IRQ)
+		{
+			timer->interrupt_master_sock(*intc->irq_slave_sock[irq]); // TIMER>IRQ <-> INTR<INTC
+		}
+		else
+		{
+			(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
+		}
 	}
-	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC <-> CPU
-	//external_input_interrupt_stub->irq_master_sock(cpu->external_input_interrupt_slave_sock);
-	critical_input_interrupt_stub->irq_master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		capture_trigger_stub[channel]->master_sock(*timer->capture_trigger_slave_sock[channel]); // Capture trigger stub <-> TIMER
+	}
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		(*timer->generate_out_master_sock[channel])(generate_out_stub[channel]->slave_sock); // TIMER <-> Generate out stub
+	}
+	timer->pwm_master_sock(pwm_stub->slave_sock); // TIMER <-> PWM stub
+	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC>IRQ <-> External Input<CPU
+	critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu->memory_import >> memory->memory_export;
+	cpu->memory_import >> crossbar->memory_export;
+	
+	crossbar->mci_memory_import >> ram->memory_export;
+	crossbar->mplb_memory_import >> mplb->memory_export;
+	(*mplb->memory_import[0]) >> intc->memory_export;
+	(*mplb->memory_import[1]) >> timer->memory_export;
+	(*mplb->memory_import[2]) >> flash->memory_export;
+	(*mplb->memory_import[3]) >> rom->memory_export;
 	cpu->loader_import >> ppc_linux_kernel_loader->loader_export;
 	ppc_linux_kernel_loader->registers_import >> cpu->registers_export;
 	
@@ -390,36 +534,66 @@ Simulator::Simulator(int argc, char **argv)
 		utlb_power_estimator->time_import >> sim_time->time_export;
 	}
 
-	effective_to_physical_address_translator->memory_import >> memory->memory_export;
-	rom_loader->memory_import >> effective_to_physical_address_translator->memory_export;
-	ppc_linux_kernel_loader->memory_import >> effective_to_physical_address_translator->memory_export;
+	ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
+	flash_effective_to_physical_address_translator->memory_import >> flash->memory_export;
+	rom_effective_to_physical_address_translator->memory_import >> rom->memory_export;
+	rom_loader->memory_import >> rom_effective_to_physical_address_translator->memory_export;
+	ppc_linux_kernel_loader->memory_import >> ram_effective_to_physical_address_translator->memory_export;
 	cpu->symbol_table_lookup_import >> ppc_linux_kernel_loader->symbol_table_lookup_export;
 }
 
 Simulator::~Simulator()
 {
 	unsigned int irq;
-	//if(external_input_interrupt_stub) delete external_input_interrupt_stub;
+	unsigned int channel;
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
-	if(memory) delete memory;
+	if(ram) delete ram;
+	if(rom) delete rom;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
-	if(router) delete router;
+	if(mplb) delete mplb;
+	if(splb0_stub) delete splb0_stub;
+	if(splb1_stub) delete splb1_stub;
 	if(intc) delete intc;
+	if(timer) delete timer;
+	if(flash) delete flash;
+	if(crossbar) delete crossbar;
+	if(master1_dcr_stub) delete master1_dcr_stub;
+	if(apu_dcr_stub) delete apu_dcr_stub;
+	if(mci_dcr_stub) delete mci_dcr_stub;
+	if(dmac0_dcr_stub) delete dmac0_dcr_stub;
+	if(dmac1_dcr_stub) delete dmac1_dcr_stub;
+	if(dmac2_dcr_stub) delete dmac2_dcr_stub;
+	if(dmac3_dcr_stub) delete dmac3_dcr_stub;
+	if(external_slave_dcr_stub) delete external_slave_dcr_stub;
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
 		if(input_interrupt_stub[irq]) delete input_interrupt_stub[irq];
 	}
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		if(capture_trigger_stub[channel]) delete capture_trigger_stub[channel];
+	}
+	// - Generate out stubs
+	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
+	{
+		if(generate_out_stub[channel]) delete generate_out_stub[channel];
+	}
+	if(pwm_stub) delete pwm_stub;
+	if(dcr_controller) delete dcr_controller;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
 	if(dtlb_power_estimator) delete dtlb_power_estimator;
 	if(utlb_power_estimator) delete utlb_power_estimator;
 	if(sim_time) delete sim_time;
+	if(host_time) delete host_time;
 	if(rom_loader) delete rom_loader;
 	if(ppc_linux_kernel_loader) delete ppc_linux_kernel_loader;
-	if(effective_to_physical_address_translator) delete effective_to_physical_address_translator;
+	if(ram_effective_to_physical_address_translator) delete ram_effective_to_physical_address_translator;
+	if(rom_effective_to_physical_address_translator) delete rom_effective_to_physical_address_translator;
+	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
@@ -463,18 +637,49 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
 
-	//  - Router
-	simulator->SetVariable("router.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("router.mapping_0", "range_start=\"0x0\" range_end=\"0x3fffffff\" output_port=\"0\" translation=\"0x0\"");
-	simulator->SetVariable("router.mapping_1", "range_start=\"0x41200000\" range_end=\"0x4120ffff\" output_port=\"1\" translation=\"0x41200000\"");
-	simulator->SetVariable("router.mapping_2", "range_start=\"0x41210000\" range_end=\"0xffffffff\" output_port=\"0\" translation=\"0x41210000\"");
+	//  - DCR controller
+	simulator->SetVariable("dcr-controller.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - Crossbar
+	simulator->SetVariable("crossbar.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - MPLB
+	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
+	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
+	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
+	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
 
 	//  - RAM
-	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("memory.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("memory.org", 0x00000000UL);
-	simulator->SetVariable("memory.bytesize", 0xffffffffffffffffULL);
+	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("ram.org", 0x00000000UL);
+	simulator->SetVariable("ram.bytesize", 256 * 1024 * 1024); // 256 MB
+
+	//  - ROM
+	simulator->SetVariable("rom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("rom.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("rom.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("rom.org", 0xff800000UL);
+	simulator->SetVariable("rom.bytesize", 8 * 1024 * 1024); // 8 MB
+
+	//  - Interrupt controller
+	simulator->SetVariable("intc.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - Timer
+	simulator->SetVariable("timer.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - Flash
+	simulator->SetVariable("flash.org", 0xfc000000UL);
+	simulator->SetVariable("flash.bytesize", 32 * 1024 * 1024); // 32 MB
+	simulator->SetVariable("flash.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	
+	//  - Capture Trigger stubs
+	simulator->SetVariable("capture-trigger-stub0.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("capture-trigger-stub0.nice-time", "1 ms");
+	simulator->SetVariable("capture-trigger-stub1.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("capture-trigger-stub1.nice-time", "1 ms");
 
 	//=========================================================================
 	//===                      Service run-time configuration               ===
