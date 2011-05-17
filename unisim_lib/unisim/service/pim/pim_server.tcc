@@ -118,6 +118,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, architecture_description_filename()
 	, gdb_registers()
 	, gdb_pc(0)
+	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
 	, trap(false)
 	, synched(false)
@@ -237,7 +238,6 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 
 			bool has_architecture_name = false;
 			bool has_architecture_endian = false;
-			GDBEndian endian = GDB_BIG_ENDIAN;
 
 			const list<unisim::util::xml::Property *> *root_node_properties = root_node->Properties();
 
@@ -1545,10 +1545,29 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		PutPacket(packet);
 
 	}
-	else if (cmdPrefix.compare("stack") == 0) {
+	else if (cmdPrefix.compare("endian") == 0) {
 		string packet("");
 
-		vector<GDBRegister>::const_iterator gdb_reg;
+		std::stringstream sstr;
+		sstr << GetEndian();
+		packet += sstr.str();
+
+		PutPacket(packet);
+
+	}
+	else if (cmdPrefix.compare("registers") == 0) {
+
+		std::stringstream sstr;
+
+		for (vector<GDBRegister>::iterator it=gdb_registers.begin() ; it < gdb_registers.end(); it++ ) {
+			sstr << (*it).GetName() << ":" << (*it).GetSize() << ";";
+		}
+
+		PutPacket(sstr.str());
+
+	}
+	else if (cmdPrefix.compare("stack") == 0) {
+		string packet("");
 
 		if(gdb_pc)
 		{

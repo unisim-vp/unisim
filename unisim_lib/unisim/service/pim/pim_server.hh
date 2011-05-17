@@ -121,7 +121,6 @@ public:
 	inline int GetHexLength() const { return 2 * size; }
 	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
 	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
-	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
 private:
 	string name;
@@ -184,6 +183,8 @@ public:
 	double GetSimTime();
 	double GetHostTime();
 
+	inline GDBEndian GetEndian() const { return endian; }
+
 protected:
 	vector<SocketThread*> protocolHandlers;
 
@@ -233,6 +234,8 @@ private:
 //	int sock;
 	vector<GDBRegister> gdb_registers;
 	GDBRegister *gdb_pc;
+	GDBEndian endian;
+
 	bool killed;
 	bool trap;
 	bool synched;
