@@ -182,6 +182,7 @@ public:
 	string GetHost() { return fHost; }
 
 	double GetSimTime();
+	double GetHostTime();
 
 protected:
 	vector<SocketThread*> protocolHandlers;
@@ -261,6 +262,9 @@ private:
 	Parameter<string> param_architecture_description_filename;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
+
+//	ofstream pim_trace_file;
+//	double last_time_ratio;
 
 };
 

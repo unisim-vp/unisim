@@ -281,6 +281,7 @@ public:
 	void GenerateLatexDocumentation(ostream& os) const;
 	
 	virtual double GetSimTime()	{ return 0;	}
+	virtual double GetHostTime()	{ return 0;	}
 
 	bool IsWarningEnabled() const;
 
