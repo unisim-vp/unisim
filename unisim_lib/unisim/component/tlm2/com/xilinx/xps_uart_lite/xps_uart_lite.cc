@@ -32,22 +32,22 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
-#include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
-#include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.tcc>
+#include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc>
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
-namespace timer {
+namespace com {
 namespace xilinx {
-namespace xps_timer {
+namespace xps_uart_lite {
 
-template class XPS_Timer<unisim::component::cxx::timer::xilinx::xps_timer::Config>;
+template class XPS_UARTLite<unisim::component::cxx::com::xilinx::xps_uart_lite::Config>;
 
-} // end of namespace xps_timer
+} // end of namespace xps_uart_lite
 } // end of namespace xilinx
-} // end of namespace timer
+} // end of namespace com
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim
