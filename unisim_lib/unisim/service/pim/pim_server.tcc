@@ -1567,11 +1567,11 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	}
 	else if (cmdPrefix.compare("stack") == 0) {
-		string packet("");
+
+		std::stringstream sstr;
 
 		if(gdb_pc)
 		{
-			std::stringstream sstr;
 			string hex;
 			unsigned int reg_num = gdb_pc->GetRegNum();
 
@@ -1589,27 +1589,25 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				const char *source_filename = stmt->GetSourceFilename();
 				if(source_filename)
 				{
-					packet += "file:" + string(source_filename);
-
-					unsigned int lineno = stmt->GetLineNo();
-					unsigned int colno = stmt->GetColNo();
-					std::string source_path;
 					const char *source_dirname = stmt->GetSourceDirname();
 					if(source_dirname)
 					{
-						packet += ";folder:" + string(source_dirname);
+						sstr << string(source_dirname);
 
-						source_path += source_dirname;
-						source_path += '/';
 					}
-					source_path += source_filename;
+					sstr << ";" << string(source_filename);
 
-	//				DumpSource(source_path.c_str(), lineno, colno, 1);
+					unsigned int lineno = stmt->GetLineNo();
+					unsigned int colno = stmt->GetColNo();
+
+					sstr << ";" << lineno << ";" << colno;
 				}
 			}
 		}
 
-		packet += ";";
+		sstr << ";";
+
+		string packet(sstr.str());
 
 		OutputText(packet.c_str(), packet.length());
 
