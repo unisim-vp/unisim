@@ -1558,7 +1558,6 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		}
 
 		string str = sstr.str();
-		cerr << "registers => " << str << endl;
 		PutPacket(str);
 
 	}
