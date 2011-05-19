@@ -196,12 +196,6 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 		return false;
 	}
 
-	// Start Simulation <-> Workbench communication
-//	target = new PIMThread("pim-thread");
-//	protocolHandlers.push_back(target);
-//
-//	protocolHandlers.push_back(this);
-
 	// Open Socket Stream
 	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
 	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
@@ -209,21 +203,6 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	socketServer->setProtocolHandler(this);
 
 	socketServer->start();
-
-
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
-
-	if(memory_access_reporting_control_import)
-	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
-	}
 
 	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
 	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
@@ -432,6 +411,21 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 		unisim::util::xml::Error(architecture_description_filename, 0, "ERROR! no root node");
 		return false;
 	}
+
+	return true;
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
+
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+
 
 	return true;
 }
@@ -1563,7 +1557,9 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			sstr << (*it).GetName() << ":" << (*it).GetSize() << ";";
 		}
 
-		PutPacket(sstr.str());
+		string str = sstr.str();
+		cerr << "registers => " << str << endl;
+		PutPacket(str);
 
 	}
 	else if (cmdPrefix.compare("stack") == 0) {
