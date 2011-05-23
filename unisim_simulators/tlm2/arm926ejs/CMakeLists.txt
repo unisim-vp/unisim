@@ -366,6 +366,9 @@ set ( api_sources
 	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.c
 	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/variable_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi_priv.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
 	)
 set_source_files_properties ( ${api_sources}
@@ -490,10 +493,10 @@ if ( BUILD_PYTHON_MODULE )
 		 'unisim__util__debug',
 		 'unisim__util__debug__dwarf',
 		 'unisim__util__debug__blob',
-		 'unisim__util__debug__debugger_handler',
 		 'unisim__util__xml',
 		 'unisim__util__generic_peripheral_register',
 		 'unisim__kernel',
+		 'unisim__util__debug__debugger_handler',
 		 'xml2',
 		 'systemc'")
 	if ( BUILD_POWER_SUPPORT )

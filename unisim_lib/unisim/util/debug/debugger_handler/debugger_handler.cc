@@ -38,9 +38,11 @@ namespace util {
 namespace debug {
 namespace debugger_handler {
 
+const std::string DebuggerHandler::DEBUGGER_API_ID("DebuggerAPI");
+
 DebuggerHandler::
-DebuggerHandler(unisim::kernel::service::Object *obj)
-	: debuggerhandler_parent_object(obj)
+DebuggerHandler(const char *_name, unisim::kernel::service::Object *parent)
+	: APIBase(_name, DebuggerHandler::DEBUGGER_API_ID.c_str(), parent)
 	, handler_context(0)
 	, breakpoint_handler_function(0)
 	, watchpoint_handler_function(0)
@@ -49,7 +51,6 @@ DebuggerHandler(unisim::kernel::service::Object *obj)
 DebuggerHandler::
 ~DebuggerHandler()
 {
-	debuggerhandler_parent_object = 0;
 	handler_context = 0;
 	breakpoint_handler_function = 0;
 	watchpoint_handler_function = 0;
@@ -212,13 +213,6 @@ CallWatchpointHandler(uint64_t addr, bool read)
 {
 	if ( watchpoint_handler_function )
 		watchpoint_handler_function(handler_context, addr, read);
-}
-
-unisim::kernel::service::Object *
-DebuggerHandler::
-GetParentObject()
-{
-	return debuggerhandler_parent_object;
 }
 
 } // end of namespace debugger_handler

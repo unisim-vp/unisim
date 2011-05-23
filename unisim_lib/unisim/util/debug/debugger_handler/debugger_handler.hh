@@ -37,6 +37,7 @@
 
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/api/api.hh"
 
 namespace unisim {
 namespace util {
@@ -44,9 +45,11 @@ namespace debug {
 namespace debugger_handler {
 
 class DebuggerHandler
+	: public unisim::kernel::api::APIBase
 {
 public:
-	DebuggerHandler(unisim::kernel::service::Object *obj);
+	static const std::string DEBUGGER_API_ID;
+	DebuggerHandler(const char *_name, unisim::kernel::service::Object *parent);
 	virtual ~DebuggerHandler();
 	virtual bool SetStepMode() = 0;
 	virtual bool SetContinueMode() = 0;
@@ -76,8 +79,6 @@ public:
 	virtual bool SetHandlerContext(void *context);
 	virtual bool SetBreakpointHandler(void (*function)(void *, uint64_t));
 	virtual bool SetWatchpointHandler(void (*function)(void *, uint64_t, bool));
-
-	unisim::kernel::service::Object *GetParentObject();
 
 protected:
 	void CallBreakpointHandler(uint64_t addr);

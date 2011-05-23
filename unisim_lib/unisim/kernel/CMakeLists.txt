@@ -73,6 +73,8 @@ add_library ( unisim__kernel
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/service.hh
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/xml_helper.cc
 		${CMAKE_SOURCE_DIR}/unisim/kernel/service/xml_helper.hh
+		${CMAKE_SOURCE_DIR}/unisim/kernel/api/api.hh
+		${CMAKE_SOURCE_DIR}/unisim/kernel/api/api.cc
 		${CMAKE_BINARY_DIR}/unisim/kernel/service/config.hh
 		${CMAKE_SOURCE_DIR}/unisim/kernel/logger/logger.cc
 		${CMAKE_SOURCE_DIR}/unisim/kernel/logger/logger.hh

@@ -1,12 +1,12 @@
 /*
                              *******************
-******************************* C HEADER FILE *******************************
+******************************* C SOURCE FILE *******************************
 **                           *******************                           **
 **                                                                         **
 ** project   : UNISIM C API                                                **
-** filename  : variable_priv.h                                             **
+** filename  : eapi.c                                                      **
 ** version   : 1                                                           **
-** date      : 12/5/2011                                                   **
+** date      : 23/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -17,8 +17,7 @@
 
 */
 
-#ifndef __UNISIM__UAPI__VARIABLE_PRIV__INCLUDED
-#define __UNISIM__UAPI__VARIABLE_PRIV__INCLUDED
+#define __UNISIM__UAPI__EAPI__C_SRC
 
 /****************************************************************************/
 /**                                                                        **/
@@ -26,11 +25,7 @@
 /**                                                                        **/
 /****************************************************************************/
 
-#include "unisim/kernel/service/service.hh"
-#include "unisim/uapi/variable.h"
-
-extern "C"
-{
+#include "unisim/uapi/uapi_priv.h"
 
 /****************************************************************************/
 /**                                                                        **/
@@ -44,14 +39,29 @@ extern "C"
 /**                                                                        **/
 /****************************************************************************/
 
+struct _UnisimExtendedAPI
+{
+	unisim::kernel::api::APIBase *api;
+	UnisimSimulator simulator;
+};
+
+/****************************************************************************/
+/**                                                                        **/
+/**                     PROTOTYPES OF LOCAL FUNCTIONS                      **/
+/**                                                                        **/
+/****************************************************************************/
+
 /****************************************************************************/
 /**                                                                        **/
 /**                     EXPORTED VARIABLES                                 **/
 /**                                                                        **/
 /****************************************************************************/
 
-#ifndef __UNISIM__UAPI__VARIABLE_PRIV__C_SRC
-#endif
+/****************************************************************************/
+/**                                                                        **/
+/**                     GLOBAL VARIABLES                                   **/
+/**                                                                        **/
+/****************************************************************************/
 
 /****************************************************************************/
 /**                                                                        **/
@@ -60,33 +70,74 @@ extern "C"
 /****************************************************************************/
 
 /****************************************************************************/
-UnisimVariable usCreateVariable(UnisimSimulator simulator,
-		unisim::kernel::service::VariableBase *unisimVariable);
+void usDestroyExtendedAPI(UnisimExtendedAPI api)
 /****************************************************************************/
-/*
- * Creates an api compliant variable from the given variable.
- *
- * Parameters:
- *   - var: the variable from which an api compliant variable must be created.
- *
- * Returns: An api compliant variable.
- */
+{
+	if ( api == 0 ) return;
 
-/****************************************************************************/
-void usDestroyUnregisteredVariable(UnisimVariable variable);
-/****************************************************************************/
-/*
- * Destroy a variable without unregistering it from the simulator.
- *
- * Parameters:
- *   - var: the variable to destroy.
- *
- * Returns: None. 
- */
-
+	usSimulatorUnregisterExtendedAPI(api->simulator, api);
+	api->api = 0;
+	api->simulator = 0;
+	free(api);
 }
 
-#endif
+/****************************************************************************/
+const char *usExtendedAPIGetName(UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	if ( api == 0 ) return 0;
+
+	return api->api->GetName();
+}
+
+/****************************************************************************/
+const char *usExtendedAPIGetType(UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	if ( api == 0 ) return 0;
+
+	return api->api->GetAPITypeName();
+}
+
+/****************************************************************************/
+/**                                                                        **/
+/**                 PRIVATELY EXPORTED FUNCTIONS                           **/
+/**                                                                        **/
+/****************************************************************************/
+
+/****************************************************************************/
+UnisimExtendedAPI usCreateExtendedAPI(UnisimSimulator simulator,
+		unisim::kernel::api::APIBase *unisimApi)
+/****************************************************************************/
+{
+	if ( simulator == 0 ) return 0;
+	if ( unisimApi == 0 ) return 0;
+
+	UnisimExtendedAPI api = (UnisimExtendedAPI)malloc(sizeof(_UnisimExtendedAPI));
+	if ( api == 0 ) return 0;
+
+	api->simulator = simulator;
+	api->api = unisimApi;
+	usSimulatorRegisterExtendedAPI(simulator, api);
+	return api;
+}
+
+/****************************************************************************/
+void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	if ( api == 0 ) return;
+
+	api->api = 0;
+	api->simulator = 0;
+	free(api);
+}
+
+/****************************************************************************/
+/**                                                                        **/
+/**                     LOCAL FUNCTIONS                                    **/
+/**                                                                        **/
+/****************************************************************************/
 
 /****************************************************************************/
 /**                                                                        **/

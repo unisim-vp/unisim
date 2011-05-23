@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : simulator.h                                                 **
 ** version   : 1                                                           **
-** date      : 12/5/2011                                                   **
+** date      : 23/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -152,6 +152,17 @@ const char *usSimulatorGetVersion(UnisimSimulator simulator);
  *
  * Returns: A null terminated string (char *) with the version description
  *          of the simulator.
+ */
+
+/****************************************************************************/
+UnisimExtendedAPI *usSimulatorGetExtendedAPIList(UnisimSimulator);
+/****************************************************************************/
+/*
+ * Returns a list of the APIs provided by the simulator.
+ *
+ * Parameters: None.
+ *
+ * Returns: A null terminated list of the APIs provided by the simulator.
  */
 
 /****************************************************************************/

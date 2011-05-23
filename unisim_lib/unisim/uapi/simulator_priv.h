@@ -15,14 +15,6 @@
 **                                                                         **
 *****************************************************************************
 
-VERSION HISTORY:
-----------------
-
-Version     : 1
-Date        : 5/5/2011
-Revised by  : Daniel Gracia Perez
-Description : Original version.
-
 */
 
 #ifndef __UNISIM__UAPI__SIMULATOR_PRIV__INCLUDED
@@ -72,6 +64,14 @@ void usSimulatorRegisterVariable(UnisimSimulator, UnisimVariable);
 
 /****************************************************************************/
 void usSimulatorUnregisterVariable(UnisimSimulator, UnisimVariable);
+/****************************************************************************/
+
+/****************************************************************************/
+void usSimulatorRegisterExtendedAPI(UnisimSimulator, UnisimExtendedAPI);
+/****************************************************************************/
+
+/****************************************************************************/
+void usSimulatorUnregisterExtendedAPI(UnisimSimulator, UnisimExtendedAPI);
 /****************************************************************************/
 
 }

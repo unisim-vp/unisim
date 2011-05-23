@@ -4,7 +4,7 @@
 **                           *******************                           **
 **                                                                         **
 ** project   : UNISIM C API                                                **
-** filename  : priv.h                                                      **
+** filename  : eapi_priv.h                                                 **
 ** version   : 1                                                           **
 ** date      : 5/5/2011                                                    **
 **                                                                         **
@@ -17,8 +17,8 @@
 
 */
 
-#ifndef __UNISIM__UAPI__INCLUDED
-#define __UNISIM__UAPI__INCLUDED
+#ifndef __UNISIM__UAPI__EAPI_PRIV__INCLUDED
+#define __UNISIM__UAPI__EAPI_PRIV__INCLUDED
 
 /****************************************************************************/
 /**                                                                        **/
@@ -26,9 +26,6 @@
 /**                                                                        **/
 /****************************************************************************/
 
-#include "unisim/uapi/types.h"
-#include "unisim/uapi/simulator.h"
-#include "unisim/uapi/variable.h"
 #include "unisim/uapi/eapi.h"
 
 extern "C"
@@ -52,7 +49,7 @@ extern "C"
 /**                                                                        **/
 /****************************************************************************/
 
-#ifndef __UNISIM__UAPI__C_SRC
+#ifndef __UNISIM__UAPI__EAPI_PRIV__C_SRC
 #endif
 
 /****************************************************************************/
@@ -61,7 +58,16 @@ extern "C"
 /**                                                                        **/
 /****************************************************************************/
 
+/****************************************************************************/
+UnisimExtendedAPI usCreateExtendedAPI(UnisimSimulator, 
+		unisim::kernel::api::APIBase *);
+/****************************************************************************/
+
 }
+
+/****************************************************************************/
+void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI);
+/****************************************************************************/
 
 #endif
 
@@ -70,5 +76,7 @@ extern "C"
 /**                               EOF                                      **/
 /**                                                                        **/
 /****************************************************************************/
+
+
 
 

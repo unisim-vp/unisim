@@ -17,6 +17,8 @@ typedef UnisimSimulatorSetupStatus (*_usSimulatorSetup_type)(UnisimSimulator);
 _usSimulatorSetup_type _usSimulatorSetup;
 typedef const char *(*_usSimulatorGetVersion_type)(UnisimSimulator);
 _usSimulatorGetVersion_type _usSimulatorGetVersion;
+typedef UnisimExtendedAPI *(* _usSimulatorGetExtendedAPIList_type)(UnisimSimulator);
+_usSimulatorGetExtendedAPIList_type _usSimulatorGetExtendedAPIList;
 typedef bool (* _usSimulatorRun_type)(UnisimSimulator);
 _usSimulatorRun_type _usSimulatorRun;
 typedef void (* _usSimulatorStop_type)(UnisimSimulator);
@@ -46,6 +48,14 @@ _usVariableGetValueAsString_type _usVariableGetValueAsString;
 typedef void (* _usDestroyVariable_type)(UnisimVariable);
 _usDestroyVariable_type _usDestroyVariable;
 
+// api methods
+typedef const char *(* _usExtendedAPIGetName_type)(UnisimExtendedAPI);
+_usExtendedAPIGetName_type _usExtendedAPIGetName;
+typedef const char *(* _usExtendedAPIGetType_type)(UnisimExtendedAPI);
+_usExtendedAPIGetType_type _usExtendedAPIGetType;
+typedef void (* _usDestroyExtendedAPI_type)(UnisimExtendedAPI);
+_usDestroyExtendedAPI_type _usDestroyExtendedAPI;
+
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
 {
@@ -72,7 +82,7 @@ bool close_lib()
 
 bool load_lib()
 {
-	simlib = dlopen("/Users/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.dylib", RTLD_LAZY);
+	simlib = dlopen("/Users/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.dylib", RTLD_NOW | RTLD_GLOBAL);
 	if(simlib == NULL)
 	{
 		std::cerr << "Could not load simulator dynamic library"
@@ -89,6 +99,8 @@ bool load_lib()
 	if ( !load_sym(simlib, "usSimulatorSetup", _usSimulatorSetup) )
 		return false;
 	if ( !load_sym(simlib, "usSimulatorGetVersion", _usSimulatorGetVersion) )
+		return false;
+	if ( !load_sym(simlib, "usSimulatorGetExtendedAPIList", _usSimulatorGetExtendedAPIList) )
 		return false;
 	if ( !load_sym(simlib, "usSimulatorRun", _usSimulatorRun) )
 		return false;
@@ -116,6 +128,13 @@ bool load_lib()
 	if ( !load_sym(simlib, "usVariableGetValueAsString", _usVariableGetValueAsString) )
 		return false;
 	if ( !load_sym(simlib, "usDestroyVariable", _usDestroyVariable) )
+		return false;
+
+	if ( !load_sym(simlib, "usExtendedAPIGetName", _usExtendedAPIGetName) )
+		return false;
+	if ( !load_sym(simlib, "usExtendedAPIGetType", _usExtendedAPIGetType) )
+		return false;
+	if ( !load_sym(simlib, "usDestroyExtendedAPI", _usDestroyExtendedAPI) )
 		return false;
 
 	return true;
@@ -278,7 +297,6 @@ int test()
 		{
 			_usDestroyVariable(found);
 		}
-		currentVariable = 0;
 		// here we should destroy the variable because it would never be used
 		//   again, but we let it undestroyed to test that the simulator
 		//   correctly deletes generated variables when destroyed
@@ -289,6 +307,19 @@ int test()
 	std::cerr << "- found a total of " << voidsCounter
 		<< " non typed variables (from a total of "
 		<< variablesCounter << " variables)" << std::endl;
+
+	std::cerr << "Testing Extended API" << std::endl;
+	UnisimExtendedAPI *apiList = _usSimulatorGetExtendedAPIList(simulator);
+	int apiListIndex = 0;
+	while ( (apiList != 0) && (apiList[apiListIndex] != 0) )
+	{
+		UnisimExtendedAPI api = apiList[apiListIndex];
+		std::cerr << " - " << _usExtendedAPIGetName(api) << " ("
+			<< _usExtendedAPIGetType(api) << ")" << std::endl;
+		_usDestroyExtendedAPI(api);
+		apiListIndex++;
+	}
+	free(apiList);
 
 	// destroying the simulator
 	bool done = _usDestroySimulator(simulator);

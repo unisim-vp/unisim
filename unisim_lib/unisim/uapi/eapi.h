@@ -4,9 +4,9 @@
 **                           *******************                           **
 **                                                                         **
 ** project   : UNISIM C API                                                **
-** filename  : priv.h                                                      **
+** filename  : eapi.h                                                      **
 ** version   : 1                                                           **
-** date      : 5/5/2011                                                    **
+** date      : 23/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -17,8 +17,8 @@
 
 */
 
-#ifndef __UNISIM__UAPI__INCLUDED
-#define __UNISIM__UAPI__INCLUDED
+#ifndef __UNISIM__UAPI__EAPI__INCLUDED
+#define __UNISIM__UAPI__EAPI__INCLUDED
 
 /****************************************************************************/
 /**                                                                        **/
@@ -27,9 +27,6 @@
 /****************************************************************************/
 
 #include "unisim/uapi/types.h"
-#include "unisim/uapi/simulator.h"
-#include "unisim/uapi/variable.h"
-#include "unisim/uapi/eapi.h"
 
 extern "C"
 {
@@ -52,7 +49,7 @@ extern "C"
 /**                                                                        **/
 /****************************************************************************/
 
-#ifndef __UNISIM__UAPI__C_SRC
+#ifndef __UNISIM__UAPI__EAPI__C_SRC
 #endif
 
 /****************************************************************************/
@@ -60,6 +57,44 @@ extern "C"
 /**                     EXPORTED FUNCTIONS                                 **/
 /**                                                                        **/
 /****************************************************************************/
+
+/****************************************************************************/
+void usDestroyExtendedAPI(UnisimExtendedAPI api);
+/****************************************************************************/
+/*
+ * Destroys an extended api handler.
+ *
+ * Parameters:
+ *   - api: the api to destroy.
+ *
+ * Returns: None.
+ */
+
+/****************************************************************************/
+const char *usExtendedAPIGetName(UnisimExtendedAPI api);
+/****************************************************************************/
+/*
+ * Get the name of an api.
+ *
+ * Parameters:
+ *   - api: the api to identify.
+ *
+ * Returns: A null terminated string with the name of the api on success. 0
+ *          otherwise.
+ */
+
+/****************************************************************************/
+const char *usExtendedAPIGetType(UnisimExtendedAPI api);
+/****************************************************************************/
+/*
+ * Get the type of an api.
+ *
+ * Parameters:
+ *   - api: the api to tipify.
+ *
+ * Returns: A null terminated string with the name of the api type on success.
+ *          0 otherwise.
+ */
 
 }
 

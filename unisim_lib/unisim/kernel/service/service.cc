@@ -1918,6 +1918,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, imports()
 	, exports()
 	, variables()
+	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
@@ -2451,6 +2452,39 @@ void Simulator::Unregister(ServiceExportBase *srv_export)
 	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
 	export_iter = exports.find(srv_export->GetName());
 	if(export_iter != exports.end()) exports.erase(export_iter);
+}
+
+void Simulator::Register(unisim::kernel::api::APIBase *api)
+{
+	if ( apis.find(api->GetName()) != apis.end() )
+	{
+		cerr << "ERROR! API \"" << api->GetName() << "\" already exists" << endl;
+		exit(1);
+	}
+
+	apis[api->GetName()] = api;
+}
+
+void Simulator::Unregister(unisim::kernel::api::APIBase *api)
+{
+	map<const char *, unisim::kernel::api::APIBase *, ltstr>::iterator api_iter;
+	api_iter = apis.find(api->GetName());
+	if ( api_iter != apis.end() )
+	{
+		apis.erase(api_iter);
+	}
+}
+
+void Simulator::GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const
+{
+	map<const char *, unisim::kernel::api::APIBase *, ltstr>::const_iterator api_iter;
+
+	for ( api_iter = apis.begin();
+			api_iter != apis.end();
+			api_iter++ )
+	{
+		api_list.push_back(api_iter->second);
+	}
 }
 
 void Simulator::Dump(ostream& os)
@@ -3479,6 +3513,13 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 bool Simulator::IsWarningEnabled() const
 {
 	return enable_warning;
+}
+
+unisim::kernel::api::APIBase *
+Simulator::
+GetAPIs()
+{
+	return 0;
 }
 
 } // end of namespace service

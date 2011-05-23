@@ -6,7 +6,7 @@
 ** project   : UNISIM C API                                                **
 ** filename  : simulator.c                                                 **
 ** version   : 1                                                           **
-** date      : 12/5/2011                                                   **
+** date      : 23/5/2011                                                   **
 **                                                                         **
 *****************************************************************************
 **                                                                         **
@@ -47,6 +47,7 @@ struct _UnisimSimulator
 	Simulator *simulator;
 	UnisimSimulatorStatus simulatorStatus;
 	std::map<UnisimVariable, UnisimVariable> variablesRegistered;
+	std::map<UnisimExtendedAPI, UnisimExtendedAPI> apisRegistered;
 };
 
 /****************************************************************************/
@@ -166,6 +167,17 @@ bool usDestroySimulator(UnisimSimulator simulator)
 		usDestroyUnregisteredVariable(variablesRegisteredIterator->second);
 	}
 
+	std::map<UnisimExtendedAPI, UnisimExtendedAPI>::iterator
+		apisRegisteredIterator;
+	for ( apisRegisteredIterator = simulator->apisRegistered.begin();
+			apisRegisteredIterator != simulator->apisRegistered.end();
+			apisRegisteredIterator = simulator->apisRegistered.begin() )
+	{
+		usSimulatorUnregisterExtendedAPI(simulator,
+				apisRegisteredIterator->second);
+		usDestroyUnregisteredExtendedAPI(apisRegisteredIterator->second);
+	}
+
 	delete(simulator->simulator);
 	simulator->simulator = 0;
 	free(simulator);
@@ -238,6 +250,79 @@ const char *usSimulatorGetVersion(UnisimSimulator simulator)
 	std::string simulatorVersion = 
 		(std::string)*simulator->simulator->FindVariable("version");
 	return simulatorVersion.c_str();
+}
+
+/****************************************************************************/
+UnisimExtendedAPI *usSimulatorGetExtendedAPIList(UnisimSimulator simulator)
+/****************************************************************************/
+{
+	std::list<unisim::kernel::api::APIBase *> unisimApiList;
+	UnisimExtendedAPI *apiList;
+
+	if ( simulator == 0 ) return 0;
+
+	simulator->simulator->GetAPIs(unisimApiList);
+
+	if ( unisimApiList.size() == 0 ) return 0;
+
+	apiList = (UnisimExtendedAPI *)malloc(sizeof(UnisimExtendedAPI) *
+			(unisimApiList.size() + 1));
+
+	if ( apiList == 0 ) return 0;
+
+	apiList = (UnisimExtendedAPI *)memset(apiList,
+			0,
+			sizeof(UnisimExtendedAPI) * (unisimApiList.size() + 1));
+	
+	std::list<unisim::kernel::api::APIBase *>::iterator unisimApiListIterator;
+	int apiListIndex;
+	bool error;
+	apiListIndex = 0;
+	error = false;
+	for ( unisimApiListIterator = unisimApiList.begin();
+			(!error) && (unisimApiListIterator != unisimApiList.end());
+			unisimApiListIterator++ )
+	{
+		UnisimExtendedAPI api =
+			usCreateExtendedAPI(simulator, *unisimApiListIterator);
+		if ( api == 0 ) error = true;
+		else apiList[apiListIndex] = api;
+		apiListIndex++;
+//		std::cerr << "EAPI "
+//			<< (*apiListIterator)->GetName()
+//			<< " (" << (*apiListIterator)->GetAPITypeName() << ")"
+//			<< std::endl;
+		// unisim::util::debug::debugger_handler::DebuggerHandler *cur
+		// 	= dynamic_cast<unisim::util::debug::debugger_handler::DebuggerHandler *>(*apiListIterator);
+		// unisim::kernel::api::APIBase *cur
+		// 	= dynamic_cast<unisim::kernel::api::APIBase *>(*apiListIterator);
+//		if ( unisim::util::debug::debugger_handler::DebuggerHandler::DEBUGGER_API_ID.compare(
+//				(*apiListIterator)->GetAPITypeName()) == 0 )
+//			std::cerr << "DebuggerHandler" << std::endl;
+//		else
+//			std::cerr << "No DebuggerHandler" << std::endl;
+//		unisim::service::debug::sim_debugger::SimDebugger<uint32_t> *cur
+//			= dynamic_cast<unisim::service::debug::sim_debugger::SimDebugger<uint32_t> *>(*apiListIterator);
+//		if ( cur != NULL) 
+//			std::cerr << "DebuggerHandler" << std::endl;
+//		else
+//			std::cerr << "No DebuggerHandler" << std::endl;
+	}
+
+	if ( error )
+	{
+		for ( apiListIndex = 0;
+				apiList[apiListIndex] != 0;
+				apiListIndex++ )
+		{
+			usDestroyExtendedAPI(apiList[apiListIndex]);
+			apiList[apiListIndex] = 0;
+		}
+		free(apiList);
+		return 0;
+	}
+
+	return apiList;
 }
 
 /****************************************************************************/
@@ -358,42 +443,9 @@ UnisimVariable *usSimulatorGetVariableListWithType(UnisimSimulator simulator,
 
 /****************************************************************************/
 /**                                                                        **/
-/**                     LOCAL FUNCTIONS                                    **/
+/**                 PRIVATELY EXPORTED FUNCTIONS                           **/
 /**                                                                        **/
 /****************************************************************************/
-
-/****************************************************************************/
-bool TransformVariableTypeToUnisimVariableBaseType(
-		UnisimVariableType variableType,
-		unisim::kernel::service::VariableBase::Type &unisimVariableBaseType)
-/****************************************************************************/
-{
-	switch ( variableType )
-	{
-		case UNISIM_VARIABLE_TYPE_VOID: 
-			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_VOID; 
-			break;
-		case UNISIM_VARIABLE_TYPE_ARRAY:
-			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_ARRAY;
-			break;
-		case UNISIM_VARIABLE_TYPE_PARAMETER:
-			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_PARAMETER;
-			break;
-		case UNISIM_VARIABLE_TYPE_STATISTIC:
-			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_STATISTIC;
-			break;
-		case UNISIM_VARIABLE_TYPE_REGISTER:
-			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_REGISTER;
-			break;
-		case UNISIM_VARIABLE_TYPE_FORMULA:
-			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_FORMULA;
-			break;
-		default:
-			return false;
-			break;
-	}
-	return true;
-}
 
 /****************************************************************************/
 void usSimulatorRegisterVariable(UnisimSimulator simulator, 
@@ -438,13 +490,13 @@ void usSimulatorUnregisterVariable(UnisimSimulator simulator,
 
 	if ( simulator == 0 )
 	{
-		std::cerr << "Warning!!!: trying to register variable without"
+		std::cerr << "Warning!!!: trying to unregister variable without"
 			<< " handling simulator '" << usVariableGetName(variable) << "'"
 			<< std::endl;
 	}
 	if ( variable == 0 )
 	{
-		std::cerr << "Warning!!!: trying to register variable without"
+		std::cerr << "Warning!!!: trying to register api without"
 			<< " handling variable"
 			<< std::endl;
 	}
@@ -461,6 +513,113 @@ void usSimulatorUnregisterVariable(UnisimSimulator simulator,
 	}
 
 	simulator->variablesRegistered.erase(variableIterator);
+}
+
+/****************************************************************************/
+void usSimulatorRegisterExtendedAPI(UnisimSimulator simulator, 
+		UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	std::map<UnisimExtendedAPI, UnisimExtendedAPI>::iterator apiIterator;
+
+	if ( simulator == 0 )
+	{
+		std::cerr << "Warning!!!: trying to register api without"
+			<< " handling simulator '" << usExtendedAPIGetName(api) << "'"
+			<< std::endl;
+	}
+	if ( api == 0 )
+	{
+		std::cerr << "Warning!!!: trying to register api without"
+			<< " handling api"
+			<< std::endl;
+	}
+	if ( (simulator == 0) || (api == 0) ) 
+		return;
+
+	apiIterator = simulator->apisRegistered.find(api);
+	if ( apiIterator != simulator->apisRegistered.end() )
+	{
+		std::cerr << "Warning!!!: trying to register a api multiple"
+			<< " times '" << usExtendedAPIGetName(api) << "'"
+			<< std::endl;
+		return;
+	}
+
+	simulator->apisRegistered[api] = api;
+}
+
+/****************************************************************************/
+void usSimulatorUnregisterExtendedAPI(UnisimSimulator simulator,
+		UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	std::map<UnisimExtendedAPI, UnisimExtendedAPI>::iterator apiIterator;
+
+	if ( simulator == 0 )
+	{
+		std::cerr << "Warning!!!: trying to unregister variable without"
+			<< " handling simulator '" << usExtendedAPIGetName(api) << "'"
+			<< std::endl;
+	}
+	if ( api == 0 )
+	{
+		std::cerr << "Warning!!!: trying to unregister api without"
+			<< " handling api"
+			<< std::endl;
+	}
+	if ( (simulator == 0) || (api == 0) ) 
+		return;
+
+	apiIterator = simulator->apisRegistered.find(api);
+	if ( apiIterator == simulator->apisRegistered.end() )
+	{
+		std::cerr << "Warning!!!: trying to unregister a api that was"
+			<< " not registered '" << usExtendedAPIGetName(api)  << "'"
+			<< std::endl;
+		return;
+	}
+
+	simulator->apisRegistered.erase(apiIterator);
+}
+
+/****************************************************************************/
+/**                                                                        **/
+/**                     LOCAL FUNCTIONS                                    **/
+/**                                                                        **/
+/****************************************************************************/
+
+/****************************************************************************/
+bool TransformVariableTypeToUnisimVariableBaseType(
+		UnisimVariableType variableType,
+		unisim::kernel::service::VariableBase::Type &unisimVariableBaseType)
+/****************************************************************************/
+{
+	switch ( variableType )
+	{
+		case UNISIM_VARIABLE_TYPE_VOID: 
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_VOID; 
+			break;
+		case UNISIM_VARIABLE_TYPE_ARRAY:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_ARRAY;
+			break;
+		case UNISIM_VARIABLE_TYPE_PARAMETER:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_PARAMETER;
+			break;
+		case UNISIM_VARIABLE_TYPE_STATISTIC:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_STATISTIC;
+			break;
+		case UNISIM_VARIABLE_TYPE_REGISTER:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_REGISTER;
+			break;
+		case UNISIM_VARIABLE_TYPE_FORMULA:
+			unisimVariableBaseType = unisim::kernel::service::VariableBase::VAR_FORMULA;
+			break;
+		default:
+			return false;
+			break;
+	}
+	return true;
 }
 
 /****************************************************************************/

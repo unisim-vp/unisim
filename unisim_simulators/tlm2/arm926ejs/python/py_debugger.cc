@@ -855,8 +855,8 @@ PyDebugger_NewDebugger (unisim::util::debug::debugger_handler::DebuggerHandler *
 	debugger_DebuggerObject *self;
 	self = (debugger_DebuggerObject *)debugger_DebuggerType.tp_alloc(
 			&debugger_DebuggerType, 0);
-	unisim::kernel::service::Object *obj = debugger->GetParentObject();
-	self->name = new std::string(obj->GetName());
+	// unisim::kernel::service::Object *obj = debugger->GetParentObject();
+	self->name = new std::string(debugger->GetName());
 	self->simulator = sim;
 	self->debugger = debugger;
 	self->debug_context = 0;

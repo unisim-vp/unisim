@@ -31,6 +31,7 @@
 #include "unisim/uapi/config.h"
 #include "unisim/uapi/simulator_priv.h"
 #include "unisim/uapi/variable_priv.h"
+#include "unisim/uapi/eapi_priv.h"
 
 extern "C"
 {

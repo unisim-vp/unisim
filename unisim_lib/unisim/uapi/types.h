@@ -25,6 +25,8 @@ extern "C"
 	typedef struct _UnisimSimulator *UnisimSimulator;
 
 	typedef struct _UnisimVariable *UnisimVariable;
+
+	typedef struct _UnisimExtendedAPI *UnisimExtendedAPI;
 }
 
 #endif // __UNISIM__UAPI__TYPES_H__
