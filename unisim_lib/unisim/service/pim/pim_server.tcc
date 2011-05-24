@@ -1596,6 +1596,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 					unsigned int colno = stmt->GetColNo();
 
 					sstr << ";" << lineno << ";" << colno;
+
 				}
 			}
 		}
@@ -1606,6 +1607,50 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		OutputText(packet.c_str(), packet.length());
 
+	}
+	else if (cmdPrefix.compare("srcaddr") == 0) {
+// ******************************
+		// qRcmd,saddr:filename;lineno;colno
+		std::stringstream sstr;
+
+		int start_index = separator_index + 1;
+		int end_index = command.find(';');
+		string source_filename = command.substr(start_index, end_index-start_index);
+
+		start_index = end_index+1;
+
+		end_index = command.find(';', start_index);
+		string lineno = command.substr(start_index, end_index-start_index);
+		start_index = end_index+1;
+
+		start_index = end_index+1;
+
+		end_index = command.find(';', start_index);
+		string colno = command.substr(start_index, end_index-start_index);
+		start_index = end_index+1;
+
+		const Statement<ADDRESS> *stmt = 0;
+
+		if(stmt_lookup_import)
+		{
+			stmt = stmt_lookup_import->FindStatement(source_filename.c_str(), convertTo<unsigned int>(lineno), convertTo<unsigned int>(colno));
+		}
+
+		if(stmt)
+		{
+			ADDRESS addr = stmt->GetAddress();
+			sstr << std::hex << addr;
+
+			string packet(sstr.str());
+
+			PutPacket(packet.c_str());
+
+		} else {
+			PutPacket("E00");
+		}
+
+
+// ******************************
 	}
 	else if (cmdPrefix.compare("statistics") == 0) {
 
