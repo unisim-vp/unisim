@@ -301,6 +301,7 @@ void Crossbar<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& 
 				event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp, &ev_completed);
 				schedule.Notify(event);
 				wait(ev_completed);
+				t = SC_ZERO_TIME;
 			}
 			break;
 		default:

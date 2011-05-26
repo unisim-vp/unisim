@@ -54,6 +54,8 @@
 #include <unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh>
 #include <unisim/component/cxx/interconnect/xilinx/crossbar/config.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
+#include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
@@ -119,8 +121,8 @@ class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_ro
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 4;
-	static const unsigned int MAX_NUM_MAPPINGS = 4;
+	static const unsigned int OUTPUT_SOCKETS = 5;
+	static const unsigned int MAX_NUM_MAPPINGS = 5;
 	static const unsigned int BUSWIDTH = 128;
 };
 
@@ -130,8 +132,8 @@ class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router:
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 4;
-	static const unsigned int MAX_NUM_MAPPINGS = 4;
+	static const unsigned int OUTPUT_SOCKETS = 5;
+	static const unsigned int MAX_NUM_MAPPINGS = 5;
 	static const unsigned int BUSWIDTH = 128;
 };
 
@@ -140,7 +142,9 @@ typedef MPLBConfig MPLB_CONFIG;
 
 typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
 typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
+typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CONFIG;
 static const unsigned int TIMER_IRQ = 3;
+static const unsigned int UART_LITE_IRQ = 2;
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -179,6 +183,7 @@ private:
 	typedef unisim::component::tlm2::memory::flash::am29::AM29<AM29_CONFIG, 32 * unisim::component::cxx::memory::flash::am29::M, 2, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
+	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<UART_LITE_CONFIG> UART_LITE;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
@@ -228,6 +233,8 @@ private:
 	DCR_CONTROLLER *dcr_controller;
 	// - Crossbar
 	CROSSBAR *crossbar;
+	// - UART Lite
+	UART_LITE *uart_lite;
 	// - DCR stubs
 	MASTER1_DCR_STUB *master1_dcr_stub;
 	APU_DCR_STUB *apu_dcr_stub;
@@ -292,6 +299,7 @@ Simulator::Simulator(int argc, char **argv)
 	, pwm_stub(0)
 	, dcr_controller(0)
 	, crossbar(0)
+	, uart_lite(0)
 	, master1_dcr_stub(0)
 	, apu_dcr_stub(0)
 	, mci_dcr_stub(0)
@@ -335,15 +343,19 @@ Simulator::Simulator(int argc, char **argv)
 	//  - IRQ Stubs
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
-		if(irq == TIMER_IRQ)
+		switch(irq)
 		{
-			input_interrupt_stub[irq] = 0;
-		}
-		else
-		{
-			std::stringstream input_interrupt_stub_name_sstr;
-			input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
-			input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str());
+			case TIMER_IRQ:
+			case UART_LITE_IRQ:
+				input_interrupt_stub[irq] = 0;
+				break;
+			default:
+				{
+					std::stringstream input_interrupt_stub_name_sstr;
+					input_interrupt_stub_name_sstr << "input-interrupt-stub" << irq;
+					input_interrupt_stub[irq] = new IRQ_STUB(input_interrupt_stub_name_sstr.str().c_str());
+				}
+				break;
 		}
 	}
 	critical_input_interrupt_stub = new IRQ_STUB("critical-input-interrupt-stub");
@@ -379,6 +391,8 @@ Simulator::Simulator(int argc, char **argv)
 	dcr_controller = new DCR_CONTROLLER("dcr-controller");
 	// - Crossbar
 	crossbar = new CROSSBAR("crossbar");
+	// - UART Lite
+	uart_lite = new UART_LITE("uart-lite");
 	// - DCR stubs
 	master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub");
 	apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub");
@@ -443,20 +457,25 @@ Simulator::Simulator(int argc, char **argv)
 	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
 	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
 	
-	(*mplb->init_socket[0])(intc->slave_sock);   // MPLB <-> INTC
-	(*mplb->init_socket[1])(timer->slave_sock);  // MPLB <-> TIMER
-	(*mplb->init_socket[2])(flash->slave_sock);  // MPLB <-> FLASH
-	(*mplb->init_socket[3])(rom->slave_sock);    // MPLB <-> ROM
+	(*mplb->init_socket[0])(intc->slave_sock);      // MPLB <-> INTC
+	(*mplb->init_socket[1])(timer->slave_sock);     // MPLB <-> TIMER
+	(*mplb->init_socket[2])(flash->slave_sock);     // MPLB <-> FLASH
+	(*mplb->init_socket[3])(rom->slave_sock);       // MPLB <-> ROM
+	(*mplb->init_socket[4])(uart_lite->slave_sock); // MPLB <-> UART Lite
 	
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
-		if(irq == TIMER_IRQ)
+		switch(irq)
 		{
-			timer->interrupt_master_sock(*intc->irq_slave_sock[irq]); // TIMER>IRQ <-> INTR<INTC
-		}
-		else
-		{
-			(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
+			case TIMER_IRQ:
+				timer->interrupt_master_sock(*intc->irq_slave_sock[irq]); // TIMER>IRQ <-> INTR<INTC
+				break;
+			case UART_LITE_IRQ:
+				uart_lite->interrupt_master_sock(*intc->irq_slave_sock[irq]); // UART Lite>IRQ <-> INTR<INTC
+				break;
+			default:
+				(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
+				break;
 		}
 	}
 	for(channel = 0; channel < TIMER_CONFIG::NUM_TIMERS; channel++)
@@ -559,6 +578,7 @@ Simulator::~Simulator()
 	if(timer) delete timer;
 	if(flash) delete flash;
 	if(crossbar) delete crossbar;
+	if(uart_lite) delete uart_lite;
 	if(master1_dcr_stub) delete master1_dcr_stub;
 	if(apu_dcr_stub) delete apu_dcr_stub;
 	if(mci_dcr_stub) delete mci_dcr_stub;
@@ -643,12 +663,16 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - Crossbar
 	simulator->SetVariable("crossbar.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
+	//  - UART Lite
+	simulator->SetVariable("uart-lite.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
 	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
 	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
+	simulator->SetVariable("mplb.mapping_4", "range_start=\"0x84000000\" range_end=\"0x8400ffff\" output_port=\"4\" translation=\"0x84000000\""); // XPS UART Lite
 
 	//  - RAM
 	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
@@ -855,7 +879,15 @@ void Simulator::Stop(Object *object, int _exit_status)
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
-	wait();
+	switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+	{
+		case SC_THREAD_PROC_: 
+		case SC_CTHREAD_PROC_:
+			wait();
+			break;
+		default:
+			break;
+	}
 }
 
 int Simulator::GetExitStatus() const

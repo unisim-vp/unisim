@@ -105,8 +105,8 @@ private:
 		typedef enum
 		{
 			// In order of priority
-			EV_WAKE_UP,           // a wake-up
-			EV_CPU,               // a CPU request occured
+			EV_TELNET_IO,   // telnet I/O
+			EV_CPU,         // a CPU request occured
 		} Type;
 		
 		class Key
@@ -114,7 +114,7 @@ private:
 		public:
 			Key()
 				: time_stamp(SC_ZERO_TIME)
-				, type(EV_WAKE_UP)
+				, type(EV_TELNET_IO)
 			{
 			}
 			
@@ -172,9 +172,9 @@ private:
 			Clear();
 		}
 		
-		void InitializeWakeUpEvent(const sc_time& time_stamp)
+		void InitializeTelnetIOEvent(const sc_time& time_stamp)
 		{
-			key.Initialize(time_stamp, EV_WAKE_UP);
+			key.Initialize(time_stamp, EV_TELNET_IO);
 			cpu_payload = 0;
 			ev_completed = 0;
 		}

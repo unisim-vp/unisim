@@ -45,10 +45,101 @@ namespace processor {
 namespace powerpc {
 namespace ppc440 {
 
+template <class CONFIG>
+int CPU<CONFIG>::StringLength(typename CONFIG::address_t addr)
+{
+	int len = 0;
+	char buffer;
+
+	while(1)
+	{
+		ReadMemory(addr, &buffer, 1);
+		if(buffer == 0) return len;
+		len++;
+		addr += 1;
+	}
+}
+
+template <class CONFIG>
+std::string CPU<CONFIG>::ReadString(typename CONFIG::address_t addr, unsigned int count)
+{
+	if(!count)
+	{
+		count = StringLength(addr);
+	}
+	
+	char *buf = (char *) calloc(count + 1, 1);
+	ReadMemory(addr, buf, count);
+
+	std::stringstream sstr;
+
+	bool open_string = false;
+	unsigned int i;
+	for(i = 0; i <= count; i++)
+	{
+		char c = buf[i];
+		if(c < ' ') // control character
+		{
+			switch(c)
+			{
+				case '\n':
+				case '\r':
+				case '\e':
+				case '\a':
+				case '\f':
+				case '\t':
+				case '\v':
+				case '\'':
+				case '\\':
+					if(!open_string)
+					{
+						sstr << "\"";
+						open_string = true;
+					}
+					switch(c)
+					{
+						case '\n': sstr << "\\n"; break;
+						case '\r': sstr << "\\r"; break;
+						case '\e': sstr << "\\e"; break;
+						case '\a': sstr << "\\a"; break;
+						case '\f': sstr << "\\f"; break;
+						case '\t': sstr << "\\t"; break;
+						case '\v': sstr << "\\v"; break;
+						case '\'': sstr << "\\'"; break;
+						case '\\': sstr << "\\\\"; break;
+					}
+					if(i == count) sstr << "\"";
+					break;
+				default:
+					if(open_string) sstr << "\"";
+					sstr << " \\0x" << std::hex << (unsigned int) c << std::dec;
+					if((i != count) && open_string) sstr << "\"";
+					break;
+			}
+		}
+		else
+		{
+			if(!open_string)
+			{
+				sstr << "\"";
+				open_string = true;
+			}
+			sstr << c;
+			if(i == count) sstr << "\"";
+		}
+	}
+		
+	free(buf);
+	
+	return sstr.str();
+}
+
 /* System call exception */
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+	
 	if(linux_os_import)
 	{
 		// Do Linux ABI translation
@@ -74,9 +165,242 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim
 			sstr << "At 0x" << std::hex << GetCIA() << std::dec;
 			const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 			if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-			sstr << ", got a " << exc.what() << " (syscall #" << GetGPR(0) << ")";
-			std::string msg = sstr.str();
+			sstr << ", got a " << exc.what();
 
+			if(unlikely(enable_linux_syscall_snooping))
+			{
+				sstr << ": ";
+				
+				switch(GetGPR(0))
+				{
+					case 1:
+						sstr << "exit(0x" << std::hex << GetGPR(3) << std::dec << ");";
+						break;
+						
+					case 2:
+						sstr << "fork()";
+						break;
+				
+					case 3:
+						sstr << "read(fd=" << (signed) GetGPR(3) << ", buf=@0x" << std::hex << GetGPR(4) << std::dec
+								<< ", count=" << GetGPR(5) << ");";
+						break;
+				
+					case 4:
+						{
+							int fd; 
+			
+							fd = GetGPR(3);
+							
+							sstr << "write(fd=" << (signed) GetGPR(3) << ", buf=@0x" << std::hex << GetGPR(4) << std::dec;
+							if((fd == 1) || (fd == 2))
+							{
+								std::string str = ReadString(GetGPR(4), GetGPR(5));
+								sstr << " " << str;
+							}
+							
+							sstr << ", count=" << GetGPR(5) << ");";
+						}
+						break;
+						
+					case 5:
+						sstr << "open(pathname=" << ReadString(GetGPR(3)) << ", flags=0x" << std::hex << GetGPR(4) 
+									<< ", mode=0x" << GetGPR(5) << std::dec << ");";
+						break;
+					
+					case 6:
+						sstr << "close(fd=" << (signed) GetGPR(3) << ");";
+						break;
+						
+					case 7:
+						sstr << "waitpid(pid=" << (int32_t) GetGPR(3) << ",status=@0x" << std::hex << GetGPR(4) << std::dec << ",options=0x" << std::hex << GetGPR(5) << std::dec << ");";
+						break;
+						
+					case 8:
+						sstr << "creat(filename=" << ReadString(GetGPR(3)) << ", mode=0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 9:
+						sstr << "link(old_path=" << ReadString(GetGPR(3)) << ", new_path=" << ReadString(GetGPR(4)) << ");";
+						break;
+						
+					case 10:
+						sstr << "unlink(path=" << ReadString(GetGPR(3)) << ");";
+						break;
+
+					case 11:
+						sstr << "execve(filename=" << ReadString(GetGPR(3)) << ", argv=0x" << std::hex << GetGPR(4) << ", envp=0x" << GetGPR(5) << std::dec << ");";
+						break;
+						
+					case 12:
+						sstr << "chdir(path=" << ReadString(GetGPR(3)) << ");";
+						break;
+						
+					case 13:
+						sstr << "time(t=@0x" << std::hex << GetGPR(3) << std::dec << ");";
+						break;
+
+					case 14:
+						sstr << "mknod(pathname=" << ReadString(GetGPR(3)) << ", mode=0x" << std::hex << GetGPR(4) << ", dev=0x" << GetGPR(5) << std::dec << ");";
+						break;
+						
+					case 15:
+						sstr << "chmod(pathname=" << ReadString(GetGPR(3)) << ", mode=0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 20:
+						sstr << "getpid();";
+						break;
+						
+					case 21:
+						sstr << "mount(source=" << ReadString(GetGPR(3)) << ", target=" << ReadString(GetGPR(4)) << ", filesystemtype="
+								<< ReadString(GetGPR(5)) << ", mountflags=0x" << std::hex << GetGPR(6) << ", data=@0x"
+								<< GetGPR(7) << std::dec << ");";
+						break;
+					
+					case 22:
+						sstr << "umount(target=" << ReadString(GetGPR(4)) << ");";
+						break;
+						
+					case 23:
+						sstr << "setuid(uid=" << GetGPR(3) << ");";
+						break;
+						
+					case 24:
+						sstr << "getuid();";
+						break;
+					
+					case 33:
+						sstr << "access(pathname=" << ReadString(GetGPR(3))
+							<< ", mode=0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 39:
+						sstr << "mkdir(pathname=" << ReadString(GetGPR(3)) << ", mode=0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 45:
+						sstr << "brk(end_data_segment=@0x" << std::hex << GetGPR(3) << std::dec << ");";
+						break;
+						
+					case 46:
+						sstr << "setgid(gid=" << GetGPR(3) << ");";
+						break;
+					
+					case 47:
+						sstr << "getgid();";
+						break;
+						
+					case 49:
+						sstr << "geteuid();";
+						break;
+						
+					case 50:
+						sstr << "getegid();";
+						break;
+						
+					case 54:
+						sstr << "ioctl(d=" << (signed) GetGPR(3) << ",request=" << (signed) GetGPR(4) << ", argp=@" << std::hex << GetGPR(5) << std::dec << ");";
+						break;
+					
+					case 60:
+						sstr << "umask(mask=0x" << std::hex << GetGPR(3) << std::dec << ");";
+						break;
+						
+					case 63:
+						sstr << "dup2(old=" << (signed) GetGPR(3) << ", new=" << (signed) GetGPR(4) << ");";
+						break;
+						
+					case 64:
+						sstr << "getppid();";
+						break;
+						
+					case 66:
+						sstr << "setsid();";
+						break;
+						
+					case 88:
+						sstr << "reboot(magic=" << (signed) GetGPR(3) << ",magic2=" << (signed) GetGPR(4) << ",cmd=" << (signed) GetGPR(5) << ",arg=@0x" << std::hex << GetGPR(6) << std::dec << ");";
+						break;
+						
+					case 90:
+						sstr << "mmap(addr=@0x" << std::hex << GetGPR(3) << std::dec << ", length=" << GetGPR(4) << ", prot=0x"
+								<< std::hex << GetGPR(5) << ", flags=0x" << GetGPR(6) << std::dec << ", fd=" << (signed) GetGPR(7)
+								<< ", offset=" << GetGPR(8) << ");";
+						break;
+						
+					case 91:
+						sstr << "munmap(addr=@0x" << std::hex << GetGPR(3) << std::dec << ", length=" << GetGPR(4) << ");";
+						break;
+						
+					case 106:
+						sstr << "stat(path=" << ReadString(GetGPR(3)) << ", buf=@0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 114:
+						sstr << "wait4(pid=" << GetGPR(3) << ", status=@0x" << std::hex << GetGPR(4) << ", options=0x" << GetGPR(5) << ", rusage=@0x" << GetGPR(6) << std::dec << ");";
+						break;
+					
+					case 120:
+						sstr << "clone(fn=0x" << std::hex << GetGPR(3) << ", child_stack=0x" << GetGPR(4) << ", flags=0x" << GetGPR(5) << ", arg=@0x" << GetGPR(6) << std::dec << ");";
+						break;
+						
+					case 122:
+						sstr << "uname(buf=@0x" << std::hex << GetGPR(3) << std::dec << ");";
+						break;
+						
+					case 141:
+						sstr << "getdents(fd=" << (signed) GetGPR(3) << ", dirp=@0x" << std::hex << GetGPR(4) << std::dec << ", count=" << GetGPR(5) << ");";
+						break;
+						
+					case 173:
+						sstr << "rt_sigaction(signum=" << (signed) GetGPR(3) << ", act=@0x" << std::hex << GetGPR(4) << ", oldact=@0x" << GetGPR(5) << std::dec << ", sigsetsize=" << GetGPR(6) << ");";
+						break;
+						
+					case 174:
+						sstr << "rt_sigprocmask(how=" << (signed) GetGPR(3) << ", set=@0x" << std::hex << GetGPR(4) << ", oldset=@0x" << GetGPR(5) << std::dec << ", sigsetsize=" << GetGPR(6) << ");";
+						break;
+						
+					case 182:
+						sstr << "getcwd(buf=@0x" << std::hex << GetGPR(3) << std::dec << ", size=" << GetGPR(4) << ");";
+						break;
+						
+					case 189:
+						sstr << "vfork();";
+						break;
+						
+					case 195:
+						sstr << "stat64(path=" << ReadString(GetGPR(3)) << ", buf=@0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 196:
+						sstr << "lstat64(path=" << ReadString(GetGPR(3)) << ", buf=@0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 197:
+						sstr << "fstat64(fd=" << (signed) GetGPR(3) << ", buf=@0x" << std::hex << GetGPR(4) << std::dec << ");";
+						break;
+						
+					case 202:
+						sstr << "getdents64(fd=" << (signed) GetGPR(3) << ", dirp=@0x" << std::hex << GetGPR(4) << std::dec << ", count=" << GetGPR(5) << ");";
+						break;
+						
+					case 204:
+						sstr << "fcntl64(fd=" << (signed) GetGPR(3) << ", cmd=0x" << std::hex << GetGPR(4) << std::dec << ", arg=@0x" << std::hex << GetGPR(5) << std::dec << ");";
+						break;
+						
+					case 234:
+						sstr << "exit_group(" << (signed) GetGPR(3) << ");";
+						break;
+						
+					default:
+						sstr << "unknown_syscall_" << GetGPR(0) << "();";
+						break;
+				}
+			}
+			
+			std::string msg = sstr.str();
+			
 			if(IsVerboseException()) logger << DebugInfo << msg << EndDebugInfo;
 			if(enable_trap_on_exception && trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
 		}
@@ -86,6 +410,8 @@ void CPU<CONFIG>::HandleException(const SystemCallException<CONFIG>& exc, unisim
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -129,6 +455,8 @@ void CPU<CONFIG>::HandleException(const MachineCheckException<CONFIG>& exc, unis
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -141,7 +469,7 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DECREMENTER));
 	
-	//ResetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
+	ResetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
@@ -164,6 +492,8 @@ void CPU<CONFIG>::HandleException(const DecrementerInterruptException<CONFIG>& e
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -199,6 +529,8 @@ void CPU<CONFIG>::HandleException(const ExternalInputInterruptException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -234,6 +566,8 @@ void CPU<CONFIG>::HandleException(const CriticalInputInterruptException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -246,8 +580,13 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 	
 	SetDEAR(exc.GetAddress()); // effective address causing the esception
 
-	SetESR(GetESR() & CONFIG::ESR_MCI_MASK); // leave ESR[MCI] unmodified, other ESR bits set to 0
-	
+	// leave ESR[MCI] unmodified
+	// alter ESR[FP], ESR[ST], ESR[DLK], ESR[AP] and ESR[BO]
+	uint32_t esr_value = (GetESR() & CONFIG::ESR_MCI_MASK) | 
+		(operation->get_esr() & (CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK | CONFIG::ESR_DLK_MASK | CONFIG::ESR_AP_MASK | CONFIG::ESR_BO_MASK));
+		
+	SetESR(esr_value);
+
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_DATA_STORAGE));
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception))
@@ -273,6 +612,8 @@ void CPU<CONFIG>::HandleException(const DSIException<CONFIG>& exc, unisim::compo
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -308,6 +649,8 @@ void CPU<CONFIG>::HandleException(const ISIException<CONFIG>& exc, unisim::compo
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -320,6 +663,8 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 	
 	SetDEAR(exc.GetAddress()); // effective address causing the esception
 
+	// leave ESR[MCI] unmodified
+	// alter ESR[FP], ESR[ST], ESR[AP]
 	uint32_t esr_value = (GetESR() & CONFIG::ESR_MCI_MASK) | (operation->get_esr() & (CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK | CONFIG::ESR_AP_MASK));
 	SetESR(esr_value);
 	
@@ -348,6 +693,8 @@ void CPU<CONFIG>::HandleException(const DataTLBErrorException<CONFIG>& exc, unis
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -381,6 +728,8 @@ void CPU<CONFIG>::HandleException(const InstructionTLBErrorException<CONFIG>& ex
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -419,6 +768,8 @@ void CPU<CONFIG>::HandleException(const AlignmentException<CONFIG>& exc, unisim:
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -475,6 +826,8 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc, unisim::c
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -508,6 +861,8 @@ void CPU<CONFIG>::HandleException(const FloatingPointUnavailableException<CONFIG
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -541,6 +896,8 @@ void CPU<CONFIG>::HandleException(const AuxiliaryProcessorUnavailableException<C
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -553,7 +910,7 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 	
 	SetNIA(GetIVPR() | GetIVOR(CONFIG::IVOR_FIXED_INTERVAL_TIMER));
 
-	//ResetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
+	ResetIRQ(CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT);
 
 	if(unlikely(IsVerboseException() || enable_trap_on_exception))
 	{
@@ -576,6 +933,8 @@ void CPU<CONFIG>::HandleException(const FixedIntervalTimerInterruptException<CON
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();
@@ -611,6 +970,8 @@ void CPU<CONFIG>::HandleException(const WatchDogTimerInterruptException<CONFIG>&
 template <class CONFIG>
 void CPU<CONFIG>::HandleException(const DebugInterruptException<CONFIG>& exc, unisim::component::cxx::processor::powerpc::ppc440::Operation<CONFIG> *operation)
 {
+	num_interrupts++;
+
 	// Invalidate shadow TLBs
 	InvalidateITLB();
 	InvalidateDTLB();

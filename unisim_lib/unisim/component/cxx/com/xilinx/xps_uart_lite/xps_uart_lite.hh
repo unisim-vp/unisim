@@ -78,6 +78,9 @@ public:
 	
 	bool Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& value, bool debug = false);
 	void Write(typename CONFIG::MEMORY_ADDR addr, uint8_t value, bool debug = false);
+	bool Read(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size);
+	void Write(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size);
+	
 	bool IsMapped(typename CONFIG::MEMORY_ADDR addr, uint32_t size) const;
 protected:
 	unisim::kernel::logger::Logger logger;

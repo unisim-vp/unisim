@@ -97,6 +97,7 @@ public:
 	bool interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& payload, tlm::tlm_dmi& dmi_data);
 
 	virtual void Synchronize();
+	virtual void Idle();
 	
 	void Run();
 	
@@ -123,6 +124,8 @@ private:
 	sc_time timer_time;
 	sc_time nice_time;
 	sc_time max_idle_time;
+	sc_time global_time;
+	sc_time idle_time;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
 	double ipc;
@@ -131,6 +134,7 @@ private:
 	Parameter<sc_time> param_ext_timer_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Statistic<sc_time> stat_idle_time;
 	
 	class Event
 	{

@@ -300,6 +300,7 @@ public:
 	void StepOneInstruction();
 	virtual void Synchronize();
 	virtual void Reset();
+	virtual void Idle();
 
 	//=====================================================================
 	//=                     CPU control handling methods                  =
@@ -524,8 +525,29 @@ public:
 			}
 		}
 	}
+	inline void DecrementDEC(uint64_t delta)
+	{
+		uint32_t old_dec = GetDEC();
+		if(old_dec > 0)
+		{
+			assert(delta <= old_dec);
+			uint32_t new_dec = old_dec - delta;
+			
+			SetDEC(new_dec);
+			
+			if(unlikely(new_dec == 0))
+			{
+				SetIRQ(CONFIG::IRQ_DECREMENTER_INTERRUPT);
+				if(GetTCR_ARE())
+				{
+					SetDEC(GetDECAR());
+				}
+			}
+		}
+	}
 	inline uint32_t GetDEC() const { return dec; }
 	inline void IncrementTB() { SetTB(GetTB() + 1); }
+	inline void IncrementTB(uint64_t delta) { SetTB(GetTB() + delta); }
 	inline uint64_t GetTB() const { return tb; }
 	inline void SetTB(uint64_t value)
 	{
@@ -550,6 +572,66 @@ public:
 	inline uint32_t GetTBU() const { return (uint32_t)(GetTB() >> 32); }
 	inline void SetTBU(uint32_t value) { SetTB((GetTB() & 0x00000000ffffffffULL) | ((uint64_t) value << 32)); }
 
+	uint64_t GetMaxIdleTime() const
+	{
+		uint64_t delay_dec = 0xffffffffffffffffULL;
+		uint64_t delay_fit = 0xffffffffffffffffULL;
+		uint64_t delay_watchdog = 0xffffffffffffffffULL;
+		
+		if(GetMSR_EE())
+		{
+			if(GetTCR_DIE())
+			{
+				delay_dec = GetDEC();
+				//std::cerr << "Time for DEC to reach zero: " << delay_dec << std::endl;
+			}
+			
+			if(GetTCR_FIE())
+			{
+				uint32_t tcr_fp = GetTCR_FP();
+				uint32_t tb_fit_mask = 4096 << (4 * tcr_fp);
+				
+				if(GetTB() & tb_fit_mask)
+				{
+					// time to toogle from 1 to 0
+					delay_fit = tb_fit_mask - (GetTB() & (tb_fit_mask - 1));
+					// time to toogle from 0 to 1
+					delay_fit += tb_fit_mask;
+				}
+				else
+				{
+					// time to toogle from 0 to 1
+					delay_fit = tb_fit_mask - (GetTB() & (tb_fit_mask - 1));
+				}
+				//std::cerr << "Time for FIT: " << delay_fit << " (tb=0x" << std::hex << GetTB() << std::dec << ", FIT mask=" << std::hex << tb_fit_mask << std::dec << ")" << std::endl;
+			}
+		}
+		
+		if(GetTCR_WIE() && GetMSR_CE())
+		{
+			uint32_t tcr_wp = GetTCR_WP();
+			uint32_t tb_watchdog_mask = 1048576 << (4 * tcr_wp);
+			
+			if(tb & tb_watchdog_mask)
+			{
+				// time to toogle from 1 to 0
+				delay_watchdog = tb_watchdog_mask - (GetTB() & (tb_watchdog_mask - 1));
+				// time to toogle from 0 to 1
+				delay_watchdog += tb_watchdog_mask;
+			}
+			else
+			{
+				// time to toogle from 0 to 1
+				delay_watchdog = tb_watchdog_mask - (GetTB() & (tb_watchdog_mask - 1));
+			}
+			//std::cerr << "Time for WDG: " << delay_watchdog << " (tb=0x" << std::hex << GetTB() << std::dec << ", WDG mask=" << std::hex << tb_watchdog_mask << std::dec << ")" << std::endl;
+		}
+		
+		uint64_t max_idle_time = delay_dec < delay_fit ? (delay_dec < delay_watchdog ? delay_dec : delay_watchdog) : (delay_fit < delay_watchdog ? delay_fit : delay_watchdog);
+		//std::cerr << "Max idle time=" << max_idle_time << std::endl;
+		return max_idle_time;
+	}
+	
 	//=====================================================================
 	//=                        XER set/get methods                        =
 	//=====================================================================
@@ -743,6 +825,8 @@ public:
 	virtual const char *GetArchitectureName() const;
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);
 	string GetFunctionFriendlyName(typename CONFIG::address_t addr);
+	int StringLength(typename CONFIG::address_t addr);
+	std::string ReadString(typename CONFIG::address_t addr, unsigned int count = 0);
 	typename CONFIG::address_t linux_printk_buf_addr;
 	uint32_t linux_printk_buf_size;
 
@@ -786,6 +870,7 @@ protected:
 	//=====================================================================
 	
 	void OnTimerClock();
+	void RunTimers(uint64_t delta);
 	
 	//=====================================================================
 	//=                        Debugging stuff                            =
@@ -853,7 +938,7 @@ private:
 	template <bool DEBUG> void EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access);
 	void DumpITLB(std::ostream& os);
 	void DumpDTLB(std::ostream& os);
-	void DumpUTLB(std::ostream& os);
+	void DumpUTLB(std::ostream& os, int highlight_index = -1, int hightligh_way = -1);
 	
 	void InvalidateDL1Set(uint32_t index);
 	void InvalidateDL1();
@@ -923,9 +1008,11 @@ private:
 	bool verbose_set_msr;
 	bool verbose_tlbwe;
 	bool enable_linux_printk_snooping;
+	bool enable_linux_syscall_snooping;
 	uint64_t trap_on_instruction_counter;
 	bool enable_trap_on_exception;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
+	uint64_t num_interrupts;
 
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
 	uint64_t instruction_counter;                              //!< Number of executed instructions
@@ -1100,6 +1187,7 @@ private:
 	Parameter<bool> param_verbose_set_msr;
 	Parameter<bool> param_verbose_tlbwe;
 	Parameter<bool> param_enable_linux_printk_snooping;
+	Parameter<bool> param_enable_linux_syscall_snooping;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Parameter<bool> param_enable_trap_on_exception;
 
@@ -1124,6 +1212,7 @@ private:
 	Statistic<uint64_t> stat_num_utlb_accesses;
 	Statistic<uint64_t> stat_num_utlb_misses;
 	Formula<double> formula_utlb_miss_rate;
+	Statistic<uint64_t> stat_num_interrupts;
 };
 
 } // end of namespace ppc440

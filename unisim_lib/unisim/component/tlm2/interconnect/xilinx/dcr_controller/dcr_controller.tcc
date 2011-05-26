@@ -139,6 +139,7 @@ void DCRController<CONFIG>::b_transport(unsigned int num_master, tlm::tlm_generi
 		event->Initialize(&payload, intf, notify_time_stamp, &ev_completed);
 		schedule.Notify(event);
 		wait(ev_completed);
+		t = SC_ZERO_TIME;
 	}
 	else
 	{

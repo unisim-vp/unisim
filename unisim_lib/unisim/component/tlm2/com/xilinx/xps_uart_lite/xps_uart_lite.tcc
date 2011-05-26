@@ -62,7 +62,7 @@ XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_module_name& name, Object *parent)
 	, slave_sock("slave-sock")
 	, interrupt_master_sock("interrupt-master-sock")
 	, cycle_time()
-	, telnet_refresh_time(1.0, SC_MS)
+	, telnet_refresh_time(100.0, SC_MS)
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_telnet_refresh_time("telnet-refresh-time", this, telnet_refresh_time, "Telnet refresh time")
@@ -290,29 +290,41 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 
 			switch(event->GetType())
 			{
-				case Event::EV_WAKE_UP:
-					schedule.FreeEvent(event);
+				case Event::EV_TELNET_IO:
+					{
+						schedule.FreeEvent(event);
+						// schedule a wake for handling I/O with telnet client
+						sc_time notify_time_stamp(sc_time_stamp());
+						notify_time_stamp += telnet_refresh_time;
+						AlignToClock(notify_time_stamp);
+						event = schedule.AllocEvent();
+						event->InitializeTelnetIOEvent(notify_time_stamp);
+						schedule.Notify(event);
+					}
 					break;
 				case Event::EV_CPU:
 					ProcessCPUEvent(event);
 					schedule.FreeEvent(event);
+					inherited::TelnetProcess();       // Handle I/O with telnet client
 					break;
 			}
 			
 		}
 		while((event = schedule.GetNextEvent()) != 0);
 	}
+	else
+	{
+		// schedule a first wake for handling I/O with telnet client
+		sc_time notify_time_stamp(sc_time_stamp());
+		notify_time_stamp += telnet_refresh_time;
+		AlignToClock(notify_time_stamp);
+		event = schedule.AllocEvent();
+		event->InitializeTelnetIOEvent(notify_time_stamp);
+		schedule.Notify(event);
+	}
 		
-	GenerateOutput();      // Generate interrupt signal
+	GenerateOutput();                 // Generate interrupt signal
 	inherited::TelnetProcess();       // Handle I/O with telnet client
-	
-	// schedule a wake for handling I/O with telnet client
-	sc_time notify_time_stamp(sc_time_stamp());
-	notify_time_stamp += telnet_refresh_time;
-	AlignToClock(notify_time_stamp);
-	event = schedule.AllocEvent();
-	event->InitializeWakeUpEvent(notify_time_stamp);
-	schedule.Notify(event);
 }
 
 template <class CONFIG>
@@ -394,12 +406,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 					}
 
 					memset(data_ptr, 0, data_length);
-					uint8_t value;
-					if(inherited::Read(addr, value))
-					{
-						memcpy(data_ptr, &value, 1);
-					}
-					else
+					if(!inherited::Read(addr, data_ptr, data_length))
 					{
 						status = tlm::TLM_GENERIC_ERROR_RESPONSE;
 					}
@@ -416,9 +423,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 							<< EndDebugInfo;
 					}
 					
-					uint8_t value;
-					memcpy(&value, data_ptr, 1);
-					inherited::Write(addr, value);
+					inherited::Write(addr, data_ptr, data_length);
 				}
 				break;
 			case tlm::TLM_IGNORE_COMMAND:

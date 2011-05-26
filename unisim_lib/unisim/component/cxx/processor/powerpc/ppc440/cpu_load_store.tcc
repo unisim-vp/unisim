@@ -118,7 +118,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 			if(linux_printk_buf_addr && (mmu_access.addr >= linux_printk_buf_addr) && (mmu_access.addr < (linux_printk_buf_addr + linux_printk_buf_size)))
 			{
 				uint32_t i;
-				cout << "\033[31m";
+				//cout << "\033[31m";
 				for(i = 0; i < size; i++)
 				{
 					char c = ((const char *) buffer)[i];
@@ -127,7 +127,7 @@ void CPU<CONFIG>::EmuStore(MMUAccess<CONFIG>& mmu_access, const void *buffer, ui
 							cout << c;
 					}
 				}
-				cout << "\033[37m";
+				//cout << "\033[37m";
 			}
 		}
 	}
@@ -493,6 +493,12 @@ void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 {
+/*	if((ea == 0xbf63ffe0) && (cia == 0xfe509d4))
+	{
+		DumpUTLB(std::cerr);
+		trap_reporting_import->ReportTrap();
+		return;
+	}*/
 	uint32_t value = gpr[rs];
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));

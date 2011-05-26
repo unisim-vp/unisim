@@ -125,9 +125,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_set_msr(false)
 	, verbose_tlbwe(false)
 	, enable_linux_printk_snooping(false)
+	, enable_linux_syscall_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
 	, max_inst(0xffffffffffffffffULL)
+	, num_interrupts(0)
 	, registers_registry()
 	, instruction_counter(0)
 	, fp32_estimate_inv_warning(false)
@@ -173,6 +175,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr, "enable/disable verbosity when setting MSR")
 	, param_verbose_tlbwe("verbose-tlbwe",  this,  verbose_tlbwe, "enable/disable verbosity when executing a tlbwe instruction")
 	, param_enable_linux_printk_snooping("enable-linux-printk-snooping", this, enable_linux_printk_snooping, "enable/disable linux printk buffer snooping")
+	, param_enable_linux_syscall_snooping("enable-linux-syscall-snooping", this, enable_linux_syscall_snooping, "enable/disable linux syscall snooping")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 	, param_enable_trap_on_exception("enable-trap-on-exception", this, enable_trap_on_exception, "enable/disable trap reporting on exception")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
@@ -193,6 +196,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, stat_num_utlb_accesses("num-utlb-accesses", this, num_utlb_accesses, "number of accesses to unified data translation look-aside buffer")
 	, stat_num_utlb_misses("num-utlb-misses", this, num_utlb_misses, "number of misses to unified data translation look-aside buffer")
 	, formula_utlb_miss_rate("utlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_utlb_misses, &stat_num_utlb_accesses, "unified data translation look-aside buffer miss rate")
+	, stat_num_interrupts("num-interrupts", this, num_interrupts, "Number of interrupts")
 {
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -670,6 +674,7 @@ void CPU<CONFIG>::Reset()
 
 	timer_cycle = 0;
 	instruction_counter = 0;
+	num_interrupts = 0;
 
 	irq = 0;
 
@@ -1482,6 +1487,11 @@ void CPU<CONFIG>::StepOneInstruction()
 	
 	//DL1SanityCheck();
 	//IL1SanityCheck();
+	
+/*	if((instruction_counter > 1000) && ((cia & 0xc0000000) != 0xc0000000))
+	{
+		trap_reporting_import->ReportTrap();
+	}*/
 }
 
 template <class CONFIG>
@@ -1494,6 +1504,18 @@ void CPU<CONFIG>::OnTimerClock()
 
 	/* decrement the decrementer each timer cycle */
 	DecrementDEC();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::RunTimers(uint64_t delta)
+{
+	timer_cycle += delta;
+	
+	/* update the time base */
+	IncrementTB(delta);
+
+	/* decrement the decrementer each timer cycle */
+	DecrementDEC(delta);
 }
 
 template <class CONFIG>
@@ -1565,6 +1587,8 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(unlikely(IsVerboseSetMSR()))
 			logger << DebugInfo << "Processor enters in the wait state" << endl << EndDebugInfo;
+		Idle();
+		ResetMSR_WE();
 	}
 
 	if(old_msr_we && !GetMSR_WE())
@@ -1871,6 +1895,10 @@ void CPU<CONFIG>::Rfmci()
 	SetMSR(GetMCSRR1());
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::Idle()
+{
+}
 
 template <class CONFIG>
 ostream& operator << (ostream& os, const MMUAccess<CONFIG>& mmu_access)

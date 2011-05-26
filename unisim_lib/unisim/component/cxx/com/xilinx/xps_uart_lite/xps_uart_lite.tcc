@@ -90,6 +90,7 @@ XPS_UARTLite<CONFIG>::XPS_UARTLite(const char *name, Object *parent)
 	, telnet_input_buffer_index(0)
 	, telnet_output_buffer_size(0)
 {
+	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_c_baseaddr.SetMutable(false);
 	param_c_highaddr.SetMutable(false);
 
@@ -169,10 +170,7 @@ bool XPS_UARTLite<CONFIG>::EndSetup()
 		socklen_t addr_len;
 #endif
 
-	if(IsVerbose())
-	{
-		logger << DebugInfo << "Listening on TCP port " << telnet_tcp_port << EndDebugInfo;
-	}
+	logger << DebugInfo << "Listening on TCP port " << telnet_tcp_port << EndDebugInfo;
 	addr_len = sizeof(addr);
 	telnet_sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 
@@ -276,10 +274,10 @@ bool XPS_UARTLite<CONFIG>::WriteMemory(typename CONFIG::MEMORY_ADDR addr, const 
 		{
 			uint8_t value;
 			memcpy(&value, src, 1);
+			Write(addr, value, true);
 			size--;
 			src++;
 			addr++;
-			Write(addr, value, true);
 		}
 		while(size);
 	}
@@ -306,7 +304,7 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 	uint8_t reg_value;
 	switch(offset)
 	{
-		case CONFIG::RX_FIFO:
+		case CONFIG::RX_FIFO + 3:
 			if(debug)
 			{
 				reg_value = GetRX_FIFO();
@@ -316,7 +314,7 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 				if(!ReadRX_FIFO(reg_value)) status = false;
 			}
 			break;
-		case CONFIG::STAT_REG:
+		case CONFIG::STAT_REG + 3:
 			reg_value = debug ? GetSTAT_REG() : ReadSTAT_REG();
 			break;
 		default: reg_value = 0; break;
@@ -327,10 +325,22 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 		logger << DebugInfo << "Reading 0x" << std::hex << (unsigned int) reg_value << " from register 0x" << offset << std::dec << " (";
 		switch(offset)
 		{
-			case CONFIG::RX_FIFO: logger << "Rx FIFO"; break;
-			case CONFIG::TX_FIFO: logger << "Tx FIFO"; break;
-			case CONFIG::STAT_REG: logger << "STAT_REG"; break;
-			case CONFIG::CTRL_REG: logger << "CTRL_REG"; break;
+			case CONFIG::RX_FIFO + 0:
+			case CONFIG::RX_FIFO + 1:
+			case CONFIG::RX_FIFO + 2:
+			case CONFIG::RX_FIFO + 3: logger << "Rx FIFO"; break;
+			case CONFIG::TX_FIFO + 0:
+			case CONFIG::TX_FIFO + 1: 
+			case CONFIG::TX_FIFO + 2:
+			case CONFIG::TX_FIFO + 3: logger << "Tx FIFO"; break;
+			case CONFIG::STAT_REG + 0:
+			case CONFIG::STAT_REG + 1:
+			case CONFIG::STAT_REG + 2:
+			case CONFIG::STAT_REG + 3: logger << "STAT_REG"; break;
+			case CONFIG::CTRL_REG + 0:
+			case CONFIG::CTRL_REG + 1:
+			case CONFIG::CTRL_REG + 2:
+			case CONFIG::CTRL_REG + 3: logger << "CTRL_REG"; break;
 			default: logger << "?"; break;
 		}
 		logger << ")" << EndDebugInfo;
@@ -350,10 +360,22 @@ void XPS_UARTLite<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, uint8_t valu
 		logger << DebugInfo << "Writing 0x" << std::hex << (unsigned int) reg_value << " in register 0x" << offset << std::dec << " (";
 		switch(offset)
 		{
-			case CONFIG::RX_FIFO: logger << "Rx FIFO"; break;
-			case CONFIG::TX_FIFO: logger << "Tx FIFO"; break;
-			case CONFIG::STAT_REG: logger << "STAT_REG"; break;
-			case CONFIG::CTRL_REG: logger << "CTRL_REG"; break;
+			case CONFIG::RX_FIFO + 0:
+			case CONFIG::RX_FIFO + 1:
+			case CONFIG::RX_FIFO + 2:
+			case CONFIG::RX_FIFO + 3: logger << "Rx FIFO"; break;
+			case CONFIG::TX_FIFO + 0:
+			case CONFIG::TX_FIFO + 1: 
+			case CONFIG::TX_FIFO + 2:
+			case CONFIG::TX_FIFO + 3: logger << "Tx FIFO"; break;
+			case CONFIG::STAT_REG + 0:
+			case CONFIG::STAT_REG + 1:
+			case CONFIG::STAT_REG + 2:
+			case CONFIG::STAT_REG + 3: logger << "STAT_REG"; break;
+			case CONFIG::CTRL_REG + 0:
+			case CONFIG::CTRL_REG + 1:
+			case CONFIG::CTRL_REG + 2:
+			case CONFIG::CTRL_REG + 3: logger << "CTRL_REG"; break;
 			default: logger << "?"; break;
 		}
 		logger << ")" << EndDebugInfo;
@@ -361,9 +383,63 @@ void XPS_UARTLite<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, uint8_t valu
 
 	switch(offset)
 	{
-		case CONFIG::TX_FIFO: if(debug) SetTX_FIFO(reg_value); else WriteTX_FIFO(reg_value); break;
-		case CONFIG::CTRL_REG: if(!debug) WriteCTRL_REG(reg_value); break;
+		case CONFIG::TX_FIFO + 3:
+			if(debug)
+			{
+				SetTX_FIFO(reg_value);
+			}
+			else
+			{
+				WriteTX_FIFO(reg_value);
+			}
+			break;
+			
+		case CONFIG::CTRL_REG + 3:
+			if(!debug) WriteCTRL_REG(reg_value);
+			break;
 		default: break;
+	}
+}
+
+template <class CONFIG>
+bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size)
+{
+	bool status = true;
+	if(size > 0)
+	{
+		uint8_t *dst = (uint8_t *) buffer;
+		
+		do
+		{
+			uint8_t value;
+			status = Read(addr, value) && status;
+			memcpy(dst, &value, 1);
+			size--;
+			dst++;
+			addr++;
+		}
+		while(size);
+	}
+	return status;
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, const void *buffer, uint32_t size)
+{
+	if(size > 0)
+	{
+		const uint8_t *src = (const uint8_t *) buffer;
+		
+		do
+		{
+			uint8_t value;
+			memcpy(&value, src, 1);
+			Write(addr, value);
+			size--;
+			src++;
+			addr++;
+		}
+		while(size);
 	}
 }
 
@@ -507,7 +583,7 @@ void XPS_UARTLite<CONFIG>::TelnetPutChar(char c)
 
 	telnet_output_buffer[telnet_output_buffer_size++] = c;
 
-	if(c == '\n')
+	if(c < ' ') // flush if we're outputing control characters
 	{
 		TelnetFlushOutput();
 	}
