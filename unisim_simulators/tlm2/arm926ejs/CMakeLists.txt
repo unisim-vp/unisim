@@ -98,7 +98,7 @@ set ( sim_subdirs
 	unisim/service/debug/gdb_server
 	unisim/service/debug/inline_debugger
 	unisim/service/debug/sim_debugger
-	unisim/util/debug/debugger_handler
+	unisim/api/debug
 	unisim/service/loader/elf_loader
 	unisim/service/loader/raw_loader
 	unisim/service/trap_handler
@@ -298,7 +298,7 @@ set ( sim__libraries
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
-	unisim__util__debug__debugger_handler
+	unisim__api__debug
 	unisim__service__trap_handler
 	)
 if ( BUILD_POWER_SUPPORT )
@@ -426,7 +426,7 @@ set ( sim__deps
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
-	unisim__util__debug__debugger_handler
+	unisim__api__debug
 	unisim__service__loader__elf_loader
 	unisim__service__loader__raw_loader
 	unisim__service__trap_handler
@@ -496,7 +496,7 @@ if ( BUILD_PYTHON_MODULE )
 		 'unisim__util__xml',
 		 'unisim__util__generic_peripheral_register',
 		 'unisim__kernel',
-		 'unisim__util__debug__debugger_handler',
+		 'unisim__api__debug',
 		 'xml2',
 		 'systemc'")
 	if ( BUILD_POWER_SUPPORT )

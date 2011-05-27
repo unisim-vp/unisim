@@ -610,7 +610,7 @@ simulator_has_debugger (armemu_SimulatorObject *self)
 
 	// PySys_WriteStdout("Checking for the existence of debugger:\n");
 
-	found = self->sim->HasAPI<unisim::util::debug::debugger_handler::DebuggerHandler>();
+	found = self->sim->HasAPI<unisim::api::debug::DebugAPI>();
 
 	if ( found )
 		Py_RETURN_TRUE;
@@ -626,11 +626,11 @@ simulator_get_debuggers (armemu_SimulatorObject *self, PyObject *args)
 	result = PyList_New(0);
 
 
-	std::list<unisim::util::debug::debugger_handler::DebuggerHandler *> 
-		list_debuggers = self->sim->GetAPI<unisim::util::debug::debugger_handler::DebuggerHandler>();
+	std::list<unisim::api::debug::DebugAPI *> 
+		list_debuggers = self->sim->GetAPI<unisim::api::debug::DebugAPI>();
 
 
-	for ( std::list<unisim::util::debug::debugger_handler::DebuggerHandler *>::iterator it = list_debuggers.begin();
+	for ( std::list<unisim::api::debug::DebugAPI *>::iterator it = list_debuggers.begin();
 			it != list_debuggers.end();
 			it++ )
 	{

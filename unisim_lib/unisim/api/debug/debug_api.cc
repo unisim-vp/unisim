@@ -31,25 +31,25 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-#include "unisim/util/debug/debugger_handler/debugger_handler.hh"
+
+#include "unisim/api/debug/debug_api.hh"
 
 namespace unisim {
-namespace util {
+namespace api {
 namespace debug {
-namespace debugger_handler {
 
-const std::string DebuggerHandler::DEBUGGER_API_ID("DebuggerAPI");
+const std::string DebugAPI::DEBUGAPI_ID("DebugAPI");
 
-DebuggerHandler::
-DebuggerHandler(const char *_name, unisim::kernel::service::Object *parent)
-	: APIBase(_name, DebuggerHandler::DEBUGGER_API_ID.c_str(), parent)
+DebugAPI::
+DebugAPI(const char *_name, unisim::kernel::service::Object *parent)
+	: APIBase(_name, DebugAPI::DEBUGAPI_ID.c_str(), parent)
 	, handler_context(0)
 	, breakpoint_handler_function(0)
 	, watchpoint_handler_function(0)
 {}
 
-DebuggerHandler::
-~DebuggerHandler()
+DebugAPI::
+~DebugAPI()
 {
 	handler_context = 0;
 	breakpoint_handler_function = 0;
@@ -57,7 +57,7 @@ DebuggerHandler::
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 HasBreakpoint(const char *str)
 {
 	uint64_t addr = 0;
@@ -70,7 +70,7 @@ HasBreakpoint(const char *str)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetBreakpoint(const char *str)
 {
 	uint64_t addr = 0;
@@ -83,7 +83,7 @@ SetBreakpoint(const char *str)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 DeleteBreakpoint(const char *str)
 {
 	uint64_t addr = 0;
@@ -96,7 +96,7 @@ DeleteBreakpoint(const char *str)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetWatchpoint(const char *str, uint32_t size)
 {
 	uint64_t addr = 0;
@@ -109,7 +109,7 @@ SetWatchpoint(const char *str, uint32_t size)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetReadWatchpoint(const char *str, uint32_t size)
 {
 	uint64_t addr = 0;
@@ -122,7 +122,7 @@ SetReadWatchpoint(const char *str, uint32_t size)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetWriteWatchpoint(const char *str, uint32_t size)
 {
 	uint64_t addr = 0;
@@ -135,7 +135,7 @@ SetWriteWatchpoint(const char *str, uint32_t size)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 DeleteWatchpoint(const char *str, uint32_t size)
 {
 	uint64_t addr = 0;
@@ -148,7 +148,7 @@ DeleteWatchpoint(const char *str, uint32_t size)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 DeleteReadWatchpoint(const char *str, uint32_t size)
 {
 	uint64_t addr = 0;
@@ -161,7 +161,7 @@ DeleteReadWatchpoint(const char *str, uint32_t size)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 DeleteWriteWatchpoint(const char *str, uint32_t size)
 {
 	uint64_t addr = 0;
@@ -174,7 +174,7 @@ DeleteWriteWatchpoint(const char *str, uint32_t size)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetHandlerContext(void *context)
 {
 	handler_context = context;
@@ -182,7 +182,7 @@ SetHandlerContext(void *context)
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetBreakpointHandler(
 		void (*function)(void *, uint64_t))
 {
@@ -191,7 +191,7 @@ SetBreakpointHandler(
 }
 
 bool
-DebuggerHandler::
+DebugAPI::
 SetWatchpointHandler(
 		void (*function)(void *, uint64_t, bool))
 {
@@ -200,7 +200,7 @@ SetWatchpointHandler(
 }
 
 void
-DebuggerHandler::
+DebugAPI::
 CallBreakpointHandler(uint64_t addr)
 {
 	if ( breakpoint_handler_function )
@@ -208,14 +208,13 @@ CallBreakpointHandler(uint64_t addr)
 }
 
 void
-DebuggerHandler::
+DebugAPI::
 CallWatchpointHandler(uint64_t addr, bool read)
 {
 	if ( watchpoint_handler_function )
 		watchpoint_handler_function(handler_context, addr, read);
 }
 
-} // end of namespace debugger_handler
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace api
+} // end of namespace kernel
 } // end of namespace unisim

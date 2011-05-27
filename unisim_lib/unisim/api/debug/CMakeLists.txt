@@ -1,4 +1,4 @@
-message ( STATUS "Checking unisim::util::debug::debugger_handler" )
+message ( STATUS "Checking unisim::api::debug" )
 
 include ( CheckIncludeFile )
 include ( ${CMAKE_SOURCE_DIR}/cmake/UnisimInclude.cmake )
@@ -12,9 +12,9 @@ foreach ( C_INCLUDE ${C_INCLUDES} )
 endforeach ( C_INCLUDE )
 
 include_directories ( ${CMAKE_SOURCE_DIR} )
-add_library ( unisim__util__debug__debugger_handler
-		${CMAKE_SOURCE_DIR}/unisim/util/debug/debugger_handler/debugger_handler.hh
-		${CMAKE_SOURCE_DIR}/unisim/util/debug/debugger_handler/debugger_handler.cc
+add_library ( unisim__api__debug
+		${CMAKE_SOURCE_DIR}/unisim/api/debug/debug_api.hh
+		${CMAKE_SOURCE_DIR}/unisim/api/debug/debug_api.cc
 	)
 
-message ( STATUS "Checking unisim::service::debug::sim_debugger - done" )
+message ( STATUS "Checking unisim::api::debug - done" )

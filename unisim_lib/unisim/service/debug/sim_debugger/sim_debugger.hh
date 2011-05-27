@@ -49,7 +49,8 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
-#include <unisim/util/debug/debugger_handler/debugger_handler.hh>
+
+#include <unisim/api/debug/debug_api.hh>
 
 #include <unisim/kernel/service/service.hh>
 
@@ -116,7 +117,7 @@ class SimDebugger
 	, public Client<Loader<ADDRESS> >
 	, public Client<StatementLookup<ADDRESS> >
 	, public SimDebuggerBase
-	, public unisim::util::debug::debugger_handler::DebuggerHandler
+	, public unisim::api::debug::DebugAPI
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;

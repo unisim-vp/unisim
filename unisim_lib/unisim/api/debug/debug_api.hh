@@ -32,25 +32,24 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DEBUGGER_HANDLER_DEBUGGER_HANDLER_HH__
-#define __UNISIM_UTIL_DEBUG_DEBUGGER_HANDLER_DEBUGGER_HANDLER_HH__
+#ifndef __UNISIM_API_DEBUG_DEBUGAPI_HH__
+#define __UNISIM_API_DEBUG_DEBUGAPI_HH__
 
 #include <inttypes.h>
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/api/api.hh"
 
 namespace unisim {
-namespace util {
+namespace api {
 namespace debug {
-namespace debugger_handler {
 
-class DebuggerHandler
+class DebugAPI
 	: public unisim::kernel::api::APIBase
 {
 public:
-	static const std::string DEBUGGER_API_ID;
-	DebuggerHandler(const char *_name, unisim::kernel::service::Object *parent);
-	virtual ~DebuggerHandler();
+	static const std::string DEBUGAPI_ID;
+	DebugAPI(const char *_name, unisim::kernel::service::Object *parent);
+	virtual ~DebugAPI();
 	virtual bool SetStepMode() = 0;
 	virtual bool SetContinueMode() = 0;
 	virtual bool IsModeStep() = 0;
@@ -91,9 +90,8 @@ private:
 	void (*watchpoint_handler_function)(void *, uint64_t, bool);
 };
 
-} // end of namespace debugger_handler
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace api
+} // end of namespace kernel
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_DEBUG_DEBUGGER_HANDLER_DEBUGGER_HANDLER_HH__
+#endif // __UNISIM_API_DEBUG_DEBUG_API__
