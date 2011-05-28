@@ -493,12 +493,6 @@ void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 {
-/*	if((ea == 0xbf63ffe0) && (cia == 0xfe509d4))
-	{
-		DumpUTLB(std::cerr);
-		trap_reporting_import->ReportTrap();
-		return;
-	}*/
 	uint32_t value = gpr[rs];
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));

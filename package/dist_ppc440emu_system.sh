@@ -148,6 +148,7 @@ unisim/service/loader/raw_loader/raw_loader32.cc \
 unisim/service/loader/ppc_uboot/ppc_uboot32.cc \
 unisim/service/loader/ppc_linux_kernel_loader/ppc_linux_kernel_loader32.cc \
 unisim/service/translator/memory_address/memory/translator.cc \
+unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -282,6 +283,7 @@ unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/char_io.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
@@ -300,6 +302,7 @@ unisim/service/power/cache_dynamic_energy.hh \
 unisim/service/power/cache_dynamic_power.hh \
 unisim/service/power/cache_leakage_power.hh \
 unisim/service/translator/memory_address/memory/translator.hh \
+unisim/service/telnet/telnet.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \

@@ -394,8 +394,6 @@ void CPU<CONFIG>::Idle()
 	sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
-	idle_time += delta_time;
-	
 	if(delta_time > cpu_time)
 	{
 		idle_time += delta_time;

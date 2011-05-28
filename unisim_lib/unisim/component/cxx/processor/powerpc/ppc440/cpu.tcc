@@ -562,18 +562,7 @@ bool CPU<CONFIG>::EndSetup()
 		
 		logger << "voltage of " << ((double) voltage / 1e3) << " V" << endl;
 
-/*		if(bus_cycle_time > 0)
-			logger << "bus cycle time of " << bus_cycle_time << " ps" << endl;*/
-		
 		logger << EndDebugInfo;
-		
-/*		if(bus_cycle_time <= 0)
-		{
-			logger << DebugError;
-			logger << "bus cycle time must be > 0" << endl;
-			logger << EndDebugError;
-			return false;
-		}*/
 	}
 
 	if(il1_power_mode_import)
@@ -1195,16 +1184,6 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 		}
 		case 0x150:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-/*			{
-				std::stringstream sstr;
-				sstr << "At 0x" << std::hex << GetCIA() << std::dec;
-				const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-				if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-				sstr << ", mttsr 0x" << std::hex << value << std::dec;
-				std::string msg = sstr.str();
-				
-				if(trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
-			}*/
 			SetTSR(GetTSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
 			return;
 		case 0x154:
@@ -1488,10 +1467,6 @@ void CPU<CONFIG>::StepOneInstruction()
 	//DL1SanityCheck();
 	//IL1SanityCheck();
 	
-/*	if((instruction_counter > 1000) && ((cia & 0xc0000000) != 0xc0000000))
-	{
-		trap_reporting_import->ReportTrap();
-	}*/
 }
 
 template <class CONFIG>

@@ -67,6 +67,7 @@
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/service/loader/ppc_linux_kernel_loader/ppc_linux_kernel_loader.hh>
 #include <unisim/service/loader/elf_loader/elf32_loader.hh>
+#include <unisim/service/telnet/telnet.hh>
 
 #include <iostream>
 #include <stdexcept>
@@ -111,6 +112,7 @@ using unisim::service::loader::elf_loader::Elf32Loader;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
+using unisim::service::telnet::Telnet;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
@@ -270,13 +272,17 @@ private:
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *ram_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *flash_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *rom_effective_to_physical_address_translator;
+	// - telnet
+	unisim::service::telnet::Telnet *telnet;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;
 	bool estimate_power;
+	bool enable_telnet;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_estimate_power;
+	Parameter<bool> param_enable_telnet;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
@@ -320,12 +326,15 @@ Simulator::Simulator(int argc, char **argv)
 	, ram_effective_to_physical_address_translator(0)
 	, flash_effective_to_physical_address_translator(0)
 	, rom_effective_to_physical_address_translator(0)
+	, telnet(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, estimate_power(false)
+	, enable_telnet(false)
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
+	, param_enable_telnet("enable-telnet", 0, enable_telnet, "Enable/Disable telnet instantiation")
 	, exit_status(0)
 {
 	unsigned int irq;
@@ -428,6 +437,8 @@ Simulator::Simulator(int argc, char **argv)
 	ram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("ram-effective-to-physical-address-translator");
 	flash_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
 	rom_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("rom-effective-to-physical-address-translator");
+	// - telnet
+	telnet = enable_telnet ? new unisim::service::telnet::Telnet("telnet") : 0;
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -559,6 +570,11 @@ Simulator::Simulator(int argc, char **argv)
 	rom_loader->memory_import >> rom_effective_to_physical_address_translator->memory_export;
 	ppc_linux_kernel_loader->memory_import >> ram_effective_to_physical_address_translator->memory_export;
 	cpu->symbol_table_lookup_import >> ppc_linux_kernel_loader->symbol_table_lookup_export;
+	
+	if(enable_telnet)
+	{
+		uart_lite->char_io_import >> telnet->char_io_export;
+	}
 }
 
 Simulator::~Simulator()
@@ -614,6 +630,7 @@ Simulator::~Simulator()
 	if(ram_effective_to_physical_address_translator) delete ram_effective_to_physical_address_translator;
 	if(rom_effective_to_physical_address_translator) delete rom_effective_to_physical_address_translator;
 	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
+	if(telnet) delete telnet;
 }
 
 void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)

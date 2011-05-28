@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,58 +31,66 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_TELNET_TELNET_HH__
+#define __UNISIM_SERVICE_TELNET_TELNET_HH__
 
-group fp(mffs, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx)
+#include <unisim/service/interfaces/char_io.hh>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <inttypes.h>
 
-group fp_update_cr0(fadd, fadds, fdiv, fdivs, fmul, fmuls, fsub, fsubs, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, fres, frsqrte, fsel, fsqrt, fsqrts)
+namespace unisim {
+namespace service {
+namespace telnet {
 
-group fp_update_crf(mcrfs, mtfsfi)
+using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::Object;
+using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
+using unisim::service::interfaces::CharIO;
+	
+class Telnet : public Service<CharIO>
+{
+public:
+	ServiceExport<CharIO> char_io_export;
+	
+	Telnet(const char *name, Object *parent = 0);
+	virtual ~Telnet();
 
-group fp_update_crb(mtfsb0, mtfsb1)
+	virtual bool EndSetup();
+	virtual void Reset();
+	virtual bool GetChar(char& c);
+	virtual void PutChar(char c);
+private:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
 
-group st(sthbrx, stwbrx, dcbi, dcbz, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx, stwcx_) 
+	int telnet_tcp_port;
+	int telnet_sock;
 
-group fp_st(stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx)
+	Parameter<bool> param_verbose;
+	Parameter<int> param_telnet_tcp_port;
 
-group fp_cmp(fcmpo, fcmpu)
+	unsigned int telnet_input_buffer_size;
+	unsigned int telnet_input_buffer_index;
+	uint8_t telnet_input_buffer[256];
 
-dcbf.get_esr = {
-	return (0x1 << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK;
-}
+	unsigned int telnet_output_buffer_size;
+	uint8_t telnet_output_buffer[256];
 
-icbi.get_esr = {
-	return (0x2 << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK;
-}
+	void TelnetFlushOutput();
+	void TelnetPut(uint8_t v);
+	bool TelnetGet(uint8_t& v);
+	bool IsVerbose() const;
+};
 
-fp.get_esr = {
-	return CONFIG::ESR_FP_MASK;
-}
+} // end of namespace telnet
+} // end of namespace service
+} // end of namespace unisim
 
-fp_update_cr0.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK;
-}
 
-fp_update_crf.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK | (((uint32_t) crfD << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK);
-}
-
-fp_update_crb.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK | (((uint32_t)(crbD / 4) << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK);
-}
-
-mtfsf.get_esr = {
-	// Note: mtfsf can update all CR fields: Q: what to put into ESR[PCRF]?
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK;
-}
-
-st.get_esr = {
-	return CONFIG::ESR_ST_MASK;
-}
-
-fp_st.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK;
-}
-
-fp_cmp.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCMP_MASK;
-}
+#endif

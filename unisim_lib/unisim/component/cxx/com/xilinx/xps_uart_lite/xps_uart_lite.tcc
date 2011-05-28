@@ -40,23 +40,6 @@
 #include <string.h>
 #include <unisim/util/queue/queue.tcc>
 
-#include <errno.h>
-
-#ifdef WIN32
-
-#include <winsock2.h>
-
-#else
-
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netinet/tcp.h>
-#include <netdb.h>
-#include <fcntl.h>
-
-#endif
-
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -75,22 +58,21 @@ template <class CONFIG>
 XPS_UARTLite<CONFIG>::XPS_UARTLite(const char *name, Object *parent)
 	: Object(name, parent)
 	, Service<Memory<typename CONFIG::MEMORY_ADDR> >(name, parent)
+	, Client<CharIO>(name, parent)
 	, memory_export("memory-export", this)
+	, char_io_import("char-io-import", this)
 	, logger(*this)
 	, verbose(false)
+	, rx_fifo()
+	, tx_fifo()
+	, stat_reg(CONFIG::STAT_REG_RESET_VALUE)
+	, tx_fifo_becomes_empty(false)
 	, c_baseaddr(CONFIG::C_BASEADDR)
 	, c_highaddr(CONFIG::C_HIGHADDR)
-	, telnet_tcp_port(23)
-	, telnet_sock(-1)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_c_baseaddr("c-baseaddr", this, c_baseaddr, "Base address (C_BASEADDR design parameter)")
 	, param_c_highaddr("c-highaddr", this, c_highaddr, "High address (C_HIGHADDR design parameter)")
-	, param_telnet_tcp_port("telnet-tcp-port", this, telnet_tcp_port, "TCP/IP port of telnet")
-	, telnet_input_buffer_size(0)
-	, telnet_input_buffer_index(0)
-	, telnet_output_buffer_size(0)
 {
-	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_c_baseaddr.SetMutable(false);
 	param_c_highaddr.SetMutable(false);
 
@@ -123,121 +105,17 @@ bool XPS_UARTLite<CONFIG>::BeginSetup()
 }
 
 template <class CONFIG>
-bool XPS_UARTLite<CONFIG>::EndSetup()
-{
-	if(telnet_sock >= 0) return true;
-	
-	struct sockaddr_in addr;
-	int server_sock;
-
-	server_sock = socket(AF_INET, SOCK_STREAM, 0);
-
-	if(server_sock < 0)
-	{
-		logger << DebugError << "socket failed" << EndDebugError;
-		return false;
-	}
-
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(telnet_tcp_port);
-	addr.sin_addr.s_addr = INADDR_ANY;
-	if(bind(server_sock, (struct sockaddr *) &addr, sizeof(addr)) < 0)
-	{
-		logger << DebugError << "Bind failed. TCP Port #" << telnet_tcp_port << " may be already in use. Please specify another port in " << param_telnet_tcp_port.GetName() << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-#else
-		close(server_sock);
-#endif
-		return false;
-	}
-
-	if(listen(server_sock, 1))
-	{
-		logger << DebugError << "Listen failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-#else
-		close(server_sock);
-#endif
-		return false;
-	}
-
-#ifdef WIN32
-		int addr_len;
-#else
-		socklen_t addr_len;
-#endif
-
-	logger << DebugInfo << "Listening on TCP port " << telnet_tcp_port << EndDebugInfo;
-	addr_len = sizeof(addr);
-	telnet_sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
-
-	if(telnet_sock < 0)
-	{
-		logger << DebugError << "accept failed" << EndDebugError;
-#ifdef WIN32
-		closesocket(server_sock);
-#else
-		close(server_sock);
-#endif
-		return false;
-	}
-
-	if(IsVerbose())
-	{
-		logger << DebugInfo << "Connection with telnet client established" << EndDebugInfo;
-	}
-
-#ifdef WIN32
-	u_long NonBlock = 1;
-	if(ioctlsocket(telnet_sock, FIONBIO, &NonBlock) != 0)
-	{
-		logger << DebugError << "ioctlsocket failed" << EndDebugError;
-		closesocket(server_sock);
-		closesocket(telnet_sock);
-		telnet_sock = -1;
-		return false;
-	}
-#else
-	int socket_flag = fcntl(telnet_sock, F_GETFL, 0);
-
-	if(socket_flag < 0)
-	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
-		close(server_sock);
-		close(telnet_sock);
-		telnet_sock = -1;
-		return false;
-	}
-
-	/* Ask for non-blocking reads on socket */
-	if(fcntl(telnet_sock, F_SETFL, socket_flag | O_NONBLOCK) < 0)
-	{
-		logger << DebugError << "fcntl failed" << EndDebugError;
-		close(server_sock);
-		close(telnet_sock);
-		telnet_sock = -1;
-		return false;
-	}
-#endif
-
-#ifdef WIN32
-	closesocket(server_sock);
-#else
-	close(server_sock);
-#endif
-
-	return true;
-}
-
-template <class CONFIG>
 void XPS_UARTLite<CONFIG>::Reset()
 {
 	rx_fifo.Clear();
 	tx_fifo.Clear();
 	stat_reg = CONFIG::STAT_REG_RESET_VALUE;
+	tx_fifo_becomes_empty = false;
+	
+	if(char_io_import)
+	{
+		char_io_import->Reset();
+	}
 }
 
 template <class CONFIG>
@@ -487,8 +365,25 @@ uint8_t XPS_UARTLite<CONFIG>::ReadSTAT_REG()
 {
 	uint8_t v = GetSTAT_REG();
 	
+	if(IsVerbose())
+	{
+		logger << DebugInfo << "STAT_REG: PARITY_ERROR FRAME_ERROR OVERRUN_ERROR INTR_ENABLED TX_FIFO_FULL TX_FIFO_EMPTY RX_FIFO_FULL RX_FIFO_VALID_DATA" << EndDebugInfo;
+		logger << DebugInfo;
+		logger << "                " << ((v & CONFIG::STAT_REG_PARITY_ERROR_MASK) ? '1' : '0');
+		logger << "            " << ((v & CONFIG::STAT_REG_FRAME_ERROR_MASK) ? '1' : '0');
+		logger << "           " << ((v & CONFIG::STAT_REG_OVERRUN_ERROR_MASK) ? '1' : '0');
+		logger << "              " << ((v & CONFIG::STAT_REG_INTR_ENABLED_MASK) ? '1' : '0');
+		logger << "            " << ((v & CONFIG::STAT_REG_TX_FIFO_FULL_MASK) ? '1' : '0');
+		logger << "            " << ((v & CONFIG::STAT_REG_TX_FIFO_EMPTY_MASK) ? '1' : '0');
+		logger << "            " << ((v & CONFIG::STAT_REG_RX_FIFO_FULL_MASK) ? '1' : '0');
+		logger << "               " << ((v & CONFIG::STAT_REG_RX_FIFO_VALID_DATA_MASK) ? '1' : '0');
+		logger << EndDebugInfo;
+	}
+	
 	// reading STAT_REG resets Parity error, Frame error, and overrun error bits
 	stat_reg = stat_reg & ~(CONFIG::STAT_REG_PARITY_ERROR_MASK | CONFIG::STAT_REG_FRAME_ERROR_MASK | CONFIG::STAT_REG_OVERRUN_ERROR_MASK);
+	
+	tx_fifo_becomes_empty = false;
 	
 	return v;
 }
@@ -503,6 +398,12 @@ template <class CONFIG>
 uint8_t XPS_UARTLite<CONFIG>::GetSTAT_REG_INTR_ENABLED() const
 {
 	return (stat_reg & CONFIG::STAT_REG_INTR_ENABLED_MASK) >> CONFIG::STAT_REG_INTR_ENABLED_OFFSET;
+}
+
+template <class CONFIG>
+bool XPS_UARTLite<CONFIG>::TXT_FIFO_BecomesEmpty() const
+{
+	return tx_fifo_becomes_empty;
 }
 
 template <class CONFIG>
@@ -524,6 +425,7 @@ void XPS_UARTLite<CONFIG>::WriteTX_FIFO(uint8_t value)
 	
 	value = value & CONFIG::DATA_MASK;
 	tx_fifo.Push(value);
+	tx_fifo_becomes_empty = false;
 }
 
 template <class CONFIG>
@@ -531,131 +433,84 @@ void XPS_UARTLite<CONFIG>::WriteCTRL_REG(uint8_t value)
 {
 	if(value & CONFIG::CTRL_REG_ENABLE_INTR_MASK)
 	{
+		if(IsVerbose())
+		{
+			logger << DebugInfo << "Enabling interrupt" << EndDebugInfo;
+		}
 		stat_reg = stat_reg | CONFIG::STAT_REG_INTR_ENABLED_MASK;
 	}
 	
 	if(value & CONFIG::CTRL_REG_RST_RX_FIFO_MASK)
 	{
+		if(IsVerbose())
+		{
+			logger << DebugInfo << "Resetting Rx fifo" << EndDebugInfo;
+		}
 		rx_fifo.Clear();
 	}
 
 	if(value & CONFIG::CTRL_REG_RST_TX_FIFO_MASK)
 	{
+		if(IsVerbose())
+		{
+			logger << DebugInfo << "Resetting Tx fifo" << EndDebugInfo;
+		}
 		tx_fifo.Clear();
 	}
 }
 
 template <class CONFIG>
-void XPS_UARTLite<CONFIG>::TelnetFlushOutput()
-{
-	if(telnet_output_buffer_size > 0)
-	{
-		unsigned int index = 0;
-		do
-		{
-#ifdef WIN32
-			int r = send(telnet_sock, telnet_output_buffer + index, telnet_output_buffer_size, 0);
-			if(r == 0 || r == SOCKET_ERROR)
-#else
-			ssize_t r = write(telnet_sock, telnet_output_buffer + index, telnet_output_buffer_size);
-			if(r <= 0)
-#endif
-			{
-				logger << DebugError << "can't write into socket" << EndDebugError;
-				Object::Stop(-1);
-				return;
-			}
-
-			index += r;
-			telnet_output_buffer_size -= r;
-		}
-		while(telnet_output_buffer_size > 0);
-	}
-}
-
-template <class CONFIG>
-void XPS_UARTLite<CONFIG>::TelnetPutChar(char c)
-{
-	if(telnet_output_buffer_size >= sizeof(telnet_output_buffer))
-	{
-		TelnetFlushOutput();
-	}
-
-	telnet_output_buffer[telnet_output_buffer_size++] = c;
-
-	if(c < ' ') // flush if we're outputing control characters
-	{
-		TelnetFlushOutput();
-	}
-}
-
-template <class CONFIG>
-bool XPS_UARTLite<CONFIG>::TelnetGetChar(char& c)
-{
-	if(telnet_input_buffer_size == 0)
-	{
-		do
-		{
-#ifdef WIN32
-			int r = recv(telnet_sock, telnet_input_buffer, sizeof(telnet_input_buffer), 0);
-			if(r == 0 || r == SOCKET_ERROR)
-#else
-			ssize_t r = read(telnet_sock, telnet_input_buffer, sizeof(telnet_input_buffer));
-			if(r <= 0)
-#endif
-			{
-#ifdef WIN32
-				if(r == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK)
-#else
-				if(r < 0 && errno == EAGAIN)
-#endif
-				{
-					return false;
-				}
-
-				logger << DebugError << "can't read from socket" << EndDebugError;
-				Object::Stop(-1);
-				return false;
-			}
-			telnet_input_buffer_index = 0;
-			telnet_input_buffer_size = r;
-			break;
-		} while(1);
-	}
-
-	c = telnet_input_buffer[telnet_input_buffer_index++];
-	telnet_input_buffer_size--;
-	return true;
-}
-
-template <class CONFIG>
 void XPS_UARTLite<CONFIG>::TelnetProcess()
 {
-	char c;
-	uint8_t v;
-	
-	if(!rx_fifo.Full())
+	if(char_io_import)
 	{
-		do
+		char c;
+		uint8_t v;
+		
+		if(!rx_fifo.Full())
 		{
-			if(!TelnetGetChar(c)) break;
+			do
+			{
+				if(!char_io_import->GetChar(c)) break;
+				
+				v = (uint8_t) c;
+				if(IsVerbose())
+				{
+					logger << DebugInfo << "Receiving ";
+					if(v >= 32)
+						logger << "character '" << c << "'";
+					else
+						logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+					logger << " from telnet client" << EndDebugInfo;
+				}
 
-			v = (uint8_t) c;
-			rx_fifo.Push(v);
+				rx_fifo.Push(v);
+			}
+			while(!rx_fifo.Full());
 		}
-		while(!rx_fifo.Full());
-	}
-	
-	if(!tx_fifo.Empty())
-	{
-		do
+		
+		if(!tx_fifo.Empty())
 		{
-			v = tx_fifo.Front();
-			tx_fifo.Pop();
-			c = (char) v;
-			TelnetPutChar(c);
+			do
+			{
+				v = tx_fifo.Front();
+				tx_fifo.Pop();
+				c = (char) v;
+				if(IsVerbose())
+				{
+					logger << DebugInfo << "Sending ";
+					if(v >= 32)
+						logger << "character '" << c << "'";
+					else
+						logger << "control character 0x" << std::hex << (unsigned int) v << std::dec;
+					logger << " to telnet client" << EndDebugInfo;
+				}
+				char_io_import->PutChar(c);
+			}
+			while(!tx_fifo.Empty());
+			
+			tx_fifo_becomes_empty = true;
 		}
-		while(!tx_fifo.Empty());
 	}
 }
 

@@ -39,6 +39,7 @@
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/char_io.hh>
 #include <unisim/util/queue/queue.hh>
 
 namespace unisim {
@@ -53,22 +54,26 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Formula;
 using unisim::kernel::service::Service;
+using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::service::ServiceImport;
 using unisim::service::interfaces::Memory;
+using unisim::service::interfaces::CharIO;
 
 template <class CONFIG>
 class XPS_UARTLite
 	: public Service<Memory<typename CONFIG::MEMORY_ADDR> >
+	, public Client<CharIO>
 {
 public:
 	ServiceExport<Memory<typename CONFIG::MEMORY_ADDR> > memory_export;
+	ServiceImport<CharIO> char_io_import;
 	
 	XPS_UARTLite(const char *name, Object *parent = 0);
 	virtual ~XPS_UARTLite();
 	
 	virtual bool BeginSetup();
-	virtual bool EndSetup();
 
 	virtual void Reset();
 	virtual bool ReadMemory(typename CONFIG::MEMORY_ADDR addr, void *buffer, uint32_t size);
@@ -90,39 +95,28 @@ private:
 	typename unisim::util::queue::Queue<typename CONFIG::RX_FIFO_CONFIG> rx_fifo;
 	typename unisim::util::queue::Queue<typename CONFIG::TX_FIFO_CONFIG> tx_fifo;
 	uint8_t stat_reg;
+	bool tx_fifo_becomes_empty;
 	
 	typename CONFIG::MEMORY_ADDR c_baseaddr;
 	typename CONFIG::MEMORY_ADDR c_highaddr;
-	int telnet_tcp_port;
-	int telnet_sock;
 	
 	Parameter<bool> param_verbose;
 	Parameter<typename CONFIG::MEMORY_ADDR> param_c_baseaddr;
 	Parameter<typename CONFIG::MEMORY_ADDR> param_c_highaddr;
-	Parameter<int> param_telnet_tcp_port;
 	
 protected:
-	unsigned int telnet_input_buffer_size;
-	unsigned int telnet_input_buffer_index;
-	char telnet_input_buffer[CONFIG::TELNET_MAX_BUFFER_SIZE];
-
-	unsigned int telnet_output_buffer_size;
-	char telnet_output_buffer[CONFIG::TELNET_MAX_BUFFER_SIZE];
-
 	uint8_t GetRX_FIFO() const;
 	bool ReadRX_FIFO(uint8_t& value);
 	uint8_t GetSTAT_REG() const;
 	uint8_t GetSTAT_REG_RX_FIFO_VALID_DATA() const;
 	uint8_t GetSTAT_REG_INTR_ENABLED() const;
 	uint8_t ReadSTAT_REG();
+	bool TXT_FIFO_BecomesEmpty() const;
 	
 	void SetTX_FIFO(uint8_t value);
 	void WriteTX_FIFO(uint8_t value);
 	void WriteCTRL_REG(uint8_t value);
 	
-	void TelnetFlushOutput();
-	void TelnetPutChar(char c);
-	bool TelnetGetChar(char& c);
 	void TelnetProcess();
 };
 

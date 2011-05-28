@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,57 +32,25 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-group fp(mffs, lfd, lfdu, lfdux, lfdx, lfs, lfsu, lfsux, lfsx)
+#ifndef __UNISIM_SERVICE_INTERFACES_CHAR_IO_HH__
+#define __UNISIM_SERVICE_INTERFACES_CHAR_IO_HH__
 
-group fp_update_cr0(fadd, fadds, fdiv, fdivs, fmul, fmuls, fsub, fsubs, fmadd, fmadds, fmsub, fmsubs, fnmadd, fnmadds, fnmsub, fnmsubs, fctiw, fctiwz, frsp, fabs, fmr, fnabs, fneg, fres, frsqrte, fsel, fsqrt, fsqrts)
+#include <unisim/kernel/service/service.hh>
 
-group fp_update_crf(mcrfs, mtfsfi)
+namespace unisim {
+namespace service {
+namespace interfaces {
 
-group fp_update_crb(mtfsb0, mtfsb1)
+class CharIO : public unisim::kernel::service::ServiceInterface
+{
+public:
+	virtual void Reset() = 0;
+	virtual bool GetChar(char& c) = 0;
+	virtual void PutChar(char c) = 0;
+};
 
-group st(sthbrx, stwbrx, dcbi, dcbz, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx, stwcx_) 
+} // end of namespace interfaces
+} // end of namespace service
+} // end of namespace unisim
 
-group fp_st(stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx)
-
-group fp_cmp(fcmpo, fcmpu)
-
-dcbf.get_esr = {
-	return (0x1 << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK;
-}
-
-icbi.get_esr = {
-	return (0x2 << CONFIG::ESR_DLK_OFFSET) & CONFIG::ESR_DLK_MASK;
-}
-
-fp.get_esr = {
-	return CONFIG::ESR_FP_MASK;
-}
-
-fp_update_cr0.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK;
-}
-
-fp_update_crf.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK | (((uint32_t) crfD << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK);
-}
-
-fp_update_crb.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK | (((uint32_t)(crbD / 4) << CONFIG::ESR_PCRF_OFFSET) & CONFIG::ESR_PCRF_MASK);
-}
-
-mtfsf.get_esr = {
-	// Note: mtfsf can update all CR fields: Q: what to put into ESR[PCRF]?
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCRE_MASK;
-}
-
-st.get_esr = {
-	return CONFIG::ESR_ST_MASK;
-}
-
-fp_st.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_ST_MASK;
-}
-
-fp_cmp.get_esr = {
-	return CONFIG::ESR_FP_MASK | CONFIG::ESR_PCMP_MASK;
-}
+#endif

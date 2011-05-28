@@ -62,7 +62,7 @@ XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_module_name& name, Object *parent)
 	, slave_sock("slave-sock")
 	, interrupt_master_sock("interrupt-master-sock")
 	, cycle_time()
-	, telnet_refresh_time(100.0, SC_MS)
+	, telnet_refresh_time(10.0, SC_MS)
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_telnet_refresh_time("telnet-refresh-time", this, telnet_refresh_time, "Telnet refresh time")
@@ -305,7 +305,6 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 				case Event::EV_CPU:
 					ProcessCPUEvent(event);
 					schedule.FreeEvent(event);
-					inherited::TelnetProcess();       // Handle I/O with telnet client
 					break;
 			}
 			
@@ -323,8 +322,8 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 		schedule.Notify(event);
 	}
 		
-	GenerateOutput();                 // Generate interrupt signal
 	inherited::TelnetProcess();       // Handle I/O with telnet client
+	GenerateOutput();                 // Generate interrupt signal
 }
 
 template <class CONFIG>
@@ -462,7 +461,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 template <class CONFIG>
 void XPS_UARTLite<CONFIG>::GenerateOutput()
 {
-	bool level = inherited::GetSTAT_REG_INTR_ENABLED() && inherited::GetSTAT_REG_RX_FIFO_VALID_DATA();
+	bool level = inherited::GetSTAT_REG_INTR_ENABLED() && (inherited::GetSTAT_REG_RX_FIFO_VALID_DATA() || inherited::TXT_FIFO_BecomesEmpty());
 	if(interrupt_output != level)
 	{
 		if(inherited::IsVerbose())
