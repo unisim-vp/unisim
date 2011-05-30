@@ -34,9 +34,6 @@
  
 #include <unisim/service/telnet/telnet.hh>
 
-// Note: this header is under BSD licence, TO BE imported in unisim
-#include <arpa/telnet.h>
-
 #include <errno.h>
 
 #ifdef WIN32
@@ -64,6 +61,20 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
+
+// Telnet commands
+const uint8_t IAC = 255;
+const uint8_t DONT = 254;
+const uint8_t DO = 253;
+const uint8_t WONT = 252;
+const uint8_t WILL = 251;
+
+// Telnet options
+const uint8_t BINARY = 0;
+const uint8_t ECHO = 1;
+const uint8_t SUPPRESS_GO_AHEAD = 3;
+const uint8_t LINEMODE = 34;
+
 
 Telnet::Telnet(const char *name, Object *parent)
 	: Object(name, parent, "this service provides character I/O over the TCP/IP telnet protocol")
@@ -190,19 +201,19 @@ bool Telnet::EndSetup()
 #endif
 	TelnetPut(IAC);
 	TelnetPut(WILL);
-	TelnetPut(TELOPT_BINARY);
+	TelnetPut(BINARY);
 
 	TelnetPut(IAC);
 	TelnetPut(WILL);
-	TelnetPut(TELOPT_ECHO);
+	TelnetPut(ECHO);
 	
 	TelnetPut(IAC);
 	TelnetPut(WILL);
-	TelnetPut(TELOPT_SGA);
+	TelnetPut(SUPPRESS_GO_AHEAD);
 	
 	TelnetPut(IAC);
 	TelnetPut(WONT);
-	TelnetPut(TELOPT_LINEMODE);
+	TelnetPut(LINEMODE);
 	
 	return true;
 }
