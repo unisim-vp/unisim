@@ -351,8 +351,14 @@ private:
 	bool XmlfyVariables(const char *filename);
 	bool LoadXmlVariables(const char *filename);
 
-	void GetRootObjects(list<Object *>& lst);
-	
+protected:
+	// TOCHECK: this method was previously declared as private,
+	//   and should probably become again private unless we consider
+	//   it part of the simulator API in which case it should
+	//   become public
+	void GetRootObjects(list<Object *>& lst) const;
+
+private:
 	class CommandLineOption
 	{
 	public:

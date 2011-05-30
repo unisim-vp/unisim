@@ -44,14 +44,15 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    std::string *name;
+	Simulator **simulator;
+	unisim::kernel::service::VariableBase *variable;
 } variable_VariableObject;
 
 static void
 variable_dealloc (variable_VariableObject *self)
 {
-	delete self->name;
-	self->name = 0;
+	self->simulator = 0;
+	self->variable = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -59,13 +60,17 @@ variable_dealloc (variable_VariableObject *self)
 static PyObject *
 variable_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
+	// variables should never be created alone
+	// they should be obtained through the simulator
 	return NULL;
 }
 
 static PyObject *
 variable_init (variable_VariableObject *self, PyObject *args, PyObject *kwds)
 {
-	self->name = 0;
+	self->variable = 0;
+	self->simulator = 0;
+
 	return (PyObject *)self;
 }
 
@@ -73,14 +78,8 @@ static PyObject *
 variable_get_name (variable_VariableObject *self)
 {
 	PyObject *result = NULL;
-	if ( PySimulator_GetSimRef() == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	result = PyUnicode_FromString(self->name->c_str());
+
+	result = PyUnicode_FromString(self->variable->GetName());
 	return result;
 }
 
@@ -88,14 +87,8 @@ static PyObject *
 variable_getname (variable_VariableObject *self, void *closure)
 {
 	PyObject *result = NULL;
-	if ( PySimulator_GetSimRef() == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	result = PyUnicode_FromString(self->name->c_str());
+	
+	result = PyUnicode_FromString(self->variable->GetName());
 	return result;
 }
 
@@ -104,20 +97,10 @@ variable_getvalue (variable_VariableObject *self,
 		void *closure)
 {
 	PyObject *result = NULL;
-	Simulator *sim = PySimulator_GetSimRef();
-	if (sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	unisim::kernel::service::VariableBase *var =
-			sim->FindVariable(self->name->c_str());
-	const char *type = var->GetDataTypeName();
+	const char *type = self->variable->GetDataTypeName();
 	if ( strcmp("boolean", type) == 0 )
 	{
-		bool value = (bool)*sim->FindVariable(self->name->c_str());
+		bool value = (bool)*(self->variable);
 		if ( value )
 			result = Py_True;
 		else
@@ -126,57 +109,57 @@ variable_getvalue (variable_VariableObject *self,
 	}
 	else if ( strcmp("signed 8-bit integer", type) == 0 )
 	{
-		char value = (char)*sim->FindVariable(self->name->c_str());
+		char value = (char)*(self->variable);
 		result = Py_BuildValue("b", value);
 	}
 	else if ( strcmp("signed 16-bit integer", type) == 0 )
 	{
-		short int value = (short int)*sim->FindVariable(self->name->c_str());
+		short int value = (short int)*(self->variable);
 		result = Py_BuildValue("h", value);
 	}
 	else if ( strcmp("signed 32-bit integer", type) == 0 )
 	{
-		long int value = (long int)*sim->FindVariable(self->name->c_str());
+		long int value = (long int)*(self->variable);
 		result = Py_BuildValue("l",value);
 	}
 	else if ( strcmp("signed 64-bit integer", type) == 0)
 	{
-		long long int value = (long long int)*sim->FindVariable(self->name->c_str());
+		long long int value = (long long int)*(self->variable);
 		result = Py_BuildValue("L", value);
 	}
 	else if ( strcmp("unsigned 8-bit integer", type) == 0 )
 	{
-		unsigned char value = (unsigned char)*sim->FindVariable(self->name->c_str());
+		unsigned char value = (unsigned char)*(self->variable);
 		result = Py_BuildValue("B", value);
 	}
 	else if ( strcmp("unsigned 16-bit integer", type) == 0 )
 	{
-		unsigned short int value = (unsigned short int)*sim->FindVariable(self->name->c_str());
+		unsigned short int value = (unsigned short int)*(self->variable);
 		result = Py_BuildValue("H", value);
 	}
 	else if ( strcmp("unsigned 32-bit integer", type) == 0 )
 	{
-		unsigned long int value = (unsigned long int)*sim->FindVariable(self->name->c_str());
+		unsigned long int value = (unsigned long int)*(self->variable);
 		result = Py_BuildValue("k",value);
 	}
 	else if ( strcmp("unsigned 64-bit integer", type) == 0 )
 	{
-		unsigned long long int value = (unsigned long long int)*sim->FindVariable(self->name->c_str());
+		unsigned long long int value = (unsigned long long int)*(self->variable);
 		result = Py_BuildValue("K", value);
 	}
 	else if ( strcmp("single precision floating-point", type) == 0 )
 	{
-		float value = (float)*sim->FindVariable(self->name->c_str());
+		float value = (float)*(self->variable);
 		result = Py_BuildValue("f", value);
 	}
 	else if ( strcmp("double precision floating-point", type) == 0 )
 	{
-		double value = (double)*sim->FindVariable(self->name->c_str());
+		double value = (double)*(self->variable);
 		result = Py_BuildValue("d", value);
 	}
 	else 	// anything else we consider it to be an string
 	{
-		std::string value = (std::string)*sim->FindVariable(self->name->c_str());
+		std::string value = (std::string)*(self->variable);
 		result = PyUnicode_FromString(value.c_str());
 	}
 	return result;
@@ -187,17 +170,7 @@ variable_getstr (variable_VariableObject *self,
 		void *closure)
 {
 	PyObject *result = NULL;
-	Simulator *sim = PySimulator_GetSimRef();
-	if (sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	unisim::kernel::service::VariableBase *var =
-			sim->FindVariable(self->name->c_str());
-	std::string value = (std::string)*var;
+	std::string value = (std::string)*(self->variable);
 	result = PyUnicode_FromString(value.c_str());
 	return result;
 }
@@ -207,29 +180,20 @@ variable_setvalue (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-	Simulator *sim = PySimulator_GetSimRef();
-
-	if ( sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return -1;
-	}
 	if ( value == NULL )
 	{
 		PyErr_SetString(PyExc_TypeError, "Cannot set value to NULL");
 		return -1;
 	}
-	unisim::kernel::service::VariableBase *var =
-			sim->FindVariable(self->name->c_str());
 	if ( PyBool_Check(value) )
 	{
 		bool boolean = false;
 		if ( PyObject_IsTrue(value) ) boolean = true;
-		*var = boolean;
+		*(self->variable) = boolean;
 		return 0;
 	}
+
+	// missing integer and float types
 
 	PyObject *utf8;
 	if ( !PyUnicode_Check(value) )
@@ -247,7 +211,7 @@ variable_setvalue (variable_VariableObject *self,
 		PyErr_SetString(PyExc_TypeError, "not a python bytes");
 		return NULL;
 	}
-	*sim->FindVariable(self->name->c_str()) = PyBytes_AsString(utf8);
+	*(self->variable) = PyBytes_AsString(utf8);
 	Py_DECREF(utf8);
 	return 0;
 }
@@ -257,16 +221,7 @@ variable_getmutable (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-	PyObject *result = NULL;
-	Simulator *sim = PySimulator_GetSimRef();
-	if (sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	bool is_mutable = sim->FindVariable(self->name->c_str())->IsMutable();
+	bool is_mutable = self->variable->IsMutable();
 	if ( is_mutable )
 		Py_RETURN_TRUE;
 	else
@@ -278,16 +233,7 @@ variable_getvisible (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-	PyObject *result = NULL;
-	Simulator *sim = PySimulator_GetSimRef();
-	if (sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	bool is_visible = sim->FindVariable(self->name->c_str())->IsVisible();
+	bool is_visible = self->variable->IsVisible();
 	if ( is_visible )
 		Py_RETURN_TRUE;
 	else
@@ -299,16 +245,15 @@ variable_getserializable (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-	PyObject *result = NULL;
-	Simulator *sim = PySimulator_GetSimRef();
-	if (sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	bool is_serializable = sim->FindVariable(self->name->c_str())->IsSerializable();
+//	Simulator *sim = PySimulator_GetSimRef();
+//	if (sim == 0 )
+//	{
+//		PyErr_Format(PyExc_RuntimeError,
+//				"Simulator for variable '%s' is no longer available",
+//				self->name->c_str());
+//		return result;
+//	}
+	bool is_serializable = self->variable->IsSerializable();
 	if ( is_serializable )
 		Py_RETURN_TRUE;
 	else
@@ -319,16 +264,11 @@ static PyObject *
 variable_get_value ( variable_VariableObject *self )
 {
 	PyObject *result = NULL;
-	Simulator *sim = PySimulator_GetSimRef();
 
-	if ( sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	std::string value = (std::string)*sim->FindVariable(self->name->c_str());
+	// TODO
+	// should convert the value to the correct type not just a string
+	
+	std::string value = (std::string)*(self->variable);
 	result = PyUnicode_FromString(value.c_str());
 	return result;
 }
@@ -338,20 +278,69 @@ variable_set_value ( variable_VariableObject *self,
 		PyObject *args)
 {
 	const char *value;
-	Simulator* sim = PySimulator_GetSimRef();
-
-	if ( sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for variable '%s' is no longer available",
-				self->name->c_str());
-		return NULL;
-	}
 
 	if ( !PyArg_ParseTuple(args, "s", &value) )
 		return NULL;
-	*sim->FindVariable(self->name->c_str()) = value;
+	*(self->variable) = value;
 	return (PyObject *)self;
+}
+
+static PyObject *
+variable_add_listener ( variable_VariableObject *self,
+		PyObject *args)
+{
+//	Simulator* sim = PySimulator_GetSimRef();
+//	PyObject *handler = 0;
+//
+//	if ( sim == 0 )
+//	{
+//		PyErr_Format(PyExc_RuntimeError,
+//				"Simulator for variable '%s' is no longer available",
+//				self->name->c_str());
+//		return NULL;
+//	}
+//	
+//	if ( !PyArg_ParseTuple(args, "O", &handler) )
+//	{
+//		PyErr_SetString(PyExc_TypeError, "A callback method must be given");
+//		return NULL;
+//	}
+//
+//	if ( !PyCallable_Check(handler) )
+//	{
+//		PyErr_SetString(PyExc_TypeError, "The parameter must be callable");
+//		return NULL;
+//	}
+//
+//	if ( self->var_listeners )
+//		Py_DECREF(self->var_listeners);
+//	self->listeners = handler;
+//	Py_INCREF(self->var_listeners);
+//
+//	Py_INCREF(Py_None);
+//	return Py_None;
+//
+//	This must be done.
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+static PyObject *
+variable_remove_listener ( variable_VariableObject *self,
+		PyObject *args )
+{
+//	const char *value;
+//	Simulator *sim = PySimulator_GetSimRef();
+//
+//	if ( sim == 0 )
+//	{
+//		PyErr_Format(PyExc_RuntimeError,
+//				"Simulator for variable '%s' is no longer available",
+//				self->name->c_str());
+//		return NULL;
+//	}
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static PyMethodDef variable_methods[] =
@@ -362,6 +351,10 @@ static PyMethodDef variable_methods[] =
 				"Return the variable value as a string."},
 		{"set_value", (PyCFunction)variable_set_value, METH_VARARGS,
 				"Set the variable value."},
+		{"add_listener", (PyCFunction)variable_add_listener, METH_VARARGS,
+				"Add a listerner to the variable."},
+		{"remove_listener", (PyCFunction)variable_remove_listener, METH_VARARGS,
+				"Removes a listeners from the variable."},
 		{NULL}
 };
 
@@ -468,7 +461,8 @@ PyInit_variable(void)
 	PyModule_AddObject(m, "Variable", (PyObject *)&variable_VariableType);
 
 	/* Initialize the C API pointer array */
-	PyVariable_API[PyVariable_NewVariable_NUM] = (void *)PyVariable_NewVariable;
+	PyVariable_API[PyVariable_NewVariable_NUM] = 
+		(void *)PyVariable_NewVariable;
 
 	/* Create a Capsule containing the API pointer array's address */
 	c_api_object = PyCapsule_New((void *)PyVariable_API, PyVariable_Capsule_Name, NULL);
@@ -484,23 +478,35 @@ PyInit_variable(void)
 }
 
 static PyObject *
-PyVariable_NewVariable (const char *name)
+PyVariable_NewVariable (const char *name, PyObject *obj_sim)
 {
-	if ( import_simulator_api() < 0 )
-		return NULL;
+	PyObject *result = NULL;
 
-	if ( PySimulator_GetSimRef() == 0 )
+	if ( import_simulator_api() < 0 )
+		return result;
+
+	Simulator **sim = PySimulator_GetSimulatorRef(obj_sim);
+	if ( sim == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
 				"No reference found to the simulator when creating variable.'%s'.",
 				name);
-		return NULL;
+		return result;
+	}
+	unisim::kernel::service::VariableBase *var = 
+		(*sim)->FindVariable(name);
+
+	if ( var == 0 )
+	{
+		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
+		return result;
 	}
 
 	variable_VariableObject *self;
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
 			&variable_VariableType, 0);
-	self->name = new std::string(name);
+	self->simulator = sim;
+	self->variable = var;
 	return (PyObject *)self;
 }
 

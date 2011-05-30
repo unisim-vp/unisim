@@ -3021,9 +3021,9 @@ void Simulator::GetFormulas(list<VariableBase *>& lst)
 	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
-void Simulator::GetRootObjects(list<Object *>& lst)
+void Simulator::GetRootObjects(list<Object *>& lst) const
 {
-	map<const char *, Object *, ltstr>::iterator object_iter;
+	map<const char *, Object *, ltstr>::const_iterator object_iter;
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{

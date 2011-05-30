@@ -91,7 +91,6 @@ static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
 }
 
 extern "C" {
-static Simulator *__current_simulator;
 
 typedef struct {
     PyObject_HEAD
@@ -168,7 +167,7 @@ static void
 simulator_dealloc (armemu_SimulatorObject *self)
 {
 	destroy_simulator(self);
-	__current_simulator = 0;
+	self->sim = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -196,7 +195,7 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 			it++ )
 	{
 		PyObject *variable;
-		variable = PyVariable_NewVariable((*it)->GetName());
+		variable = PyVariable_NewVariable((*it)->GetName(), (PyObject *)self);
 		if ( variable == NULL )
 		{
 			PyDict_Clear(result);
@@ -306,7 +305,6 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
 	self->trap_handler = 0;
 	self->trap_context = 0;
-	__current_simulator = self->sim;
 
 	return 0;
 }
@@ -342,7 +340,7 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 	if ( var == 0 )
 		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
 	else
-		result = PyVariable_NewVariable(var->GetName());
+		result = PyVariable_NewVariable(var->GetName(), (PyObject *)self);
 	return result;
 }
 
@@ -606,18 +604,39 @@ simulator_remove_trap_handler (armemu_SimulatorObject *self)
 }
 
 static PyObject *
-simulator_get_debugger (armemu_SimulatorObject *self, PyObject *args)
+simulator_has_debugger (armemu_SimulatorObject *self)
+{
+	bool found = false;
+
+	// PySys_WriteStdout("Checking for the existence of debugger:\n");
+
+	found = self->sim->HasAPI<unisim::util::debug::debugger_handler::DebuggerHandler>();
+
+	if ( found )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
+}
+
+static PyObject *
+simulator_get_debuggers (armemu_SimulatorObject *self, PyObject *args)
 {
 	PyObject *result = 0;
 
-	const char *debugger_name = 0;
-	if ( !PyArg_ParseTuple(args, "s", &debugger_name) )
+	// create the list of debuggers
+	result = PyList_New(0);
+
+
+	std::list<unisim::util::debug::debugger_handler::DebuggerHandler *> 
+		list_debuggers = self->sim->GetAPI<unisim::util::debug::debugger_handler::DebuggerHandler>();
+
+
+	for ( std::list<unisim::util::debug::debugger_handler::DebuggerHandler *>::iterator it = list_debuggers.begin();
+			it != list_debuggers.end();
+			it++ )
 	{
-		PyErr_SetString(PyExc_TypeError, "parameters must be the name of the desired debugger");
-		return NULL;
+		PyList_Append(result, PyDebugger_NewDebugger(*it, (PyObject *)self));
 	}
-	// the name of the debugger should be checked before its creation
-	result = PyDebugger_NewDebugger(debugger_name);
+
 	return result;
 }
 
@@ -653,8 +672,10 @@ static PyMethodDef simulator_methods[] =
 			"Set the external trap handler"},
 	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
 			"Remove the external trap handler"},
-	{"get_debugger", (PyCFunction)simulator_get_debugger, METH_VARARGS,
-					"Get a handler of the given name debugger"},
+	{"has_debugger", (PyCFunction)simulator_has_debugger, METH_NOARGS,
+			"Indicates if the simulator provides some kind of debugging interface"},
+	{"get_debuggers", (PyCFunction)simulator_get_debuggers, METH_NOARGS,
+			"Get a list of the available debuggers in the system"},
 	{NULL}
 };
 
@@ -731,7 +752,7 @@ PyInit_simulator(void)
     static void *PySimulator_API[PySimulator_API_pointers];
     PyObject *c_api_object;
 
-    __current_simulator = 0;
+	//__current_simulator = 0;
 
     if ( PyType_Ready(&armemu_SimulatorType) < 0 )
     	return NULL;
@@ -745,7 +766,10 @@ PyInit_simulator(void)
 	PyModule_AddObject(m, "Simulator", (PyObject *)&armemu_SimulatorType);
 
 	/* Initialize the C API pointer array */
-	PySimulator_API[PySimulator_GetSimRef_NUM] = (void *)PySimulator_GetSimRef;
+	PySimulator_API[PySimulator_GetSimulator_NUM] = 
+		(void *)PySimulator_GetSimulator;
+	PySimulator_API[PySimulator_GetSimulatorRef_NUM] = 
+		(void *)PySimulator_GetSimulatorRef;
 
 	/* Create a Capsule containing the API pointer array's address */
 	c_api_object = PyCapsule_New((void *)PySimulator_API, PySimulator_Capsule_Name, NULL);
@@ -769,9 +793,17 @@ PyInit_simulator(void)
 }
 
 static Simulator *
-PySimulator_GetSimRef()
+PySimulator_GetSimulator(PyObject *obj)
 {
-	return __current_simulator;
+	armemu_SimulatorObject *sim_object = (armemu_SimulatorObject *)obj;
+	return sim_object->sim;
+}
+
+static Simulator **
+PySimulator_GetSimulatorRef(PyObject *obj)
+{
+	armemu_SimulatorObject *sim_object = (armemu_SimulatorObject *)obj;
+	return &(sim_object->sim);
 }
 
 }

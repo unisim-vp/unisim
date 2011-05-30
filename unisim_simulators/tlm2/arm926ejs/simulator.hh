@@ -88,7 +88,86 @@ public:
 #ifdef SIM_LIBRARY
 	bool AddVariableBaseListener(void *(*notif_function)(const char *), const char *var_name);
 	bool SetTrapHandler(void (*function)(void *, unsigned int), void *context);
-	unisim::util::debug::debugger_handler::DebuggerHandler *GetDebugger(const char *name);
+	template <typename T> 
+		bool 
+		HasAPI(const T *api = 0) const
+		{
+			bool found = false;
+
+			std::list<unisim::kernel::service::Object *> objs;
+
+			GetRootObjects(objs);
+
+			for ( std::list<unisim::kernel::service::Object *>::iterator it = objs.begin();
+					it != objs.end();
+					it++ )
+			{
+				found |= ObjectHasAPI<T>(*it);
+			}
+
+			return found;
+		};
+
+	template <typename T>
+		std::list<T *>
+		GetAPI(const T *api = 0) const
+	{
+		std::list<T *> ret;
+		bool found = HasAPI<T>();
+		if ( !found )
+		{
+			return ret; // returning empty list
+		}
+
+		std::list<unisim::kernel::service::Object *> objs;
+
+		GetRootObjects(objs);
+
+		for ( std::list<unisim::kernel::service::Object *>::iterator it = objs.begin();
+				it != objs.end();
+				it++ )
+		{
+			ObjectHasAPI<T>(*it, &ret);
+		}
+
+		return ret;
+	}
+
+private:
+	template <typename T> 
+		bool 
+		ObjectHasAPI(unisim::kernel::service::Object *obj,
+				std::list<T *> *api_obj_list = 0,
+				const T *api = 0) const
+		{
+			bool found = false;
+
+			// std::cerr << "- " << obj->GetName() << " ";
+			if ( dynamic_cast<T *>(obj) )
+			{
+				// std::cerr << "YES";
+				found = true;
+				if ( api_obj_list )
+					api_obj_list->push_back(dynamic_cast<T *>(obj));
+			}
+			else
+			{
+				// std::cerr << "NO";
+			}
+			// std::cerr << std::endl;
+
+			std::list<unisim::kernel::service::Object *> objs = obj->GetLeafs();
+			for ( std::list<unisim::kernel::service::Object *>::iterator it = 
+					objs.begin();
+					it != objs.end();
+					it++ )
+			{
+				found |= ObjectHasAPI<T>(*it);
+			}
+
+			return found;
+		};
+public:
 #endif // SIM_LIBRARY
 	virtual void Stop(unisim::kernel::service::Object *object, int exit_status);
 
