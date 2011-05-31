@@ -91,7 +91,7 @@ const char *usExtendedAPIGetName(UnisimExtendedAPI api)
 }
 
 /****************************************************************************/
-const char *usExtendedAPIGetType(UnisimExtendedAPI api)
+const char *usExtendedAPIGetTypeName(UnisimExtendedAPI api)
 /****************************************************************************/
 {
 	if ( api == 0 ) return 0;

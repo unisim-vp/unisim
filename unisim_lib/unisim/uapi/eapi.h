@@ -84,7 +84,7 @@ const char *usExtendedAPIGetName(UnisimExtendedAPI api);
  */
 
 /****************************************************************************/
-const char *usExtendedAPIGetType(UnisimExtendedAPI api);
+const char *usExtendedAPIGetTypeName(UnisimExtendedAPI api);
 /****************************************************************************/
 /*
  * Get the type of an api.

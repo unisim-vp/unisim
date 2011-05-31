@@ -63,11 +63,11 @@ UnisimExtendedAPI usCreateExtendedAPI(UnisimSimulator,
 		unisim::kernel::api::APIBase *);
 /****************************************************************************/
 
-}
-
 /****************************************************************************/
 void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI);
 /****************************************************************************/
+
+}
 
 #endif
 

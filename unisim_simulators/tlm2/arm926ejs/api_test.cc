@@ -64,8 +64,8 @@ _usDestroyVariable_type _usDestroyVariable;
 // api methods
 typedef const char *(* _usExtendedAPIGetName_type)(UnisimExtendedAPI);
 _usExtendedAPIGetName_type _usExtendedAPIGetName;
-typedef const char *(* _usExtendedAPIGetType_type)(UnisimExtendedAPI);
-_usExtendedAPIGetType_type _usExtendedAPIGetType;
+typedef const char *(* _usExtendedAPIGetTypeName_type)(UnisimExtendedAPI);
+_usExtendedAPIGetTypeName_type _usExtendedAPIGetTypeName;
 typedef void (* _usDestroyExtendedAPI_type)(UnisimExtendedAPI);
 _usDestroyExtendedAPI_type _usDestroyExtendedAPI;
 
@@ -157,7 +157,7 @@ bool load_lib()
 
 	if ( !load_sym(simlib, "usExtendedAPIGetName", _usExtendedAPIGetName) )
 		return false;
-	if ( !load_sym(simlib, "usExtendedAPIGetType", _usExtendedAPIGetType) )
+	if ( !load_sym(simlib, "usExtendedAPIGetTypeName", _usExtendedAPIGetTypeName) )
 		return false;
 	if ( !load_sym(simlib, "usDestroyExtendedAPI", _usDestroyExtendedAPI) )
 		return false;
@@ -423,7 +423,7 @@ int test()
 	{
 		UnisimExtendedAPI api = apiList[apiListIndex];
 		std::cerr << " - " << _usExtendedAPIGetName(api) << " ("
-			<< _usExtendedAPIGetType(api) << ")" << std::endl;
+			<< _usExtendedAPIGetTypeName(api) << ")" << std::endl;
 		_usDestroyExtendedAPI(api);
 		apiListIndex++;
 	}
