@@ -82,6 +82,18 @@ void usDestroyVariable(UnisimVariable variable);
  */
 
 /****************************************************************************/
+UnisimSimulator usVariableGetAssociatedSimulator(UnisimVariable variable);
+/****************************************************************************/
+/*
+ * Returns the simulator associtated to the variable.
+ *
+ * Parameters:
+ *   - variable: the variable to consider.
+ *
+ * Returns: the associated simulator.
+ */
+
+/****************************************************************************/
 UnisimVariableType usVariableGetType(UnisimVariable variable);
 /****************************************************************************/
 /*
@@ -156,6 +168,71 @@ const char *usVariableGetValueAsString(UnisimVariable variable);
  * Returns: A null terminated string with the value of the given variable.
  */
 
+/****************************************************************************/
+void usVariableSetValueFromString(UnisimVariable variable, const char *value);
+/****************************************************************************/
+/*
+ * Sets the value of the given variable from a null terminated string.
+ *
+ * Parameters:
+ *   - variable: the variable to handle.
+ *   - value: the null terminated string containing the value.
+ *
+ * Returns: None.
+ */
+
+/****************************************************************************/
+unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable);
+/****************************************************************************/
+/*
+ * Gets the value of the given variable as unsigned long long.
+ *
+ * Parameters:
+ *   - var: the variable to handle.
+ *
+ * Returns: unsigned long long representation of the reguested variable.
+ */
+
+/****************************************************************************/
+void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable, 
+		unsigned long long value);
+/****************************************************************************/
+/*
+ * Sets the value of the given variable from a unsigned long long.
+ *
+ * Parameters:
+ *   - variable: the variable to handle.
+ *   - value: the unsigned long long value.
+ *
+ * Returns: None.
+ */
+
+/****************************************************************************/
+bool usVariableSetListener(UnisimVariable variable, 
+		void (* listener)(UnisimVariable context));
+/****************************************************************************/
+/*
+ * Sets a function to call when the variable is modified (actually notified).
+ *
+ * Parameters:
+ *   - variable: the variable to handle.
+ *   - listener: the function to call when the variable is modified.
+ *
+ * Returns: true on success, false if could not set the handler (or if a
+ *          handler already exists.
+ */
+
+/****************************************************************************/
+void usVariableRemoveListener(UnisimVariable variable);
+/****************************************************************************/
+/*
+ * Removes the current variable listener.
+ *
+ * Parameters:
+ *   - variable: the variable to handle.
+ * 
+ * Returns: None.
+ */
 }
 
 #endif

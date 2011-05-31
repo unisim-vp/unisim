@@ -38,6 +38,37 @@ extern "C"
 /**                                                                        **/
 /****************************************************************************/
 
+class
+UnisimVariableListener 
+	: public unisim::kernel::service::VariableBaseListener
+{
+public:
+	UnisimVariableListener(UnisimVariable _variable,
+			void (* _listener)(UnisimVariable context));
+//		: unisim::kernel::service::VariableBaseListener(_variable->variable)
+//		, listener(_listener)
+//		, variable(_variable)
+//	{
+//		variable->variable->AddListener(this);
+//	}
+
+	~UnisimVariableListener();
+//	{
+//		variable->variable->RemoveListener(this);
+//		listener = 0;
+//		variable = 0;
+//	}
+//
+	void VariableBaseNotify(const unisim::kernel::service::VariableBase *unisimVariable);
+//	{
+//		(*listener)(variable);
+//	}
+
+private:
+	void (* listener)(UnisimVariable);
+	UnisimVariable variable;
+};
+
 /****************************************************************************/
 /**                                                                        **/
 /**                     TYPEDEFS AND STRUCTURES                            **/

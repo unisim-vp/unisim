@@ -44,6 +44,7 @@
 struct _UnisimVariable
 {
 	unisim::kernel::service::VariableBase *variable;
+	UnisimVariableListener *listener;	
 	UnisimSimulator simulator;
 };
 
@@ -77,10 +78,23 @@ void usDestroyVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
+	if ( variable->listener ) delete variable->listener;
 	usSimulatorUnregisterVariable(variable->simulator, variable);
 	variable->variable = 0;
 	variable->simulator = 0;
+	variable->listener = 0;
 	free(variable);
+	variable = 0;
+}
+
+/****************************************************************************/
+UnisimSimulator usVariableGetAssociatedSimulator(UnisimVariable variable)
+/****************************************************************************/
+{
+	if ( variable == 0 )
+		return 0;
+
+	return variable->simulator;
 }
 
 /****************************************************************************/
@@ -164,6 +178,61 @@ const char *usVariableGetValueAsString(UnisimVariable variable)
 }
 
 /****************************************************************************/
+void usVariableSetValueFromString(UnisimVariable variable, const char *value)
+/****************************************************************************/
+{
+	if ( variable == 0 ) return;
+	
+	*(variable->variable) = value;
+}
+
+/****************************************************************************/
+unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable)
+/****************************************************************************/
+{
+	if ( variable == 0 ) return 0;
+
+	unsigned long long value = ((unsigned long long)*(variable->variable));
+	return value;
+}
+
+/****************************************************************************/
+void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable, 
+		unsigned long long value)
+/****************************************************************************/
+{
+	if ( variable == 0 ) return;
+
+	*(variable->variable) = value;
+}
+
+/****************************************************************************/
+bool usVariableSetListener(UnisimVariable variable, 
+		void (*listener)(UnisimVariable context))
+/****************************************************************************/
+{
+	if ( variable == 0 ) return false;
+	if ( variable->listener != 0 ) return false;
+
+	variable->listener = new UnisimVariableListener(variable, listener);
+
+	if ( variable->listener == 0 ) return false;
+
+	return true;
+}
+/****************************************************************************/
+void usVariableRemoveListener(UnisimVariable variable)
+/****************************************************************************/
+{
+	if ( variable == 0 ) return;
+	if ( variable->listener == 0 ) return;
+
+	delete variable->listener;
+
+	variable->listener = 0;
+}
+
+/****************************************************************************/
 /**                                                                        **/
 /**                 PRIVATELY EXPORTED FUNCTIONS                           **/
 /**                                                                        **/
@@ -182,6 +251,7 @@ UnisimVariable usCreateVariable(UnisimSimulator simulator,
 
 	variable->simulator = simulator;
 	variable->variable = unisimVariable;
+	variable->listener = 0;
 	usSimulatorRegisterVariable(simulator, variable);
 	return variable;
 }
@@ -192,9 +262,36 @@ void usDestroyUnregisteredVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
+	delete variable->listener;
 	variable->variable = 0;
 	variable->simulator = 0;
+	variable->listener = 0;
 	free(variable);
+}
+
+UnisimVariableListener ::
+UnisimVariableListener(UnisimVariable _variable,
+		void (* _listener)(UnisimVariable context))
+	: unisim::kernel::service::VariableBaseListener()
+	, listener(_listener)
+	, variable(_variable)
+{
+	variable->variable->AddListener(this);
+}
+
+UnisimVariableListener ::
+~UnisimVariableListener()
+{
+	variable->variable->RemoveListener(this);
+	listener = 0;
+	variable = 0;
+}
+
+void 
+UnisimVariableListener ::
+VariableBaseNotify(const unisim::kernel::service::VariableBase *unisimVariable)
+{
+	(*listener)(variable);
 }
 
 /****************************************************************************/
