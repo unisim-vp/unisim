@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <dlfcn.h>
+#include <inttypes.h>
 #include "unisim/uapi/uapi.h"
 
 void *simlib;
@@ -33,6 +34,8 @@ typedef UnisimVariable *(* _usSimulatorGetVariableListWithType_type)(UnisimSimul
 _usSimulatorGetVariableListWithType_type _usSimulatorGetVariableListWithType;
 
 // variable methods
+typedef UnisimSimulator (* _usVariableGetAssociatedSimulator_type)(UnisimVariable);
+_usVariableGetAssociatedSimulator_type _usVariableGetAssociatedSimulator;
 typedef const char *(* _usVariableGetName_type)(UnisimVariable);
 _usVariableGetName_type _usVariableGetName;
 typedef UnisimVariableType (* _usVariableGetType_type)(UnisimVariable);
@@ -45,6 +48,16 @@ typedef bool (* _usVariableSerializable_type)(UnisimVariable);
 _usVariableSerializable_type _usVariableSerializable;
 typedef const char *(* _usVariableGetValueAsString_type)(UnisimVariable);
 _usVariableGetValueAsString_type _usVariableGetValueAsString;
+typedef void (* _usVariableSetValueFromString_type)(UnisimVariable, const char *);
+_usVariableSetValueFromString_type _usVariableSetValueFromString;
+typedef unsigned long long (* _usVariableGetValueAsUnsignedLongLong_type)(UnisimVariable);
+_usVariableGetValueAsUnsignedLongLong_type _usVariableGetValueAsUnsignedLongLong;
+typedef void (* _usVariableSetValueFromUnsignedLongLong_type)(UnisimVariable, unsigned long long);
+_usVariableSetValueFromUnsignedLongLong_type _usVariableSetValueFromUnsignedLongLong;
+typedef bool (* _usVariableSetListener_type)(UnisimVariable, void (* listener)(UnisimVariable));
+_usVariableSetListener_type _usVariableSetListener;
+typedef void (* _usVariableRemoveListener_type)(UnisimVariable);
+_usVariableRemoveListener_type _usVariableRemoveListener;
 typedef void (* _usDestroyVariable_type)(UnisimVariable);
 _usDestroyVariable_type _usDestroyVariable;
 
@@ -115,6 +128,8 @@ bool load_lib()
 	if ( !load_sym(simlib, "usSimulatorGetVariableListWithType", _usSimulatorGetVariableListWithType) )
 		return false;
 
+	if ( !load_sym(simlib, "usVariableGetAssociatedSimulator", _usVariableGetAssociatedSimulator) )
+		return false;
 	if ( !load_sym(simlib, "usVariableGetName", _usVariableGetName) )
 		return false;
 	if ( !load_sym(simlib, "usVariableGetType", _usVariableGetType) )
@@ -127,6 +142,16 @@ bool load_lib()
 		return false;
 	if ( !load_sym(simlib, "usVariableGetValueAsString", _usVariableGetValueAsString) )
 		return false;
+	if ( !load_sym(simlib, "usVariableSetValueFromString", _usVariableSetValueFromString) )
+		return false;
+	if ( !load_sym(simlib, "usVariableGetValueAsUnsignedLongLong", _usVariableGetValueAsUnsignedLongLong) )
+		return false;
+	if ( !load_sym(simlib, "usVariableSetValueFromUnsignedLongLong", _usVariableSetValueFromUnsignedLongLong) )
+		return false;
+	if ( !load_sym(simlib, "usVariableSetListener", _usVariableSetListener) )
+		return false;
+	if ( !load_sym(simlib, "usVariableRemoveListener", _usVariableRemoveListener) )
+		return false;
 	if ( !load_sym(simlib, "usDestroyVariable", _usDestroyVariable) )
 		return false;
 
@@ -138,6 +163,89 @@ bool load_lib()
 		return false;
 
 	return true;
+}
+
+int CloseSimulator ( UnisimSimulator simulator )
+{
+	// destroying the simulator
+	bool done = _usDestroySimulator(simulator);
+	if ( !done )
+		std::cerr << "Could not destroy simulator" << std::endl;
+
+	if ( !close_lib() )
+	{
+		std::cerr << "Could not correctly close the library" << std::endl;
+		return -1;
+	}
+
+	return 0;
+}
+
+void InstructionCounterListener ( UnisimVariable variable )
+{
+	unsigned long long instructionCounterValue = 
+		_usVariableGetValueAsUnsignedLongLong(variable);
+	if ( (instructionCounterValue % 1000) == 0 )
+		std::cerr << ".";
+	if ( (instructionCounterValue % 20000) == 0 )
+		std::cerr << " " << instructionCounterValue << std::endl;
+	if ( (instructionCounterValue % 100000UL) == 0)
+	{
+		std::cerr << "Calling stop" << std::endl;
+		UnisimSimulator simulator = _usVariableGetAssociatedSimulator(variable);
+		_usSimulatorStop(simulator);
+	}
+}
+
+const char *SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
+{
+	std::stringstream str;
+	switch ( status )
+	{
+		case UNISIM_SIMULATOR_SETUP_STATUS_OK:
+			str << " (UNISIM_SIMULATOR_SETUP_STATUS_OK)";
+			break;
+		case UNISIM_SIMULATOR_SETUP_STATUS_WARNING:
+			str << " (UNISIM_SIMULATOR_SETUP_STATUS_WARNING)";
+			break;
+		case UNISIM_SIMULATOR_SETUP_STATUS_ERROR:
+			str << " (UNISIM_SIMULATOR_SETUP_STATUS_ERROR)";
+			break;
+		default:
+			str << " (UNISIM_SIMULATOR_SETUP_STATUS_<unknown>)";
+			break;
+	}
+	return str.str().c_str();
+}
+
+const char *SimulatorStatusAsString(UnisimSimulatorStatus status)
+{
+	std::stringstream str;
+	switch ( status )
+	{
+		case UNISIM_SIMULATOR_STATUS_NONE:
+			str << "UNISIM_SIMULATOR_STATUS_NONE";
+			break;
+		case UNISIM_SIMULATOR_STATUS_CREATED:
+			str << "UNISIM_SIMULATOR_STATUS_CREATED";
+			break;
+		case UNISIM_SIMULATOR_STATUS_SETUP:
+			str << "UNISIM_SIMULATOR_STATUS_SETUP";
+			break;
+		case UNISIM_SIMULATOR_STATUS_RUNNING:
+			str << "UNISIM_SIMULATOR_STATUS_RUNNING";
+			break;
+		case UNISIM_SIMULATOR_STATUS_STOPPED:
+			str << "UNISIM_SIMULATOR_STATUS_STOPPED";
+			break;
+		case UNISIM_SIMULATOR_STATUS_FINISHED:
+			str << "UNISIM_SIMULATOR_STATUS_FINISHED";
+			break;
+		default:
+			str << "UNISIM_SIMULATOR_STATUS_<unknown>";
+			break;
+	}
+	return str.str().c_str();
 }
 
 int test()
@@ -173,7 +281,7 @@ int test()
 		std::cerr << "Could not get the authors variable" << std::endl;
 	else
 	{
-		std::cerr << "The variableiable name is '" << _usVariableGetName(variable) << "'" <<  std::endl;
+		std::cerr << "The variable name is '" << _usVariableGetName(variable) << "'" <<  std::endl;
 		std::cerr << "variableiable properties: " << std::endl
 			<< " - visible      = " << _usVariableVisible(variable) << std::endl
 			<< " - mutable      = " << _usVariableMutable(variable) << std::endl
@@ -321,18 +429,44 @@ int test()
 	}
 	free(apiList);
 
-	// destroying the simulator
-	bool done = _usDestroySimulator(simulator);
-	if ( !done )
-		std::cerr << "Could not destroy simulator" << std::endl;
+	// run the simulator
+	std::cerr << "Starting run test" << std::endl;
 
-	if ( !close_lib() )
+	// setting kernel_logger.std_err output
+	std::cerr << " - setting logger";
+	UnisimVariable loggerVariable =
+		_usSimulatorGetVariable(simulator, "kernel_logger.std_err");
+	if ( loggerVariable == 0 )
+		std::cerr << std::endl << "WARNING: could not get logger output" << std::endl;
+	else
 	{
-		std::cerr << "Could not correctly close the library" << std::endl;
-		return -1;
+		std::cerr << " to true"; 
+		_usVariableSetValueFromUnsignedLongLong(loggerVariable, 1);
+		std::cerr << " (DONE)" << std::endl;
 	}
+	std::cerr << " - launching setup";
+	UnisimSimulatorSetupStatus simulatorSetupStatus = _usSimulatorSetup(simulator);
+	std::cerr << " " << SimulatorSetupStatusAsString(simulatorSetupStatus) << std::endl;
+	std::cerr << " - simulator status ";
+	UnisimSimulatorStatus simulatorStatus = _usSimulatorGetStatus(simulator); 
+	std::cerr << " " << SimulatorStatusAsString(simulatorStatus) << std::endl;
+	std::cerr << " - setting listener into instruction counter" << std::endl;
+	UnisimVariable instructionCounterVariable =
+		_usSimulatorGetVariable(simulator, "cpu.instruction-counter");
+	if ( instructionCounterVariable == 0 )
+	{
+		std::cerr << "ERROR: could not get instruction counter variable" << std::endl;
+		return CloseSimulator(simulator);
+	}
+	_usVariableSetListener(instructionCounterVariable, InstructionCounterListener);
 
-	return 0;
+	bool ok = _usSimulatorRun(simulator);
+	if ( !ok )
+		std::cerr << "Could not run the simulator" << std::endl;
+
+	_usVariableRemoveListener(variable);
+
+	return CloseSimulator(simulator);
 }
 
 int main()
