@@ -92,7 +92,7 @@ using unisim::service::pim::PIMThread;
 
 template <class ADDRESS>
 PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
-	: Object(_name, _parent, "GDB Server")
+	: Object(_name, _parent, "PIM Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
