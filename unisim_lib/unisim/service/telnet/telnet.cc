@@ -68,6 +68,8 @@ const uint8_t DONT = 254;
 const uint8_t DO = 253;
 const uint8_t WONT = 252;
 const uint8_t WILL = 251;
+const uint8_t SB = 250;
+const uint8_t SE = 240;
 
 // Telnet options
 const uint8_t BINARY = 0;
@@ -84,6 +86,9 @@ Telnet::Telnet(const char *name, Object *parent)
 	, verbose(false)
 	, telnet_tcp_port(23)
 	, telnet_sock(-1)
+	, state(0)
+	, sb_opt(0)
+	, sb_params_vec()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_telnet_tcp_port("telnet-tcp-port", this, telnet_tcp_port, "TCP/IP port of telnet")
 {
@@ -307,20 +312,219 @@ void Telnet::Reset()
 	telnet_output_buffer_size = 0;
 }
 
+const char *Telnet::GetOptName(uint8_t opt) const
+{
+	switch(opt)
+	{
+		case ECHO: return "ECHO";
+		case BINARY: return "BINARY";
+		case LINEMODE: return "LINEMODE";
+		case SUPPRESS_GO_AHEAD: return "SUPPRESS_GO_AHEAD";
+	}
+	return 0;
+}
+
+void Telnet::Dont(uint8_t opt)
+{
+	if(IsVerbose())
+	{
+		const char *opt_name = GetOptName(opt);
+		logger << DebugInfo << "DONT ";
+		if(opt_name)
+		{
+			logger << opt_name;
+		}
+		else
+		{
+			logger << (unsigned int) opt;
+		}
+		logger << EndDebugInfo;
+	}
+}
+
+void Telnet::Do(uint8_t opt)
+{
+	if(IsVerbose())
+	{
+		const char *opt_name = GetOptName(opt);
+		logger << DebugInfo << "DO ";
+		if(opt_name)
+		{
+			logger << opt_name;
+		}
+		else
+		{
+			logger << (unsigned int) opt;
+		}
+		logger << EndDebugInfo;
+	}
+}
+
+void Telnet::Wont(uint8_t opt)
+{
+	if(IsVerbose())
+	{
+		const char *opt_name = GetOptName(opt);
+		logger << DebugInfo << "WONT ";
+		if(opt_name)
+		{
+			logger << opt_name;
+		}
+		else
+		{
+			logger << (unsigned int) opt;
+		}
+		logger << EndDebugInfo;
+	}
+}
+
+void Telnet::Will(uint8_t opt)
+{
+	if(IsVerbose())
+	{
+		const char *opt_name = GetOptName(opt);
+		logger << DebugInfo << "WILL ";
+		if(opt_name)
+		{
+			logger << opt_name;
+		}
+		else
+		{
+			logger << (unsigned int) opt;
+		}
+		logger << EndDebugInfo;
+	}
+}
+
+void Telnet::SubNegociation(uint8_t opt, uint8_t *params, unsigned int num_params)
+{
+	if(IsVerbose())
+	{
+		logger << DebugInfo << "SB " << GetOptName(opt);
+		unsigned int i;
+		for(i = 0; i < num_params; i++)
+		{
+			logger << (unsigned int) params[i];
+			if(i != (num_params - 1)) logger << " ";
+		}
+		logger << EndDebugInfo;
+	}
+}
+
 bool Telnet::GetChar(char& c)
 {
 	uint8_t v;
-	
-	if(!TelnetGet(v)) return false;
 
-	c = (char) v;
-	return true;
+	do
+	{
+		if(!TelnetGet(v)) return false;
+
+		switch(state)
+		{
+			case 0:
+				if(v == IAC)
+				{
+					state = 1;
+					break;
+				}
+				if(v == 0) break;
+				c = (char) v;
+				if(IsVerbose())
+				{
+					logger << DebugInfo << "Getting character ";
+					if((v >= 32) && (v < 128))
+						logger << "'" << c << "'";
+					else
+						logger << "0x" << std::hex << (unsigned int) v << std::dec;
+					logger << EndDebugInfo;
+				}
+				return true;
+				
+			case 1: // got an IAC
+				switch(v)
+				{
+					case IAC:
+						c = (char) v;
+						return true;
+					case DONT:
+						state = 2;
+						break;
+					case DO:
+						state = 3;
+						break;
+					case WONT:
+						state = 4;
+						break;
+					case WILL:
+						state = 5;
+						break;
+					case SB:
+						state = 6;
+						break;
+					default:
+						state = 0;
+						break;
+				}
+				break;
+			case 2: // got a DONT
+				Dont(v);
+				state = 0;
+				break;
+			case 3: // got a DO
+				Do(v);
+				state = 0;
+				break;
+			case 4: // got a WONT
+				Wont(v);
+				state = 0;
+				break;
+			case 5: // got a WILL
+				Will(v);
+				state = 0;
+				break;
+			case 6: // got a SB
+				sb_opt = v;
+				sb_params_vec.clear();
+				state = 7;
+				break;
+			case 7:
+				if(v == SE)
+				{
+					unsigned int num_params = sb_params_vec.size();
+					uint8_t sb_params[num_params];
+					unsigned int i;
+					for(i = 0; i < num_params; i++)
+					{
+						sb_params[i] = sb_params_vec[i];
+					}
+					SubNegociation(sb_opt, sb_params, num_params);
+					sb_params_vec.clear();
+					state = 0;
+					break;
+				}
+				else
+				{
+					sb_params_vec.push_back(v);
+				}
+				break;
+		}
+	}
+	while(1);
 }
 
 void Telnet::PutChar(char c)
 {
 	uint8_t v = (uint8_t) c;
 	
+	if(IsVerbose())
+	{
+		logger << DebugInfo << "Putting character ";
+		if(v >= 32)
+			logger << "'" << c << "'";
+		else
+			logger << "0x" << std::hex << (unsigned int) v << std::dec;
+		logger << EndDebugInfo;
+	}
 	TelnetPut(v);
 	if(v == IAC) TelnetPut(v);
 }

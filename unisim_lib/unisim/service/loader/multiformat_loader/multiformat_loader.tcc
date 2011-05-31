@@ -248,7 +248,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 			}
 			
 			std::stringstream sstr_loader_name;
-			sstr_loader_name << GetFileFormatName(file_fmt) << "-loader[" << stmt_idx << "]";
+			sstr_loader_name << "file" << stmt_idx;
 			std::string loader_name(sstr_loader_name.str());
 			std::transform(loader_name.begin(), loader_name.end(), loader_name.begin(), ::tolower); // make sure service name is lower case
 			

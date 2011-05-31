@@ -67,16 +67,21 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, cpu_time()
 	, nice_time()
 	, max_idle_time()
-	, global_time()
+	, run_time()
 	, idle_time()
 	, ev_max_idle()
 	, ev_irq()
 	, ipc(1.0)
+	, one(1.0)
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, stat_one("one", this, one, "one")
+	, stat_run_time("run-time", this, run_time, "run time")
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
+	, formula_idle_rate("idle-rate", this, Formula<double>::OP_DIV, &stat_idle_time, &stat_run_time, "idle rate")
+	, formula_load_rate("load-rate", this, Formula<double>::OP_SUB, &stat_one, &formula_idle_rate, "load rate")
 	, external_event_schedule()
 	, critical_input_interrupt_redirector(0)
 	, external_input_interrupt_redirector(0)
@@ -85,6 +90,10 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, dcurd_plb_redirector(0)
 	, dcr_redirector(0)
 {
+	stat_one.SetMutable(false);
+	stat_one.SetSerializable(false);
+	stat_one.SetVisible(false);
+	
 	icurd_plb_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
 		IF_ICURD_PLB,
 		this,
@@ -206,7 +215,7 @@ void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
 	cpu_time = SC_ZERO_TIME;
-	global_time = sc_time_stamp();
+	run_time = sc_time_stamp();
 }
 
 template <class CONFIG>
@@ -336,7 +345,7 @@ bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& p
 template <class CONFIG>
 inline void CPU<CONFIG>::UpdateTime()
 {
-	if(unlikely(global_time > timer_time))
+	if(unlikely(run_time > timer_time))
 	{
 		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 		do
@@ -345,7 +354,7 @@ inline void CPU<CONFIG>::UpdateTime()
 			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
-		while(unlikely(global_time > timer_time));
+		while(unlikely(run_time > timer_time));
 	}
 }
 
@@ -404,8 +413,8 @@ void CPU<CONFIG>::Idle()
 	{
 		cpu_time -= delta_time;
 	}
-	global_time = new_time_stamp;
-	global_time += cpu_time;
+	run_time = new_time_stamp;
+	run_time += cpu_time;
 	UpdateTime();
 	ProcessExternalEvents();
 }
@@ -442,8 +451,8 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -466,8 +475,8 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	
 	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -490,8 +499,8 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	
 	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 
@@ -516,8 +525,8 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -542,8 +551,8 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 

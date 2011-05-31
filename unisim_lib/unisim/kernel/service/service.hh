@@ -497,10 +497,6 @@ public:
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child, const char *description = 0);
 	
-#if 0
-	Formula(const char *name, Object *owner, const char *math_formula, const char *description = 0);
-#endif
-
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
@@ -520,30 +516,6 @@ private:
 
 	Operator op;
 	VariableBase *childs[3];
-
-#if 0
-	static const unsigned int TOK_EOF   = 256;
-	static const unsigned int TOK_ERROR = 257;
-	static const unsigned int TOK_LTE   = 258;
-	static const unsigned int TOK_GTE   = 259;
-	static const unsigned int TOK_ABS   = 260;
-	static const unsigned int TOK_MIN   = 261;
-	static const unsigned int TOK_MAX   = 262;
-	static const unsigned int TOK_IDENT = 263;
-	static const unsigned int TOK_EXPR  = 264;
-
-	static const unsigned int PEEK_TOK  = 0;
-	static const unsigned int GET_TOK   = 1;
-	
-	unsigned int look_ahead_token;
-	VariableBase *look_ahead_lval;
-
-	const char *GetTokenName(unsigned int token) const;
-	unsigned int ReadToken(const char *math_formula, unsigned int& pos, unsigned int mode, VariableBase **lval = 0);
-	unsigned int Parse(const char *math_formula, unsigned int& pos, VariableBase **lval);
-	void Initialize(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-	Formula(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-#endif
 };
 
 //=============================================================================

@@ -669,15 +669,8 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 }
 
 //=============================================================================
-//=                           VariableArray<TYPE>                            =
-//=============================================================================
-
-//=============================================================================
 //=                             Formula<TYPE>                                 =
 //=============================================================================
-
-// static unsigned int auto_formula_id = 0;
-static string auto_formula_id_string;
 
 template <class TYPE>
 Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)

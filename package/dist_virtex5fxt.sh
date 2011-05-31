@@ -155,6 +155,7 @@ unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -288,6 +289,7 @@ unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/char_io.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
@@ -313,6 +315,7 @@ unisim/service/tee/loader/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
+unisim/service/telnet/telnet.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \

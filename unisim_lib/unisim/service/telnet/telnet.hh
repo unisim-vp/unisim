@@ -71,6 +71,9 @@ private:
 
 	int telnet_tcp_port;
 	int telnet_sock;
+	int state;
+	uint8_t sb_opt;
+	std::vector<uint8_t> sb_params_vec;
 
 	Parameter<bool> param_verbose;
 	Parameter<int> param_telnet_tcp_port;
@@ -81,6 +84,13 @@ private:
 
 	unsigned int telnet_output_buffer_size;
 	uint8_t telnet_output_buffer[256];
+
+	const char *GetOptName(uint8_t opt) const;
+	void Dont(uint8_t opt);
+	void Do(uint8_t opt);
+	void Wont(uint8_t opt);
+	void Will(uint8_t opt);
+	void SubNegociation(uint8_t opt, uint8_t *params, unsigned int num_params);
 
 	void TelnetFlushOutput();
 	void TelnetPut(uint8_t v);
