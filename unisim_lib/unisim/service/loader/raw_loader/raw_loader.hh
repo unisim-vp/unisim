@@ -52,7 +52,7 @@ namespace raw_loader {
 template <class MEMORY_ADDR>
 class RawLoader
 	: public unisim::kernel::service::Service<
-		unisim::service::interfaces::Loader<MEMORY_ADDR> >
+		unisim::service::interfaces::Loader>
 	, public unisim::kernel::service::Service<
 		unisim::service::interfaces::Blob<MEMORY_ADDR> >
 	, public unisim::kernel::service::Client<
@@ -60,7 +60,7 @@ class RawLoader
 {
 public:
 	unisim::kernel::service::ServiceExport<
-		unisim::service::interfaces::Loader<MEMORY_ADDR> > loader_export;
+		unisim::service::interfaces::Loader> loader_export;
 	unisim::kernel::service::ServiceExport<
 		unisim::service::interfaces::Blob<MEMORY_ADDR> > blob_export;
 	unisim::kernel::service::ServiceImport<

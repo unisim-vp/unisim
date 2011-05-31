@@ -35,14 +35,17 @@
 #ifndef UNISIM_SERVICE_INTERFACES_MEMORY_DIRECT_ACCESS_HH
 #define UNISIM_SERVICE_INTERFACES_MEMORY_DIRECT_ACCESS_HH
 
+#include <unisim/kernel/service/service.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
 
 template<class ADDRESS>
-struct MemoryDirectAccess
+class MemoryDirectAccess : public unisim::kernel::service::ServiceInterface
 {
-	virtual void * GetDirectAccess(ADDRESS addr, ADDRESS & start_addr, PHYSICAL_ADDR& end_addr);
+public:
+	virtual void * GetDirectAccess(ADDRESS addr, ADDRESS & start_addr, PHYSICAL_ADDR& end_addr) = 0;
 };
 
 } // end of namespace interfaces

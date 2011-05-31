@@ -55,18 +55,18 @@ rfmci.disasm = {
 op mfdcr(31[6]:rd[5]:dcrf[10]:323[10]:?[1])
 
 mfdcr.execute = {
-	// TODO
-	throw IllegalInstructionException<CONFIG>();
+	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
+	cpu->MoveFromDCR(rd, dcrn);
 }
 
 mfdcr.disasm = {
-	os << "mfdcr r" << (unsigned int) rd << ", " << (unsigned int) dcrf;
+	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
+	os << "mfdcr r" << (unsigned int) rd << ", " << dcrn;
 }
 
 op mfdcrx(31[6]:rd[5]:ra[5]:?[5]:259[10]:?[1])
 
 mfdcrx.execute = {
-	// TODO
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -77,7 +77,6 @@ mfdcrx.disasm = {
 op mfdcrux(31[6]:rd[5]:ra[5]:?[5]:291[10]:?[1])
 
 mfdcrux.execute = {
-	// TODO
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -88,18 +87,18 @@ mfdcrux.disasm = {
 op mtdcr(31[6]:rs[5]:dcrf[10]:451[10]:?[1])
 
 mtdcr.execute = {
-	// TODO
-	throw IllegalInstructionException<CONFIG>();
+	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
+	cpu->MoveToDCR(rs, dcrn);
 }
 
 mtdcr.disasm = {
-	os << "mtdcr " << (unsigned int) dcrf << ", r" << (unsigned int) rs;
+	uint32_t dcrn = ((dcrf & 0x1f) << 5) | ((dcrf >> 5) & 0x1f);
+	os << "mtdcr " << dcrn << ", r" << (unsigned int) rs;
 }
 
 op mtdcrx(31[6]:rs[5]:ra[5]:?[5]:387[10]:?[1])
 
 mtdcrx.execute = {
-	// TODO
 	throw IllegalInstructionException<CONFIG>();
 }
 
@@ -110,7 +109,6 @@ mtdcrx.disasm = {
 op mtdcrux(31[6]:rs[5]:ra[5]:?[5]:419[10]:?[1])
 
 mtdcrux.execute = {
-	// TODO
 	throw IllegalInstructionException<CONFIG>();
 }
 

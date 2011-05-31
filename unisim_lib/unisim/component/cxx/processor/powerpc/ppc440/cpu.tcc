@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
+#include <unisim/kernel/debug/debug.hh>
 
 #include <sstream>
 #include <stdexcept>
@@ -61,7 +62,7 @@ template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "this module implements a PPC440 CPU core")
 	, unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>()
-	, Client<Loader<typename CONFIG::address_t> >(name,  parent)
+	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
@@ -1486,6 +1487,8 @@ void CPU<CONFIG>::StepOneInstruction()
 template <class CONFIG>
 void CPU<CONFIG>::OnTimerClock()
 {
+	timer_cycle++;
+	
 	/* update the time base */
 	IncrementTB();
 
@@ -1738,20 +1741,6 @@ const char *CPU<CONFIG>::GetArchitectureName() const
 	return "powerpc";
 }
 
-template <class CONFIG>
-bool CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
-{
-	return memory_import->ReadMemory(physical_addr, buffer, size);
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
-{
-	return memory_import->WriteMemory(physical_addr, buffer, size);
-}
-
-
-
 /* Endian interface */
 template <class CONFIG>
 endian_type CPU<CONFIG>::GetEndianess()
@@ -1762,6 +1751,29 @@ endian_type CPU<CONFIG>::GetEndianess()
 template <class CONFIG>
 void CPU<CONFIG>::SetIRQ(unsigned int _irq)
 {
+	if(IsVerboseException())
+	{
+		if(_irq & CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT)
+		{
+			logger << DebugInfo << "Got an external input interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a critical input interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a decrementer interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a fixed interval timer interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a watchdog timer interrupt condition" << EndDebugInfo;
+		}
+	}
 	irq = irq | (_irq & (CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT | CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT));
 	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
 	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
@@ -1801,6 +1813,10 @@ void CPU<CONFIG>::ResetIRQ(unsigned int _irq)
 	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
 	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
 	if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
+	if(IsVerboseException())
+	{
+		logger << DebugInfo << "Reseting pending IRQ mask: " << irq << EndDebugInfo;
+	}
 }
 
 template <class CONFIG>

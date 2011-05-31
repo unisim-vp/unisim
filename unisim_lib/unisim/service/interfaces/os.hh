@@ -35,14 +35,14 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_OS_INTERFACE_HH__
 #define __UNISIM_SERVICE_INTERFACES_OS_INTERFACE_HH__
 
+#include <unisim/kernel/service/service.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
   
-  class OS {
+  class OS : public unisim::kernel::service::ServiceInterface{
   public:
-	OS() {}
-	virtual ~OS() {}
     /**
      * Execute an os system call.
      */

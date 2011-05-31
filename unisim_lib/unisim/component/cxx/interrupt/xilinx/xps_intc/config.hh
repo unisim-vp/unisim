@@ -81,8 +81,8 @@ public:
 	
 	static const unsigned int C_SPLB_DWITH = 128;        // PLB data with (in bits)
 	static const unsigned int C_NUM_INTR_INPUTS = 32;    // Number of interrupt inputs
-	static const MEMORY_ADDR C_BASEADDR = 0x41200000ULL; // XPS INTC Base Address
-	static const MEMORY_ADDR C_HIGHADDR = 0x4120ffffULL; // XPS INTC Base Address
+	static const MEMORY_ADDR C_BASEADDR = 0x41200000ULL; // XPS INTC Base Address default value (as ML507 board)
+	static const MEMORY_ADDR C_HIGHADDR = 0x4120ffffULL; // XPS INTC Base Address default value (as ML507 board)
 	
 	// Optional features
 	static const bool C_HAS_IPR = true; // Indicates the presence of IPR

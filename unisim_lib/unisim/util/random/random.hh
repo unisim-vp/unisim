@@ -49,7 +49,9 @@ class Random
 public:
 	static const long Max = +2147483647L;
 	static const long Min = -Max - 1L;
+	Random();
 	Random(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
+	void Seed(int32_t seed_x, int32_t seed_y, int32_t seed_z, int32_t seed_w);
 	int32_t Generate();
 	int32_t Generate(uint32_t radius);
 private:

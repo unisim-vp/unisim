@@ -65,7 +65,7 @@ template <class MEMORY_ADDR>
 RawLoader<MEMORY_ADDR> ::
 RawLoader(const char *name, Object *parent)
 	: Object(name, parent)
-	, Service<Loader<MEMORY_ADDR> >(name, parent)
+	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
 	, loader_export("loader-export", this)

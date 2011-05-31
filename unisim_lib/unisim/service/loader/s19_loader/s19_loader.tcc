@@ -48,7 +48,7 @@ template <class MEMORY_ADDR>
 S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	Object(name,parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Service<Loader<MEMORY_ADDR> >(name, parent),
+	Service<Loader>(name, parent),
 	memory_import("memory-import", this),
 	loader_export("loader-export", this),
 	filename(),

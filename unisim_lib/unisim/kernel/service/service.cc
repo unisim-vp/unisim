@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <limits>
 #if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
@@ -625,7 +626,11 @@ template <class TYPE> Variable<TYPE>::operator string () const
 			sstr << "0x" << hex << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
-			sstr << dec << (unsigned long long) *storage;
+			sstr << dec;
+			if(std::numeric_limits<TYPE>::is_signed)
+				sstr << (long long) *storage;
+			else
+				sstr << (unsigned long long) *storage;
 			break;
 	}
 	return sstr.str();
@@ -679,6 +684,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
@@ -693,6 +699,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = 0;
@@ -707,6 +714,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child;
 	childs[1] = 0;
 	childs[2] = 0;
@@ -1772,6 +1780,14 @@ void Object::SetDescription(const char *_description)
 }
 
 //=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+ServiceInterface::~ServiceInterface()
+{
+}
+
+//=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
 
@@ -1906,12 +1922,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, description()
 	, version()
     , license()
+    , schematic()
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
 	, var_description(0)
 	, var_version(0)
 	, var_license(0)
+	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
 	, command_line_options()
 	, objects()
@@ -1972,6 +1990,11 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	var_license->SetMutable(false);
 	var_license->SetVisible(false);
 	var_license->SetSerializable(false);
+
+	var_schematic = new Parameter<string>("schematic", 0, schematic, "path to simulator schematic");
+	var_schematic->SetMutable(false);
+	var_schematic->SetVisible(false);
+	var_schematic->SetSerializable(false);
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
@@ -2315,6 +2338,11 @@ Simulator::~Simulator()
 		delete var_license;
 	}
 	
+	if(var_schematic)
+	{
+		delete var_schematic;
+	}
+
 	if(var_description)
 	{
 		delete var_description;
@@ -2565,6 +2593,8 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			break;
 	}*/
 	
+	unsigned int max_name_column_width = 64;
+	unsigned int max_value_column_width = 32;
 	unsigned int max_variable_name_length = 0;
 	unsigned int max_variable_value_length = 0;
 	
@@ -2586,6 +2616,9 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			if(variable_value_length > max_variable_value_length) max_variable_value_length = variable_value_length;
 		}
 	}
+	
+	if(max_variable_name_length < max_name_column_width) max_name_column_width = max_variable_name_length;
+	if(max_variable_value_length < max_value_column_width) max_value_column_width = max_variable_value_length;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -2600,10 +2633,16 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 //			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
-			sstr_name.width(max_variable_name_length);
+			if(strlen(name) <= max_name_column_width)
+			{
+				sstr_name.width(max_name_column_width);
+			}
 			sstr_name.setf(std::ios::left);
 			sstr_name << name;
-			sstr_value.width(max_variable_value_length);
+			if(value.length() <= max_value_column_width)
+			{
+				sstr_value.width(max_value_column_width);
+			}
 			sstr_value.setf(std::ios::left);
 			sstr_value << value;
 			os << sstr_name.str() << " " << sstr_value.str();
@@ -3340,6 +3379,16 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	os << "\\section{Simulated configuration}" << endl;
 	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
+	
+	if(!schematic.empty())
+	{
+		os << "\\begin{figure}[!ht]" << endl;
+		os << "\t\\begin{center}" << endl;
+		os << "\t\t\\includegraphics[width=\\textwidth]{" << schematic << "}" << endl;
+		os << "\t\\end{center}" << endl;
+		os << "\t\\caption{" << program_name << " simulator schematic.}" << endl;
+		os << "\\end{figure}" << endl;
+	}
 	
 	os << "\\noindent The " << string_to_latex(program_name.c_str()) << " simulator is composed of the following modules and services:" << endl;
 	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << endl;
