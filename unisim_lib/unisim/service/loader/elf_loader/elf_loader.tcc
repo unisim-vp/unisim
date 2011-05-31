@@ -138,7 +138,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	{
 		const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
 		
-		if((section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL) && (section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS) && (section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A))
+		if((section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL) &&
+		   (section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS) &&
+		   (section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A))
 		{
 			if(unlikely(verbose))
 			{
@@ -403,7 +405,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				logger << EndDebugInfo;
 			}
 
-			void *sh_data = sh_size ? calloc(sh_size + 1, 1) : 0; // Allocate one additional byte for zero-terminated strings
+			void *sh_data = (sh_size && (sh_type != SHT_NOBITS)) ? calloc(sh_size + 1, 1) : 0; // Allocate one additional byte for zero-terminated strings
 			
 			if((sh_type != SHT_NULL) && (sh_type != SHT_NOBITS))
 			{

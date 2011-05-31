@@ -242,76 +242,6 @@
 			<description>targeted average instructions per second</description>
 		</variable>
 	</object>
-	<object name="elf32-loader[0]">
-		<variable name="filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>program0.elf</value>
-			<description>the ELF filename to load into memory</description>
-		</variable>
-		<variable name="base-addr">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
-			<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
-		</variable>
-		<variable name="force-base-addr">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>if true force base address for a unique program segment</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="force-use-virtual-address">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>force use of virtual addresses instead of physical addresses</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="dump-headers">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>dump headers while loading ELF file</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="dwarf-to-html-output-directory">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value></value>
-			<description>DWARF v2/v3 to HTML output directory</description>
-		</variable>
-		<variable name="parse-dwarf">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable/Disable parsing of DWARF debugging informations</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
 	<object name="erom">
 		<variable name="org">
 			<type>parameter</type>
@@ -362,7 +292,7 @@
 		<variable name="bytesize">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x800000</value>
+			<value>8388608</value>
 			<description>flash memory size in bytes</description>
 		</variable>
 		<variable name="endian">
@@ -565,11 +495,73 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="fsm-to-graphviz-output-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>FSM (finite state machine) to Graphviz output filename</description>
+		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>
 			<data_type>sc_time</data_type>
 			<value>13332 ps</value>
 			<description>flash memory cycle time</description>
+		</variable>
+	</object>
+	<object name="loader">
+		<object name="loader.memory-mapper">
+			<variable name="verbose">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="verbose-parser">
+				<type>parameter</type>
+				<data_type>boolean</data_type>
+				<value>false</value>
+				<description>Enable/Disable verbosity of parser</description>
+				<enumeration>
+					<item>true</item>
+					<item>false</item>
+				</enumeration>
+			</variable>
+			<variable name="mapping">
+				<type>parameter</type>
+				<data_type>string</data_type>
+				<value>mpc107:0x00000000-0xffffffff</value>
+				<description>Memory mapping. Syntax: [[(memory=]&lt;memory1&gt;[:[range=]&lt;low1-high1&gt;]][,[(memory=]&lt;memory2&gt;[:[range=]&lt;low2-high2&gt;]]... (e.g. ram:0x0-0x00ffff,rom:0xff0000-0xffffff)</description>
+			</variable>
+		</object>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-parser">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity of parser</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>List of files to load. Syntax: [[filename=]&lt;filename1&gt;[:[format=]&lt;format1&gt;]][,[filename=]&lt;filename2&gt;[:[format=]&lt;format2&gt;]]... (e.g. boot.bin:raw,app.elf)</description>
 		</variable>
 	</object>
 	<object name="memory">
@@ -1264,7 +1256,7 @@
 	<variable name="description">
 		<type>parameter</type>
 		<data_type>string</data_type>
-		<value>UNISIM embedded-ppc-g4-board simulator is a MPC7447A/MPC107 board simulator with support of ELF32 binaries and targeted for industrial applications</value>
+		<value>UNISIM embedded-ppc-g4-board simulator is a MPC7447A/MPC107 board simulator with support of ELF32, ELF64, S19, and RAW binaries and targeted for industrial applications</value>
 		<description>Description</description>
 	</variable>
 	<variable name="enable-gdb-server">
@@ -1307,6 +1299,88 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
+	<variable name="kernel_logger.file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.txt</value>
+		<description>Filename to keep logger output (the option file must be activated)</description>
+	</variable>
+	<variable name="kernel_logger.std_err">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Show logger output through the standard error output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_err_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Show logger output through the standard output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file xml formatted</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file_gzipped">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.xml</value>
+		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+	</variable>
 	<variable name="license">
 		<type>parameter</type>
 		<data_type>string</data_type>
@@ -1323,22 +1397,22 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
-	<variable name="num-programs">
-		<type>parameter</type>
-		<data_type>unsigned 32-bit integer</data_type>
-		<value>1</value>
-		<description>Number of programs to load into memory, i.e. the number of ELF32 loaders</description>
-	</variable>
 	<variable name="program-name">
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>UNISIM embedded-ppc-g4-board</value>
 		<description>Program name</description>
 	</variable>
+	<variable name="schematic">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value></value>
+		<description>path to simulator schematic</description>
+	</variable>
 	<variable name="version">
 		<type>parameter</type>
 		<data_type>string</data_type>
-		<value>1.1beta1</value>
+		<value>1.1beta2</value>
 		<description>Version</description>
 	</variable>
 </variables>

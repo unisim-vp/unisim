@@ -68,20 +68,20 @@ using unisim::kernel::logger::Logger;
 
 template<class T>
 class LinuxLoader :
-public Client<Loader<T> >,
+public Client<Loader>,
 public Client<Blob<T> >,
 public Client<Memory<T> >,
-public Service<Loader<T> >,
+public Service<Loader>,
 public Service<Blob<T> >,
 public unisim::kernel::service::VariableBaseListener
 {
 public:
 	/* Import of the different services */
-	ServiceImport<Loader<T> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<Blob<T> > blob_import;
 	ServiceImport<Memory<T> > memory_import;
 	/* Exported services */
-	ServiceExport<Loader<T> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<T> > blob_export;
 
 	/* Constructor/Destructor */

@@ -228,7 +228,8 @@ tlm::tlm_sync_enum XPS_IntC<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 				Event *event = schedule.AllocEvent();
 				event->InitializeCPUEvent(&payload, notify_time_stamp);
 				schedule.Notify(event);
-				return tlm::TLM_ACCEPTED;
+				phase = tlm::END_REQ;
+				return tlm::TLM_UPDATED;
 			}
 			break;
 		case tlm::END_RESP:

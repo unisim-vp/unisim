@@ -86,7 +86,14 @@ DCRController<CONFIG>::DCRController(const sc_module_name& name, Object *parent)
 
 	SC_HAS_PROCESS(DCRController);
 	
-	SC_THREAD(Process);
+	if(threaded_model)
+	{
+		SC_THREAD(Process);
+	}
+	else
+	{
+		SC_METHOD(Process);
+	}
 }
 
 template <class CONFIG>
@@ -132,6 +139,7 @@ void DCRController<CONFIG>::b_transport(unsigned int num_master, tlm::tlm_generi
 		event->Initialize(&payload, intf, notify_time_stamp, &ev_completed);
 		schedule.Notify(event);
 		wait(ev_completed);
+		t = SC_ZERO_TIME;
 	}
 	else
 	{
@@ -219,65 +227,96 @@ void DCRController<CONFIG>::invalidate_direct_mem_ptr(unsigned int num_slave, sc
 {
 }
 
-
 template <class CONFIG>
-void DCRController<CONFIG>::Process()
+void DCRController<CONFIG>::ProcessEvents()
 {
-	while(1)
+	const sc_time& time_stamp = sc_time_stamp();
+	if(inherited::IsVerbose())
 	{
-		wait(schedule.GetKernelEvent());
-		const sc_time& time_stamp = sc_time_stamp();
-		if(inherited::IsVerbose())
-		{
-			inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
-		}
-		
-		Event *event = schedule.GetNextEvent();
-		
-		if(event)
-		{
-			do
-			{
-				if(event->GetTimeStamp() != time_stamp)
-				{
-					inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-					Object::Stop(-1);
-				}
-				if((time_stamp.value() % cycle_time.value()) != 0)
-				{
-					inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
-					Object::Stop(-1);
-				}
+		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+	}
 	
-				int intf = event->GetInterface();
-				
-				if(inherited::IsMasterInterface(intf))
+	Event *event = schedule.GetNextEvent();
+	
+	if(event)
+	{
+		do
+		{
+			if(event->GetTimeStamp() != time_stamp)
+			{
+				inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
+				Object::Stop(-1);
+			}
+			if((time_stamp.value() % cycle_time.value()) != 0)
+			{
+				inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
+				Object::Stop(-1);
+			}
+
+			int intf = event->GetInterface();
+			
+			if((intf >= 0) && inherited::IsMasterInterface(intf)) // not an event from a master ?
+			{
+				unsigned int num_master = inherited::GetMaster(intf);
+				if(num_master >= CONFIG::NUM_MASTERS)
 				{
-					if(ProcessForwardEvent(event))
-					{
-						schedule.FreeEvent(event);
-					}
-					else
-					{
-						sc_time notify_time_stamp(time_stamp);
-						notify_time_stamp += cycle_time;
-						event->SetTimeStamp(notify_time_stamp);
-						schedule.Notify(event); // reschedule event later
-					}
+					inherited::logger << DebugError << "Internal error: in " << __FUNCTION__ << ", can't find master" << EndDebugError;
+					Object::Stop(-1);
+					return;
 				}
-				else
+				
+				switch(num_master)
 				{
-					ProcessBackwardEvent(event);
-					schedule.FreeEvent(event);
+					case CONFIG::C440_MASTER_NUM:
+						if(inherited::GetDCRControllerStatusAndControlRegister_XM_ALOCK() || inherited::GetDCRControllerStatusAndControlRegister_XM_LOCK())
+						{
+							// XM master has locked bus
+							return;
+						}
+						break;
+					case CONFIG::XM_MASTER_NUM:
+						if(inherited::GetDCRControllerStatusAndControlRegister_C440_ALOCK() || inherited::GetDCRControllerStatusAndControlRegister_C440_LOCK())
+						{
+							// C440 master has locked bus
+							return;
+						}
+						break;
 				}
 			}
-			while((event = schedule.GetNextEvent()) != 0);
+			
+			if((intf < 0) || inherited::IsMasterInterface(intf)) // internal event or event from a master
+			{
+				ProcessForwardEvent(event);
+			}
+			else // event from a target
+			{
+				ProcessBackwardEvent(event);
+			}
 		}
+		while((event = schedule.GetNextEvent()) != 0);
 	}
 }
 
 template <class CONFIG>
-bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
+void DCRController<CONFIG>::Process()
+{
+	if(threaded_model)
+	{
+		while(1)
+		{
+			wait(schedule.GetKernelEvent());
+			ProcessEvents();
+		}
+	}
+	else
+	{
+		ProcessEvents();
+		next_trigger(schedule.GetKernelEvent());
+	}
+}
+
+template <class CONFIG>
+void DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 {
 	int src_if = event->GetInterface();
 	
@@ -291,25 +330,7 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 		{
 			inherited::logger << DebugError << "Internal error: in " << __FUNCTION__ << ", can't find master" << EndDebugError;
 			Object::Stop(-1);
-			return false;
-		}
-		
-		switch(num_master)
-		{
-			case CONFIG::C440_MASTER_NUM:
-				if(inherited::GetDCRControllerStatusAndControlRegister_XM_ALOCK() || inherited::GetDCRControllerStatusAndControlRegister_XM_LOCK())
-				{
-					// XM master has locked bus
-					return false;
-				}
-				break;
-			case CONFIG::XM_MASTER_NUM:
-				if(inherited::GetDCRControllerStatusAndControlRegister_C440_ALOCK() || inherited::GetDCRControllerStatusAndControlRegister_C440_LOCK())
-				{
-					// C440 master has locked bus
-					return false;
-				}
-				break;
+			return;
 		}
 	}
 	
@@ -327,28 +348,28 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 			<< ": DCR address 0x" << std::hex << addr << std::dec << " is not 32-bit aligned"
 			<< EndDebugError;
 		Object::Stop(-1);
-		return false;
+		return;
 	}
 	
 	if(data_length != 4)
 	{
 		inherited::logger << DebugError << "data length of " << data_length << " bytes is unsupported" << EndDebugError;
 		Object::Stop(-1);
-		return false;
+		return;
 	}
 	
 	if(byte_enable_length)
 	{
 		inherited::logger << DebugError << "byte enable is unsupported" << EndDebugError;
 		Object::Stop(-1);
-		return false;
+		return;
 	}
 	
 	if(streaming_width && (streaming_width != data_length))
 	{
 		inherited::logger << DebugError << "streaming width of " << data_length << " bytes is unsupported" << EndDebugError;
 		Object::Stop(-1);
-		return false;
+		return;
 	}
 
 	uint32_t dcrn = addr / 4;
@@ -402,8 +423,14 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 					
 					(*dcr_slave_sock[num_master])->nb_transport_bw(*payload, phase, t);
 				}
+				if(src_if < 0)
+				{
+					payload->release(); // Payload has been acquired by BindIndirectAccess
+				}
+				
+				schedule.FreeEvent(event);
 			}
-			return true;
+			return;
 
 		case CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::INDIRECT_MODE_ACCESS_REGISTER:
 			{
@@ -437,8 +464,11 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 					inherited::logger << DebugWarning << "indirect access to DCR #0x" << std::hex << dcrn << std::dec << " is illegal" << EndDebugWarning;
 					DoTimeOutAccess(num_master, event->GetCompletionEvent(), payload);
 				}
+				
+				indirect_payload->release();
 			}
-			return true;
+			schedule.FreeEvent(event);
+			return;
 	}
 
 	int dst_if = inherited::Route(dcrn);
@@ -447,7 +477,8 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 	{
 		// Unmapped access
 		DoTimeOutAccess(num_master, event->GetCompletionEvent(), payload);
-		return true;
+		schedule.FreeEvent(event);
+		return;
 	}
 
 	unsigned int num_slave = inherited::GetSlave(dst_if);
@@ -455,7 +486,7 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 	{
 		inherited::logger << DebugError << "Internal error: in " << __FUNCTION__ << ", can't find slave" << EndDebugError;
 		Object::Stop(-1);
-		return false;
+		return;
 	}
 
 	if(inherited::IsVerbose())
@@ -474,82 +505,93 @@ bool DCRController<CONFIG>::ProcessForwardEvent(Event *event)
 				<< num_slave << ", DCR #0x" << std::hex << dcrn << std::dec << ")" << EndDebugInfo;
 		}
 	}
-	
+
 	sc_time t(cycle_time);
 
 	sc_event *ev_completed = event->GetCompletionEvent();
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
 
-	if(ev_completed)
+	sync = (*dcr_master_sock[num_slave])->nb_transport_fw(*payload, phase, t);
+
+	if(sync == tlm::TLM_COMPLETED)
 	{
 		if(src_if < 0)
 		{
 			// indirect access
 			tlm::tlm_generic_payload *original_payload = ResolveIndirectAccess(payload, num_master);
-			inherited::ResetALOCK(num_master);
 
-			(*dcr_master_sock[num_slave])->b_transport(*payload, t);
-			
 			if(payload->get_response_status() != tlm::TLM_OK_RESPONSE)
 			{
 				// Unmapped access or slave error results in timeout
 				DoTimeOutAccess(num_master, ev_completed, original_payload);
 			}
-			else
+			else if(ev_completed)
 			{
 				ev_completed->notify(t);
 			}
-			
-			original_payload->release(); // original payload has been acquired by BindIndirectAccess
+			else
+			{
+				phase = tlm::BEGIN_RESP;
+				(*dcr_slave_sock[num_master])->nb_transport_bw(*original_payload, phase, t);
+			}
 		}
 		else
 		{
-			(*dcr_master_sock[num_slave])->b_transport(*payload, t);
-			
 			if(payload->get_response_status() != tlm::TLM_OK_RESPONSE)
 			{
-				// Unmapped access or slave error results in timeout
 				DoTimeOutAccess(num_master, ev_completed, payload);
 			}
-			else
+			else if(ev_completed)
 			{
 				ev_completed->notify(t);
 			}
+			else
+			{
+				phase = tlm::BEGIN_RESP;
+				(*dcr_slave_sock[num_master])->nb_transport_bw(*payload, phase, t);
+			}
 		}
+		
+		schedule.FreeEvent(event);
 	}
 	else
 	{
 		payload->acquire();
-		return_if.insert(std::pair<tlm::tlm_generic_payload *, int>(payload, src_if));
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-			
-		(*dcr_master_sock[num_slave])->nb_transport_fw(*payload, phase, t);
+		pending_requests.insert(std::pair<tlm::tlm_generic_payload *, Event *>(payload, event));
 	}
-	
-	return true;
 }
 
 template <class CONFIG>
 void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	
-	typename std::map<tlm::tlm_generic_payload *, int>::iterator it = return_if.find(payload);
-	payload->release();
-	
-	if(it == return_if.end())
+	typename std::map<tlm::tlm_generic_payload *, Event *>::iterator it = pending_requests.find(payload);
+	if(it == pending_requests.end())
 	{
-		inherited::logger << DebugError << "Internal error: in " << __FUNCTION__ << ", can't find interface" << EndDebugError;
+		inherited::logger << DebugError << "Internal error: in " << __FUNCTION__ << ", can't find original event" << EndDebugError;
 		Object::Stop(-1);
 		return;
 	}
 	
-	int src_if = (*it).second;
+	schedule.FreeEvent(event);
+	event = (*it).second;
+	pending_requests.erase(it);
+	int src_if = event->GetInterface();
+	sc_event *ev_completed = event->GetCompletionEvent();
+	
 	unsigned int num_master;
 	
 	if(src_if < 0)
 	{
 		// indirect access
+		tlm::tlm_response_status status = payload->get_response_status();
+		
 		payload = ResolveIndirectAccess(payload, num_master);
+		
+		payload->set_response_status(status);
+		
+		inherited::ResetALOCK(num_master);
 	}
 
 	if(payload->get_response_status() != tlm::TLM_OK_RESPONSE)
@@ -559,11 +601,21 @@ void DCRController<CONFIG>::ProcessBackwardEvent(Event *event)
 	else
 	{
 		sc_time t(cycle_time);
-		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		(*dcr_slave_sock[num_master])->nb_transport_bw(*payload, phase, t);
+		
+		if(ev_completed)
+		{
+			ev_completed->notify(t);
+		}
+		else
+		{
+			tlm::tlm_phase phase = tlm::BEGIN_RESP;
+			(*dcr_slave_sock[num_master])->nb_transport_bw(*payload, phase, t);
+		}
 	}
 	
-	payload->release(); // payload has been acquired either by BindIndirectAccess or ProcessForwardEvent
+	payload->release(); // payload has been acquired by ProcessForwardEvent
+	
+	schedule.FreeEvent(event);
 }
 
 template <class CONFIG>
@@ -609,7 +661,6 @@ void DCRController<CONFIG>::DoTimeOutAccess(unsigned int num_master, sc_event *e
 template <class CONFIG>
 void DCRController<CONFIG>::BindIndirectAccess(tlm::tlm_generic_payload *original_payload, tlm::tlm_generic_payload *payload, unsigned int num_master)
 {
-	payload->acquire();
 	indirect_access_master.insert(std::pair<tlm::tlm_generic_payload *, unsigned int>(payload, num_master));
 	original_payload->acquire();
 	indirect_access_payload_binding.insert(std::pair<tlm::tlm_generic_payload *, tlm::tlm_generic_payload *>(payload, original_payload));

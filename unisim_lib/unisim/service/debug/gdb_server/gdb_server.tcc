@@ -440,10 +440,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 		socklen_t addr_len;
 #endif
 
-	if(verbose)
-	{
-		logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
-	}
+	logger << DebugInfo << "Listening on TCP port " << tcp_port << EndDebugInfo;
 	addr_len = sizeof(addr);
 	sock = accept(server_sock, (struct sockaddr *) &addr, &addr_len);
 

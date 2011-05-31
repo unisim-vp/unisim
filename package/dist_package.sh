@@ -581,6 +581,7 @@ for PKG in "$@"; do
 				"bin/unisim-ppcemu-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		ppcemu-system)
@@ -650,6 +651,7 @@ for PKG in "$@"; do
 				"bin/unisim-embedded-ppc-g4-board-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		tms320c3x)

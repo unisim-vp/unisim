@@ -39,6 +39,10 @@
 #include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
 #include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/config.hh>
+#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
+#include <unisim/kernel/tlm2/tlm.hh>
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
@@ -91,36 +95,29 @@ using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Object;
 
-class IRQStub
-	: public sc_module
-	, tlm::tlm_bw_transport_if<unisim::component::tlm2::interrupt::InterruptProtocolTypes>
+#ifdef DEBUG_PPC440EMU
+class PLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
 {
 public:
-	tlm::tlm_initiator_socket<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> irq_master_sock;
-	
-	IRQStub(const sc_module_name& name);
-
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	static const unsigned int INPUT_SOCKETS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 1;
+	static const unsigned int MAX_NUM_MAPPINGS = 1;
+	static const unsigned int BUSWIDTH = 128;
 };
 
-IRQStub::IRQStub(const sc_module_name& name)
-	: sc_module(name)
-	, irq_master_sock("irq-master-sock")
+typedef PLBDebugConfig PLB_CONFIG;
+#else
+class PLBConfig : public unisim::component::tlm2::interconnect::generic_router::Config
 {
-	irq_master_sock(*this);
-}
+public:
+	static const unsigned int INPUT_SOCKETS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 1;
+	static const unsigned int MAX_NUM_MAPPINGS = 1;
+	static const unsigned int BUSWIDTH = 128;
+};
 
-tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
-{
-	return tlm::TLM_COMPLETED;
-}
-
-void IRQStub::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
-{
-}
-
+typedef PLBConfig PLB_CONFIG;
+#endif
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -149,17 +146,24 @@ private:
 
 	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> MEMORY;
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<CPU_CONFIG> CPU;
+	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::interrupt::InterruptProtocolTypes> IRQ_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<4> DCR_STUB;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<PLB_CONFIG> PLB;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
 	//=========================================================================
 	//  - PowerPC processor
 	CPU *cpu;
+	//  - PLB
+	PLB *plb;
 	//  - RAM
 	MEMORY *memory;
 	// - IRQ stubs
-	IRQStub *external_input_interrupt_stub;
-	IRQStub *critical_input_interrupt_stub;
+	IRQ_STUB *external_input_interrupt_stub;
+	IRQ_STUB *critical_input_interrupt_stub;
+	// - DCR stub
+	DCR_STUB *dcr_stub;
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -203,9 +207,11 @@ private:
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
+	, plb(0)
 	, memory(0)
 	, external_input_interrupt_stub(0)
 	, critical_input_interrupt_stub(0)
+	, dcr_stub(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -229,11 +235,15 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 	//  - PowerPC processor
 	cpu = new CPU("cpu");
+	//  - PLB
+	plb = new PLB("plb");
 	//  - RAM
 	memory = new MEMORY("memory");
 	//  - IRQ Stubs
-	external_input_interrupt_stub = new IRQStub("external-input-interrupt-stub");
-	critical_input_interrupt_stub = new IRQStub("critical-input-interrupt-stub");
+	external_input_interrupt_stub = new IRQ_STUB("external-input-interrupt-stub");
+	critical_input_interrupt_stub = new IRQ_STUB("critical-input-interrupt-stub");
+	//  - DCR stub
+	dcr_stub = new DCR_STUB("dcr-stub");
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -265,15 +275,20 @@ Simulator::Simulator(int argc, char **argv)
 	//===                        Components connection                      ===
 	//=========================================================================
 
-	cpu->bus_master_sock(memory->slave_sock); // CPU <-> RAM
-	external_input_interrupt_stub->irq_master_sock(cpu->external_input_interrupt_slave_sock);
-	critical_input_interrupt_stub->irq_master_sock(cpu->critical_input_interrupt_slave_sock);
+	cpu->icurd_plb_master_sock(*plb->targ_socket[0]); // CPU>ICURD <-> PLB
+	cpu->dcuwr_plb_master_sock(*plb->targ_socket[1]); // CPU>DCUWR <-> PLB
+	cpu->dcurd_plb_master_sock(*plb->targ_socket[2]); // CPU>DCURD <-> PLB
+	(*plb->init_socket[0])(memory->slave_sock); // PLB <-> RAM
+	external_input_interrupt_stub->master_sock(cpu->external_input_interrupt_slave_sock);
+	critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock);
+	cpu->dcr_master_sock(dcr_stub->slave_sock);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
 	//=========================================================================
 
-	cpu->memory_import >> memory->memory_export;
+	cpu->memory_import >> plb->memory_export;
+	(*plb->memory_import[0]) >> memory->memory_export;
 	
 	if(enable_inline_debugger)
 	{
@@ -345,6 +360,7 @@ Simulator::~Simulator()
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
+	if(plb) delete plb;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
 	if(itlb_power_estimator) delete itlb_power_estimator;
@@ -394,6 +410,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "1 ms"); // 1 ms
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
+
+	//  - PLB
+	simulator->SetVariable("plb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("plb.mapping_0", "range_start=\"0x0\" range_end=\"0xffffffffffffffff\" output_port=\"0\" translation=\"0x0\""); // RAM
 
 	//  - RAM
 	simulator->SetVariable("memory.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());

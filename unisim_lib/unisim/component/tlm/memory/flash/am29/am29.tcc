@@ -32,28 +32,28 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_TCC__
-#define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_TCC__
+#ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_TCC__
+#define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_TCC__
 
 #include <systemc.h>
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29.hh"
 
 namespace unisim {
 namespace component {
 namespace tlm {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::util::garbage_collector::Pointer;
-using unisim::component::cxx::memory::flash::am29lv::CMD_READ;
-using unisim::component::cxx::memory::flash::am29lv::CMD_WRITE;
+using unisim::component::cxx::memory::flash::am29::CMD_READ;
+using unisim::component::cxx::memory::flash::am29::CMD_WRITE;
 
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
@@ -66,15 +66,15 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_module_name& name, Object *parent) :
-	Object(name, parent, "AM29LVxxx flash memory"),
+AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29(const sc_module_name& name, Object *parent) :
+	Object(name, parent, "AM29xxx flash memory"),
 	sc_module(name),
-	unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>(name, parent),
+	unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>(name, parent),
 	slave_port("slave-port"),
 	cycle_time(SC_ZERO_TIME),
 	param_cycle_time("cycle-time", this, cycle_time, "flash memory cycle time")
 {
-	SC_HAS_PROCESS(AM29LV);
+	SC_HAS_PROCESS(AM29);
 
 	slave_port(*this);
 
@@ -82,14 +82,14 @@ AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::AM29LV(const sc_m
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::~AM29LV()
+AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::~AM29()
 {
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::BeginSetup()
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::BeginSetup()
 {
-	if(inherited::verbose)
+	if(inherited::IsVerbose())
 	{
 		inherited::logger << DebugInfo;
 		inherited::logger << "cycle time of " << cycle_time << std::endl;
@@ -101,13 +101,13 @@ bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::BeginSetup()
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-bool AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Send(const Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > >& message)
+bool AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Send(const Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > >& message)
 {
 	return input_queue.nb_write(message);
 }
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
+void AM29<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 {
 	while(1)
 	{
@@ -122,7 +122,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 				{
 					if(!inherited::FSM(CMD_READ, req->addr, (uint8_t *) rsp->read_data, req->size))
 					{
-						if(inherited::verbose)
+						if(inherited::IsVerbose())
 						{
 							inherited::logger << DebugWarning;
 							inherited::logger << "Invalid read" << std::endl;
@@ -138,7 +138,7 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 			case MemoryRequest<typename CONFIG::ADDRESS, IO_WIDTH>::WRITE:
 				if(!inherited::FSM(CMD_WRITE, req->addr, req->write_data, req->size))
 				{
-					if(inherited::verbose)
+					if(inherited::IsVerbose())
 					{
 						inherited::logger << DebugWarning;
 						inherited::logger << "Invalid write" << std::endl;
@@ -151,11 +151,11 @@ void AM29LV<CONFIG, BYTESIZE, IO_WIDTH, MAX_TRANSACTION_DATA_SIZE>::Process()
 	}
 }
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_HH__
+#endif // __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__

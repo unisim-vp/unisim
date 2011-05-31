@@ -60,7 +60,7 @@ template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "PowerPC MPC7447A CPU")
 	, unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>()
-	, Client<Loader<typename CONFIG::physical_address_t> >(name,  parent)
+	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)

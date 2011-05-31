@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,25 +31,23 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include "unisim/component/tlm/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/tlm/memory/flash/am29lv/am29lv.tcc"
+
+#include <unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
+#include <unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.tcc>
+#include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 
 namespace unisim {
 namespace component {
-namespace tlm {
-namespace memory {
-namespace flash {
-namespace am29lv {
+namespace cxx {
+namespace com {
+namespace xilinx {
+namespace xps_uart_lite {
 
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig, 
-	4 * unisim::component::cxx::memory::flash::am29lv::M, 8, 32>; // 4 MB/64 bits
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig, 
-	8 * unisim::component::cxx::memory::flash::am29lv::M, 8, 32>; // 8 MB/64 bits
+template class XPS_UARTLite<Config>;
 
-} // end of namespace am29lv
-} // end of namespace flash
-} // end of namespace memory
-} // end of namespace tlm
+} // end of namespace xps_uart_lite
+} // end of namespace xilinx
+} // end of namespace com
+} // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim

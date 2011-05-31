@@ -775,7 +775,7 @@ void CPU<CONFIG>::DumpDTLB(std::ostream& os)
 }
 
 template <class CONFIG>
-void CPU<CONFIG>::DumpUTLB(std::ostream& os)
+void CPU<CONFIG>::DumpUTLB(std::ostream& os, int highlight_index, int hightligh_way)
 {
 	uint32_t tlb_index = 0;
 	uint32_t tlb_way;
@@ -787,7 +787,42 @@ void CPU<CONFIG>::DumpUTLB(std::ostream& os)
 	{
 		tlb_entry = &(*tlb_set)[tlb_way];
 		
-		os << " way #" << tlb_way << ":" << tlb_entry->pte << std::endl;
+		if(tlb_entry->pte.GetV())
+		{
+			if((highlight_index >= 0) && (tlb_index == (uint32_t) highlight_index))
+			{
+				if((hightligh_way < 0) || ((hightligh_way >= 0) && (tlb_way == (uint32_t) hightligh_way)))
+				{
+					os << ">>>";
+				}
+			}
+			os << " way #" << tlb_way << ":";
+			
+			typename CONFIG::address_t page_size = 1024 << (2 * tlb_entry->pte.GetSIZE()); // page size in bytes
+			typename CONFIG::address_t low = tlb_entry->pte.GetEPN() << ((8 * sizeof(typename CONFIG::address_t)) - CONFIG::TLBE0_EPN_BITSIZE);
+			typename CONFIG::address_t high = low + page_size - 1;
+
+			typename CONFIG::physical_address_t plow = ((typename CONFIG::physical_address_t) tlb_entry->pte.GetERPN() << CONFIG::PADDR_ERPN_OFFSET)
+										| ((typename CONFIG::physical_address_t) tlb_entry->pte.GetRPN() << CONFIG::PADDR_RPN_OFFSET);
+			typename CONFIG::physical_address_t phigh = plow + page_size - 1;
+
+			typename CONFIG::ACCESS_CTRL access_ctrl = tlb_entry->pte.GetAccessCtrl();
+
+			os << "S=";
+			os << ((access_ctrl & CONFIG::AC_SR) ? 'r' : '-');
+			os << ((access_ctrl & CONFIG::AC_SW) ? 'w' : '-');
+			os << ((access_ctrl & CONFIG::AC_SX) ? 'x' : '-');
+			os << " U=";
+			os << ((access_ctrl & CONFIG::AC_UR) ? 'r' : '-');
+			os << ((access_ctrl & CONFIG::AC_UW) ? 'w' : '-');
+			os << ((access_ctrl & CONFIG::AC_UX) ? 'x' : '-');
+			os << " 0x" << std::hex << low << std::dec << "-0x" << std::hex << high << std::dec;
+			os << " -> 0x" << std::hex << plow << std::dec << "-0x" << std::hex << phigh << std::dec << ":";
+
+			os << tlb_entry->pte;
+
+			os << std::endl;
+		}
 	}
 }
 
@@ -892,6 +927,15 @@ void CPU<CONFIG>::Tlbwe(uint32_t s, uint32_t way, uint8_t ws)
 		case 2:
 			tlb_entry.pte.Set(ws, s & CONFIG::TLBE2_DATA_MASK);
 			break;
+	}
+	
+	if(IsVerboseTlbwe())
+	{
+		std::stringstream sstr;
+		DumpUTLB(sstr, 0, way);
+		logger << DebugInfo << "After tlbwe, UTLB contains:" << std::endl;
+		logger << sstr.str();
+		logger << EndDebugInfo;
 	}
 }
 

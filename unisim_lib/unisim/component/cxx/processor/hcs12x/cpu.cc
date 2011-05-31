@@ -118,13 +118,13 @@ CPU::CPU(const char *name, Object *parent):
 	spurious_interrupt(false),
 	instruction_counter(0),
 	cycles_counter(0),
-	load_counter(0),
-	store_counter(0),
+	data_load_counter(0),
+	data_store_counter(0),
 	max_inst((uint64_t) -1),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	stat_cycles_counter("cycles-counter", this, cycles_counter),
-	stat_load_counter("load-counter", this, load_counter),
-	stat_store_counter("store-counter", this, store_counter),
+	stat_load_counter("data-load-counter", this, data_load_counter),
+	stat_store_counter("data-store-counter", this, data_store_counter),
 	param_max_inst("max-inst",this,max_inst)
 
 {

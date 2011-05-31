@@ -171,6 +171,7 @@ std::ostream& operator << (std::ostream& os, const BackTrace& backtrace)
 				os << begin_of_mangled_name;
 			}
 			if(status != -1) free(output);
+			if(demangled_name) free(demangled_name);
 		}
 
 		if(begin_of_offset && end_of_offset)

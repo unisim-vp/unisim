@@ -144,15 +144,25 @@ unisim/service/power/cache_leakage_power.cc \
 unisim/service/power/cache_power_estimator.cc \
 unisim/service/power/cache_profile.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
+unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
-unisim/component/cxx/memory/flash/am29lv/am29lv.cc \
-unisim/component/cxx/memory/flash/am29lv/config.cc \
+unisim/component/cxx/memory/flash/am29/am29.cc \
+unisim/component/cxx/memory/flash/am29/am29lv800b.cc \
+unisim/component/cxx/memory/flash/am29/am29lv800b_config.cc \
 unisim/component/cxx/chipset/mpc107/address_map_entry.cc \
 unisim/component/cxx/chipset/mpc107/config_regs.cc \
 unisim/component/cxx/chipset/mpc107/address_maps.cc \
@@ -185,7 +195,7 @@ unisim/component/tlm/chipset/mpc107/mpc107_fsb32_pci32_debug.cc \
 unisim/component/tlm/fsb/snooping_bus/bus_addr32_size32_procs1.cc \
 unisim/component/tlm/memory/ram/memory_32.cc \
 unisim/component/tlm/memory/ram/memory_32_debug.cc \
-unisim/component/tlm/memory/flash/am29lv/am29lv.cc"
+unisim/component/tlm/memory/flash/am29/am29lv800b.cc"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_ISA_FILES="\
 unisim/component/cxx/processor/powerpc/isa/altivec.isa \
@@ -285,6 +295,9 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
@@ -292,6 +305,12 @@ unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/coff_loader/ti/ti.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/service/power/cache_power_estimator.hh \
@@ -309,7 +328,9 @@ unisim/component/cxx/processor/powerpc/mpc7447a/exception.hh \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.hh \
 unisim/component/cxx/cache/cache.hh \
 unisim/component/cxx/tlb/tlb.hh \
-unisim/component/cxx/memory/flash/am29lv/am29lv.hh \
+unisim/component/cxx/memory/flash/am29/am29.hh \
+unisim/component/cxx/memory/flash/am29/am29lv800b_config.hh \
+unisim/component/cxx/memory/flash/am29/types.hh \
 unisim/component/cxx/chipset/mpc107/address_maps.hh \
 unisim/component/cxx/chipset/mpc107/address_map_entry.hh \
 unisim/component/cxx/chipset/mpc107/config_regs.hh \
@@ -324,15 +345,13 @@ unisim/component/cxx/chipset/mpc107/dma/buffer.hh \
 unisim/component/cxx/chipset/mpc107/dma/register.hh \
 unisim/component/cxx/chipset/mpc107/epic/epic.hh \
 unisim/component/cxx/pci/types.hh \
-unisim/component/cxx/memory/flash/am29lv/types.hh \
-unisim/component/cxx/memory/flash/am29lv/config.hh \
 unisim/component/tlm/processor/powerpc/mpc7447a/cpu.hh \
 unisim/component/tlm/message/snooping_fsb.hh \
 unisim/component/tlm/message/interrupt.hh \
 unisim/component/tlm/debug/transaction_spy.hh \
 unisim/component/tlm/message/memory.hh \
 unisim/component/tlm/memory/ram/memory.hh \
-unisim/component/tlm/memory/flash/am29lv/am29lv.hh \
+unisim/component/tlm/memory/flash/am29/am29.hh \
 unisim/component/tlm/fsb/snooping_bus/bus.hh \
 unisim/component/tlm/chipset/mpc107/mpc107.hh \
 unisim/component/tlm/chipset/mpc107/epic/epic.hh \
@@ -375,8 +394,16 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
+unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/coff_loader/ti/ti.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
@@ -390,19 +417,19 @@ unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/cxx/cache/cache.tcc \
 unisim/component/cxx/tlb/tlb.tcc \
-unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
-unisim/component/tlm/memory/ram/memory.tcc \
-unisim/component/cxx/memory/flash/am29lv/am29lv.tcc \
+unisim/component/cxx/memory/flash/am29/am29.tcc \
 unisim/component/cxx/chipset/mpc107/address_maps.tcc \
 unisim/component/cxx/chipset/mpc107/pci_controller.tcc \
 unisim/component/cxx/chipset/mpc107/atu/atu.tcc \
 unisim/component/cxx/chipset/mpc107/dma/buffer.tcc \
 unisim/component/cxx/chipset/mpc107/dma/dma.tcc \
 unisim/component/cxx/chipset/mpc107/epic/epic.tcc \
+unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc \
+unisim/component/tlm/memory/ram/memory.tcc \
 unisim/component/tlm/chipset/mpc107/epic/epic.tcc \
 unisim/component/tlm/chipset/mpc107/mpc107.tcc \
 unisim/component/tlm/fsb/snooping_bus/bus.tcc \
-unisim/component/tlm/memory/flash/am29lv/am29lv.tcc \
+unisim/component/tlm/memory/flash/am29/am29.tcc \
 unisim/component/cxx/pci/debug/pci_stub.tcc \
 unisim/component/tlm/pci/debug/pci_stub.tcc"
 

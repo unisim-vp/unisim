@@ -148,8 +148,8 @@ unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/raw_loader/raw_loader32.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/loader/coff_loader/coff_loader32.cc \
-unisim/service/loader/multiloader/multiloader.cc \
-unisim/service/loader/multiloader/multiloader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
 unisim/service/translator/memory_address/memory/translator.cc \
 unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
@@ -173,6 +173,7 @@ unisim/component/cxx/memory/flash/am29/s29gl256p.cc \
 unisim/component/cxx/memory/flash/am29/s29gl256p_config.cc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
+unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
@@ -186,6 +187,7 @@ unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
+unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
@@ -298,7 +300,7 @@ unisim/service/loader/raw_loader/raw_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
 unisim/service/loader/coff_loader/ti/ti.hh \
-unisim/service/loader/multiloader/multiloader.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/service/power/cache_power_estimator.hh \
@@ -331,6 +333,8 @@ unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh \
 unisim/component/cxx/interconnect/xilinx/crossbar/config.hh \
+unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
+unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh \
 unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
@@ -343,6 +347,7 @@ unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/tlm2/memory/flash/am29/am29.hh \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh \
+unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
 "
 
 UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES="\
@@ -381,7 +386,7 @@ unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
 unisim/service/loader/coff_loader/ti/ti.tcc \
-unisim/service/loader/multiloader/multiloader.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/translator/memory_address/memory/translator.tcc \
 unisim/service/tee/loader/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
@@ -405,6 +410,7 @@ unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
 unisim/component/cxx/memory/flash/am29/am29.tcc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.tcc \
+unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
@@ -414,6 +420,7 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/memory/flash/am29/am29.tcc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc \
+unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_M4_FILES="\

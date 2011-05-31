@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_CXX_TIMER_XILINX_XPS_INTC_XPS_TIMER_TCC__
-#define __UNISIM_COMPONENT_CXX_TIMER_XILINX_XPS_INTC_XPS_TIMER_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_TIMER_XILINX_XPS_TIMER_XPS_TIMER_TCC__
+#define __UNISIM_COMPONENT_CXX_TIMER_XILINX_XPS_TIMER_XPS_TIMER_TCC__
 
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>

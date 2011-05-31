@@ -486,6 +486,7 @@ public:
 		schedule.insert(std::pair<typename EVENT::Key, EVENT *>(event->GetKey(), event));
 		sc_time t(time_stamp);
 		t -= sc_time_stamp();
+//		std::cerr << "notify(" << t << ") from" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
 		kernel_event.notify(t);
 	}
 	

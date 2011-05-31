@@ -80,6 +80,11 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 	{
 		if(blob_import[i]) delete blob_import[i];
 	}
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>

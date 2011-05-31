@@ -167,32 +167,6 @@ Setup()
 void
 LoggerServer::
 OnDisconnect() {
-	if (xml_writer != NULL) 
-	{
-		int rc = xmlTextWriterEndElement(xml_writer);
-		if (rc < 0)
-		{
-			cerr << "Error(LoggerServer): "
-				<< "could not close the root element of xml output" << endl;
-		}
-		rc = xmlTextWriterEndDocument(xml_writer);
-		if (rc < 0)
-		{
-			cerr << "Warning(LoggerServer::OnDisconnect): "
-				<< "could not correctly close the xml output file" << endl;
-		}
-		xmlFreeTextWriter(xml_writer);
-		xml_writer = NULL;
-	}
-	if (text_file.is_open())
-	{
-		text_file.close();
-		if (text_file.is_open())
-		{
-			cerr << "Warning(LoggerServer::OnDisconnect): "
-				<< "could not correctly close the text output file" << endl;
-		}
-	}
 }
 
 LoggerServer *

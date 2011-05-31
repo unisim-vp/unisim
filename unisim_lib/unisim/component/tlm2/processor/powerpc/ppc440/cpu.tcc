@@ -67,6 +67,8 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, cpu_time()
 	, nice_time()
 	, max_idle_time()
+	, global_time()
+	, idle_time()
 	, ev_max_idle()
 	, ev_irq()
 	, ipc(1.0)
@@ -74,6 +76,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, stat_idle_time("idle-time", this, idle_time, "idle time")
 	, external_event_schedule()
 	, critical_input_interrupt_redirector(0)
 	, external_input_interrupt_redirector(0)
@@ -141,6 +144,21 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 template <class CONFIG>
 CPU<CONFIG>::~CPU()
 {
+	if(icurd_plb_redirector)
+	{
+		delete icurd_plb_redirector;
+	}
+	
+	if(dcuwr_plb_redirector)
+	{
+		delete dcuwr_plb_redirector;
+	}
+	
+	if(dcurd_plb_redirector)
+	{
+		delete dcurd_plb_redirector;
+	}
+	
 	if(critical_input_interrupt_redirector)
 	{
 		delete critical_input_interrupt_redirector;
@@ -150,6 +168,13 @@ CPU<CONFIG>::~CPU()
 	{
 		delete external_input_interrupt_redirector;
 	}
+	
+	if(dcr_redirector)
+	{
+		delete dcr_redirector;
+	}
+	
+	//std::cerr << "total time=" << total_time << std::endl;
 }
 
 template <class CONFIG>
@@ -180,9 +205,8 @@ template <class CONFIG>
 void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
-	//std::cerr << "sc_time_stamp() = " << sc_time_stamp() << ":" << std::endl << unisim::kernel::debug::BackTrace() << std::endl;
-	timer_time -= cpu_time;
 	cpu_time = SC_ZERO_TIME;
+	global_time = sc_time_stamp();
 }
 
 template <class CONFIG>
@@ -312,36 +336,30 @@ bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& p
 template <class CONFIG>
 inline void CPU<CONFIG>::UpdateTime()
 {
-	if(unlikely(cpu_time > timer_time))
+	if(unlikely(global_time > timer_time))
 	{
 		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 		do
 		{
 			//std::cerr << "timer_time=" << timer_time << std::endl;
-			inherited::OnTimerClock();
+			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
-		while(unlikely(cpu_time > timer_time));
-	}
-
-	if(unlikely(cpu_time >= nice_time))
-	{
-		Synchronize();
+		while(unlikely(global_time > timer_time));
 	}
 }
 
 template <class CONFIG>
 inline void CPU<CONFIG>::AlignToBusClock()
 {
-	sc_dt::uint64 time_tu = sc_time_stamp().value();
 	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+	sc_dt::uint64 time_tu = sc_time_stamp().value();
 	sc_dt::uint64 cpu_time_tu = cpu_time.value() + time_tu;
 	sc_dt::uint64 modulo = cpu_time_tu % bus_cycle_time_tu;
 	if(!modulo) return; // already aligned
 
 	cpu_time_tu += bus_cycle_time_tu - modulo;
 	cpu_time = sc_time(cpu_time_tu - time_tu, false);
-	UpdateTime();
 }
 
 template <class CONFIG>
@@ -356,6 +374,41 @@ void CPU<CONFIG>::AlignToBusClock(sc_time& t)
 	t = sc_time(time_tu, false);
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::Idle()
+{
+	// This is called within thread Run()
+	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
+	max_idle_time = timer_cycle_time;
+	max_idle_time *= inherited::GetMaxIdleTime();
+#if 0
+	usleep(max_idle_time.to_seconds() * 1.0e6);
+#endif
+	ev_max_idle.notify(max_idle_time);
+	//std::cerr << sc_time_stamp() << ": Idle wait for at most " << max_idle_time << std::endl;
+	sc_time old_time_stamp(sc_time_stamp());
+	wait(ev_max_idle | ev_irq);
+	ev_max_idle.cancel();
+	sc_time new_time_stamp(sc_time_stamp());
+	
+	sc_time delta_time(new_time_stamp);
+	delta_time -= old_time_stamp;
+	
+	if(delta_time > cpu_time)
+	{
+		idle_time += delta_time;
+		idle_time -= cpu_time;
+		cpu_time = SC_ZERO_TIME;
+	}
+	else
+	{
+		cpu_time -= delta_time;
+	}
+	global_time = new_time_stamp;
+	global_time += cpu_time;
+	UpdateTime();
+	ProcessExternalEvents();
+}
 
 template <class CONFIG>
 void CPU<CONFIG>::Run()
@@ -368,6 +421,10 @@ void CPU<CONFIG>::Run()
 		cpu_time += time_per_instruction;
 		UpdateTime();
 		ProcessExternalEvents();
+		if(unlikely(cpu_time >= nice_time))
+		{
+			Synchronize();
+		}
 	}
 }
 
@@ -385,12 +442,13 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
+	global_time = sc_time_stamp();
+	global_time += cpu_time;
+	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
 	payload->release();
 
-	UpdateTime();
-	
 	return status == tlm::TLM_OK_RESPONSE;
 }
 
@@ -408,12 +466,13 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	
 	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
+	global_time = sc_time_stamp();
+	global_time += cpu_time;
+
 	tlm::tlm_response_status status = payload->get_response_status();
 	
 	payload->release();
 
-	UpdateTime();
-	
 	return status == tlm::TLM_OK_RESPONSE;
 }
 
@@ -431,12 +490,13 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	
 	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
+	global_time = sc_time_stamp();
+	global_time += cpu_time;
+
 	tlm::tlm_response_status status = payload->get_response_status();
 
 	payload->release();
 
-	UpdateTime();
-	
 	return status == tlm::TLM_OK_RESPONSE;
 }
 
@@ -456,12 +516,13 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
+	global_time = sc_time_stamp();
+	global_time += cpu_time;
+
 	tlm::tlm_response_status status = payload->get_response_status();
 	
 	payload->release();
 
-	UpdateTime();
-	
 	value = unisim::util::endian::BigEndian2Host(buffer);
 }
 
@@ -481,11 +542,13 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
+	global_time = sc_time_stamp();
+	global_time += cpu_time;
+
 	tlm::tlm_response_status status = payload->get_response_status();
 
 	payload->release();
 
-	UpdateTime();
 }
 
 } // end of namespace ppc440
