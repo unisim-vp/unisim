@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,59 +32,59 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __PYTHON_PY_DEBUGGER_HH__
-#define __PYTHON_PY_DEBUGGER_HH__
+#include "unisim/kernel/api/api.hh"
 
-#include <Python.h>
-#include "simulator.hh"
-#include "python/python_config.hh"
+namespace unisim {
+namespace kernel {
+namespace api {
 
-extern "C" {
-
-/* Variable full capsule name */
-#define PyDebugger_Module_Name PACKAGE_NAME".debugger"
-#define PyDebugger_Capsule_Name PACKAGE_NAME".debugger._C_API"
-
-/* C API functions */
-#define PyDebugger_NewDebugger_NUM 0
-#define PyDebugger_NewDebugger_RETURN PyObject *
-#define PyDebugger_NewDebugger_PROTO (unisim::api::debug::DebugAPI *debugger, PyObject *sim_obj)
-
-/* Total number of C API pointers */
-#define PyDebugger_API_pointers 1
-
-#ifdef DEBUGGER_MODULE
-/* This section is used when compiling py_variable.cc */
-
-static PyDebugger_NewDebugger_RETURN PyDebugger_NewDebugger PyDebugger_NewDebugger_PROTO;
-
-#else // DEBUGGER_MODULE
-/* This section is used in modules that use debugger module's API */
-static void **PyDebugger_API;
-
-#define PyDebugger_NewDebugger \
-	(*(PyDebugger_NewDebugger_RETURN (*)PyDebugger_NewDebugger_PROTO) PyDebugger_API[PyDebugger_NewDebugger_NUM])
-
-/* Ensures that the initial PyDebugger_API is NULL
- */
-static void import_debugger_api_init(void)
+APIBase ::
+APIBase(const char *_name,
+		const char *_type_name,
+		unisim::kernel::service::Object *obj)
+	: object(obj)
+	, name( _name)
+	, type_name(_type_name)
 {
-	PyDebugger_API = NULL;
+	unisim::kernel::service::Simulator *simulator = object->GetSimulator();
+	simulator->Register(this);
 }
 
-/* Return -1 on error, 0 on success.
- * PyCapsule_Import will set an exception if there's an error.
- */
-static int import_debugger_api(void)
+APIBase ::
+~APIBase()
 {
-	if ( PyDebugger_API != NULL ) return 0;
-	if ( PyImport_ImportModule(PyDebugger_Module_Name) == NULL ) return -1;
-	PyDebugger_API = (void **)PyCapsule_Import(PyDebugger_Capsule_Name, 0);
-	return ( PyDebugger_API != NULL ) ? 0 : -1;
+	object = 0;
 }
 
-#endif // DEBUGGER_MODULE
-
+unisim::kernel::service::Object *
+APIBase ::
+GetUnisimObject()
+{
+	return object;
 }
 
-#endif /* __PYTHON_DEBUGGER_HH__ */
+const char *
+APIBase ::
+GetName()
+{
+	return name.c_str();
+}
+
+const char *
+APIBase ::
+GetAPITypeName()
+{
+	return type_name.c_str();
+}
+
+const char *
+APIBase ::
+GetObjectName()
+{
+	return object->GetName();
+}
+
+} // end of namespace api
+} // end of namespace kernel
+} // end of namespace unisim
+

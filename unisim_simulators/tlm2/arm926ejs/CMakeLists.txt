@@ -13,6 +13,27 @@ set ( SIM_COPYRIGHT "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique"
 set ( SIM_LICENSE "BSD (See file COPYING)" )
 set ( SIM_DESCRIPTION "UNISIM PB-ARM926EJS Simulator" )
 
+# all the libraries need to be compiled with -fPIC otherwise dynamic linking
+#   might not work properly
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_CXX_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH ${FLAGS} )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
+endif ( FPIC_MATCH )
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_C_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH ${FLAGS} )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC" )
+endif ( FPIC_MATCH )
+
 if ( UNIX AND NOT APPLE )
 	find_file ( LSB_RELEASE_FILE lsb-release /etc )
 	if ( LSB_RELEASE_FILE )
@@ -77,7 +98,7 @@ set ( sim_subdirs
 	unisim/service/debug/gdb_server
 	unisim/service/debug/inline_debugger
 	unisim/service/debug/sim_debugger
-	unisim/util/debug/debugger_handler
+	unisim/api/debug
 	unisim/service/loader/elf_loader
 	unisim/service/loader/raw_loader
 	unisim/service/trap_handler
@@ -277,7 +298,7 @@ set ( sim__libraries
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
-	unisim__util__debug__debugger_handler
+	unisim__api__debug
 	unisim__service__trap_handler
 	)
 if ( BUILD_POWER_SUPPORT )
@@ -332,6 +353,49 @@ target_link_libraries ( ${SIM_EXEC_TARGET}
 	# simulator
 	${sim__libraries}
 	)
+
+set ( API__SIM_EXEC_NAME ${SIM_EXEC_NAME} )
+configure_file (
+	${CMAKE_SOURCE_DIR}/unisim/uapi/config.h.in
+	${CMAKE_BINARY_DIR}/unisim/uapi/config.h )
+set ( api_sources
+	${CMAKE_SOURCE_DIR}/unisim/uapi/uapi.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
+	)
+set_source_files_properties ( ${api_sources}
+	PROPERTIES
+		LANGUAGE CXX
+	)
+add_library ( libuapi SHARED
+	${api_sources}
+	)
+target_link_libraries ( libuapi
+	simulatorlib
+	)
+set_target_properties ( libuapi
+	PROPERTIES
+		COMPILE_DEFINITIONS SIM_LIBRARY )
+add_executable ( api_test
+	${CMAKE_SOURCE_DIR}/api_test.cc
+	)
+# set_target_properties ( api_test
+#	PROPERTIES
+#		COMPILE_DEFINITIONS SIM_LIBRARY )
+target_link_libraries ( api_test
+	dl
+	# libuapi
+	# simulatorlib
+	)
+	
 # add_library ( ${ARMEMU_LIB_TARGET}
 # 	SHARED
 # 		${simulator__sources} )
@@ -362,7 +426,7 @@ set ( sim__deps
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
-	unisim__util__debug__debugger_handler
+	unisim__api__debug
 	unisim__service__loader__elf_loader
 	unisim__service__loader__raw_loader
 	unisim__service__trap_handler
@@ -429,10 +493,10 @@ if ( BUILD_PYTHON_MODULE )
 		 'unisim__util__debug',
 		 'unisim__util__debug__dwarf',
 		 'unisim__util__debug__blob',
-		 'unisim__util__debug__debugger_handler',
 		 'unisim__util__xml',
 		 'unisim__util__generic_peripheral_register',
 		 'unisim__kernel',
+		 'unisim__api__debug',
 		 'xml2',
 		 'systemc'")
 	if ( BUILD_POWER_SUPPORT )

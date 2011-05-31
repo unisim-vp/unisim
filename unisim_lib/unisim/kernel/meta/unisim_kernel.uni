@@ -7,6 +7,8 @@
 			<file>unisim/kernel/service/service.hh</file>
 			<file>unisim/kernel/service/xml_helper.cc</file>
 			<file>unisim/kernel/service/xml_helper.hh</file>
+			<file>unisim/kernel/api/api.cc</file>
+			<file>unisim/kernel/api/api.hh</file>
 			<file>unisim/kernel/service/config.hh.in</file>
 			<file>unisim/kernel/logger/logger.cc</file>
 			<file>unisim/kernel/logger/logger.hh</file>

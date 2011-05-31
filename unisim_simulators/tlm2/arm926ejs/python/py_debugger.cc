@@ -46,7 +46,7 @@ typedef struct {
     /* Type-specific fields go here. */
     std::string *name;
 	Simulator **simulator;
-	unisim::util::debug::debugger_handler::DebuggerHandler *debugger;
+	unisim::api::debug::DebugAPI *debugger;
 	PyObject *debug_context;
     PyObject *debug_breakpoint_handler;
     PyObject *debug_watchpoint_handler;
@@ -832,7 +832,7 @@ PyInit_debugger(void)
 }
 
 static PyObject *
-PyDebugger_NewDebugger (unisim::util::debug::debugger_handler::DebuggerHandler *debugger, PyObject *sim_obj)
+PyDebugger_NewDebugger (unisim::api::debug::DebugAPI *debugger, PyObject *sim_obj)
 {
 	if ( import_simulator_api() < 0 )
 		return NULL;
@@ -855,8 +855,8 @@ PyDebugger_NewDebugger (unisim::util::debug::debugger_handler::DebuggerHandler *
 	debugger_DebuggerObject *self;
 	self = (debugger_DebuggerObject *)debugger_DebuggerType.tp_alloc(
 			&debugger_DebuggerType, 0);
-	unisim::kernel::service::Object *obj = debugger->GetParentObject();
-	self->name = new std::string(obj->GetName());
+	// unisim::kernel::service::Object *obj = debugger->GetParentObject();
+	self->name = new std::string(debugger->GetName());
 	self->simulator = sim;
 	self->debugger = debugger;
 	self->debug_context = 0;
