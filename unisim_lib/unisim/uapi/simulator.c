@@ -329,13 +329,31 @@ UnisimExtendedAPI *usSimulatorGetExtendedAPIList(UnisimSimulator simulator)
 bool usSimulatorRun(UnisimSimulator simulator)
 /****************************************************************************/
 {
-	return false;
+	if ( simulator == 0 ) return false;
+	if ( simulator->simulatorStatus != UNISIM_SIMULATOR_STATUS_SETUP )
+		return false;
+
+	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_RUNNING;
+	
+	simulator->simulator->Run();
+
+	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_FINISHED;
+
+	return true;
 }
 
 /****************************************************************************/
 void usSimulatorStop(UnisimSimulator simulator)
 /****************************************************************************/
 {
+	if ( simulator == 0 ) return;
+
+	if ( simulator->simulatorStatus != UNISIM_SIMULATOR_STATUS_RUNNING )
+		return;
+
+	simulator->simulator->Stop(0, 0);
+
+	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_STOPPED;
 }
 
 /****************************************************************************/
