@@ -30,6 +30,7 @@
 #include "unisim/uapi/simulator.h"
 #include "unisim/uapi/variable.h"
 #include "unisim/uapi/eapi.h"
+#include "unisim/uapi/debug/debug.h"
 
 extern "C"
 {

@@ -106,4 +106,3 @@ const char *usExtendedAPIGetTypeName(UnisimExtendedAPI api);
 /**                                                                        **/
 /****************************************************************************/
 
-

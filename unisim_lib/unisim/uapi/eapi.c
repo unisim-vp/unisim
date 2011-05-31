@@ -39,12 +39,6 @@
 /**                                                                        **/
 /****************************************************************************/
 
-struct _UnisimExtendedAPI
-{
-	unisim::kernel::api::APIBase *api;
-	UnisimSimulator simulator;
-};
-
 /****************************************************************************/
 /**                                                                        **/
 /**                     PROTOTYPES OF LOCAL FUNCTIONS                      **/
@@ -74,11 +68,16 @@ void usDestroyExtendedAPI(UnisimExtendedAPI api)
 /****************************************************************************/
 {
 	if ( api == 0 ) return;
-
-	usSimulatorUnregisterExtendedAPI(api->simulator, api);
-	api->api = 0;
-	api->simulator = 0;
-	free(api);
+	
+	if ( api->usDestroyAPI != 0 )
+		api->usDestroyAPI(api);
+	else
+	{
+		usSimulatorUnregisterExtendedAPI(api->simulator, api);
+		api->api = 0;
+		api->simulator = 0;
+		free(api);
+	}
 }
 
 /****************************************************************************/
@@ -118,6 +117,8 @@ UnisimExtendedAPI usCreateExtendedAPI(UnisimSimulator simulator,
 
 	api->simulator = simulator;
 	api->api = unisimApi;
+	api->usDestroyAPI = 0;
+	api->usDestroyUnregisteredAPI = 0;
 	usSimulatorRegisterExtendedAPI(simulator, api);
 	return api;
 }
@@ -128,9 +129,32 @@ void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI api)
 {
 	if ( api == 0 ) return;
 
-	api->api = 0;
-	api->simulator = 0;
-	free(api);
+	if ( api->usDestroyUnregisteredAPI != 0 )
+		api->usDestroyUnregisteredAPI(api);
+	else
+	{
+		api->api = 0;
+		api->simulator = 0;
+		free(api);
+	}
+}
+
+/****************************************************************************/
+unisim::kernel::api::APIBase *usExtendedAPIGetUnisimAPI(UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	if ( api == 0 ) return 0;
+
+	return api->api;
+}
+
+/****************************************************************************/
+UnisimSimulator usExtendedAPIGetSimulator(UnisimExtendedAPI api)
+/****************************************************************************/
+{
+	if ( api == 0 ) return 0;
+
+	return api->simulator;
 }
 
 /****************************************************************************/

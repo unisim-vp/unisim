@@ -1,3 +1,4 @@
+#include <string.h>
 #include <stdlib.h>
 #include <iostream>
 #include <sstream>
@@ -68,6 +69,12 @@ typedef const char *(* _usExtendedAPIGetTypeName_type)(UnisimExtendedAPI);
 _usExtendedAPIGetTypeName_type _usExtendedAPIGetTypeName;
 typedef void (* _usDestroyExtendedAPI_type)(UnisimExtendedAPI);
 _usDestroyExtendedAPI_type _usDestroyExtendedAPI;
+
+// debug api methods
+typedef UnisimDebugAPI (* _usCreateDebugAPI_type)(UnisimExtendedAPI);
+_usCreateDebugAPI_type _usCreateDebugAPI;
+typedef void (* _usDestroyDebugAPI_type)(UnisimDebugAPI);
+_usDestroyDebugAPI_type _usDestroyDebugAPI;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -160,6 +167,11 @@ bool load_lib()
 	if ( !load_sym(simlib, "usExtendedAPIGetTypeName", _usExtendedAPIGetTypeName) )
 		return false;
 	if ( !load_sym(simlib, "usDestroyExtendedAPI", _usDestroyExtendedAPI) )
+		return false;
+
+	if ( !load_sym(simlib, "usCreateDebugAPI", _usCreateDebugAPI) )
+		return false;
+	if ( !load_sym(simlib, "usDestroyDebugAPI", _usDestroyDebugAPI) )
 		return false;
 
 	return true;
@@ -424,6 +436,11 @@ int test()
 		UnisimExtendedAPI api = apiList[apiListIndex];
 		std::cerr << " - " << _usExtendedAPIGetName(api) << " ("
 			<< _usExtendedAPIGetTypeName(api) << ")" << std::endl;
+		if ( strcmp("DebugAPI", _usExtendedAPIGetTypeName(api)) == 0 )
+		{
+			UnisimDebugAPI dapi = _usCreateDebugAPI(api);
+			// _usDestroyDebugAPI(dapi);
+		}
 		_usDestroyExtendedAPI(api);
 		apiListIndex++;
 	}

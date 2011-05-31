@@ -370,6 +370,8 @@ set ( api_sources
 	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi_priv.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/debug/debug.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/debug/debug.c
 	)
 set_source_files_properties ( ${api_sources}
 	PROPERTIES

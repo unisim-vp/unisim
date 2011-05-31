@@ -43,6 +43,14 @@ extern "C"
 /**                                                                        **/
 /****************************************************************************/
 
+struct _UnisimExtendedAPI
+{
+	unisim::kernel::api::APIBase *api;
+	UnisimSimulator simulator;
+	void (*usDestroyAPI)(UnisimExtendedAPI);
+	void (*usDestroyUnregisteredAPI)(UnisimExtendedAPI);
+};
+
 /****************************************************************************/
 /**                                                                        **/
 /**                     EXPORTED VARIABLES                                 **/
@@ -65,6 +73,14 @@ UnisimExtendedAPI usCreateExtendedAPI(UnisimSimulator,
 
 /****************************************************************************/
 void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI);
+/****************************************************************************/
+
+/****************************************************************************/
+unisim::kernel::api::APIBase *usExtendedAPIGetUnisimAPI(UnisimExtendedAPI);
+/****************************************************************************/
+
+/****************************************************************************/
+UnisimSimulator usExtendedAPIGetSimulator(UnisimExtendedAPI);
 /****************************************************************************/
 
 }
