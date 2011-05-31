@@ -19,8 +19,8 @@
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::trap_reporting</dep>
 			<dep>unisim::util::debug</dep>
-			<dep>unisim::util::debug::debugger_handler</dep>
 			<dep>unisim::util::endian</dep>
+			<dep>unisim::api::debug</dep>
 			<dep>unisim::kernel::service</dep>
 		</depends>
 	</unit>

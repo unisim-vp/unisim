@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::api::debug</name>
+		<files>
+			<file>unisim/api/debug/debug_api.hh</file>
+			<file>unisim/api/debug/debug_api.cc</file>
+			<file>unisim/api/debug/CMakeLists.txt</file>
+		</files>
+		<depends>
+		</depends>
+	</unit>
+</package>

@@ -64,7 +64,7 @@
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 #ifdef SIM_SIM_DEBUGGER_SUPPORT
 #include "unisim/service/debug/sim_debugger/sim_debugger.hh"
-#include "unisim/util/debug/debugger_handler/debugger_handler.hh"
+#include "unisim/api/debug/debug_api.hh"
 #endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 #include "unisim/service/power/cache_power_estimator.hh"
