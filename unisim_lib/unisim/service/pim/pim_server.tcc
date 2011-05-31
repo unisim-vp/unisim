@@ -134,9 +134,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, param_host("host", this, fHost)
 
 {
-/*   voir l'impact de la mise en commentaire - suite modif Gilles sur l'architecture UNISIM
-	Object::SetupDependsOn(registers_import);
-*/
 
 	memory_access_reporting_export.SetupDependsOn(memory_access_reporting_control_import);
 
@@ -159,7 +156,7 @@ PIMServer<ADDRESS>::~PIMServer()
 		sockfd = -1;
 	}
 
-	if (socketfd) { delete socketfd; socketfd = NULL;}
+	if (socketServer) { delete socketServer; socketServer = NULL;}
 	if (target) { delete target; target = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
@@ -184,17 +181,18 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	}
 
 	// Start Simulation <-> Workbench communication
-	target = new PIMThread("pim-thread");
-	protocolHandlers.push_back(target);
-
-	protocolHandlers.push_back(this);
+//	target = new PIMThread("pim-thread");
+//	protocolHandlers.push_back(target);
+//
+//	protocolHandlers.push_back(this);
 
 	// Open Socket Stream
-	socketfd = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
+	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
+	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
 
-	socketfd->setProtocolHandlers(&protocolHandlers);
+	socketServer->setProtocolHandler(this);
 
-	socketfd->start();
+	socketServer->start();
 
 
 	return true;
@@ -432,7 +430,7 @@ bool PIMServer<ADDRESS>::EndSetup() {
 template <class ADDRESS>
 void PIMServer<ADDRESS>::Stop(int exit_status) {
 
-	if (socketfd) { socketfd->stop();}
+	if (socketServer) { socketServer->stop();}
 	if (target) { target->stop();}
 	if (pimServerThread) { pimServerThread->stop();}
 
@@ -1486,6 +1484,20 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			PutPacket("T05");
 
 		}
+
+	}
+	else if (cmdPrefix.compare("start-pim") == 0) {
+		// Start PIMThread
+		target = new PIMThread("pim-thread");
+
+		// Open Socket Stream
+		// restart the SocketServer to get connection with Pim-Client
+
+		socketServer->setProtocolHandler(target);
+
+		socketServer->start();
+
+		OutputText("OK", 2);
 
 	}
 	else if (cmdPrefix.compare("time") == 0) {

@@ -323,6 +323,12 @@ uint8_t CPU::Step()
 
 			op->disasm(disasm_str);
 
+			std::cerr <<  DebugInfo << GetSimulatedTime() << " ms: "
+					<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
+					<< GetFunctionFriendlyName(current_pc) << " : "
+					<< disasm_str.str()
+					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
+
 			ctstr << op->GetEncoding();
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
 				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
