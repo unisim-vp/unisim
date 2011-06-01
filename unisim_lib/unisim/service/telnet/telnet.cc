@@ -103,6 +103,14 @@ Telnet::Telnet(const char *name, Object *parent)
 
 Telnet::~Telnet()
 {
+	if(telnet_sock >= 0)
+	{
+#ifdef WIN32
+		closesocket(telnet_sock);
+#else
+		close(telnet_sock);
+#endif
+	}
 }
 
 bool Telnet::EndSetup()
@@ -129,6 +137,16 @@ bool Telnet::EndSetup()
 	{
 		logger << DebugError << "socket failed" << EndDebugError;
 		return false;
+	}
+
+    /* ask for reusing TCP port */
+    int opt = 1;
+    if(setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, (char *) &opt, sizeof(opt)) < 0)
+	{
+		if(verbose)
+		{
+			logger << DebugWarning << "setsockopt failed requesting port reuse" << EndDebugWarning;
+		}
 	}
 
 	memset(&addr, 0, sizeof(addr));

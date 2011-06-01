@@ -621,35 +621,46 @@ done
 
 # Top level
 
-echo "This package contains:" > "${DEST_DIR}/README"
-echo "  - UNISIM GenISSLib: an instruction set simulator generator" >> "${DEST_DIR}/README"
-echo "  - UNISIM virtex5fxt: a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IPs." >> "${DEST_DIR}/README"
-echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+cat << EOF > "${DEST_DIR}/AUTHORS"
+Gilles Mouchard <gilles.mouchard@cea.fr>
+Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+Réda Nouacer <reda.nouacer@cea.fr>
+EOF
 
-echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
-echo "------------" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Requirements:" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bash" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU make" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU autoconf" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU automake" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU flex" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bison" >> "${DEST_DIR}/INSTALL"
-echo "  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
-echo "  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
-echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
-echo "  $ make" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Installing (optional):" >> "${DEST_DIR}/INSTALL"
-echo "  $ make install" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
+cat << EOF > "${DEST_DIR}/README"
+This package contains:
+  - UNISIM GenISSLib: an instruction set simulator generator
+  - UNISIM Virtex 5 FXT Simulator: a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IPs.
+See INSTALL for installation instructions.
+EOF
+
+cat << EOF > "${DEST_DIR}/INSTALL"
+INSTALLATION
+------------
+
+Requirements:
+  - GNU C++ compiler
+  - GNU C++ standard library
+  - GNU bash
+  - GNU make
+  - GNU autoconf
+  - GNU automake
+  - GNU flex
+  - GNU bison
+  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
+  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
+  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
+  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
+  - Core SystemC Language >= 2.1 (http://www.systemc.org)
+  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+
+Building instructions:
+  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ make
+
+Installing (optional):
+  $ make install
+EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"

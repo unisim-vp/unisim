@@ -387,35 +387,56 @@ template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
 	// This is called within thread Run()
+	
+	// Compute the time to consume before an internal timer event occurs
 	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 	max_idle_time = timer_cycle_time;
 	max_idle_time *= inherited::GetMaxIdleTime();
-#if 0
-	usleep(max_idle_time.to_seconds() * 1.0e6);
-#endif
+	// Also account for locally spent time from the time decoupling point of view
+	max_idle_time += cpu_time;
+	
+	// Notify an event
 	ev_max_idle.notify(max_idle_time);
-	//std::cerr << sc_time_stamp() << ": Idle wait for at most " << max_idle_time << std::endl;
+	
+	
+	// wait for either an internal timer event or an external event
 	sc_time old_time_stamp(sc_time_stamp());
 	wait(ev_max_idle | ev_irq);
-	ev_max_idle.cancel();
 	sc_time new_time_stamp(sc_time_stamp());
 	
+	// cancel event because we can't know which wake up condition occured
+	ev_max_idle.cancel();
+	
+	// compute the time spent by the SystemC wait
 	sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
+	// Check whether CPU was really idle
 	if(delta_time > cpu_time)
 	{
-		idle_time += delta_time;
-		idle_time -= cpu_time;
+		// CPU was really idle
+		sc_time true_idle_time(delta_time);
+		true_idle_time -= cpu_time;
+#if 0
+		usleep(true_idle_time.to_seconds() * 1.0e6);
+#endif
+		idle_time += true_idle_time;
 		cpu_time = SC_ZERO_TIME;
 	}
 	else
 	{
+		// CPU was not really idle because an external event was delayed because of time decoupling
 		cpu_time -= delta_time;
 	}
+	
+	// update overall run time
 	run_time = new_time_stamp;
 	run_time += cpu_time;
+	
+	// run internal timers
 	UpdateTime();
+	
+	// check for external events
 	ProcessExternalEvents();
 }
 

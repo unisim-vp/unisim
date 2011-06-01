@@ -887,7 +887,7 @@ void Simulator::Run()
 	cerr << "simulation time: " << spent_time << " seconds" << endl;
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "target speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["run-time"] - (double) (*cpu)["idle-time"]) / 1000000.0) << " MIPS" << endl;
-	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / ((double) (*cpu)["load-rate"] * spent_time) / 1000000.0) << " MIPS" << endl;
+	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
 }
 
