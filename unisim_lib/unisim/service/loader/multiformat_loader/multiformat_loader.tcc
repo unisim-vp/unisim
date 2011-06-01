@@ -112,7 +112,7 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *Mult
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A multi-format loader that supports ELF32, ELF64, S19, COFF and Raw binary files")
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
@@ -788,7 +788,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MemoryMapper(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A memory mapper")
 	, Service<Memory<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
 	, memory_export("memory-export", this)

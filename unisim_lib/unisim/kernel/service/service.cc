@@ -548,7 +548,7 @@ VariableBase& VariableBase::operator = (const VariableBase& variable)
 
 std::string VariableBase::GetSymbolicValue() const
 {
-	return name;
+	return IsVisible() ? name : (string) *this;
 }
 
 void VariableBase::GenerateLatexDocumentation(std::ostream& os) const

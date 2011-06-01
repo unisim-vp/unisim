@@ -76,13 +76,14 @@
 #include <iostream>
 #include <stdexcept>
 #include <stdlib.h>
-#include <signal.h>
 
 #ifdef WIN32
 
 #include <windows.h>
 #include <winsock2.h>
 
+#else
+#include <signal.h>
 #endif
 
 #ifdef WITH_FPU
@@ -103,11 +104,43 @@ typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
 #endif
 #endif
 
+#ifdef WIN32
+BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool stop = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			cerr << "Interrupted by Ctrl-C" << endl;
+			stop = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			cerr << "Interrupted by Ctrl-Break" << endl;
+			stop = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			cerr << "Interrupted by a console close" << endl;
+			stop = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			cerr << "Interrupted because of logoff" << endl;
+			stop = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			cerr << "Interrupted because of shutdown" << endl;
+			stop = true;
+			break;
+	}
+	if(stop) sc_stop();
+	return stop ? TRUE : FALSE;
+}
+#else
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
 	sc_stop();
 }
+#endif
 
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
@@ -181,7 +214,7 @@ private:
 	//=========================================================================
 
 	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> RAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> ROM;
+	typedef unisim::component::tlm2::memory::ram::Memory<CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CPU_CONFIG::FSB_BURST_SIZE / CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, DEBUG_INFORMATION> BRAM;
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<CPU_CONFIG> CPU;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<MPLB_CONFIG> MPLB;
 	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG> INTC;
@@ -212,8 +245,8 @@ private:
 	CPU *cpu;
 	//  - RAM
 	RAM *ram;
-	//  - ROM
-	ROM *rom;
+	//  - BRAM
+	BRAM *bram;
 	// - IRQ stubs
 	IRQ_STUB *input_interrupt_stub[INTC_CONFIG::C_NUM_INTR_INPUTS];
 	IRQ_STUB *critical_input_interrupt_stub;
@@ -273,7 +306,7 @@ private:
 	//  - memory address translator from effective address to physical address
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *ram_effective_to_physical_address_translator;
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *flash_effective_to_physical_address_translator;
-	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *rom_effective_to_physical_address_translator;
+	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *bram_effective_to_physical_address_translator;
 	// - telnet
 	unisim::service::telnet::Telnet *telnet;
 
@@ -296,7 +329,7 @@ Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, ram(0)
-	, rom(0)
+	, bram(0)
 	, critical_input_interrupt_stub(0)
 	, mplb(0)
 	, splb0_stub(0)
@@ -328,7 +361,7 @@ Simulator::Simulator(int argc, char **argv)
 	, utlb_power_estimator(0)
 	, ram_effective_to_physical_address_translator(0)
 	, flash_effective_to_physical_address_translator(0)
-	, rom_effective_to_physical_address_translator(0)
+	, bram_effective_to_physical_address_translator(0)
 	, telnet(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
@@ -350,8 +383,8 @@ Simulator::Simulator(int argc, char **argv)
 	cpu = new CPU("cpu");
 	//  - RAM
 	ram = new RAM("ram");
-	//  - ROM
-	rom = new ROM("rom");
+	//  - RAM
+	bram = new BRAM("bram");
 	//  - IRQ Stubs
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
@@ -437,7 +470,7 @@ Simulator::Simulator(int argc, char **argv)
 	//  - memory address translator from effective address to physical address
 	ram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("ram-effective-to-physical-address-translator");
 	flash_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("flash-effective-to-physical-address-translator");
-	rom_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("rom-effective-to-physical-address-translator");
+	bram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("bram-effective-to-physical-address-translator");
 	// - telnet
 	telnet = enable_telnet ? new unisim::service::telnet::Telnet("telnet") : 0;
 	
@@ -472,7 +505,7 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->init_socket[0])(intc->slave_sock);      // MPLB <-> INTC
 	(*mplb->init_socket[1])(timer->slave_sock);     // MPLB <-> TIMER
 	(*mplb->init_socket[2])(flash->slave_sock);     // MPLB <-> FLASH
-	(*mplb->init_socket[3])(rom->slave_sock);       // MPLB <-> ROM
+	(*mplb->init_socket[3])(bram->slave_sock);      // MPLB <-> BRAM
 	(*mplb->init_socket[4])(uart_lite->slave_sock); // MPLB <-> UART Lite
 	
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
@@ -513,7 +546,7 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->memory_import[0]) >> intc->memory_export;
 	(*mplb->memory_import[1]) >> timer->memory_export;
 	(*mplb->memory_import[2]) >> flash->memory_export;
-	(*mplb->memory_import[3]) >> rom->memory_export;
+	(*mplb->memory_import[3]) >> bram->memory_export;
 	cpu->loader_import >> loader->loader_export;
 	
 	if(enable_inline_debugger)
@@ -566,9 +599,9 @@ Simulator::Simulator(int argc, char **argv)
 
 	ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
 	flash_effective_to_physical_address_translator->memory_import >> flash->memory_export;
-	rom_effective_to_physical_address_translator->memory_import >> rom->memory_export;
+	bram_effective_to_physical_address_translator->memory_import >> bram->memory_export;
 	*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
-	*loader->memory_import[1] >> rom_effective_to_physical_address_translator->memory_export;
+	*loader->memory_import[1] >> bram_effective_to_physical_address_translator->memory_export;
 	*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
@@ -584,7 +617,7 @@ Simulator::~Simulator()
 	unsigned int channel;
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
 	if(ram) delete ram;
-	if(rom) delete rom;
+	if(bram) delete bram;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
@@ -628,7 +661,7 @@ Simulator::~Simulator()
 	if(host_time) delete host_time;
 	if(loader) delete loader;
 	if(ram_effective_to_physical_address_translator) delete ram_effective_to_physical_address_translator;
-	if(rom_effective_to_physical_address_translator) delete rom_effective_to_physical_address_translator;
+	if(bram_effective_to_physical_address_translator) delete bram_effective_to_physical_address_translator;
 	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
 	if(telnet) delete telnet;
 }
@@ -644,8 +677,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("description", "UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs");
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
-	const char *filename = "";
-	const char *rom_filename = "boot.elf";
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
@@ -684,11 +715,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
 	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
 	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
-	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xff800000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xff800000\""); // 8 MB ROM (i.e. 2 * 32 Mbits XCF32P platform flash memory)
+	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xfffc0000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfffc0000\""); // 256 KB XPS BRAM
 	simulator->SetVariable("mplb.mapping_4", "range_start=\"0x84000000\" range_end=\"0x8400ffff\" output_port=\"4\" translation=\"0x84000000\""); // XPS UART Lite
 	
 	// - Loader memory router
-	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,rom-effective-to-physical-address-translator:0xff800000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 8 MB ROM / 32 MB Flash memory
+	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,bram-effective-to-physical-address-translator:0xfffc0000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
 	//  - RAM
 	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
@@ -697,12 +728,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ram.org", 0x00000000UL);
 	simulator->SetVariable("ram.bytesize", 256 * 1024 * 1024); // 256 MB
 
-	//  - ROM
-	simulator->SetVariable("rom.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("rom.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("rom.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("rom.org", 0xff800000UL);
-	simulator->SetVariable("rom.bytesize", 8 * 1024 * 1024); // 8 MB
+	//  - BRAM
+	simulator->SetVariable("bram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("bram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("bram.write-latency", SC_ZERO_TIME.to_string().c_str());
+	simulator->SetVariable("bram.org", 0xfffc0000UL);
+	simulator->SetVariable("bram.bytesize", 256 * 1024); // 256 KB
 	
 	//  - Interrupt controller
 	simulator->SetVariable("intc.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
@@ -731,10 +762,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
-	//  - ELF32 Loader run-time configuration
-	simulator->SetVariable("elf32-loader.filename", filename);
-	//  - ROM Loader run-time configuration
-	simulator->SetVariable("rom-loader.filename", rom_filename);
 
 	//  - Cache/TLB power estimators run-time configuration
 	simulator->SetVariable("il1-power-estimator.cache-size", CPU_CONFIG::DL1_CONFIG::CACHE_SIZE);
@@ -810,11 +837,17 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
+#ifndef WIN32
 	void (*prev_sig_int_handler)(int) = 0;
+#endif
 
 	if(!inline_debugger)
 	{
+#ifdef WIN32
+		SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
+#else
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+#endif
 	}
 
 	try
@@ -829,7 +862,11 @@ void Simulator::Run()
 
 	if(!inline_debugger)
 	{
+#ifdef WIN32
+		SetConsoleCtrlHandler(ConsoleCtrlHandler, FALSE);
+#else
 		signal(SIGINT, prev_sig_int_handler);
+#endif
 	}
 
 	cerr << "Simulation finished" << endl;

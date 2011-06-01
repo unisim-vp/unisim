@@ -79,11 +79,14 @@ const uint8_t LINEMODE = 34;
 
 
 Telnet::Telnet(const char *name, Object *parent)
-	: Object(name, parent, "this service provides character I/O over the TCP/IP telnet protocol")
+	: Object(name, parent, "This service provides character I/O over the TCP/IP telnet protocol")
 	, Service<CharIO>(name, parent)
 	, char_io_export("char-io-export", this)
 	, logger(*this)
 	, verbose(false)
+	, guest_os("unknown")
+	, remove_null_character(false)
+	, remove_line_feed(false)
 	, telnet_tcp_port(23)
 	, telnet_sock(-1)
 	, state(0)
@@ -91,8 +94,11 @@ Telnet::Telnet(const char *name, Object *parent)
 	, sb_params_vec()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_telnet_tcp_port("telnet-tcp-port", this, telnet_tcp_port, "TCP/IP port of telnet")
+	, param_guest_os("guest-os", this, guest_os, "Guest operating system")
 {
 	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_guest_os.AddEnumeratedValue("unknown");
+	param_guest_os.AddEnumeratedValue("linux");
 }
 
 Telnet::~Telnet()
@@ -101,6 +107,17 @@ Telnet::~Telnet()
 
 bool Telnet::EndSetup()
 {
+	if(guest_os.compare("linux") == 0)
+	{
+		remove_null_character = true;
+		remove_line_feed = true;
+	}
+	else
+	{
+		remove_null_character = true;
+		remove_line_feed = false;
+	}
+	
 	if(telnet_sock >= 0) return true;
 	
 	struct sockaddr_in addr;
@@ -231,7 +248,7 @@ void Telnet::TelnetFlushOutput()
 		do
 		{
 #ifdef WIN32
-			int r = send(telnet_sock, telnet_output_buffer + index, telnet_output_buffer_size, 0);
+			int r = send(telnet_sock, (const char *)(telnet_output_buffer + index), telnet_output_buffer_size, 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
 			ssize_t r = write(telnet_sock, telnet_output_buffer + index, telnet_output_buffer_size);
@@ -268,7 +285,7 @@ bool Telnet::TelnetGet(uint8_t& v)
 		do
 		{
 #ifdef WIN32
-			int r = recv(telnet_sock, telnet_input_buffer, sizeof(telnet_input_buffer), 0);
+			int r = recv(telnet_sock, (char *) telnet_input_buffer, sizeof(telnet_input_buffer), 0);
 			if(r == 0 || r == SOCKET_ERROR)
 #else
 			ssize_t r = read(telnet_sock, telnet_input_buffer, sizeof(telnet_input_buffer));
@@ -427,7 +444,8 @@ bool Telnet::GetChar(char& c)
 					state = 1;
 					break;
 				}
-				if(v == 0) break;
+				if((v == 0) && remove_null_character) break; // filter null character
+				if((v == 10) && remove_line_feed) break; // filter line feed
 				c = (char) v;
 				if(IsVerbose())
 				{

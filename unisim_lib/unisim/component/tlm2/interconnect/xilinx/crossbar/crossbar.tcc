@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A crossbar")
 	, unisim::component::cxx::interconnect::xilinx::crossbar::Crossbar<CONFIG>(name, parent)
 	, sc_module(name)
 	, icurd_plb_slave_sock("icurd-plb-slave-sock")

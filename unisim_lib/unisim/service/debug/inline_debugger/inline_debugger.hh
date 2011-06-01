@@ -54,6 +54,10 @@
 #include <inttypes.h>
 #include <string>
 
+#ifdef WIN32
+#include <windows.h>
+#endif
+
 namespace unisim {
 namespace service {
 namespace debug {
@@ -102,9 +106,15 @@ public:
 protected:
 	static bool trap;
 private:
+#ifndef WIN32
 	static void (*prev_sig_int_handler)(int);
+#endif
 	static int alive_instances;
+#ifdef WIN32
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
 	static void SigIntHandler(int signum);
+#endif
 };
 
 template <class ADDRESS>

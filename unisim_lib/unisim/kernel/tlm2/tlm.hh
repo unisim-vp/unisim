@@ -576,7 +576,7 @@ private:
 
 template <unsigned int BUSWIDTH, class TYPES>
 InitiatorStub<BUSWIDTH, TYPES>::InitiatorStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "An initiator stub")
 	, sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
@@ -648,7 +648,7 @@ private:
 
 template <unsigned int BUSWIDTH, class TYPES>
 TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "A target stub")
 	, sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)
@@ -756,7 +756,7 @@ private:
 
 template <unsigned int BUSWIDTH>
 TargetStub<BUSWIDTH, tlm::tlm_base_protocol_types>::TargetStub(const sc_module_name& name, unisim::kernel::service::Object *parent)
-	: unisim::kernel::service::Object(name, parent)
+	: unisim::kernel::service::Object(name, parent, "A target stub")
 	, sc_module(name)
 	, slave_sock("slave-sock")
 	, logger(*this)

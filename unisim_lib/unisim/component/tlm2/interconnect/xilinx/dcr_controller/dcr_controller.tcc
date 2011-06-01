@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 DCRController<CONFIG>::DCRController(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A Device Control Register bus controller")
 	, unisim::component::cxx::interconnect::xilinx::dcr_controller::DCRController<CONFIG>(name, parent)
 	, sc_module(name)
 	, cycle_time(SC_ZERO_TIME)

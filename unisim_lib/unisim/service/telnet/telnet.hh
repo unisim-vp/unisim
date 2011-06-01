@@ -39,6 +39,8 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <inttypes.h>
+#include <string>
+#include <vector>
 
 namespace unisim {
 namespace service {
@@ -68,6 +70,9 @@ public:
 private:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
+	std::string guest_os;
+	bool remove_null_character;
+	bool remove_line_feed;
 
 	int telnet_tcp_port;
 	int telnet_sock;
@@ -77,6 +82,7 @@ private:
 
 	Parameter<bool> param_verbose;
 	Parameter<int> param_telnet_tcp_port;
+	Parameter<std::string> param_guest_os;
 
 	unsigned int telnet_input_buffer_size;
 	unsigned int telnet_input_buffer_index;

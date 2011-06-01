@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugInfo;
 
 template <class CONFIG>
 DCRController<CONFIG>::DCRController(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A Device Control Register bus controller")
 	, logger(*this)
 	, indirect_mode_address_register(0)
 	, dcr_controller_status_and_control_register(CONFIG::DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_RESET_VALUE)
