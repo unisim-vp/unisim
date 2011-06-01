@@ -78,7 +78,7 @@ void usDestroyVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
-	if ( variable->listener ) delete variable->listener;
+	if ( variable->listener != 0 ) delete variable->listener;
 	usSimulatorUnregisterVariable(variable->simulator, variable);
 	variable->variable = 0;
 	variable->simulator = 0;
@@ -262,7 +262,7 @@ void usDestroyUnregisteredVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
-	delete variable->listener;
+	if ( variable->listener != 0 ) delete variable->listener;
 	variable->variable = 0;
 	variable->simulator = 0;
 	variable->listener = 0;

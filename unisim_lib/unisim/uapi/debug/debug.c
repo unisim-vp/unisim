@@ -91,7 +91,7 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi)
 	if ( (unisimApi == 0) || (simulator == 0) )
 		return 0;
 
-	UnisimDebugAPI debugApi = (UnisimDebugAPI)malloc(sizeof(UnisimDebugAPI));
+	UnisimDebugAPI debugApi = (UnisimDebugAPI)malloc(sizeof(struct _UnisimDebugAPI));
 	if ( debugApi == 0 )
 		return 0;
 

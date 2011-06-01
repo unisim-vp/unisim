@@ -102,7 +102,8 @@ bool close_lib()
 
 bool load_lib()
 {
-	simlib = dlopen("/Users/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.dylib", RTLD_NOW | RTLD_GLOBAL);
+	// simlib = dlopen("/Users/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.dylib", RTLD_NOW | RTLD_GLOBAL);
+	simlib = dlopen("/home/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.so", RTLD_NOW | RTLD_GLOBAL);
 	if(simlib == NULL)
 	{
 		std::cerr << "Could not load simulator dynamic library"
@@ -209,7 +210,7 @@ void InstructionCounterListener ( UnisimVariable variable )
 	}
 }
 
-const char *SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
+std::string SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
 {
 	std::stringstream str;
 	switch ( status )
@@ -227,10 +228,10 @@ const char *SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
 			str << " (UNISIM_SIMULATOR_SETUP_STATUS_<unknown>)";
 			break;
 	}
-	return str.str().c_str();
+	return str.str();
 }
 
-const char *SimulatorStatusAsString(UnisimSimulatorStatus status)
+std::string SimulatorStatusAsString(UnisimSimulatorStatus status)
 {
 	std::stringstream str;
 	switch ( status )
@@ -257,7 +258,7 @@ const char *SimulatorStatusAsString(UnisimSimulatorStatus status)
 			str << "UNISIM_SIMULATOR_STATUS_<unknown>";
 			break;
 	}
-	return str.str().c_str();
+	return str.str();
 }
 
 int test()
@@ -463,10 +464,10 @@ int test()
 	}
 	std::cerr << " - launching setup";
 	UnisimSimulatorSetupStatus simulatorSetupStatus = _usSimulatorSetup(simulator);
-	std::cerr << " " << SimulatorSetupStatusAsString(simulatorSetupStatus) << std::endl;
+	std::cerr << " " << SimulatorSetupStatusAsString(simulatorSetupStatus).c_str() << std::endl;
 	std::cerr << " - simulator status ";
 	UnisimSimulatorStatus simulatorStatus = _usSimulatorGetStatus(simulator); 
-	std::cerr << " " << SimulatorStatusAsString(simulatorStatus) << std::endl;
+	std::cerr << " " << SimulatorStatusAsString(simulatorStatus).c_str() << std::endl;
 	std::cerr << " - setting listener into instruction counter" << std::endl;
 	UnisimVariable instructionCounterVariable =
 		_usSimulatorGetVariable(simulator, "cpu.instruction-counter");
@@ -481,7 +482,7 @@ int test()
 	if ( !ok )
 		std::cerr << "Could not run the simulator" << std::endl;
 
-	_usVariableRemoveListener(variable);
+	_usVariableRemoveListener(instructionCounterVariable);
 
 	return CloseSimulator(simulator);
 }

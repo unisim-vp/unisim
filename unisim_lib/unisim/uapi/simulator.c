@@ -46,8 +46,8 @@ struct _UnisimSimulator
 {
 	Simulator *simulator;
 	UnisimSimulatorStatus simulatorStatus;
-	std::map<UnisimVariable, UnisimVariable> variablesRegistered;
-	std::map<UnisimExtendedAPI, UnisimExtendedAPI> apisRegistered;
+	std::map<UnisimVariable, UnisimVariable> *variablesRegistered;
+	std::map<UnisimExtendedAPI, UnisimExtendedAPI> *apisRegistered;
 };
 
 /****************************************************************************/
@@ -85,12 +85,27 @@ UnisimSimulator usCreateSimulator(char *configurationXmlFile,
 		char **optionList)
 /****************************************************************************/
 {
-	_UnisimSimulator *simulator;
+	UnisimSimulator simulator;
 	char **argv;
 	int argvSize = 2; //4; // default number of parameters
 
-	simulator = new _UnisimSimulator();
+	simulator = (UnisimSimulator)malloc(sizeof(_UnisimSimulator));
 	if ( simulator == 0 ) return 0;
+	simulator->variablesRegistered = new std::map<UnisimVariable, UnisimVariable>();
+	if ( simulator->variablesRegistered == 0)
+	{
+		free(simulator);
+		simulator = 0;
+		return 0;
+	}
+	simulator->apisRegistered = new std::map<UnisimExtendedAPI, UnisimExtendedAPI>();
+	if ( simulator->apisRegistered == 0 )
+	{
+		delete(simulator->apisRegistered);
+		free(simulator);
+		simulator = 0;
+		return 0;
+	}
 	simulator->simulator = 0;
 	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_NONE;
 
@@ -138,10 +153,13 @@ UnisimSimulator usCreateSimulator(char *configurationXmlFile,
 	if ( simulator->simulator == 0 ) 
 	{
 		free(argv);
+		delete(simulator->variablesRegistered);
+		delete(simulator->apisRegistered);
 		free(simulator);
 		return 0;
 	}
 
+	free(argv);
 	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_CREATED;
 	return simulator;
 }
@@ -158,26 +176,30 @@ bool usDestroySimulator(UnisimSimulator simulator)
 
 	std::map<UnisimVariable, UnisimVariable>::iterator
 		variablesRegisteredIterator;
-	for ( variablesRegisteredIterator = simulator->variablesRegistered.begin();
-			variablesRegisteredIterator != simulator->variablesRegistered.end();
-			variablesRegisteredIterator = simulator->variablesRegistered.begin())
+	for ( variablesRegisteredIterator = simulator->variablesRegistered->begin();
+			variablesRegisteredIterator != simulator->variablesRegistered->end();
+			variablesRegisteredIterator = simulator->variablesRegistered->begin())
 	{
+		UnisimVariable variable = variablesRegisteredIterator->second;
 		usSimulatorUnregisterVariable(simulator, 
-				variablesRegisteredIterator->second);
-		usDestroyUnregisteredVariable(variablesRegisteredIterator->second);
+				variable);
+		usDestroyUnregisteredVariable(variable);
 	}
 
 	std::map<UnisimExtendedAPI, UnisimExtendedAPI>::iterator
 		apisRegisteredIterator;
-	for ( apisRegisteredIterator = simulator->apisRegistered.begin();
-			apisRegisteredIterator != simulator->apisRegistered.end();
-			apisRegisteredIterator = simulator->apisRegistered.begin() )
+	for ( apisRegisteredIterator = simulator->apisRegistered->begin();
+			apisRegisteredIterator != simulator->apisRegistered->end();
+			apisRegisteredIterator = simulator->apisRegistered->begin() )
 	{
+		UnisimExtendedAPI api = apisRegisteredIterator->second;
 		usSimulatorUnregisterExtendedAPI(simulator,
-				apisRegisteredIterator->second);
-		usDestroyUnregisteredExtendedAPI(apisRegisteredIterator->second);
+				api);
+		usDestroyUnregisteredExtendedAPI(api);
 	}
 
+	delete(simulator->variablesRegistered);
+	delete(simulator->apisRegistered);
 	delete(simulator->simulator);
 	simulator->simulator = 0;
 	free(simulator);
@@ -487,8 +509,8 @@ void usSimulatorRegisterVariable(UnisimSimulator simulator,
 	if ( (simulator == 0) || (variable == 0) ) 
 		return;
 
-	variableIterator = simulator->variablesRegistered.find(variable);
-	if ( variableIterator != simulator->variablesRegistered.end() )
+	variableIterator = simulator->variablesRegistered->find(variable);
+	if ( variableIterator != simulator->variablesRegistered->end() )
 	{
 		std::cerr << "Warning!!!: trying to register a variable multiple"
 			<< " times '" << usVariableGetName(variable) << "'"
@@ -496,7 +518,7 @@ void usSimulatorRegisterVariable(UnisimSimulator simulator,
 		return;
 	}
 
-	simulator->variablesRegistered[variable] = variable;
+	(*simulator->variablesRegistered)[variable] = variable;
 }
 
 /****************************************************************************/
@@ -521,8 +543,8 @@ void usSimulatorUnregisterVariable(UnisimSimulator simulator,
 	if ( (simulator == 0) || (variable == 0) ) 
 		return;
 
-	variableIterator = simulator->variablesRegistered.find(variable);
-	if ( variableIterator == simulator->variablesRegistered.end() )
+	variableIterator = simulator->variablesRegistered->find(variable);
+	if ( variableIterator == simulator->variablesRegistered->end() )
 	{
 		std::cerr << "Warning!!!: trying to unregister a variable that was"
 			<< " not registered '" << usVariableGetName(variable)  << "'"
@@ -530,7 +552,7 @@ void usSimulatorUnregisterVariable(UnisimSimulator simulator,
 		return;
 	}
 
-	simulator->variablesRegistered.erase(variableIterator);
+	simulator->variablesRegistered->erase(variableIterator);
 }
 
 /****************************************************************************/
@@ -555,8 +577,8 @@ void usSimulatorRegisterExtendedAPI(UnisimSimulator simulator,
 	if ( (simulator == 0) || (api == 0) ) 
 		return;
 
-	apiIterator = simulator->apisRegistered.find(api);
-	if ( apiIterator != simulator->apisRegistered.end() )
+	apiIterator = simulator->apisRegistered->find(api);
+	if ( apiIterator != simulator->apisRegistered->end() )
 	{
 		std::cerr << "Warning!!!: trying to register a api multiple"
 			<< " times '" << usExtendedAPIGetName(api) << "'"
@@ -564,7 +586,7 @@ void usSimulatorRegisterExtendedAPI(UnisimSimulator simulator,
 		return;
 	}
 
-	simulator->apisRegistered[api] = api;
+	(*simulator->apisRegistered)[api] = api;
 }
 
 /****************************************************************************/
@@ -589,8 +611,8 @@ void usSimulatorUnregisterExtendedAPI(UnisimSimulator simulator,
 	if ( (simulator == 0) || (api == 0) ) 
 		return;
 
-	apiIterator = simulator->apisRegistered.find(api);
-	if ( apiIterator == simulator->apisRegistered.end() )
+	apiIterator = simulator->apisRegistered->find(api);
+	if ( apiIterator == simulator->apisRegistered->end() )
 	{
 		std::cerr << "Warning!!!: trying to unregister a api that was"
 			<< " not registered '" << usExtendedAPIGetName(api)  << "'"
@@ -598,7 +620,7 @@ void usSimulatorUnregisterExtendedAPI(UnisimSimulator simulator,
 		return;
 	}
 
-	simulator->apisRegistered.erase(apiIterator);
+	simulator->apisRegistered->erase(apiIterator);
 }
 
 /****************************************************************************/
