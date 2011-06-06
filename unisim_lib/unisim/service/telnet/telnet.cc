@@ -42,6 +42,7 @@
 
 #else
 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -122,7 +123,7 @@ bool Telnet::EndSetup()
 	}
 	else
 	{
-		remove_null_character = true;
+		remove_null_character = false;
 		remove_line_feed = false;
 	}
 	
