@@ -175,6 +175,8 @@ unisim/component/cxx/memory/flash/am29/s29gl256p_config.cc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
+unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.cc \
+unisim/component/cxx/com/xilinx/xps_gpio/config.cc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
@@ -189,6 +191,7 @@ unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
+unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.cc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
@@ -338,6 +341,8 @@ unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh \
 unisim/component/cxx/interconnect/xilinx/crossbar/config.hh \
 unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
 unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh \
+unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh \
+unisim/component/cxx/com/xilinx/xps_gpio/config.hh \
 unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
@@ -351,6 +356,7 @@ unisim/component/tlm2/memory/flash/am29/am29.hh \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh \
 unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
+unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh \
 "
 
 UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES="\
@@ -414,6 +420,7 @@ unisim/component/cxx/memory/flash/am29/am29.tcc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.tcc \
 unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
+unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
@@ -424,6 +431,7 @@ unisim/component/tlm2/memory/flash/am29/am29.tcc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc \
 unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
+unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.tcc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_M4_FILES="\

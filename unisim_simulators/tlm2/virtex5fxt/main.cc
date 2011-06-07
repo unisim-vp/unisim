@@ -56,6 +56,9 @@
 #include <unisim/component/cxx/interconnect/xilinx/crossbar/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
+#include <unisim/component/cxx/com/xilinx/xps_gpio/config.hh>
+
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
@@ -159,8 +162,8 @@ class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_ro
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 5;
-	static const unsigned int MAX_NUM_MAPPINGS = 5;
+	static const unsigned int OUTPUT_SOCKETS = 6;
+	static const unsigned int MAX_NUM_MAPPINGS = 6;
 	static const unsigned int BUSWIDTH = 128;
 };
 
@@ -170,8 +173,8 @@ class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router:
 {
 public:
 	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 5;
-	static const unsigned int MAX_NUM_MAPPINGS = 5;
+	static const unsigned int OUTPUT_SOCKETS = 6;
+	static const unsigned int MAX_NUM_MAPPINGS = 6;
 	static const unsigned int BUSWIDTH = 128;
 };
 
@@ -181,8 +184,10 @@ typedef MPLBConfig MPLB_CONFIG;
 typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
 typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
 typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CONFIG;
+typedef unisim::component::cxx::com::xilinx::xps_gpio::Config GPIO_CONFIG;
 static const unsigned int TIMER_IRQ = 3;
 static const unsigned int UART_LITE_IRQ = 2;
+static const unsigned int GPIO_IRQ = 7;
 
 
 class Simulator : public unisim::kernel::service::Simulator
@@ -223,6 +228,7 @@ private:
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
 	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<UART_LITE_CONFIG> UART_LITE;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_CONFIG> GPIO;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
@@ -237,6 +243,8 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC2_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC3_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> EXTERNAL_SLAVE_DCR_STUB;
+	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_OUTPUT_STUB;
+	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_INPUT_STUB;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -274,6 +282,8 @@ private:
 	CROSSBAR *crossbar;
 	// - UART Lite
 	UART_LITE *uart_lite;
+	// - GPIO
+	GPIO *gpio;
 	// - DCR stubs
 	MASTER1_DCR_STUB *master1_dcr_stub;
 	APU_DCR_STUB *apu_dcr_stub;
@@ -283,6 +293,10 @@ private:
 	DMAC2_DCR_STUB *dmac2_dcr_stub;
 	DMAC3_DCR_STUB *dmac3_dcr_stub;
 	EXTERNAL_SLAVE_DCR_STUB *external_slave_dcr_stub;
+	GPIO_INPUT_STUB *gpio_input_stub[GPIO_CONFIG::C_GPIO_WIDTH];
+	GPIO_INPUT_STUB *gpio2_input_stub[GPIO_CONFIG::C_GPIO2_WIDTH];
+	GPIO_OUTPUT_STUB *gpio_output_stub[GPIO_CONFIG::C_GPIO_WIDTH];
+	GPIO_OUTPUT_STUB *gpio2_output_stub[GPIO_CONFIG::C_GPIO2_WIDTH];
 	
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -341,6 +355,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dcr_controller(0)
 	, crossbar(0)
 	, uart_lite(0)
+	, gpio(0)
 	, master1_dcr_stub(0)
 	, apu_dcr_stub(0)
 	, mci_dcr_stub(0)
@@ -375,6 +390,7 @@ Simulator::Simulator(int argc, char **argv)
 {
 	unsigned int irq;
 	unsigned int channel;
+	unsigned int i;
 	
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -392,6 +408,7 @@ Simulator::Simulator(int argc, char **argv)
 		{
 			case TIMER_IRQ:
 			case UART_LITE_IRQ:
+			case GPIO_IRQ:
 				input_interrupt_stub[irq] = 0;
 				break;
 			default:
@@ -438,6 +455,8 @@ Simulator::Simulator(int argc, char **argv)
 	crossbar = new CROSSBAR("crossbar");
 	// - UART Lite
 	uart_lite = new UART_LITE("uart-lite");
+	// - GPIO
+	gpio = new GPIO("gpio");
 	// - DCR stubs
 	master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub");
 	apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub");
@@ -447,6 +466,32 @@ Simulator::Simulator(int argc, char **argv)
 	dmac2_dcr_stub = new DMAC2_DCR_STUB("dma2-dcr-stub");
 	dmac3_dcr_stub = new DMAC3_DCR_STUB("dma3-dcr-stub");
 	external_slave_dcr_stub = new EXTERNAL_SLAVE_DCR_STUB("external-slave-dcr-stub");
+	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		std::stringstream gpio_input_stub_name_sstr;
+		gpio_input_stub_name_sstr << "gpio-input-stub" << i;
+		gpio_input_stub[i] = new GPIO_INPUT_STUB(gpio_input_stub_name_sstr.str().c_str());
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
+	{
+		std::stringstream gpio2_input_stub_name_sstr;
+		gpio2_input_stub_name_sstr << "gpio2-input-stub" << i;
+		gpio2_input_stub[i] = new GPIO_INPUT_STUB(gpio2_input_stub_name_sstr.str().c_str());
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		
+		std::stringstream gpio_output_stub_name_sstr;
+		gpio_output_stub_name_sstr << "gpio-output-stub" << i;
+		gpio_output_stub[i] = new GPIO_OUTPUT_STUB(gpio_output_stub_name_sstr.str().c_str());
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
+	{
+		
+		std::stringstream gpio2_output_stub_name_sstr;
+		gpio2_output_stub_name_sstr << "gpio2-output-stub" << i;
+		gpio2_output_stub[i] = new GPIO_OUTPUT_STUB(gpio2_output_stub_name_sstr.str().c_str());
+	}
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -507,6 +552,7 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->init_socket[2])(flash->slave_sock);     // MPLB <-> FLASH
 	(*mplb->init_socket[3])(bram->slave_sock);      // MPLB <-> BRAM
 	(*mplb->init_socket[4])(uart_lite->slave_sock); // MPLB <-> UART Lite
+	(*mplb->init_socket[5])(gpio->slave_sock);      // MPLB <-> GPIO
 	
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
@@ -517,6 +563,9 @@ Simulator::Simulator(int argc, char **argv)
 				break;
 			case UART_LITE_IRQ:
 				uart_lite->interrupt_master_sock(*intc->irq_slave_sock[irq]); // UART Lite>IRQ <-> INTR<INTC
+				break;
+			case GPIO_IRQ:
+				gpio->interrupt_master_sock(*intc->irq_slave_sock[irq]); // GPIO>IRQ <-> INTR<INTC
 				break;
 			default:
 				(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
@@ -534,6 +583,16 @@ Simulator::Simulator(int argc, char **argv)
 	timer->pwm_master_sock(pwm_stub->slave_sock); // TIMER <-> PWM stub
 	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC>IRQ <-> External Input<CPU
 	critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
+	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		gpio_input_stub[i]->master_sock(*gpio->gpio_slave_sock[i]); // GPIO input Stub <-> GPIO
+		(*gpio->gpio_master_sock[i])(gpio_output_stub[i]->slave_sock); // GPIO <-> GPIO output Stub
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
+	{
+		gpio2_input_stub[i]->master_sock(*gpio->gpio2_slave_sock[i]); // GPIO input Stub <-> GPIO
+		(*gpio->gpio2_master_sock[i])(gpio2_output_stub[i]->slave_sock); // GPIO <-> GPIO output Stub
+	}
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -547,6 +606,8 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->memory_import[1]) >> timer->memory_export;
 	(*mplb->memory_import[2]) >> flash->memory_export;
 	(*mplb->memory_import[3]) >> bram->memory_export;
+	(*mplb->memory_import[4]) >> uart_lite->memory_export;
+	(*mplb->memory_import[5]) >> gpio->memory_export;
 	cpu->loader_import >> loader->loader_export;
 	
 	if(enable_inline_debugger)
@@ -615,6 +676,7 @@ Simulator::~Simulator()
 {
 	unsigned int irq;
 	unsigned int channel;
+	unsigned int i;
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
 	if(ram) delete ram;
 	if(bram) delete bram;
@@ -629,6 +691,7 @@ Simulator::~Simulator()
 	if(flash) delete flash;
 	if(crossbar) delete crossbar;
 	if(uart_lite) delete uart_lite;
+	if(gpio) delete gpio;
 	if(master1_dcr_stub) delete master1_dcr_stub;
 	if(apu_dcr_stub) delete apu_dcr_stub;
 	if(mci_dcr_stub) delete mci_dcr_stub;
@@ -651,6 +714,22 @@ Simulator::~Simulator()
 		if(generate_out_stub[channel]) delete generate_out_stub[channel];
 	}
 	if(pwm_stub) delete pwm_stub;
+	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		if(gpio_input_stub[i]) delete gpio_input_stub[i];
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
+	{
+		if(gpio2_input_stub[i]) delete gpio2_input_stub[i];
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		if(gpio_output_stub[i]) delete gpio_output_stub[i];
+	}
+	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
+	{
+		if(gpio2_output_stub[i]) delete gpio2_output_stub[i];
+	}
 	if(dcr_controller) delete dcr_controller;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
@@ -717,6 +796,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xfffc0000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfffc0000\""); // 256 KB XPS BRAM
 	simulator->SetVariable("mplb.mapping_4", "range_start=\"0x84000000\" range_end=\"0x8400ffff\" output_port=\"4\" translation=\"0x84000000\""); // XPS UART Lite
+	simulator->SetVariable("mplb.mapping_5", "range_start=\"0x81460000\" range_end=\"0x8146ffff\" output_port=\"5\" translation=\"0x81460000\""); // XPS GPIO
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,bram-effective-to-physical-address-translator:0xfffc0000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
@@ -743,6 +823,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - UART Lite
 	simulator->SetVariable("uart-lite.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - GPIO
+	simulator->SetVariable("gpio.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - Flash
 	simulator->SetVariable("flash.org", 0xfc000000UL);
