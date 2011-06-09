@@ -61,6 +61,10 @@ class XPS_GPIO
 	: public Service<Memory<typename CONFIG::MEMORY_ADDR> >
 {
 public:
+	static const unsigned int NUM_GPIO_CHANNELS = CONFIG::C_IS_DUAL ? 2 : 1;
+	static const uint32_t GPIO_MASK = (1ULL << CONFIG::C_GPIO_WIDTH) - 1; // GPIO Channel 1 bit mask
+	static const uint32_t GPIO2_MASK = (1ULL << CONFIG::C_GPIO2_WIDTH) - 1; // GPIO Channel 2 bit mask
+	
 	ServiceExport<Memory<typename CONFIG::MEMORY_ADDR> > memory_export;
 	
 	XPS_GPIO(const char *name, Object *parent = 0);

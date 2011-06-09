@@ -38,8 +38,6 @@
 #include <systemc.h>
 #include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh>
 
-#define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
-
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -263,7 +261,7 @@ unsigned int XPS_GPIO<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		case tlm::TLM_READ_COMMAND:
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << LOCATION
+				inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 					<< sc_time_stamp().to_string()
 					<< ": received a TLM_READ_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -279,7 +277,7 @@ unsigned int XPS_GPIO<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 		case tlm::TLM_WRITE_COMMAND:
 			if(inherited::IsVerbose())
 			{
-				inherited::logger << DebugInfo << LOCATION
+				inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 					<< sc_time_stamp()
 					<< ": received a TLM_WRITE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -293,7 +291,7 @@ unsigned int XPS_GPIO<CONFIG>::transport_dbg(tlm::tlm_generic_payload& payload)
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
-			inherited::logger << DebugInfo << LOCATION
+			inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 					<< sc_time_stamp() 
 					<< " : received an unexpected TLM_IGNORE_COMMAND payload at 0x"
 					<< std::hex << addr << std::dec
@@ -322,7 +320,7 @@ tlm::tlm_sync_enum XPS_GPIO<CONFIG>::nb_transport_fw(tlm::tlm_generic_payload& p
 				
 				if(cmd == tlm::TLM_IGNORE_COMMAND)
 				{
-					inherited::logger << DebugError << LOCATION
+					inherited::logger << DebugError << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 							<< (sc_time_stamp() + t)
 							<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 							<< EndDebugError;
@@ -358,7 +356,7 @@ void XPS_GPIO<CONFIG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::s
 			
 	if(cmd == tlm::TLM_IGNORE_COMMAND)
 	{
-		inherited::logger << DebugError << LOCATION
+		inherited::logger << DebugError << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 				<< (sc_time_stamp() + t)
 				<< " : received an unexpected TLM_IGNORE_COMMAND payload"
 				<< EndDebugError;
@@ -591,7 +589,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		if(!inherited::IsMapped(addr, data_length))
 		{
-			inherited::logger << DebugWarning << LOCATION
+			inherited::logger << DebugWarning << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 				<< time_stamp
 				<< ": unmapped access at 0x" << std::hex << addr << std::dec << " ( " << data_length << " bytes)"
 				<< EndDebugWarning;
@@ -600,7 +598,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 		else if(streaming_width && (streaming_width != data_length))
 		{
 			// streaming is not supported
-			inherited::logger << DebugError << LOCATION
+			inherited::logger << DebugError << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 				<< time_stamp
 				<< ": streaming width of " << streaming_width << " bytes is unsupported"
 				<< EndDebugError;
@@ -610,7 +608,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 		else if(byte_enable_length)
 		{
 			// byte enable is not supported
-			inherited::logger << DebugError << LOCATION
+			inherited::logger << DebugError << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 				<< time_stamp
 				<< ": byte enable is unsupported"
 				<< EndDebugError;
@@ -620,7 +618,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 		else if((data_length != 4))
 		{
 			// only data length of 4 bytes is supported
-			inherited::logger << DebugWarning << LOCATION
+			inherited::logger << DebugWarning << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 				<< time_stamp
 				<< ": data length of " << data_length << " bytes is unsupported"
 				<< EndDebugWarning;
@@ -636,7 +634,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 				{
 					if(inherited::IsVerbose())
 					{
-						inherited::logger << DebugInfo << LOCATION
+						inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 							<< time_stamp
 							<< ": processing a TLM_READ_COMMAND payload at 0x"
 							<< std::hex << addr << std::dec
@@ -652,7 +650,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 				{
 					if(inherited::IsVerbose())
 					{
-						inherited::logger << DebugInfo << LOCATION
+						inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 							<< time_stamp
 							<< ": processing a TLM_WRITE_COMMAND payload at 0x"
 							<< std::hex << addr << std::dec
@@ -667,7 +665,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 			case tlm::TLM_IGNORE_COMMAND:
 				if(inherited::IsVerbose())
 				{
-					inherited::logger << DebugInfo << LOCATION
+					inherited::logger << DebugInfo << __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 						<< time_stamp
 						<< ": received a TLM_IGNORE_COMMAND payload at 0x"
 						<< std::hex << addr << std::dec
@@ -692,7 +690,7 @@ void XPS_GPIO<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 	
 }
@@ -701,7 +699,7 @@ template <class CONFIG>
 void XPS_GPIO<CONFIG>::GenerateOutput()
 {
 	unsigned int channel;
-	for(channel = 0; channel < CONFIG::NUM_GPIO_CHANNELS; channel++)
+	for(channel = 0; channel < inherited::NUM_GPIO_CHANNELS; channel++)
 	{
 		uint32_t data = channel ? inherited::GetGPIO2_DATA() : inherited::GetGPIO_DATA();
 		uint32_t tri = channel ? inherited::GetGPIO2_TRI() : inherited::GetGPIO_TRI();
@@ -759,7 +757,7 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 		
 		sc_time t(SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
+		interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

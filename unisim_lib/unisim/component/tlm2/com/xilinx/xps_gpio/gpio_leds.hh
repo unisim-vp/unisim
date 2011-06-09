@@ -32,15 +32,13 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_XPS_GPIO_HH__
-#define __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_XPS_GPIO_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_GPIO_LEDS_HH__
+#define __UNISIM_COMPONENT_TLM2_GPIO_XILINX_XPS_GPIO_GPIO_LEDS_HH__
 
 #include <systemc.h>
 #include <unisim/kernel/tlm2/tlm.hh>
-#include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh>
-#include <unisim/component/tlm2/interrupt/types.hh>
-#include <stack>
-#include <vector>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
+#include <unisim/service/interfaces/led_board.hh>
 
 namespace unisim {
 namespace component {
@@ -51,57 +49,32 @@ namespace xps_gpio {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
-using unisim::kernel::service::Service;
-using unisim::kernel::service::ServiceExport;
-using unisim::kernel::service::ServiceExportBase;
+using unisim::kernel::service::Client;
+using unisim::kernel::service::ServiceImport;
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::tlm2::Schedule;
 using unisim::component::tlm2::interrupt::InterruptPayload;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
+using unisim::service::interfaces::LED_Board;
 
-typedef unisim::kernel::tlm2::SimplePayload<bool> GPIOPayload;
-
-typedef unisim::kernel::tlm2::SimpleProtocolTypes<bool> GPIOProtocolTypes;
-
-template <class CONFIG>
-class XPS_GPIO
+template <unsigned int NUM_LEDS>
+class GPIO_LEDs
 	: public sc_module
-	, public unisim::component::cxx::com::xilinx::xps_gpio::XPS_GPIO<CONFIG>
-	, public tlm::tlm_fw_transport_if<tlm::tlm_base_protocol_types>
+	, public Client<LED_Board>
 {
 public:
 	static const bool threaded_model = false;
 	
-	typedef unisim::component::cxx::com::xilinx::xps_gpio::XPS_GPIO<CONFIG> inherited;
-	typedef tlm::tlm_initiator_socket<0, GPIOProtocolTypes> gpio_master_socket;
 	typedef tlm::tlm_target_socket<0, GPIOProtocolTypes> gpio_slave_socket;
-	typedef tlm::tlm_initiator_socket<0, InterruptProtocolTypes> interrupt_master_socket;
 	
-	// PLB slave interface
-	tlm::tlm_target_socket<CONFIG::C_SPLB_DWITH, tlm::tlm_base_protocol_types> slave_sock;
+	gpio_slave_socket *gpio_slave_sock[NUM_LEDS];
 	
-	// GPIO inputs
-	gpio_slave_socket *gpio_slave_sock[CONFIG::C_GPIO_WIDTH];
-	gpio_slave_socket *gpio2_slave_sock[CONFIG::C_GPIO2_WIDTH];
+	ServiceImport<LED_Board> led_board_import;
 
-	// GPIO output
-	gpio_master_socket *gpio_master_sock[CONFIG::C_GPIO_WIDTH];
-	gpio_master_socket *gpio2_master_sock[CONFIG::C_GPIO2_WIDTH];
-
-	// Interrupt
-	interrupt_master_socket interrupt_master_sock;
-
-	XPS_GPIO(const sc_module_name& name, Object *parent = 0);
-	virtual ~XPS_GPIO();
+	GPIO_LEDs(const sc_module_name& name, Object *parent = 0);
+	virtual ~GPIO_LEDs();
 	
 	virtual bool BeginSetup();
-	
-	// PLB interface
-	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data);
-	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
-	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	
 	// Forward b_transport/nb_transport callbacks for GPIO
 	void gpio_b_transport(unsigned int pin, GPIOPayload& trans, sc_core::sc_time& t);
@@ -109,17 +82,15 @@ public:
 	unsigned int gpio_transport_dbg(unsigned int pin, GPIOPayload& payload);
 	bool gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload& payload, tlm::tlm_dmi& dmi_data);
 
-	// Backward nb_transport callbacks for GPIO
-	tlm::tlm_sync_enum gpio_nb_transport_bw(unsigned int pin, GPIOPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	void gpio_invalidate_direct_mem_ptr(unsigned int pin, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-	
-	// Backward nb_transport callbacks for interrupt
-	tlm::tlm_sync_enum interrupt_nb_transport_bw(unsigned int dummy_id, InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
-	void interrupt_invalidate_direct_mem_ptr(unsigned int dummy_id, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
-
 	void Process();
 	
 protected:
+	unisim::kernel::logger::Logger logger;
+	bool verbose;
+	
+	Parameter<bool> param_verbose;
+	
+	bool IsVerbose() const;
 private:
 	void AlignToClock(sc_time& t);
 	
@@ -129,8 +100,7 @@ private:
 		typedef enum
 		{
 			// In order of priority
-			EV_GPIO,              // a GPIO input is available
-			EV_CPU,               // a CPU request occured
+			EV_GPIO              // a GPIO input is available
 		} Type;
 		
 		class Key
@@ -196,9 +166,7 @@ private:
 
 		Event()
 			: key()
-			, cpu_payload(0)
 			, gpio_pin_value(0)
-			, ev_completed(0)
 		{
 		}
 		
@@ -207,29 +175,15 @@ private:
 			Clear();
 		}
 		
-		void InitializeCPUEvent(tlm::tlm_generic_payload *_payload, const sc_time& time_stamp, sc_event *_ev_completed = 0)
-		{
-			_payload->acquire();
-			key.Initialize(time_stamp, EV_CPU, 0);
-			cpu_payload = _payload;
-			gpio_pin_value = 0;
-			ev_completed = _ev_completed;
-		}
-		
 		void InitializeGPIOEvent(unsigned int channel, bool _gpio_pin_value, const sc_time& time_stamp)
 		{
 			key.Initialize(time_stamp, EV_GPIO, channel);
-			cpu_payload = 0;
 			gpio_pin_value = _gpio_pin_value;
-			ev_completed = 0;
 		}
 
 		void Clear()
 		{
-			if(cpu_payload) cpu_payload->release();
 			key.Clear();
-			cpu_payload = 0;
-			ev_completed = 0;
 		}
 		
 		Type GetType() const
@@ -247,11 +201,6 @@ private:
 			return key.GetTimeStamp();
 		}
 		
-		tlm::tlm_generic_payload *GetCPUPayload() const
-		{
-			return cpu_payload;
-		}
-		
 		unsigned int GetGPIOPin() const
 		{
 			return key.GetPin();
@@ -262,20 +211,13 @@ private:
 			return gpio_pin_value;
 		}
 		
-		sc_event *GetCompletionEvent() const
-		{
-			return ev_completed;
-		}
-		
 		const Key& GetKey() const
 		{
 			return key;
 		}
 	private:
 		Key key;
-		tlm::tlm_generic_payload *cpu_payload;
 		bool gpio_pin_value;
-		sc_event *ev_completed;
 	};
 
 
@@ -284,30 +226,19 @@ private:
 	sc_time cycle_time;
 	
 	sc_time time_stamp;
-	sc_time ready_time_stamp;
-
-	uint32_t gpio_output_data[inherited::NUM_GPIO_CHANNELS];
-	bool interrupt_output;
 	
+	bool led_status[NUM_LEDS];
+
 	/** The parameter for the cycle time */
 	Parameter<sc_time> param_cycle_time;
 
-	unisim::kernel::tlm2::FwRedirector<XPS_GPIO<CONFIG>, GPIOProtocolTypes> *gpio_fw_redirector[CONFIG::C_GPIO_WIDTH];
-	unisim::kernel::tlm2::FwRedirector<XPS_GPIO<CONFIG>, GPIOProtocolTypes> *gpio2_fw_redirector[CONFIG::C_GPIO2_WIDTH];
-	unisim::kernel::tlm2::BwRedirector<XPS_GPIO<CONFIG>, GPIOProtocolTypes> *gpio_bw_redirector[CONFIG::C_GPIO_WIDTH];
-	unisim::kernel::tlm2::BwRedirector<XPS_GPIO<CONFIG>, GPIOProtocolTypes> *gpio2_bw_redirector[CONFIG::C_GPIO2_WIDTH];
-	unisim::kernel::tlm2::BwRedirector<XPS_GPIO<CONFIG>, InterruptProtocolTypes> *interrupt_bw_redirector;
+	unisim::kernel::tlm2::FwRedirector<GPIO_LEDs<NUM_LEDS>, GPIOProtocolTypes> *gpio_fw_redirector[NUM_LEDS];
+	unisim::kernel::tlm2::BwRedirector<GPIO_LEDs<NUM_LEDS>, InterruptProtocolTypes> *interrupt_bw_redirector;
 
-	PayloadFabric<GPIOPayload> gpio_payload_fabric;
-	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 	Schedule<Event> schedule;
 	
-	bool PinToChannelAndBit(unsigned int pin, unsigned int& channel, unsigned int& bit) const;
-	bool ChannelAndBitToPin(unsigned int channel, unsigned int bit, unsigned int& pin) const;
 	void ProcessEvents();
 	void ProcessGPIOEvent(Event *event);
-	void ProcessCPUEvent(Event *event);
-	void GenerateOutput();
 };
 
 } // end of namespace xps_gpio

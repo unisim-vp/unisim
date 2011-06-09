@@ -108,26 +108,21 @@ class Config
 public:
 	typedef uint64_t MEMORY_ADDR;
 	
-	static const unsigned int C_SPLB_DWITH = 128;        // PLB data with (in bits)
-	static const unsigned int C_GPIO_WIDTH = 32;         // The width in bits of GPIO Channel 1
-	static const unsigned int C_GPIO2_WIDTH = 32;        // The width in bits of GPIO Channel 2
-	static const MEMORY_ADDR C_BASEADDR = 0x81460000ULL; // XPS GPIO Base Address default value (as ML507 board)
-	static const MEMORY_ADDR C_HIGHADDR = 0x8146ffffULL; // XPS GPIO High Address default value (as ML507 board)
+	static const unsigned int C_SPLB_DWITH = 128;       // PLB data with (in bits)
+	static const unsigned int C_GPIO_WIDTH = 0;         // The width in bits of GPIO Channel 1
+	static const unsigned int C_GPIO2_WIDTH = 0;        // The width in bits of GPIO Channel 2
+	static const MEMORY_ADDR C_BASEADDR = 0x0ULL;       // XPS GPIO Base Address default value
+	static const MEMORY_ADDR C_HIGHADDR = 0x0ULL;       // XPS GPIO High Address default value
 	
 	// default values
-	static const uint32_t C_DOUT_DEFAULT = 0x00000000UL; // GPIO_DATA reset value
-	static const uint32_t C_TRI_DEFAULT = 0xffffffffUL;  // GPIO_TRI reset value
+	static const uint32_t C_DOUT_DEFAULT = 0x00000000UL;   // GPIO_DATA reset value
+	static const uint32_t C_TRI_DEFAULT = 0xffffffffUL;    // GPIO_TRI reset value
 	static const uint32_t C_DOUT_DEFAULT_2 = 0x00000000UL; // GPIO2_DATA reset value
 	static const uint32_t C_TRI_DEFAULT_2 = 0xffffffffUL;  // GPIO2_TRI reset value
 	
 	// Optional features
-	static const bool C_IS_DUAL = true;          // Use dual channel
-	static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
-	static const unsigned int NUM_GPIO_CHANNELS = C_IS_DUAL ? 2 : 1;
-
-	// Bit masks
-	static const uint32_t GPIO_MASK = (1ULL << C_GPIO_WIDTH) - 1; // GPIO Channel 1 bit mask
-	static const uint32_t GPIO2_MASK = (1ULL << C_GPIO2_WIDTH) - 1; // GPIO Channel 2 bit mask
+	static const bool C_IS_DUAL = false;              // Whether it is a dual channel GPIO
+	static const bool C_INTERRUPT_IS_PRESENT = false; // Whether interrupt is present or not
 };
 
 } // end of namespace xps_gpio

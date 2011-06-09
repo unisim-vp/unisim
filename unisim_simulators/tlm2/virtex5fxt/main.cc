@@ -57,7 +57,13 @@
 #include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.tcc>
+#include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.tcc>
 #include <unisim/component/cxx/com/xilinx/xps_gpio/config.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.hh>
+#include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.tcc>
 
 
 #include <unisim/kernel/service/service.hh>
@@ -89,62 +95,6 @@
 #include <signal.h>
 #endif
 
-#ifdef WITH_FPU
-#ifdef DEBUG_VIRTEX5FXT
-static const bool DEBUG_INFORMATION = true;
-typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU CPU_CONFIG;
-#else
-static const bool DEBUG_INFORMATION = false;
-typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU CPU_CONFIG;
-#endif
-#else
-#ifdef DEBUG_VIRTEX5FXT
-static const bool DEBUG_INFORMATION = true;
-typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig CPU_CONFIG;
-#else
-static const bool DEBUG_INFORMATION = false;
-typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
-#endif
-#endif
-
-#ifdef WIN32
-BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType)
-{
-	bool stop = false;
-	switch(dwCtrlType)
-	{
-		case CTRL_C_EVENT:
-			cerr << "Interrupted by Ctrl-C" << endl;
-			stop = true;
-			break;
-		case CTRL_BREAK_EVENT:
-			cerr << "Interrupted by Ctrl-Break" << endl;
-			stop = true;
-			break;
-		case CTRL_CLOSE_EVENT:
-			cerr << "Interrupted by a console close" << endl;
-			stop = true;
-			break;
-		case CTRL_LOGOFF_EVENT:
-			cerr << "Interrupted because of logoff" << endl;
-			stop = true;
-			break;
-		case CTRL_SHUTDOWN_EVENT:
-			cerr << "Interrupted because of shutdown" << endl;
-			stop = true;
-			break;
-	}
-	if(stop) sc_stop();
-	return stop ? TRUE : FALSE;
-}
-#else
-void SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
-}
-#endif
-
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
@@ -157,38 +107,9 @@ using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Object;
 
-#ifdef DEBUG_VIRTEX5FXT
-class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
-{
-public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 6;
-	static const unsigned int MAX_NUM_MAPPINGS = 6;
-	static const unsigned int BUSWIDTH = 128;
-};
-
-typedef MPLBDebugConfig MPLB_CONFIG;
-#else
-class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router::Config
-{
-public:
-	static const unsigned int INPUT_SOCKETS = 1;
-	static const unsigned int OUTPUT_SOCKETS = 6;
-	static const unsigned int MAX_NUM_MAPPINGS = 6;
-	static const unsigned int BUSWIDTH = 128;
-};
-
-typedef MPLBConfig MPLB_CONFIG;
-#endif
-
-typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
-typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
-typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CONFIG;
-typedef unisim::component::cxx::com::xilinx::xps_gpio::Config GPIO_CONFIG;
-static const unsigned int TIMER_IRQ = 3;
-static const unsigned int UART_LITE_IRQ = 2;
-static const unsigned int GPIO_IRQ = 7;
-
+//=========================================================================
+//===                        Top level class                            ===
+//=========================================================================
 
 class Simulator : public unisim::kernel::service::Simulator
 {
@@ -201,6 +122,103 @@ public:
 	int GetExitStatus() const;
 protected:
 private:
+	//=========================================================================
+	//===                  Template classes configuration                   ===
+	//=========================================================================
+#ifdef DEBUG_VIRTEX5FXT
+	static const bool DEBUG_INFORMATION = true;
+#else
+	static const bool DEBUG_INFORMATION = false;
+#endif
+
+#ifdef WITH_FPU
+#ifdef DEBUG_VIRTEX5FXT
+	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU CPU_CONFIG;
+#else
+	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU CPU_CONFIG;
+#endif
+#else
+#ifdef DEBUG_VIRTEX5FXT
+	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig CPU_CONFIG;
+#else
+	typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
+#endif
+#endif
+
+#ifdef DEBUG_VIRTEX5FXT
+	class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
+	{
+	public:
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 9;
+		static const unsigned int MAX_NUM_MAPPINGS = 9;
+		static const unsigned int BUSWIDTH = 128;
+	};
+
+	typedef MPLBDebugConfig MPLB_CONFIG;
+#else
+	class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router::Config
+	{
+	public:
+		static const unsigned int INPUT_SOCKETS = 1;
+		static const unsigned int OUTPUT_SOCKETS = 9;
+		static const unsigned int MAX_NUM_MAPPINGS = 9;
+		static const unsigned int BUSWIDTH = 128;
+	};
+
+	typedef MPLBConfig MPLB_CONFIG;
+#endif
+
+	typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
+	typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
+	typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CONFIG;
+
+	class GPIO_DIP_SWITCHES_8BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
+	{
+	public:
+		static const unsigned int C_GPIO_WIDTH = 8;          // The width in bits of GPIO Channel 1
+		static const MEMORY_ADDR C_BASEADDR = 0x81460000ULL; // XPS GPIO Base Address default value
+		static const MEMORY_ADDR C_HIGHADDR = 0x8146ffffULL; // XPS GPIO High Address default value
+		
+		// Optional features
+		static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
+	};
+
+	class GPIO_LEDS_8BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
+	{
+	public:
+		static const unsigned int C_GPIO_WIDTH = 8;          // The width in bits of GPIO Channel 1
+		static const MEMORY_ADDR C_BASEADDR = 0x81400000ULL; // XPS GPIO Base Address default value
+		static const MEMORY_ADDR C_HIGHADDR = 0x8140ffffULL; // XPS GPIO High Address default value
+	};
+
+	class GPIO_5_LEDS_POSITIONS_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
+	{
+	public:
+		static const unsigned int C_GPIO_WIDTH = 5;          // The width in bits of GPIO Channel 1
+		static const MEMORY_ADDR C_BASEADDR = 0x81420000ULL; // XPS GPIO Base Address default value
+		static const MEMORY_ADDR C_HIGHADDR = 0x8142ffffULL; // XPS GPIO High Address default value
+	};
+
+	class GPIO_PUSH_BUTTONS_5BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
+	{
+	public:
+		static const unsigned int C_GPIO_WIDTH = 5;          // The width in bits of GPIO Channel 1
+		static const MEMORY_ADDR C_BASEADDR = 0x81440000ULL; // XPS GPIO Base Address default value
+		static const MEMORY_ADDR C_HIGHADDR = 0x8144ffffULL; // XPS GPIO High Address default value
+		
+		// Optional features
+		static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
+	};
+
+	//=========================================================================
+	//===                            IRQ mapping                            ===
+	//=========================================================================
+
+	static const unsigned int TIMER_IRQ = 3;
+	static const unsigned int UART_LITE_IRQ = 2;
+	static const unsigned int GPIO_DIP_SWITCHES_8BIT_IRQ = 7;
+	static const unsigned int GPIO_PUSH_BUTTONS_5BIT_IRQ = 8;
 
 	//=========================================================================
 	//===                       Constants definitions                       ===
@@ -228,7 +246,14 @@ private:
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
 	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<UART_LITE_CONFIG> UART_LITE;
-	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_CONFIG> GPIO;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_DIP_SWITCHES_8BIT_CONFIG> GPIO_DIP_SWITCHES_8BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_LEDS_8BIT_CONFIG> GPIO_LEDS_8BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_5_LEDS_POSITIONS_CONFIG> GPIO_5_LEDS_POSITIONS;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_PUSH_BUTTONS_5BIT_CONFIG> GPIO_PUSH_BUTTONS_5BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_Switches<8> DIP_SWITCHES_8BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<8> LEDS_8BIT;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<5> _5_LEDS_POSITIONS;
+	typedef unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_Switches<5> PUSH_BUTTONS_5BIT;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::PWMProtocolTypes> PWM_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::timer::xilinx::xps_timer::GenerateOutProtocolTypes> GENERATE_OUT_STUB;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::CaptureTriggerStub CAPTURE_TRIGGER_STUB;
@@ -247,7 +272,7 @@ private:
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_INPUT_STUB;
 
 	//=========================================================================
-	//===                     Component instantiations                      ===
+	//===                           Components                              ===
 	//=========================================================================
 	//  - PowerPC processor
 	CPU *cpu;
@@ -282,8 +307,22 @@ private:
 	CROSSBAR *crossbar;
 	// - UART Lite
 	UART_LITE *uart_lite;
-	// - GPIO
-	GPIO *gpio;
+	// - GPIO DIP switches 8 Bit
+	GPIO_DIP_SWITCHES_8BIT *gpio_dip_switches_8bit;
+	// - GPIO LEDs 8 Bit
+	GPIO_LEDS_8BIT *gpio_leds_8bit;
+	// - GPIO 5 LEDs Positions
+	GPIO_5_LEDS_POSITIONS *gpio_5_leds_positions;
+	// - GPIO Push Buttons 5 bit
+	GPIO_PUSH_BUTTONS_5BIT *gpio_push_buttons_5bit;
+	// - DIP Switches 8 bit
+	DIP_SWITCHES_8BIT *dip_switches_8bit;
+	// - LEDs 8 bit
+	LEDS_8BIT *leds_8bit;
+	// - 5 LEDs Positions
+	_5_LEDS_POSITIONS *_5_leds_positions;
+	// - Push buttons 5 bit
+	PUSH_BUTTONS_5BIT *push_buttons_5bit;
 	// - DCR stubs
 	MASTER1_DCR_STUB *master1_dcr_stub;
 	APU_DCR_STUB *apu_dcr_stub;
@@ -293,13 +332,9 @@ private:
 	DMAC2_DCR_STUB *dmac2_dcr_stub;
 	DMAC3_DCR_STUB *dmac3_dcr_stub;
 	EXTERNAL_SLAVE_DCR_STUB *external_slave_dcr_stub;
-	GPIO_INPUT_STUB *gpio_input_stub[GPIO_CONFIG::C_GPIO_WIDTH];
-	GPIO_INPUT_STUB *gpio2_input_stub[GPIO_CONFIG::C_GPIO2_WIDTH];
-	GPIO_OUTPUT_STUB *gpio_output_stub[GPIO_CONFIG::C_GPIO_WIDTH];
-	GPIO_OUTPUT_STUB *gpio2_output_stub[GPIO_CONFIG::C_GPIO2_WIDTH];
 	
 	//=========================================================================
-	//===                         Service instantiations                    ===
+	//===                            Services                               ===
 	//=========================================================================
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
@@ -335,9 +370,12 @@ private:
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+#ifdef WIN32
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+	static void SigIntHandler(int signum);
+#endif
 };
-
-
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
@@ -355,7 +393,14 @@ Simulator::Simulator(int argc, char **argv)
 	, dcr_controller(0)
 	, crossbar(0)
 	, uart_lite(0)
-	, gpio(0)
+	, gpio_dip_switches_8bit(0)
+	, gpio_leds_8bit(0)
+	, gpio_5_leds_positions(0)
+	, gpio_push_buttons_5bit(0)
+	, dip_switches_8bit(0)
+	, leds_8bit(0)
+	, _5_leds_positions(0)
+	, push_buttons_5bit(0)
 	, master1_dcr_stub(0)
 	, apu_dcr_stub(0)
 	, mci_dcr_stub(0)
@@ -408,7 +453,8 @@ Simulator::Simulator(int argc, char **argv)
 		{
 			case TIMER_IRQ:
 			case UART_LITE_IRQ:
-			case GPIO_IRQ:
+			case GPIO_DIP_SWITCHES_8BIT_IRQ:
+			case GPIO_PUSH_BUTTONS_5BIT_IRQ:
 				input_interrupt_stub[irq] = 0;
 				break;
 			default:
@@ -455,8 +501,22 @@ Simulator::Simulator(int argc, char **argv)
 	crossbar = new CROSSBAR("crossbar");
 	// - UART Lite
 	uart_lite = new UART_LITE("uart-lite");
-	// - GPIO
-	gpio = new GPIO("gpio");
+	// - GPIO DIP switches 8 Bit
+	gpio_dip_switches_8bit = new GPIO_DIP_SWITCHES_8BIT("gpio-dip-switches-8bit");
+	// - GPIO LEDs 8 Bit
+	gpio_leds_8bit = new GPIO_LEDS_8BIT("");
+	// - GPIO 5 LEDs Positions
+	gpio_5_leds_positions = new GPIO_5_LEDS_POSITIONS("gpio-5-leds-positions");
+	// - GPIO Push Buttons 5 bit
+	gpio_push_buttons_5bit = new GPIO_PUSH_BUTTONS_5BIT("gpio-push-buttons-5bit");
+	// - DIP Switches 8 bit
+	dip_switches_8bit = new DIP_SWITCHES_8BIT("dip-switches-8bit");
+	// - LEDs 8 bit
+	leds_8bit = new LEDS_8BIT("leds-8bit");
+	// - 5 LEDs Positions
+	_5_leds_positions = new _5_LEDS_POSITIONS("5-leds-positions");
+	// - Push buttons 5 bit
+	push_buttons_5bit = new PUSH_BUTTONS_5BIT("push-buttons-5bit");
 	// - DCR stubs
 	master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub");
 	apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub");
@@ -466,32 +526,6 @@ Simulator::Simulator(int argc, char **argv)
 	dmac2_dcr_stub = new DMAC2_DCR_STUB("dma2-dcr-stub");
 	dmac3_dcr_stub = new DMAC3_DCR_STUB("dma3-dcr-stub");
 	external_slave_dcr_stub = new EXTERNAL_SLAVE_DCR_STUB("external-slave-dcr-stub");
-	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		std::stringstream gpio_input_stub_name_sstr;
-		gpio_input_stub_name_sstr << "gpio-input-stub" << i;
-		gpio_input_stub[i] = new GPIO_INPUT_STUB(gpio_input_stub_name_sstr.str().c_str());
-	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
-	{
-		std::stringstream gpio2_input_stub_name_sstr;
-		gpio2_input_stub_name_sstr << "gpio2-input-stub" << i;
-		gpio2_input_stub[i] = new GPIO_INPUT_STUB(gpio2_input_stub_name_sstr.str().c_str());
-	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		
-		std::stringstream gpio_output_stub_name_sstr;
-		gpio_output_stub_name_sstr << "gpio-output-stub" << i;
-		gpio_output_stub[i] = new GPIO_OUTPUT_STUB(gpio_output_stub_name_sstr.str().c_str());
-	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
-	{
-		
-		std::stringstream gpio2_output_stub_name_sstr;
-		gpio2_output_stub_name_sstr << "gpio2-output-stub" << i;
-		gpio2_output_stub[i] = new GPIO_OUTPUT_STUB(gpio2_output_stub_name_sstr.str().c_str());
-	}
 
 	//=========================================================================
 	//===                         Service instantiations                    ===
@@ -552,7 +586,10 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->init_socket[2])(flash->slave_sock);     // MPLB <-> FLASH
 	(*mplb->init_socket[3])(bram->slave_sock);      // MPLB <-> BRAM
 	(*mplb->init_socket[4])(uart_lite->slave_sock); // MPLB <-> UART Lite
-	(*mplb->init_socket[5])(gpio->slave_sock);      // MPLB <-> GPIO
+	(*mplb->init_socket[5])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
+	(*mplb->init_socket[6])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
+	(*mplb->init_socket[7])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
+	(*mplb->init_socket[8])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
 	
 	for(irq = 0; irq < INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
@@ -564,8 +601,11 @@ Simulator::Simulator(int argc, char **argv)
 			case UART_LITE_IRQ:
 				uart_lite->interrupt_master_sock(*intc->irq_slave_sock[irq]); // UART Lite>IRQ <-> INTR<INTC
 				break;
-			case GPIO_IRQ:
-				gpio->interrupt_master_sock(*intc->irq_slave_sock[irq]); // GPIO>IRQ <-> INTR<INTC
+			case GPIO_DIP_SWITCHES_8BIT_IRQ:
+				gpio_dip_switches_8bit->interrupt_master_sock(*intc->irq_slave_sock[irq]); // GPIO DIP SWITCHES 8BIT>IRQ <-> INTR<INTC
+				break;
+			case GPIO_PUSH_BUTTONS_5BIT_IRQ:
+				gpio_push_buttons_5bit->interrupt_master_sock(*intc->irq_slave_sock[irq]); // GPIO PUSH BUTTONS 5BIT>IRQ <-> INTR<INTC
 				break;
 			default:
 				(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
@@ -583,15 +623,22 @@ Simulator::Simulator(int argc, char **argv)
 	timer->pwm_master_sock(pwm_stub->slave_sock); // TIMER <-> PWM stub
 	intc->irq_master_sock(cpu->external_input_interrupt_slave_sock); // INTC>IRQ <-> External Input<CPU
 	critical_input_interrupt_stub->master_sock(cpu->critical_input_interrupt_slave_sock); // IRQ Stub <-> CPU
-	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
+	
+	for(i = 0; i < GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH; i++)
 	{
-		gpio_input_stub[i]->master_sock(*gpio->gpio_slave_sock[i]); // GPIO input Stub <-> GPIO
-		(*gpio->gpio_master_sock[i])(gpio_output_stub[i]->slave_sock); // GPIO <-> GPIO output Stub
+		(*dip_switches_8bit->gpio_master_sock[i])(*gpio_dip_switches_8bit->gpio_slave_sock[i]);
 	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
+	for(i = 0; i < GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH; i++)
 	{
-		gpio2_input_stub[i]->master_sock(*gpio->gpio2_slave_sock[i]); // GPIO input Stub <-> GPIO
-		(*gpio->gpio2_master_sock[i])(gpio2_output_stub[i]->slave_sock); // GPIO <-> GPIO output Stub
+		(*gpio_leds_8bit->gpio_master_sock[i])(*leds_8bit->gpio_slave_sock[i]);
+	}
+	for(i = 0; i < GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		(*gpio_5_leds_positions->gpio_master_sock[i])(*_5_leds_positions->gpio_slave_sock[i]);
+	}
+	for(i = 0; i < GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH; i++)
+	{
+		(*push_buttons_5bit->gpio_master_sock[i])(*gpio_push_buttons_5bit->gpio_slave_sock[i]);
 	}
 
 	//=========================================================================
@@ -607,7 +654,10 @@ Simulator::Simulator(int argc, char **argv)
 	(*mplb->memory_import[2]) >> flash->memory_export;
 	(*mplb->memory_import[3]) >> bram->memory_export;
 	(*mplb->memory_import[4]) >> uart_lite->memory_export;
-	(*mplb->memory_import[5]) >> gpio->memory_export;
+	(*mplb->memory_import[5]) >> gpio_dip_switches_8bit->memory_export;
+	(*mplb->memory_import[6]) >> gpio_leds_8bit->memory_export;
+	(*mplb->memory_import[7]) >> gpio_5_leds_positions->memory_export;
+	(*mplb->memory_import[8]) >> gpio_push_buttons_5bit->memory_export;
 	cpu->loader_import >> loader->loader_export;
 	
 	if(enable_inline_debugger)
@@ -676,7 +726,6 @@ Simulator::~Simulator()
 {
 	unsigned int irq;
 	unsigned int channel;
-	unsigned int i;
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
 	if(ram) delete ram;
 	if(bram) delete bram;
@@ -691,7 +740,14 @@ Simulator::~Simulator()
 	if(flash) delete flash;
 	if(crossbar) delete crossbar;
 	if(uart_lite) delete uart_lite;
-	if(gpio) delete gpio;
+	if(gpio_dip_switches_8bit) delete gpio_dip_switches_8bit;
+	if(gpio_leds_8bit) delete gpio_leds_8bit;
+	if(gpio_5_leds_positions) delete gpio_5_leds_positions;
+	if(gpio_push_buttons_5bit) delete gpio_push_buttons_5bit;
+	if(dip_switches_8bit) delete dip_switches_8bit;
+	if(leds_8bit) delete leds_8bit;
+	if(_5_leds_positions) delete _5_leds_positions;
+	if(push_buttons_5bit) delete push_buttons_5bit;
 	if(master1_dcr_stub) delete master1_dcr_stub;
 	if(apu_dcr_stub) delete apu_dcr_stub;
 	if(mci_dcr_stub) delete mci_dcr_stub;
@@ -714,22 +770,6 @@ Simulator::~Simulator()
 		if(generate_out_stub[channel]) delete generate_out_stub[channel];
 	}
 	if(pwm_stub) delete pwm_stub;
-	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		if(gpio_input_stub[i]) delete gpio_input_stub[i];
-	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
-	{
-		if(gpio2_input_stub[i]) delete gpio2_input_stub[i];
-	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO_WIDTH; i++)
-	{
-		if(gpio_output_stub[i]) delete gpio_output_stub[i];
-	}
-	for(i = 0; i < GPIO_CONFIG::C_GPIO2_WIDTH; i++)
-	{
-		if(gpio2_output_stub[i]) delete gpio2_output_stub[i];
-	}
 	if(dcr_controller) delete dcr_controller;
 	if(il1_power_estimator) delete il1_power_estimator;
 	if(dl1_power_estimator) delete dl1_power_estimator;
@@ -796,7 +836,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xfffc0000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfffc0000\""); // 256 KB XPS BRAM
 	simulator->SetVariable("mplb.mapping_4", "range_start=\"0x84000000\" range_end=\"0x8400ffff\" output_port=\"4\" translation=\"0x84000000\""); // XPS UART Lite
-	simulator->SetVariable("mplb.mapping_5", "range_start=\"0x81460000\" range_end=\"0x8146ffff\" output_port=\"5\" translation=\"0x81460000\""); // XPS GPIO
+	simulator->SetVariable("mplb.mapping_5", "range_start=\"0x81460000\" range_end=\"0x8146ffff\" output_port=\"5\" translation=\"0x81460000\""); // GPIO DIP SWITCHES 8BIT
+	simulator->SetVariable("mplb.mapping_6", "range_start=\"0x81400000\" range_end=\"0x8140ffff\" output_port=\"6\" translation=\"0x81400000\""); // GPIO LEDS 8BIT
+	simulator->SetVariable("mplb.mapping_7", "range_start=\"0x81420000\" range_end=\"0x8142ffff\" output_port=\"7\" translation=\"0x81420000\""); // GPIO 5 LEDS POSITIONS
+	simulator->SetVariable("mplb.mapping_8", "range_start=\"0x81440000\" range_end=\"0x8144ffff\" output_port=\"8\" translation=\"0x81440000\""); // GPIO PUSH BUTTONS 5BIT
 	
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,bram-effective-to-physical-address-translator:0xfffc0000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
@@ -927,9 +970,9 @@ void Simulator::Run()
 	if(!inline_debugger)
 	{
 #ifdef WIN32
-		SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
+		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
 #else
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
 #endif
 	}
 
@@ -946,7 +989,7 @@ void Simulator::Run()
 	if(!inline_debugger)
 	{
 #ifdef WIN32
-		SetConsoleCtrlHandler(ConsoleCtrlHandler, FALSE);
+		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, FALSE);
 #else
 		signal(SIGINT, prev_sig_int_handler);
 #endif
@@ -1021,6 +1064,44 @@ int Simulator::GetExitStatus() const
 {
 	return exit_status;
 }
+
+#ifdef WIN32
+BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool stop = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			cerr << "Interrupted by Ctrl-C" << endl;
+			stop = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			cerr << "Interrupted by Ctrl-Break" << endl;
+			stop = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			cerr << "Interrupted by a console close" << endl;
+			stop = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			cerr << "Interrupted because of logoff" << endl;
+			stop = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			cerr << "Interrupted because of shutdown" << endl;
+			stop = true;
+			break;
+	}
+	if(stop) sc_stop();
+	return stop ? TRUE : FALSE;
+}
+#else
+void Simulator::SigIntHandler(int signum)
+{
+	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	sc_stop();
+}
+#endif
 
 int sc_main(int argc, char *argv[])
 {

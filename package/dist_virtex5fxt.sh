@@ -191,7 +191,7 @@ unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
-unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.cc \
+unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.cc
 "
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
@@ -293,6 +293,8 @@ unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/char_io.hh \
+unisim/service/interfaces/keyboard.hh \
+unisim/service/interfaces/led_board.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
@@ -357,6 +359,8 @@ unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh \
 unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
 unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.hh \
 "
 
 UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES="\
@@ -432,6 +436,8 @@ unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc \
 unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
 unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.tcc \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.tcc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_M4_FILES="\

@@ -378,7 +378,7 @@ template <class CONFIG>
 uint32_t XPS_GPIO<CONFIG>::GetGPIO_DATA() const
 {
 	return ((gpio_data_in[(read_idx >> GPIO_DATA_IDX_SHIFT) & 1] & gpio_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1]) |
-	       (gpio_data[(read_idx >> GPIO_DATA_IDX_SHIFT) & 1] & ~gpio_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1])) & CONFIG::GPIO_MASK;
+	       (gpio_data[(read_idx >> GPIO_DATA_IDX_SHIFT) & 1] & ~gpio_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1])) & GPIO_MASK;
 }
 
 template <class CONFIG>
@@ -391,13 +391,13 @@ template <class CONFIG>
 uint32_t XPS_GPIO<CONFIG>::GetGPIO2_DATA() const
 {
 	return ((gpio2_data_in[(read_idx >> GPIO2_DATA_IN_IDX_SHIFT) & 1] & gpio2_tri[(read_idx >> GPIO2_TRI_IDX_SHIFT) & 1]) |
-	       (gpio2_data[(read_idx >> GPIO2_DATA_IN_IDX_SHIFT) & 1] & ~gpio2_tri[(read_idx >> GPIO2_TRI_IDX_SHIFT) & 1])) & CONFIG::GPIO_MASK;
+	       (gpio2_data[(read_idx >> GPIO2_DATA_IN_IDX_SHIFT) & 1] & ~gpio2_tri[(read_idx >> GPIO2_TRI_IDX_SHIFT) & 1])) & GPIO_MASK;
 }
 
 template <class CONFIG>
 uint32_t XPS_GPIO<CONFIG>::GetGPIO2_TRI() const
 {
-	return gpio2_tri[(read_idx >> GPIO2_TRI_IDX_SHIFT) & 1] & CONFIG::GPIO_MASK;
+	return gpio2_tri[(read_idx >> GPIO2_TRI_IDX_SHIFT) & 1] & GPIO_MASK;
 }
 
 template <class CONFIG>
@@ -428,14 +428,14 @@ template <class CONFIG>
 void XPS_GPIO<CONFIG>::SetGPIO_DATA_IN(uint32_t value)
 {
 	gpio_data_in[(write_idx >> GPIO_DATA_IN_IDX_SHIFT) & 1] =
-		(gpio_data_in[(read_idx >> GPIO_DATA_IN_IDX_SHIFT) & 1] & ~CONFIG::GPIO_MASK) |
-		(value & CONFIG::GPIO_MASK);
+		(gpio_data_in[(read_idx >> GPIO_DATA_IN_IDX_SHIFT) & 1] & ~GPIO_MASK) |
+		(value & GPIO_MASK);
 }
 
 template <class CONFIG>
 void XPS_GPIO<CONFIG>::SetGPIO_DATA(uint32_t value)
 {
-	gpio_data[(write_idx >> GPIO_DATA_IDX_SHIFT) & 1] = (gpio_data[(read_idx >> GPIO_DATA_IDX_SHIFT) & 1] & ~CONFIG::GPIO_MASK) | (value & CONFIG::GPIO_MASK);
+	gpio_data[(write_idx >> GPIO_DATA_IDX_SHIFT) & 1] = (gpio_data[(read_idx >> GPIO_DATA_IDX_SHIFT) & 1] & ~GPIO_MASK) | (value & GPIO_MASK);
 	toggle |= (1 << GPIO_DATA_IDX_SHIFT);
 }
 
@@ -450,14 +450,14 @@ void XPS_GPIO<CONFIG>::SetGPIO_DATA(unsigned int bitnum, bool value)
 template <class CONFIG>
 void XPS_GPIO<CONFIG>::SetGPIO_TRI(uint32_t value)
 {
-	gpio_tri[(write_idx >> GPIO_TRI_IDX_SHIFT) & 1] = (gpio_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1] & ~CONFIG::GPIO_MASK) | (value & CONFIG::GPIO_MASK);
+	gpio_tri[(write_idx >> GPIO_TRI_IDX_SHIFT) & 1] = (gpio_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1] & ~GPIO_MASK) | (value & GPIO_MASK);
 	toggle |= (1 << GPIO_TRI_IDX_SHIFT);
 }
 
 template <class CONFIG>
 void XPS_GPIO<CONFIG>::SetGPIO2_DATA(uint32_t value)
 {
-	gpio2_data[(write_idx >> GPIO2_DATA_IDX_SHIFT) & 1] = (gpio2_data[(read_idx >> GPIO2_DATA_IDX_SHIFT) & 1] & ~CONFIG::GPIO2_MASK) | (value & CONFIG::GPIO2_MASK);
+	gpio2_data[(write_idx >> GPIO2_DATA_IDX_SHIFT) & 1] = (gpio2_data[(read_idx >> GPIO2_DATA_IDX_SHIFT) & 1] & ~GPIO2_MASK) | (value & GPIO2_MASK);
 	toggle |= (1 << GPIO2_DATA_IDX_SHIFT);
 }
 
@@ -472,7 +472,7 @@ void XPS_GPIO<CONFIG>::SetGPIO2_DATA(unsigned int bitnum, bool value)
 template <class CONFIG>
 void XPS_GPIO<CONFIG>::SetGPIO2_TRI(uint32_t value)
 {
-	gpio2_tri[(write_idx >> GPIO2_TRI_IDX_SHIFT) & 1] = (gpio2_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1] & ~CONFIG::GPIO2_MASK) | (value & CONFIG::GPIO2_MASK);
+	gpio2_tri[(write_idx >> GPIO2_TRI_IDX_SHIFT) & 1] = (gpio2_tri[(read_idx >> GPIO_TRI_IDX_SHIFT) & 1] & ~GPIO2_MASK) | (value & GPIO2_MASK);
 	toggle |= (1 << GPIO2_TRI_IDX_SHIFT);
 }
 
