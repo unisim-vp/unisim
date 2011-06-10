@@ -66,8 +66,10 @@ public:
 	static const bool threaded_model = false;
 	
 	typedef tlm::tlm_target_socket<0, GPIOProtocolTypes> gpio_slave_socket;
+	typedef tlm::tlm_initiator_socket<0, GPIOProtocolTypes> gpio_master_socket;
 	
 	gpio_slave_socket *gpio_slave_sock[NUM_LEDS];
+	gpio_master_socket *gpio_master_sock[NUM_LEDS];
 	
 	ServiceImport<LED_Board> led_board_import;
 
@@ -81,6 +83,10 @@ public:
 	tlm::tlm_sync_enum gpio_nb_transport_fw(unsigned int pin, GPIOPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	unsigned int gpio_transport_dbg(unsigned int pin, GPIOPayload& payload);
 	bool gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload& payload, tlm::tlm_dmi& dmi_data);
+
+	// Backward nb_transport callbacks for GPIO
+	tlm::tlm_sync_enum gpio_nb_transport_bw(unsigned int pin, GPIOPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	void gpio_invalidate_direct_mem_ptr(unsigned int pin, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	void Process();
 	
@@ -220,19 +226,12 @@ private:
 		bool gpio_pin_value;
 	};
 
-
-	sc_time process_local_time_offset;
-	/** Cycle time */
-	sc_time cycle_time;
-	
 	sc_time time_stamp;
 	
 	bool led_status[NUM_LEDS];
 
-	/** The parameter for the cycle time */
-	Parameter<sc_time> param_cycle_time;
-
 	unisim::kernel::tlm2::FwRedirector<GPIO_LEDs<NUM_LEDS>, GPIOProtocolTypes> *gpio_fw_redirector[NUM_LEDS];
+	unisim::kernel::tlm2::BwRedirector<GPIO_LEDs<NUM_LEDS>, GPIOProtocolTypes> *gpio_bw_redirector[NUM_LEDS];
 	unisim::kernel::tlm2::BwRedirector<GPIO_LEDs<NUM_LEDS>, InterruptProtocolTypes> *interrupt_bw_redirector;
 
 	Schedule<Event> schedule;

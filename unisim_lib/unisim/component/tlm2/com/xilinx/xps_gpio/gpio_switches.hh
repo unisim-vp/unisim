@@ -69,7 +69,11 @@ public:
 	static const bool threaded_model = false;
 	
 	typedef tlm::tlm_initiator_socket<0, GPIOProtocolTypes> gpio_master_socket;
+	typedef tlm::tlm_target_socket<0, GPIOProtocolTypes> gpio_slave_socket;
 	
+	// GPIO input
+	gpio_slave_socket *gpio_slave_sock[NUM_SWITCHES];
+
 	// GPIO output
 	gpio_master_socket *gpio_master_sock[NUM_SWITCHES];
 	
@@ -81,6 +85,12 @@ public:
 	
 	virtual bool BeginSetup();
 	
+	// Forward b_transport/nb_transport callbacks for GPIO
+	void gpio_b_transport(unsigned int pin, GPIOPayload& trans, sc_core::sc_time& t);
+	tlm::tlm_sync_enum gpio_nb_transport_fw(unsigned int pin, GPIOPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	unsigned int gpio_transport_dbg(unsigned int pin, GPIOPayload& payload);
+	bool gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload& payload, tlm::tlm_dmi& dmi_data);
+
 	// Backward nb_transport callbacks for GPIO
 	tlm::tlm_sync_enum gpio_nb_transport_bw(unsigned int pin, GPIOPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	void gpio_invalidate_direct_mem_ptr(unsigned int pin, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
@@ -93,20 +103,12 @@ protected:
 	
 	Parameter<bool> param_verbose;
 private:
-	void AlignToClock(sc_time& t);
-	
-	sc_time process_local_time_offset;
-	/** Cycle time */
-	sc_time cycle_time;
-	
-	sc_time time_stamp;
-	
 	sc_time polling_period;
 
 	/** The parameter for the cycle time */
-	Parameter<sc_time> param_cycle_time;
 	Parameter<sc_time> param_polling_period;
 
+	unisim::kernel::tlm2::FwRedirector<GPIO_Switches<NUM_SWITCHES>, GPIOProtocolTypes> *gpio_fw_redirector[NUM_SWITCHES];
 	unisim::kernel::tlm2::BwRedirector<GPIO_Switches<NUM_SWITCHES>, GPIOProtocolTypes> *gpio_bw_redirector[NUM_SWITCHES];
 
 	PayloadFabric<GPIOPayload> gpio_payload_fabric;

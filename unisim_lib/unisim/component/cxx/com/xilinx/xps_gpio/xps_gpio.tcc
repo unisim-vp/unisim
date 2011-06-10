@@ -97,10 +97,10 @@ XPS_GPIO<CONFIG>::XPS_GPIO(const char *name, Object *parent)
 	sstr_description << "Use dual channel: " << (CONFIG::C_IS_DUAL ? "yes" : "no") << std::endl;
 	sstr_description << "GPIO Channel 1 width: " << CONFIG::C_GPIO_WIDTH << " bits" << std::endl;
 	if(CONFIG::C_IS_DUAL) sstr_description << "GPIO Channel 2 width: " << CONFIG::C_GPIO2_WIDTH << " bits" << std::endl;
-	sstr_description << "GPIO_DATA reset value: " << std::hex << CONFIG::C_DOUT_DEFAULT << std::dec << std::endl;
-	sstr_description << "GPIO_TRI reset value: " << std::hex << CONFIG::C_TRI_DEFAULT << std::dec << std::endl;
-	if(CONFIG::C_IS_DUAL) sstr_description << "GPIO2_DATA reset value: " << std::hex << CONFIG::C_DOUT_DEFAULT_2 << std::dec << std::endl;
-	if(CONFIG::C_IS_DUAL) sstr_description << "GPIO2_TRI reset value: " << std::hex << CONFIG::C_TRI_DEFAULT_2 << std::dec << std::endl;
+	sstr_description << "GPIO_DATA reset value: 0x" << std::hex << CONFIG::C_DOUT_DEFAULT << std::dec << std::endl;
+	sstr_description << "GPIO_TRI reset value: 0x" << std::hex << CONFIG::C_TRI_DEFAULT << std::dec << std::endl;
+	if(CONFIG::C_IS_DUAL) sstr_description << "GPIO2_DATA reset value: 0x" << std::hex << CONFIG::C_DOUT_DEFAULT_2 << std::dec << std::endl;
+	if(CONFIG::C_IS_DUAL) sstr_description << "GPIO2_TRI reset value: 0x" << std::hex << CONFIG::C_TRI_DEFAULT_2 << std::dec << std::endl;
 	
 	Object::SetDescription(sstr_description.str().c_str());
 }

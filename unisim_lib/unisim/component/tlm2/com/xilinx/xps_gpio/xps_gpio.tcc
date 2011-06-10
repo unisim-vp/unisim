@@ -58,7 +58,6 @@ XPS_GPIO<CONFIG>::XPS_GPIO(const sc_module_name& name, Object *parent)
 	, sc_module(name)
 	, unisim::component::cxx::com::xilinx::xps_gpio::XPS_GPIO<CONFIG>(name, parent)
 	, slave_sock("slave-sock")
-	, interrupt_master_sock("interrupt-master-sock")
 	, cycle_time()
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
@@ -142,15 +141,21 @@ XPS_GPIO<CONFIG>::XPS_GPIO(const sc_module_name& name, Object *parent)
 		
 		(*gpio2_master_sock[i])(*gpio2_bw_redirector[i]);
 	}
+	
+	if(CONFIG::C_INTERRUPT_IS_PRESENT)
+	{
+		interrupt_master_sock = new interrupt_master_socket("interrupt-master-sock");
 
-	interrupt_bw_redirector = 
-		new unisim::kernel::tlm2::BwRedirector<XPS_GPIO<CONFIG>, InterruptProtocolTypes>(
-			0,
-			this,
-			&XPS_GPIO<CONFIG>::interrupt_nb_transport_bw,
-			&XPS_GPIO<CONFIG>::interrupt_invalidate_direct_mem_ptr
-		);
-	interrupt_master_sock(*interrupt_bw_redirector);
+		interrupt_bw_redirector = 
+			new unisim::kernel::tlm2::BwRedirector<XPS_GPIO<CONFIG>, InterruptProtocolTypes>(
+				0,
+				this,
+				&XPS_GPIO<CONFIG>::interrupt_nb_transport_bw,
+				&XPS_GPIO<CONFIG>::interrupt_invalidate_direct_mem_ptr
+			);
+
+		(*interrupt_master_sock)(*interrupt_bw_redirector);
+	}
 	
 	SC_HAS_PROCESS(XPS_GPIO);
 
@@ -181,6 +186,11 @@ XPS_GPIO<CONFIG>::~XPS_GPIO()
 		delete gpio2_master_sock[i];
 		delete gpio2_fw_redirector[i];
 		delete gpio2_bw_redirector[i];
+	}
+	if(CONFIG::C_INTERRUPT_IS_PRESENT)
+	{
+		delete interrupt_master_sock;
+		delete interrupt_bw_redirector;
 	}
 }
 
@@ -743,25 +753,28 @@ void XPS_GPIO<CONFIG>::GenerateOutput()
 		gpio_output_data[channel] = (gpio_output_data[channel] & ~tri) | (data & tri);
 	}
 	
-	bool level = inherited::GetGIER_GLOBAL_INTERRUPT_ENABLE() && ((inherited::GetIP_ISR() & inherited::GetIP_IER()) != 0);
-	if(interrupt_output != level)
+	if(CONFIG::C_INTERRUPT_IS_PRESENT)
 	{
-		if(inherited::IsVerbose())
+		bool level = inherited::GetGIER_GLOBAL_INTERRUPT_ENABLE() && ((inherited::GetIP_ISR() & inherited::GetIP_IER()) != 0);
+		if(interrupt_output != level)
 		{
-			inherited::logger << DebugInfo << time_stamp << ": Interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
-		}
-		
-		InterruptPayload *interrupt_payload = interrupt_payload_fabric.allocate();
+			if(inherited::IsVerbose())
+			{
+				inherited::logger << DebugInfo << time_stamp << ": Interrupt signal goes " << (level ? "high" : "low") << EndDebugInfo;
+			}
+			
+			InterruptPayload *interrupt_payload = interrupt_payload_fabric.allocate();
 
-		interrupt_payload->SetValue(level);
-		
-		sc_time t(SC_ZERO_TIME);
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
-		
-		interrupt_payload->release();
-		
-		interrupt_output = level;
+			interrupt_payload->SetValue(level);
+			
+			sc_time t(SC_ZERO_TIME);
+			tlm::tlm_phase phase = tlm::BEGIN_REQ;
+			(*interrupt_master_sock)->nb_transport_fw(*interrupt_payload, phase, t);
+			
+			interrupt_payload->release();
+			
+			interrupt_output = level;
+		}
 	}
 }
 

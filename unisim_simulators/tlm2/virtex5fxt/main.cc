@@ -504,7 +504,7 @@ Simulator::Simulator(int argc, char **argv)
 	// - GPIO DIP switches 8 Bit
 	gpio_dip_switches_8bit = new GPIO_DIP_SWITCHES_8BIT("gpio-dip-switches-8bit");
 	// - GPIO LEDs 8 Bit
-	gpio_leds_8bit = new GPIO_LEDS_8BIT("");
+	gpio_leds_8bit = new GPIO_LEDS_8BIT("gpio-leds-8bit");
 	// - GPIO 5 LEDs Positions
 	gpio_5_leds_positions = new GPIO_5_LEDS_POSITIONS("gpio-5-leds-positions");
 	// - GPIO Push Buttons 5 bit
@@ -602,10 +602,10 @@ Simulator::Simulator(int argc, char **argv)
 				uart_lite->interrupt_master_sock(*intc->irq_slave_sock[irq]); // UART Lite>IRQ <-> INTR<INTC
 				break;
 			case GPIO_DIP_SWITCHES_8BIT_IRQ:
-				gpio_dip_switches_8bit->interrupt_master_sock(*intc->irq_slave_sock[irq]); // GPIO DIP SWITCHES 8BIT>IRQ <-> INTR<INTC
+				(*gpio_dip_switches_8bit->interrupt_master_sock)(*intc->irq_slave_sock[irq]); // GPIO DIP SWITCHES 8BIT>IRQ <-> INTR<INTC
 				break;
 			case GPIO_PUSH_BUTTONS_5BIT_IRQ:
-				gpio_push_buttons_5bit->interrupt_master_sock(*intc->irq_slave_sock[irq]); // GPIO PUSH BUTTONS 5BIT>IRQ <-> INTR<INTC
+				(*gpio_push_buttons_5bit->interrupt_master_sock)(*intc->irq_slave_sock[irq]); // GPIO PUSH BUTTONS 5BIT>IRQ <-> INTR<INTC
 				break;
 			default:
 				(input_interrupt_stub[irq]->master_sock)(*intc->irq_slave_sock[irq]); // IRQ stub>IRQ <-> INTR<INTC
@@ -627,18 +627,22 @@ Simulator::Simulator(int argc, char **argv)
 	for(i = 0; i < GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH; i++)
 	{
 		(*dip_switches_8bit->gpio_master_sock[i])(*gpio_dip_switches_8bit->gpio_slave_sock[i]);
+		(*gpio_dip_switches_8bit->gpio_master_sock[i])(*dip_switches_8bit->gpio_slave_sock[i]);
 	}
 	for(i = 0; i < GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH; i++)
 	{
 		(*gpio_leds_8bit->gpio_master_sock[i])(*leds_8bit->gpio_slave_sock[i]);
+		(*leds_8bit->gpio_master_sock[i])(*gpio_leds_8bit->gpio_slave_sock[i]);
 	}
 	for(i = 0; i < GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH; i++)
 	{
 		(*gpio_5_leds_positions->gpio_master_sock[i])(*_5_leds_positions->gpio_slave_sock[i]);
+		(*_5_leds_positions->gpio_master_sock[i])(*gpio_5_leds_positions->gpio_slave_sock[i]);
 	}
 	for(i = 0; i < GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH; i++)
 	{
 		(*push_buttons_5bit->gpio_master_sock[i])(*gpio_push_buttons_5bit->gpio_slave_sock[i]);
+		(*gpio_push_buttons_5bit->gpio_master_sock[i])(*push_buttons_5bit->gpio_slave_sock[i]);
 	}
 
 	//=========================================================================
@@ -867,8 +871,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	//  - UART Lite
 	simulator->SetVariable("uart-lite.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
-	//  - GPIO
-	simulator->SetVariable("gpio.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	//  - GPIOs
+	simulator->SetVariable("gpio-dip-switches-8bit.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("gpio-leds-8bit.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("gpio-5-leds-positions.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+	simulator->SetVariable("gpio-push-buttons-5bit.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - Flash
 	simulator->SetVariable("flash.org", 0xfc000000UL);

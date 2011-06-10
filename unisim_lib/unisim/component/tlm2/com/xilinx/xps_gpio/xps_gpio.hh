@@ -89,7 +89,7 @@ public:
 	gpio_master_socket *gpio2_master_sock[CONFIG::C_GPIO2_WIDTH];
 
 	// Interrupt
-	interrupt_master_socket interrupt_master_sock;
+	interrupt_master_socket *interrupt_master_sock;
 
 	XPS_GPIO(const sc_module_name& name, Object *parent = 0);
 	virtual ~XPS_GPIO();

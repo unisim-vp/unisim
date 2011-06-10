@@ -58,12 +58,15 @@ GPIO_Switches<NUM_SWITCHES>::GPIO_Switches(const sc_module_name& name, Object *p
 	, logger(*this)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-	, cycle_time()
 	, polling_period(10, SC_MS)
-	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_polling_period("polling-period", this, polling_period, "Polling period of host keyboard")
 	, gpio_payload_fabric()
 {
+	std::stringstream sstr_description;
+	sstr_description << "This module implements a " << NUM_SWITCHES << "-switch board (DIP switch or push buttons) on GPIO." << std::endl;
+	
+	Object::SetDescription(sstr_description.str().c_str());
+
 	unsigned int i;
 	for(i = 0; i < NUM_SWITCHES; i++)
 	{
@@ -81,6 +84,23 @@ GPIO_Switches<NUM_SWITCHES>::GPIO_Switches(const sc_module_name& name, Object *p
 			);
 		
 		(*gpio_master_sock[i])(*gpio_bw_redirector[i]);
+
+		std::stringstream gpio_slave_sock_name_sstr;
+		gpio_slave_sock_name_sstr << "gpio-slave-sock" << i;
+		
+		gpio_slave_sock[i] = new gpio_slave_socket(gpio_slave_sock_name_sstr.str().c_str());
+
+		gpio_fw_redirector[i] = 
+			new unisim::kernel::tlm2::FwRedirector<GPIO_Switches<NUM_SWITCHES>, GPIOProtocolTypes >(
+				i,
+				this,
+				&GPIO_Switches<NUM_SWITCHES>::gpio_nb_transport_fw,
+				&GPIO_Switches<NUM_SWITCHES>::gpio_b_transport,
+				&GPIO_Switches<NUM_SWITCHES>::gpio_transport_dbg,
+				&GPIO_Switches<NUM_SWITCHES>::gpio_get_direct_mem_ptr
+			);
+		
+		(*gpio_slave_sock[i])(*gpio_fw_redirector[i]);
 	}
 	
 	SC_HAS_PROCESS(GPIO_Switches);
@@ -102,19 +122,54 @@ GPIO_Switches<NUM_SWITCHES>::~GPIO_Switches()
 	for(i = 0; i < NUM_SWITCHES; i++)
 	{
 		delete gpio_master_sock[i];
+		delete gpio_slave_sock[i];
 		delete gpio_bw_redirector[i];
+		delete gpio_fw_redirector[i];
 	}
 }
 
 template <unsigned int NUM_SWITCHES>
 bool GPIO_Switches<NUM_SWITCHES>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
-	{
-		logger << DebugError << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
-		return false;
-	}
 	return true;
+}
+
+template <unsigned int NUM_SWITCHES>
+void GPIO_Switches<NUM_SWITCHES>::gpio_b_transport(unsigned int pin, GPIOPayload& payload, sc_core::sc_time& t)
+{
+	logger << DebugWarning << "Receiving an input on pin #" << pin << EndDebugWarning;
+}
+
+template <unsigned int NUM_SWITCHES>
+tlm::tlm_sync_enum GPIO_Switches<NUM_SWITCHES>::gpio_nb_transport_fw(unsigned int pin, GPIOPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case tlm::BEGIN_REQ:
+			logger << DebugWarning << "Receiving an input on pin #" << pin << EndDebugWarning;
+			phase = tlm::END_REQ;
+			return tlm::TLM_COMPLETED;
+			break;
+		case tlm::END_RESP:
+			return tlm::TLM_COMPLETED;
+		default:
+			logger << DebugError << "protocol error" << EndDebugError;
+			Object::Stop(-1);
+			break;
+	}
+	return tlm::TLM_COMPLETED;
+}
+
+template <unsigned int NUM_SWITCHES>
+unsigned int GPIO_Switches<NUM_SWITCHES>::gpio_transport_dbg(unsigned int pin, GPIOPayload& payload)
+{
+	return 0;
+}
+
+template <unsigned int NUM_SWITCHES>
+bool GPIO_Switches<NUM_SWITCHES>::gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload& payload, tlm::tlm_dmi& dmi_data)
+{
+	return false;
 }
 
 template <unsigned int NUM_SWITCHES>
@@ -200,18 +255,6 @@ void GPIO_Switches<NUM_SWITCHES>::Poll()
 			while(keyboard_import->GetKeyAction(key_action));
 		}
 	}
-}
-
-template <unsigned int NUM_SWITCHES>
-void GPIO_Switches<NUM_SWITCHES>::AlignToClock(sc_time& t)
-{
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
-	if(!modulo) return; // already aligned
-
-	time_tu += cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
 }
 
 } // end of namespace xps_gpio

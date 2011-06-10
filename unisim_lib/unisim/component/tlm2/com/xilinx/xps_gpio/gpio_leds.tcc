@@ -58,10 +58,13 @@ GPIO_LEDs<NUM_LEDS>::GPIO_LEDs(const sc_module_name& name, Object *parent)
 	, logger(*this)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
-	, cycle_time()
-	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, schedule()
 {
+	std::stringstream sstr_description;
+	sstr_description << "This module implements a " << NUM_LEDS << "-LED board on GPIO." << std::endl;
+	
+	Object::SetDescription(sstr_description.str().c_str());
+
 	unsigned int i;
 	for(i = 0; i < NUM_LEDS; i++)
 	{
@@ -83,6 +86,21 @@ GPIO_LEDs<NUM_LEDS>::GPIO_LEDs(const sc_module_name& name, Object *parent)
 			);
 		
 		(*gpio_slave_sock[i])(*gpio_fw_redirector[i]);
+
+		std::stringstream gpio_master_sock_name_sstr;
+		gpio_master_sock_name_sstr << "gpio-master-sock" << i;
+		
+		gpio_master_sock[i] = new gpio_master_socket(gpio_master_sock_name_sstr.str().c_str());
+
+		gpio_bw_redirector[i] = 
+			new unisim::kernel::tlm2::BwRedirector<GPIO_LEDs<NUM_LEDS>, GPIOProtocolTypes >(
+				i,
+				this,
+				&GPIO_LEDs<NUM_LEDS>::gpio_nb_transport_bw,
+				&GPIO_LEDs<NUM_LEDS>::gpio_invalidate_direct_mem_ptr
+			);
+		
+		(*gpio_master_sock[i])(*gpio_bw_redirector[i]);
 	}
 	
 	SC_HAS_PROCESS(GPIO_LEDs);
@@ -104,7 +122,9 @@ GPIO_LEDs<NUM_LEDS>::~GPIO_LEDs()
 	for(i = 0; i < NUM_LEDS; i++)
 	{
 		delete gpio_slave_sock[i];
+		delete gpio_master_sock[i];
 		delete gpio_fw_redirector[i];
+		delete gpio_bw_redirector[i];
 	}
 }
 
@@ -117,11 +137,6 @@ bool GPIO_LEDs<NUM_LEDS>::IsVerbose() const
 template <unsigned int NUM_LEDS>
 bool GPIO_LEDs<NUM_LEDS>::BeginSetup()
 {
-	if(cycle_time == SC_ZERO_TIME)
-	{
-		logger << DebugError << param_cycle_time.GetName() << " must be > " << SC_ZERO_TIME << EndDebugError;
-		return false;
-	}
 	unsigned int i;
 	for(i = 0; i < NUM_LEDS; i++) led_status[i] = false;
 	
@@ -136,7 +151,6 @@ void GPIO_LEDs<NUM_LEDS>::gpio_b_transport(unsigned int pin, GPIOPayload& payloa
 	sc_time notify_time_stamp(sc_time_stamp());
 	notify_time_stamp += t;
 
-	AlignToClock(notify_time_stamp);
 	Event *event = schedule.AllocEvent();
 	event->InitializeGPIOEvent(pin, gpio_pin_value, notify_time_stamp);
 	schedule.Notify(event);
@@ -154,7 +168,6 @@ tlm::tlm_sync_enum GPIO_LEDs<NUM_LEDS>::gpio_nb_transport_fw(unsigned int pin, G
 				sc_time notify_time_stamp(sc_time_stamp());
 				notify_time_stamp += t;
 
-				AlignToClock(notify_time_stamp);
 				Event *event = schedule.AllocEvent();
 				event->InitializeGPIOEvent(pin, gpio_pin_value, notify_time_stamp);
 				schedule.Notify(event);
@@ -186,6 +199,30 @@ bool GPIO_LEDs<NUM_LEDS>::gpio_get_direct_mem_ptr(unsigned int pin, GPIOPayload&
 }
 
 template <unsigned int NUM_LEDS>
+void GPIO_LEDs<NUM_LEDS>::gpio_invalidate_direct_mem_ptr(unsigned int pin, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+}
+
+
+template <unsigned int NUM_LEDS>
+tlm::tlm_sync_enum GPIO_LEDs<NUM_LEDS>::gpio_nb_transport_bw(unsigned int pin, GPIOPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	switch(phase)
+	{
+		case tlm::END_REQ:
+			return tlm::TLM_ACCEPTED;
+		case tlm::BEGIN_RESP:
+			return tlm::TLM_COMPLETED;
+		default:
+			logger << DebugError << "protocol error" << EndDebugError;
+			Object::Stop(-1);
+			break;
+	}
+	
+	return tlm::TLM_COMPLETED;
+}
+
+template <unsigned int NUM_LEDS>
 void GPIO_LEDs<NUM_LEDS>::ProcessEvents()
 {
 	time_stamp = sc_time_stamp();
@@ -203,11 +240,6 @@ void GPIO_LEDs<NUM_LEDS>::ProcessEvents()
 			if(event->GetTimeStamp() != time_stamp)
 			{
 				logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-				Object::Stop(-1);
-			}
-			if((time_stamp.value() % cycle_time.value()) != 0)
-			{
-				logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
 				Object::Stop(-1);
 			}
 
@@ -260,18 +292,6 @@ void GPIO_LEDs<NUM_LEDS>::ProcessGPIOEvent(Event *event)
 		if(led_board_import) led_board_import->SetLEDStatus(pin, gpio_pin_value);
 	}
 	led_status[pin] = gpio_pin_value;
-}
-
-template <unsigned int NUM_LEDS>
-void GPIO_LEDs<NUM_LEDS>::AlignToClock(sc_time& t)
-{
-	sc_dt::uint64 time_tu = t.value();
-	sc_dt::uint64 cycle_time_tu = cycle_time.value();
-	sc_dt::uint64 modulo = time_tu % cycle_time_tu;
-	if(!modulo) return; // already aligned
-
-	time_tu += cycle_time_tu - modulo;
-	t = sc_time(time_tu, false);
 }
 
 } // end of namespace xps_gpio
