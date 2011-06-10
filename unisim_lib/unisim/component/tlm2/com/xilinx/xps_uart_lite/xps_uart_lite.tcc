@@ -66,6 +66,7 @@ XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_module_name& name, Object *parent)
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_telnet_refresh_time("telnet-refresh-time", this, telnet_refresh_time, "Telnet refresh time")
+	, stat_interrupt_output("interrupt-output", this, interrupt_output, "Interrupt output level")
 	, schedule()
 {
 	slave_sock(*this); // Bind socket to implementer of interface
@@ -321,9 +322,14 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 		event->InitializeTelnetIOEvent(notify_time_stamp);
 		schedule.Notify(event);
 	}
-		
-	inherited::TelnetProcess();       // Handle I/O with telnet client
+	
+	if(!interrupt_output || inherited::HasInterrupt())
+	{
+		inherited::TelnetProcess();       // Handle I/O with telnet client only if interrupt signal would go low because of processor activity
+	}
 	GenerateOutput();                 // Generate interrupt signal
+		
+	inherited::ResetTX_FIFO_BecomesEmpty();
 }
 
 template <class CONFIG>
@@ -461,7 +467,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 template <class CONFIG>
 void XPS_UARTLite<CONFIG>::GenerateOutput()
 {
-	bool level = inherited::GetSTAT_REG_INTR_ENABLED() && (inherited::GetSTAT_REG_RX_FIFO_VALID_DATA() || inherited::TXT_FIFO_BecomesEmpty());
+	bool level = inherited::HasInterrupt();
 	if(interrupt_output != level)
 	{
 		if(inherited::IsVerbose())

@@ -344,6 +344,10 @@ bool XPS_UARTLite<CONFIG>::ReadRX_FIFO(uint8_t& value)
 	
 	value = rx_fifo.Front() & CONFIG::DATA_MASK;
 	rx_fifo.Pop();
+	if(rx_fifo.Empty() && IsVerbose())
+	{
+		logger << DebugInfo << "Rx FIFO becomes empty" << EndDebugInfo;
+	}
 	return true;
 }
 
@@ -383,8 +387,6 @@ uint8_t XPS_UARTLite<CONFIG>::ReadSTAT_REG()
 	// reading STAT_REG resets Parity error, Frame error, and overrun error bits
 	stat_reg = stat_reg & ~(CONFIG::STAT_REG_PARITY_ERROR_MASK | CONFIG::STAT_REG_FRAME_ERROR_MASK | CONFIG::STAT_REG_OVERRUN_ERROR_MASK);
 	
-	tx_fifo_becomes_empty = false;
-	
 	return v;
 }
 
@@ -401,9 +403,21 @@ uint8_t XPS_UARTLite<CONFIG>::GetSTAT_REG_INTR_ENABLED() const
 }
 
 template <class CONFIG>
-bool XPS_UARTLite<CONFIG>::TXT_FIFO_BecomesEmpty() const
+bool XPS_UARTLite<CONFIG>::TX_FIFO_BecomesEmpty() const
 {
 	return tx_fifo_becomes_empty;
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::ResetTX_FIFO_BecomesEmpty()
+{
+	tx_fifo_becomes_empty = false;
+}
+
+template <class CONFIG>
+bool XPS_UARTLite<CONFIG>::HasInterrupt() const
+{
+	return GetSTAT_REG_INTR_ENABLED() && (GetSTAT_REG_RX_FIFO_VALID_DATA() || TX_FIFO_BecomesEmpty());
 }
 
 template <class CONFIG>
@@ -425,7 +439,6 @@ void XPS_UARTLite<CONFIG>::WriteTX_FIFO(uint8_t value)
 	
 	value = value & CONFIG::DATA_MASK;
 	tx_fifo.Push(value);
-	tx_fifo_becomes_empty = false;
 }
 
 template <class CONFIG>
