@@ -389,9 +389,13 @@ set_target_properties ( libuapi
 add_executable ( api_test
 	${CMAKE_SOURCE_DIR}/api_test.cc
 	)
-# set_target_properties ( api_test
-#	PROPERTIES
-#		COMPILE_DEFINITIONS SIM_LIBRARY )
+
+get_target_property ( libuapi_LOCATION
+	libuapi
+	LOCATION )
+set_target_properties ( api_test
+	PROPERTIES
+		COMPILE_DEFINITIONS UNISIM_UAPI_LIB_PATH="${libuapi_LOCATION}" )
 target_link_libraries ( api_test
 	dl
 	# libuapi

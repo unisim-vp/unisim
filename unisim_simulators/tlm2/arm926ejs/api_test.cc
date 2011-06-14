@@ -102,11 +102,10 @@ bool close_lib()
 
 bool load_lib()
 {
-	// simlib = dlopen("/Users/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.dylib", RTLD_NOW | RTLD_GLOBAL);
-	simlib = dlopen("/home/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.so", RTLD_NOW | RTLD_GLOBAL);
+	simlib = dlopen(UNISIM_UAPI_LIB_PATH, RTLD_NOW || RTLD_GLOBAL);
 	if(simlib == NULL)
 	{
-		std::cerr << "Could not load simulator dynamic library"
+		std::cerr << "Could not load simulator dynamic library (" << UNISIM_UAPI_LIB_PATH << ")"
 			<< std::endl;
 		return false;
 	}
