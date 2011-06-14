@@ -73,6 +73,9 @@
 using namespace std;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
+using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
+using unisim::component::cxx::processor::hcs12x::address_t;
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
