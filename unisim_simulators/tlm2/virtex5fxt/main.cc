@@ -54,6 +54,8 @@
 #include <unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh>
 #include <unisim/component/cxx/interconnect/xilinx/crossbar/config.hh>
+#include <unisim/component/tlm2/interconnect/xilinx/mci/mci.hh>
+#include <unisim/component/cxx/interconnect/xilinx/mci/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
@@ -231,6 +233,7 @@ private:
 	typedef unisim::component::cxx::memory::flash::am29::S29GL256PConfig AM29_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
 	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
+	typedef unisim::component::cxx::interconnect::xilinx::mci::Config MCI_CONFIG;
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -245,6 +248,7 @@ private:
 	typedef unisim::component::tlm2::memory::flash::am29::AM29<AM29_CONFIG, 32 * unisim::component::cxx::memory::flash::am29::M, 2, CPU_CONFIG::FSB_WIDTH * 8> FLASH;
 	typedef unisim::component::tlm2::interconnect::xilinx::dcr_controller::DCRController<DCR_CONTROLLER_CONFIG> DCR_CONTROLLER;
 	typedef unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG> CROSSBAR;
+	typedef unisim::component::tlm2::interconnect::xilinx::mci::MCI<MCI_CONFIG> MCI;
 	typedef unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<UART_LITE_CONFIG> UART_LITE;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_DIP_SWITCHES_8BIT_CONFIG> GPIO_DIP_SWITCHES_8BIT;
 	typedef unisim::component::tlm2::com::xilinx::xps_gpio::XPS_GPIO<GPIO_LEDS_8BIT_CONFIG> GPIO_LEDS_8BIT;
@@ -262,7 +266,6 @@ private:
 	typedef unisim::kernel::tlm2::InitiatorStub<CPU_CONFIG::FSB_WIDTH * 8> SPLB1_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<4> MASTER1_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> APU_DCR_STUB;
-	typedef unisim::kernel::tlm2::TargetStub<4> MCI_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC0_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC1_DCR_STUB;
 	typedef unisim::kernel::tlm2::TargetStub<4> DMAC2_DCR_STUB;
@@ -305,6 +308,8 @@ private:
 	DCR_CONTROLLER *dcr_controller;
 	// - Crossbar
 	CROSSBAR *crossbar;
+	// - MCI
+	MCI *mci;
 	// - UART Lite
 	UART_LITE *uart_lite;
 	// - GPIO DIP switches 8 Bit
@@ -326,7 +331,6 @@ private:
 	// - DCR stubs
 	MASTER1_DCR_STUB *master1_dcr_stub;
 	APU_DCR_STUB *apu_dcr_stub;
-	MCI_DCR_STUB *mci_dcr_stub;
 	DMAC0_DCR_STUB *dmac0_dcr_stub;
 	DMAC1_DCR_STUB *dmac1_dcr_stub;
 	DMAC2_DCR_STUB *dmac2_dcr_stub;
@@ -392,6 +396,7 @@ Simulator::Simulator(int argc, char **argv)
 	, pwm_stub(0)
 	, dcr_controller(0)
 	, crossbar(0)
+	, mci(0)
 	, uart_lite(0)
 	, gpio_dip_switches_8bit(0)
 	, gpio_leds_8bit(0)
@@ -403,7 +408,6 @@ Simulator::Simulator(int argc, char **argv)
 	, push_buttons_5bit(0)
 	, master1_dcr_stub(0)
 	, apu_dcr_stub(0)
-	, mci_dcr_stub(0)
 	, dmac0_dcr_stub(0)
 	, dmac1_dcr_stub(0)
 	, dmac2_dcr_stub(0)
@@ -499,6 +503,8 @@ Simulator::Simulator(int argc, char **argv)
 	dcr_controller = new DCR_CONTROLLER("dcr-controller");
 	// - Crossbar
 	crossbar = new CROSSBAR("crossbar");
+	// - MCI
+	mci = new MCI("mci");
 	// - UART Lite
 	uart_lite = new UART_LITE("uart-lite");
 	// - GPIO DIP switches 8 Bit
@@ -520,7 +526,6 @@ Simulator::Simulator(int argc, char **argv)
 	// - DCR stubs
 	master1_dcr_stub = new MASTER1_DCR_STUB("master1-dcr-stub");
 	apu_dcr_stub = new APU_DCR_STUB("apu-dcr-stub");
-	mci_dcr_stub = new MCI_DCR_STUB("mci-dcr-stub");
 	dmac0_dcr_stub = new DMAC0_DCR_STUB("dma0-dcr-stub");
 	dmac1_dcr_stub = new DMAC1_DCR_STUB("dma1-dcr-stub");
 	dmac2_dcr_stub = new DMAC2_DCR_STUB("dma2-dcr-stub");
@@ -564,7 +569,7 @@ Simulator::Simulator(int argc, char **argv)
 	master1_dcr_stub->master_sock(*dcr_controller->dcr_slave_sock[1]); // master 1>DCR <-> DCR controller
 	
 	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::APU_SLAVE_NUM])(apu_dcr_stub->slave_sock);
-	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::MCI_SLAVE_NUM])(mci_dcr_stub->slave_sock);
+	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::MCI_SLAVE_NUM])(mci->dcr_slave_sock);
 	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::CROSSBAR_SLAVE_NUM])(crossbar->crossbar_dcr_slave_sock);
 	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS0_SLAVE_NUM])(crossbar->plbs0_dcr_slave_sock);
 	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::PLBS1_SLAVE_NUM])(crossbar->plbs1_dcr_slave_sock);
@@ -576,7 +581,8 @@ Simulator::Simulator(int argc, char **argv)
 	(*dcr_controller->dcr_master_sock[DCR_CONTROLLER_CONFIG::EXTERNAL_SLAVE_NUM])(external_slave_dcr_stub->slave_sock);
 	
 	crossbar->mplb_master_sock(*mplb->targ_socket[0]);   // crossbar>MPLB <-> MPLB
-	crossbar->mci_master_sock(ram->slave_sock);       // crossbar>MCI <-> RAM
+	crossbar->mci_master_sock(mci->mci_slave_sock);      // crossbar>MCI <-> MCI
+	mci->mci_master_sock(ram->slave_sock);               // MCI <-> RAM 
 	
 	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
 	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
@@ -651,8 +657,9 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->memory_import >> crossbar->memory_export;
 	
-	crossbar->mci_memory_import >> ram->memory_export;
+	crossbar->mci_memory_import >> mci->memory_export;
 	crossbar->mplb_memory_import >> mplb->memory_export;
+	mci->memory_import >> ram->memory_export;
 	(*mplb->memory_import[0]) >> intc->memory_export;
 	(*mplb->memory_import[1]) >> timer->memory_export;
 	(*mplb->memory_import[2]) >> flash->memory_export;
@@ -743,6 +750,7 @@ Simulator::~Simulator()
 	if(timer) delete timer;
 	if(flash) delete flash;
 	if(crossbar) delete crossbar;
+	if(mci) delete mci;
 	if(uart_lite) delete uart_lite;
 	if(gpio_dip_switches_8bit) delete gpio_dip_switches_8bit;
 	if(gpio_leds_8bit) delete gpio_leds_8bit;
@@ -754,7 +762,6 @@ Simulator::~Simulator()
 	if(push_buttons_5bit) delete push_buttons_5bit;
 	if(master1_dcr_stub) delete master1_dcr_stub;
 	if(apu_dcr_stub) delete apu_dcr_stub;
-	if(mci_dcr_stub) delete mci_dcr_stub;
 	if(dmac0_dcr_stub) delete dmac0_dcr_stub;
 	if(dmac1_dcr_stub) delete dmac1_dcr_stub;
 	if(dmac2_dcr_stub) delete dmac2_dcr_stub;
@@ -832,6 +839,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	//  - Crossbar
 	simulator->SetVariable("crossbar.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
+
+	//  - MCI
+	simulator->SetVariable("mci.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());

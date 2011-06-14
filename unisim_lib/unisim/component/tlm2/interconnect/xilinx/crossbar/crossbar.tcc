@@ -521,12 +521,14 @@ void Crossbar<CONFIG>::ProcessBackwardEvent(Event *event)
 		return;
 	}
 	
-	//CheckResponseStatus(dst_if, event->GetInterface(), payload);
+	typename inherited::Interface dst_if = event->GetInterface();
 	
 	schedule.FreeEvent(event);
 	event = (*it).second;
 	pending_requests.erase(it);
 
+	CheckResponseStatus(event->GetInterface(), dst_if, payload);
+	
 	sc_time t(cycle_time);
 	
 	sc_event *ev_completed = event->GetCompletionEvent();
