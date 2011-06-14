@@ -1,28 +1,43 @@
 /*
-                             *******************
-******************************* C SOURCE FILE *******************************
-**                           *******************                           **
-**                                                                         **
-** project   : UNISIM C API                                                **
-** filename  : variable.c                                                  **
-** version   : 1                                                           **
-** date      : 12/5/2011                                                   **
-**                                                                         **
-*****************************************************************************
-**                                                                         **
-** Copyright (c) 2011, Commissariat a l'Energie Atomique (CEA)             **
-** All rights reserved.                                                    **
-**                                                                         **
-*****************************************************************************
-
-*/
+ *  Copyright (c) 2011
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
 
 #define __UNISIM__UAPI__VARIABLE__C_SRC
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     MODULES USED                                       **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      MODULES USED                                       **/
+/*                                                                         **/
 /****************************************************************************/
 
 #include <string>
@@ -30,15 +45,15 @@
 #include "unisim/uapi/uapi_priv.h"
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     DEFINITIONS AND MACROS                             **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      DEFINITIONS AND MACROS                             **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     TYPEDEFS AND STRUCTURES                            **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      TYPEDEFS AND STRUCTURES                            **/
+/*                                                                         **/
 /****************************************************************************/
 
 struct _UnisimVariable
@@ -49,32 +64,30 @@ struct _UnisimVariable
 };
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     PROTOTYPES OF LOCAL FUNCTIONS                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      PROTOTYPES OF LOCAL FUNCTIONS                      **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED VARIABLES                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED VARIABLES                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     GLOBAL VARIABLES                                   **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      GLOBAL VARIABLES                                   **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED FUNCTIONS                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED FUNCTIONS                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
 void usDestroyVariable(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return;
 
@@ -87,9 +100,7 @@ void usDestroyVariable(UnisimVariable variable)
 	variable = 0;
 }
 
-/****************************************************************************/
 UnisimSimulator usVariableGetAssociatedSimulator(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 )
 		return 0;
@@ -97,9 +108,7 @@ UnisimSimulator usVariableGetAssociatedSimulator(UnisimVariable variable)
 	return variable->simulator;
 }
 
-/****************************************************************************/
 UnisimVariableType usVariableGetType(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0) return UNISIM_VARIABLE_TYPE_NONE;
 
@@ -131,45 +140,35 @@ UnisimVariableType usVariableGetType(UnisimVariable variable)
 	return UNISIM_VARIABLE_TYPE_NONE;
 }
 
-/****************************************************************************/
 const char *usVariableGetName(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return 0;
 
 	return variable->variable->GetName();
 }
 
-/****************************************************************************/
 bool usVariableVisible(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return 0;
 
 	return variable->variable->IsVisible();
 }
 
-/****************************************************************************/
 bool usVariableMutable(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return 0;
 
 	return variable->variable->IsMutable();
 }
 
-/****************************************************************************/
 bool usVariableSerializable(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return 0;
 
 	return variable->variable->IsSerializable();
 }
 
-/****************************************************************************/
 const char *usVariableGetValueAsString(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return 0;
 
@@ -177,18 +176,14 @@ const char *usVariableGetValueAsString(UnisimVariable variable)
 	return value;
 }
 
-/****************************************************************************/
 void usVariableSetValueFromString(UnisimVariable variable, const char *value)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return;
 	
 	*(variable->variable) = value;
 }
 
-/****************************************************************************/
 unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return 0;
 
@@ -196,20 +191,16 @@ unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable)
 	return value;
 }
 
-/****************************************************************************/
 void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable, 
 		unsigned long long value)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return;
 
 	*(variable->variable) = value;
 }
 
-/****************************************************************************/
 bool usVariableSetListener(UnisimVariable variable, 
 		void (*listener)(UnisimVariable context))
-/****************************************************************************/
 {
 	if ( variable == 0 ) return false;
 	if ( variable->listener != 0 ) return false;
@@ -220,9 +211,8 @@ bool usVariableSetListener(UnisimVariable variable,
 
 	return true;
 }
-/****************************************************************************/
+
 void usVariableRemoveListener(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return;
 	if ( variable->listener == 0 ) return;
@@ -233,15 +223,13 @@ void usVariableRemoveListener(UnisimVariable variable)
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                 PRIVATELY EXPORTED FUNCTIONS                           **/
-/**                                                                        **/
+/*                                                                         **/
+/*                  PRIVATELY EXPORTED FUNCTIONS                           **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
 UnisimVariable usCreateVariable(UnisimSimulator simulator,
 		unisim::kernel::service::VariableBase *unisimVariable)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return 0;
 	if ( unisimVariable == 0 ) return 0;
@@ -256,9 +244,7 @@ UnisimVariable usCreateVariable(UnisimSimulator simulator,
 	return variable;
 }
 
-/****************************************************************************/
 void usDestroyUnregisteredVariable(UnisimVariable variable)
-/****************************************************************************/
 {
 	if ( variable == 0 ) return;
 
@@ -295,14 +281,14 @@ VariableBaseNotify(const unisim::kernel::service::VariableBase *unisimVariable)
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     LOCAL FUNCTIONS                                    **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      LOCAL FUNCTIONS                                    **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                               EOF                                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                                EOF                                      **/
+/*                                                                         **/
 /****************************************************************************/
 

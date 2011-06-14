@@ -1,29 +1,44 @@
 /*
-                             *******************
-******************************* C HEADER FILE *******************************
-**                           *******************                           **
-**                                                                         **
-** project   : UNISIM C API                                                **
-** filename  : variable.h                                                  **
-** version   : 1                                                           **
-** date      : 12/5/2011                                                   **
-**                                                                         **
-*****************************************************************************
-**                                                                         **
-** Copyright (c) 2011, Commissariat a l'Energie Atomique (CEA)             **
-** All rights reserved.                                                    **
-**                                                                         **
-*****************************************************************************
-
-*/
+ *  Copyright (c) 2011
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
 
 #ifndef __UNISIM__UAPI__VARIABLE__INCLUDED
 #define __UNISIM__UAPI__VARIABLE__INCLUDED
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     MODULES USED                                       **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      MODULES USED                                       **/
+/*                                                                         **/
 /****************************************************************************/
 
 #include "unisim/uapi/types.h"
@@ -32,215 +47,170 @@ extern "C"
 {
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     DEFINITIONS AND MACROS                             **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      DEFINITIONS AND MACROS                             **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     TYPEDEFS AND STRUCTURES                            **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      TYPEDEFS AND STRUCTURES                            **/
+/*                                                                         **/
 /****************************************************************************/
 
+/**
+ * Definition of the possible variable types.
+ */
 typedef enum
 {
-	UNISIM_VARIABLE_TYPE_NONE,
-	UNISIM_VARIABLE_TYPE_VOID,
-	UNISIM_VARIABLE_TYPE_ARRAY,
-	UNISIM_VARIABLE_TYPE_PARAMETER,
-	UNISIM_VARIABLE_TYPE_STATISTIC,
-	UNISIM_VARIABLE_TYPE_REGISTER,
-	UNISIM_VARIABLE_TYPE_FORMULA
+	UNISIM_VARIABLE_TYPE_NONE, /**< Special system type to indicate that the type is not defined. */
+	UNISIM_VARIABLE_TYPE_VOID, /**< Special system type to indicate any type. */
+	UNISIM_VARIABLE_TYPE_ARRAY, /**< Array type. */
+	UNISIM_VARIABLE_TYPE_PARAMETER, /**< Parameter type. */
+	UNISIM_VARIABLE_TYPE_STATISTIC, /**< Statistic type. */
+	UNISIM_VARIABLE_TYPE_REGISTER, /**< Register type. */
+	UNISIM_VARIABLE_TYPE_FORMULA /**< Formula type. */
 } UnisimVariableType;
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED VARIABLES                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED VARIABLES                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
 #ifndef __UNISIM__UAPI__VARIABLE__C_SRC
 #endif
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED FUNCTIONS                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED FUNCTIONS                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
-void usDestroyVariable(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Destroys the given variable handler
  *
- * Parameters:
- *   - var: the variable handler to destroy.
- *
- * Returns: None.
+ * @param variable The variable handler to destroy.
  */
+void usDestroyVariable(UnisimVariable variable);
 
-/****************************************************************************/
-UnisimSimulator usVariableGetAssociatedSimulator(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Returns the simulator associtated to the variable.
  *
- * Parameters:
- *   - variable: the variable to consider.
+ * @param variable The variable to consider.
  *
- * Returns: the associated simulator.
+ * @return The associated simulator.
  */
+UnisimSimulator usVariableGetAssociatedSimulator(UnisimVariable variable);
 
-/****************************************************************************/
-UnisimVariableType usVariableGetType(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Gets the type of the variable as defined by VariableType.
  *
- * Parameters:
- *   - var: the variable to inspect.
+ * @param variable The variable to inspect.
  *
- * Returns: the type of the variable as defined by VariableType.
+ * @return The type of the variable as defined by VariableType.
  */
+UnisimVariableType usVariableGetType(UnisimVariable variable);
 
-/****************************************************************************/
-const char *usVariableGetName(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Gets the name of the given variable handler.
  *
- * Parameters:
- *   - var: the variable to handle.
+ * @param variable The variable to handle.
  *
- * Returns: A null terminated string with the name of the given variable.
+ * @return A null terminated string with the name of the given variable.
  */
+const char *usVariableGetName(UnisimVariable variable);
 
-/****************************************************************************/
-bool usVariableVisible(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Is the variable visible.
  *
- * Parameters:
- *   - var: the variable to handle.
+ * @param variable The variable to handle.
  *
- * Returns: returns true if the variable is visible, false if not. Note that
- *          it may return false also if the variable is corrupted.
+ * @return True if the variable is visible, false if not. Note that
+ *         it may return false also if the variable is corrupted.
  */
+bool usVariableVisible(UnisimVariable variable);
 
-/****************************************************************************/
-bool usVariableMutable(UnisimVariable varable);
-/****************************************************************************/
-/*
+/**
  * Is the variable mutable.
  *
- * Parameters:
- *   - var: the variable to handle.
+ * @param variable The variable to handle.
  *
- * Returns: returns true if the variable is mutable, false if not. Note that
- *          it may return false also if the variable is corrupted.
+ * @return True if the variable is mutable, false if not. Note that
+ *         it may return false also if the variable is corrupted.
  */
+bool usVariableMutable(UnisimVariable varable);
 
-/****************************************************************************/
-bool usVariableSerializable(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Is the variable serializable.
  *
- * Parameters:
- *   - var: the variable to handle.
+ * @param variable The variable to handle.
  *
- * Returns: returns true if the variable is serializable, false if not. Note 
- *          that it may return false also if the variable is corrupted.
+ * @return True if the variable is serializable, false if not. Note 
+ *         that it may return false also if the variable is corrupted.
  */
+bool usVariableSerializable(UnisimVariable variable);
 
-/****************************************************************************/
-const char *usVariableGetValueAsString(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Gets the value of the given variable as a null terminated string.
  *
- * Parameters:
- *   - var: the variable to handle.
+ * @param variable The variable to handle.
  *
- * Returns: A null terminated string with the value of the given variable.
+ * @return A null terminated string with the value of the given variable.
  */
+const char *usVariableGetValueAsString(UnisimVariable variable);
 
-/****************************************************************************/
-void usVariableSetValueFromString(UnisimVariable variable, const char *value);
-/****************************************************************************/
-/*
+/**
  * Sets the value of the given variable from a null terminated string.
  *
- * Parameters:
- *   - variable: the variable to handle.
- *   - value: the null terminated string containing the value.
- *
- * Returns: None.
+ * @param variable The variable to handle.
+ * @param value The null terminated string containing the value.
  */
+void usVariableSetValueFromString(UnisimVariable variable, const char *value);
 
-/****************************************************************************/
-unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Gets the value of the given variable as unsigned long long.
  *
- * Parameters:
- *   - var: the variable to handle.
+ * @param variable The variable to handle.
  *
- * Returns: unsigned long long representation of the reguested variable.
+ * @return Unsigned long long representation of the reguested variable.
  */
+unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable);
 
-/****************************************************************************/
-void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable, 
-		unsigned long long value);
-/****************************************************************************/
-/*
+/**
  * Sets the value of the given variable from a unsigned long long.
  *
- * Parameters:
- *   - variable: the variable to handle.
- *   - value: the unsigned long long value.
- *
- * Returns: None.
+ * @param variable The variable to handle.
+ * @param value The unsigned long long value.
  */
+void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable, 
+		unsigned long long value);
 
-/****************************************************************************/
-bool usVariableSetListener(UnisimVariable variable, 
-		void (* listener)(UnisimVariable context));
-/****************************************************************************/
-/*
+/**
  * Sets a function to call when the variable is modified (actually notified).
  *
- * Parameters:
- *   - variable: the variable to handle.
- *   - listener: the function to call when the variable is modified.
+ * @param variable The variable to handle.
+ * @param listener The function to call when the variable is modified.
  *
- * Returns: true on success, false if could not set the handler (or if a
+ * @return True on success, false if could not set the handler (or if a
  *          handler already exists.
  */
+bool usVariableSetListener(UnisimVariable variable, 
+		void (* listener)(UnisimVariable context));
 
-/****************************************************************************/
-void usVariableRemoveListener(UnisimVariable variable);
-/****************************************************************************/
-/*
+/**
  * Removes the current variable listener.
  *
- * Parameters:
- *   - variable: the variable to handle.
- * 
- * Returns: None.
+ * @param variable The variable to handle.
  */
+void usVariableRemoveListener(UnisimVariable variable);
 }
 
 #endif
 
 /****************************************************************************/
-/**                                                                        **/
-/**                               EOF                                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                                EOF                                      **/
+/*                                                                         **/
 /****************************************************************************/
-
 

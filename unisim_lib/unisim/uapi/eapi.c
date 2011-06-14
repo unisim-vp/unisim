@@ -1,171 +1,172 @@
 /*
-                             *******************
-******************************* C SOURCE FILE *******************************
-**                           *******************                           **
-**                                                                         **
-** project   : UNISIM C API                                                **
-** filename  : eapi.c                                                      **
-** version   : 1                                                           **
-** date      : 23/5/2011                                                   **
-**                                                                         **
-*****************************************************************************
-**                                                                         **
-** Copyright (c) 2011, Commissariat a l'Energie Atomique (CEA)             **
-** All rights reserved.                                                    **
-**                                                                         **
-*****************************************************************************
-
-*/
+ *  Copyright (c) 2011
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
 
 #define __UNISIM__UAPI__EAPI__C_SRC
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     MODULES USED                                       **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      MODULES USED                                       **/
+/*                                                                         **/
 /****************************************************************************/
 
 #include "unisim/uapi/uapi_priv.h"
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     DEFINITIONS AND MACROS                             **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      DEFINITIONS AND MACROS                             **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     TYPEDEFS AND STRUCTURES                            **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      TYPEDEFS AND STRUCTURES                            **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     PROTOTYPES OF LOCAL FUNCTIONS                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      PROTOTYPES OF LOCAL FUNCTIONS                      **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED VARIABLES                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED VARIABLES                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     GLOBAL VARIABLES                                   **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      GLOBAL VARIABLES                                   **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED FUNCTIONS                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED FUNCTIONS                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
-void usDestroyExtendedAPI(UnisimExtendedAPI api)
-/****************************************************************************/
+void usDestroyExtendedAPI(UnisimExtendedAPI eapi)
 {
-	if ( api == 0 ) return;
+	if ( eapi == 0 ) return;
 	
-	if ( api->usDestroyAPI != 0 )
-		api->usDestroyAPI(api);
+	if ( eapi->usDestroyAPI != 0 )
+		eapi->usDestroyAPI(eapi);
 	else
 	{
-		usSimulatorUnregisterExtendedAPI(api->simulator, api);
-		api->api = 0;
-		api->simulator = 0;
-		free(api);
+		usSimulatorUnregisterExtendedAPI(eapi->simulator, eapi);
+		eapi->api = 0;
+		eapi->simulator = 0;
+		free(eapi);
 	}
 }
 
-/****************************************************************************/
-const char *usExtendedAPIGetName(UnisimExtendedAPI api)
-/****************************************************************************/
+const char *usExtendedAPIGetName(UnisimExtendedAPI eapi)
 {
-	if ( api == 0 ) return 0;
+	if ( eapi == 0 ) return 0;
 
-	return api->api->GetName();
+	return eapi->api->GetName();
+}
+
+const char *usExtendedAPIGetTypeName(UnisimExtendedAPI eapi)
+{
+	if ( eapi == 0 ) return 0;
+
+	return eapi->api->GetAPITypeName();
 }
 
 /****************************************************************************/
-const char *usExtendedAPIGetTypeName(UnisimExtendedAPI api)
-/****************************************************************************/
-{
-	if ( api == 0 ) return 0;
-
-	return api->api->GetAPITypeName();
-}
-
-/****************************************************************************/
-/**                                                                        **/
-/**                 PRIVATELY EXPORTED FUNCTIONS                           **/
-/**                                                                        **/
+/*                                                                         **/
+/*                  PRIVATELY EXPORTED FUNCTIONS                           **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
 UnisimExtendedAPI usCreateExtendedAPI(UnisimSimulator simulator,
 		unisim::kernel::api::APIBase *unisimApi)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return 0;
 	if ( unisimApi == 0 ) return 0;
 
-	UnisimExtendedAPI api = (UnisimExtendedAPI)malloc(sizeof(_UnisimExtendedAPI));
-	if ( api == 0 ) return 0;
+	UnisimExtendedAPI eapi = (UnisimExtendedAPI)malloc(sizeof(_UnisimExtendedAPI));
+	if ( eapi == 0 ) return 0;
 
-	api->simulator = simulator;
-	api->api = unisimApi;
-	api->usDestroyAPI = 0;
-	api->usDestroyUnregisteredAPI = 0;
-	usSimulatorRegisterExtendedAPI(simulator, api);
-	return api;
+	eapi->simulator = simulator;
+	eapi->api = unisimApi;
+	eapi->usDestroyAPI = 0;
+	eapi->usDestroyUnregisteredAPI = 0;
+	usSimulatorRegisterExtendedAPI(simulator, eapi);
+	return eapi;
 }
 
-/****************************************************************************/
-void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI api)
-/****************************************************************************/
+void usDestroyUnregisteredExtendedAPI(UnisimExtendedAPI eapi)
 {
-	if ( api == 0 ) return;
+	if ( eapi == 0 ) return;
 
-	if ( api->usDestroyUnregisteredAPI != 0 )
-		api->usDestroyUnregisteredAPI(api);
+	if ( eapi->usDestroyUnregisteredAPI != 0 )
+		eapi->usDestroyUnregisteredAPI(eapi);
 	else
 	{
-		api->api = 0;
-		api->simulator = 0;
-		free(api);
+		eapi->api = 0;
+		eapi->simulator = 0;
+		free(eapi);
 	}
 }
 
-/****************************************************************************/
-unisim::kernel::api::APIBase *usExtendedAPIGetUnisimAPI(UnisimExtendedAPI api)
-/****************************************************************************/
+unisim::kernel::api::APIBase *usExtendedAPIGetUnisimAPI(UnisimExtendedAPI eapi)
 {
-	if ( api == 0 ) return 0;
+	if ( eapi == 0 ) return 0;
 
-	return api->api;
+	return eapi->api;
+}
+
+UnisimSimulator usExtendedAPIGetSimulator(UnisimExtendedAPI eapi)
+{
+	if ( eapi == 0 ) return 0;
+
+	return eapi->simulator;
 }
 
 /****************************************************************************/
-UnisimSimulator usExtendedAPIGetSimulator(UnisimExtendedAPI api)
-/****************************************************************************/
-{
-	if ( api == 0 ) return 0;
-
-	return api->simulator;
-}
-
-/****************************************************************************/
-/**                                                                        **/
-/**                     LOCAL FUNCTIONS                                    **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      LOCAL FUNCTIONS                                    **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                               EOF                                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                                EOF                                      **/
+/*                                                                         **/
 /****************************************************************************/
 

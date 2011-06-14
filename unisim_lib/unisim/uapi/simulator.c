@@ -1,28 +1,43 @@
 /*
-                             *******************
-******************************* C SOURCE FILE *******************************
-**                           *******************                           **
-**                                                                         **
-** project   : UNISIM C API                                                **
-** filename  : simulator.c                                                 **
-** version   : 1                                                           **
-** date      : 23/5/2011                                                   **
-**                                                                         **
-*****************************************************************************
-**                                                                         **
-** Copyright (c) 2011, Commissariat a l'Energie Atomique (CEA)             **
-** All rights reserved.                                                    **
-**                                                                         **
-*****************************************************************************
-
-*/
+ *  Copyright (c) 2011
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
 
 #define __UNISIM__UAPI__SIMULATOR__C_SRC
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     MODULES USED                                       **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      MODULES USED                                       **/
+/*                                                                         **/
 /****************************************************************************/
 
 #include <string>
@@ -31,59 +46,69 @@
 #include "unisim/uapi/uapi_priv.h"
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     DEFINITIONS AND MACROS                             **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      DEFINITIONS AND MACROS                             **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     TYPEDEFS AND STRUCTURES                            **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      TYPEDEFS AND STRUCTURES                            **/
+/*                                                                         **/
 /****************************************************************************/
 
+/**
+ * Definition of the simulator state.
+ * It contains the pointer to the unisim simulator and its status. Additionally
+ * it contatins the list of the currently registered (requested by the api user)
+ * variables and extended apis.
+ */
 struct _UnisimSimulator
 {
-	Simulator *simulator;
-	UnisimSimulatorStatus simulatorStatus;
-	std::map<UnisimVariable, UnisimVariable> *variablesRegistered;
-	std::map<UnisimExtendedAPI, UnisimExtendedAPI> *apisRegistered;
+	Simulator *simulator; /**< Pointer to the unisim simulator. */
+	UnisimSimulatorStatus simulatorStatus; /**< The status of the simulator. */
+	std::map<UnisimVariable, UnisimVariable> *variablesRegistered; /**< Currently registered variables. */
+	std::map<UnisimExtendedAPI, UnisimExtendedAPI> *apisRegistered; /**< Currently registered extended apis. */
 };
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     PROTOTYPES OF LOCAL FUNCTIONS                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      PROTOTYPES OF LOCAL FUNCTIONS                      **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
+/**
+ * Transform the api variable type definition to a unisim (c++) VariableBase type.
+ *
+ * @param variableType The api variable type to transform.
+ * @param unisimVariableType The given api variable type transformed into a unisim VariableBase type.
+ *
+ * @return True if the transformation was feasible, false otherwise.
+ */
 bool TransformVariableTypeToUnisimVariableBaseType(
-		UnisimVariableType,
-		unisim::kernel::service::VariableBase::Type &);
+		UnisimVariableType variableType,
+		unisim::kernel::service::VariableBase::Type &unisimVariableType);
+
+/****************************************************************************/
+/*                                                                         **/
+/*                      EXPORTED VARIABLES                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED VARIABLES                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      GLOBAL VARIABLES                                   **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     GLOBAL VARIABLES                                   **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED FUNCTIONS                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED FUNCTIONS                                 **/
-/**                                                                        **/
-/****************************************************************************/
-
-/****************************************************************************/
 UnisimSimulator usCreateSimulator(char *configurationXmlFile, 
 		char **optionList)
-/****************************************************************************/
 {
 	UnisimSimulator simulator;
 	char **argv;
@@ -147,8 +172,6 @@ UnisimSimulator usCreateSimulator(char *configurationXmlFile,
 	}
 	argv[optionListIndex] = 0;
 
-	//	unisimSimulator->sim = init_func(argvSize, argv);
-	// unisimSimulator->sim = NewSimulator(argvSize, argv);
 	simulator->simulator = new Simulator(argvSize, argv);
 	if ( simulator->simulator == 0 ) 
 	{
@@ -164,9 +187,7 @@ UnisimSimulator usCreateSimulator(char *configurationXmlFile,
 	return simulator;
 }
 
-/****************************************************************************/
 bool usDestroySimulator(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return true;
 
@@ -207,9 +228,7 @@ bool usDestroySimulator(UnisimSimulator simulator)
 	return true;
 }
 
-/****************************************************************************/
 UnisimSimulatorStatus usSimulatorGetStatus(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	UnisimSimulatorStatus simulatorStatus;
 
@@ -219,9 +238,7 @@ UnisimSimulatorStatus usSimulatorGetStatus(UnisimSimulator simulator)
 	return simulatorStatus;
 }
 
-/****************************************************************************/
 UnisimSimulatorSetupStatus usSimulatorSetup(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return UNISIM_SIMULATOR_SETUP_STATUS_ERROR;
 
@@ -263,9 +280,7 @@ UnisimSimulatorSetupStatus usSimulatorSetup(UnisimSimulator simulator)
 	return simulatorStatus;
 }
 
-/****************************************************************************/
 const char *usSimulatorGetVersion(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return 0;
 
@@ -274,9 +289,7 @@ const char *usSimulatorGetVersion(UnisimSimulator simulator)
 	return simulatorVersion.c_str();
 }
 
-/****************************************************************************/
 UnisimExtendedAPI *usSimulatorGetExtendedAPIList(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	std::list<unisim::kernel::api::APIBase *> unisimApiList;
 	UnisimExtendedAPI *apiList;
@@ -310,25 +323,6 @@ UnisimExtendedAPI *usSimulatorGetExtendedAPIList(UnisimSimulator simulator)
 		if ( api == 0 ) error = true;
 		else apiList[apiListIndex] = api;
 		apiListIndex++;
-//		std::cerr << "EAPI "
-//			<< (*apiListIterator)->GetName()
-//			<< " (" << (*apiListIterator)->GetAPITypeName() << ")"
-//			<< std::endl;
-		// unisim::util::debug::debugger_handler::DebuggerHandler *cur
-		// 	= dynamic_cast<unisim::util::debug::debugger_handler::DebuggerHandler *>(*apiListIterator);
-		// unisim::kernel::api::APIBase *cur
-		// 	= dynamic_cast<unisim::kernel::api::APIBase *>(*apiListIterator);
-//		if ( unisim::util::debug::debugger_handler::DebuggerHandler::DEBUGGER_API_ID.compare(
-//				(*apiListIterator)->GetAPITypeName()) == 0 )
-//			std::cerr << "DebuggerHandler" << std::endl;
-//		else
-//			std::cerr << "No DebuggerHandler" << std::endl;
-//		unisim::service::debug::sim_debugger::SimDebugger<uint32_t> *cur
-//			= dynamic_cast<unisim::service::debug::sim_debugger::SimDebugger<uint32_t> *>(*apiListIterator);
-//		if ( cur != NULL) 
-//			std::cerr << "DebuggerHandler" << std::endl;
-//		else
-//			std::cerr << "No DebuggerHandler" << std::endl;
 	}
 
 	if ( error )
@@ -347,9 +341,7 @@ UnisimExtendedAPI *usSimulatorGetExtendedAPIList(UnisimSimulator simulator)
 	return apiList;
 }
 
-/****************************************************************************/
 bool usSimulatorRun(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return false;
 	if ( simulator->simulatorStatus != UNISIM_SIMULATOR_STATUS_SETUP )
@@ -364,9 +356,7 @@ bool usSimulatorRun(UnisimSimulator simulator)
 	return true;
 }
 
-/****************************************************************************/
 void usSimulatorStop(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return;
 
@@ -378,20 +368,16 @@ void usSimulatorStop(UnisimSimulator simulator)
 	simulator->simulatorStatus = UNISIM_SIMULATOR_STATUS_STOPPED;
 }
 
-/****************************************************************************/
 UnisimVariable usSimulatorGetVariable(UnisimSimulator simulator, 
 		const char *variableName)
-/****************************************************************************/
 {
 	return usSimulatorGetVariableWithType(simulator, variableName, 
 			UNISIM_VARIABLE_TYPE_VOID);
 }
 
-/****************************************************************************/
 UnisimVariable usSimulatorGetVariableWithType(UnisimSimulator simulator,
 		const char *variableName,
 		UnisimVariableType variableType)
-/****************************************************************************/
 {
 	if ( simulator == 0 ) return 0;
 
@@ -410,18 +396,14 @@ UnisimVariable usSimulatorGetVariableWithType(UnisimSimulator simulator,
 	return variable;
 }
 
-/****************************************************************************/
 UnisimVariable *usSimulatorGetVariableList(UnisimSimulator simulator)
-/****************************************************************************/
 {
 	return usSimulatorGetVariableListWithType(simulator,
 			UNISIM_VARIABLE_TYPE_VOID);
 }
 
-/****************************************************************************/
 UnisimVariable *usSimulatorGetVariableListWithType(UnisimSimulator simulator,
 		UnisimVariableType variableType)
-/****************************************************************************/
 {
 	std::list<unisim::kernel::service::VariableBase *> unisimVariableBaseList;
 	UnisimVariable *variableList;
@@ -482,15 +464,13 @@ UnisimVariable *usSimulatorGetVariableListWithType(UnisimSimulator simulator,
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                 PRIVATELY EXPORTED FUNCTIONS                           **/
-/**                                                                        **/
+/*                                                                         **/
+/*                  PRIVATELY EXPORTED FUNCTIONS                           **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
 void usSimulatorRegisterVariable(UnisimSimulator simulator, 
 		UnisimVariable variable)
-/****************************************************************************/
 {
 	std::map<UnisimVariable, UnisimVariable>::iterator variableIterator;
 
@@ -521,10 +501,8 @@ void usSimulatorRegisterVariable(UnisimSimulator simulator,
 	(*simulator->variablesRegistered)[variable] = variable;
 }
 
-/****************************************************************************/
 void usSimulatorUnregisterVariable(UnisimSimulator simulator,
 		UnisimVariable variable)
-/****************************************************************************/
 {
 	std::map<UnisimVariable, UnisimVariable>::iterator variableIterator;
 
@@ -555,10 +533,8 @@ void usSimulatorUnregisterVariable(UnisimSimulator simulator,
 	simulator->variablesRegistered->erase(variableIterator);
 }
 
-/****************************************************************************/
 void usSimulatorRegisterExtendedAPI(UnisimSimulator simulator, 
 		UnisimExtendedAPI api)
-/****************************************************************************/
 {
 	std::map<UnisimExtendedAPI, UnisimExtendedAPI>::iterator apiIterator;
 
@@ -589,10 +565,8 @@ void usSimulatorRegisterExtendedAPI(UnisimSimulator simulator,
 	(*simulator->apisRegistered)[api] = api;
 }
 
-/****************************************************************************/
 void usSimulatorUnregisterExtendedAPI(UnisimSimulator simulator,
 		UnisimExtendedAPI api)
-/****************************************************************************/
 {
 	std::map<UnisimExtendedAPI, UnisimExtendedAPI>::iterator apiIterator;
 
@@ -624,16 +598,14 @@ void usSimulatorUnregisterExtendedAPI(UnisimSimulator simulator,
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     LOCAL FUNCTIONS                                    **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      LOCAL FUNCTIONS                                    **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
 bool TransformVariableTypeToUnisimVariableBaseType(
 		UnisimVariableType variableType,
 		unisim::kernel::service::VariableBase::Type &unisimVariableBaseType)
-/****************************************************************************/
 {
 	switch ( variableType )
 	{
@@ -663,8 +635,8 @@ bool TransformVariableTypeToUnisimVariableBaseType(
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                               EOF                                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                                EOF                                      **/
+/*                                                                         **/
 /****************************************************************************/
 

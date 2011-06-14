@@ -1,28 +1,43 @@
 /*
-                             *******************
-******************************* C SOURCE FILE *******************************
-**                           *******************                           **
-**                                                                         **
-** project   : UNISIM C API                                                **
-** filename  : debug/debug.c                                               **
-** version   : 1                                                           **
-** date      : 31/05/2011                                                  **
-**                                                                         **
-*****************************************************************************
-**                                                                         **
-** Copyright (c) 2011, Commissariat a l'Energie Atomique (CEA)             **
-** All rights reserved.                                                    **
-**                                                                         **
-*****************************************************************************
-
-*/
+ *  Copyright (c) 2011
+ *  Commissariat a l'Energie Atomique (CEA)
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification,
+ *  are permitted provided that the following conditions are met:
+ *
+ *   - Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of CEA nor the names of its contributors may be used to
+ *     endorse or promote products derived from this software without specific prior
+ *     written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED.
+ *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+ *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+ *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ */
 
 #define __UNISIM__UAPI__DEBUG__DEBUG__C_SRC
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     MODULES USED                                       **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      MODULES USED                                       **/
+/*                                                                         **/
 /****************************************************************************/
 
 #include <string.h>
@@ -30,54 +45,60 @@
 #include "unisim/uapi/uapi_priv.h"
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     DEFINITIONS AND MACROS                             **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      DEFINITIONS AND MACROS                             **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     TYPEDEFS AND STRUCTURES                            **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      TYPEDEFS AND STRUCTURES                            **/
+/*                                                                         **/
 /****************************************************************************/
 
+/**
+ * Definition of the debug api state.
+ */
 struct _UnisimDebugAPI
 {
-	struct _UnisimExtendedAPI eapi;
-	unisim::api::debug::DebugAPI *api;
+	struct _UnisimExtendedAPI eapi; /**< Pointer to the generic extended api state */
+	unisim::api::debug::DebugAPI *api; /**< Pointer to the c++ unisim debug api */
 };
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     PROTOTYPES OF LOCAL FUNCTIONS                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      PROTOTYPES OF LOCAL FUNCTIONS                      **/
+/*                                                                         **/
+/****************************************************************************/
+
+/**
+ * Destroy an unregistered debug api object.
+ * This method should only be called when the simulator is being destroyed without
+ * having previously destroyed the debug api object itself.
+ *
+ * @param dapi The debug api object to destroy.
+ */
+void usDestroyUnregisteredDebugAPI(UnisimDebugAPI dapi);
+
+/****************************************************************************/
+/*                                                                         **/
+/*                      EXPORTED VARIABLES                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-void usDestroyUnregisteredDebugAPI(UnisimDebugAPI api);
+/*                                                                         **/
+/*                      GLOBAL VARIABLES                                   **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED VARIABLES                                 **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      EXPORTED FUNCTIONS                                 **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
-/**                                                                        **/
-/**                     GLOBAL VARIABLES                                   **/
-/**                                                                        **/
-/****************************************************************************/
-
-/****************************************************************************/
-/**                                                                        **/
-/**                     EXPORTED FUNCTIONS                                 **/
-/**                                                                        **/
-/****************************************************************************/
-
-/****************************************************************************/
 UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi)
-/****************************************************************************/
 {
 	if ( eapi == 0 ) return 0;
 
@@ -105,9 +126,7 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi)
 	return debugApi;
 }
 
-/****************************************************************************/
 void usDestroyDebugAPI(UnisimDebugAPI api)
-/****************************************************************************/
 {
 	if ( api == 0 ) return;
 
@@ -120,20 +139,18 @@ void usDestroyDebugAPI(UnisimDebugAPI api)
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                 PRIVATELY EXPORTED FUNCTIONS                           **/
-/**                                                                        **/
+/*                                                                         **/
+/*                  PRIVATELY EXPORTED FUNCTIONS                           **/
+/*                                                                         **/
 /****************************************************************************/
 
 /****************************************************************************/
-/**                                                                        **/
-/**                     LOCAL FUNCTIONS                                    **/
-/**                                                                        **/
+/*                                                                         **/
+/*                      LOCAL FUNCTIONS                                    **/
+/*                                                                         **/
 /****************************************************************************/
 
-/****************************************************************************/
 void usDestroyUnregisteredDebugAPI(UnisimDebugAPI api)
-/****************************************************************************/
 {
 	if ( api == 0 ) return;
 
@@ -145,8 +162,8 @@ void usDestroyUnregisteredDebugAPI(UnisimDebugAPI api)
 }
 
 /****************************************************************************/
-/**                                                                        **/
-/**                               EOF                                      **/
-/**                                                                        **/
+/*                                                                         **/
+/*                                EOF                                      **/
+/*                                                                         **/
 /****************************************************************************/
 
