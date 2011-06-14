@@ -77,7 +77,7 @@ void PIMThread::Run(){
 			super::stop();
 		} else {
 
-// qRcmd,cmd;var_name[:value]{;var_name[:value]}
+// qRcmd,cmd;var_name[:value];{var_name[:value];}
 			int start_index = 0;
 			int end_index = buf_str.find(',');
 			string qRcmd = buf_str.substr(start_index, end_index-start_index);
@@ -92,7 +92,7 @@ void PIMThread::Run(){
 
 				std::ostringstream os;
 
-				os << GetSimTime();
+				os << GetSimTime() << ";";
 
 				do {
 
@@ -105,10 +105,12 @@ void PIMThread::Run(){
 						for (int i=0; i < simulator_variables.size(); i++) {
 							if (name.compare(simulator_variables[i]->GetName()) == 0) {
 
-								os << ";" << simulator_variables[i]->GetName() << ":";
+								os << simulator_variables[i]->GetName() << ":";
 
 								double val = *(simulator_variables[i]);
 								os << stringify(val);
+
+								os << ";";
 
 								break;
 							}
