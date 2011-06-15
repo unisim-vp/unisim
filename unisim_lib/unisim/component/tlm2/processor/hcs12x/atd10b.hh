@@ -136,7 +136,7 @@ public:
 	void Process();
 	void RunScanMode();
 	void RunTriggerMode();
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	//================================================================
 	//=                    tlm2 Interface                            =

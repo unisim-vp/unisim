@@ -147,7 +147,7 @@ public:
 	virtual double  GetSimulatedTime();
 
 	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();

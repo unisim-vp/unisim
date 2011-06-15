@@ -77,11 +77,11 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ECT::read_write);
-	bus_clock_socket.register_b_transport(this, &ECT::UpdateBusClock);
+	bus_clock_socket.register_b_transport(this, &ECT::updateBusClock);
 
 	SC_HAS_PROCESS(ECT);
 
-	SC_THREAD(Run);
+	SC_THREAD(run);
 
 }
 
@@ -100,7 +100,7 @@ ECT::~ECT() {
 
 }
 
-void ECT::Run() {
+void ECT::run() {
 
 	sc_time delay = sc_time(1, SC_MS);
 
@@ -265,7 +265,7 @@ void ECT::ComputeInternalTime() {
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 }
 
-void ECT::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+void ECT::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );

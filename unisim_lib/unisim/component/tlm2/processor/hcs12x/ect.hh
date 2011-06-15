@@ -133,9 +133,9 @@ public:
 	ECT(const sc_module_name& name, Object *parent = 0);
 	virtual ~ECT();
 
-	void Run();
+	void run();
 	void assertInterrupt(uint8_t interrupt_offset);
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     //================================================================
     //=                    tlm2 Interface                            =

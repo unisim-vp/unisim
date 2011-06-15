@@ -133,6 +133,7 @@ public:
 	virtual ~CRG();
 
 	void RunRTI();
+	void RunCOP();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 
@@ -197,8 +198,14 @@ private:
 	sc_time		pll_clock;
 	sc_time		bus_clock;
 
-	sc_event rti_enable_event;
+	sc_event	rti_enable_event;
+	sc_event	cop_enable_event;
 
+	bool armcop_write_enabled;
+	bool cop_timeout_reset;
+	bool cop_timeout_restart;
+
+	// MC9S12XDP512V2 - CRG baseAddress
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
@@ -222,11 +229,9 @@ private:
 
 	void compute_clock();
 	void initialize_rti_counter();
-	void UpdateBusClock();
+	void updateBusClock();
 
-	void select_cop_timeout();
-	void cop_reset();
-	void restart_cop_timeout();
+	void systemReset();
 
 	// =============================================
 	// =            Registers                      =

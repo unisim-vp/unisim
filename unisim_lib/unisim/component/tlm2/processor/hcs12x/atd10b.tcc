@@ -110,7 +110,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
-	bus_clock_socket.register_b_transport(this, &ATD10B::UpdateBusClock);
+	bus_clock_socket.register_b_transport(this, &ATD10B::updateBusClock);
 
 	SC_HAS_PROCESS(ATD10B);
 
@@ -853,7 +853,7 @@ void ATD10B<ATD_SIZE>::ComputeInternalTime() {
 }
 
 template <uint8_t ATD_SIZE>
-void ATD10B<ATD_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+void ATD10B<ATD_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
