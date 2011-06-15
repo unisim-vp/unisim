@@ -22,7 +22,7 @@ string ( REGEX MATCH "-fPIC"
 	FPIC_MATCH "${FLAGS}" )
 if ( FPIC_MATCH )
 else ( FPIC_MATCH )
-	set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
+	set_property ( CACHE CMAKE_CXX_FLAGS APPEND PROPERTY VALUE "-fPIC" ) 
 endif ( FPIC_MATCH )
 get_property ( FLAGS
 	VARIABLE
@@ -31,7 +31,7 @@ string ( REGEX MATCH "-fPIC"
 	FPIC_MATCH "${FLAGS}" )
 if ( FPIC_MATCH )
 else ( FPIC_MATCH )
-	set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC" )
+	set_property ( CACHE CMAKE_C_FLAGS APPEND PROPERTY VALUE "-fPIC" ) 
 endif ( FPIC_MATCH )
 
 if ( UNIX AND NOT APPLE )
