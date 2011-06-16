@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <sstream>
+#include <map>
 #include <dlfcn.h>
 #include <inttypes.h>
 #include "unisim/uapi/uapi.h"
@@ -75,6 +76,10 @@ typedef UnisimDebugAPI (* _usCreateDebugAPI_type)(UnisimExtendedAPI);
 _usCreateDebugAPI_type _usCreateDebugAPI;
 typedef void (* _usDestroyDebugAPI_type)(UnisimDebugAPI);
 _usDestroyDebugAPI_type _usDestroyDebugAPI;
+typedef bool (* _usDebugAPISetBreakpointHandler_type)(UnisimDebugAPI, void (* callback)(UnisimDebugAPI, uint64_t));
+_usDebugAPISetBreakpointHandler_type _usDebugAPISetBreakpointHandler;
+typedef bool (* _usDebugAPISetStepMode_type)(UnisimDebugAPI);
+_usDebugAPISetStepMode_type _usDebugAPISetStepMode;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -173,6 +178,10 @@ bool load_lib()
 		return false;
 	if ( !load_sym(simlib, "usDestroyDebugAPI", _usDestroyDebugAPI) )
 		return false;
+	if ( !load_sym(simlib, "usDebugAPISetBreakpointHandler", _usDebugAPISetBreakpointHandler) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetStepMode", _usDebugAPISetStepMode) )
+		return false;
 
 	return true;
 }
@@ -258,6 +267,12 @@ std::string SimulatorStatusAsString(UnisimSimulatorStatus status)
 			break;
 	}
 	return str.str();
+}
+
+std::map<uint64_t, uint64_t> insn_trace;
+void BreakpointHandler(UnisimDebugAPI dapi, uint64_t addr)
+{
+	insn_trace[addr]++;
 }
 
 int test()
@@ -429,6 +444,7 @@ int test()
 		<< variablesCounter << " variables)" << std::endl;
 
 	std::cerr << "Testing Extended API" << std::endl;
+	UnisimDebugAPI dapi = 0;
 	UnisimExtendedAPI *apiList = _usSimulatorGetExtendedAPIList(simulator);
 	int apiListIndex = 0;
 	while ( (apiList != 0) && (apiList[apiListIndex] != 0) )
@@ -438,8 +454,7 @@ int test()
 			<< _usExtendedAPIGetTypeName(api) << ")" << std::endl;
 		if ( strcmp("DebugAPI", _usExtendedAPIGetTypeName(api)) == 0 )
 		{
-			UnisimDebugAPI dapi = _usCreateDebugAPI(api);
-			// _usDestroyDebugAPI(dapi);
+			dapi = _usCreateDebugAPI(api);
 		}
 		_usDestroyExtendedAPI(api);
 		apiListIndex++;
@@ -476,6 +491,21 @@ int test()
 		return CloseSimulator(simulator);
 	}
 	_usVariableSetListener(instructionCounterVariable, InstructionCounterListener);
+	if ( dapi != 0 )
+	{
+		std::cerr << " - setting up debug step mode and breakpoint handler" << std::endl;
+		if ( _usDebugAPISetBreakpointHandler(dapi, BreakpointHandler) )
+		{
+			if ( !_usDebugAPISetStepMode(dapi) )
+			{
+				std::cerr << "   - could not activate debug step mode" << std::endl;
+			}
+		}
+		else
+		{
+			std::cerr << "   - could not set breakpoint handler" << std::endl;
+		}
+	}
 
 	bool ok = _usSimulatorRun(simulator);
 	if ( !ok )
@@ -492,6 +522,12 @@ int main()
 	{
 		std::cerr << "Could not do more than once" << std::endl;
 		return 0;
+	}
+	for ( std::map<uint64_t, uint64_t>::iterator it = insn_trace.begin();
+			it != insn_trace.end();
+			it++ )
+	{
+		std::cerr << "0x" << std::hex << (*it).first << std::dec << ": " << (*it).second << std::endl;
 	}
 	return test();
 }

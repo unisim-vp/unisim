@@ -41,6 +41,8 @@
 /*                                                                         **/
 /****************************************************************************/
 
+#include <inttypes.h>
+
 #include "unisim/uapi/types.h"
 
 extern "C"
@@ -85,9 +87,32 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi);
 /**
  * Destroys a debug api handler.
  *
- * @param dapi the debug api to destroy.
+ * @param dapi The debug handler to destroy.
  */
 void usDestroyDebugAPI(UnisimDebugAPI api);
+
+/**
+ * Set the debug handler into step mode.
+ * The breakpoint handler will be called before the execution of a new instruction.
+ *
+ * @param dapi The debug handler to configure.
+ *
+ * @return True if could be set into step mode, false otherwise.
+ */
+bool usDebugAPISetStepMode(UnisimDebugAPI dapi);
+
+/**
+ * Set the breakpoint callback handler for the given debug handler.
+ * The breakpoint will be called each time a breakpoint is found or under step
+ * mode before the execution of any instruction.
+ *
+ * @param dapi The debug handler to configure.
+ * @param callback Pointer to the breakpoint callback handler.
+ *
+ * @return True if the callback could be set, false otherwise.
+ */
+bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
+		void (* callback)(UnisimDebugAPI , uint64_t));
 
 }
 

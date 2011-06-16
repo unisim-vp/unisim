@@ -121,6 +121,7 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi)
 	debugApi->eapi.usDestroyAPI = (void (*)(UnisimExtendedAPI))usDestroyDebugAPI;
 	debugApi->eapi.usDestroyUnregisteredAPI = (void (*)(UnisimExtendedAPI))usDestroyUnregisteredDebugAPI;
 	debugApi->api = static_cast<unisim::api::debug::DebugAPI *>(unisimApi);
+	debugApi->api->SetHandlerContext(debugApi);
 	usSimulatorRegisterExtendedAPI(simulator, (UnisimExtendedAPI)debugApi);
 	
 	return debugApi;
@@ -136,6 +137,21 @@ void usDestroyDebugAPI(UnisimDebugAPI api)
 	api->eapi.usDestroyAPI = 0;
 	api->api = 0;
 	free(api);
+}
+
+bool usDebugAPISetStepMode(UnisimDebugAPI dapi)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetStepMode();
+}
+
+bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
+		void (* callback)(UnisimDebugAPI, uint64_t))
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetBreakpointHandler((void (*)(void *, uint64_t))callback);	
 }
 
 /****************************************************************************/
