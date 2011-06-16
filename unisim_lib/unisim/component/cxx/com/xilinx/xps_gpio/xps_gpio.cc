@@ -43,6 +43,19 @@ namespace com {
 namespace xilinx {
 namespace xps_gpio {
 
+const unsigned int Config::C_SPLB_DWITH;
+const unsigned int Config::C_GPIO_WIDTH;
+const unsigned int Config::C_GPIO2_WIDTH;
+const Config::MEMORY_ADDR Config::C_BASEADDR;
+const Config::MEMORY_ADDR Config::C_HIGHADDR;
+	
+const uint32_t Config::C_DOUT_DEFAULT;
+const uint32_t Config::C_TRI_DEFAULT;
+const uint32_t Config::C_DOUT_DEFAULT_2;
+const uint32_t Config::C_TRI_DEFAULT_2;
+const bool Config::C_IS_DUAL;
+const bool Config::C_INTERRUPT_IS_PRESENT;
+
 template class XPS_GPIO<Config>;
 template void XPS_GPIO<Config>::Read(Config::MEMORY_ADDR, uint8_t& value);
 template void XPS_GPIO<Config>::Read(Config::MEMORY_ADDR, uint16_t& value);

@@ -225,7 +225,7 @@ void CPU<CONFIG>::ProcessExternalEvents()
 	time_stamp += cpu_time;
 	Event *event = external_event_schedule.GetNextEvent(time_stamp);
 	
-	if(event)
+	if(unlikely(event != 0))
 	{
 		do
 		{
@@ -348,6 +348,8 @@ inline void CPU<CONFIG>::UpdateTime()
 	if(unlikely(run_time > timer_time))
 	{
 		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
+		
+#if 0
 		do
 		{
 			//std::cerr << "timer_time=" << timer_time << std::endl;
@@ -355,6 +357,26 @@ inline void CPU<CONFIG>::UpdateTime()
 			timer_time += timer_cycle_time;
 		}
 		while(unlikely(run_time > timer_time));
+#else
+		// Note: this code brings a slight speed improvement (6 %)
+#if 0
+		sc_time delta_time(run_time);
+		delta_time -= timer_time;
+		uint64_t delta = (uint64_t) ceil(delta_time / timer_cycle_time);
+		inherited::RunTimers(delta);
+		sc_time t(timer_cycle_time);
+		t *= (double) delta;
+		timer_time += t;
+#else
+		sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
+		sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
+		uint64_t delta = (delta_time_tu + timer_cycle_time_tu - 1) / timer_cycle_time_tu;
+		inherited::RunTimers(delta);
+		sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
+		sc_time t(t_tu, false);
+		timer_time += t;
+#endif
+#endif
 	}
 }
 

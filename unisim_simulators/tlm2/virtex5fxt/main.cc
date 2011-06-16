@@ -381,6 +381,11 @@ private:
 #endif
 };
 
+const unsigned int Simulator::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int Simulator::GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int Simulator::GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH;
+const unsigned int Simulator::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH;
+
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)

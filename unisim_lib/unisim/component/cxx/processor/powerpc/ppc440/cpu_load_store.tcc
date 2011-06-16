@@ -362,6 +362,7 @@ void CPU<CONFIG>::Int8Load(unsigned int rd, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint16_t value;
 	EmuLoad<uint16_t, false, false>(value, ea);
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
@@ -372,6 +373,7 @@ void CPU<CONFIG>::Int16Load(unsigned int rd, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint16_t value;
 	EmuLoad<uint16_t, false, false>(value, ea);
 	gpr[rd] = (uint32_t) (int16_t) value; // 16-bit to 32-bit sign extension
@@ -382,6 +384,7 @@ void CPU<CONFIG>::SInt16Load(unsigned int rd, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint32_t value;
 	EmuLoad<uint32_t, false, false>(value, ea);
 	gpr[rd] = value;
@@ -392,6 +395,8 @@ void CPU<CONFIG>::Int32Load(unsigned int rd, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 {
+	// check alignment
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint32_t value;
 	EmuLoad<uint32_t, false, false>(value, ea);
 	Flags flags;
@@ -404,6 +409,7 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 7) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint64_t value;
 	EmuLoad<uint64_t, false, false>(value, ea);
 	fpr[fd] = SoftDouble(value);
@@ -414,6 +420,7 @@ void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint16_t value;
 	EmuLoad<uint16_t, true, false>(value, ea); // reversed
 	gpr[rd] = (uint32_t) value; // 16-bit to 32-bit zero extension
@@ -424,6 +431,7 @@ void CPU<CONFIG>::Int16LoadByteReverse(unsigned int rd, typename CONFIG::address
 template <class CONFIG>
 void CPU<CONFIG>::Int32LoadByteReverse(unsigned int rd, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint32_t value;
 	EmuLoad<uint32_t, true, false>(value, ea); // reversed
 	gpr[rd] = value;
@@ -484,6 +492,7 @@ void CPU<CONFIG>::Int8Store(unsigned int rs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint16_t value = (uint16_t) gpr[rs];
 	EmuStore<uint16_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
@@ -493,6 +502,7 @@ void CPU<CONFIG>::Int16Store(unsigned int rs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint32_t value = gpr[rs];
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
@@ -502,6 +512,7 @@ void CPU<CONFIG>::Int32Store(unsigned int rs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	Flags flags;
 	flags.setRoundingMode(RN_ZERO);
 	uint32_t value = SoftFloat(fpr[fs], flags).queryValue();
@@ -513,6 +524,7 @@ void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 7) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint64_t value = fpr[fs].queryValue();
 	EmuStore<uint64_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
@@ -522,6 +534,7 @@ void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 3) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint32_t value = (uint32_t) fpr[fs].queryValue();
 	EmuStore<uint32_t, false, false>(value, ea);
 	MonitorStore(ea, sizeof(value));
@@ -531,6 +544,7 @@ void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 template <class CONFIG>
 void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
+	if(unlikely((ea & 1) && GetCCR0_FLSTA() && !linux_os_import)) throw AlignmentException<CONFIG>(ea);
 	uint16_t value = (uint16_t) gpr[rs];
 	EmuStore<uint16_t, true, false>(value, ea); // reversed
 	MonitorStore(ea, sizeof(value));
@@ -540,6 +554,7 @@ void CPU<CONFIG>::Int16StoreByteReverse(unsigned int rs, typename CONFIG::addres
 template <class CONFIG>
 void CPU<CONFIG>::Int32StoreByteReverse(unsigned int rs, typename CONFIG::address_t ea)
 {
+	if(unlikely(GetCCR0_FLSTA() && (ea & 3))) throw AlignmentException<CONFIG>(ea);
 	uint32_t value = gpr[rs];
 	EmuStore<uint32_t, true, false>(value, ea); // reversed
 	MonitorStore(ea, sizeof(value));
