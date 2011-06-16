@@ -161,6 +161,20 @@ bool usDebugAPISetContinueMode(UnisimDebugAPI dapi)
 	return dapi->api->SetContinueMode();
 }
 
+bool usDebugAPIIsModeStep(UnisimDebugAPI dapi)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->IsModeStep();
+}
+
+bool usDebugAPIIsModeContinue(UnisimDebugAPI dapi)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->IsModeContinue();
+}
+
 /****************************************************************************/
 /*                                                                         **/
 /*                  PRIVATELY EXPORTED FUNCTIONS                           **/

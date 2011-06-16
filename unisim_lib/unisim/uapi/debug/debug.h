@@ -124,6 +124,24 @@ bool usDebugAPISetStepMode(UnisimDebugAPI dapi);
  */
 bool usDebugAPISetContinueMode(UnisimDebugAPI dapi);
 
+/**
+ * Returns true if the debugger is in step mode.
+ *
+ * @param dapi The debug handler to request.
+ *
+ * @return True if the debug handler is in step mode, false otherwise.
+ */
+bool usDebugAPIIsModeStep(UnisimDebugAPI dapi);
+
+/**
+ * Return true if the debugger is in continue mode.
+ *
+ * @param dapi The debug handler to request.
+ *
+ * @return True if the debug handler is in continue mode, false otherwise.
+ */
+bool usDebugAPIIsModeContinue(UnisimDebugAPI dapi);
+
 }
 
 #endif

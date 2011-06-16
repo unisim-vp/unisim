@@ -82,6 +82,10 @@ typedef bool (* _usDebugAPISetStepMode_type)(UnisimDebugAPI);
 _usDebugAPISetStepMode_type _usDebugAPISetStepMode;
 typedef bool (* _usDebugAPISetContinueMode_type)(UnisimDebugAPI);
 _usDebugAPISetContinueMode_type _usDebugAPISetContinueMode;
+typedef bool (* _usDebugAPIIsModeStep_type)(UnisimDebugAPI);
+_usDebugAPIIsModeStep_type _usDebugAPIIsModeStep;
+typedef bool (* _usDebugAPIIsModeContinue_type)(UnisimDebugAPI);
+_usDebugAPIIsModeContinue_type _usDebugAPIIsModeContinue;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -185,6 +189,10 @@ bool load_lib()
 	if ( !load_sym(simlib, "usDebugAPISetStepMode", _usDebugAPISetStepMode) )
 		return false;
 	if ( !load_sym(simlib, "usDebugAPISetContinueMode", _usDebugAPISetContinueMode) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIIsModeStep", _usDebugAPIIsModeStep) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIIsModeContinue", _usDebugAPIIsModeContinue) )
 		return false;
 
 	return true;
