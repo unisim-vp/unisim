@@ -60,7 +60,7 @@ echo "<?xml version='1.0' encoding='UTF-8'?>
 </repositories>" > config.xml
 
 # copy files required into the src directory
-python3.1 ${REPO_PATH}/package/puscomp/puscomp.py -c config.xml -o src -v unisim_simulator::tlm2::arm926ejs
+python3.1 ${REPO_PATH}/package/puscomp/puscomp.py -c config.xml -o src unisim_simulator::tlm2::arm926ejs
 
 # configure and build the simulator
 cd build
