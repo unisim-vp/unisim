@@ -92,16 +92,6 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi);
 void usDestroyDebugAPI(UnisimDebugAPI api);
 
 /**
- * Set the debug handler into step mode.
- * The breakpoint handler will be called before the execution of a new instruction.
- *
- * @param dapi The debug handler to configure.
- *
- * @return True if could be set into step mode, false otherwise.
- */
-bool usDebugAPISetStepMode(UnisimDebugAPI dapi);
-
-/**
  * Set the breakpoint callback handler for the given debug handler.
  * The breakpoint will be called each time a breakpoint is found or under step
  * mode before the execution of any instruction.
@@ -113,6 +103,26 @@ bool usDebugAPISetStepMode(UnisimDebugAPI dapi);
  */
 bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
 		void (* callback)(UnisimDebugAPI , uint64_t));
+
+/**
+ * Set the debug handler into step mode.
+ * The breakpoint handler will be called before the execution of a new instruction.
+ *
+ * @param dapi The debug handler to configure.
+ *
+ * @return True if could be set into step mode, false otherwise.
+ */
+bool usDebugAPISetStepMode(UnisimDebugAPI dapi);
+
+/**
+ * Set the debug handler into continue mode.
+ * The breakpoint handler will only be called when a breakpoint is found.
+ *
+ * @param dapi The debug handler to configure.
+ *
+ * @return True if could be set into step mode, false otherwise.
+ */
+bool usDebugAPISetContinueMode(UnisimDebugAPI dapi);
 
 }
 

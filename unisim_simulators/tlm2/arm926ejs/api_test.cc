@@ -80,6 +80,8 @@ typedef bool (* _usDebugAPISetBreakpointHandler_type)(UnisimDebugAPI, void (* ca
 _usDebugAPISetBreakpointHandler_type _usDebugAPISetBreakpointHandler;
 typedef bool (* _usDebugAPISetStepMode_type)(UnisimDebugAPI);
 _usDebugAPISetStepMode_type _usDebugAPISetStepMode;
+typedef bool (* _usDebugAPISetContinueMode_type)(UnisimDebugAPI);
+_usDebugAPISetContinueMode_type _usDebugAPISetContinueMode;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -181,6 +183,8 @@ bool load_lib()
 	if ( !load_sym(simlib, "usDebugAPISetBreakpointHandler", _usDebugAPISetBreakpointHandler) )
 		return false;
 	if ( !load_sym(simlib, "usDebugAPISetStepMode", _usDebugAPISetStepMode) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetContinueMode", _usDebugAPISetContinueMode) )
 		return false;
 
 	return true;

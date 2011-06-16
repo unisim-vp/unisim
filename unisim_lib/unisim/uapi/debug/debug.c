@@ -139,6 +139,14 @@ void usDestroyDebugAPI(UnisimDebugAPI api)
 	free(api);
 }
 
+bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
+		void (* callback)(UnisimDebugAPI, uint64_t))
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetBreakpointHandler((void (*)(void *, uint64_t))callback);	
+}
+
 bool usDebugAPISetStepMode(UnisimDebugAPI dapi)
 {
 	if ( dapi == 0 ) return false;
@@ -146,12 +154,11 @@ bool usDebugAPISetStepMode(UnisimDebugAPI dapi)
 	return dapi->api->SetStepMode();
 }
 
-bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
-		void (* callback)(UnisimDebugAPI, uint64_t))
+bool usDebugAPISetContinueMode(UnisimDebugAPI dapi)
 {
 	if ( dapi == 0 ) return false;
-
-	return dapi->api->SetBreakpointHandler((void (*)(void *, uint64_t))callback);	
+	
+	return dapi->api->SetContinueMode();
 }
 
 /****************************************************************************/
