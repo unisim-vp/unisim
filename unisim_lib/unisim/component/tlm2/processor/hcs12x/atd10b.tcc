@@ -105,7 +105,6 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 		analog_signal[i] = vrl;
 		analog_signal_reg[i].SetMutable(true);
 	}
-	
 
 	anx_socket(*this);
 	interrupt_request(*this);
@@ -119,6 +118,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	// TODO: Scan External Trigger Channels. I think to use ANx Channels !!!
 	SC_THREAD(RunTriggerMode);
 	sensitive << trigger_event;
+
+	Reset();
 
 }
 
@@ -933,8 +934,6 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 
 		return false;
 	}
-
-	Reset();
 
 	ComputeInternalTime();
 

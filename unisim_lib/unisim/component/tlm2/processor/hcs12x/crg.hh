@@ -51,6 +51,7 @@
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_initiator_socket.h"
+//#include "tlm_utils/multi_passthrough_target_socket.h"
 
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
@@ -124,6 +125,8 @@ public:
 	tlm_utils::multi_passthrough_initiator_socket<CRG> bus_clock_socket;
 
 	tlm_utils::simple_target_socket<CRG> slave_socket;
+
+//	tlm_utils::multi_passthrough_target_socket<CRG> reset_socket;
 
 	ServiceExport<Memory<service_address_t> > memory_export;
 	ServiceImport<Memory<service_address_t> > memory_import;
@@ -227,11 +230,16 @@ private:
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 
-	void compute_clock();
-	void initialize_rti_counter();
-	void updateBusClock();
+	inline void compute_clock();
+	inline void initialize_rti_counter();
+	inline void updateBusClock();
 
-	void systemReset();
+	inline void systemReset();
+
+	inline void set_crgflg_lock();
+	inline void clear_crgflg_lock();
+	inline void set_crgflg_track();
+	inline void clear_crgflg_track();
 
 	// =============================================
 	// =            Registers                      =

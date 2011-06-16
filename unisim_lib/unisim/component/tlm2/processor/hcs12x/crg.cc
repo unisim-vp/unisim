@@ -61,6 +61,19 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
+	, synr_register(0x00)
+	, refdv_register(0x00)
+	, ctflg_register(0x00)
+	, crgflg_register(0x00)
+	, crgint_register(0x00)
+	, clksel_register(0x00)
+	, pllctl_register(0xF1)
+	, rtictl_register(0x00)
+	, copctl_register(0x00)
+	, forbyp_register(0x00)
+	, ctctl_register(0x00)
+	, armcop_register(0x00)
+
 	, armcop_write_enabled(false)
 	, cop_timeout_reset(false)
 	, cop_timeout_restart(false)
@@ -86,6 +99,8 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 
 	slave_socket.register_b_transport(this, &CRG::read_write);
+
+//	reset_socket.register_b_transport(this, &CRG::reset_handler);
 
 	SC_HAS_PROCESS(CRG);
 
@@ -150,6 +165,31 @@ bool CRG::read(uint8_t offset, uint8_t &value) {
 	return true;
 }
 
+inline void CRG::set_crgflg_lock() {
+
+	uint8_t old_crgflg_register = crgflg_register;
+	crgflg_register = old_crgflg_register | 0x08;
+	if (((crgflg_register & 0x08) & (old_crgflg_register & 0x08)) == 0) {
+		assertInterrupt(interrupt_offset_pll_lock);
+	}
+
+}
+inline void CRG::clear_crgflg_lock() {
+
+	uint8_t old_crgflg_register = crgflg_register;
+	crgflg_register = old_crgflg_register & 0xF7;
+	if (((crgflg_register & 0x08) & (old_crgflg_register & 0x08)) == 0) {
+		assertInterrupt(interrupt_offset_pll_lock);
+	}
+}
+
+inline void CRG::set_crgflg_track() {
+	crgflg_register = crgflg_register | 0x04;
+}
+inline void CRG::clear_crgflg_track() {
+	crgflg_register = crgflg_register & 0xFB;
+}
+
 bool CRG::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
@@ -160,10 +200,14 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 			}
 
 			synr_register = value & 0x3F;
-			crgflg_register = crgflg_register | 0x0C; // set Lock and track bits
 
 			compute_clock();
-			updateBusClock();
+
+			/**
+			 * Write to SYNR register initializes the lock detector bit and the track detector bit.
+			 */
+			set_crgflg_lock();
+			set_crgflg_track();
 
 		} break;
 		case REFDV: {
@@ -173,48 +217,66 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 			}
 
 			refdv_register = value & 0x3F;
-			crgflg_register = crgflg_register | 0x1C;
 
 			compute_clock();
-			updateBusClock();
-			assertInterrupt(interrupt_offset_pll_lock);
+
+			/**
+			 * Write to SYNR register initializes the lock detector bit and the track detector bit.
+			 */
+			set_crgflg_lock();
+			set_crgflg_track();
+
 		} break;
 		case CTFLG: {
 			// This register is reserved for factory testing
 			return true;
 		} break;
 		case CRGFLG: {
-			/**
-			 * TODO:
-			 *  RTIF: set at the end of RTI period
-			 *  PORF: set when a power on occurs
-			 *  LVRF: set if low voltage reset
-			 *  LOCKIF: is set when Lock status bit change
-			 *  SCMIF: is set when SCM status bit change
-			 */
 
+			//  RTIF: set at the end of RTI period
 			if ((value & 0x80) != 0) {
 				crgflg_register = crgflg_register & 0x7F;
 			}
 
+			/** TODO:
+			 *  PORF: set when a power on occurs
+			 */
 			if ((value & 0x40) != 0) {
 				crgflg_register = crgflg_register & 0xBF;
 			}
 
+			/**
+			 * TODO:
+			 *  LVRF: set if low voltage reset
+			 */
 			if ((value & 0x20) != 0) {
 				crgflg_register = crgflg_register & 0xDF;
 			}
 
+			/**
+			 *  LOCKIF: is set when Lock status bit change
+			 */
 			if ((value & 0x10) != 0) {
 				crgflg_register = crgflg_register & 0xEF;
 			}
 
+			/**
+			 * TODO:
+			 *  SCMIF: is set when SCM status bit change
+			 */
 			if ((value & 0x02) != 0) {
 				crgflg_register = crgflg_register & 0xFD;
 			}
 
 		} break;
 		case CRGINT: {
+			/**
+			 * TODO:
+			 * ILAF bit is set to 1 when an illegal address reset occurs.
+			 * ILAF bit is Unaffected by system reset.
+			 * ILAF bit is Cleared by power on or low voltage reset.
+			 */
+
 			uint8_t val = value & 0xD2;
 
 			uint8_t old_ilaf_bit = crgint_register & 0x40;
@@ -229,9 +291,16 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 		} break;
 		case CLKSEL: {
-			clksel_register = value;
+
+			/**
+			 * TODO:
+			 * - PLLSEL bit is cleared when the MCU enters self clock mode, Stop mode or wait mode with PLLWAI bit set
+			 * - Pseudo Stop Bit: controls the functionality of the oscillator during stop mode.
+			 * -
+			 */
+			clksel_register = value & 0xCB;
 			compute_clock();
-			updateBusClock();
+
 
 		} break;
 		case PLLCTL: {
@@ -438,12 +507,19 @@ void CRG::compute_clock() {
 
 	pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
 
-	if ((clksel_register & 0x80) != 0) {
-		bus_clock = pll_clock * 2;
-	} else {
+	/**
+	 *  PLL Select Bit:
+	 *  Writing a1 when LOCK = 0 and AUTO = 1, or TRACK = 0 and AUTO = 0 has no effect.
+	 */
+	if ((((crgflg_register & 0x08) == 0) && ((pllctl_register & 0x20) != 0)) ||
+			((((crgflg_register & 0x04) == 0) && ((pllctl_register & 0x20) == 0))) ||
+			((clksel_register & 0x80) == 0)) {
 		bus_clock = oscillator_clock * 2;
+	} else {
+		bus_clock = pll_clock * 2;
 	}
 
+	updateBusClock();
 }
 
 void CRG::updateBusClock() {
@@ -545,10 +621,6 @@ bool CRG::BeginSetup() {
 
 	oscillator_clock = sc_time((double) oscillator_clock_int, SC_PS);
 
-	Reset();
-
-	compute_clock();
-
 	return true;
 }
 
@@ -587,6 +659,8 @@ void CRG::Reset() {
 	forbyp_register =  0x00;
 	ctctl_register = 0x00;
 	armcop_register = 0x00;
+
+	compute_clock();
 
 }
 

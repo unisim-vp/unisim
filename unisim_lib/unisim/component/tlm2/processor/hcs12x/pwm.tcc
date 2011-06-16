@@ -100,6 +100,9 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
 	bus_clock_socket.register_b_transport(this, &PWM::updateBusClock);
+
+	Reset();
+
 }
 
 template <uint8_t PWM_SIZE>
@@ -742,8 +745,6 @@ bool PWM<PWM_SIZE>::BeginSetup() {
 
 	sprintf(buf, "%s.PWMSDN",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsdn_register);
-
-	Reset();
 
 	ComputeInternalTime();
 

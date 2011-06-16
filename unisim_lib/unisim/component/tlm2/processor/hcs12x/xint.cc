@@ -73,6 +73,12 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	fromCPU_Target.register_b_transport(this, &XINT::getVectorAddress);
 	slave_socket.register_b_transport(this, &XINT::read_write);
 
+	SC_HAS_PROCESS(XINT);
+
+	SC_THREAD(Run);
+
+	zeroTime = sc_time((double)0, SC_PS);
+
 	XINT_REGS_ADDRESSES[IVBR]		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
 	XINT_REGS_RESET_VALUES[IVBR]	= 0xFF;		// IVBR is only one.
 
@@ -106,14 +112,7 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	XINT_REGS_ADDRESSES[INT_CFDATA7] = 0x012F;
 	XINT_REGS_RESET_VALUES[INT_CFDATA7]	= 0x01;
 
-
-	zeroTime = sc_time((double)0, SC_PS);
-
 	Reset();
-
-	SC_HAS_PROCESS(XINT);
-
-	SC_THREAD(Run);
 
 }
 

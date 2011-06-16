@@ -88,6 +88,8 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Run);
 
+	this->Reset();
+
 }
 
 
@@ -247,8 +249,6 @@ HCS12X ::BeginSetup() {
 	}
 
 	ComputeInternalTime();
-
-	this->Reset();
 
 	if(debug_enabled &&  inherited::verbose_setup) {
 		*inherited::logger << DebugInfo
