@@ -105,6 +105,17 @@ bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
 		void (* callback)(UnisimDebugAPI , uint64_t));
 
 /**
+ * Set the watchpoint callback handler for the given debug handler.
+ *
+ * @param dapi The debug handler to configure.
+ * @param callback Pointer to the watchpoint callback handler.
+ *
+ * @return True if the callback could be set, false otherwise.
+ */
+bool usDebugAPISetWatchpointHandler(UnisimDebugAPI dapi,
+		void (* callback)(UnisimDebugAPI, uint64_t, bool));
+
+/**
  * Set the debug handler into step mode.
  * The breakpoint handler will be called before the execution of a new instruction.
  *
@@ -141,6 +152,104 @@ bool usDebugAPIIsModeStep(UnisimDebugAPI dapi);
  * @return True if the debug handler is in continue mode, false otherwise.
  */
 bool usDebugAPIIsModeContinue(UnisimDebugAPI dapi);
+
+/**
+ * Get the address of the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param str [in] A null terminated string with the symbol.
+ * @param addr [in,out] The address of the resolved symbol.
+ *
+ * @return True if the debugger could handle the symbol, false otherwise.
+ */
+bool usDebugAPIGetSymbolAddress(UnisimDebugAPI dapi,
+		const char *str, uint64_t *addr);
+
+/**
+ * Get the address of the given file.
+ *
+ * @param dapi The ddebug handler to use.
+ * @param str [in] A null terminated string with the file name.
+ * @param addr [in,out] The address of the resolved file name.
+ *
+ * @return True if the debugger could handle the symbol, false otherwise.
+ */
+bool usDebugAPIGetFileSystemAddress(UnisimDebugAPI dapi,
+		const char *str, uint64_t *addr);
+
+/**
+ * Request the debugger if a breakpoint for the given address exists.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The breakpoint address to check.
+ *
+ * @return True if there is a breakpoint at the given address, false otherwise.
+ */
+bool usDebugAPIHasBreakpoint(UnisimDebugAPI dapi, uint64_t addr);
+
+/**
+ * Set a breakpoint at the given address.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The address at which the breakpoint should be set.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetBreakpoint(UnisimDebugAPI dapi, uint64_t addr);
+
+/**
+ * Delete an existing breakpoint using its address.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The address at which a breakpoint should be set.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteBreakpoint(UnisimDebugAPI dapi, uint64_t addr);
+
+/**
+ * Request the debugger if a breakpoint from the given symbol exists.
+ *
+ * @param dapi The debug handler to use.
+ * @param str [in] The symbol at which the breakpoint should be set.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIHasBreakpointSymbol(UnisimDebugAPI dapi, const char *str);
+
+/**
+ * Set a breakpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param str [in] The symbol at which a breakpoint should be set.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetBreakpointSymbol(UnisimDebugAPI dapi, const char *str);
+
+/**
+ * Delete an existing breakpoint using the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param str [in] The symbol at which a breakpoint should be set.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteBreakpointSymbol(UnisimDebugAPI dapi, const char *str);
+
+// TODO:
+// bool SetWatchpoint(uint64_t addr, uint32_t size);
+// bool SetReadWatchpoint(uint64_t addr, uint32_t size);
+// bool SetWriteWatchpoint(uint64_t addr, uint32_t size);
+// bool DeleteWatchpoint(uint64_t addr, uint32_t size);
+// bool DeleteReadWatchpoint(uint64_t addr, uint32_t size);
+// bool DeleteWriteWatchpoint(uint64_t addr, uint32_t size);
+// bool SetWatchpoint(const char *str, uint32_t size);
+// bool SetReadWatchpoint(const char *str, uint32_t size);
+// bool SetWriteWatchpoint(const char *str, uint32_t size);
+// bool DeleteWatchpoint(const char *str, uint32_t size);
+// bool DeleteReadWatchpoint(const char *str, uint32_t size);
+// bool DeleteWriteWatchpoint(const char *str, uint32_t size);
 
 }
 

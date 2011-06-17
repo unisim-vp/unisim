@@ -147,6 +147,14 @@ bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
 	return dapi->api->SetBreakpointHandler((void (*)(void *, uint64_t))callback);	
 }
 
+bool usDebugAPISetWatchpointHandler(UnisimDebugAPI dapi,
+		void (* callback)(UnisimDebugAPI, uint64_t, bool))
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetWatchpointHandler((void (*)(void *, uint64_t, bool))callback);
+}
+
 bool usDebugAPISetStepMode(UnisimDebugAPI dapi)
 {
 	if ( dapi == 0 ) return false;
@@ -173,6 +181,71 @@ bool usDebugAPIIsModeContinue(UnisimDebugAPI dapi)
 	if ( dapi == 0 ) return false;
 
 	return dapi->api->IsModeContinue();
+}
+
+bool usDebugAPIGetSymbolAddress(UnisimDebugAPI dapi,
+		const char *str, uint64_t *addr)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+	if ( addr == 0 ) return false;
+
+	return dapi->api->GetSymbolAddress(str, *addr);
+}
+
+bool usDebugAPIGetFileSystemAddress(UnisimDebugAPI dapi,
+		const char *str, uint64_t *addr)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+	if ( addr == 0 ) return false;
+
+	return dapi->api->GetFileSystemAddress(str, *addr);
+}
+
+bool usDebugAPIHasBreakpoint(UnisimDebugAPI dapi, uint64_t addr)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->HasBreakpoint(addr);
+}
+
+bool usDebugAPISetBreakpoint(UnisimDebugAPI dapi, uint64_t addr)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetBreakpoint(addr);
+}
+
+bool usDebugAPIDeleteBreakpoint(UnisimDebugAPI dapi, uint64_t addr)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->DeleteBreakpoint(addr);
+}
+
+bool usDebugAPIHasBreakpointSymbol(UnisimDebugAPI dapi, const char *str)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->HasBreakpoint(str);
+}
+
+bool usDebugAPISetBreakpointSymbol(UnisimDebugAPI dapi, const char *str)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->SetBreakpoint(str);
+}
+
+bool usDebugAPIDeleteBreakpointSymbol(UnisimDebugAPI dapi, const char *str)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->DeleteBreakpoint(str);
 }
 
 /****************************************************************************/

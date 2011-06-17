@@ -86,6 +86,22 @@ typedef bool (* _usDebugAPIIsModeStep_type)(UnisimDebugAPI);
 _usDebugAPIIsModeStep_type _usDebugAPIIsModeStep;
 typedef bool (* _usDebugAPIIsModeContinue_type)(UnisimDebugAPI);
 _usDebugAPIIsModeContinue_type _usDebugAPIIsModeContinue;
+typedef bool (* _usDebugAPIGetSymbolAddress_type)(UnisimDebugAPI, const char *, uint64_t);
+_usDebugAPIGetSymbolAddress_type _usDebugAPIGetSymbolAddress;
+typedef bool (* _usDebugAPIGetFileSystemAddress_type)(UnisimDebugAPI, const char *, uint64_t);
+_usDebugAPIGetFileSystemAddress_type _usDebugAPIGetFileSystemAddress;
+typedef bool (* _usDebugAPIHasBreakpoint_type)(UnisimDebugAPI, uint64_t);
+_usDebugAPIHasBreakpoint_type _usDebugAPIHasBreakpoint;
+typedef bool (* _usDebugAPISetBreakpoint_type)(UnisimDebugAPI, uint64_t);
+_usDebugAPISetBreakpoint_type _usDebugAPISetBreakpoint;
+typedef bool (* _usDebugAPIDeleteBreakpoint_type)(UnisimDebugAPI, uint64_t);
+_usDebugAPIDeleteBreakpoint_type _usDebugAPIDeleteBreakpoint;
+typedef bool (* _usDebugAPIHasBreakpointSymbol_type)(UnisimDebugAPI, const char *);
+_usDebugAPIHasBreakpointSymbol_type _usDebugAPIHasBreakpointSymbol;
+typedef bool (* _usDebugAPISetBreakpointSymbol_type)(UnisimDebugAPI, const char *);
+_usDebugAPISetBreakpointSymbol_type _usDebugAPISetBreakpointSymbol;
+typedef bool (* _usDebugAPIDeleteBreakpointSymbol_type)(UnisimDebugAPI, const char *);
+_usDebugAPIDeleteBreakpointSymbol_type _usDebugAPIDeleteBreakpointSymbol;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -193,6 +209,22 @@ bool load_lib()
 	if ( !load_sym(simlib, "usDebugAPIIsModeStep", _usDebugAPIIsModeStep) )
 		return false;
 	if ( !load_sym(simlib, "usDebugAPIIsModeContinue", _usDebugAPIIsModeContinue) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIGetSymbolAddress", _usDebugAPIGetSymbolAddress) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIGetFileSystemAddress", _usDebugAPIGetFileSystemAddress) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIHasBreakpoint", _usDebugAPIHasBreakpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetBreakpoint", _usDebugAPISetBreakpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteBreakpoint", _usDebugAPIDeleteBreakpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIHasBreakpointSymbol", _usDebugAPIHasBreakpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetBreakpointSymbol", _usDebugAPISetBreakpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteBreakpointSymbol", _usDebugAPIDeleteBreakpointSymbol) )
 		return false;
 
 	return true;
