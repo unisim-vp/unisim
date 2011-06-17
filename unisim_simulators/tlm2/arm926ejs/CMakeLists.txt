@@ -19,19 +19,19 @@ get_property ( FLAGS
 	VARIABLE
 	PROPERTY CMAKE_CXX_FLAGS )
 string ( REGEX MATCH "-fPIC"
-	FPIC_MATCH ${FLAGS} )
+	FPIC_MATCH "${FLAGS}" )
 if ( FPIC_MATCH )
 else ( FPIC_MATCH )
-	set ( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC" )
+	set ( CMAKE_CXX_FLAGS "${FLAGS} -fPIC" CACHE STRING "CMAKE_CXX_FLAGS" )
 endif ( FPIC_MATCH )
 get_property ( FLAGS
 	VARIABLE
 	PROPERTY CMAKE_C_FLAGS )
 string ( REGEX MATCH "-fPIC"
-	FPIC_MATCH ${FLAGS} )
+	FPIC_MATCH "${FLAGS}" )
 if ( FPIC_MATCH )
 else ( FPIC_MATCH )
-	set ( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC" )
+	set ( CMAKE_C_FLAGS "${FLAGS} -fPIC" CACHE STRING "CMAKE_C_FLAGS" )
 endif ( FPIC_MATCH )
 
 if ( UNIX AND NOT APPLE )
@@ -370,6 +370,8 @@ set ( api_sources
 	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi_priv.h
 	${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/debug/debug.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/debug/debug.c
 	)
 set_source_files_properties ( ${api_sources}
 	PROPERTIES
@@ -387,9 +389,13 @@ set_target_properties ( libuapi
 add_executable ( api_test
 	${CMAKE_SOURCE_DIR}/api_test.cc
 	)
-# set_target_properties ( api_test
-#	PROPERTIES
-#		COMPILE_DEFINITIONS SIM_LIBRARY )
+
+get_target_property ( libuapi_LOCATION
+	libuapi
+	LOCATION )
+set_target_properties ( api_test
+	PROPERTIES
+		COMPILE_DEFINITIONS UNISIM_UAPI_LIB_PATH="${libuapi_LOCATION}" )
 target_link_libraries ( api_test
 	dl
 	# libuapi

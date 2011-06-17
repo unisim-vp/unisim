@@ -90,8 +90,8 @@ private:
 	void (*watchpoint_handler_function)(void *, uint64_t, bool);
 };
 
+} // end of namespace debug
 } // end of namespace api
-} // end of namespace kernel
 } // end of namespace unisim
 
 #endif // __UNISIM_API_DEBUG_DEBUG_API__

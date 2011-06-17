@@ -1,6 +1,8 @@
+#include <string.h>
 #include <stdlib.h>
 #include <iostream>
 #include <sstream>
+#include <map>
 #include <dlfcn.h>
 #include <inttypes.h>
 #include "unisim/uapi/uapi.h"
@@ -64,10 +66,66 @@ _usDestroyVariable_type _usDestroyVariable;
 // api methods
 typedef const char *(* _usExtendedAPIGetName_type)(UnisimExtendedAPI);
 _usExtendedAPIGetName_type _usExtendedAPIGetName;
-typedef const char *(* _usExtendedAPIGetType_type)(UnisimExtendedAPI);
-_usExtendedAPIGetType_type _usExtendedAPIGetType;
+typedef const char *(* _usExtendedAPIGetTypeName_type)(UnisimExtendedAPI);
+_usExtendedAPIGetTypeName_type _usExtendedAPIGetTypeName;
 typedef void (* _usDestroyExtendedAPI_type)(UnisimExtendedAPI);
 _usDestroyExtendedAPI_type _usDestroyExtendedAPI;
+
+// debug api methods
+typedef UnisimDebugAPI (* _usCreateDebugAPI_type)(UnisimExtendedAPI);
+_usCreateDebugAPI_type _usCreateDebugAPI;
+typedef void (* _usDestroyDebugAPI_type)(UnisimDebugAPI);
+_usDestroyDebugAPI_type _usDestroyDebugAPI;
+typedef bool (* _usDebugAPISetBreakpointHandler_type)(UnisimDebugAPI, void (* callback)(UnisimDebugAPI, uint64_t));
+_usDebugAPISetBreakpointHandler_type _usDebugAPISetBreakpointHandler;
+typedef bool (* _usDebugAPISetStepMode_type)(UnisimDebugAPI);
+_usDebugAPISetStepMode_type _usDebugAPISetStepMode;
+typedef bool (* _usDebugAPISetContinueMode_type)(UnisimDebugAPI);
+_usDebugAPISetContinueMode_type _usDebugAPISetContinueMode;
+typedef bool (* _usDebugAPIIsModeStep_type)(UnisimDebugAPI);
+_usDebugAPIIsModeStep_type _usDebugAPIIsModeStep;
+typedef bool (* _usDebugAPIIsModeContinue_type)(UnisimDebugAPI);
+_usDebugAPIIsModeContinue_type _usDebugAPIIsModeContinue;
+typedef bool (* _usDebugAPIGetSymbolAddress_type)(UnisimDebugAPI, const char *, uint64_t);
+_usDebugAPIGetSymbolAddress_type _usDebugAPIGetSymbolAddress;
+typedef bool (* _usDebugAPIGetFileSystemAddress_type)(UnisimDebugAPI, const char *, uint64_t);
+_usDebugAPIGetFileSystemAddress_type _usDebugAPIGetFileSystemAddress;
+typedef bool (* _usDebugAPIHasBreakpoint_type)(UnisimDebugAPI, uint64_t);
+_usDebugAPIHasBreakpoint_type _usDebugAPIHasBreakpoint;
+typedef bool (* _usDebugAPISetBreakpoint_type)(UnisimDebugAPI, uint64_t);
+_usDebugAPISetBreakpoint_type _usDebugAPISetBreakpoint;
+typedef bool (* _usDebugAPIDeleteBreakpoint_type)(UnisimDebugAPI, uint64_t);
+_usDebugAPIDeleteBreakpoint_type _usDebugAPIDeleteBreakpoint;
+typedef bool (* _usDebugAPIHasBreakpointSymbol_type)(UnisimDebugAPI, const char *);
+_usDebugAPIHasBreakpointSymbol_type _usDebugAPIHasBreakpointSymbol;
+typedef bool (* _usDebugAPISetBreakpointSymbol_type)(UnisimDebugAPI, const char *);
+_usDebugAPISetBreakpointSymbol_type _usDebugAPISetBreakpointSymbol;
+typedef bool (* _usDebugAPIDeleteBreakpointSymbol_type)(UnisimDebugAPI, const char *);
+_usDebugAPIDeleteBreakpointSymbol_type _usDebugAPIDeleteBreakpointSymbol;
+typedef bool (* _usDebugAPISetWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPISetWatchpoint_type _usDebugAPISetWatchpoint;
+typedef bool (* _usDebugAPISetReadWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPISetReadWatchpoint_type _usDebugAPISetReadWatchpoint;
+typedef bool (* _usDebugAPISetWriteWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPISetWriteWatchpoint_type _usDebugAPISetWriteWatchpoint;
+typedef bool (* _usDebugAPIDeleteWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPIDeleteWatchpoint_type _usDebugAPIDeleteWatchpoint;
+typedef bool (* _usDebugAPIDeleteReadWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPIDeleteReadWatchpoint_type _usDebugAPIDeleteReadWatchpoint;
+typedef bool (* _usDebugAPIDeleteWriteWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPIDeleteWriteWatchpoint_type _usDebugAPIDeleteWriteWatchpoint;
+typedef bool (* _usDebugAPISetWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPISetWatchpointSymbol_type _usDebugAPISetWatchpointSymbol;
+typedef bool (* _usDebugAPISetReadWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPISetReadWatchpointSymbol_type _usDebugAPISetReadWatchpointSymbol;
+typedef bool (* _usDebugAPISetWriteWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPISetWriteWatchpointSymbol_type _usDebugAPISetWriteWatchpointSymbol;
+typedef bool (* _usDebugAPIDeleteWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPIDeleteWatchpointSymbol_type _usDebugAPIDeleteWatchpointSymbol;
+typedef bool (* _usDebugAPIDeleteReadWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPIDeleteReadWatchpointSymbol_type _usDebugAPIDeleteReadWatchpointSymbol;
+typedef bool (* _usDebugAPIDeleteWriteWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPIDeleteWriteWatchpointSymbol_type _usDebugAPIDeleteWriteWatchpointSymbol;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -95,10 +153,10 @@ bool close_lib()
 
 bool load_lib()
 {
-	simlib = dlopen("/Users/gracia/Developer/unisim/arm926ejs/build/lib/liblibuapi.dylib", RTLD_NOW | RTLD_GLOBAL);
+	simlib = dlopen(UNISIM_UAPI_LIB_PATH, RTLD_NOW || RTLD_GLOBAL);
 	if(simlib == NULL)
 	{
-		std::cerr << "Could not load simulator dynamic library"
+		std::cerr << "Could not load simulator dynamic library (" << UNISIM_UAPI_LIB_PATH << ")"
 			<< std::endl;
 		return false;
 	}
@@ -157,9 +215,64 @@ bool load_lib()
 
 	if ( !load_sym(simlib, "usExtendedAPIGetName", _usExtendedAPIGetName) )
 		return false;
-	if ( !load_sym(simlib, "usExtendedAPIGetType", _usExtendedAPIGetType) )
+	if ( !load_sym(simlib, "usExtendedAPIGetTypeName", _usExtendedAPIGetTypeName) )
 		return false;
 	if ( !load_sym(simlib, "usDestroyExtendedAPI", _usDestroyExtendedAPI) )
+		return false;
+
+	if ( !load_sym(simlib, "usCreateDebugAPI", _usCreateDebugAPI) )
+		return false;
+	if ( !load_sym(simlib, "usDestroyDebugAPI", _usDestroyDebugAPI) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetBreakpointHandler", _usDebugAPISetBreakpointHandler) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetStepMode", _usDebugAPISetStepMode) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetContinueMode", _usDebugAPISetContinueMode) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIIsModeStep", _usDebugAPIIsModeStep) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIIsModeContinue", _usDebugAPIIsModeContinue) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIGetSymbolAddress", _usDebugAPIGetSymbolAddress) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIGetFileSystemAddress", _usDebugAPIGetFileSystemAddress) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIHasBreakpoint", _usDebugAPIHasBreakpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetBreakpoint", _usDebugAPISetBreakpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteBreakpoint", _usDebugAPIDeleteBreakpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIHasBreakpointSymbol", _usDebugAPIHasBreakpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetBreakpointSymbol", _usDebugAPISetBreakpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteBreakpointSymbol", _usDebugAPIDeleteBreakpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWatchpoint", _usDebugAPISetWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetReadWatchpoint", _usDebugAPISetReadWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWriteWatchpoint", _usDebugAPISetWriteWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWatchpoint", _usDebugAPIDeleteWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteReadWatchpoint", _usDebugAPIDeleteReadWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWriteWatchpoint", _usDebugAPIDeleteWriteWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWatchpointSymbol", _usDebugAPISetWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetReadWatchpointSymbol", _usDebugAPISetReadWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWriteWatchpointSymbol", _usDebugAPISetWriteWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWatchpointSymbol", _usDebugAPIDeleteWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteReadWatchpointSymbol", _usDebugAPIDeleteReadWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWriteWatchpointSymbol", _usDebugAPIDeleteWriteWatchpointSymbol) )
 		return false;
 
 	return true;
@@ -197,7 +310,7 @@ void InstructionCounterListener ( UnisimVariable variable )
 	}
 }
 
-const char *SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
+std::string SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
 {
 	std::stringstream str;
 	switch ( status )
@@ -215,10 +328,10 @@ const char *SimulatorSetupStatusAsString(UnisimSimulatorSetupStatus status)
 			str << " (UNISIM_SIMULATOR_SETUP_STATUS_<unknown>)";
 			break;
 	}
-	return str.str().c_str();
+	return str.str();
 }
 
-const char *SimulatorStatusAsString(UnisimSimulatorStatus status)
+std::string SimulatorStatusAsString(UnisimSimulatorStatus status)
 {
 	std::stringstream str;
 	switch ( status )
@@ -245,7 +358,13 @@ const char *SimulatorStatusAsString(UnisimSimulatorStatus status)
 			str << "UNISIM_SIMULATOR_STATUS_<unknown>";
 			break;
 	}
-	return str.str().c_str();
+	return str.str();
+}
+
+std::map<uint64_t, uint64_t> insn_trace;
+void BreakpointHandler(UnisimDebugAPI dapi, uint64_t addr)
+{
+	insn_trace[addr]++;
 }
 
 int test()
@@ -417,13 +536,18 @@ int test()
 		<< variablesCounter << " variables)" << std::endl;
 
 	std::cerr << "Testing Extended API" << std::endl;
+	UnisimDebugAPI dapi = 0;
 	UnisimExtendedAPI *apiList = _usSimulatorGetExtendedAPIList(simulator);
 	int apiListIndex = 0;
 	while ( (apiList != 0) && (apiList[apiListIndex] != 0) )
 	{
 		UnisimExtendedAPI api = apiList[apiListIndex];
 		std::cerr << " - " << _usExtendedAPIGetName(api) << " ("
-			<< _usExtendedAPIGetType(api) << ")" << std::endl;
+			<< _usExtendedAPIGetTypeName(api) << ")" << std::endl;
+		if ( strcmp("DebugAPI", _usExtendedAPIGetTypeName(api)) == 0 )
+		{
+			dapi = _usCreateDebugAPI(api);
+		}
 		_usDestroyExtendedAPI(api);
 		apiListIndex++;
 	}
@@ -446,10 +570,10 @@ int test()
 	}
 	std::cerr << " - launching setup";
 	UnisimSimulatorSetupStatus simulatorSetupStatus = _usSimulatorSetup(simulator);
-	std::cerr << " " << SimulatorSetupStatusAsString(simulatorSetupStatus) << std::endl;
+	std::cerr << " " << SimulatorSetupStatusAsString(simulatorSetupStatus).c_str() << std::endl;
 	std::cerr << " - simulator status ";
 	UnisimSimulatorStatus simulatorStatus = _usSimulatorGetStatus(simulator); 
-	std::cerr << " " << SimulatorStatusAsString(simulatorStatus) << std::endl;
+	std::cerr << " " << SimulatorStatusAsString(simulatorStatus).c_str() << std::endl;
 	std::cerr << " - setting listener into instruction counter" << std::endl;
 	UnisimVariable instructionCounterVariable =
 		_usSimulatorGetVariable(simulator, "cpu.instruction-counter");
@@ -459,12 +583,27 @@ int test()
 		return CloseSimulator(simulator);
 	}
 	_usVariableSetListener(instructionCounterVariable, InstructionCounterListener);
+	if ( dapi != 0 )
+	{
+		std::cerr << " - setting up debug step mode and breakpoint handler" << std::endl;
+		if ( _usDebugAPISetBreakpointHandler(dapi, BreakpointHandler) )
+		{
+			if ( !_usDebugAPISetStepMode(dapi) )
+			{
+				std::cerr << "   - could not activate debug step mode" << std::endl;
+			}
+		}
+		else
+		{
+			std::cerr << "   - could not set breakpoint handler" << std::endl;
+		}
+	}
 
 	bool ok = _usSimulatorRun(simulator);
 	if ( !ok )
 		std::cerr << "Could not run the simulator" << std::endl;
 
-	_usVariableRemoveListener(variable);
+	_usVariableRemoveListener(instructionCounterVariable);
 
 	return CloseSimulator(simulator);
 }
@@ -475,6 +614,12 @@ int main()
 	{
 		std::cerr << "Could not do more than once" << std::endl;
 		return 0;
+	}
+	for ( std::map<uint64_t, uint64_t>::iterator it = insn_trace.begin();
+			it != insn_trace.end();
+			it++ )
+	{
+		std::cerr << "0x" << std::hex << (*it).first << std::dec << ": " << (*it).second << std::endl;
 	}
 	return test();
 }
