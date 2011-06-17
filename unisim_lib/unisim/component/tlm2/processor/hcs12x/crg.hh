@@ -137,6 +137,7 @@ public:
 
 	void RunRTI();
 	void RunCOP();
+	void RunClockMonitor();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 
@@ -201,12 +202,19 @@ private:
 	sc_time		pll_clock;
 	sc_time		bus_clock;
 
+	sc_event	clockmonitor_enable_event;
 	sc_event	rti_enable_event;
 	sc_event	cop_enable_event;
 
 	bool armcop_write_enabled;
 	bool cop_timeout_reset;
 	bool cop_timeout_restart;
+	bool clock_monitor_enabled; // reset to TRUE; the clock monitor is enabled by default
+
+	bool copwai_write; // CLKSEL::WOPWAI is write once bit
+	bool rti_enabled;
+	bool cop_enabled;
+	bool scme_write;
 
 	// MC9S12XDP512V2 - CRG baseAddress
 	address_t	baseAddress;
@@ -234,12 +242,14 @@ private:
 	inline void initialize_rti_counter();
 	inline void updateBusClock();
 
-	inline void systemReset();
+	void systemReset();
+	void activateSelfClockMode();
+	void activateStopMode();
+	void activateWaitMode();
+	void wakeupFromStopMode();
 
-	inline void set_crgflg_lock();
-	inline void clear_crgflg_lock();
-	inline void set_crgflg_track();
-	inline void clear_crgflg_track();
+	inline void initialize_lock_dectector();
+	inline void initialize_track_detector();
 
 	// =============================================
 	// =            Registers                      =

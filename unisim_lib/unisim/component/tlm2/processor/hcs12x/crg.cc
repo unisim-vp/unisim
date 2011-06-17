@@ -77,6 +77,11 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, armcop_write_enabled(false)
 	, cop_timeout_reset(false)
 	, cop_timeout_restart(false)
+	, copwai_write(false)
+	, clock_monitor_enabled(true)
+	, rti_enabled(true)
+	, cop_enabled(true)
+	, scme_write(false)
 
 	, oscillator_clock_int(0)
 	, param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_int)
@@ -106,6 +111,7 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(RunRTI);
 	SC_THREAD(RunCOP);
+	SC_THREAD(RunClockMonitor);
 
 }
 
@@ -165,31 +171,6 @@ bool CRG::read(uint8_t offset, uint8_t &value) {
 	return true;
 }
 
-inline void CRG::set_crgflg_lock() {
-
-	uint8_t old_crgflg_register = crgflg_register;
-	crgflg_register = old_crgflg_register | 0x08;
-	if (((crgflg_register & 0x08) & (old_crgflg_register & 0x08)) == 0) {
-		assertInterrupt(interrupt_offset_pll_lock);
-	}
-
-}
-inline void CRG::clear_crgflg_lock() {
-
-	uint8_t old_crgflg_register = crgflg_register;
-	crgflg_register = old_crgflg_register & 0xF7;
-	if (((crgflg_register & 0x08) & (old_crgflg_register & 0x08)) == 0) {
-		assertInterrupt(interrupt_offset_pll_lock);
-	}
-}
-
-inline void CRG::set_crgflg_track() {
-	crgflg_register = crgflg_register | 0x04;
-}
-inline void CRG::clear_crgflg_track() {
-	crgflg_register = crgflg_register & 0xFB;
-}
-
 bool CRG::write(uint8_t offset, uint8_t value) {
 
 	switch (offset) {
@@ -206,8 +187,8 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 			/**
 			 * Write to SYNR register initializes the lock detector bit and the track detector bit.
 			 */
-			set_crgflg_lock();
-			set_crgflg_track();
+			initialize_lock_dectector();
+			initialize_track_detector();
 
 		} break;
 		case REFDV: {
@@ -220,11 +201,9 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 			compute_clock();
 
-			/**
-			 * Write to SYNR register initializes the lock detector bit and the track detector bit.
-			 */
-			set_crgflg_lock();
-			set_crgflg_track();
+			// Write to SYNR register initializes the lock detector bit and the track detector bit.
+			initialize_lock_dectector();
+			initialize_track_detector();
 
 		} break;
 		case CTFLG: {
@@ -286,19 +265,32 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 			}
 
 			if ((val & 0x80) != 0) {
+				rti_enabled = true;
 				rti_enable_event.notify();
 			}
 
 		} break;
 		case CLKSEL: {
 
-			/**
-			 * TODO:
-			 * - PLLSEL bit is cleared when the MCU enters self clock mode, Stop mode or wait mode with PLLWAI bit set
-			 * - Pseudo Stop Bit: controls the functionality of the oscillator during stop mode.
-			 * -
-			 */
-			clksel_register = value & 0xCB;
+			uint8_t old_clksel_register = clksel_register;
+
+			value = value & 0xCB;
+
+			// CLKSEL::COPWAI write once in Normal modes
+			if (copwai_write) {
+				uint8_t copwai_bit = old_clksel_register & 0x01;
+				value = (value & 0xFE) | copwai_bit;
+			} else {
+				copwai_write = true;
+			}
+
+			clksel_register = value;
+
+			if (((old_clksel_register & 0x04) == 0) && ((clksel_register & 0x04) != 0)) {
+				// While the PLLWAI bit is set, the AUTO bit is set to 1.
+				pllctl_register = (pllctl_register | 0x20);
+			}
+
 			compute_clock();
 
 
@@ -306,7 +298,20 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 		case PLLCTL: {
 			uint8_t cme_bit = pllctl_register & 0x80;
 			uint8_t pllon_bit = pllctl_register & 0x40;
+			uint8_t auto_bit = pllctl_register & 0x20;
 
+			// PLLCTL::SCME write once in Normal modes
+			// PLLCTL::SCME can not be cleared while operating in self clock mode (CRGFLG::SCM = 1).
+			uint8_t scme_bit = pllctl_register & 0x01;
+			if ((scme_write) || ((crgflg_register & 0x01) != 0)) {
+				value = (value & 0xFE) | scme_bit;
+			} else {
+				scme_write = true;
+			}
+
+			/**
+			 * PLLCTL::CME : write any time except when CRGFLG::SCM=1
+			 */
 			// check CRGFLG::SCM bit
 			if ((crgflg_register & 0x01) != 0) {
 				value = (value & 0x7F) | cme_bit;
@@ -317,7 +322,24 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 				value = (value & 0xBF) | pllon_bit;
 			}
 
+			// check CLKSEl::PLLWAI
+			if ((clksel_register & 0x040) != 0) {
+				value = (value & 0xDF) | auto_bit;
+			}
+
 			pllctl_register = value;
+
+			if ((pllctl_register & 0x80) != 0) {
+				// enables the clock monitor
+				clockmonitor_enable_event.notify();
+			}
+
+			// TODO: implement acquisition and tracking
+			if (((pllctl_register & 0x20) != 0) || ((pllctl_register & 0x10) != 0)) {
+				// TODO: High bandwidth (acquisition) mode
+			} else {
+				// TODO: Low bandwidth (tracking) mode
+			}
 
 		} break;
 		case RTICTL: {
@@ -334,6 +356,7 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 			copctl_register = value & 0xE7;
 			if (((copctl_register & 0x07) != 0) && ((copctl_register & 0x80) != 0)) {
+				cop_enabled = true;
 				cop_enable_event.notify();
 			}
 
@@ -368,6 +391,134 @@ void CRG::systemReset() {
 
 }
 
+inline void CRG::initialize_lock_dectector() {
+
+	/**
+	 * TODO: implement Lock detector functionality
+	 */
+
+	// the following isn't a final implementation
+	uint8_t old_crgflg_register = crgflg_register;
+	crgflg_register = old_crgflg_register | 0x08;
+	if (((crgflg_register & 0x08) & (old_crgflg_register & 0x08)) == 0) {
+		assertInterrupt(interrupt_offset_pll_lock);
+	}
+
+}
+
+inline void CRG::initialize_track_detector() {
+
+	/**
+	 * TODO: implement Track detector functionality
+	 */
+
+	// the following isn't a final implementation
+	crgflg_register = crgflg_register | 0x04;
+}
+
+void CRG::activateSelfClockMode() {
+	// clear CLKSEL::PLLSEL bit
+	clksel_register = clksel_register & 0x7F;
+}
+
+void CRG::activateStopMode() {
+	// clear CLKSEL::PLLSEL bit
+	clksel_register = clksel_register & 0x7F;
+
+	// check CLKSEL::PSTP bit
+	if ((clksel_register & 0x40) != 0) {
+		// TODO: Oscillator continues to run in stop mode (pseudo stop)
+		/**
+		 * Pseudo stop mode allows for faster STOP recovery and reduces the mechanical stress and
+		 * aging of the resonator in case of frequent STOP conditions at the expense of a slightly increased power consumption
+		 */
+
+		/**
+		 *  If the PRE bit is cleared the RTI dividers will go static while pseudo stop mode is active.
+		 *  The RTI dividers will not initialize like in wait mode with RTIWAI bit set.
+		 */
+		if ((pllctl_register & 0x04) == 0) {
+			rti_enabled = false;
+		}
+
+		/**
+		 * If the PCE bit is cleared, the COP dividers will go static while pseudo stop mode is active.
+		 * The COP dividers will not initialize like in wait mode with COPWAI bit set
+		 */
+		if ((pllctl_register & 0x02) == 0) {
+			cop_enabled = false;
+		}
+
+	} else {
+		// TODO: Oscillator is disabled in stop mode.
+	}
+
+	// In stop mode the clock monitor is disabled independently of the PLLCTL::CME bit setting
+	clock_monitor_enabled = false;
+}
+
+void CRG::activateWaitMode() {
+
+	// check CLKSEL::PLLWAI bit
+	if ((clksel_register & 0x08) != 0) {
+		// clear CLKSEL::PLLSEL bit
+		clksel_register = clksel_register & 0x7F;
+	}
+
+	// check CLKSEL::RTIWAI
+	if ((clksel_register & 0x02) != 0) {
+		/**
+		 * RTIWAI=1 : RTI stops and initializes the RTI dividers whenever the part goes into wait mode
+		 */
+		rtictl_register = 0x00;
+		crgint_register = crgint_register & 0x7F;
+
+	}
+
+	// check CLKSEL::COPWAI
+	if ((clksel_register & 0x01) != 0) {
+		/**
+		 * COPWAI=1 : COP stops and initializes the COP counter whenever the part goes into wait mode
+		 * COPWAI)0 : COP keeps running in wait mode
+		 */
+
+		// reset to 0 the COPCTL::WCOP, COPCTL::CRx bits
+		copctl_register = copctl_register & 0x60;
+
+	}
+}
+
+void CRG::wakeupFromStopMode() {
+
+	// check PLLCTL::FSTWKP and if PLLCTL::SCME = 0 then PLLCTL::FSTWKP has no effect
+	if (((pllctl_register & 0x08) !=0) && ((pllctl_register & 0x01) != 0)) {
+		clock_monitor_enabled = false;
+	}
+
+	rti_enabled = true;
+	if ((crgint_register & 0x80) != 0) {
+		rti_enable_event.notify();
+	}
+
+	cop_enabled = true;
+	if (((copctl_register & 0x07) != 0) && ((copctl_register & 0x80) != 0))  {
+		cop_enable_event.notify();
+	}
+
+}
+
+void CRG::RunClockMonitor() {
+
+	// TODO: implement clock monitor functionality
+
+//	while (true) {
+		while (((pllctl_register & 0x80) == 0) && (clock_monitor_enabled)) {
+			wait(clockmonitor_enable_event);
+		}
+//	}
+
+}
+
 void CRG::RunCOP() {
 
 	/**
@@ -379,7 +530,7 @@ void CRG::RunCOP() {
 	 */
 
 	while (true) {
-		while (((copctl_register & 0x07) == 0) || ((copctl_register & 0x80) == 0))  {
+		while (((copctl_register & 0x07) == 0) || ((copctl_register & 0x80) == 0) || (!cop_enabled))  {
 			wait(cop_enable_event);
 		}
 
@@ -403,8 +554,16 @@ void CRG::RunCOP() {
 		armcop_write_enabled = false;
 
 		wait(cop_timeout_75);
+
 		if (cop_timeout_reset) {
-			systemReset();
+			// A write into ARMCOP register during the first 75% of the selected period will reset the part
+			continue;
+		}
+
+		if (((copctl_register & 0x07) == 0) || ((copctl_register & 0x80) == 0)) {
+			// If the CRG enter in wait mode and CLKSEL::COPWAI is set to 1
+			// the COP stops and has to be restarted manually
+			continue;
 		}
 
 		armcop_write_enabled = true;
@@ -428,7 +587,7 @@ void CRG::RunRTI() {
 	sc_time delay;
 
 	while (true) {
-		while ((crgint_register & 0x80) == 0) {
+		while (((crgint_register & 0x80) == 0) || (!rti_enabled)) {
 			wait(rti_enable_event);
 		}
 
@@ -509,11 +668,11 @@ void CRG::compute_clock() {
 
 	/**
 	 *  PLL Select Bit:
-	 *  Writing a1 when LOCK = 0 and AUTO = 1, or TRACK = 0 and AUTO = 0 has no effect.
+	 *  Writing a 1 when LOCK = 0 and AUTO = 1, or TRACK = 0 and AUTO = 0 has no effect.
 	 */
 	if ((((crgflg_register & 0x08) == 0) && ((pllctl_register & 0x20) != 0)) ||
 			((((crgflg_register & 0x04) == 0) && ((pllctl_register & 0x20) == 0))) ||
-			((clksel_register & 0x80) == 0)) {
+			((pllctl_register & 0x40) == 0)) {
 		bus_clock = oscillator_clock * 2;
 	} else {
 		bus_clock = pll_clock * 2;
