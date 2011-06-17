@@ -237,19 +237,137 @@ bool usDebugAPISetBreakpointSymbol(UnisimDebugAPI dapi, const char *str);
  */
 bool usDebugAPIDeleteBreakpointSymbol(UnisimDebugAPI dapi, const char *str);
 
-// TODO:
-// bool SetWatchpoint(uint64_t addr, uint32_t size);
-// bool SetReadWatchpoint(uint64_t addr, uint32_t size);
-// bool SetWriteWatchpoint(uint64_t addr, uint32_t size);
-// bool DeleteWatchpoint(uint64_t addr, uint32_t size);
-// bool DeleteReadWatchpoint(uint64_t addr, uint32_t size);
-// bool DeleteWriteWatchpoint(uint64_t addr, uint32_t size);
-// bool SetWatchpoint(const char *str, uint32_t size);
-// bool SetReadWatchpoint(const char *str, uint32_t size);
-// bool SetWriteWatchpoint(const char *str, uint32_t size);
-// bool DeleteWatchpoint(const char *str, uint32_t size);
-// bool DeleteReadWatchpoint(const char *str, uint32_t size);
-// bool DeleteWriteWatchpoint(const char *str, uint32_t size);
+/**
+ * Set a watchpoint at the given address.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The watchpoint address.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size);
+
+/**
+ * Set a read watchpoint at the given address.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The watchpoint address.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetReadWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size);
+
+/**
+ * Set a write watchpoint at the given address.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The watchpoint address.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetWriteWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size);
+
+/**
+ * Delete any watchpoint at the given address/size.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The watchpoint address.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size);
+
+/**
+ * Delete any read watchpoint at the given address/size.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The watchpoint address.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteReadWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size);
+
+/**
+ * Delete any write watchpoint at the given address/size.
+ *
+ * @param dapi The debug handler to use.
+ * @param addr The watchpoint address.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteWriteWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size);
+
+/**
+ * Set a watchpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param [in] str The watchpoint symbol.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
+
+/**
+ * Set a read watchpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param [in] str The watchpoint symbol.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetReadWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
+
+/**
+ * Set a write watchpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param [in] str The watchpoint symbol.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetWriteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
+
+/**
+ * Delete any watchpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param [in] str The watchpoint symbol.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
+
+/**
+ * Delete any read watchpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param [in] str The watchpoint symbol.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteReadWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
+
+/**
+ * Delete any write watchpoint at the given symbol.
+ *
+ * @param dapi The debug handler to use.
+ * @param [in] str The watchpoint symbol.
+ * @param size The size of the watchpoint.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPIDeleteWriteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size);
 
 }
 

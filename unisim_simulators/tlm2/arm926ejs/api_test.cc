@@ -102,6 +102,30 @@ typedef bool (* _usDebugAPISetBreakpointSymbol_type)(UnisimDebugAPI, const char 
 _usDebugAPISetBreakpointSymbol_type _usDebugAPISetBreakpointSymbol;
 typedef bool (* _usDebugAPIDeleteBreakpointSymbol_type)(UnisimDebugAPI, const char *);
 _usDebugAPIDeleteBreakpointSymbol_type _usDebugAPIDeleteBreakpointSymbol;
+typedef bool (* _usDebugAPISetWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPISetWatchpoint_type _usDebugAPISetWatchpoint;
+typedef bool (* _usDebugAPISetReadWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPISetReadWatchpoint_type _usDebugAPISetReadWatchpoint;
+typedef bool (* _usDebugAPISetWriteWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPISetWriteWatchpoint_type _usDebugAPISetWriteWatchpoint;
+typedef bool (* _usDebugAPIDeleteWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPIDeleteWatchpoint_type _usDebugAPIDeleteWatchpoint;
+typedef bool (* _usDebugAPIDeleteReadWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPIDeleteReadWatchpoint_type _usDebugAPIDeleteReadWatchpoint;
+typedef bool (* _usDebugAPIDeleteWriteWatchpoint_type)(UnisimDebugAPI, uint64_t, uint32_t);
+_usDebugAPIDeleteWriteWatchpoint_type _usDebugAPIDeleteWriteWatchpoint;
+typedef bool (* _usDebugAPISetWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPISetWatchpointSymbol_type _usDebugAPISetWatchpointSymbol;
+typedef bool (* _usDebugAPISetReadWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPISetReadWatchpointSymbol_type _usDebugAPISetReadWatchpointSymbol;
+typedef bool (* _usDebugAPISetWriteWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPISetWriteWatchpointSymbol_type _usDebugAPISetWriteWatchpointSymbol;
+typedef bool (* _usDebugAPIDeleteWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPIDeleteWatchpointSymbol_type _usDebugAPIDeleteWatchpointSymbol;
+typedef bool (* _usDebugAPIDeleteReadWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPIDeleteReadWatchpointSymbol_type _usDebugAPIDeleteReadWatchpointSymbol;
+typedef bool (* _usDebugAPIDeleteWriteWatchpointSymbol_type)(UnisimDebugAPI, const char *, uint32_t);
+_usDebugAPIDeleteWriteWatchpointSymbol_type _usDebugAPIDeleteWriteWatchpointSymbol;
 
 template <typename T>
 bool load_sym(void *lib, const char *name, T &func)
@@ -225,6 +249,30 @@ bool load_lib()
 	if ( !load_sym(simlib, "usDebugAPISetBreakpointSymbol", _usDebugAPISetBreakpointSymbol) )
 		return false;
 	if ( !load_sym(simlib, "usDebugAPIDeleteBreakpointSymbol", _usDebugAPIDeleteBreakpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWatchpoint", _usDebugAPISetWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetReadWatchpoint", _usDebugAPISetReadWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWriteWatchpoint", _usDebugAPISetWriteWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWatchpoint", _usDebugAPIDeleteWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteReadWatchpoint", _usDebugAPIDeleteReadWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWriteWatchpoint", _usDebugAPIDeleteWriteWatchpoint) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWatchpointSymbol", _usDebugAPISetWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetReadWatchpointSymbol", _usDebugAPISetReadWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPISetWriteWatchpointSymbol", _usDebugAPISetWriteWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWatchpointSymbol", _usDebugAPIDeleteWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteReadWatchpointSymbol", _usDebugAPIDeleteReadWatchpointSymbol) )
+		return false;
+	if ( !load_sym(simlib, "usDebugAPIDeleteWriteWatchpointSymbol", _usDebugAPIDeleteWriteWatchpointSymbol) )
 		return false;
 
 	return true;

@@ -248,6 +248,96 @@ bool usDebugAPIDeleteBreakpointSymbol(UnisimDebugAPI dapi, const char *str)
 	return dapi->api->DeleteBreakpoint(str);
 }
 
+bool usDebugAPISetWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetWatchpoint(addr, size);
+}
+
+bool usDebugAPISetReadWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetReadWatchpoint(addr, size);
+}
+
+bool usDebugAPISetWriteWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetWriteWatchpoint(addr, size);
+}
+
+bool usDebugAPIDeleteWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->DeleteWatchpoint(addr, size);
+}
+
+bool usDebugAPIDeleteReadWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->DeleteReadWatchpoint(addr, size);
+}
+
+bool usDebugAPIDeleteWriteWatchpoint(UnisimDebugAPI dapi, uint64_t addr, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->DeleteWriteWatchpoint(addr, size);
+}
+
+bool usDebugAPISetWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->SetWatchpoint(str, size);
+}
+
+bool usDebugAPISetReadWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->SetReadWatchpoint(str, size);
+}
+
+bool usDebugAPISetWriteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->SetWriteWatchpoint(str, size);
+}
+
+bool usDebugAPIDeleteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->DeleteWatchpoint(str, size);
+}
+
+bool usDebugAPIDeleteReadWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->DeleteReadWatchpoint(str, size);
+}
+
+bool usDebugAPIDeleteWriteWatchpointSymbol(UnisimDebugAPI dapi, const char *str, uint32_t size)
+{
+	if ( dapi == 0 ) return false;
+	if ( str == 0 ) return false;
+
+	return dapi->api->DeleteWriteWatchpoint(str, size);
+}
+
 /****************************************************************************/
 /*                                                                         **/
 /*                  PRIVATELY EXPORTED FUNCTIONS                           **/
