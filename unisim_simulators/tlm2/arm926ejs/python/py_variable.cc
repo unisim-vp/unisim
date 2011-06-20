@@ -33,7 +33,8 @@
  */
 
 #include <Python.h>
-#include "simulator.hh"
+// #include "simulator.hh"
+#include "unisim/uapi/uapi.h"
 #include <string>
 #define VARIABLE_MODULE
 #include "python/py_variable.hh"
@@ -44,14 +45,15 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-	Simulator **simulator;
-	unisim::kernel::service::VariableBase *variable;
+	// Simulator **simulator;
+	// unisim::kernel::service::VariableBase *variable;
+	UnisimVariable variable;
 } variable_VariableObject;
 
 static void
 variable_dealloc (variable_VariableObject *self)
 {
-	self->simulator = 0;
+	usDestroyVariable(self->variable);
 	self->variable = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
@@ -69,7 +71,6 @@ static PyObject *
 variable_init (variable_VariableObject *self, PyObject *args, PyObject *kwds)
 {
 	self->variable = 0;
-	self->simulator = 0;
 
 	return (PyObject *)self;
 }
@@ -79,7 +80,7 @@ variable_get_name (variable_VariableObject *self)
 {
 	PyObject *result = NULL;
 
-	result = PyUnicode_FromString(self->variable->GetName());
+	result = PyUnicode_FromString(usVariableGetName(self->variable));
 	return result;
 }
 
@@ -88,7 +89,7 @@ variable_getname (variable_VariableObject *self, void *closure)
 {
 	PyObject *result = NULL;
 	
-	result = PyUnicode_FromString(self->variable->GetName());
+	result = PyUnicode_FromString(usVariableGetName(self->variable));
 	return result;
 }
 
@@ -97,10 +98,10 @@ variable_getvalue (variable_VariableObject *self,
 		void *closure)
 {
 	PyObject *result = NULL;
-	const char *type = self->variable->GetDataTypeName();
+	const char *type = usVariableGetDataTypeName(self->variable);
 	if ( strcmp("boolean", type) == 0 )
 	{
-		bool value = (bool)*(self->variable);
+		bool value = usVariableGetValueAsBoolean(self->variable);
 		if ( value )
 			result = Py_True;
 		else
@@ -109,58 +110,57 @@ variable_getvalue (variable_VariableObject *self,
 	}
 	else if ( strcmp("signed 8-bit integer", type) == 0 )
 	{
-		char value = (char)*(self->variable);
+		char value = usVariableGetValueAsChar(self->variable);
 		result = Py_BuildValue("b", value);
 	}
 	else if ( strcmp("signed 16-bit integer", type) == 0 )
 	{
-		short int value = (short int)*(self->variable);
+		short int value = usVariableGetValueAsShort(self->variable);
 		result = Py_BuildValue("h", value);
 	}
 	else if ( strcmp("signed 32-bit integer", type) == 0 )
 	{
-		long int value = (long int)*(self->variable);
+		long int value = usVariableGetValueAsLong(self->variable);
 		result = Py_BuildValue("l",value);
 	}
 	else if ( strcmp("signed 64-bit integer", type) == 0)
 	{
-		long long int value = (long long int)*(self->variable);
+		long long int value = usVariableGetValueAsLongLong(self->variable);
 		result = Py_BuildValue("L", value);
 	}
 	else if ( strcmp("unsigned 8-bit integer", type) == 0 )
 	{
-		unsigned char value = (unsigned char)*(self->variable);
+		unsigned char value = usVariableGetValueAsUChar(self->variable);
 		result = Py_BuildValue("B", value);
 	}
 	else if ( strcmp("unsigned 16-bit integer", type) == 0 )
 	{
-		unsigned short int value = (unsigned short int)*(self->variable);
+		unsigned short int value = usVariableGetValueAsUShort(self->variable);
 		result = Py_BuildValue("H", value);
 	}
 	else if ( strcmp("unsigned 32-bit integer", type) == 0 )
 	{
-		unsigned long int value = (unsigned long int)*(self->variable);
+		unsigned long int value = usVariableGetValueAsULong(self->variable);
 		result = Py_BuildValue("k",value);
 	}
 	else if ( strcmp("unsigned 64-bit integer", type) == 0 )
 	{
-		unsigned long long int value = (unsigned long long int)*(self->variable);
+		unsigned long long int value = usVariableGetValueAsULongLong(self->variable);
 		result = Py_BuildValue("K", value);
 	}
 	else if ( strcmp("single precision floating-point", type) == 0 )
 	{
-		float value = (float)*(self->variable);
+		float value = usVariableGetValueAsFloat(self->variable);
 		result = Py_BuildValue("f", value);
 	}
 	else if ( strcmp("double precision floating-point", type) == 0 )
 	{
-		double value = (double)*(self->variable);
+		double value = usVariableGetValueAsDouble(self->variable);
 		result = Py_BuildValue("d", value);
 	}
 	else 	// anything else we consider it to be an string
 	{
-		std::string value = (std::string)*(self->variable);
-		result = PyUnicode_FromString(value.c_str());
+		result = PyUnicode_FromString(usVariableGetValueAsString(self->variable));
 	}
 	return result;
 }
@@ -170,8 +170,7 @@ variable_getstr (variable_VariableObject *self,
 		void *closure)
 {
 	PyObject *result = NULL;
-	std::string value = (std::string)*(self->variable);
-	result = PyUnicode_FromString(value.c_str());
+	result = PyUnicode_FromString(usVariableGetValueAsString(self->variable));
 	return result;
 }
 
@@ -189,7 +188,7 @@ variable_setvalue (variable_VariableObject *self,
 	{
 		bool boolean = false;
 		if ( PyObject_IsTrue(value) ) boolean = true;
-		*(self->variable) = boolean;
+		usVariableSetValueFromBoolean(self->variable, boolean);
 		return 0;
 	}
 
@@ -211,7 +210,7 @@ variable_setvalue (variable_VariableObject *self,
 		PyErr_SetString(PyExc_TypeError, "not a python bytes");
 		return NULL;
 	}
-	*(self->variable) = PyBytes_AsString(utf8);
+	usVariableSetValueFromString(self->variable, PyBytes_AsString(utf8));
 	Py_DECREF(utf8);
 	return 0;
 }
@@ -221,7 +220,7 @@ variable_getmutable (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-	bool is_mutable = self->variable->IsMutable();
+	bool is_mutable = usVariableMutable(self->variable);
 	if ( is_mutable )
 		Py_RETURN_TRUE;
 	else
@@ -233,7 +232,7 @@ variable_getvisible (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-	bool is_visible = self->variable->IsVisible();
+	bool is_visible = usVariableVisible(self->variable);
 	if ( is_visible )
 		Py_RETURN_TRUE;
 	else
@@ -245,15 +244,7 @@ variable_getserializable (variable_VariableObject *self,
 		PyObject *value,
 		void *closure)
 {
-//	Simulator *sim = PySimulator_GetSimRef();
-//	if (sim == 0 )
-//	{
-//		PyErr_Format(PyExc_RuntimeError,
-//				"Simulator for variable '%s' is no longer available",
-//				self->name->c_str());
-//		return result;
-//	}
-	bool is_serializable = self->variable->IsSerializable();
+	bool is_serializable = usVariableSerializable(self->variable);
 	if ( is_serializable )
 		Py_RETURN_TRUE;
 	else
@@ -267,9 +258,10 @@ variable_get_value ( variable_VariableObject *self )
 
 	// TODO
 	// should convert the value to the correct type not just a string
-	
-	std::string value = (std::string)*(self->variable);
-	result = PyUnicode_FromString(value.c_str());
+
+	result = variable_getvalue(self, NULL);
+	// std::string value = (std::string)*(self->variable);
+	// result = PyUnicode_FromString(value.c_str());
 	return result;
 }
 
@@ -279,9 +271,10 @@ variable_set_value ( variable_VariableObject *self,
 {
 	const char *value;
 
-	if ( !PyArg_ParseTuple(args, "s", &value) )
-		return NULL;
-	*(self->variable) = value;
+	// if ( !PyArg_ParseTuple(args, "s", &value) )
+	// 	return NULL;
+	// *(self->variable) = value;
+	variable_setvalue(self, args, NULL);
 	return (PyObject *)self;
 }
 
@@ -289,6 +282,7 @@ static PyObject *
 variable_add_listener ( variable_VariableObject *self,
 		PyObject *args)
 {
+	// TODO
 //	Simulator* sim = PySimulator_GetSimRef();
 //	PyObject *handler = 0;
 //
@@ -329,6 +323,7 @@ static PyObject *
 variable_remove_listener ( variable_VariableObject *self,
 		PyObject *args )
 {
+	// TODO
 //	const char *value;
 //	Simulator *sim = PySimulator_GetSimRef();
 //
@@ -478,23 +473,12 @@ PyInit_variable(void)
 }
 
 static PyObject *
-PyVariable_NewVariable (const char *name, PyObject *obj_sim)
+PyVariable_NewVariable (UnisimVariable var)
 {
 	PyObject *result = NULL;
 
 	if ( import_simulator_api() < 0 )
 		return result;
-
-	Simulator **sim = PySimulator_GetSimulatorRef(obj_sim);
-	if ( sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"No reference found to the simulator when creating variable.'%s'.",
-				name);
-		return result;
-	}
-	unisim::kernel::service::VariableBase *var = 
-		(*sim)->FindVariable(name);
 
 	if ( var == 0 )
 	{
@@ -505,7 +489,6 @@ PyVariable_NewVariable (const char *name, PyObject *obj_sim)
 	variable_VariableObject *self;
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
 			&variable_VariableType, 0);
-	self->simulator = sim;
 	self->variable = var;
 	return (PyObject *)self;
 }

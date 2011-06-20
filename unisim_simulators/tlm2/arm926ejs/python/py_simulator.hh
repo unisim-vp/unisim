@@ -36,7 +36,8 @@
 #define __PYTHON_PY_SIMULATOR_HH__
 
 #include <Python.h>
-#include "simulator.hh"
+// #include "simulator.hh"
+#include "unisim/uapi/uapi.h"
 #include "python/python_config.hh"
 
 extern "C" {
@@ -49,14 +50,14 @@ extern "C" {
 
 /* C API functions */
 #define PySimulator_GetSimulator_NUM 0
-#define PySimulator_GetSimulator_RETURN Simulator *
+#define PySimulator_GetSimulator_RETURN UnisimSimulator
 #define PySimulator_GetSimulator_PROTO (PyObject *)
-#define PySimulator_GetSimulatorRef_NUM 1
-#define PySimulator_GetSimulatorRef_RETURN Simulator **
-#define PySimulator_GetSimulatorRef_PROTO (PyObject *)
+// #define PySimulator_GetSimulatorRef_NUM 1
+// #define PySimulator_GetSimulatorRef_RETURN Simulator **
+// #define PySimulator_GetSimulatorRef_PROTO (PyObject *)
 
 /* Total number of C API pointers */
-#define PySimulator_API_pointers 2
+#define PySimulator_API_pointers 1
 
 #ifdef SIMULATOR_MODULE
 /* This section is used when compiling py_variable.cc */
@@ -64,9 +65,9 @@ extern "C" {
 static PySimulator_GetSimulator_RETURN 
 	PySimulator_GetSimulator
 	PySimulator_GetSimulator_PROTO;
-static PySimulator_GetSimulatorRef_RETURN 
-	PySimulator_GetSimulatorRef
-	PySimulator_GetSimulatorRef_PROTO;
+// static PySimulator_GetSimulatorRef_RETURN 
+// 	PySimulator_GetSimulatorRef
+//	PySimulator_GetSimulatorRef_PROTO;
 
 #else // SIMULATOR_MODULE
 
@@ -77,10 +78,10 @@ static void **PySimulator_API;
 (*(PySimulator_GetSimulator_RETURN \
    (*)PySimulator_GetSimulator_PROTO) \
  PySimulator_API[PySimulator_GetSimulator_NUM])
-#define PySimulator_GetSimulatorRef \
-(*(PySimulator_GetSimulatorRef_RETURN \
-   (*)PySimulator_GetSimulatorRef_PROTO) \
- PySimulator_API[PySimulator_GetSimulatorRef_NUM])
+//#define PySimulator_GetSimulatorRef 
+//(*(PySimulator_GetSimulatorRef_RETURN 
+//   (*)PySimulator_GetSimulatorRef_PROTO) 
+// PySimulator_API[PySimulator_GetSimulatorRef_NUM])
 
 /* Ensures that the initial PySimulator_API is NULL
  */
