@@ -147,25 +147,180 @@ const char *usVariableGetName(UnisimVariable variable)
 	return variable->variable->GetName();
 }
 
-bool usVariableVisible(UnisimVariable variable)
+const char *usVariableGetDataTypeName(UnisimVariable variable)
 {
 	if ( variable == 0 ) return 0;
+
+	return variable->variable->GetTypeName();
+}
+
+bool usVariableVisible(UnisimVariable variable)
+{
+	if ( variable == 0 ) return false;
 
 	return variable->variable->IsVisible();
 }
 
 bool usVariableMutable(UnisimVariable variable)
 {
-	if ( variable == 0 ) return 0;
+	if ( variable == 0 ) return false;
 
 	return variable->variable->IsMutable();
 }
 
 bool usVariableSerializable(UnisimVariable variable)
 {
-	if ( variable == 0 ) return 0;
+	if ( variable == 0 ) return false;
 
 	return variable->variable->IsSerializable();
+}
+
+template<class T>
+T usVariableGetValue(UnisimVariable variable)
+{
+	if ( variable == 0 ) return (T)0;
+
+	T value = (T)*(variable->variable);
+	return value;
+}
+
+template<class T>
+void usVariableSetValue(UnisimVariable variable, T value)
+{
+	if ( variable == 0 ) return;
+
+	*(variable->variable) = value;
+}
+
+bool usVariableGetValueAsBoolean(UnisimVariable variable)
+{
+	return usVariableGetValue<bool>(variable);
+}
+
+void usVariableSetValueFromBoolean(UnisimVariable variable, bool value)
+{
+	usVariableSetValue<bool>(variable, value);
+}
+
+unsigned char usVariableGetValueAsUChar(UnisimVariable variable)
+{
+	return usVariableGetValue<unsigned char>(variable);
+}
+
+void usVariableSetValueFromUChar(UnisimVariable variable, unsigned char value)
+{
+	usVariableSetValue<unsigned char>(variable, value);
+}
+
+char usVariableGetValueAsChar(UnisimVariable variable)
+{
+	return usVariableGetValue<char>(variable);
+}
+
+void usVariableSetValueFromChar(UnisimVariable variable, char value)
+{
+	usVariableSetValue<char>(variable, value);
+}
+
+unsigned short usVariableGetValueAsUShort(UnisimVariable variable)
+{
+	return usVariableGetValue<unsigned short>(variable);
+}
+
+void usVariableSetValueFromUShort(UnisimVariable variable, unsigned short value)
+{
+	usVariableSetValue<unsigned short>(variable, value);
+}
+
+short usVariableGetValueAsShort(UnisimVariable variable)
+{
+	return usVariableGetValue<short>(variable);
+}
+
+void usVariableSetValueFromShort(UnisimVariable variable, short value)
+{
+	usVariableSetValue<short>(variable, value);
+}
+
+unsigned int usVariableGetValueAsUInt(UnisimVariable variable)
+{
+	return usVariableGetValue<unsigned int>(variable);
+}
+
+void usVariableSetValueFromUInt(UnisimVariable variable, unsigned int value)
+{
+	usVariableSetValue<unsigned int>(variable, value);
+}
+
+int usVariableGetValueAsInt(UnisimVariable variable)
+{
+	return usVariableGetValue<int>(variable);
+}
+
+void usVariableSetValueFromInt(UnisimVariable variable, int value)
+{
+	usVariableSetValue<int>(variable, value);
+}
+
+unsigned long usVariableGetValueAsULong(UnisimVariable variable)
+{
+	return usVariableGetValue<unsigned long>(variable);
+}
+
+void usVariableSetValueFromULong(UnisimVariable variable, unsigned long value)
+{
+	usVariableSetValue<unsigned long>(variable, value);
+}
+
+long usVariableGetValueAsLong(UnisimVariable variable)
+{
+	return usVariableGetValue<long>(variable);
+}
+
+void usVariableSetValueFromLong(UnisimVariable variable, long value)
+{
+	usVariableSetValue<long>(variable, value);
+}
+
+unsigned long long usVariableGetValueAsULongLong(UnisimVariable variable)
+{
+	return usVariableGetValue<unsigned long long>(variable);
+}
+
+void usVariableSetValueFromULongLong(UnisimVariable variable, 
+		unsigned long long value)
+{
+	usVariableSetValue<unsigned long long>(variable, value);
+}
+
+long long usVariableGetValueAsLongLong(UnisimVariable variable)
+{
+	return usVariableGetValue<long long>(variable);
+}
+
+void usVariableSetValueFromLongLong(UnisimVariable variable, long long value)
+{
+	usVariableSetValue<long long>(variable, value);
+}
+
+float usVariableGetValueAsFloat(UnisimVariable variable)
+{
+	return usVariableGetValue<float>(variable);
+}
+
+void usVariableSetValueFromFloat(UnisimVariable variable, float value)
+{
+	usVariableSetValue<float>(variable, value);
+}
+
+double usVariableGetValueAsDouble(UnisimVariable variable)
+{
+	return usVariableGetValue<double>(variable);
+}
+
+void usVariableSetValueFromDouble(UnisimVariable variable, double value)
+{
+	usVariableSetValue<double>(variable, value);
 }
 
 const char *usVariableGetValueAsString(UnisimVariable variable)
@@ -178,25 +333,7 @@ const char *usVariableGetValueAsString(UnisimVariable variable)
 
 void usVariableSetValueFromString(UnisimVariable variable, const char *value)
 {
-	if ( variable == 0 ) return;
-	
-	*(variable->variable) = value;
-}
-
-unsigned long long usVariableGetValueAsUnsignedLongLong(UnisimVariable variable)
-{
-	if ( variable == 0 ) return 0;
-
-	unsigned long long value = ((unsigned long long)*(variable->variable));
-	return value;
-}
-
-void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable, 
-		unsigned long long value)
-{
-	if ( variable == 0 ) return;
-
-	*(variable->variable) = value;
+	usVariableSetValue<const char *>(variable, value);
 }
 
 bool usVariableSetListener(UnisimVariable variable, 

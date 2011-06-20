@@ -63,6 +63,7 @@ struct _UnisimDebugAPI
 {
 	struct _UnisimExtendedAPI eapi; /**< Pointer to the generic extended api state */
 	unisim::api::debug::DebugAPI *api; /**< Pointer to the c++ unisim debug api */
+	void *context; /**< Pointer to the context which will be handled to callbacks */
 };
 
 /****************************************************************************/
@@ -121,7 +122,8 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi)
 	debugApi->eapi.usDestroyAPI = (void (*)(UnisimExtendedAPI))usDestroyDebugAPI;
 	debugApi->eapi.usDestroyUnregisteredAPI = (void (*)(UnisimExtendedAPI))usDestroyUnregisteredDebugAPI;
 	debugApi->api = static_cast<unisim::api::debug::DebugAPI *>(unisimApi);
-	debugApi->api->SetHandlerContext(debugApi);
+	debugApi->context = 0;
+	// debugApi->api->SetHandlerContext(debugApi);
 	usSimulatorRegisterExtendedAPI(simulator, (UnisimExtendedAPI)debugApi);
 	
 	return debugApi;
@@ -136,23 +138,32 @@ void usDestroyDebugAPI(UnisimDebugAPI api)
 	api->eapi.simulator = 0;
 	api->eapi.usDestroyAPI = 0;
 	api->api = 0;
+	api->context = 0;
 	free(api);
 }
 
-bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
-		void (* callback)(UnisimDebugAPI, uint64_t))
+bool usDebugAPISetContext(UnisimDebugAPI dapi,
+		void *context)
 {
 	if ( dapi == 0 ) return false;
 
-	return dapi->api->SetBreakpointHandler((void (*)(void *, uint64_t))callback);	
+	return dapi->api->SetHandlerContext(context);
+}
+
+bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
+		void (* callback)(void *, uint64_t))
+{
+	if ( dapi == 0 ) return false;
+
+	return dapi->api->SetBreakpointHandler(callback);	
 }
 
 bool usDebugAPISetWatchpointHandler(UnisimDebugAPI dapi,
-		void (* callback)(UnisimDebugAPI, uint64_t, bool))
+		void (* callback)(void *, uint64_t, bool))
 {
 	if ( dapi == 0 ) return false;
 
-	return dapi->api->SetWatchpointHandler((void (*)(void *, uint64_t, bool))callback);
+	return dapi->api->SetWatchpointHandler(callback);
 }
 
 bool usDebugAPISetStepMode(UnisimDebugAPI dapi)
