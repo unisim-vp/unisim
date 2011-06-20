@@ -92,6 +92,17 @@ UnisimDebugAPI usCreateDebugAPI(UnisimExtendedAPI eapi);
 void usDestroyDebugAPI(UnisimDebugAPI api);
 
 /**
+ * Set the context which will be handled to the breakpoint/watchpoint handlers.
+ *
+ * @param dapi The debug handler to configure.
+ * @param context Pointer to the context that will be given to the handlers.
+ *
+ * @return True on success, false otherwise.
+ */
+bool usDebugAPISetContext(UnisimDebugAPI dapi,
+		void *context);
+
+/**
  * Set the breakpoint callback handler for the given debug handler.
  * The breakpoint will be called each time a breakpoint is found or under step
  * mode before the execution of any instruction.
@@ -102,7 +113,7 @@ void usDestroyDebugAPI(UnisimDebugAPI api);
  * @return True if the callback could be set, false otherwise.
  */
 bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
-		void (* callback)(UnisimDebugAPI , uint64_t));
+		void (* callback)(void *, uint64_t));
 
 /**
  * Set the watchpoint callback handler for the given debug handler.
@@ -113,7 +124,7 @@ bool usDebugAPISetBreakpointHandler(UnisimDebugAPI dapi,
  * @return True if the callback could be set, false otherwise.
  */
 bool usDebugAPISetWatchpointHandler(UnisimDebugAPI dapi,
-		void (* callback)(UnisimDebugAPI, uint64_t, bool));
+		void (* callback)(void *, uint64_t, bool));
 
 /**
  * Set the debug handler into step mode.
