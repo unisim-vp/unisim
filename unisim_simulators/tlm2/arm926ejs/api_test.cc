@@ -52,10 +52,10 @@ typedef const char *(* _usVariableGetValueAsString_type)(UnisimVariable);
 _usVariableGetValueAsString_type _usVariableGetValueAsString;
 typedef void (* _usVariableSetValueFromString_type)(UnisimVariable, const char *);
 _usVariableSetValueFromString_type _usVariableSetValueFromString;
-typedef unsigned long long (* _usVariableGetValueAsUnsignedLongLong_type)(UnisimVariable);
-_usVariableGetValueAsUnsignedLongLong_type _usVariableGetValueAsUnsignedLongLong;
-typedef void (* _usVariableSetValueFromUnsignedLongLong_type)(UnisimVariable, unsigned long long);
-_usVariableSetValueFromUnsignedLongLong_type _usVariableSetValueFromUnsignedLongLong;
+typedef unsigned long long (* _usVariableGetValueAsULongLong_type)(UnisimVariable);
+_usVariableGetValueAsULongLong_type _usVariableGetValueAsULongLong;
+typedef void (* _usVariableSetValueFromULongLong_type)(UnisimVariable, unsigned long long);
+_usVariableSetValueFromULongLong_type _usVariableSetValueFromULongLong;
 typedef bool (* _usVariableSetListener_type)(UnisimVariable, void (* listener)(UnisimVariable));
 _usVariableSetListener_type _usVariableSetListener;
 typedef void (* _usVariableRemoveListener_type)(UnisimVariable);
@@ -76,7 +76,7 @@ typedef UnisimDebugAPI (* _usCreateDebugAPI_type)(UnisimExtendedAPI);
 _usCreateDebugAPI_type _usCreateDebugAPI;
 typedef void (* _usDestroyDebugAPI_type)(UnisimDebugAPI);
 _usDestroyDebugAPI_type _usDestroyDebugAPI;
-typedef bool (* _usDebugAPISetBreakpointHandler_type)(UnisimDebugAPI, void (* callback)(UnisimDebugAPI, uint64_t));
+typedef bool (* _usDebugAPISetBreakpointHandler_type)(UnisimDebugAPI, void (* callback)(void *, uint64_t));
 _usDebugAPISetBreakpointHandler_type _usDebugAPISetBreakpointHandler;
 typedef bool (* _usDebugAPISetStepMode_type)(UnisimDebugAPI);
 _usDebugAPISetStepMode_type _usDebugAPISetStepMode;
@@ -202,9 +202,9 @@ bool load_lib()
 		return false;
 	if ( !load_sym(simlib, "usVariableSetValueFromString", _usVariableSetValueFromString) )
 		return false;
-	if ( !load_sym(simlib, "usVariableGetValueAsUnsignedLongLong", _usVariableGetValueAsUnsignedLongLong) )
+	if ( !load_sym(simlib, "usVariableGetValueAsULongLong", _usVariableGetValueAsULongLong) )
 		return false;
-	if ( !load_sym(simlib, "usVariableSetValueFromUnsignedLongLong", _usVariableSetValueFromUnsignedLongLong) )
+	if ( !load_sym(simlib, "usVariableSetValueFromULongLong", _usVariableSetValueFromULongLong) )
 		return false;
 	if ( !load_sym(simlib, "usVariableSetListener", _usVariableSetListener) )
 		return false;
@@ -297,7 +297,7 @@ int CloseSimulator ( UnisimSimulator simulator )
 void InstructionCounterListener ( UnisimVariable variable )
 {
 	unsigned long long instructionCounterValue = 
-		_usVariableGetValueAsUnsignedLongLong(variable);
+		_usVariableGetValueAsULongLong(variable);
 	if ( (instructionCounterValue % 1000) == 0 )
 		std::cerr << ".";
 	if ( (instructionCounterValue % 20000) == 0 )
@@ -362,13 +362,18 @@ std::string SimulatorStatusAsString(UnisimSimulatorStatus status)
 }
 
 std::map<uint64_t, uint64_t> insn_trace;
-void BreakpointHandler(UnisimDebugAPI dapi, uint64_t addr)
+unsigned long long int insn_trace_counter;
+void BreakpointHandler(void *context, uint64_t addr)
 {
 	insn_trace[addr]++;
+	insn_trace_counter++;
+	// if ( insn_trace_counter % 10000 ) 
+	// 	std::cerr << "*";
 }
 
 int test()
 {
+	insn_trace_counter = 0;
 	if ( !load_lib() )
 	{
 		std::cerr << "Could not load symbols" << std::endl;
@@ -565,7 +570,7 @@ int test()
 	else
 	{
 		std::cerr << " to true"; 
-		_usVariableSetValueFromUnsignedLongLong(loggerVariable, 1);
+		_usVariableSetValueFromULongLong(loggerVariable, 1);
 		std::cerr << " (DONE)" << std::endl;
 	}
 	std::cerr << " - launching setup";

@@ -122,6 +122,15 @@ UnisimVariableType usVariableGetType(UnisimVariable variable);
 const char *usVariableGetName(UnisimVariable variable);
 
 /**
+ * Gets the type of the variable data.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return A null terminated string with the type name of the given variable data.
+ */
+const char *usVariableGetDataTypeName(UnisimVariable variable);
+
+/**
  * Is the variable visible.
  *
  * @param variable The variable to handle.
@@ -150,6 +159,201 @@ bool usVariableMutable(UnisimVariable varable);
  *         that it may return false also if the variable is corrupted.
  */
 bool usVariableSerializable(UnisimVariable variable);
+
+/** Gets the value of the given variable as a boolean.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a boolean.
+ */
+bool usVariableGetValueAsBoolean(UnisimVariable variable);
+
+/** Sets the value of the given variable from a boolean.
+ *
+ * @param variable The variable to handle.
+ * @param value The boolean value.
+ */
+void usVariableSetValueFromBoolean(UnisimVariable variable, bool value);
+
+/** Get the value of the given variable as an unsigned char.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as an unsigned  char.
+ */
+unsigned char usVariableGetValueAsUChar(UnisimVariable variable);
+
+/** Set the value of the given variable from an unsigned char.
+ *
+ * @param variable The variable to handle.
+ * @param value The unsigned char value.
+ */
+void usVariableSetValueFromUChar(UnisimVariable variable, unsigned char value);
+
+/** Get the value of the given variable as a signed char.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a signed char.
+ */
+char usVariableGetValueAsChar(UnisimVariable variable);
+
+/** Set the value of the given variable from a signed char.
+ *
+ * @param variable The variable to handle.
+ * @param value The signed char value.
+ */
+void usVariableSetValueFromChar(UnisimVariable variable, char value);
+
+/** Get the value of the given variable as an unsigned short.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as an unsigned short.
+ */
+unsigned short usVariableGetValueAsUShort(UnisimVariable variable);
+
+/** Set the value of the given variable from an unsigned short.
+ *
+ * @param variable The variable to handle.
+ * @param value The unsigned shor value.
+ */
+void usVariableSetValueFromUShort(UnisimVariable variable, unsigned short value);
+
+/** Get the value of the given variable as a signed short.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a signed short.
+ */
+short usVariableGetValueAsShort(UnisimVariable variable);
+
+/** Set the value of the given variable from a signed short.
+ *
+ * @param variable The variable to handle.
+ * @param value The signed short value.
+ */
+void usVariableSetValueFromShort(UnisimVariable variable, short value);
+
+/** Get the value of the given variable as a unsigned int.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as an unsigned int.
+ */
+unsigned int usVariableGetValueAsUInt(UnisimVariable variable);
+
+/** Set the value of the given variable from an unsigned int.
+ *
+ * @param variable The variable to handle.
+ * @param value The unsigned int value.
+ */
+void usVariableSetValueFromUInt(UnisimVariable variable, unsigned int value);
+
+/** Get the value of the given variable as a signed int.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a signed int.
+ */
+int usVariableGetValueAsInt(UnisimVariable variable);
+
+/** Set the value of the given variable from a signed int.
+ *
+ * @param variable The variable to handle.
+ * @param value The signed int value.
+ */
+void usVariableSetValueFromInt(UnisimVariable variable, int value);
+
+/** Get the value of the given variable as a unsigned long.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as an unsigned long.
+ */
+unsigned long usVariableGetValueAsULong(UnisimVariable variable);
+
+/** Set the value of the given variable from an unsigned long.
+ *
+ * @param variable The variable to handle.
+ * @param value The unsigned long value.
+ */
+void usVariableSetValueFromULong(UnisimVariable variable, unsigned long value);
+
+/** Get the value of the given variable as a signed long.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a signed long.
+ */
+long usVariableGetValueAsLong(UnisimVariable variable);
+
+/** Set the value of the given variable from a signed long.
+ *
+ * @param variable The variable to handle.
+ * @param value The signed long value.
+ */
+void usVariableSetValueFromLong(UnisimVariable variable, long value);
+
+/** Get the value of the given variable as a unsigned long long.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as an unsigned long long.
+ */
+unsigned long long usVariableGetValueAsULongLong(UnisimVariable variable);
+
+/** Set the value of the given variable from an unsigned long long.
+ *
+ * @param variable The variable to handle.
+ * @param value The unsigned long long value.
+ */
+void usVariableSetValueFromULongLong(UnisimVariable variable, unsigned long long value);
+
+/** Get the value of the given variable as a signed long long.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a signed long long.
+ */
+long long usVariableGetValueAsLongLong(UnisimVariable variable);
+
+/** Set the value of the given variable from a signed long long.
+ *
+ * @param variable The variable to handle.
+ * @param value The signed long long value.
+ */
+void usVariableSetValueFromLongLong(UnisimVariable variable, long long value);
+
+/** Gets the value of the given variable as a float.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a float.
+ */
+float usVariableGetValueAsFloat(UnisimVariable variable);
+
+/** Sets the value of the given variable from a float.
+ *
+ * @param variable The variable to handle.
+ * @param value The float value.
+ */
+void usVariableSetValueFromFloat(UnisimVariable variable, float value);
+
+/** Gets the value of the given variable as a double.
+ *
+ * @param variable The variable to handle.
+ *
+ * @return The value of the given variable as a double.
+ */
+double usVariableGetValueAsDouble(UnisimVariable variable);
+
+/** Sets the value of the given variable from a double.
+ *
+ * @param variable The variable to handle.
+ * @param value The double value.
+ */
+void usVariableSetValueFromDouble(UnisimVariable variable, double value);
 
 /**
  * Gets the value of the given variable as a null terminated string.
