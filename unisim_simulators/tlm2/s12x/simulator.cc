@@ -462,6 +462,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
 	simulator->SetVariable("CRG.interrupt-offset-self-clock-mode", 0xc4);
 	simulator->SetVariable("CRG.debug-enabled", false);
+	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
+	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
 	simulator->SetVariable("ECT.bus-cycle-time", 250000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);

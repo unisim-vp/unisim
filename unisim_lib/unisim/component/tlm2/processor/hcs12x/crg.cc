@@ -61,7 +61,7 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
 
-	, synr_register(0x00)
+	, synr_register(0x09)
 	, refdv_register(0x00)
 	, ctflg_register(0x00)
 	, crgflg_register(0x00)
@@ -83,8 +83,13 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, cop_enabled(true)
 	, scme_write(false)
 
-	, oscillator_clock_int(0)
-	, param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_int)
+	, oscillator_clock_value(125000)
+	, param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_value)
+	, self_clock_mode_value(100000)
+	, param_self_clock_mode_clock("param-self-clock-mode-clock", this, self_clock_mode_value, "Self Clock Mode frequency between 1MHz and 5.5 MHz (unit PS)")
+	, pll_stabilization_delay_value(0.24)
+	, param_pll_stabilization_delay("pll-stabilization-delay", this, pll_stabilization_delay_value, "Total PLL stabilization delay (acquisition + tracking). e.g. for Fosc = 4MHz and REFDV = #$00, SYNR = #$09 the acquisition_delay = 0.09 ms and tracking_delay = 0.16 ms")
+
 
 	, baseAddress(0x0034)
 	, param_baseAddress("base-address", this, baseAddress)
@@ -109,6 +114,7 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(CRG);
 
+	SC_THREAD(RunPLL_LockTrack_Detector);
 	SC_THREAD(RunRTI);
 	SC_THREAD(RunCOP);
 	SC_THREAD(RunClockMonitor);
@@ -182,13 +188,11 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 			synr_register = value & 0x3F;
 
-			compute_clock();
-
 			/**
 			 * Write to SYNR register initializes the lock detector bit and the track detector bit.
 			 */
-			initialize_lock_dectector();
-			initialize_track_detector();
+			lock_track_detector_event.notify();
+
 
 		} break;
 		case REFDV: {
@@ -199,11 +203,8 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 			refdv_register = value & 0x3F;
 
-			compute_clock();
-
 			// Write to SYNR register initializes the lock detector bit and the track detector bit.
-			initialize_lock_dectector();
-			initialize_track_detector();
+			lock_track_detector_event.notify();
 
 		} break;
 		case CTFLG: {
@@ -291,7 +292,7 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 				pllctl_register = (pllctl_register | 0x20);
 			}
 
-			compute_clock();
+			updateBusClock();
 
 
 		} break;
@@ -389,31 +390,6 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 
 void CRG::systemReset() {
 
-}
-
-inline void CRG::initialize_lock_dectector() {
-
-	/**
-	 * TODO: implement Lock detector functionality
-	 */
-
-	// the following isn't a final implementation
-	uint8_t old_crgflg_register = crgflg_register;
-	crgflg_register = old_crgflg_register | 0x08;
-	if (((crgflg_register & 0x08) & (old_crgflg_register & 0x08)) == 0) {
-		assertInterrupt(interrupt_offset_pll_lock);
-	}
-
-}
-
-inline void CRG::initialize_track_detector() {
-
-	/**
-	 * TODO: implement Track detector functionality
-	 */
-
-	// the following isn't a final implementation
-	crgflg_register = crgflg_register | 0x04;
 }
 
 void CRG::activateSelfClockMode() {
@@ -539,7 +515,7 @@ void CRG::RunCOP() {
 
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
-			sc_time min_pll_clock = (2 * oscillator_clock) / 64 ;
+			sc_time min_pll_clock = 2 * self_clock_mode_clock * (synr_register + 1) / (refdv_register + 1); // PLLCLK at minimum frequency Fscm;
 			cop_timeout = min_pll_clock / ((2^14) * (copctl_register & 0x07));
 		} else {
 			cop_timeout = oscillator_clock / ((2^14) * (copctl_register & 0x07));
@@ -587,14 +563,14 @@ void CRG::RunRTI() {
 	sc_time delay;
 
 	while (true) {
-		while (((crgint_register & 0x80) == 0) || (!rti_enabled)) {
+		while (((crgint_register & 0x80) == 0) || ((rtictl_register & 0x70) == 0) || (!rti_enabled)) {
 			wait(rti_enable_event);
 		}
 
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
 			//delay = rti_fdr * pll_clock;
-			sc_time min_pll_clock = (2 * oscillator_clock) / 64 ;
+			sc_time min_pll_clock = 2 * self_clock_mode_clock * (synr_register + 1) / (refdv_register + 1); // PLLCLK at minimum frequency Fscm;
 			delay = rti_fdr * min_pll_clock;
 		} else {
 			delay = rti_fdr * oscillator_clock;
@@ -661,16 +637,47 @@ tlm_sync_enum CRG::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_
 	return TLM_ACCEPTED;
 }
 
+void CRG::RunPLL_LockTrack_Detector() {
 
-void CRG::compute_clock() {
+	while (true) {
 
-	pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
+		/**
+		 * The lock detector compares the frequencies of the FEEDBACK clock, and the REFERENCE clock.
+		 * Therefore, the speed of the lock detector is directly proportional to the final reference frequency.
+		 * The circuit determines the mode of the PLL and the lock condition based on this comparison
+		 */
+
+		wait(lock_track_detector_event);
+
+		pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
+
+		/**
+		 *  TODO:
+		 *  - Implement a mechanism to emulate unstable PLL
+		 *  - Implement Lock detector functionality
+		 *  - Implement Track detector functionality
+		 */
+		crgflg_register = crgflg_register & 0xF7; // clear LOCK bit
+		assertInterrupt(interrupt_offset_pll_lock);
+		wait(pll_stabilization_delay);
+		crgflg_register = crgflg_register | 0x08; // set LOCK bit
+
+		crgflg_register = crgflg_register | 0x04; // set TRACK bit
+
+		assertInterrupt(interrupt_offset_pll_lock);
+
+	}
+
+}
+
+void CRG::updateBusClock() {
 
 	/**
 	 *  PLL Select Bit:
 	 *  Writing a 1 when LOCK = 0 and AUTO = 1, or TRACK = 0 and AUTO = 0 has no effect.
 	 */
-	if ((((crgflg_register & 0x08) == 0) && ((pllctl_register & 0x20) != 0)) ||
+	if (((clksel_register & 0x80) == 0) ||
+			(((crgflg_register & 0x08) == 0) && ((pllctl_register & 0x20) != 0)) ||
 			((((crgflg_register & 0x04) == 0) && ((pllctl_register & 0x20) == 0))) ||
 			((pllctl_register & 0x40) == 0)) {
 		bus_clock = oscillator_clock * 2;
@@ -678,10 +685,6 @@ void CRG::compute_clock() {
 		bus_clock = pll_clock * 2;
 	}
 
-	updateBusClock();
-}
-
-void CRG::updateBusClock() {
 	// notify bus_clock update
 	sc_dt::uint64 bus_clock_value = bus_clock.value();
 
@@ -727,7 +730,7 @@ void CRG::initialize_rti_counter() {
 		if (rtr64 != 0) {
 			rti_fdr = (rtr30+1) * std::pow((double)2, 10+rtr64-1);
 		} else {
-			// disable RTI
+			rti_enabled = false;
 		}
 	}
 
@@ -778,8 +781,19 @@ bool CRG::BeginSetup() {
 	sprintf(buf, "%s.ARMCOP",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &armcop_register);
 
-	oscillator_clock = sc_time((double) oscillator_clock_int, SC_PS);
+	oscillator_clock = sc_time((double) oscillator_clock_value, SC_PS);
 
+	bus_clock = oscillator_clock * 2;
+
+	// TODO: parameterize this variable or use another mechanism (asynchronous thread or potentiometer)
+
+	/**
+	 * The following pll_delta_time value is measured for the following characteristics
+	 * fosc = 4 MHz, fBUS = 40 MHz equivalent fVCO = 80 MHz: REFDV = #$00, SYNR = #$09, CS = 4.7 nF, CP = 470 pF, RS = 4.7 kΩ
+	 */
+	pll_stabilization_delay =  sc_time((double) pll_stabilization_delay_value, SC_MS); // acquisition_delay = 0.09 ms and tracking_delay = 0.16 ms
+
+	self_clock_mode_clock =   sc_time((double) self_clock_mode_value, SC_PS);
 	return true;
 }
 
@@ -806,7 +820,7 @@ void CRG::OnDisconnect() {
 
 void CRG::Reset() {
 
-	synr_register =  0x00;
+	synr_register =  0x09;
 	refdv_register = 0x00;
 	ctflg_register = 0x00;
 	crgflg_register = 0x00;
@@ -819,7 +833,7 @@ void CRG::Reset() {
 	ctctl_register = 0x00;
 	armcop_register = 0x00;
 
-	compute_clock();
+	updateBusClock();
 
 }
 

@@ -44,7 +44,7 @@
 		<variable name="use-atd-stub">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -118,7 +118,7 @@
 		<variable name="use-atd-stub">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -270,7 +270,7 @@
 		<variable name="enable-fine-timing">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -311,9 +311,21 @@
 	<object name="CRG">
 		<variable name="oscillator-clock">
 			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>125000</value>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x1e848</value>
 			<description></description>
+		</variable>
+		<variable name="pll-stabilization-delay">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.24</value>
+			<description>Total PLL stabilization delay (acquisition + tracking). e.g. for Fosc = 4MHz and REFDV = #$00, SYNR = #$09 the acquisition_delay = 0.09 ms and tracking_delay = 0.16 ms</description>
+		</variable>
+		<variable name="param-self-clock-mode-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x186a0</value>
+			<description>Self Clock Mode frequency between 1MHz and 5.5 MHz (unit PS)</description>
 		</variable>
 		<variable name="base-address">
 			<type>parameter</type>
@@ -472,7 +484,7 @@
 		<variable name="stub-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -539,7 +551,17 @@
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
 			<value>0x0</value>
-			<description>if not null, a forced base address for a unique program segment</description>
+			<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+		</variable>
+		<variable name="force-base-addr">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if true force base address for a unique program segment</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 		<variable name="force-use-virtual-address">
 			<type>parameter</type>
@@ -577,6 +599,16 @@
 			<value></value>
 			<description>DWARF v2/v3 to HTML output directory</description>
 		</variable>
+		<variable name="parse-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Enable/Disable parsing of DWARF debugging informations</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 	</object>
 	<object name="external-memory">
 		<variable name="org">
@@ -587,7 +619,7 @@
 		</variable>
 		<variable name="bytesize">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
+			<data_type>unsigned 64-bit integer</data_type>
 			<value>8388608</value>
 			<description>memory size in bytes</description>
 		</variable>
@@ -613,7 +645,7 @@
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
-			<description></description>
+			<description>enable/disable verbosity</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -623,9 +655,9 @@
 	<object name="external_router">
 		<variable name="cycle_time">
 			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>250000</value>
-			<description>Time to process a request/response by the router in SC_PS)</description>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>Time to process a request/response by the router</description>
 		</variable>
 		<variable name="port_buffer_size">
 			<type>parameter</type>
@@ -636,7 +668,7 @@
 		<variable name="mapping_0">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x800&quot; range_end=&quot;0x7fffff&quot; output_port=&quot;0&quot; translation=&quot;800&quot;</value>
+			<value>range_start=&quot;0x800&quot; range_end=&quot;0x7fffff&quot; output_port=&quot;0&quot; translation=&quot;0x800&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 	</object>
@@ -649,7 +681,7 @@
 		</variable>
 		<variable name="bytesize">
 			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
+			<data_type>unsigned 64-bit integer</data_type>
 			<value>65536</value>
 			<description>memory size in bytes</description>
 		</variable>
@@ -675,7 +707,7 @@
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
-			<description></description>
+			<description>enable/disable verbosity</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -685,9 +717,9 @@
 	<object name="internal_router">
 		<variable name="cycle_time">
 			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>250000</value>
-			<description>Time to process a request/response by the router in SC_PS)</description>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>Time to process a request/response by the router</description>
 		</variable>
 		<variable name="port_buffer_size">
 			<type>parameter</type>
@@ -698,128 +730,44 @@
 		<variable name="mapping_0">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x34&quot; range_end=&quot;0x40&quot; output_port=&quot;0&quot; translation=&quot;34&quot;</value>
+			<value>range_start=&quot;0x34&quot; range_end=&quot;0x40&quot; output_port=&quot;0&quot; translation=&quot;0x34&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 		<variable name="mapping_1">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x40&quot; range_end=&quot;0x7f&quot; output_port=&quot;1&quot; translation=&quot;40&quot;</value>
+			<value>range_start=&quot;0x40&quot; range_end=&quot;0x7f&quot; output_port=&quot;1&quot; translation=&quot;0x40&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 		<variable name="mapping_2">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x80&quot; range_end=&quot;0xb0&quot; output_port=&quot;2&quot; translation=&quot;80&quot;</value>
+			<value>range_start=&quot;0x80&quot; range_end=&quot;0xb0&quot; output_port=&quot;2&quot; translation=&quot;0x80&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 		<variable name="mapping_3">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x120&quot; range_end=&quot;0x130&quot; output_port=&quot;3&quot; translation=&quot;120&quot;</value>
+			<value>range_start=&quot;0x120&quot; range_end=&quot;0x130&quot; output_port=&quot;3&quot; translation=&quot;0x120&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 		<variable name="mapping_4">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x2c0&quot; range_end=&quot;0x2e0&quot; output_port=&quot;4&quot; translation=&quot;2c0&quot;</value>
+			<value>range_start=&quot;0x2c0&quot; range_end=&quot;0x2e0&quot; output_port=&quot;4&quot; translation=&quot;0x2c0&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 		<variable name="mapping_5">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x300&quot; range_end=&quot;0x328&quot; output_port=&quot;5&quot; translation=&quot;300&quot;</value>
+			<value>range_start=&quot;0x300&quot; range_end=&quot;0x328&quot; output_port=&quot;5&quot; translation=&quot;0x300&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 		<variable name="mapping_6">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x800&quot; range_end=&quot;0xffff&quot; output_port=&quot;6&quot; translation=&quot;800&quot;</value>
+			<value>range_start=&quot;0x800&quot; range_end=&quot;0xffff&quot; output_port=&quot;6&quot; translation=&quot;0x800&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
-		</variable>
-	</object>
-	<object name="kernel_logger">
-		<variable name="std_err">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Show logger output through the standard error output</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="std_out">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Show logger output through the standard output</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="std_err_color">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="std_out_color">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Colorize logger output through the standard output (only works if std_out is active)</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="file">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Keep logger output in a file</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>logger_output.txt</value>
-			<description>Filename to keep logger output (the option file must be activated)</description>
-		</variable>
-		<variable name="xml_file">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Keep logger output in a file xml formatted</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="xml_filename">
-			<type>parameter</type>
-			<data_type>string</data_type>
-			<value>logger_output.xml</value>
-			<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
-		</variable>
-		<variable name="xml_file_gzipped">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
 		</variable>
 	</object>
 	<variable name="authors">
@@ -910,6 +858,88 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
+	<variable name="kernel_logger.file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.txt</value>
+		<description>Filename to keep logger output (the option file must be activated)</description>
+	</variable>
+	<variable name="kernel_logger.std_err">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Show logger output through the standard error output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_err_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Show logger output through the standard output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Keep logger output in a file xml formatted</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file_gzipped">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.xml</value>
+		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+	</variable>
 	<variable name="license">
 		<type>parameter</type>
 		<data_type>string</data_type>
@@ -921,6 +951,12 @@
 		<data_type>string</data_type>
 		<value>UNISIM star12x</value>
 		<description>Program name</description>
+	</variable>
+	<variable name="schematic">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value></value>
+		<description>path to simulator schematic</description>
 	</variable>
 	<variable name="version">
 		<type>parameter</type>

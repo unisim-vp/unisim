@@ -195,12 +195,23 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	double	oscillator_clock_int;	// The time unit is PS
-	Parameter<double>	param_oscillator_clock_int;
+	uint32_t	oscillator_clock_value;	// The time unit is PS
+	Parameter<uint32_t>	param_oscillator_clock_int;
 	sc_time		oscillator_clock;
+
+	double pll_stabilization_delay_value;
+	Parameter<double>	param_pll_stabilization_delay;
+	sc_time		pll_stabilization_delay;
+
+	uint32_t self_clock_mode_value;
+	Parameter<uint32_t> param_self_clock_mode_clock;
+	sc_time self_clock_mode_clock;
 
 	sc_time		pll_clock;
 	sc_time		bus_clock;
+
+	sc_event	lock_track_detector_event;
+	sc_event	track_detector_event;
 
 	sc_event	clockmonitor_enable_event;
 	sc_event	rti_enable_event;
@@ -238,7 +249,7 @@ private:
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 
-	inline void compute_clock();
+	inline void RunPLL_LockTrack_Detector();
 	inline void initialize_rti_counter();
 	inline void updateBusClock();
 
@@ -247,9 +258,6 @@ private:
 	void activateStopMode();
 	void activateWaitMode();
 	void wakeupFromStopMode();
-
-	inline void initialize_lock_dectector();
-	inline void initialize_track_detector();
 
 	// =============================================
 	// =            Registers                      =
