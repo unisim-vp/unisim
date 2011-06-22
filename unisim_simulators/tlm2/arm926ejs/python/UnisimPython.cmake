@@ -90,6 +90,7 @@ if ( ${PYTHONINTERP_FOUND} )
 			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
 			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
 			simulatorlib
+			libuapi
 			${sim__deps}
 		COMMENT
 			"Building python extension."
