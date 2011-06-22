@@ -395,19 +395,35 @@ void usVariableSetValueFromUnsignedLongLong(UnisimVariable variable,
  *
  * @param variable The variable to handle.
  * @param listener The function to call when the variable is modified.
+ * @param context Context that will be handled to the listener when called.
  *
  * @return True on success, false if could not set the handler (or if a
  *          handler already exists.
  */
-bool usVariableSetListener(UnisimVariable variable, 
-		void (* listener)(UnisimVariable context));
+bool usVariableSetListener(UnisimVariable variable,
+		void (* listener)(void *context),
+		void *context);
 
 /**
- * Removes the current variable listener.
+ * Removes the given variable listener.
+ *
+ * @param variable The variable to handle.
+ * @param listener The listener to remove.
+ * @param context The associated listener context to remove.
+ *
+ * @return True if the listener was found, false otherwise.
+ */
+bool usVariableRemoveListener(UnisimVariable variable,
+		void (* listener)(void *context),
+		void *context);
+
+/**
+ * Removes all the variable listeners.
  *
  * @param variable The variable to handle.
  */
-void usVariableRemoveListener(UnisimVariable variable);
+void usVariableRemoveListeners(UnisimVariable variable);
+
 }
 
 #endif

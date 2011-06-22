@@ -73,12 +73,23 @@ public:
 	 * @return A UnisimVariableListener.
 	 */
 	UnisimVariableListener(UnisimVariable _variable,
-			void (* _listener)(UnisimVariable context));
+			void (* _listener)(void *),
+			void *_context);
 
 	/**
 	 * Destructor.
 	 */
 	~UnisimVariableListener();
+
+	/**
+	 * Check that the given listener function is the same than the owned by this listener.
+	 *
+	 * @param _listener The listener function to compare against.
+	 * @param _context The context of the listener function to compare against.
+	 *
+	 * @return True if the object listener function and the given listener are the same, false otherwise.
+	 */
+	bool Check(void (* _listener)(void *), void *_context);
 
 	/**
 	 * Notify the unisim variable that the api variable has been modified (probably).
@@ -91,11 +102,15 @@ private:
 	/**
 	 * The function that will be called when the variable is modified.
 	 */
-	void (* listener)(UnisimVariable);
+	void (* listener)(void *);
 	/**
 	 * The api variable attached to the given listener.
 	 */
 	UnisimVariable variable;
+	/**
+	 * The context handled to the listener when called.
+	 */
+	void *context;
 };
 
 /****************************************************************************/
