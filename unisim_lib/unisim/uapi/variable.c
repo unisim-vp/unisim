@@ -59,7 +59,7 @@
 struct _UnisimVariable
 {
 	unisim::kernel::service::VariableBase *variable;
-	UnisimVariableListener *listener;	
+	std::list<UnisimVariableListener *> *listeners;
 	UnisimSimulator simulator;
 };
 
@@ -91,11 +91,19 @@ void usDestroyVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
-	if ( variable->listener != 0 ) delete variable->listener;
+	std::cerr << "*** Destroying variable " << variable->variable->GetName() << std::endl;
+	if ( variable->listeners != 0 )
+	{
+		for ( std::list<UnisimVariableListener *>::iterator it = variable->listeners->begin();
+				it != variable->listeners->end();
+				it++ )
+			delete (*it);
+		delete variable->listeners;
+	}
 	usSimulatorUnregisterVariable(variable->simulator, variable);
 	variable->variable = 0;
 	variable->simulator = 0;
-	variable->listener = 0;
+	variable->listeners = 0;
 	free(variable);
 	variable = 0;
 }
@@ -151,7 +159,7 @@ const char *usVariableGetDataTypeName(UnisimVariable variable)
 {
 	if ( variable == 0 ) return 0;
 
-	return variable->variable->GetTypeName();
+	return variable->variable->GetDataTypeName();
 }
 
 bool usVariableVisible(UnisimVariable variable)
@@ -337,27 +345,63 @@ void usVariableSetValueFromString(UnisimVariable variable, const char *value)
 }
 
 bool usVariableSetListener(UnisimVariable variable, 
-		void (*listener)(UnisimVariable context))
+		void (*listener)(void *context),
+		void *context)
 {
 	if ( variable == 0 ) return false;
-	if ( variable->listener != 0 ) return false;
+	if ( variable->listeners == 0 )
+	{
+		variable->listeners = new std::list<UnisimVariableListener *>();
+	}
+	if ( variable->listeners == 0 ) return false;
+	bool already_exist = false;
+	for ( std::list<UnisimVariableListener *>::iterator it = variable->listeners->begin();
+			(it != variable->listeners->end()) && !already_exist;
+			it++ )
+		if ( (*it)->Check(listener, context) ) already_exist = true;
+	if ( already_exist ) return true;
 
-	variable->listener = new UnisimVariableListener(variable, listener);
-
-	if ( variable->listener == 0 ) return false;
+	UnisimVariableListener *listener_obj =
+		new UnisimVariableListener(variable, listener, context);
+	if ( listener_obj == 0 ) return false;
+	variable->listeners->push_back(listener_obj);
 
 	return true;
 }
 
-void usVariableRemoveListener(UnisimVariable variable)
+bool usVariableRemoveListener(UnisimVariable variable,
+		void (* listener)(void *context),
+		void *context)
+{
+	if ( variable == 0 ) return false;
+	if ( variable->listeners == 0 ) return false;
+
+	for ( std::list<UnisimVariableListener *>::iterator it = variable->listeners->begin();
+			it != variable->listeners->end();
+			it++ )
+	{
+		if ( (*it)->Check(listener, context) )
+		{
+			delete (*it);
+			variable->listeners->erase(it);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void usVariableRemoveListeners(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
-	if ( variable->listener == 0 ) return;
-
-	delete variable->listener;
-
-	variable->listener = 0;
+	if ( variable->listeners == 0 ) return;
+	for ( std::list<UnisimVariableListener *>::iterator it = variable->listeners->begin();
+			it != variable->listeners->end();
+			it = variable->listeners->begin() )
+		delete (*it);
+	variable->listeners->clear();
 }
+
 
 /****************************************************************************/
 /*                                                                         **/
@@ -376,7 +420,7 @@ UnisimVariable usCreateVariable(UnisimSimulator simulator,
 
 	variable->simulator = simulator;
 	variable->variable = unisimVariable;
-	variable->listener = 0;
+	variable->listeners = 0;
 	usSimulatorRegisterVariable(simulator, variable);
 	return variable;
 }
@@ -385,19 +429,21 @@ void usDestroyUnregisteredVariable(UnisimVariable variable)
 {
 	if ( variable == 0 ) return;
 
-	if ( variable->listener != 0 ) delete variable->listener;
+	if ( variable->listeners != 0 ) delete variable->listeners;
 	variable->variable = 0;
 	variable->simulator = 0;
-	variable->listener = 0;
+	variable->listeners = 0;
 	free(variable);
 }
 
 UnisimVariableListener ::
 UnisimVariableListener(UnisimVariable _variable,
-		void (* _listener)(UnisimVariable context))
+		void (* _listener)(void *),
+		void *_context)
 	: unisim::kernel::service::VariableBaseListener()
 	, listener(_listener)
 	, variable(_variable)
+	, context(_context)
 {
 	variable->variable->AddListener(this);
 }
@@ -408,13 +454,21 @@ UnisimVariableListener ::
 	variable->variable->RemoveListener(this);
 	listener = 0;
 	variable = 0;
+	context = 0;
+}
+
+bool
+UnisimVariableListener ::
+Check(void (* _listener)(void *), void *_context)
+{
+	return (_listener == listener) && (_context == context);
 }
 
 void 
 UnisimVariableListener ::
 VariableBaseNotify(const unisim::kernel::service::VariableBase *unisimVariable)
 {
-	(*listener)(variable);
+	(*listener)(context);
 }
 
 /****************************************************************************/

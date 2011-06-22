@@ -56,7 +56,7 @@ typedef unsigned long long (* _usVariableGetValueAsULongLong_type)(UnisimVariabl
 _usVariableGetValueAsULongLong_type _usVariableGetValueAsULongLong;
 typedef void (* _usVariableSetValueFromULongLong_type)(UnisimVariable, unsigned long long);
 _usVariableSetValueFromULongLong_type _usVariableSetValueFromULongLong;
-typedef bool (* _usVariableSetListener_type)(UnisimVariable, void (* listener)(UnisimVariable));
+typedef bool (* _usVariableSetListener_type)(UnisimVariable, void (* listener)(void *), void *);
 _usVariableSetListener_type _usVariableSetListener;
 typedef void (* _usVariableRemoveListener_type)(UnisimVariable);
 _usVariableRemoveListener_type _usVariableRemoveListener;
@@ -294,8 +294,9 @@ int CloseSimulator ( UnisimSimulator simulator )
 	return 0;
 }
 
-void InstructionCounterListener ( UnisimVariable variable )
+void InstructionCounterListener ( void *_variable )
 {
+	UnisimVariable variable = (UnisimVariable) _variable;
 	unsigned long long instructionCounterValue = 
 		_usVariableGetValueAsULongLong(variable);
 	if ( (instructionCounterValue % 1000) == 0 )
@@ -587,7 +588,7 @@ int test()
 		std::cerr << "ERROR: could not get instruction counter variable" << std::endl;
 		return CloseSimulator(simulator);
 	}
-	_usVariableSetListener(instructionCounterVariable, InstructionCounterListener);
+	_usVariableSetListener(instructionCounterVariable, InstructionCounterListener, instructionCounterVariable);
 	if ( dapi != 0 )
 	{
 		std::cerr << " - setting up debug step mode and breakpoint handler" << std::endl;
