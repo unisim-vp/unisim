@@ -110,8 +110,24 @@ static PyObject *
 variable_getname (variable_VariableObject *self, void *closure)
 {
 	PyObject *result = NULL;
-	
-	result = PyUnicode_FromString(usVariableGetName(self->variable));
+
+	result = variable_get_name(self);
+	return result;
+}
+
+static PyObject *
+variable_get_datatypename(variable_VariableObject *self)
+{
+	PyObject *result = NULL;
+	result = PyUnicode_FromString(usVariableGetDataTypeName(self->variable));
+	return result;
+}
+
+static PyObject *
+variable_getdatatypename(variable_VariableObject *self, void *closure)
+{
+	PyObject *result = NULL;
+	result = variable_get_datatypename(self);
 	return result;
 }
 
@@ -393,6 +409,8 @@ static PyMethodDef variable_methods[] =
 {
 		{"get_name", (PyCFunction)variable_get_name, METH_NOARGS,
 				"Return the variable name."},
+		{"get_datatypename", (PyCFunction)variable_get_datatypename, METH_NOARGS,
+				"Return the variable type name."},
 		{"get_value", (PyCFunction)variable_get_value, METH_NOARGS,
 				"Return the variable value as a string."},
 		{"set_value", (PyCFunction)variable_set_value, METH_VARARGS,
@@ -412,6 +430,11 @@ static PyGetSetDef variable_getseters[] =
 				(getter)variable_getname, NULL,
 				"variable name",
 				NULL,
+		},
+		{"datatypename",
+			(getter)variable_getdatatypename, NULL,
+			"variable data type name",
+			NULL,
 		},
 		{"value",
 				(getter)variable_getvalue, (setter)variable_setvalue,
