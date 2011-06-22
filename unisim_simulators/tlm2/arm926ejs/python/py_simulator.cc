@@ -265,6 +265,8 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 		options = (char **)malloc(sizeof(char *) * (size + 1));
 		if ( options == 0 ) return -1;
 		options[size] = 0;
+		pos = 0;
+		int options_index = 0;
 		while ( PyDict_Next(parms, &pos, &key, &value) )
 		{
 			char *ckey = 0;
@@ -295,8 +297,9 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 			Py_DECREF(utf8);
 			std::stringstream assign;
 			assign << ckey << "=" << cvalue;
-			options[pos] = (char *)malloc(sizeof(char) * (assign.str().size() + 1));
-			strcpy(options[pos], assign.str().c_str());
+			options[options_index] = (char *)malloc(sizeof(char) * (assign.str().size() + 1));
+			strcpy(options[options_index], assign.str().c_str());
+			options_index++;
 		}
 		
 	}
@@ -311,11 +314,14 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 		options[i] = 0;
 	}
 
-
 //	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
 //	self->trap_handler = 0;
 //	self->trap_context = 0;
 
+	if ( self->sim == 0 )
+	{
+		return -1;
+	}
 	return 0;
 }
 
