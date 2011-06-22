@@ -472,44 +472,49 @@ if ( BUILD_PYTHON_MODULE )
 		 '${OSCI_SYSTEMC_INCLUDE_DIR}',
 		 '${OSCI_TLM2_INCLUDE_DIR}'")
 	set ( PYTHON__SIM__LIB_DIRS
-		"'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
-	foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
-		get_filename_component( lib_path ${lib}
-			PATH )
-		set ( PYTHON__SIM__LIB_DIRS
-			"${PYTHON__SIM__LIB_DIRS},
-			 '${lib_path}'")
-	endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+		"'${CMAKE_LIBRARY_OUTPUT_DIRECTORY}'")
 	set ( PYTHON__SIM__LIBS
-		"'simulatorlib',
-		 'unisim__component__tlm2__memory__ram',
-		 'unisim__component__tlm2__processor__arm__arm926ejs',
-		 'unisim__component__tlm2__chipset__arm926ejs_pxp',
-		 'unisim__component__cxx__processor__arm__arm926ejs',
-		 'unisim__component__cxx__memory__ram',
-		 'unisim__service__time__host_time',
-		 'unisim__service__time__sc_time',
-		 'unisim__service__loader__elf_loader',
-		 'unisim__service__loader__raw_loader',
-		 'unisim__service__debug__gdb_server',
-		 'unisim__service__debug__inline_debugger',
-		 'unisim__service__debug__sim_debugger',
-		 'unisim__service__trap_handler',
-		 'unisim__util__random',
-		 'unisim__util__debug',
-		 'unisim__util__debug__dwarf',
-		 'unisim__util__debug__blob',
-		 'unisim__util__xml',
-		 'unisim__util__generic_peripheral_register',
-		 'unisim__kernel',
-		 'unisim__api__debug',
-		 'xml2',
-		 'systemc'")
+		"'libuapi'" )
+#	set ( PYTHON__SIM__LIB_DIRS
+#		"'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
+#	foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+#		get_filename_component( lib_path ${lib}
+#			PATH )
+#		set ( PYTHON__SIM__LIB_DIRS
+#			"${PYTHON__SIM__LIB_DIRS},
+#			 '${lib_path}'")
+#	endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
+#	set ( PYTHON__SIM__LIBS
+#		"'simulatorlib',
+#		 'unisim__component__tlm2__memory__ram',
+#		 'unisim__component__tlm2__processor__arm__arm926ejs',
+#		 'unisim__component__tlm2__chipset__arm926ejs_pxp',
+#		 'unisim__component__cxx__processor__arm__arm926ejs',
+#		 'unisim__component__cxx__memory__ram',
+#		 'unisim__service__time__host_time',
+#		 'unisim__service__time__sc_time',
+#		 'unisim__service__loader__elf_loader',
+#		 'unisim__service__loader__raw_loader',
+#		 'unisim__service__debug__gdb_server',
+#		 'unisim__service__debug__inline_debugger',
+#		 'unisim__service__debug__sim_debugger',
+#		 'unisim__service__trap_handler',
+#		 'unisim__util__random',
+#		 'unisim__util__debug',
+#		 'unisim__util__debug__dwarf',
+#		 'unisim__util__debug__blob',
+#		 'unisim__util__xml',
+#		 'unisim__util__generic_peripheral_register',
+#		 'unisim__kernel',
+#		 'unisim__api__debug',
+#		 'xml2',
+#		 'systemc'")
 	if ( BUILD_POWER_SUPPORT )
 		get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
 			PATH )
 		set ( PYTHON__SIM__LIB_DIRS
 			"${PYTHON__SIM__LIB_DIRS},
+			 '${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}',
 			 '${lib_path}'")
 		get_filename_component ( lib_name ${CACTI_4_2_LIBRARY}
 			NAME_WE )
