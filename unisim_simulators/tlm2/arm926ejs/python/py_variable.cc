@@ -45,16 +45,36 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-	// Simulator **simulator;
-	// unisim::kernel::service::VariableBase *variable;
 	UnisimVariable variable;
+	PyObject *variable_listener_handler;
+	PyObject *variable_listener_handler_context;
 } variable_VariableObject;
 
+void variable_listener_handler(void *context)
+{
+	variable_VariableObject *self = (variable_VariableObject *)context;
+	if ( self->variable_listener_handler == 0 )
+		return;
+	PyObject *arglist;
+	arglist = Py_BuildValue("(O)",
+			(self->variable_listener_handler_context != 0 ?
+				self->variable_listener_handler_context : Py_None));
+	PyObject *result = PyObject_CallObject(self->variable_listener_handler, arglist);
+	Py_DECREF(arglist);
+	if ( result != NULL ) Py_DECREF(result);
+
+}
 static void
 variable_dealloc (variable_VariableObject *self)
 {
 	usDestroyVariable(self->variable);
 	self->variable = 0;
+	if ( self->variable_listener_handler != 0 )
+		Py_DECREF(self->variable_listener_handler);
+	if ( self->variable_listener_handler_context != 0 )
+		Py_DECREF(self->variable_listener_handler_context);
+	self->variable_listener_handler = 0;
+	self->variable_listener_handler_context = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -71,6 +91,8 @@ static PyObject *
 variable_init (variable_VariableObject *self, PyObject *args, PyObject *kwds)
 {
 	self->variable = 0;
+	self->variable_listener_handler = 0;
+	self->variable_listener_handler_context = 0;
 
 	return (PyObject *)self;
 }
@@ -256,12 +278,7 @@ variable_get_value ( variable_VariableObject *self )
 {
 	PyObject *result = NULL;
 
-	// TODO
-	// should convert the value to the correct type not just a string
-
 	result = variable_getvalue(self, NULL);
-	// std::string value = (std::string)*(self->variable);
-	// result = PyUnicode_FromString(value.c_str());
 	return result;
 }
 
@@ -269,52 +286,67 @@ static PyObject *
 variable_set_value ( variable_VariableObject *self,
 		PyObject *args)
 {
-	const char *value;
-
-	// if ( !PyArg_ParseTuple(args, "s", &value) )
-	// 	return NULL;
-	// *(self->variable) = value;
 	variable_setvalue(self, args, NULL);
 	return (PyObject *)self;
+}
+
+static PyObject *
+variable_set_listener_context ( variable_VariableObject *self,
+		PyObject *args)
+{
+	PyObject *context = NULL;
+
+	if ( !PyArg_ParseTuple(args, "O", &context) )
+	{
+		PyErr_SetString(PyExc_TypeError, "A context must be given");
+		return NULL;
+	}
+
+	if ( self->variable_listener_handler_context )
+		Py_DECREF(self->variable_listener_handler_context);
+	self->variable_listener_handler_context = context;
+	Py_INCREF(self->variable_listener_handler_context);
+
+	Py_INCREF(Py_None);
+	return Py_None;
 }
 
 static PyObject *
 variable_add_listener ( variable_VariableObject *self,
 		PyObject *args)
 {
-	// TODO
-//	Simulator* sim = PySimulator_GetSimRef();
-//	PyObject *handler = 0;
-//
-//	if ( sim == 0 )
-//	{
-//		PyErr_Format(PyExc_RuntimeError,
-//				"Simulator for variable '%s' is no longer available",
-//				self->name->c_str());
-//		return NULL;
-//	}
-//	
-//	if ( !PyArg_ParseTuple(args, "O", &handler) )
-//	{
-//		PyErr_SetString(PyExc_TypeError, "A callback method must be given");
-//		return NULL;
-//	}
-//
-//	if ( !PyCallable_Check(handler) )
-//	{
-//		PyErr_SetString(PyExc_TypeError, "The parameter must be callable");
-//		return NULL;
-//	}
-//
-//	if ( self->var_listeners )
-//		Py_DECREF(self->var_listeners);
-//	self->listeners = handler;
-//	Py_INCREF(self->var_listeners);
-//
-//	Py_INCREF(Py_None);
-//	return Py_None;
-//
-//	This must be done.
+	PyObject *handler = 0;
+
+	if ( self->variable == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Variable no longer available");
+		return NULL;
+	}
+
+	if ( !PyArg_ParseTuple(args, "O", &handler) )
+	{
+		PyErr_SetString(PyExc_TypeError, "A callback method must be given");
+		return NULL;
+	}
+
+	if ( !PyCallable_Check(handler) )
+	{
+		PyErr_SetString(PyExc_TypeError, "The parameter must be callable");
+		return NULL;
+	}
+
+	if ( self->variable_listener_handler != 0 )
+		Py_DECREF(self->variable_listener_handler);
+	self->variable_listener_handler = handler;
+	Py_INCREF(self->variable_listener_handler);
+
+	if ( !usVariableSetListener(self->variable, variable_listener_handler, (void *)self) )
+	{
+		PyErr_SetString(PyExc_TypeError, "Could not set variable listener.");
+		return NULL;
+	}
+
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -323,17 +355,36 @@ static PyObject *
 variable_remove_listener ( variable_VariableObject *self,
 		PyObject *args )
 {
-	// TODO
-//	const char *value;
-//	Simulator *sim = PySimulator_GetSimRef();
-//
-//	if ( sim == 0 )
-//	{
-//		PyErr_Format(PyExc_RuntimeError,
-//				"Simulator for variable '%s' is no longer available",
-//				self->name->c_str());
-//		return NULL;
-//	}
+	PyObject *handler = 0;
+
+	if ( self->variable == 0 )
+	{
+		PyErr_Format(PyExc_RuntimeError,
+				"Variable no longer available");
+		return NULL;
+	}
+
+	if ( !PyArg_ParseTuple(args, "O", &handler) )
+	{
+		PyErr_SetString(PyExc_TypeError, "A callback method to remove must be given");
+		return NULL;
+	}
+
+	if ( !PyCallable_Check(handler) )
+	{
+		PyErr_SetString(PyExc_TypeError, "The parameter must be callable");
+		return NULL;
+	}
+
+	if ( !usVariableRemoveListener(self->variable, variable_listener_handler, (void *)self) )
+	{
+		PyErr_SetString(PyExc_TypeError, "Could not remove variable listener.");
+		return NULL;
+	}
+
+	Py_DECREF(self->variable_listener_handler);
+	self->variable_listener_handler = 0;
+
 	Py_INCREF(Py_None);
 	return Py_None;
 }
@@ -346,6 +397,8 @@ static PyMethodDef variable_methods[] =
 				"Return the variable value as a string."},
 		{"set_value", (PyCFunction)variable_set_value, METH_VARARGS,
 				"Set the variable value."},
+		{"set_listener_context", (PyCFunction)variable_set_listener_context, METH_VARARGS,
+				"Set the context to be handled to the variable listeners."},
 		{"add_listener", (PyCFunction)variable_add_listener, METH_VARARGS,
 				"Add a listerner to the variable."},
 		{"remove_listener", (PyCFunction)variable_remove_listener, METH_VARARGS,
@@ -490,6 +543,8 @@ PyVariable_NewVariable (UnisimVariable var)
 	self = (variable_VariableObject *)variable_VariableType.tp_alloc(
 			&variable_VariableType, 0);
 	self->variable = var;
+	self->variable_listener_handler = 0;
+	self->variable_listener_handler_context = 0;
 	return (PyObject *)self;
 }
 
