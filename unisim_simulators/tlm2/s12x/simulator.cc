@@ -451,12 +451,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("CPU.nice-time", "1 ms");
-	simulator->SetVariable("CPU.cpu-cycle-time", 250000);
-	simulator->SetVariable("CPU.bus-cycle-time", 250000);
+	simulator->SetVariable("CPU.core-clock", 250000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
-	simulator->SetVariable("CRG.oscillator-clock", 125000);
+	simulator->SetVariable("CRG.oscillator-clock", 250000);
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
@@ -604,7 +603,7 @@ void Simulator::Run() {
 		cerr << endl;
 
 		cerr << "simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["bus-cycle-time"] * 1000000)  << " MHz" << endl;
+		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << " MHz" << endl;
 		cerr << "Target speed           : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << " MIPS" << endl;
 		cerr << "Target speed           : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << " MHz" << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;

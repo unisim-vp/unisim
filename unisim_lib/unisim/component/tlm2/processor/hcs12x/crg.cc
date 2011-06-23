@@ -33,6 +33,7 @@
  */
 
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
+#include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 #include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
@@ -42,6 +43,7 @@ namespace processor {
 namespace hcs12x {
 
 using unisim::util::debug::SimpleRegister;
+using unisim::component::tlm2::processor::hcs12x::XINT;
 
 CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
@@ -83,7 +85,7 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	, cop_enabled(true)
 	, scme_write(false)
 
-	, oscillator_clock_value(125000)
+	, oscillator_clock_value(250000)
 	, param_oscillator_clock_int("oscillator-clock", this, oscillator_clock_value)
 	, self_clock_mode_value(100000)
 	, param_self_clock_mode_clock("param-self-clock-mode-clock", this, self_clock_mode_value, "Self Clock Mode frequency between 1MHz and 5.5 MHz (unit PS)")
@@ -398,7 +400,7 @@ bool CRG::write(uint8_t offset, uint8_t value) {
 }
 
 void CRG::systemReset() {
-
+	assertInterrupt(XINT::INT_SYS_RESET_OFFSET);
 }
 
 void CRG::RunClockMonitor() {
@@ -439,7 +441,9 @@ void CRG::RunClockMonitor() {
 				}
 
 			} else {
-				deactivateSelfClockMode();
+				if ((crgflg_register & 0x01) != 0) {
+					deactivateSelfClockMode();
+				}
 			}
 
 		}
@@ -635,7 +639,6 @@ void CRG::RunRTI() {
 
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
-			//delay = rti_fdr * pll_clock;
 			// PLLCLK at minimum frequency Fscm;
 			delay = rti_fdr * pll_clock;
 		} else {
@@ -754,7 +757,9 @@ void CRG::updateBusClock() {
 			(((crgflg_register & 0x08) == 0) && ((pllctl_register & 0x20) != 0)) ||
 			((((crgflg_register & 0x04) == 0) && ((pllctl_register & 0x20) == 0))) ||
 			((pllctl_register & 0x40) == 0)) {
+
 		bus_clock = oscillator_clock * 2;
+
 	} else {
 		bus_clock = pll_clock * 2;
 	}
