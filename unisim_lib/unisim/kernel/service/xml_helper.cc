@@ -460,7 +460,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 { 
 	const xmlChar* name = 0;
 	const xmlChar* value = 0;
-	const xmlChar* name_attr = 0;
+	xmlChar* name_attr = 0;
 
 	name = xmlTextReaderConstName(reader);
 	if (name == NULL) 
@@ -488,6 +488,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 			}
 			cerr << " + object " << name_attr << endl;
 			cur_object.push_back(string((char *)name_attr));
+			free(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == 15)
 		{
@@ -512,6 +513,7 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				cur_var->name << cur_object.back() << "." << name_attr;
 			else 
 				cur_var->name << name_attr;
+			free(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == 15)
 		{

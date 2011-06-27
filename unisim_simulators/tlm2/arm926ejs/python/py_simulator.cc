@@ -34,44 +34,46 @@
 
 #include <Python.h>
 #include <map>
-#include "simulator.hh"
+#include <sstream>
+#include "unisim/uapi/uapi.h"
+// #include "simulator.hh"
 #define SIMULATOR_MODULE
 #include "python/py_simulator.hh"
 #include "python/py_variable.hh"
 #include "python/py_debugger.hh"
 
-static std::map<std::string, int> time_unit_map;
-static std::map<std::string, sc_time_unit> sc_time_unit_map;
-
-void TimeUnitMapInit()
-{
-	time_unit_map.insert(std::pair<std::string, int>("fs", 0));
-	time_unit_map.insert(std::pair<std::string, int>("FS", 0));
-	time_unit_map.insert(std::pair<std::string, int>("ps", 1));
-	time_unit_map.insert(std::pair<std::string, int>("PS", 1));
-	time_unit_map.insert(std::pair<std::string, int>("ns", 2));
-	time_unit_map.insert(std::pair<std::string, int>("NS", 2));
-	time_unit_map.insert(std::pair<std::string, int>("us", 3));
-	time_unit_map.insert(std::pair<std::string, int>("US", 3));
-	time_unit_map.insert(std::pair<std::string, int>("ms", 4));
-	time_unit_map.insert(std::pair<std::string, int>("MS", 4));
-	time_unit_map.insert(std::pair<std::string, int>("sec", 5));
-	time_unit_map.insert(std::pair<std::string, int>("SEC", 5));
-
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("fs", SC_FS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("FS", SC_FS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ps", SC_PS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("PS", SC_PS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ns", SC_NS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("NS", SC_NS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("us", SC_US));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("US", SC_US));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ms", SC_MS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("MS", SC_MS));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("sec", SC_SEC));
-	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
-}
-
+//static std::map<std::string, int> time_unit_map;
+//static std::map<std::string, sc_time_unit> sc_time_unit_map;
+//
+//void TimeUnitMapInit()
+//{
+//	time_unit_map.insert(std::pair<std::string, int>("fs", 0));
+//	time_unit_map.insert(std::pair<std::string, int>("FS", 0));
+//	time_unit_map.insert(std::pair<std::string, int>("ps", 1));
+//	time_unit_map.insert(std::pair<std::string, int>("PS", 1));
+//	time_unit_map.insert(std::pair<std::string, int>("ns", 2));
+//	time_unit_map.insert(std::pair<std::string, int>("NS", 2));
+//	time_unit_map.insert(std::pair<std::string, int>("us", 3));
+//	time_unit_map.insert(std::pair<std::string, int>("US", 3));
+//	time_unit_map.insert(std::pair<std::string, int>("ms", 4));
+//	time_unit_map.insert(std::pair<std::string, int>("MS", 4));
+//	time_unit_map.insert(std::pair<std::string, int>("sec", 5));
+//	time_unit_map.insert(std::pair<std::string, int>("SEC", 5));
+//
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("fs", SC_FS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("FS", SC_FS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ps", SC_PS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("PS", SC_PS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ns", SC_NS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("NS", SC_NS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("us", SC_US));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("US", SC_US));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("ms", SC_MS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("MS", SC_MS));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("sec", SC_SEC));
+//	sc_time_unit_map.insert(std::pair<std::string, sc_time_unit>("SEC", SC_SEC));
+//}
+//
 //static int TimeUnit(const std::string& unit)
 //{
 //	const std::map<std::string, int>::iterator it = time_unit_map.find(unit);
@@ -80,87 +82,88 @@ void TimeUnitMapInit()
 //	return (*it).second;
 //}
 
-static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
-{
-	const std::map<std::string, sc_time_unit>::iterator it = sc_time_unit_map.find(unit);
-
-	if ( it == sc_time_unit_map.end() ) return false;
-	sc_unit = (*it).second;
-
-	return true;
-}
+//static bool SCTimeUnit(const std::string& unit, sc_time_unit& sc_unit)
+//{
+//	const std::map<std::string, sc_time_unit>::iterator it = sc_time_unit_map.find(unit);
+//
+//	if ( it == sc_time_unit_map.end() ) return false;
+//	sc_unit = (*it).second;
+//
+//	return true;
+//}
 
 extern "C" {
 
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    Simulator *sim;
-    unisim::kernel::service::Simulator::SetupStatus setup;
-    PyObject *trap_handler;
-    PyObject *trap_context;
+	UnisimSimulator sim;
+    // Simulator *sim;
+    // unisim::kernel::service::Simulator::SetupStatus setup;
+    // PyObject *trap_handler;
+    // PyObject *trap_context;
 } armemu_SimulatorObject;
 
-static Simulator *
-create_simulator(char *xml_file, std::vector<std::string> *parms)
-{
-	Simulator *sim;
-	char **argv;
-	int argv_size = 4; // default number of parameters;
-	if ( xml_file != NULL )
-		argv_size += 2;
-	if ( parms != NULL )
-		argv_size += (parms->size() * 2);
-	argv = (char **)malloc(sizeof(char *) * (argv_size + 1));
-	int index = 0;
-	argv[index++] = (char *)SIM_EXEC_LOCATION;
-	argv[index++] = (char *)"-p";
-	argv[index++] = (char *)PYTHON_LIB_TO_SHARED_DATA_PATH;
-	argv[index++] = (char *)"-w";
-	if ( xml_file != NULL )
-		argv[index++] = xml_file;
-	if ( parms != NULL )
-	{
-		std::vector<std::string>::iterator it;
-		for ( it = parms->begin(); it != parms->end(); it++ )
-		{
-			argv[index++] = (char *)"-s";
-			argv[index++] = (char *)(*it).c_str();
-		}
-	}
-	argv[index] = 0;
-
-	sim = new Simulator(argv_size, argv);
-	return sim;
-}
+//static Simulator *
+//create_simulator(char *xml_file, std::vector<std::string> *parms)
+//{
+//	Simulator *sim;
+//	char **argv;
+//	int argv_size = 4; // default number of parameters;
+//	if ( xml_file != NULL )
+//		argv_size += 2;
+//	if ( parms != NULL )
+//		argv_size += (parms->size() * 2);
+//	argv = (char **)malloc(sizeof(char *) * (argv_size + 1));
+//	int index = 0;
+//	argv[index++] = (char *)SIM_EXEC_LOCATION;
+//	argv[index++] = (char *)"-p";
+//	argv[index++] = (char *)PYTHON_LIB_TO_SHARED_DATA_PATH;
+//	argv[index++] = (char *)"-w";
+//	if ( xml_file != NULL )
+//		argv[index++] = xml_file;
+//	if ( parms != NULL )
+//	{
+//		std::vector<std::string>::iterator it;
+//		for ( it = parms->begin(); it != parms->end(); it++ )
+//		{
+//			argv[index++] = (char *)"-s";
+//			argv[index++] = (char *)(*it).c_str();
+//		}
+//	}
+//	argv[index] = 0;
+//
+//	sim = new Simulator(argv_size, argv);
+//	return sim;
+//}
 
 static void
 destroy_simulator(armemu_SimulatorObject *self)
 {
-	Simulator *sim = self->sim;
+	UnisimSimulator sim = self->sim;
 	if ( sim )
 	{
-		delete sim;
-		if ( sc_curr_simcontext == sc_default_global_context )
-		{
-			delete sc_curr_simcontext;
-		}
-		else
-		{
-			delete sc_curr_simcontext;
-			delete sc_default_global_context;
-		}
-		sc_curr_simcontext = 0;
-		sc_default_global_context = 0;
+		usDestroySimulator(sim);
+//		if ( sc_curr_simcontext == sc_default_global_context )
+//		{
+//			delete sc_curr_simcontext;
+//		}
+//		else
+//		{
+//			delete sc_curr_simcontext;
+//			delete sc_default_global_context;
+//		}
+//		sc_curr_simcontext = 0;
+//		sc_default_global_context = 0;
 	}
 	self->sim = 0;
 	sim = 0;
-	if ( self->trap_handler )
-		Py_DECREF(self->trap_handler);
-	if ( self->trap_context )
-		Py_DECREF(self->trap_context);
-	self->trap_handler = 0;
-	self->trap_context = 0;
+//	if ( self->trap_handler )
+//		Py_DECREF(self->trap_handler);
+//	if ( self->trap_context )
+//		Py_DECREF(self->trap_context);
+//	self->trap_handler = 0;
+//	self->trap_context = 0;
 }
 
 static void
@@ -178,31 +181,28 @@ simulator_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 	armemu_SimulatorObject *self;
 	self = (armemu_SimulatorObject *)type->tp_alloc(type, 0);
 	self->sim = 0; // create_simulator();
-	self->setup = unisim::kernel::service::Simulator::ST_ERROR; // self->sim->Setup();
+// 	self->setup = unisim::kernel::service::Simulator::ST_ERROR; // self->sim->Setup();
 	return (PyObject *)self;
 }
 
 static PyObject *
-pydict_from_variable_list ( armemu_SimulatorObject *self,
-		std::list<unisim::kernel::service::VariableBase*>& list)
+pydict_from_variable_list (UnisimVariable *list)
 {
 	PyObject *result;
 	result = PyDict_New();
 	if ( result == NULL ) return NULL;
 
-	for ( std::list<unisim::kernel::service::VariableBase *>::iterator it = list.begin();
-			it != list.end();
-			it++ )
+	for ( unsigned int i = 0; list[i] != 0; i++ )
 	{
 		PyObject *variable;
-		variable = PyVariable_NewVariable((*it)->GetName(), (PyObject *)self);
+		variable = PyVariable_NewVariable(list[i]);
 		if ( variable == NULL )
 		{
 			PyDict_Clear(result);
 			result = NULL;
 			return result;
 		}
-		if ( PyDict_SetItemString(result, (*it)->GetName(), variable) == -1)
+		if ( PyDict_SetItemString(result, usVariableGetName(list[i]), variable) == -1 )
 		{
 			Py_DECREF(variable);
 			PyDict_Clear(result);
@@ -218,17 +218,18 @@ pydict_from_variable_list ( armemu_SimulatorObject *self,
 static void
 simulator_trap_handler (void *_self, unsigned int id)
 {
-	PyObject *result;
-	armemu_SimulatorObject *self = (armemu_SimulatorObject *)_self;
-	if ( self->trap_handler == 0 )
-	{
-		return;
-	}
-	PyObject *arglist;
-	arglist = Py_BuildValue("(Oi)", self->trap_context, id);
-	result = PyObject_CallObject(self->trap_handler, arglist);
-	Py_DECREF(arglist);
-	if ( result != NULL ) Py_DECREF(result);
+	return; // TODO
+//	PyObject *result;
+//	armemu_SimulatorObject *self = (armemu_SimulatorObject *)_self;
+//	if ( self->trap_handler == 0 )
+//	{
+//		return;
+//	}
+//	PyObject *arglist;
+//	arglist = Py_BuildValue("(Oi)", self->trap_context, id);
+//	result = PyObject_CallObject(self->trap_handler, arglist);
+//	Py_DECREF(arglist);
+//	if ( result != NULL ) Py_DECREF(result);
 }
 
 static int
@@ -236,7 +237,8 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 {
 	char *xml_file = NULL;
 	PyObject *parms = NULL;
-	std::vector<std::string> *cparms = NULL;
+	// std::vector<std::string> *cparms = NULL;
+	char **options = 0;
 
 	static char *kwlist[] = {"xml", "parms", NULL};
 	if (! PyArg_ParseTupleAndKeywords(args, kwds, "|sO", kwlist,
@@ -259,8 +261,12 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 				return -1;
 			}
 		}
+		Py_ssize_t size = PyDict_Size(parms);
+		options = (char **)malloc(sizeof(char *) * (size + 1));
+		if ( options == 0 ) return -1;
+		options[size] = 0;
 		pos = 0;
-		cparms = new std::vector<std::string>();
+		int options_index = 0;
 		while ( PyDict_Next(parms, &pos, &key, &value) )
 		{
 			char *ckey = 0;
@@ -291,21 +297,31 @@ simulator_init (armemu_SimulatorObject *self, PyObject *args, PyObject *kwds)
 			Py_DECREF(utf8);
 			std::stringstream assign;
 			assign << ckey << "=" << cvalue;
-			cparms->push_back(assign.str());
+			options[options_index] = (char *)malloc(sizeof(char) * (assign.str().size() + 1));
+			strcpy(options[options_index], assign.str().c_str());
+			options_index++;
 		}
+		
 	}
 
-	self->sim = create_simulator(xml_file, cparms);
-	if ( xml_file )
-		free(xml_file);
+	self->sim = usCreateSimulator(xml_file, options);
 
-	if ( cparms )
-		delete cparms;
+	if ( xml_file ) free(xml_file);
+	xml_file = 0;
+	for ( unsigned int i = 0; options[i] != 0; i++ )
+	{
+		free(options[i]);
+		options[i] = 0;
+	}
 
-	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
-	self->trap_handler = 0;
-	self->trap_context = 0;
+//	self->sim->SetTrapHandler(simulator_trap_handler, (void *)self);
+//	self->trap_handler = 0;
+//	self->trap_context = 0;
 
+	if ( self->sim == 0 )
+	{
+		return -1;
+	}
 	return 0;
 }
 
@@ -313,8 +329,9 @@ static PyObject *
 simulator_setup (armemu_SimulatorObject *self)
 {
 	PyObject *result;
-	self->setup = self->sim->Setup();
-	result = PyLong_FromLong(self->setup);
+	unsigned int setup_status;
+	setup_status = usSimulatorSetup(self->sim);
+	result = PyLong_FromLong(setup_status);
 
 	return result;
 }
@@ -322,9 +339,11 @@ simulator_setup (armemu_SimulatorObject *self)
 static PyObject *
 simulator_version (armemu_SimulatorObject *self)
 {
-	PyObject *result;
-	std::string version = (std::string)*self->sim->FindVariable("version");
-	result = PyUnicode_FromString(version.c_str());
+	PyObject *result = NULL;
+	UnisimVariable version = usSimulatorGetVariable(self->sim, "version");
+	if ( version )
+		result = PyUnicode_FromString(usVariableGetValueAsString(version));
+
 	return result;
 }
 
@@ -333,14 +352,16 @@ simulator_get_variable (armemu_SimulatorObject *self, PyObject *args)
 {
 	PyObject *result = NULL;
 	const char *var_name;
+	UnisimVariable var;
 
 	if ( !PyArg_ParseTuple(args, "s", &var_name) )
 		return result;
-	unisim::kernel::service::VariableBase *var = self->sim->FindVariable(var_name);
+	var = usSimulatorGetVariable(self->sim, var_name);
+
 	if ( var == 0 )
 		PyErr_SetString(PyExc_ValueError, "could not find the given variable");
 	else
-		result = PyVariable_NewVariable(var->GetName(), (PyObject *)self);
+		result = PyVariable_NewVariable(var);
 	return result;
 }
 
@@ -349,9 +370,10 @@ simulator_get_variables (armemu_SimulatorObject *self)
 {
 	PyObject *result;
 
-	std::list<unisim::kernel::service::VariableBase *> var_list;
-	self->sim->GetVariables(var_list);
-	result = pydict_from_variable_list(self, var_list);
+	UnisimVariable *var_list;
+	var_list = usSimulatorGetVariableList(self->sim);
+	result = pydict_from_variable_list(var_list);
+	free(var_list);
 
 	return result;
 }
@@ -362,9 +384,11 @@ simulator_get_parameters (armemu_SimulatorObject *self)
 	PyObject *result;
 
 	if ( self->sim == 0 ) return NULL;
-	std::list<unisim::kernel::service::VariableBase *> parm_list;
-	self->sim->GetParameters(parm_list);
-	result = pydict_from_variable_list(self, parm_list);
+
+	UnisimVariable *var_list;
+	var_list = usSimulatorGetVariableListWithType(self->sim, UNISIM_VARIABLE_TYPE_PARAMETER);
+	result = pydict_from_variable_list(var_list);
+	free(var_list);
 
 	return result;
 }
@@ -375,9 +399,11 @@ simulator_get_statistics (armemu_SimulatorObject *self)
 	PyObject *result;
 
 	if ( self->sim == 0 ) return NULL;
-	std::list<unisim::kernel::service::VariableBase *> stat_list;
-	self->sim->GetStatistics(stat_list);
-	result = pydict_from_variable_list(self, stat_list);
+	
+	UnisimVariable *var_list;
+	var_list = usSimulatorGetVariableListWithType(self->sim, UNISIM_VARIABLE_TYPE_STATISTIC);
+	result = pydict_from_variable_list(var_list);
+	free(var_list);
 
 	return result;
 }
@@ -386,11 +412,11 @@ static PyObject *
 simulator_get_registers (armemu_SimulatorObject *self)
 {
 	PyObject *result;
-
-	if ( self->sim == 0 ) return NULL;
-	std::list<unisim::kernel::service::VariableBase *> reg_list;
-	self->sim->GetRegisters(reg_list);
-	result = pydict_from_variable_list(self, reg_list);
+	
+	UnisimVariable *var_list;
+	var_list = usSimulatorGetVariableListWithType(self->sim, UNISIM_VARIABLE_TYPE_REGISTER);
+	result = pydict_from_variable_list(var_list);
+	free(var_list);
 
 	return result;
 }
@@ -399,11 +425,11 @@ static PyObject *
 simulator_get_formulas ( armemu_SimulatorObject *self)
 {
 	PyObject *result;
-
-	if ( self->sim == 0 ) return NULL;
-	std::list<unisim::kernel::service::VariableBase *> form_list;
-	self->sim->GetFormulas(form_list);
-	result = pydict_from_variable_list(self, form_list);
+	
+	UnisimVariable *var_list;
+	var_list = usSimulatorGetVariableListWithType(self->sim, UNISIM_VARIABLE_TYPE_FORMULA);
+	result = pydict_from_variable_list(var_list);
+	free(var_list);
 
 	return result;
 }
@@ -434,183 +460,149 @@ simulator_get_formulas ( armemu_SimulatorObject *self)
 static PyObject *
 simulator_is_running (armemu_SimulatorObject *self)
 {
-	PyObject *result = 0;
-
-	if ( !self->setup )
-	{
-		result = PyUnicode_FromString("Simulation setup failed.");
-	}
-
-	if ( result == 0 )
-	{
-		if ( self->sim->IsRunning() )
-			Py_RETURN_TRUE;
-		Py_RETURN_FALSE;
-	}
-	return result;
+	if ( usSimulatorGetStatus(self->sim) == UNISIM_SIMULATOR_STATUS_RUNNING )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
 }
 
 static PyObject *
 simulator_has_started (armemu_SimulatorObject *self)
 {
-	PyObject *result = 0;
-
-	if ( !self->setup )
+	UnisimSimulatorStatus status = usSimulatorGetStatus(self->sim);
+	switch ( status )
 	{
-		result = PyUnicode_FromString("Simulation setup failed.");
-	}
-
-	if ( result == 0 )
-	{
-		if ( self->sim->SimulationStarted() )
+		case UNISIM_SIMULATOR_STATUS_RUNNING:
+		case UNISIM_SIMULATOR_STATUS_STOPPED:
+		case UNISIM_SIMULATOR_STATUS_FINISHED:
 			Py_RETURN_TRUE;
-		Py_RETURN_FALSE;
+			break;
+		default:
+			break;
 	}
-	return result;
+	Py_RETURN_FALSE;
 }
 
 static PyObject *
 simulator_has_finished(armemu_SimulatorObject *self)
 {
-	PyObject *result = 0;
-
-	if ( !self->setup )
-	{
-		result = PyUnicode_FromString("Simulation setup failed.");
-	}
-
-	if ( result == 0 )
-	{
-		if ( self->sim->SimulationFinished() )
-			Py_RETURN_TRUE;
-		Py_RETURN_FALSE;
-	}
-	return result;
+	if ( usSimulatorGetStatus(self->sim) == UNISIM_SIMULATOR_STATUS_FINISHED )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
 }
 
 static PyObject *
 simulator_run (armemu_SimulatorObject *self, PyObject *args)
 {
-	PyObject *result = 0;
-	double dtime = 0.0;
-	char *cunit = "sec";
-	std::string unit;
-	sc_time_unit time_unit;
-	if ( self->setup != unisim::kernel::service::Simulator::ST_OK_TO_START &&
-			self->setup != unisim::kernel::service::Simulator::ST_WARNING )
+	if ( usSimulatorGetStatus(self->sim) == UNISIM_SIMULATOR_STATUS_SETUP )
 	{
-		result = PyUnicode_FromString("Simulation setup failed.");
-	}
-
-	if ( (result == 0) && PyArg_ParseTuple(args, "|ds", &dtime, cunit))
-	{
-		unit = cunit;
-	}
-	else
-		return result;
-
-	if ( result ) return result;
-	if ( !SCTimeUnit(unit, time_unit) )
-	{
-		result = PyUnicode_FromFormat("ERROR: Unknown time_unit \"%s\"", unit.c_str());
-		return result;
-	}
-
-	if ( dtime == 0.0 )
-	{
-		self->sim->Run();
-		result = PyUnicode_FromString("Simulation finished.");
-	}
-	else
-	{
-		self->sim->Run(dtime, time_unit);
-		PyObject *py_dtime = PyFloat_FromDouble(dtime);
-		result = PyUnicode_FromFormat("Simulation of %S%s finished.",
-				py_dtime, unit.c_str(), time_unit);
-	}
-
-	return result;
-}
-
-static PyObject *
-simulator_stop (armemu_SimulatorObject *self)
-{
-	self->sim->Stop(0, 0);
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
-static PyObject *
-simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
-{
-	PyObject *result = 0;
-
-	PyObject *handler;
-	PyObject *context;
-
-	if ( !PyArg_ParseTuple(args, "OO", &context, &handler) )
-	{
-		PyErr_SetString(PyExc_TypeError, "parameters must be a context and a function/method");
-		return NULL;
-	}
-    if ( !PyCallable_Check(handler) )
-    {
-        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
-        return NULL;
-    }
-    Py_XINCREF(handler);         /* Add a reference to new callback */
-	if ( self->trap_handler )
-	{
-		result = self->trap_handler;
-	    Py_DECREF(result);  /* Dispose of previous callback */
-	}
-	self->trap_handler = handler;
-	if ( self->trap_context )
-		Py_DECREF(self->trap_context);
-	Py_INCREF(context);
-	self->trap_context = context;
-	if ( result )
-		return result;
-	Py_INCREF(Py_None);
-	return Py_None;
-}
-
-static PyObject *
-simulator_remove_trap_handler (armemu_SimulatorObject *self)
-{
-	PyObject *result;
-
-	if ( self->trap_handler )
-	{
-		if ( self->trap_context )
+		bool run_output;
+		run_output = usSimulatorRun(self->sim);
+		if ( run_output )
 		{
-			result = Py_BuildValue("(OO)", self->trap_handler, self->trap_context);
-			Py_DECREF(self->trap_context);
-			self->trap_context = 0;
+			Py_RETURN_TRUE;
 		}
 		else
 		{
-			Py_INCREF(Py_None);
-			result = Py_BuildValue("(OO)", self->trap_handler, Py_None);
+			Py_RETURN_FALSE;
 		}
-		Py_DECREF(self->trap_handler);
 	}
-	else
+
+	Py_RETURN_FALSE;
+}
+			
+static PyObject *
+simulator_stop (armemu_SimulatorObject *self)
+{
+	if ( usSimulatorGetStatus(self->sim) == UNISIM_SIMULATOR_STATUS_RUNNING )
 	{
-		result = Py_None;
-		Py_INCREF(result);
+		usSimulatorStop(self->sim);
+		Py_RETURN_TRUE;
 	}
-	return result;
+	Py_RETURN_FALSE;
 }
 
+//static PyObject *
+//simulator_set_trap_handler (armemu_SimulatorObject *self, PyObject *args)
+//{
+//	PyObject *result = 0;
+//
+//	PyObject *handler;
+//	PyObject *context;
+//
+//	if ( !PyArg_ParseTuple(args, "OO", &context, &handler) )
+//	{
+//		PyErr_SetString(PyExc_TypeError, "parameters must be a context and a function/method");
+//		return NULL;
+//	}
+//    if ( !PyCallable_Check(handler) )
+//    {
+//        PyErr_SetString(PyExc_TypeError, "parameter must be callable");
+//        return NULL;
+//    }
+//    Py_XINCREF(handler);         /* Add a reference to new callback */
+//	if ( self->trap_handler )
+//	{
+//		result = self->trap_handler;
+//	    Py_DECREF(result);  /* Dispose of previous callback */
+//	}
+//	self->trap_handler = handler;
+//	if ( self->trap_context )
+//		Py_DECREF(self->trap_context);
+//	Py_INCREF(context);
+//	self->trap_context = context;
+//	if ( result )
+//		return result;
+//	Py_INCREF(Py_None);
+//	return Py_None;
+//}
+//
+//static PyObject *
+//simulator_remove_trap_handler (armemu_SimulatorObject *self)
+//{
+//	PyObject *result;
+//
+//	if ( self->trap_handler )
+//	{
+//		if ( self->trap_context )
+//		{
+//			result = Py_BuildValue("(OO)", self->trap_handler, self->trap_context);
+//			Py_DECREF(self->trap_context);
+//			self->trap_context = 0;
+//		}
+//		else
+//		{
+//			Py_INCREF(Py_None);
+//			result = Py_BuildValue("(OO)", self->trap_handler, Py_None);
+//		}
+//		Py_DECREF(self->trap_handler);
+//	}
+//	else
+//	{
+//		result = Py_None;
+//		Py_INCREF(result);
+//	}
+//	return result;
+//}
+//
 static PyObject *
 simulator_has_debugger (armemu_SimulatorObject *self)
 {
 	bool found = false;
 
-	// PySys_WriteStdout("Checking for the existence of debugger:\n");
-
-	found = self->sim->HasAPI<unisim::api::debug::DebugAPI>();
+	UnisimExtendedAPI *list = usSimulatorGetExtendedAPIList(self->sim);
+	if ( list == 0 ) Py_RETURN_FALSE;
+	for ( unsigned int i = 0; (!false) && (list[i] != 0); i++ )
+	{
+		const char *api_type = usExtendedAPIGetTypeName(list[i]);
+		if ( strcmp(api_type, "DebugAPI") == 0 )
+			found = true;
+	}
+	for ( unsigned int i = 0; list[i] != 0; i++ )
+	{
+		usDestroyExtendedAPI(list[i]);
+		list[i] = 0;
+	}
+	free(list);
 
 	if ( found )
 		Py_RETURN_TRUE;
@@ -622,20 +614,27 @@ simulator_get_debuggers (armemu_SimulatorObject *self, PyObject *args)
 {
 	PyObject *result = 0;
 
-	// create the list of debuggers
 	result = PyList_New(0);
-
-
-	std::list<unisim::api::debug::DebugAPI *> 
-		list_debuggers = self->sim->GetAPI<unisim::api::debug::DebugAPI>();
-
-
-	for ( std::list<unisim::api::debug::DebugAPI *>::iterator it = list_debuggers.begin();
-			it != list_debuggers.end();
-			it++ )
+	UnisimExtendedAPI *list = usSimulatorGetExtendedAPIList(self->sim);
+	if ( list == 0 )
+		return result;
+	
+	// create the list of debuggers
+	for ( unsigned int i = 0; list[i] != 0; i++ )
 	{
-		PyList_Append(result, PyDebugger_NewDebugger(*it, (PyObject *)self));
+		UnisimDebugAPI api = usCreateDebugAPI(list[i]);
+		if ( api != 0 )
+		{
+			PyList_Append(result, PyDebugger_NewDebugger(api));
+		}
 	}
+	for ( unsigned int i = 0; list[i] != 0; i++ )
+	{
+		usDestroyExtendedAPI(list[i]);
+		list[i] = 0;
+	}
+	free(list);
+
 
 	return result;
 }
@@ -668,10 +667,10 @@ static PyMethodDef simulator_methods[] =
 			"Checks if the simulation has been started or not"},
 	{"has_finished", (PyCFunction)simulator_has_finished, METH_NOARGS,
 			"Checks if the simulation has been finished or not"},
-	{"set_trap_handler", (PyCFunction)simulator_set_trap_handler, METH_VARARGS,
-			"Set the external trap handler"},
-	{"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
-			"Remove the external trap handler"},
+	// {"set_trap_handler", (PyCFunction)simulator_set_trap_handler, METH_VARARGS,
+	// 		"Set the external trap handler"},
+	// {"remove_trap_handler", (PyCFunction)simulator_remove_trap_handler, METH_NOARGS,
+	// 		"Remove the external trap handler"},
 	{"has_debugger", (PyCFunction)simulator_has_debugger, METH_NOARGS,
 			"Indicates if the simulator provides some kind of debugging interface"},
 	{"get_debuggers", (PyCFunction)simulator_get_debuggers, METH_NOARGS,
@@ -759,15 +758,15 @@ PyInit_simulator(void)
     if (m == NULL)
         return NULL;
 
-    TimeUnitMapInit();
+    // TimeUnitMapInit();
 	Py_INCREF(&armemu_SimulatorType);
 	PyModule_AddObject(m, "Simulator", (PyObject *)&armemu_SimulatorType);
 
 	/* Initialize the C API pointer array */
 	PySimulator_API[PySimulator_GetSimulator_NUM] = 
 		(void *)PySimulator_GetSimulator;
-	PySimulator_API[PySimulator_GetSimulatorRef_NUM] = 
-		(void *)PySimulator_GetSimulatorRef;
+//	PySimulator_API[PySimulator_GetSimulatorRef_NUM] = 
+// 		(void *)PySimulator_GetSimulatorRef;
 
 	/* Create a Capsule containing the API pointer array's address */
 	c_api_object = PyCapsule_New((void *)PySimulator_API, PySimulator_Capsule_Name, NULL);
@@ -790,18 +789,18 @@ PyInit_simulator(void)
 	return m;
 }
 
-static Simulator *
+static UnisimSimulator
 PySimulator_GetSimulator(PyObject *obj)
 {
 	armemu_SimulatorObject *sim_object = (armemu_SimulatorObject *)obj;
 	return sim_object->sim;
 }
 
-static Simulator **
-PySimulator_GetSimulatorRef(PyObject *obj)
-{
-	armemu_SimulatorObject *sim_object = (armemu_SimulatorObject *)obj;
-	return &(sim_object->sim);
-}
+//static Simulator **
+//PySimulator_GetSimulatorRef(PyObject *obj)
+//{
+//	armemu_SimulatorObject *sim_object = (armemu_SimulatorObject *)obj;
+//	return &(sim_object->sim);
+//}
 
 }

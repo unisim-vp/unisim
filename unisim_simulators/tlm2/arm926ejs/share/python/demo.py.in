@@ -65,10 +65,14 @@ class SimulatorHandler(simulator.Simulator):
 
 	def __init__(self):
 		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
-		parms = self.get_parameters()
+		print("Simulator initialized")
+		# parms = self.get_variables()
+		# for name in parms:
+		# 	print("+ %s" % (name), parms[name].get_value())
 		self.insn_threshold = 100000
+		self.insn_counter = 0
 		# self.max_insns = self.insn_threshold * 3000
-		self.max_insns = self.insn_threshold * 100 
+		self.max_insns = self.insn_threshold * 1 
 		self.traps_to_logger = False
 		self.current_time = 0
 		self.cpu_dcache_read_accesses = 0
@@ -79,18 +83,36 @@ class SimulatorHandler(simulator.Simulator):
 		self.cpu_dcache_prefetch_hits = 0
 		self.cpu_icache_read_accesses = 0
 		self.cpu_icache_read_hits = 0
-		parms['cpu.trap-on-instruction-counter'].value = self.insn_threshold
-		parms['trap-handler.send-traps-to-logger'].value = self.traps_to_logger
-		self.set_trap_handler(None, self.trap_handler)
+		print("__init__ finished")
+		# parms['cpu.trap-on-instruction-counter'].value = self.insn_threshold
+		# parms['trap-handler.send-traps-to-logger'].value = self.traps_to_logger
+		# self.set_trap_handler(None, self.trap_handler)
+
+	def insn_counter_listener(self, variable):
+		self.insn_counter = variable.get_value()
+		if self.insn_counter >= self.max_insns:
+			if self.stop():
+				print("Stopped the simulation")
+			else:
+				print("Could not stop the simulation")
+				sys.exit(0)
 
 	def setup(self):
+		print("performing setup")
 		# we can not call self.setup() because it would cause a recursive
 		#   call to the SimulatorHandler class. To avoid that we call the
 		#   class directly (simulator.Simulator.setup()) giving it the 
 		#   reference to itself.
 		simulator.Simulator.setup(self)
+		print("setup finished")
 		# we prepare a log file for our collected data
 		self.log = open("log.txt", "w")
+		print("instruction-counter variable")
+		self.insn_counter_var = self.get_variable("cpu.instruction-counter")
+		self.insn_counter_var.add_listener(self.insn_counter_listener)
+		self.insn_counter_var.set_listener_context(self.insn_counter_var)
+		print("instruction-counter data type = ", self.insn_counter_var.get_datatypename())
+		print("instruction-counter variable finished")
 
 	def dump_params(self):
 		print("Dumping parameters:")

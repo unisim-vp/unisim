@@ -36,7 +36,8 @@
 #define __PYTHON_PY_VARIABLE_HH__
 
 #include <Python.h>
-#include "simulator.hh"
+// #include "simulator.hh"
+#include "unisim/uapi/uapi.h"
 #include "python/python_config.hh"
 
 extern "C" {
@@ -48,8 +49,7 @@ extern "C" {
 /* C API functions */
 #define PyVariable_NewVariable_NUM 0
 #define PyVariable_NewVariable_RETURN PyObject *
-#define PyVariable_NewVariable_PROTO (const char *, \
-		PyObject *sim)
+#define PyVariable_NewVariable_PROTO (UnisimVariable)
 
 /* Total number of C API pointers */
 #define PyVariable_API_pointers 1

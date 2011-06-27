@@ -33,7 +33,8 @@
  */
 
 #include <Python.h>
-#include "simulator.hh"
+// #include "simulator.hh"
+#include "unisim/uapi/uapi.h"
 #include <string>
 #define DEBUGGER_MODULE
 #include "python/py_debugger.hh"
@@ -44,9 +45,10 @@ extern "C" {
 typedef struct {
     PyObject_HEAD
     /* Type-specific fields go here. */
-    std::string *name;
-	Simulator **simulator;
-	unisim::api::debug::DebugAPI *debugger;
+	UnisimDebugAPI debugger;
+//    std::string *name;
+//	Simulator **simulator;
+//	unisim::api::debug::DebugAPI *debugger;
 	PyObject *debug_context;
     PyObject *debug_breakpoint_handler;
     PyObject *debug_watchpoint_handler;
@@ -92,10 +94,17 @@ void debugger_watchpoint_handler(void *_self, uint64_t addr, bool read)
 static void
 debugger_dealloc (debugger_DebuggerObject *self)
 {
-	delete self->name;
-	self->name = 0;
-	self->simulator = 0;
+	// delete self->name;
+	// self->name = 0;
+	// self->simulator = 0;
+	usDestroyDebugAPI(self->debugger);
 	self->debugger = 0;
+	Py_DECREF(self->debug_context);
+	Py_DECREF(self->debug_breakpoint_handler);
+	Py_DECREF(self->debug_watchpoint_handler);
+	self->debug_context = 0;
+	self->debug_breakpoint_handler = 0;
+	self->debug_watchpoint_handler = 0;
 
 	Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -111,8 +120,8 @@ debugger_new (PyTypeObject *type, PyObject *args, PyObject *kwds)
 static PyObject *
 debugger_init (debugger_DebuggerObject *self, PyObject *args, PyObject *kwds)
 {
-	self->name = 0;
-	self->simulator = 0;
+	// self->name = 0;
+	// self->simulator = 0;
 	self->debugger = 0;
 	self->debug_context = 0;
 	self->debug_breakpoint_handler = 0;
@@ -124,14 +133,7 @@ static PyObject *
 debugger_get_name (debugger_DebuggerObject *self)
 {
 	PyObject *result = NULL;
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
-	result = PyUnicode_FromString(self->name->c_str());
+	result = PyUnicode_FromString(usExtendedAPIGetName((UnisimExtendedAPI)self->debugger));
 	return result;
 }
 
@@ -211,43 +213,28 @@ static PyObject *
 debugger_set_step_mode (debugger_DebuggerObject *self)
 {
 	PyObject *result = NULL;
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
-	self->debugger->SetStepMode();
-	Py_RETURN_NONE;
+	if ( usDebugAPISetStepMode(self->debugger) )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
 }
 
 static PyObject *
 debugger_is_mode_step (debugger_DebuggerObject *self)
 {
 	PyObject *result = NULL;
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
-	if ( self->debugger->IsModeStep() )
+	if ( usDebugAPIIsModeStep(self->debugger) )
 		Py_RETURN_TRUE;
 	Py_RETURN_FALSE;
 }
@@ -256,43 +243,28 @@ static PyObject *
 debugger_set_continue_mode (debugger_DebuggerObject *self)
 {
 	PyObject *result = NULL;
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
-	self->debugger->SetContinueMode();
-	Py_RETURN_NONE;
+	if ( usDebugAPISetContinueMode(self->debugger) )
+		Py_RETURN_TRUE;
+	Py_RETURN_FALSE;
 }
 
 static PyObject *
 debugger_is_mode_continue (debugger_DebuggerObject *self)
 {
 	PyObject *result = NULL;
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
-	if ( self->debugger->IsModeContinue() )
+	if ( usDebugAPIIsModeContinue(self->debugger) )
 		Py_RETURN_TRUE;
 	Py_RETURN_FALSE;
 }
@@ -307,18 +279,10 @@ debugger_has_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 	char *c_str = 0;
 	bool parm_ok = false;
 
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger no longer available");
 		return result;
 	}
 	if ( PyArg_ParseTuple(args, "O", &parm) )
@@ -349,11 +313,11 @@ debugger_has_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 
 	if ( c_str )
 	{
-		if ( self->debugger->HasBreakpoint(c_str) )
+		if ( usDebugAPIHasBreakpointSymbol(self->debugger, c_str) )
 			Py_RETURN_TRUE;
 	}
 	else
-		if ( self->debugger->HasBreakpoint(addr) )
+		if ( usDebugAPIHasBreakpoint(self->debugger, addr) )
 			Py_RETURN_TRUE;
 	Py_RETURN_FALSE;
 }
@@ -368,18 +332,10 @@ debugger_set_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 	char *c_str = 0;
 	bool parm_ok = false;
 
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
 	if ( PyArg_ParseTuple(args, "O", &parm) )
@@ -410,14 +366,11 @@ debugger_set_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 
 	if ( c_str )
 	{
-		if ( self->debugger->SetBreakpoint(c_str) )
-		{
+		if ( usDebugAPISetBreakpointSymbol(self->debugger, c_str) )
 			Py_RETURN_TRUE;
-		}
-
 	}
 	else
-		if ( self->debugger->SetBreakpoint(addr) )
+		if ( usDebugAPISetBreakpoint(self->debugger, addr) )
 			Py_RETURN_TRUE;
 	Py_RETURN_FALSE;
 }
@@ -432,18 +385,10 @@ debugger_delete_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 	char *c_str = 0;
 	bool parm_ok = false;
 
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
 	if ( PyArg_ParseTuple(args, "O", &parm) )
@@ -474,13 +419,13 @@ debugger_delete_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 
 	if ( c_str )
 	{
-		if ( self->debugger->DeleteBreakpoint(c_str) )
+		if ( usDebugAPIDeleteBreakpointSymbol(self->debugger, c_str) )
 			Py_RETURN_TRUE;
 
 	}
 	else
 	{
-		if ( self->debugger->DeleteBreakpoint(addr) )
+		if ( usDebugAPIDeleteBreakpoint(self->debugger, addr) )
 			Py_RETURN_TRUE;
 	}
 	Py_RETURN_FALSE;
@@ -500,18 +445,10 @@ debugger_generic_set_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
 	unsigned int size = 0;
 	bool parm_ok = false;
 
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
 	if ( PyArg_ParseTuple(args, "OI", &parm, &size) )
@@ -545,18 +482,18 @@ debugger_generic_set_wathcpoint ( debugger_DebuggerObject *self, PyObject *args,
 	{
 	case READ: // read watchpoint
 		watchpoint_result = ( c_str ?
-				self->debugger->SetReadWatchpoint(c_str, size):
-				self->debugger->SetReadWatchpoint(addr, size));
+				usDebugAPISetReadWatchpointSymbol(self->debugger, c_str, size):
+				usDebugAPISetReadWatchpoint(self->debugger, addr, size));
 		break;
 	case WRITE: // write watchpoint
 		watchpoint_result = ( c_str ?
-				self->debugger->SetWriteWatchpoint(c_str, size):
-				self->debugger->SetWriteWatchpoint(addr, size));
+				usDebugAPISetWriteWatchpointSymbol(self->debugger, c_str, size):
+				usDebugAPISetWriteWatchpoint(self->debugger, addr, size));
 		break;
 	default: // read/write watchpoint
 		watchpoint_result = ( c_str ?
-				self->debugger->SetWatchpoint(c_str, size):
-				self->debugger->SetWatchpoint(addr, size));
+				usDebugAPISetWatchpointSymbol(self->debugger, c_str, size):
+				usDebugAPISetWatchpoint(self->debugger, addr, size));
 		break;
 	}
 
@@ -595,18 +532,10 @@ debugger_generic_delete_wathcpoint ( debugger_DebuggerObject *self, PyObject *ar
 	unsigned int size = 0;
 	bool parm_ok = false;
 
-	if ( (self->simulator == 0) || (*(self->simulator) == 0) )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"Simulator for debugger '%s' is no longer available",
-				self->name->c_str());
-		return result;
-	}
 	if ( self->debugger == 0 )
 	{
 		PyErr_Format(PyExc_RuntimeError,
-				"Unisim debugger '%s' is no longer available",
-				self->name->c_str());
+				"Unisim debugger is no longer available");
 		return result;
 	}
 	if ( PyArg_ParseTuple(args, "OI", &parm, &size) )
@@ -640,18 +569,18 @@ debugger_generic_delete_wathcpoint ( debugger_DebuggerObject *self, PyObject *ar
 	{
 	case READ: // read watchpoint
 		watchpoint_result = ( c_str ?
-				self->debugger->DeleteReadWatchpoint(c_str, size) :
-				self->debugger->DeleteReadWatchpoint(addr, size));
+				usDebugAPIDeleteReadWatchpointSymbol(self->debugger, c_str, size) :
+				usDebugAPIDeleteReadWatchpoint(self->debugger, addr, size) );
 		break;
 	case WRITE: // write watchpoint
 		watchpoint_result = ( c_str ?
-				self->debugger->DeleteWriteWatchpoint(c_str, size) :
-				self->debugger->DeleteWriteWatchpoint(addr, size));
+				usDebugAPIDeleteWriteWatchpointSymbol(self->debugger, c_str, size) :
+				usDebugAPIDeleteWriteWatchpoint(self->debugger, addr, size) );
 		break;
 	default: // read/write watchpoint
 		watchpoint_result = ( c_str ?
-				self->debugger->DeleteWatchpoint(c_str, size) :
-				self->debugger->DeleteWatchpoint(addr, size));
+				usDebugAPIDeleteWatchpointSymbol(self->debugger, c_str, size) :
+				usDebugAPIDeleteWatchpoint(self->debugger, addr, size) );
 		break;
 	}
 
@@ -832,18 +761,18 @@ PyInit_debugger(void)
 }
 
 static PyObject *
-PyDebugger_NewDebugger (unisim::api::debug::DebugAPI *debugger, PyObject *sim_obj)
+PyDebugger_NewDebugger (UnisimDebugAPI debugger)
 {
 	if ( import_simulator_api() < 0 )
 		return NULL;
 
-	Simulator **sim = PySimulator_GetSimulatorRef(sim_obj);
-	if ( *sim == 0 )
-	{
-		PyErr_Format(PyExc_RuntimeError,
-				"No reference found to the simulator when creating debugger.");
-		return NULL;
-	}
+//	Simulator **sim = PySimulator_GetSimulatorRef(sim_obj);
+//	if ( *sim == 0 )
+//	{
+//		PyErr_Format(PyExc_RuntimeError,
+//				"No reference found to the simulator when creating debugger.");
+//		return NULL;
+//	}
 
 	if ( debugger == 0 )
 	{
@@ -856,16 +785,16 @@ PyDebugger_NewDebugger (unisim::api::debug::DebugAPI *debugger, PyObject *sim_ob
 	self = (debugger_DebuggerObject *)debugger_DebuggerType.tp_alloc(
 			&debugger_DebuggerType, 0);
 	// unisim::kernel::service::Object *obj = debugger->GetParentObject();
-	self->name = new std::string(debugger->GetName());
-	self->simulator = sim;
+	// self->name = new std::string(debugger->GetName());
+	// self->simulator = sim;
 	self->debugger = debugger;
 	self->debug_context = 0;
 	self->debug_breakpoint_handler = 0;
 	self->debug_watchpoint_handler = 0;
 
-	debugger->SetHandlerContext((void *)self);
-	debugger->SetBreakpointHandler(debugger_breakpoint_handler);
-	debugger->SetWatchpointHandler(debugger_watchpoint_handler);
+	usDebugAPISetContext(self->debugger, (void *)self);
+	usDebugAPISetBreakpointHandler(self->debugger, debugger_breakpoint_handler);
+	usDebugAPISetWatchpointHandler(self->debugger, debugger_watchpoint_handler);
 	return (PyObject *)self;
 }
 

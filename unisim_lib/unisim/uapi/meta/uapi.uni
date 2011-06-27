@@ -17,6 +17,8 @@
 			<file>unisim/uapi/simulator_priv.h</file>
 			<file>unisim/uapi/variable_priv.h</file>
 			<file>unisim/uapi/eapi_priv.h</file>
+			<file>unisim/uapi/debug/debug.h</file>
+			<file>unisim/uapi/debug/debug.c</file>
 		</files>
 	</unit>
 </package>
