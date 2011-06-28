@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <limits>
 #if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
@@ -625,7 +626,11 @@ template <class TYPE> Variable<TYPE>::operator string () const
 			sstr << "0x" << hex << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
-			sstr << dec << (unsigned long long) *storage;
+			sstr << dec;
+			if(std::numeric_limits<TYPE>::is_signed)
+				sstr << (long long) *storage;
+			else
+				sstr << (unsigned long long) *storage;
 			break;
 	}
 	return sstr.str();
@@ -679,6 +684,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
@@ -693,6 +699,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = 0;
@@ -707,6 +714,7 @@ Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, Variable
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child;
 	childs[1] = 0;
 	childs[2] = 0;
@@ -1772,6 +1780,14 @@ void Object::SetDescription(const char *_description)
 }
 
 //=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+ServiceInterface::~ServiceInterface()
+{
+}
+
+//=============================================================================
 //=                           ServiceImportBase                               =
 //=============================================================================
 
@@ -1906,18 +1922,21 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, description()
 	, version()
     , license()
+    , schematic()
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
 	, var_description(0)
 	, var_version(0)
 	, var_license(0)
+	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
 	, command_line_options()
 	, objects()
 	, imports()
 	, exports()
 	, variables()
+	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
@@ -1972,9 +1991,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	var_license->SetVisible(false);
 	var_license->SetSerializable(false);
 
+	var_schematic = new Parameter<string>("schematic", 0, schematic, "path to simulator schematic");
+	var_schematic->SetMutable(false);
+	var_schematic->SetVisible(false);
+	var_schematic->SetSerializable(false);
+
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
-	// parse command line arguments
+	// parse command line arguments (first pass)
 	int state = 0;
 	char **arg;
 	for(arg = argv + 1; *arg != 0 && state != -1;)
@@ -2078,20 +2102,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-			//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+			// std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+			// std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 			if ( GetSharePath(bin_dir, shared_data_dir) )
 			{
-				//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+				// std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 			}
 			else
 			{
+				// std::cerr << "Could not resolve share data dir path" << std::endl;
 				warn_get_share_path = true;
 			}
 		}
 		else
 		{
+			// std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
 			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
@@ -2099,11 +2125,18 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	else
 	{
 		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
+		{
+			// std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
+		}
+		else
+		{
+			// std::cerr << "Resolved data dir path: " << shared_data_dir
+			// 	<< std::endl;
+		}
 	}
-	// parse command line arguments
-	// int state = 0;
-	// char **arg;
+
+	// parse command line arguments (second pass)
 	state = 0;
 	
 	for(arg = argv + 1; *arg != 0 && state != -1;)
@@ -2305,6 +2338,11 @@ Simulator::~Simulator()
 		delete var_license;
 	}
 	
+	if(var_schematic)
+	{
+		delete var_schematic;
+	}
+
 	if(var_description)
 	{
 		delete var_description;
@@ -2444,6 +2482,39 @@ void Simulator::Unregister(ServiceExportBase *srv_export)
 	if(export_iter != exports.end()) exports.erase(export_iter);
 }
 
+void Simulator::Register(unisim::kernel::api::APIBase *api)
+{
+	if ( apis.find(api->GetName()) != apis.end() )
+	{
+		cerr << "ERROR! API \"" << api->GetName() << "\" already exists" << endl;
+		exit(1);
+	}
+
+	apis[api->GetName()] = api;
+}
+
+void Simulator::Unregister(unisim::kernel::api::APIBase *api)
+{
+	map<const char *, unisim::kernel::api::APIBase *, ltstr>::iterator api_iter;
+	api_iter = apis.find(api->GetName());
+	if ( api_iter != apis.end() )
+	{
+		apis.erase(api_iter);
+	}
+}
+
+void Simulator::GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const
+{
+	map<const char *, unisim::kernel::api::APIBase *, ltstr>::const_iterator api_iter;
+
+	for ( api_iter = apis.begin();
+			api_iter != apis.end();
+			api_iter++ )
+	{
+		api_list.push_back(api_iter->second);
+	}
+}
+
 void Simulator::Dump(ostream& os)
 {
 	os << "OBJECTS:" << endl;
@@ -2522,6 +2593,8 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			break;
 	}*/
 	
+	unsigned int max_name_column_width = 64;
+	unsigned int max_value_column_width = 32;
 	unsigned int max_variable_name_length = 0;
 	unsigned int max_variable_value_length = 0;
 	
@@ -2543,6 +2616,9 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			if(variable_value_length > max_variable_value_length) max_variable_value_length = variable_value_length;
 		}
 	}
+	
+	if(max_variable_name_length < max_name_column_width) max_name_column_width = max_variable_name_length;
+	if(max_variable_value_length < max_value_column_width) max_value_column_width = max_variable_value_length;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -2557,10 +2633,16 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 //			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
-			sstr_name.width(max_variable_name_length);
+			if(strlen(name) <= max_name_column_width)
+			{
+				sstr_name.width(max_name_column_width);
+			}
 			sstr_name.setf(std::ios::left);
 			sstr_name << name;
-			sstr_value.width(max_variable_value_length);
+			if(value.length() <= max_value_column_width)
+			{
+				sstr_value.width(max_value_column_width);
+			}
 			sstr_value.setf(std::ios::left);
 			sstr_value << value;
 			os << sstr_name.str() << " " << sstr_value.str();
@@ -3298,6 +3380,16 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\section{Simulated configuration}" << endl;
 	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
 	
+	if(!schematic.empty())
+	{
+		os << "\\begin{figure}[!ht]" << endl;
+		os << "\t\\begin{center}" << endl;
+		os << "\t\t\\includegraphics[width=\\textwidth]{" << schematic << "}" << endl;
+		os << "\t\\end{center}" << endl;
+		os << "\t\\caption{" << program_name << " simulator schematic.}" << endl;
+		os << "\\end{figure}" << endl;
+	}
+	
 	os << "\\noindent The " << string_to_latex(program_name.c_str()) << " simulator is composed of the following modules and services:" << endl;
 	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << endl;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
@@ -3470,6 +3562,13 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 bool Simulator::IsWarningEnabled() const
 {
 	return enable_warning;
+}
+
+unisim::kernel::api::APIBase *
+Simulator::
+GetAPIs()
+{
+	return 0;
 }
 
 } // end of namespace service

@@ -92,25 +92,25 @@ using unisim::util::debug::Register;
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class LinuxOS :
 	public Service<unisim::service::interfaces::LinuxOS>,
-	public Service<unisim::service::interfaces::Loader<ADDRESS_TYPE> >,
+	public Service<unisim::service::interfaces::Loader>,
 	public Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >,
 	public Client<Memory<ADDRESS_TYPE> >,
 	public Client<MemoryInjection<ADDRESS_TYPE> >,
 	public Client<Registers>,
-	public Client<Loader<ADDRESS_TYPE> >,
+	public Client<Loader>,
 	public Client<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
 {
 public:
     /* Exported services */
 	ServiceExport<unisim::service::interfaces::LinuxOS> linux_os_export;
-	ServiceExport<unisim::service::interfaces::Loader<ADDRESS_TYPE> > loader_export;
+	ServiceExport<unisim::service::interfaces::Loader> loader_export;
 	ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> > blob_export;
 
 	/* Imported services */
 	ServiceImport<Memory<ADDRESS_TYPE> > memory_import;
 	ServiceImport<MemoryInjection<ADDRESS_TYPE> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
-	ServiceImport<Loader<ADDRESS_TYPE> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<Blob<ADDRESS_TYPE> > blob_import;
 
     /* Constructor/Destructor */

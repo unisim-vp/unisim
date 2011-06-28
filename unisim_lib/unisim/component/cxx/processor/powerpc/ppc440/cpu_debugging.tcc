@@ -166,6 +166,7 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 			size -= sz;
 			read_offset += sz;
 			addr += sz;
+			physical_addr += sz;
 			size_to_protection_boundary -= sz;
 		} while(size > 0 && size_to_protection_boundary > 0);
 	} while(size > 0);
@@ -297,6 +298,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 			size -= sz;
 			write_offset += sz;
 			addr += sz;
+			physical_addr += sz;
 			size_to_protection_boundary -= sz;
 		} while(size > 0 && size_to_protection_boundary > 0);
 	} while(size > 0);

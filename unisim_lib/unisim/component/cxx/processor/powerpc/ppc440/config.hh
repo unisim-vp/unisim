@@ -446,7 +446,7 @@ public:
 	static const uint32_t ESR_MASK = ESR_MCI_MASK | ESR_PIL_MASK | ESR_PPR_MASK | ESR_PTR_MASK |
 	                                 ESR_FP_MASK | ESR_ST_MASK | ESR_DLK_MASK | ESR_AP_MASK |
 	                                 ESR_PUO_MASK | ESR_BO_MASK | ESR_PIE_MASK | ESR_PCRE_MASK |
-	                                 ESR_PCRE_MASK | ESR_PCMP_MASK | ESR_PCRF_MASK;
+	                                 ESR_PCMP_MASK | ESR_PCRF_MASK;
 	
 	static const uint32_t ESR_RESET_VALUE = 0; // undefined
 };

@@ -99,7 +99,7 @@ public:
 	
 	IRQStub(const sc_module_name& name);
 
-	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual tlm::tlm_sync_enum nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
 	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 };
@@ -111,7 +111,7 @@ IRQStub::IRQStub(const sc_module_name& name)
 	irq_master_sock(*this);
 }
 
-tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
+tlm::tlm_sync_enum IRQStub::nb_transport_bw(unisim::component::tlm2::interrupt::InterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	return tlm::TLM_COMPLETED;
 }
@@ -435,7 +435,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("linux-os.endianness", "big-endian");
 	simulator->SetVariable("linux-os.utsname-sysname", "Linux");
 	simulator->SetVariable("linux-os.utsname-nodename", "localhost");
-	simulator->SetVariable("linux-os.utsname-release", "2.6.27.35");
+	simulator->SetVariable("linux-os.utsname-release", "2.6.31.14");
 	simulator->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
 	simulator->SetVariable("linux-os.utsname-machine", "powerpc");
 	simulator->SetVariable("linux-os.verbose", false);

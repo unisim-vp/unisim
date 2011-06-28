@@ -116,9 +116,10 @@ private:
 	std::map<uint64_t, DWARF_LocListEntry<MEMORY_ADDR> * > dw_loc_list;        // location lists in section .debug_loc indexed by .debug_loc section offset
 
 	unisim::kernel::logger::Logger& logger;
+	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
-
+	void BuildStatementMatrix();
 };
 
 } // end of namespace dwarf

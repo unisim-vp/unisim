@@ -33,7 +33,6 @@ public:
 	~PIMThread();
 
 	virtual void Run();
-	virtual string getProtocol() { return "PIM"; }
 	double GetSimTime();
 
 private:

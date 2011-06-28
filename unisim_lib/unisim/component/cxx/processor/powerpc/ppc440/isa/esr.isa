@@ -40,7 +40,7 @@ group fp_update_crf(mcrfs, mtfsfi)
 
 group fp_update_crb(mtfsb0, mtfsb1)
 
-group st(sthbrx, stwbrx, dcbi, dcbz, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx) 
+group st(sthbrx, stwbrx, dcbi, dcbz, stb, stbu, stbux, stbx, sth, sthu, sthux, sthx, stw, stwu, stwux, stwx, stwcx_) 
 
 group fp_st(stfd, stfdu, stfdux, stfdx, stfiwx, stfs, stfsu, stfsux, stfsx)
 

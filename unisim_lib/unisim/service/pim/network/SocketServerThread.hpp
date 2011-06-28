@@ -25,15 +25,14 @@ public:
 
 	virtual void Run();
 
-	void setProtocolHandlers(vector<SocketThread*> *protocolHandlers) { this->protocolHandlers = protocolHandlers; }
+	void setProtocolHandler(SocketThread* protocolHandler) { this->protocolHandler = protocolHandler; }
 
 private:
 	int primary_sockfd;
 
 	uint8_t request_nbre;
-	vector<SocketThread*> *protocolHandlers;
+	SocketThread* protocolHandler;
 
-	bool bindHandler(int newsockfd);
 };
 
 } // network 

@@ -73,17 +73,14 @@ bool PIM::Setup() {
 
 void PIM::Run() {
 
-	vector<SocketThread*> protocolHandlers;
-
 	// Start Simulation <-> ToolBox communication
 	target = new PIMThread("pim-thread");
-	protocolHandlers.push_back(target);
 
 	// Open Socket Stream
 	socketfd = new SocketServerThread(fHost, fPort, true, 1);
 //	socketfd = new SocketClientThread(fHost, fPort);
 
-	socketfd->setProtocolHandlers(&protocolHandlers);
+	socketfd->setProtocolHandler(target);
 
 	socketfd->start();
 

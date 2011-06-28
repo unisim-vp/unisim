@@ -146,6 +146,7 @@ unisim/service/os/linux_os/linux_os_32.cc \
 unisim/service/os/linux_os/linux_os_exception.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/linux_loader/linux32_loader.cc \
+unisim/component/cxx/processor/powerpc/config.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \

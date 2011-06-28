@@ -41,9 +41,10 @@
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 #include <tlm_utils/tlm_quantumkeeper.h>
-#include <tlm_utils/peq_with_get.h>
 #include <inttypes.h>
 #include <unisim/component/tlm2/interrupt/types.hh>
+#include <stack>
+#include <vector>
 
 namespace unisim {
 namespace component {
@@ -59,45 +60,61 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
-using unisim::component::tlm2::interrupt::TLMInterruptPayload;
+using unisim::component::tlm2::interrupt::InterruptPayload;
 
 template <class CONFIG>
 class CPU
 	: public sc_module
 	, public unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG>
-	, public tlm::tlm_bw_transport_if<>
 {
 public:
 	
 	typedef unisim::component::cxx::processor::powerpc::ppc440::CPU<CONFIG> inherited;
-	typedef tlm::tlm_initiator_socket<CONFIG::FSB_WIDTH * 8> bus_master_socket;
+	typedef tlm::tlm_initiator_socket<CONFIG::FSB_WIDTH * 8> plb_master_socket;
 	typedef tlm::tlm_target_socket<0, InterruptProtocolTypes> irq_slave_socket;
+	typedef tlm::tlm_initiator_socket<4> dcr_master_socket;
 
-	bus_master_socket bus_master_sock;
-	irq_slave_socket external_input_interrupt_slave_sock;
-	irq_slave_socket critical_input_interrupt_slave_sock;
+	plb_master_socket icurd_plb_master_sock; // Instruction Cache Unit Read PLB interface
+	plb_master_socket dcuwr_plb_master_sock; // Data Cache Unit Write PLB interface
+	plb_master_socket dcurd_plb_master_sock; // Data Cache Unit Read PLB interface
+	irq_slave_socket external_input_interrupt_slave_sock; // External Input
+	irq_slave_socket critical_input_interrupt_slave_sock; // Critical Input
+	dcr_master_socket dcr_master_sock; // DCR master interface
 	
 	CPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~CPU();
 	
 	virtual bool EndSetup();
-	
-	virtual tlm::tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
 
-	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
+	// Back path
+	virtual tlm::tlm_sync_enum nb_transport_bw(unsigned int if_id, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	virtual void invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	
+	// Forward path
+	void interrupt_b_transport(unsigned int irq, InterruptPayload& payload, sc_core::sc_time& t);
+	tlm::tlm_sync_enum interrupt_nb_transport_fw(unsigned int irq, InterruptPayload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
+	unsigned int interrupt_transport_dbg(unsigned int, InterruptPayload& payload);
+	bool interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& payload, tlm::tlm_dmi& dmi_data);
+
 	virtual void Synchronize();
+	virtual void Idle();
 	
-	inline void UpdateTime();
-	inline void AlignToBusClock();
 	void Run();
-	void SignalExternalInputInterrupt();
-	void SignalCriticalInputInterrupt();
 	
 protected:
-	virtual bool BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
-	virtual bool BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual bool PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
+	virtual void DCRRead(unsigned int dcrn, uint32_t& value);
+	virtual void DCRWrite(unsigned int dcrn, uint32_t value);
 private:
+	typedef enum
+	{
+		IF_ICURD_PLB,
+		IF_DCUWR_PLB,
+		IF_DCURD_PLB,
+		IF_DCR
+	} Interface;
 	
 	PayloadFabric<tlm::tlm_generic_payload> payload_fabric;
 	sc_time cpu_cycle_time;
@@ -107,6 +124,8 @@ private:
 	sc_time timer_time;
 	sc_time nice_time;
 	sc_time max_idle_time;
+	sc_time global_time;
+	sc_time idle_time;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
 	double ipc;
@@ -115,31 +134,285 @@ private:
 	Parameter<sc_time> param_ext_timer_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Statistic<sc_time> stat_idle_time;
 	
-	class IRQQueue : public tlm::tlm_fw_transport_if<InterruptProtocolTypes>
+	class Event
 	{
 	public:
-		IRQQueue(const char *name);
+		typedef enum
+		{
+			// In order of priority
+			EV_IRQ,               // an IRQ event
+		} Type;
 		
-		virtual void b_transport(TLMInterruptPayload& trans, sc_core::sc_time& t);
+		typedef enum
+		{
+			IRQ_CRITICAL_INPUT = 0,
+			IRQ_EXTERNAL_INPUT = 1,
+		} IRQ;
+		
+		Event()
+			: type(EV_IRQ)
+			, time_stamp(SC_ZERO_TIME)
+			, irq(0)
+			, level(false)
+		{
+		}
+		
+		~Event()
+		{
+			Clear();
+		}
+		
+		void InitializeIRQEvent(unsigned int _irq, bool _level, const sc_time& _time_stamp)
+		{
+			type = EV_IRQ;
+			time_stamp = _time_stamp;
+			irq = _irq;
+			level = _level;
+		}
 
-		virtual tlm::tlm_sync_enum nb_transport_fw(TLMInterruptPayload& trans, tlm::tlm_phase& phase, sc_core::sc_time& t);
+		void Clear()
+		{
+			type = EV_IRQ;
+			time_stamp = SC_ZERO_TIME;
+			irq = 0;
+			level = false;
+		}
+		
+		Type GetType() const
+		{
+			return type;
+		}
+		
+		void SetTimeStamp(const sc_time& _time_stamp)
+		{
+			time_stamp = _time_stamp;
+		}
+		
+		const sc_time& GetTimeStamp() const
+		{
+			return time_stamp;
+		}
+		
+		unsigned int GetIRQ() const
+		{
+			return irq;
+		}
+		
+		bool GetLevel() const
+		{
+			return level;
+		}
+		
+	private:
+		Type type;
+		sc_time time_stamp;
+		unsigned int irq;
+		bool level;
+	};
+	
+	class EventAllocator
+	{
+	public:
+		EventAllocator()
+			: free_list()
+		{
+		}
+		
+		~EventAllocator()
+		{
+			while(!free_list.empty())
+			{
+				Event *event = free_list.top();
+				delete event;
+				free_list.pop();
+			}
+		}
+		
+		Event *AllocEvent()
+		{
+			if(!free_list.empty())
+			{
+				Event *event = free_list.top();
+				free_list.pop();
+				return event;
+			}
+			
+			return new Event();
+		}
+		
+		void FreeEvent(Event *event)
+		{
+			event->Clear();
+			free_list.push(event);
+		}
+	private:
+		std::stack<Event *, std::vector<Event *> > free_list;
+	};
+	
+	class ScheduleKey
+	{
+	public:
+		ScheduleKey(const sc_time& _time_stamp, typename Event::Type _type, unsigned int _irq)
+			: time_stamp(_time_stamp)
+			, type(_type)
+			, irq(_irq)
+		{
+		}
+		
+		int operator < (const ScheduleKey& sk) const
+		{
+			return (time_stamp < sk.time_stamp) || ((time_stamp == sk.time_stamp) && ((type < sk.type) || ((type == sk.type) && (irq < sk.irq))));
+		}
+		
+		const sc_time& GetTimeStamp() const
+		{
+			return time_stamp;
+		}
+	private:
+		sc_time time_stamp;
+		typename Event::Type type;
+		unsigned int irq;
+	};
+	
+	class Schedule
+	{
+	public:
+		Schedule()
+			: schedule()
+			, kernel_event()
+			, event_allocator()
+		{
+		}
+		
+		~Schedule()
+		{
+			typename std::multimap<ScheduleKey, Event *>::iterator it;
+			for(it = schedule.begin(); it != schedule.end(); it++)
+			{
+				Event *event = (*it).second;
+				
+				event_allocator.FreeEvent(event);
+			}
+		}
+		
+		void NotifyIRQEvent(unsigned int irq, bool level, const sc_time& time_stamp)
+		{
+			ScheduleKey key = ScheduleKey(time_stamp, Event::EV_IRQ, irq);
+			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.find(key);
+			if(it != schedule.end())
+			{
+				if((*it).second->GetLevel() == level) return; // Already scheduled
+			}
+			Event *event = event_allocator.AllocEvent();
+			event->InitializeIRQEvent(irq, level, time_stamp);
+			schedule.insert(std::pair<ScheduleKey, Event *>(key, event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
+		}
 
-		virtual unsigned int transport_dbg(TLMInterruptPayload& trans);
+		void Notify(Event *event)
+		{
+			const sc_time& time_stamp = event->GetTimeStamp();
+			schedule.insert(std::pair<ScheduleKey, Event *>(ScheduleKey(time_stamp, event->GetType(), event->GetIRQ()), event));
+			sc_time t(time_stamp);
+			t -= sc_time_stamp();
+			kernel_event.notify(t);
+		}
 		
-		virtual bool get_direct_mem_ptr(TLMInterruptPayload& trans, tlm::tlm_dmi& dmi_data);
+		Event *GetNextEvent(const sc_time& time_stamp)
+		{
+			if(schedule.empty()) return 0;
+			
+			typename std::multimap<ScheduleKey, Event *>::iterator it = schedule.begin();
+			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			if(event_time_stamp <= time_stamp)
+			{
+				Event *event = (*it).second;
+				schedule.erase(it);
+				return event;
+			}
+			
+			sc_time t(event_time_stamp);
+			t -= time_stamp;
+			kernel_event.notify(t);
+			
+			return 0;
+		}
 		
-		TLMInterruptPayload *GetNextIRQ();
-		sc_event& GetEvent();
+		void FreeEvent(Event *event)
+		{
+			event_allocator.FreeEvent(event);
+		}
+		
+		const sc_event& GetKernelEvent() const
+		{
+			return kernel_event;
+		}
+		
+		void Flush(const sc_time& time_stamp, typename Event::Type event_type)
+		{
+			typename std::multimap<ScheduleKey, Event *>::iterator it;
+			for(it = schedule.begin(); it != schedule.end(); it++)
+			{
+				Event *event = (*it).second;
+				
+				if(event->GetType() == event_type)
+				{
+					event_allocator.FreeEvent(event);
+					schedule.erase(it);
+				}
+			}
+			kernel_event.cancel();
+
+			if(schedule.empty()) return;
+			
+			it = schedule.begin();
+			const sc_time& event_time_stamp = (*it).first.GetTimeStamp();
+			if(event_time_stamp <= time_stamp)
+			{
+				return;
+			}
+			
+			sc_time t(event_time_stamp);
+			t -= time_stamp;
+			kernel_event.notify(t);
+		}
+
+		void Clear()
+		{
+			typename std::multimap<ScheduleKey, Event *>::iterator it;
+			for(it = schedule.begin(); it != schedule.end(); it++)
+			{
+				Event *event = (*it).second;
+				
+				event_allocator.FreeEvent(event);
+			}
+			schedule.clear();
+			kernel_event.cancel();
+		}
 
 	private:
-		tlm_utils::peq_with_get<TLMInterruptPayload> queue;
+		std::multimap<ScheduleKey, Event *> schedule;
+		
+		sc_event kernel_event;
+		EventAllocator event_allocator;
 	};
 
-	IRQQueue external_input_interrupt_queue;
-	IRQQueue critical_input_interrupt_queue;
-
-	void SignalIRQ(IRQQueue& queue, unsigned int irq);
+	Schedule external_event_schedule;
+	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *critical_input_interrupt_redirector;
+	unisim::kernel::tlm2::FwRedirector<CPU<CONFIG>, unisim::kernel::tlm2::SimpleProtocolTypes<bool> > *external_input_interrupt_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *icurd_plb_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcuwr_plb_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcurd_plb_redirector;
+	unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> > *dcr_redirector;
+	inline void UpdateTime();
+	inline void AlignToBusClock();
+	void AlignToBusClock(sc_time& t);
+	void ProcessExternalEvents();
+	void ProcessIRQEvent(Event *event);
 };
 
 } // end of namespace ppc440

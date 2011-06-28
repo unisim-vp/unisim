@@ -36,6 +36,7 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
 #define __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -54,10 +55,9 @@ public:
 	virtual void ReportFinishedInstruction(ADDRESS next_addr) = 0;
 };
 
-class MemoryAccessReportingControl
+class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual ~MemoryAccessReportingControl() {}
 	virtual void RequiresMemoryAccessReporting(bool report) = 0;
 	virtual void RequiresFinishedInstructionReporting(bool report) = 0;
 };

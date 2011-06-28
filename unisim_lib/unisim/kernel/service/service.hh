@@ -45,6 +45,25 @@
 #include <sstream>
 #include <string.h>
 
+namespace unisim {
+namespace kernel {
+namespace service {
+
+class Object;
+class Simulator;
+
+}
+
+namespace api {
+
+class APIBase;
+
+}
+}
+}
+
+#include "unisim/kernel/api/api.hh"
+
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
 #if defined(likely)
 #undef likely
@@ -85,7 +104,6 @@ using std::ostream;
 using std::vector;
 
 class EmptyClientInterface {};
-class Object;
 class VariableBase;
 template <class TYPE> class Variable;
 template <class TYPE> class Parameter;
@@ -241,7 +259,8 @@ public:
 	static Simulator *simulator;
 	VariableBase *void_variable;
 
-	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
+	Simulator(int argc, char **argv,
+			void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
 	virtual void Stop(Object *object, int exit_status);
@@ -284,6 +303,8 @@ public:
 
 	bool IsWarningEnabled() const;
 
+	unisim::kernel::api::APIBase *GetAPIs();
+
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -291,6 +312,7 @@ private:
 	friend class XMLHelper;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
+	friend class unisim::kernel::api::APIBase;
 
 	string shared_data_dir;
 	std::map<string, string> set_vars;
@@ -313,12 +335,14 @@ private:
 	string description;
 	string version;
 	string license;
+	string schematic;
 	Parameter<string> *var_program_name;
 	Parameter<string> *var_authors;
 	Parameter<string> *var_copyright;
 	Parameter<string> *var_description;
 	Parameter<string> *var_version;
 	Parameter<string> *var_license;
+	Parameter<string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
 	
 	void Version(ostream& os) const;
@@ -333,6 +357,9 @@ private:
 	void Unregister(ServiceImportBase *srv_import);
 	void Unregister(ServiceExportBase *srv_export);
 	void Unregister(VariableBase *variable);
+
+	void Register(unisim::kernel::api::APIBase *api);
+	void Unregister(unisim::kernel::api::APIBase *api);
 	
 	void Initialize(VariableBase *variable);
 
@@ -349,12 +376,13 @@ private:
 	bool XmlfyVariables(const char *filename);
 	bool LoadXmlVariables(const char *filename);
 
-protected:
+public:
 	// TOCHECK: this method was previously declared as private,
 	//   and should probably become again private unless we consider
 	//   it part of the simulator API in which case it should
 	//   become public
 	void GetRootObjects(list<Object *>& lst) const;
+	void GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const;
 
 private:
 	class CommandLineOption
@@ -388,6 +416,7 @@ private:
 	map<const char *, ServiceImportBase *, ltstr> imports;
 	map<const char *, ServiceExportBase *, ltstr> exports;
 	map<const char *, VariableBase *, ltstr> variables;
+	map<const char *, unisim::kernel::api::APIBase *, ltstr> apis;
 	
 	string *cmd_args;
 	ParameterArray<string> *param_cmd_args;
@@ -761,6 +790,16 @@ private:
 };
 
 //=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+class ServiceInterface
+{
+public:
+	virtual ~ServiceInterface();
+};
+
+//=============================================================================
 //=                            Service<SERVICE_IF>                            =
 //=============================================================================
 
@@ -942,7 +981,11 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
-	ServiceImport<SERVICE_IF>::DisconnectService();
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceImport()" << endl;
+#endif
+	//ServiceImport<SERVICE_IF>::DisconnectService();
+	ServiceImport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1081,7 +1124,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 	{
 		if(service)
 		{
-			service->OnDisconnect();
+			//service->OnDisconnect(); // Gilles: That's dangerous
 #ifdef DEBUG_SERVICE
 			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
 #endif
@@ -1117,9 +1160,24 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 			if(*import_iter == this)
 			{
 				alias_import->actual_imports.erase(import_iter);
-				this->alias_import = 0;
+				break;
 			}
 		}
+		alias_import = 0;
+	}
+
+	if(!actual_imports.empty())
+	{
+		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	
+		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
+		{
+			if((*import_iter)->alias_import == this)
+			{
+				(*import_iter)->alias_import = 0;
+			}
+		}
+		actual_imports.clear();
 	}
 
 	if(srv_export)
@@ -1257,7 +1315,11 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
-	ServiceExport<SERVICE_IF>::DisconnectClient();
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceExport()" << endl;
+#endif
+	//ServiceExport<SERVICE_IF>::DisconnectClient();
+	ServiceExport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1366,6 +1428,21 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 #endif
 
 	DisconnectClient();
+	
+	if(actual_export)
+	{
+		typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	
+		for(export_iter = actual_export->alias_exports.begin(); export_iter != actual_export->alias_exports.end(); export_iter++)
+		{
+			if(*export_iter == this)
+			{
+				actual_export->alias_exports.erase(export_iter);
+				break;
+			}
+		}
+		actual_export = 0;
+	}
 
 	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
@@ -1437,7 +1514,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 
 	if(client)
 	{
-		client->OnDisconnect();
+		//client->OnDisconnect(); // Gilles: that's dangerous
 #ifdef DEBUG_SERVICE
 		cerr << GetName() << ": Unresolving client " << client->GetName() << endl;
 #endif

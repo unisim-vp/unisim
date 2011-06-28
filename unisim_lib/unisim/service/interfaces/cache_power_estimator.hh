@@ -35,15 +35,16 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_CACHE_POWER_ESTIMATOR_HH__
 #define __UNISIM_SERVICE_INTERFACES_CACHE_POWER_ESTIMATOR_HH__
 
+#include <unisim/kernel/service/service.hh>
+
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class CachePowerEstimator
+class CachePowerEstimator : public unisim::kernel::service::ServiceInterface
 {
 public:
 	CachePowerEstimator() {}
-	virtual ~CachePowerEstimator() {}
 	virtual void ReportReadAccess() = 0;
 	virtual void ReportWriteAccess() = 0;
 	virtual double GetDynamicEnergy() = 0;

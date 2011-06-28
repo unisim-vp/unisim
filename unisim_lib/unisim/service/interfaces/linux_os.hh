@@ -35,17 +35,15 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_LINUX_OS_HH__
 #define __UNISIM_SERVICE_INTERFACES_LINUX_OS_HH__
 
+#include <unisim/kernel/service/service.hh>
 #include <string>
-//#include "unisim/service/interfaces/os.hh"
 
 namespace unisim {
 namespace service {
 namespace interfaces {
 
-class LinuxOS {
+class LinuxOS  : public unisim::kernel::service::ServiceInterface {
 public:
-	LinuxOS() {}
-	virtual ~LinuxOS() {}
 	/**
      * Executes a system call based on the binding done with the SetSyscallId
      *   method.

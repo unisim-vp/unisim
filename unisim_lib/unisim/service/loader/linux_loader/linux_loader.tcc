@@ -50,10 +50,10 @@ using namespace unisim::kernel::logger;
 template<class T>
 LinuxLoader<T>::LinuxLoader(const char *name, Object *parent) :
 Object(name, parent),
-Client<Loader<T> >(name, parent),
+Client<Loader>(name, parent),
 Client<Blob<T> >(name, parent),
 Client<Memory<T> >(name, parent),
-Service<Loader<T> >(name, parent),
+Service<Loader>(name, parent),
 Service<Blob<T> >(name, parent),
 unisim::kernel::service::VariableBaseListener(),
 loader_import("loader_import", this),
@@ -94,6 +94,7 @@ param_envp(),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
+	param_max_environ.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_argc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	if ( argc )
 	{

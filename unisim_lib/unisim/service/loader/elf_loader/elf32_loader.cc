@@ -41,6 +41,7 @@ namespace loader {
 namespace elf_loader {
 
 template class ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>;
+//template class ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>;
 
 } // end of namespace elf_loader
 } // end of namespace loader

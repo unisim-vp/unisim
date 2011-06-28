@@ -41,6 +41,7 @@
 #include <unisim/component/cxx/cache/cache.tcc>
 #include <unisim/component/cxx/tlb/tlb.tcc>
 #include <unisim/util/queue/queue.tcc>
+#include <unisim/kernel/debug/debug.hh>
 
 #include <sstream>
 #include <stdexcept>
@@ -61,7 +62,7 @@ template <class CONFIG>
 CPU<CONFIG>::CPU(const char *name, Object *parent)
 	: Object(name, parent, "this module implements a PPC440 CPU core")
 	, unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>()
-	, Client<Loader<typename CONFIG::address_t> >(name,  parent)
+	, Client<Loader>(name,  parent)
 	, Client<SymbolTableLookup<typename CONFIG::address_t> >(name,  parent)
 	, Client<DebugControl<typename CONFIG::address_t> >(name,  parent)
 	, Client<MemoryAccessReporting<typename CONFIG::address_t> >(name,  parent)
@@ -124,9 +125,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_set_msr(false)
 	, verbose_tlbwe(false)
 	, enable_linux_printk_snooping(false)
+	, enable_linux_syscall_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
 	, max_inst(0xffffffffffffffffULL)
+	, num_interrupts(0)
 	, registers_registry()
 	, instruction_counter(0)
 	, fp32_estimate_inv_warning(false)
@@ -172,6 +175,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_set_msr("verbose-set-msr",  this,  verbose_set_msr, "enable/disable verbosity when setting MSR")
 	, param_verbose_tlbwe("verbose-tlbwe",  this,  verbose_tlbwe, "enable/disable verbosity when executing a tlbwe instruction")
 	, param_enable_linux_printk_snooping("enable-linux-printk-snooping", this, enable_linux_printk_snooping, "enable/disable linux printk buffer snooping")
+	, param_enable_linux_syscall_snooping("enable-linux-syscall-snooping", this, enable_linux_syscall_snooping, "enable/disable linux syscall snooping")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 	, param_enable_trap_on_exception("enable-trap-on-exception", this, enable_trap_on_exception, "enable/disable trap reporting on exception")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
@@ -192,6 +196,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, stat_num_utlb_accesses("num-utlb-accesses", this, num_utlb_accesses, "number of accesses to unified data translation look-aside buffer")
 	, stat_num_utlb_misses("num-utlb-misses", this, num_utlb_misses, "number of misses to unified data translation look-aside buffer")
 	, formula_utlb_miss_rate("utlb-miss-rate", this, Formula<double>::OP_DIV, &stat_num_utlb_misses, &stat_num_utlb_accesses, "unified data translation look-aside buffer miss rate")
+	, stat_num_interrupts("num-interrupts", this, num_interrupts, "Number of interrupts")
 {
 	param_trap_on_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_cpu_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -557,18 +562,7 @@ bool CPU<CONFIG>::EndSetup()
 		
 		logger << "voltage of " << ((double) voltage / 1e3) << " V" << endl;
 
-/*		if(bus_cycle_time > 0)
-			logger << "bus cycle time of " << bus_cycle_time << " ps" << endl;*/
-		
 		logger << EndDebugInfo;
-		
-/*		if(bus_cycle_time <= 0)
-		{
-			logger << DebugError;
-			logger << "bus cycle time must be > 0" << endl;
-			logger << EndDebugError;
-			return false;
-		}*/
 	}
 
 	if(il1_power_mode_import)
@@ -669,6 +663,7 @@ void CPU<CONFIG>::Reset()
 
 	timer_cycle = 0;
 	instruction_counter = 0;
+	num_interrupts = 0;
 
 	irq = 0;
 
@@ -1189,16 +1184,6 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 		}
 		case 0x150:
 			if(GetMSR_PR()) throw PrivilegeViolationException<CONFIG>();
-/*			{
-				std::stringstream sstr;
-				sstr << "At 0x" << std::hex << GetCIA() << std::dec;
-				const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(GetCIA(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
-				if(symbol) sstr << " (" << symbol->GetFriendlyName(GetCIA()) << ")";
-				sstr << ", mttsr 0x" << std::hex << value << std::dec;
-				std::string msg = sstr.str();
-				
-				if(trap_reporting_import) trap_reporting_import->ReportTrap(*this, msg.c_str());
-			}*/
 			SetTSR(GetTSR() & ~value); // A 1 clears the bit, a 0 leaves it unchanged
 			return;
 		case 0x154:
@@ -1481,16 +1466,31 @@ void CPU<CONFIG>::StepOneInstruction()
 	
 	//DL1SanityCheck();
 	//IL1SanityCheck();
+	
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::OnTimerClock()
 {
+	timer_cycle++;
+	
 	/* update the time base */
 	IncrementTB();
 
 	/* decrement the decrementer each timer cycle */
 	DecrementDEC();
+}
+
+template <class CONFIG>
+void CPU<CONFIG>::RunTimers(uint64_t delta)
+{
+	timer_cycle += delta;
+	
+	/* update the time base */
+	IncrementTB(delta);
+
+	/* decrement the decrementer each timer cycle */
+	DecrementDEC(delta);
 }
 
 template <class CONFIG>
@@ -1562,6 +1562,8 @@ void CPU<CONFIG>::SetMSR(uint32_t value)
 	{
 		if(unlikely(IsVerboseSetMSR()))
 			logger << DebugInfo << "Processor enters in the wait state" << endl << EndDebugInfo;
+		Idle();
+		ResetMSR_WE();
 	}
 
 	if(old_msr_we && !GetMSR_WE())
@@ -1738,20 +1740,6 @@ const char *CPU<CONFIG>::GetArchitectureName() const
 	return "powerpc";
 }
 
-template <class CONFIG>
-bool CPU<CONFIG>::BusRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
-{
-	return memory_import->ReadMemory(physical_addr, buffer, size);
-}
-
-template <class CONFIG>
-bool CPU<CONFIG>::BusWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
-{
-	return memory_import->WriteMemory(physical_addr, buffer, size);
-}
-
-
-
 /* Endian interface */
 template <class CONFIG>
 endian_type CPU<CONFIG>::GetEndianess()
@@ -1762,6 +1750,29 @@ endian_type CPU<CONFIG>::GetEndianess()
 template <class CONFIG>
 void CPU<CONFIG>::SetIRQ(unsigned int _irq)
 {
+	if(IsVerboseException())
+	{
+		if(_irq & CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT)
+		{
+			logger << DebugInfo << "Got an external input interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a critical input interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a decrementer interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a fixed interval timer interrupt condition" << EndDebugInfo;
+		}
+		if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT)
+		{
+			logger << DebugInfo << "Got a watchdog timer interrupt condition" << EndDebugInfo;
+		}
+	}
 	irq = irq | (_irq & (CONFIG::IRQ_EXTERNAL_INPUT_INTERRUPT | CONFIG::IRQ_CRITICAL_INPUT_INTERRUPT));
 	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_DIS_MASK);
 	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() | CONFIG::TSR_FIS_MASK);
@@ -1801,6 +1812,10 @@ void CPU<CONFIG>::ResetIRQ(unsigned int _irq)
 	if(_irq & CONFIG::IRQ_DECREMENTER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_DIS_MASK);
 	if(_irq & CONFIG::IRQ_FIXED_INTERVAL_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_FIS_MASK);
 	if(_irq & CONFIG::IRQ_WATCHDOG_TIMER_INTERRUPT) SetTSR(GetTSR() & ~CONFIG::TSR_WIS_MASK);
+	if(IsVerboseException())
+	{
+		logger << DebugInfo << "Reseting pending IRQ mask: " << irq << EndDebugInfo;
+	}
 }
 
 template <class CONFIG>
@@ -1855,6 +1870,10 @@ void CPU<CONFIG>::Rfmci()
 	SetMSR(GetMCSRR1());
 }
 
+template <class CONFIG>
+void CPU<CONFIG>::Idle()
+{
+}
 
 template <class CONFIG>
 ostream& operator << (ostream& os, const MMUAccess<CONFIG>& mmu_access)
