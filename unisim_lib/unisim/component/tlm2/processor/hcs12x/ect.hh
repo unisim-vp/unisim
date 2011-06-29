@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2008, 2011
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -113,6 +113,16 @@ public:
 	//=                REGISTERS OFFSETS                      =
 	//=========================================================
 
+	enum REGS_OFFSETS {TIOS, CFORC, OC7M, OC7D, TCNT_HIGH, TCNT_LOW, TSCR1,
+						TTOF, TCTL1, TCTL2, TCTL3, TCTL4, TIE, TSCR2, TFLG1, TFLG2,
+						TC0_HIGH, TC0_LOW, TC1_HIGH, TC1_LOW, TC2_HIGH, TC2_LOW,
+						TC3_HIGH, TC3_LOW, TC4_HIGH, TC4_LOW, TC5_HIGH, TC5_LOW,
+						TC6_HIGH, TC6_LOW, TC7_HIGH, TC7_LOW, PACTL, PAFLG,
+						PACN3, PACN2, PACN1, PACN0, MCCTL, MCFLG, ICPAR, DLYCT,
+						ICOVW, ICSYS, RESERVED, TIMTST, PTPSR, PTMCPSR, PBCTL,
+						PBFLG, PA3H, PA2H, PA1H, PA0H, MCCNT_HIGH, MCCNT_LOW,
+						TC0H_HIGH, TC0H_LOW, TC1H_HIGH, TC1H_LOW,
+						TC2H_HIGH, TC2H_LOW, TC3H_HIGH, TC3H_LOW};
 
 	//=========================================================
 	//=                MODULE INTERFACE                       =
@@ -135,7 +145,7 @@ public:
 
 	void run();
 	void assertInterrupt(uint8_t interrupt_offset);
-	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -179,8 +189,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, uint8_t &value);
-    bool write(uint8_t offset, uint8_t val);
+    bool read(uint8_t offset, unsigned char* value, uint8_t size);
+    bool write(uint8_t offset, unsigned char* value, uint8_t size);
 
 
 protected:
@@ -214,7 +224,14 @@ private:
 	//=            REGISTER SET    =
 	//==============================
 
+	uint8_t	tios_register, cforc_register, oc7m_register, oc7d_register,
+			tscr1_register, tie_register, tscr2_register, tflg1_register, tflg2_register,
+			pactl_register, paflg_register, mcctl_register, mcflg_register, icpar_register,
+			dlyct_register, icovw_register, icsys_register, reserved_address, timtst_register,
+			ptpsr_register, ptmcpsr_register, pbctl_register, pbflg_register, paxh_registers[4];
 
+	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register, pacn32_register,
+			pacn10_register, tc_registers[8], mccnt_register, tcxh_registers[4];
 
 }; /* end class ECT */
 

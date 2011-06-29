@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2008, 2011
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -77,7 +77,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ECT::read_write);
-	bus_clock_socket.register_b_transport(this, &ECT::updateBusClock);
+	bus_clock_socket.register_b_transport(this, &ECT::updateCRGClock);
 
 	SC_HAS_PROCESS(ECT);
 
@@ -170,45 +170,559 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
-	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+	unsigned char* data_ptr = trans.get_data_ptr();
+	unsigned int data_length = trans.get_data_length();
 
 	assert(address >= baseAddress);
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		unsigned int data_length = trans.get_data_length();
-		memset(data_ptr, 0, data_length);
-		read(address - baseAddress, *data_ptr);
+		read(address - baseAddress, data_ptr, data_length);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-		write(address - baseAddress, *data_ptr);
+		write(address - baseAddress, data_ptr, data_length);
 	}
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-bool ECT::read(uint8_t offset, uint8_t &value) {
+bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
+
+	memset(value, 0, size);
 
 	switch (offset) {
+		case TIOS: {
+			*((uint8_t *)value) =  tios_register;
+		} break;
+		case CFORC: {
+			*((uint8_t *)value) = 0x00;
+		} break;
+		case OC7M: {
+			*((uint8_t *)value) = oc7m_register;
+		} break;
+		case OC7D: {
+			*((uint8_t *)value) =  oc7d_register;
+		} break;
+		case TCNT_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tcnt_register;
+			} else {
+				*((uint8_t *)value) = tcnt_register >> 8;
+			}
+
+		} break;
+		case TCNT_LOW: {
+			*((uint8_t *)value) = tcnt_register & 0x00FF;
+		} break;
+		case TSCR1: {
+			*((uint8_t *)value) = tscr1_register & 0xF8;
+		} break;
+		case TTOF: {
+			*((uint8_t *)value) = ttof_register;
+		} break;
+		case TCTL1: {
+			if (size == 2) {
+				*((uint16_t *)value) = tctl12_register;
+			} else {
+				*((uint8_t *)value) =  tctl12_register >> 8;
+			}
+
+		} break;
+		case TCTL2: {
+			*((uint8_t *)value) =  tctl12_register & 0x00FF;
+		} break;
+		case TCTL3: {
+			if (size == 2) {
+				*((uint16_t *)value) = tctl34_register;
+			} else {
+				*((uint8_t *)value) = tctl34_register >> 8;
+			}
+
+		} break;
+		case TCTL4: {
+			*((uint8_t *)value) = tctl34_register & 0x00FF;
+		} break;
+		case TIE: {
+			*((uint8_t *)value) =  tie_register;
+		} break;
+		case TSCR2: {
+			*((uint8_t *)value) =  tscr2_register & 0x8F;
+		} break;
+		case TFLG1: {
+			*((uint8_t *)value) = tflg1_register;
+		} break;
+		case TFLG2: {
+			*((uint8_t *)value) = tflg2_register;
+		} break;
+		case TC0_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[0];
+			} else {
+				*((uint8_t *)value) =  tc_registers[0] >> 8;
+			}
+		} break;
+		case TC0_LOW: {
+			*((uint8_t *)value) =  tc_registers[0] & 0x00FF;
+		} break;
+		case TC1_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[1];
+			} else {
+				*((uint8_t *)value) =  tc_registers[1] >> 8;
+			}
+		} break;
+		case TC1_LOW: {
+			*((uint8_t *)value) =  tc_registers[1] & 0x00FF;
+		} break;
+		case TC2_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[2];
+			} else {
+				*((uint8_t *)value) =  tc_registers[2] >> 8;
+			}
+		} break;
+		case TC2_LOW: {
+			*((uint8_t *)value) =  tc_registers[2] & 0x00FF;
+		} break;
+		case TC3_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[3];
+			} else {
+				*((uint8_t *)value) =  tc_registers[3] >> 8;
+			}
+		} break;
+		case TC3_LOW: {
+			*((uint8_t *)value) =  tc_registers[3] & 0x00FF;
+		} break;
+		case TC4_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[4];
+			} else {
+				*((uint8_t *)value) =  tc_registers[4] >> 8;
+			}
+		} break;
+		case TC4_LOW: {
+			*((uint8_t *)value) =  tc_registers[4] & 0x00FF;
+		} break;
+		case TC5_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[5];
+			} else {
+				*((uint8_t *)value) =  tc_registers[5] >> 8;
+			}
+		} break;
+		case TC5_LOW: {
+			*((uint8_t *)value) =  tc_registers[5] & 0x00FF;
+		} break;
+		case TC6_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[6];
+			} else {
+				*((uint8_t *)value) =  tc_registers[6] >> 8;
+			}
+		} break;
+		case TC6_LOW: {
+			*((uint8_t *)value) =  tc_registers[6] & 0x00FF;
+		} break;
+		case TC7_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tc_registers[7];
+			} else {
+				*((uint8_t *)value) =  tc_registers[7] >> 8;
+			}
+		} break;
+		case TC7_LOW: {
+			*((uint8_t *)value) =  tc_registers[7] & 0x00FF;
+		} break;
+		case PACTL: {
+			*((uint8_t *)value) =  pactl_register & 0x7F;
+		} break;
+		case PAFLG: {
+			*((uint8_t *)value) = paflg_register & 0x03;
+		} break;
+		case PACN3: {
+			if (size == 2) {
+				*((uint16_t *)value) = pacn32_register;
+			} else {
+				*((uint8_t *)value) = pacn32_register >> 8;
+			}
+		} break;
+		case PACN2: {
+			*((uint8_t *)value) = pacn32_register & 0x00FF;
+		} break;
+		case PACN1: {
+			if (size == 2) {
+				*((uint16_t *)value) = pacn10_register;
+			} else {
+				*((uint8_t *)value) = pacn10_register >> 8;
+			}
+		} break;
+		case PACN0: {
+			*((uint8_t *)value) = pacn10_register & 0x00FF;
+		} break;
+		case MCCTL: {
+			*((uint8_t *)value) = mcctl_register & 0xE7;
+		} break;
+		case MCFLG: {
+			*((uint8_t *)value) = mcflg_register & 0x8F;
+		} break;
+		case ICPAR: {
+			*((uint8_t *)value) = icpar_register & 0x0F;
+		} break;
+		case DLYCT: {
+			*((uint8_t *)value) = dlyct_register;
+		} break;
+		case ICOVW: {
+			*((uint8_t *)value) = icovw_register;
+		} break;
+		case ICSYS: {
+			*((uint8_t *)value) = icsys_register;
+		} break;
+		case RESERVED: { /* Reserved Address */} break;
+		case TIMTST: { /* Timer Test Register */} break;
+		case PTPSR: {
+			*((uint8_t *)value) = ptpsr_register;
+		} break;
+		case PTMCPSR: {
+			*((uint8_t *)value) = ptmcpsr_register;
+		} break;
+		case PBCTL: {
+			*((uint8_t *)value) = pbctl_register & 0x42;
+		} break;
+		case PBFLG: {
+			*((uint8_t *)value) = pbflg_register & 0x02;
+		} break;
+		case PA3H: {
+			*((uint8_t *)value) = paxh_registers[3];
+		} break;
+		case PA2H: {
+			*((uint8_t *)value) = paxh_registers[2];
+		} break;
+		case PA1H: {
+			*((uint8_t *)value) = paxh_registers[1];
+		} break;
+		case PA0H: {
+			*((uint8_t *)value) = paxh_registers[0];
+		} break;
+		case MCCNT_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = mccnt_register;
+			} else {
+				*((uint8_t *)value) = mccnt_register >> 8;
+			}
+
+		} break;
+		case MCCNT_LOW: {
+			*((uint8_t *)value) = mccnt_register & 0x00FF;
+		} break;
+		case TC0H_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tcxh_registers[0];
+			} else {
+				*((uint8_t *)value) = tcxh_registers[0] >> 8;
+			}
+
+		} break;
+		case TC0H_LOW: {
+			*((uint8_t *)value) = tcxh_registers[0] & 0x00FF;
+		} break;
+		case TC1H_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tcxh_registers[1];
+			} else {
+				*((uint8_t *)value) = tcxh_registers[1] >> 8;
+			}
+
+		} break;
+		case TC1H_LOW: {
+			*((uint8_t *)value) = tcxh_registers[1] & 0x00FF;
+		} break;
+		case TC2H_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tcxh_registers[2];
+			} else {
+				*((uint8_t *)value) = tcxh_registers[2] >> 8;
+			}
+
+		} break;
+		case TC2H_LOW: {
+			*((uint8_t *)value) = tcxh_registers[2] & 0x00FF;
+		} break;
+		case TC3H_HIGH: {
+			if (size == 2) {
+				*((uint16_t *)value) = tcxh_registers[3];
+			} else {
+				*((uint8_t *)value) = tcxh_registers[3] >> 8;
+			}
+
+		} break;
+		case TC3H_LOW: {
+			*((uint8_t *)value) = tcxh_registers[3] & 0x00FF;
+		} break;
+
 		default: {
-//			char buff[30];
-//			sprintf(buff,"%d",offset);
-//			std::cerr << "Warning: ECT => Read Request not supported for register at offset = " << buff << std::endl;
+			return false;
 		}
 	}
 
-	return false;
+	return true;
 }
 
-bool ECT::write(uint8_t offset, uint8_t value) {
+bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 
 	switch (offset) {
+		case TIOS: {
+			 tios_register = *((uint8_t *)value);
+		} break;
+		case CFORC: {
+			cforc_register = *((uint8_t *)value);
+		} break;
+		case OC7M: {
+			oc7m_register = *((uint8_t *)value);
+		} break;
+		case OC7D: {
+			oc7d_register = *((uint8_t *)value);
+		} break;
+		case TCNT_HIGH: {
+			if (size == 2) {
+				tcnt_register = *((uint16_t *)value);
+			} else {
+				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+
+		} break;
+		case TCNT_LOW: {
+			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TSCR1: {
+			tscr1_register = (tscr1_register & 0x07) | (*((uint8_t *)value) & 0xF8);
+		} break;
+		case TTOF: {
+			ttof_register = *((uint8_t *)value);
+		} break;
+		case TCTL1: {
+			if (size == 2) {
+				tctl12_register = *((uint16_t *)value);
+			} else {
+				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+
+		} break;
+		case TCTL2: {
+			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TCTL3: {
+			if (size == 2) {
+				tctl34_register = *((uint16_t *)value);
+			} else {
+				tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TCTL4: {
+			tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TIE: {
+			tie_register = *((uint8_t *)value);
+		} break;
+		case TSCR2: {
+			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)value) & 0x8F);
+		} break;
+		case TFLG1: {
+			tflg1_register = *((uint8_t *)value);
+		} break;
+		case TFLG2: {
+			tflg2_register = (tflg2_register & 0x7F) | (*((uint8_t *)value) & 0x80);
+		} break;
+		case TC0_HIGH: {
+			if (size == 2) {
+				tc_registers[0] = *((uint16_t *)value);
+			} else {
+				tc_registers[0] = (tc_registers[0] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC0_LOW: {
+			tc_registers[0] = (tc_registers[0] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC1_HIGH: {
+			if (size == 2) {
+				tc_registers[1] = *((uint16_t *)value);
+			} else {
+				tc_registers[1] = (tc_registers[1] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC1_LOW: {
+			tc_registers[1] = (tc_registers[1] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC2_HIGH: {
+			if (size == 2) {
+				tc_registers[2] = *((uint16_t *)value);
+			} else {
+				tc_registers[2] = (tc_registers[2] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC2_LOW: {
+			tc_registers[2] = (tc_registers[2] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC3_HIGH: {
+			if (size == 2) {
+				tc_registers[3] = *((uint16_t *)value);
+			} else {
+				tc_registers[3] = (tc_registers[3] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC3_LOW: {
+			tc_registers[3] = (tc_registers[3] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC4_HIGH: {
+			if (size == 2) {
+				tc_registers[4] = *((uint16_t *)value);
+			} else {
+				tc_registers[4] = (tc_registers[4] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC4_LOW: {
+			tc_registers[4] = (tc_registers[4] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC5_HIGH: {
+			if (size == 2) {
+				tc_registers[5] = *((uint16_t *)value);
+			} else {
+				tc_registers[5] = (tc_registers[5] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC5_LOW: {
+			tc_registers[5] = (tc_registers[5] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC6_HIGH: {
+			if (size == 2) {
+				tc_registers[6] = *((uint16_t *)value);
+			} else {
+				tc_registers[6] = (tc_registers[6] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC6_LOW: {
+			tc_registers[6] = (tc_registers[6] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC7_HIGH: {
+			if (size == 2) {
+				tc_registers[7] = *((uint16_t *)value);
+			} else {
+				tc_registers[7] = (tc_registers[7] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case TC7_LOW: {
+			tc_registers[7] = (tc_registers[7] & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case PACTL: {
+			pactl_register = (pactl_register & 0x80) | (*((uint8_t *)value) & 0x7F);
+		} break;
+		case PAFLG: {
+			paflg_register = (paflg_register & 0xFC) | (*((uint8_t *)value) & 0x03);
+		} break;
+		case PACN3: {
+			if (size == 2) {
+				pacn32_register = *((uint16_t *)value);
+			} else {
+				pacn32_register = (pacn32_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case PACN2: {
+			pacn32_register = (pacn32_register & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case PACN1: {
+			if (size == 2) {
+				pacn10_register = *((uint16_t *)value);
+			} else {
+				pacn10_register = (pacn10_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+			}
+		} break;
+		case PACN0: {
+			pacn10_register = (pacn10_register & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case MCCTL: {
+			mcctl_register = *((uint8_t *)value);
+		} break;
+		case MCFLG: {++
+			mcflg_register = (mcflg_register & 0x7F) | (*((uint8_t *)value) & 0x80);
+		} break;
+		case ICPAR: {
+			icpar_register = (icpar_register & 0xF0) | (*((uint8_t *)value) & 0x0F);
+		} break;
+		case DLYCT: {
+			dlyct_register = *((uint8_t *)value);
+		} break;
+		case ICOVW: {
+			icovw_register = *((uint8_t *)value);
+		} break;
+		case ICSYS: {
+			icsys_register = *((uint8_t *)value);
+		} break;
+		case RESERVED: { /* Reserved Address */} break;
+		case TIMTST: { /* Timer Test Register */} break;
+		case PTPSR: {
+			ptpsr_register = *((uint8_t *)value);
+		} break;
+		case PTMCPSR: {
+			ptmcpsr_register = *((uint8_t *)value);
+		} break;
+		case PBCTL: {
+			pbctl_register = (pbctl_register & 0xBD) | (*((uint8_t *)value) & 0x42);
+		} break;
+		case PBFLG: {
+			pbflg_register = (pbflg_register & 0xFD) | (*((uint8_t *)value) & 0x02);
+		} break;
+		case PA3H: {
+			/* don't accept write */;
+		} break;
+		case PA2H: {
+			/* don't accept write */;
+		} break;
+		case PA1H: {
+			/* don't accept write */;
+		} break;
+		case PA0H: {
+			/* don't accept write */;
+		} break;
+		case MCCNT_HIGH: {
+			if (size == 2) {
+				mccnt_register = *((uint16_t *)value);
+			} else {
+				mccnt_register = (mccnt_register & 0x00FF) | ((uint16_t) (*((uint8_t *)value) << 8));
+			}
+
+		} break;
+		case MCCNT_LOW: {
+			mccnt_register = (mccnt_register & 0xFF00) | *((uint8_t *)value);
+		} break;
+		case TC0H_HIGH: {
+			/* don't accept write */;
+		} break;
+		case TC0H_LOW: {
+			/* don't accept write */;
+		} break;
+		case TC1H_HIGH: {
+			/* don't accept write */;
+		} break;
+		case TC1H_LOW: {
+			/* don't accept write */;
+		} break;
+		case TC2H_HIGH: {
+			/* don't accept write */;
+		} break;
+		case TC2H_LOW: {
+			/* don't accept write */;
+		} break;
+		case TC3H_HIGH: {
+			/* don't accept write */;
+		} break;
+		case TC3H_LOW: {
+			/* don't accept write */;
+		} break;
+
 		default: {
-//			char buff[30];
-//			sprintf(buff,"%d",offset);
-//			std::cerr << "Warning: ECT => Write Request not supported for register at offset = " << buff << std::endl;
+			return false;
 		}
 	}
 
-	return false;
+	return true;
 }
 
 //=====================================================================
@@ -258,6 +772,39 @@ void ECT::OnDisconnect() {
 
 void ECT::Reset() {
 
+		tios_register = 0x00;
+		cforc_register = 0x00;
+		oc7m_register = 0x00;
+		oc7d_register = 0x00;
+		tcnt_register = 0x0000;
+		tscr1_register = 0x0000;
+		ttof_register = 0x00;
+		tctl12_register = 0x0000;
+		tctl34_register = 0x0000;
+		tie_register = 0x0000;
+		tscr2_register = 0x00;
+		tflg1_register = 0x00;
+		tflg2_register = 0x00;
+		for (uint8_t i=0; i<8; i++) { tc_registers[i] = 0x0000; }
+		pactl_register = 0x00;
+		paflg_register = 0x00;
+		pacn32_register = 0x0000;
+		pacn10_register = 0x0000;
+		mcctl_register = 0x00;
+		mcflg_register = 0x00;
+		icpar_register = 0x00;
+		dlyct_register = 0x00;
+		icovw_register = 0x00;
+		icsys_register = 0x00;
+		timtst_register = 0x00;
+		ptpsr_register = 0x00;
+		ptmcpsr_register = 0x00;
+		pbctl_register = 0x00;
+		pbflg_register = 0x00;
+		for (uint8_t i=0; i<4; i++) { paxh_registers[i] = 0x00; }
+		mccnt_register = 0xFFFF;
+		for (uint8_t i=0; i<4; i++) { tcxh_registers[i] = 0x0000; }
+
 }
 
 void ECT::ComputeInternalTime() {
@@ -265,7 +812,7 @@ void ECT::ComputeInternalTime() {
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 }
 
-void ECT::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
