@@ -26,6 +26,8 @@
 			<file>share/linux/unisim-armemu.desktop.in</file>
 			<file>share/linux/find_deb_dependencies.sh</file>
 			<file>share/python/demo.py.in</file>
+			<file>share/python/demo2.py.in</file>
+			<file>python/UnisimPython.cmake</file>
 			<file>python/py_simulator.hh</file>
 			<file>python/py_simulator.cc</file>
 			<file>python/py_variable.hh</file>
@@ -44,6 +46,7 @@
 		<depends>
 			<dep>unisim</dep>
 			<dep>osci_systemc</dep>
+			<dep>unisim::uapi</dep>
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::component::tlm2::processor::arm::armemu</dep>
 			<dep>unisim::component::tlm2::memory::ram</dep>
