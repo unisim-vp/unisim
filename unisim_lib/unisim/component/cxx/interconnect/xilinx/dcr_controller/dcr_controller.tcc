@@ -56,7 +56,7 @@ DCRController<CONFIG>::DCRController(const char *name, Object *parent)
 	: Object(name, parent, "A Device Control Register bus controller")
 	, logger(*this)
 	, indirect_mode_address_register(0)
-	, dcr_controller_status_and_control_register(CONFIG::DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_RESET_VALUE)
+	, dcr_controller_status_and_control_register(DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_RESET_VALUE)
 	, verbose(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
@@ -76,16 +76,16 @@ bool DCRController<CONFIG>::IsVerbose() const
 template <class CONFIG>
 bool DCRController<CONFIG>::IsMappedDCR(uint32_t dcrn) const
 {
-	return (dcrn >= CONFIG::DCR_CONTROLLER_BASEADDR) && (dcrn < (CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::DCR_CONTROLLER_LOCATIONS));
+	return (dcrn >= DCR_CONTROLLER_BASEADDR) && (dcrn < (DCR_CONTROLLER_BASEADDR + CONFIG::DCR_CONTROLLER_LOCATIONS));
 }
 
 template <class CONFIG>
 int DCRController<CONFIG>::Route(uint32_t dcrn)
 {
-	if(dcrn < CONFIG::DCR_CONTROLLER_BASEADDR) return CONFIG::EXTERNAL_SLAVE_NUM;
-	if(dcrn >= (CONFIG::DCR_CONTROLLER_BASEADDR + CONFIG::DCR_CONTROLLER_LOCATIONS)) return CONFIG::EXTERNAL_SLAVE_NUM;
+	if(dcrn < DCR_CONTROLLER_BASEADDR) return CONFIG::EXTERNAL_SLAVE_NUM;
+	if(dcrn >= (DCR_CONTROLLER_BASEADDR + CONFIG::DCR_CONTROLLER_LOCATIONS)) return CONFIG::EXTERNAL_SLAVE_NUM;
 	
-	uint32_t offset = dcrn - CONFIG::DCR_CONTROLLER_BASEADDR;
+	uint32_t offset = dcrn - DCR_CONTROLLER_BASEADDR;
 	if((offset >= CONFIG::APU_LOW) && (offset <= CONFIG::APU_HIGH)) return GetSlaveInterface(CONFIG::APU_SLAVE_NUM);
 	if((offset >= CONFIG::MCI_LOW) && (offset <= CONFIG::MCI_HIGH)) return GetSlaveInterface(CONFIG::MCI_SLAVE_NUM);
 	if((offset >= CONFIG::CROSSBAR_LOW) && (offset <= CONFIG::CROSSBAR_HIGH)) return GetSlaveInterface(CONFIG::CROSSBAR_SLAVE_NUM);
@@ -139,7 +139,7 @@ unsigned int DCRController<CONFIG>::GetMaster(int intf) const
 template <class CONFIG>
 void DCRController<CONFIG>::Read(uint32_t dcrn, uint32_t& value)
 {
-	uint32_t offset = dcrn - CONFIG::DCR_CONTROLLER_BASEADDR;
+	uint32_t offset = dcrn - DCR_CONTROLLER_BASEADDR;
 	
 	switch(offset)
 	{
@@ -180,7 +180,7 @@ void DCRController<CONFIG>::Write(unsigned int num_master, uint32_t dcrn, uint32
 		logger << " master writing 0x" << std::hex << value << std::dec << " into DCR #0x" << std::hex << dcrn << std::dec << EndDebugInfo;
 	}
 
-	uint32_t offset = dcrn - CONFIG::DCR_CONTROLLER_BASEADDR;
+	uint32_t offset = dcrn - DCR_CONTROLLER_BASEADDR;
 	
 	switch(offset)
 	{

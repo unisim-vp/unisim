@@ -36,38 +36,34 @@
 #include "config.h"
 #endif
 
-#include <unisim/component/cxx/processor/powerpc/ppc440/config.hh>
+// Class definition of components
 #include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
 #include <unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.hh>
-#include <unisim/component/cxx/interrupt/xilinx/xps_intc/config.hh>
 #include <unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.hh>
-#include <unisim/component/cxx/timer/xilinx/xps_timer/config.hh>
 #include <unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/config.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 #include <unisim/component/tlm2/memory/flash/am29/am29.hh>
-#include <unisim/component/cxx/memory/flash/am29/s29gl256p_config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh>
-#include <unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh>
-#include <unisim/component/cxx/interconnect/xilinx/crossbar/config.hh>
 #include <unisim/component/tlm2/interconnect/xilinx/mci/mci.hh>
-#include <unisim/component/cxx/interconnect/xilinx/mci/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
-#include <unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh>
-#include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.tcc>
-#include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.tcc>
-#include <unisim/component/cxx/com/xilinx/xps_gpio/config.hh>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh>
-#include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc>
 #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.hh>
-#include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.tcc>
 
+// Simulator compile time configuration
+#include <config.hh>
 
+// Template class implementation of components
+// #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
+// #include <unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.tcc>
+// #include <unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.tcc>
+// #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc>
+// #include <unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.tcc>
+
+// Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
@@ -80,10 +76,10 @@
 #include <unisim/service/tee/loader/tee.hh>
 #include <unisim/service/tee/symbol_table_lookup/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
-
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
+// Host machine standard headers
 #include <iostream>
 #include <stdexcept>
 #include <stdlib.h>
@@ -133,95 +129,6 @@ private:
 	static const bool DEBUG_INFORMATION = false;
 #endif
 
-#ifdef WITH_FPU
-#ifdef DEBUG_VIRTEX5FXT
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU CPU_CONFIG;
-#else
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU CPU_CONFIG;
-#endif
-#else
-#ifdef DEBUG_VIRTEX5FXT
-	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig CPU_CONFIG;
-#else
-	typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
-#endif
-#endif
-
-#ifdef DEBUG_VIRTEX5FXT
-	class MPLBDebugConfig : public unisim::component::tlm2::interconnect::generic_router::VerboseConfig
-	{
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 9;
-		static const unsigned int MAX_NUM_MAPPINGS = 9;
-		static const unsigned int BUSWIDTH = 128;
-	};
-
-	typedef MPLBDebugConfig MPLB_CONFIG;
-#else
-	class MPLBConfig : public unisim::component::tlm2::interconnect::generic_router::Config
-	{
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 9;
-		static const unsigned int MAX_NUM_MAPPINGS = 9;
-		static const unsigned int BUSWIDTH = 128;
-	};
-
-	typedef MPLBConfig MPLB_CONFIG;
-#endif
-
-	typedef unisim::component::cxx::interrupt::xilinx::xps_intc::Config INTC_CONFIG;
-	typedef unisim::component::cxx::timer::xilinx::xps_timer::Config TIMER_CONFIG;
-	typedef unisim::component::cxx::com::xilinx::xps_uart_lite::Config UART_LITE_CONFIG;
-
-	class GPIO_DIP_SWITCHES_8BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
-	{
-	public:
-		static const unsigned int C_GPIO_WIDTH = 8;          // The width in bits of GPIO Channel 1
-		static const MEMORY_ADDR C_BASEADDR = 0x81460000ULL; // XPS GPIO Base Address default value
-		static const MEMORY_ADDR C_HIGHADDR = 0x8146ffffULL; // XPS GPIO High Address default value
-		
-		// Optional features
-		static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
-	};
-
-	class GPIO_LEDS_8BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
-	{
-	public:
-		static const unsigned int C_GPIO_WIDTH = 8;          // The width in bits of GPIO Channel 1
-		static const MEMORY_ADDR C_BASEADDR = 0x81400000ULL; // XPS GPIO Base Address default value
-		static const MEMORY_ADDR C_HIGHADDR = 0x8140ffffULL; // XPS GPIO High Address default value
-	};
-
-	class GPIO_5_LEDS_POSITIONS_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
-	{
-	public:
-		static const unsigned int C_GPIO_WIDTH = 5;          // The width in bits of GPIO Channel 1
-		static const MEMORY_ADDR C_BASEADDR = 0x81420000ULL; // XPS GPIO Base Address default value
-		static const MEMORY_ADDR C_HIGHADDR = 0x8142ffffULL; // XPS GPIO High Address default value
-	};
-
-	class GPIO_PUSH_BUTTONS_5BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
-	{
-	public:
-		static const unsigned int C_GPIO_WIDTH = 5;          // The width in bits of GPIO Channel 1
-		static const MEMORY_ADDR C_BASEADDR = 0x81440000ULL; // XPS GPIO Base Address default value
-		static const MEMORY_ADDR C_HIGHADDR = 0x8144ffffULL; // XPS GPIO High Address default value
-		
-		// Optional features
-		static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
-	};
-
-	//=========================================================================
-	//===                            IRQ mapping                            ===
-	//=========================================================================
-
-	static const unsigned int TIMER_IRQ = 3;
-	static const unsigned int UART_LITE_IRQ = 2;
-	static const unsigned int GPIO_DIP_SWITCHES_8BIT_IRQ = 7;
-	static const unsigned int GPIO_PUSH_BUTTONS_5BIT_IRQ = 8;
-
 	//=========================================================================
 	//===                       Constants definitions                       ===
 	//=========================================================================
@@ -230,10 +137,6 @@ private:
 	typedef CPU_CONFIG::address_t CPU_ADDRESS_TYPE;
 	typedef CPU_CONFIG::physical_address_t FSB_ADDRESS_TYPE;
 	typedef uint32_t CPU_REG_TYPE;
-	typedef unisim::component::cxx::memory::flash::am29::S29GL256PConfig AM29_CONFIG;
-	typedef unisim::component::cxx::interconnect::xilinx::dcr_controller::Config DCR_CONTROLLER_CONFIG;
-	typedef unisim::component::cxx::interconnect::xilinx::crossbar::Config CROSSBAR_CONFIG;
-	typedef unisim::component::cxx::interconnect::xilinx::mci::Config MCI_CONFIG;
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
@@ -381,10 +284,10 @@ private:
 #endif
 };
 
-const unsigned int Simulator::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH;
-const unsigned int Simulator::GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH;
-const unsigned int Simulator::GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH;
-const unsigned int Simulator::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH;
+const unsigned int GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH;
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)

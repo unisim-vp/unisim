@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2011,
+ *  Copyright (c) 2010-2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,21 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <unisim/component/cxx/com/xilinx/xps_gpio/config.hh>
+#include "unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh"
+#include "unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc"
+#include "config.hh"
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace com {
-namespace xilinx {
-namespace xps_gpio {
-
-const unsigned int Config::C_GPIO_WIDTH;
-const unsigned int Config::C_GPIO2_WIDTH;
-	
-} // end of namespace xps_gpio
-} // end of namespace xilinx
-} // end of namespace com
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
+template class unisim::component::tlm2::com::xilinx::xps_gpio::GPIO_LEDs<GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH>;

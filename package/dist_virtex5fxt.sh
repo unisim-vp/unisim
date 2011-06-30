@@ -166,20 +166,12 @@ unisim/component/cxx/processor/powerpc/ppc440/config.cc \
 unisim/component/cxx/processor/powerpc/ppc440/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
-unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
-unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/cxx/timer/xilinx/xps_timer/config.cc \
 unisim/component/cxx/memory/flash/am29/am29.cc \
 unisim/component/cxx/memory/flash/am29/s29gl256p.cc \
 unisim/component/cxx/memory/flash/am29/s29gl256p_config.cc \
-unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
-unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/cxx/interconnect/xilinx/mci/mci.cc \
-unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
-unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.cc \
 unisim/component/cxx/com/xilinx/xps_gpio/config.cc \
-unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
-unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
@@ -189,11 +181,7 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
-unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
-unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
 unisim/component/tlm2/interconnect/xilinx/mci/mci.cc \
-unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.cc \
-unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.cc
 "
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
@@ -509,8 +497,24 @@ string"
 
 UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES="\
 main.cc \
+config.cc \
+mplb.cc \
+intc.cc \
+timer.cc \
+dcr_controller.cc \
+crossbar.cc \
+uart_lite.cc \
+gpio_dip_switches_8bit.cc \
+gpio_leds_8bit.cc \
+gpio_5_leds_positions.cc \
+gpio_push_buttons_5bit.cc \
+dip_switches_8bit.cc \
+leds_8bit.cc \
+5_leds_positions.cc \
+push_buttons_5bit.cc \
 "
 UNISIM_SIMULATORS_VIRTEX5FXT_HEADER_FILES="\
+config.hh \
 "
 
 UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES=

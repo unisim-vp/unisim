@@ -179,7 +179,7 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 {
 	bool status = true;
 	typename CONFIG::MEMORY_ADDR offset = addr - c_baseaddr;
-	uint8_t reg_value;
+	uint8_t reg_value = 0;
 	switch(offset)
 	{
 		case CONFIG::RX_FIFO + 3:
@@ -195,7 +195,6 @@ bool XPS_UARTLite<CONFIG>::Read(typename CONFIG::MEMORY_ADDR addr, uint8_t& valu
 		case CONFIG::STAT_REG + 3:
 			reg_value = debug ? GetSTAT_REG() : ReadSTAT_REG();
 			break;
-		default: reg_value = 0; break;
 	}
 	
 	if(IsVerbose())

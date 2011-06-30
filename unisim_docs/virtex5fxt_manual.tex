@@ -4,6 +4,8 @@
 \usepackage{ulem}
 \usepackage{supertabular}
 \usepackage{fancyhdr}
+\usepackage{rotating}
+\usepackage{verbatim} 
 \voffset -1.5cm
 \hoffset 0.0cm
 \textheight 25cm
@@ -12,9 +14,12 @@
 \oddsidemargin 0.0cm
 \evensidemargin 0.0cm
 
-\usepackage{hyperref}%                   % Utilisation de HyperTeX
+\newcommand{\VROT}[1]{\begin{turn}{90}#1\end{turn}}     % vertical text
+\def\X{$\surd$}     % tick symbol
 
-\lhead{\includegraphics[width=1.0cm]{logo_unisim.pdf}}
+\newenvironment{script}{\endgraf\footnotesize\verbatim}{\endverbatim}
+
+\usepackage{hyperref}%                   % Utilisation de HyperTeX
 
 \hypersetup{
     pdfauthor   = {Gilles Mouchard},%
@@ -34,5 +39,14 @@
 
 \maketitle
 \input{virtex5fxt/virtex5fxt}
+
+\appendix
+\section{Simulator technical reference (generated) }
+\label{techref}
+
+\input{virtex5fxt/techref}
+
+\bibliographystyle{plain}
+\bibliography{virtex5fxt/virtex5fxt}
 
 \end{document}
