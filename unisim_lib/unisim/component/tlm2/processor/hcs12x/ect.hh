@@ -143,9 +143,10 @@ public:
 	ECT(const sc_module_name& name, Object *parent = 0);
 	virtual ~ECT();
 
-	void run();
+	void start();
 	void assertInterrupt(uint8_t interrupt_offset);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void runCaptureCompareAction();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -194,6 +195,8 @@ public:
 
 
 protected:
+    inline bool isInputCapture(uint8_t channel_index);
+    inline bool transferOutputCompareToTimerPort(uint8_t channel_index);
 
 private:
 	void ComputeInternalTime();
@@ -232,6 +235,29 @@ private:
 
 	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register, pacn32_register,
 			pacn10_register, tc_registers[8], mccnt_register, tcxh_registers[4];
+
+	class Channel_t : public sc_module {
+	public:
+
+		Channel_t(const sc_module_name& name, ECT *parent, const uint8_t channel_number, uint16_t *tc_ptr);
+
+		void Run();
+		void runCaptureCompareAction();
+		void wakeup();
+		void disable();
+
+	private:
+
+		uint16_t *tc_register_ptr;
+
+		uint8_t channel_index;
+		uint8_t channelMask;
+		ECT	*ectParent;
+		sc_event wakeup_event;
+
+		template <class T> void checkChangeStateAndWait(const sc_time clk);
+
+	} *channel[8];
 
 }; /* end class ECT */
 

@@ -43,6 +43,9 @@ namespace hcs12x {
 
 using unisim::util::debug::SimpleRegister;
 
+template void ECT::Channel_t::checkChangeStateAndWait<uint8_t>(const sc_time clk);
+template void ECT::Channel_t::checkChangeStateAndWait<uint16_t>(const sc_time clk);
+
 ECT::ECT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
@@ -75,13 +78,24 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
+	uint8_t channel_number;
+
+	char channelName[20];
+
+	for (uint8_t i=0; i<8; i++) {
+		channel_number = i;
+
+		sprintf (channelName, "channel_%d", channel_number);
+
+		channel[channel_number] = new Channel_t(channelName, this, channel_number, &tc_registers[i]);
+
+	}
+
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ECT::read_write);
 	bus_clock_socket.register_b_transport(this, &ECT::updateCRGClock);
 
-	SC_HAS_PROCESS(ECT);
-
-	SC_THREAD(run);
+	Reset();
 
 }
 
@@ -100,18 +114,15 @@ ECT::~ECT() {
 
 }
 
-void ECT::run() {
+void ECT::start() {
+	for (int i=0; i<8; i++) {
+		channel[i]->wakeup();
+	}
+}
 
-	sc_time delay = sc_time(1, SC_MS);
-
-	while (true) {
-
-		wait();
-//		wait(delay);
-//		for (int index=0; index < 8; index++) {
-//			assertInterrupt(interrupt_offset_channel0 - index*2);
-//		}
-
+void ECT::runCaptureCompareAction() {
+	for (int i=0; i<8; i++) {
+		channel[i]->runCaptureCompareAction();
 	}
 }
 
@@ -252,86 +263,6 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 		case TFLG2: {
 			*((uint8_t *)value) = tflg2_register;
 		} break;
-		case TC0_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[0];
-			} else {
-				*((uint8_t *)value) =  tc_registers[0] >> 8;
-			}
-		} break;
-		case TC0_LOW: {
-			*((uint8_t *)value) =  tc_registers[0] & 0x00FF;
-		} break;
-		case TC1_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[1];
-			} else {
-				*((uint8_t *)value) =  tc_registers[1] >> 8;
-			}
-		} break;
-		case TC1_LOW: {
-			*((uint8_t *)value) =  tc_registers[1] & 0x00FF;
-		} break;
-		case TC2_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[2];
-			} else {
-				*((uint8_t *)value) =  tc_registers[2] >> 8;
-			}
-		} break;
-		case TC2_LOW: {
-			*((uint8_t *)value) =  tc_registers[2] & 0x00FF;
-		} break;
-		case TC3_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[3];
-			} else {
-				*((uint8_t *)value) =  tc_registers[3] >> 8;
-			}
-		} break;
-		case TC3_LOW: {
-			*((uint8_t *)value) =  tc_registers[3] & 0x00FF;
-		} break;
-		case TC4_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[4];
-			} else {
-				*((uint8_t *)value) =  tc_registers[4] >> 8;
-			}
-		} break;
-		case TC4_LOW: {
-			*((uint8_t *)value) =  tc_registers[4] & 0x00FF;
-		} break;
-		case TC5_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[5];
-			} else {
-				*((uint8_t *)value) =  tc_registers[5] >> 8;
-			}
-		} break;
-		case TC5_LOW: {
-			*((uint8_t *)value) =  tc_registers[5] & 0x00FF;
-		} break;
-		case TC6_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[6];
-			} else {
-				*((uint8_t *)value) =  tc_registers[6] >> 8;
-			}
-		} break;
-		case TC6_LOW: {
-			*((uint8_t *)value) =  tc_registers[6] & 0x00FF;
-		} break;
-		case TC7_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tc_registers[7];
-			} else {
-				*((uint8_t *)value) =  tc_registers[7] >> 8;
-			}
-		} break;
-		case TC7_LOW: {
-			*((uint8_t *)value) =  tc_registers[7] & 0x00FF;
-		} break;
 		case PACTL: {
 			*((uint8_t *)value) =  pactl_register & 0x7F;
 		} break;
@@ -390,18 +321,7 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 		case PBFLG: {
 			*((uint8_t *)value) = pbflg_register & 0x02;
 		} break;
-		case PA3H: {
-			*((uint8_t *)value) = paxh_registers[3];
-		} break;
-		case PA2H: {
-			*((uint8_t *)value) = paxh_registers[2];
-		} break;
-		case PA1H: {
-			*((uint8_t *)value) = paxh_registers[1];
-		} break;
-		case PA0H: {
-			*((uint8_t *)value) = paxh_registers[0];
-		} break;
+
 		case MCCNT_HIGH: {
 			if (size == 2) {
 				*((uint16_t *)value) = mccnt_register;
@@ -413,52 +333,42 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 		case MCCNT_LOW: {
 			*((uint8_t *)value) = mccnt_register & 0x00FF;
 		} break;
-		case TC0H_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tcxh_registers[0];
-			} else {
-				*((uint8_t *)value) = tcxh_registers[0] >> 8;
-			}
-
-		} break;
-		case TC0H_LOW: {
-			*((uint8_t *)value) = tcxh_registers[0] & 0x00FF;
-		} break;
-		case TC1H_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tcxh_registers[1];
-			} else {
-				*((uint8_t *)value) = tcxh_registers[1] >> 8;
-			}
-
-		} break;
-		case TC1H_LOW: {
-			*((uint8_t *)value) = tcxh_registers[1] & 0x00FF;
-		} break;
-		case TC2H_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tcxh_registers[2];
-			} else {
-				*((uint8_t *)value) = tcxh_registers[2] >> 8;
-			}
-
-		} break;
-		case TC2H_LOW: {
-			*((uint8_t *)value) = tcxh_registers[2] & 0x00FF;
-		} break;
-		case TC3H_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = tcxh_registers[3];
-			} else {
-				*((uint8_t *)value) = tcxh_registers[3] >> 8;
-			}
-
-		} break;
-		case TC3H_LOW: {
-			*((uint8_t *)value) = tcxh_registers[3] & 0x00FF;
-		} break;
 
 		default: {
+			if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
+				uint8_t tc_offset = offset - TC0_HIGH;
+				if ((tc_offset % 2) == 0) // TCx_High ?
+				{
+					if (size == 2) {
+						*((uint16_t *)value) = tc_registers[tc_offset];
+					} else {
+						*((uint8_t *)value) =  tc_registers[tc_offset] >> 8;
+					}
+				} else {
+					*((uint8_t *)value) =  tc_registers[tc_offset] & 0x00FF;
+				}
+			}
+			else if ((offset >= PA3H) && (offset <= PA0H)) {
+				uint8_t paxh_offset = offset - PA3H;
+				*((uint8_t *)value) = paxh_registers[paxh_offset];
+			}
+			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
+				uint8_t tcxh_offset = offset - TC0H_HIGH;
+
+				if ((tcxh_offset % 2) == 0) // TCxH_High ?
+				{
+					if (size == 2) {
+						*((uint16_t *)value) = tcxh_registers[tcxh_offset];
+					} else {
+						*((uint8_t *)value) = tcxh_registers[tcxh_offset] >> 8;
+					}
+
+				} else {
+					*((uint8_t *)value) = tcxh_registers[tcxh_offset] & 0x00FF;
+
+				}
+			}
+
 			return false;
 		}
 	}
@@ -474,6 +384,7 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		} break;
 		case CFORC: {
 			cforc_register = *((uint8_t *)value);
+			runCaptureCompareAction();
 		} break;
 		case OC7M: {
 			oc7m_register = *((uint8_t *)value);
@@ -482,15 +393,20 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			oc7d_register = *((uint8_t *)value);
 		} break;
 		case TCNT_HIGH: {
+			cerr << "Warning:: Try writing to TCNT High register. Has no meaning or effect." << endl;
+/*
 			if (size == 2) {
 				tcnt_register = *((uint16_t *)value);
 			} else {
 				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 			}
-
+*/
 		} break;
 		case TCNT_LOW: {
+			cerr << "Warning:: Try writing to TCNT High register. Has no meaning or effect." << endl;
+/*
 			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value);
+*/
 		} break;
 		case TSCR1: {
 			tscr1_register = (tscr1_register & 0x07) | (*((uint8_t *)value) & 0xF8);
@@ -530,86 +446,6 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		} break;
 		case TFLG2: {
 			tflg2_register = (tflg2_register & 0x7F) | (*((uint8_t *)value) & 0x80);
-		} break;
-		case TC0_HIGH: {
-			if (size == 2) {
-				tc_registers[0] = *((uint16_t *)value);
-			} else {
-				tc_registers[0] = (tc_registers[0] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC0_LOW: {
-			tc_registers[0] = (tc_registers[0] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC1_HIGH: {
-			if (size == 2) {
-				tc_registers[1] = *((uint16_t *)value);
-			} else {
-				tc_registers[1] = (tc_registers[1] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC1_LOW: {
-			tc_registers[1] = (tc_registers[1] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC2_HIGH: {
-			if (size == 2) {
-				tc_registers[2] = *((uint16_t *)value);
-			} else {
-				tc_registers[2] = (tc_registers[2] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC2_LOW: {
-			tc_registers[2] = (tc_registers[2] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC3_HIGH: {
-			if (size == 2) {
-				tc_registers[3] = *((uint16_t *)value);
-			} else {
-				tc_registers[3] = (tc_registers[3] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC3_LOW: {
-			tc_registers[3] = (tc_registers[3] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC4_HIGH: {
-			if (size == 2) {
-				tc_registers[4] = *((uint16_t *)value);
-			} else {
-				tc_registers[4] = (tc_registers[4] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC4_LOW: {
-			tc_registers[4] = (tc_registers[4] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC5_HIGH: {
-			if (size == 2) {
-				tc_registers[5] = *((uint16_t *)value);
-			} else {
-				tc_registers[5] = (tc_registers[5] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC5_LOW: {
-			tc_registers[5] = (tc_registers[5] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC6_HIGH: {
-			if (size == 2) {
-				tc_registers[6] = *((uint16_t *)value);
-			} else {
-				tc_registers[6] = (tc_registers[6] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC6_LOW: {
-			tc_registers[6] = (tc_registers[6] & 0xFF00) | *((uint8_t *)value);
-		} break;
-		case TC7_HIGH: {
-			if (size == 2) {
-				tc_registers[7] = *((uint16_t *)value);
-			} else {
-				tc_registers[7] = (tc_registers[7] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-			}
-		} break;
-		case TC7_LOW: {
-			tc_registers[7] = (tc_registers[7] & 0xFF00) | *((uint8_t *)value);
 		} break;
 		case PACTL: {
 			pactl_register = (pactl_register & 0x80) | (*((uint8_t *)value) & 0x7F);
@@ -669,18 +505,6 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		case PBFLG: {
 			pbflg_register = (pbflg_register & 0xFD) | (*((uint8_t *)value) & 0x02);
 		} break;
-		case PA3H: {
-			/* don't accept write */;
-		} break;
-		case PA2H: {
-			/* don't accept write */;
-		} break;
-		case PA1H: {
-			/* don't accept write */;
-		} break;
-		case PA0H: {
-			/* don't accept write */;
-		} break;
 		case MCCNT_HIGH: {
 			if (size == 2) {
 				mccnt_register = *((uint16_t *)value);
@@ -692,37 +516,113 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		case MCCNT_LOW: {
 			mccnt_register = (mccnt_register & 0xFF00) | *((uint8_t *)value);
 		} break;
-		case TC0H_HIGH: {
-			/* don't accept write */;
-		} break;
-		case TC0H_LOW: {
-			/* don't accept write */;
-		} break;
-		case TC1H_HIGH: {
-			/* don't accept write */;
-		} break;
-		case TC1H_LOW: {
-			/* don't accept write */;
-		} break;
-		case TC2H_HIGH: {
-			/* don't accept write */;
-		} break;
-		case TC2H_LOW: {
-			/* don't accept write */;
-		} break;
-		case TC3H_HIGH: {
-			/* don't accept write */;
-		} break;
-		case TC3H_LOW: {
-			/* don't accept write */;
-		} break;
 
 		default: {
+			if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
+				uint8_t tc_offset = offset - TC0_HIGH;
+				if ((tc_offset % 2) == 0) // TCx_High ?
+				{
+					if (size == 2) {
+						tc_registers[tc_offset] = *((uint16_t *)value);
+					} else {
+						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+					}
+
+				} else {
+					tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)value);
+				}
+			}
+			else if ((offset >= PA3H) && (offset <= PA0H)) {
+				/* don't accept write */;
+			}
+			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
+				/* don't accept write */;
+			}
+
 			return false;
 		}
 	}
 
 	return true;
+}
+
+inline bool ECT::isInputCapture(uint8_t channel_index) {
+	if ((tios_register & (1 << channel_index)) == 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+inline bool ECT::transferOutputCompareToTimerPort(uint8_t channel_index) {
+	if ((oc7m_register & (1 << channel_index)) != 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+//=====================================================
+//=             ECT Channel methods                   =
+//=====================================================
+
+ECT::Channel_t::Channel_t(const sc_module_name& name, ECT *parent, const uint8_t channel_number, uint16_t *tc_ptr) :
+	sc_module(name)
+	, ectParent(parent)
+	, channel_index(channel_number)
+	, tc_register_ptr(tc_ptr)
+
+{
+
+	channelMask = (0x01 << channel_index);
+
+	SC_HAS_PROCESS(Channel_t);
+
+	SC_THREAD(Run);
+	sensitive << wakeup_event;
+}
+
+void ECT::Channel_t::Run() {
+
+	wait(wakeup_event);
+}
+
+void ECT::Channel_t::runCaptureCompareAction() {
+	/**
+	 * This method is called by writing to "CFORC" register or by starting output compare thread.
+	 * Run the action which is programmed for output compare "x" to occur immediately.
+	 * The interrupt flag does not get set. It is set by the caller if required.
+	 */
+
+	// check the associated bit in TIOS_register
+	if (ectParent->isInputCapture(channel_index))
+	{
+
+	}
+	else // the channel is set to output compare
+	{
+
+		/**
+		 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
+		 * will be transfered to the timer port on a successful channel 7 output compare ?
+		 */
+		if (ectParent->transferOutputCompareToTimerPort(channel_index)) {
+
+		}
+	}
+}
+
+template <class T> void ECT::Channel_t::checkChangeStateAndWait(const sc_time clk) {
+
+}
+
+
+void ECT::Channel_t::wakeup() {
+	wakeup_event.notify();
+}
+
+void ECT::Channel_t::disable() {
+
 }
 
 //=====================================================================
@@ -731,17 +631,147 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 
 bool ECT::BeginSetup() {
 
-	//	char buf[80];
-	//
-	//	sprintf(buf, "%s.ATDCTL0",name());
-	//	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
+	char buf[80];
+
+	sprintf(buf, "%s.TIOS",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tios_register);
+
+	sprintf(buf, "%s.CFORC",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cforc_register);
+
+	sprintf(buf, "%s.OC7M",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7m_register);
+
+	sprintf(buf, "%s.OC7D",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7d_register);
+
+	sprintf(buf, "%s.TCNT",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcnt_register);
+
+	sprintf(buf, "%s.TSCR1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr1_register);
+
+	sprintf(buf, "%s.TTOF",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttof_register);
+
+	sprintf(buf, "%s.TCTL12",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl12_register);
+
+	sprintf(buf, "%s.TCTL34",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl34_register);
+
+	sprintf(buf, "%s.TIE",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tie_register);
+
+	sprintf(buf, "%s.TSCR2",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr2_register);
+
+	sprintf(buf, "%s.TFLG1",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg1_register);
+
+	sprintf(buf, "%s.TFLG2",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg2_register);
+
+	sprintf(buf, "%s.TC0",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[0]);
+
+	sprintf(buf, "%s.TC1",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[1]);
+
+	sprintf(buf, "%s.TC2",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[2]);
+
+	sprintf(buf, "%s.TC3",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[3]);
+
+	sprintf(buf, "%s.TC4",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[4]);
+
+	sprintf(buf, "%s.TC5",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[5]);
+
+	sprintf(buf, "%s.TC6",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[6]);
+
+	sprintf(buf, "%s.TC7",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[7]);
+
+	sprintf(buf, "%s.PACTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pactl_register);
+
+	sprintf(buf, "%s.PAFLG",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paflg_register);
+
+	sprintf(buf, "%s.PACN32",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pacn32_register);
+
+	sprintf(buf, "%s.PACN10",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pacn10_register);
+
+	sprintf(buf, "%s.MCCTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcctl_register);
+
+	sprintf(buf, "%s.MCFLG",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcflg_register);
+
+	sprintf(buf, "%s.ICPAR",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icpar_register);
+
+	sprintf(buf, "%s.DLYCT",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &dlyct_register);
+
+	sprintf(buf, "%s.ICOVW",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icovw_register);
+
+	sprintf(buf, "%s.ICSYS",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icsys_register);
+
+	sprintf(buf, "%s.TIMTST",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &timtst_register);
+
+	sprintf(buf, "%s.PTPSR",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptpsr_register);
+
+	sprintf(buf, "%s.PTMCPSR",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptmcpsr_register);
+
+	sprintf(buf, "%s.PBCTL",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbctl_register);
+
+	sprintf(buf, "%s.PBFLG",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbflg_register);
+
+	sprintf(buf, "%s.PA3H",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[3]);
+
+	sprintf(buf, "%s.PA2H",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[2]);
+
+	sprintf(buf, "%s.PA1H",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[1]);
+
+	sprintf(buf, "%s.PA0H",name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[0]);
+
+	sprintf(buf, "%s.MCCNT",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &mccnt_register);
+
+	sprintf(buf, "%s.TC0H",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[0]);
+
+	sprintf(buf, "%s.TC1H",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[1]);
+
+	sprintf(buf, "%s.TC2H",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[2]);
+
+	sprintf(buf, "%s.TC3H",name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[3]);
 
 
-		Reset();
+	ComputeInternalTime();
 
-		ComputeInternalTime();
-
-		return true;
+	return true;
 }
 
 bool ECT::Setup(ServiceExportBase *srv_export) {
