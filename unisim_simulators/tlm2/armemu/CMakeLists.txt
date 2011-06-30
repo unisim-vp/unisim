@@ -30,10 +30,18 @@ if ( UNIX AND NOT APPLE )
 	message ( "**** Release = ${DISTRIB_ID}${DISTRIB_RELEASE}" )
 endif ( UNIX AND NOT APPLE )
 
-option ( BUILD_SIM_PIM_SUPPORT "Set this option if you want to compile the simulator for use with unisim-workbench." )
-
-option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
-option ( BUILD_ARMEMU_POWER_SUPPORT "Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required.")
+option ( 
+	BUILD_SIM_PIM_SUPPORT 
+	"Set this option if you want to compile the simulator for use with unisim-workbench."
+	)
+option ( 
+	BUILD_ARMEMU_PYTHON_MODULE 
+	"Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1."
+	)
+option ( 
+	BUILD_ARMEMU_POWER_SUPPORT 
+	"Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required."
+	)
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -51,25 +59,46 @@ set ( ARMEMU_EXEC_TARGET ${ARMEMU_EXEC_NAME}-exe )
 set ( ARMEMU_LIB_TARGET ${ARMEMU_LIB_NAME}-lib )
 set ( RELATIVE_SHARE_DIRECTORY "share/${ARMEMU_EXEC_NAME}" )
 set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
-set_property ( GLOBAL 
+set_property ( 
+	GLOBAL 
 	PROPERTY
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
-set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
+set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS 
+	*.cc *.tcc *.hh 
+	CACHE 
+	STRING "Extensions of the source files"
+	)
 
-set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
-set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/bin
+	)
+set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}
+	)
+set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/lib
+	)
 	
-set ( CXX_INCLUDES iostream list string )
+set ( CXX_INCLUDES 
+	iostream 
+	list
+	string 
+	)
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
 	if ( NOT HAVE_${CXX_INCLUDE} )
-		message ( SEND_ERROR "Could not find C++ header \"${CXX_INCLUDE}\"." )
+		message ( SEND_ERROR
+			"Could not find C++ header \"${CXX_INCLUDE}\"."
+			)
 	endif ( NOT HAVE_${CXX_INCLUDE} )
 endforeach ( CXX_INCLUDE )
 
-set ( C_INCLUDES getopt stdlib signal )
+set ( C_INCLUDES 
+	getopt 
+	stdlib
+	signal
+	)
 foreach ( C_INCLUDE ${C_INCLUDES} )
 	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
 	if ( NOT HAVE_${C_INCLUDE}_H )
@@ -86,7 +115,7 @@ set ( armemu_subdirs
 	unisim/service/debug/gdb_server
 	unisim/service/debug/inline_debugger
 	unisim/service/debug/sim_debugger
-	unisim/util/debug/debugger_handler
+	unisim/api/debug
 	unisim/service/loader/elf_loader
 	unisim/service/loader/linux_loader
 	unisim/service/os/linux_os/linux_os_32
@@ -232,10 +261,6 @@ add_custom_target ( armemu__share_python
 		"Setting python demos."
 	)
 
-configure_file (
-	${CMAKE_SOURCE_DIR}/share/python/demo.py.in
-	${SHARE_DIRECTORY}/python/demo.py )
-
 if ( APPLE )
 	configure_file ( 
 		${CMAKE_SOURCE_DIR}/share/macosx/armemu-launcher.sh.in
@@ -295,7 +320,7 @@ set ( armemu__libraries
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
-	unisim__util__debug__debugger_handler
+	unisim__api__debug
 	unisim__service__trap_handler
 	)
 if ( BUILD_SIM_PIM_SUPPORT )
@@ -346,7 +371,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__util__random',
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
-	 'unisim__util__debug__debugger_handler',
+	 'unisim__api__debug',
 	 'unisim__util__debug__blob',
 	 'unisim__util__xml',
 	 'unisim__kernel',
@@ -372,10 +397,6 @@ check_include_file ( editline/readline.h HAVE_editline_readline_H )
 if ( HAVE_editline_readline_H )
 	find_library ( LIBEDIT
 		edit )
-	if ( LIBEDIT )
-		set ( PYTHON__ARMEMU__LIBS
-			"${PYTHON__ARMEMU__LIBS},'edit'" )
-	endif ( LIBEDIT )
 endif ( HAVE_editline_readline_H )
 
 configure_file ( 
@@ -432,6 +453,39 @@ set_target_properties ( ${ARMEMU_EXEC_TARGET}
 # 		VERSION ${SIM_VERSION}
 # 		SOVERSION ${SIM_SOVERSION} )
 	
+set ( API__SIM_EXEC_NAME ${SIM_EXEC_NAME} )
+configure_file (
+	${CMAKE_SOURCE_DIR}/unisim/uapi/config.h.in
+	${CMAKE_BINARY_DIR}/unisim/uapi/config.h )
+set ( api_sources
+	${CMAKE_SOURCE_DIR}/unisim/uapi/uapi.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/simulator_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/variable_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.c
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/eapi_priv.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/types.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/debug/debug.h
+	${CMAKE_SOURCE_DIR}/unisim/uapi/debug/debug.c
+	)
+set_source_files_properties ( ${api_sources}
+	PROPERTIES
+		LANGUAGE CXX
+	)
+add_library ( libuapi SHARED
+	${api_sources}
+	)
+target_link_libraries ( libuapi
+	simulatorlib
+	)
+set_target_properties ( libuapi
+	PROPERTIES
+		COMPILE_DEFINITIONS SIM_LIBRARY )
+
 set ( armemu__deps
 	unisim__kernel
 	unisim__component__tlm2__processor__arm__armemu
@@ -442,7 +496,7 @@ set ( armemu__deps
 	unisim__service__debug__gdb_server
 	unisim__service__debug__inline_debugger
 	unisim__service__debug__sim_debugger
-	unisim__util__debug__debugger_handler
+	unisim__api__debug
 	unisim__service__loader__elf_loader
 	unisim__service__loader__linux_loader
 	unisim__service__os__linux_os__linux_os_32
@@ -484,64 +538,110 @@ add_custom_command (
 	)
 
 if ( BUILD_ARMEMU_PYTHON_MODULE )
+	set ( PYTHON__SIM__MODULE_NAME "armemu" )
+	set ( PYTHON__SIM__IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}" )
+	set ( PYTHON__SIM__EXTRA_COMPILE_FLAGS "-DSIM_LIBRARY" )
+	set ( PYTHON__SIM__SIM_EXEC_NAME ${ARMEMU_EXEC_NAME} )
+	set ( PYTHON__SIM__INCLUDE_DIRS
+		"'${CMAKE_SOURCE_DIR}',
+		 '${CMAKE_BINARY_DIR}',
+		 '${OSCI_SYSTEMC_INCLUDE_DIR}',
+		 '${OSCI_TLM2_INCLUDE_DIR}'")
+	set ( PYTHON__SIM__LIB_DIRS
+		"'${CMAKE_LIBRARY_OUTPUT_DIRECTORY}'")
+	set ( PYTHON__SIM__LIBS
+		"'libuapi'" )
+	if ( BUILD_POWER_SUPPORT )
+		get_filename_component ( lib_path ${CACTI_4_2_LIBRARY}
+			PATH )
+		set ( PYTHON__SIM__LIB_DIRS
+			"${PYTHON__SIM__LIB_DIRS},
+			 '${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}',
+			 '${lib_path}'")
+		get_filename_component ( lib_name ${CACTI_4_2_LIBRARY}
+			NAME_WE )
+		string ( REGEX REPLACE "^lib" "" lib_name ${lib_name} )
+		set ( PYTHON__SIM__LIBS
+			"${PYTHON__SIM__LIBS},
+			'unisim__service__power',
+			'${lib_name}'" )
+	endif ( BUILD_POWER_SUPPORT )
+	if ( LIBEDIT )
+		set ( PYTHON__SIM__LIBS
+			"${PYTHON__SIM__LIBS},'edit'" )
+	endif ( LIBEDIT )
+
+	include ( python/UnisimPython.cmake )
+
 	configure_file (
-		${CMAKE_SOURCE_DIR}/python/setup.py.in
-		${CMAKE_BINARY_DIR}/python/setup.py )
+		${CMAKE_SOURCE_DIR}/share/python/demo.py.in
+		${SHARE_DIRECTORY}/python/demo.py )
 	configure_file (
-		${CMAKE_SOURCE_DIR}/python/python_config.hh.in
-		${CMAKE_BINARY_DIR}/python/python_config.hh )
+		${CMAKE_SOURCE_DIR}/share/python/demo2.py.in
+		${SHARE_DIRECTORY}/python/demo2.py )
 
-	add_custom_command (
-		OUTPUT
-			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
-			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
-			lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
-		COMMAND
-			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
-		COMMAND
-			${CMAKE_COMMAND} -E make_directory python
-		COMMAND
-			${PYTHON_EXECUTABLE} python/setup.py build -t python --build-lib lib
-		DEPENDS
-			${CMAKE_BINARY_DIR}/config.hh
-			${CMAKE_BINARY_DIR}/python/setup.py
-			${CMAKE_BINARY_DIR}/python/python_config.hh
-			${CMAKE_SOURCE_DIR}/python/py_simulator.hh
-			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
-			${CMAKE_SOURCE_DIR}/python/py_variable.hh
-			${CMAKE_SOURCE_DIR}/python/py_variable.cc
-			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
-			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
-			simulatorlib
-			${armemu__deps}
-		COMMENT
-			"Building python extension."
-		)
-
-	if ( ${PYTHONINTERP_FOUND} )
-		add_custom_target ( ${ARMEMU_LIB_TARGET}-python
-			ALL
-			DEPENDS
-				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
-				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
-				lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
-			COMMENT
-				"Python target."
-		)
-	endif ( ${PYTHONINTERP_FOUND} )
-
-	if ( ${PYTHONINTERP_FOUND} )
-		install (
-			FILES
-				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
-			DESTINATION
-				lib
-			)
-	endif ( ${PYTHONINTERP_FOUND} )
+#	configure_file (
+#		${CMAKE_SOURCE_DIR}/python/setup.py.in
+#		${CMAKE_BINARY_DIR}/python/setup.py )
+#	configure_file (
+#		${CMAKE_SOURCE_DIR}/python/python_config.hh.in
+#		${CMAKE_BINARY_DIR}/python/python_config.hh )
+#
+#	add_custom_command (
+#		OUTPUT
+#			lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+#			lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+#			lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
+#		COMMAND
+#			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+#		COMMAND
+#			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+#		COMMAND
+#			${CMAKE_COMMAND} -E remove lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
+#		COMMAND
+#			${CMAKE_COMMAND} -E make_directory python
+#		COMMAND
+#			${PYTHON_EXECUTABLE} python/setup.py build -t python --build-lib lib
+#		DEPENDS
+#			${CMAKE_BINARY_DIR}/config.hh
+#			${CMAKE_BINARY_DIR}/python/setup.py
+#			${CMAKE_BINARY_DIR}/python/python_config.hh
+#			${CMAKE_SOURCE_DIR}/python/py_simulator.hh
+#			${CMAKE_SOURCE_DIR}/python/py_simulator.cc
+#			${CMAKE_SOURCE_DIR}/python/py_variable.hh
+#			${CMAKE_SOURCE_DIR}/python/py_variable.cc
+#			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
+#			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
+#			simulatorlib
+#			${armemu__deps}
+#		COMMENT
+#			"Building python extension."
+#		)
+#
+#	if ( ${PYTHONINTERP_FOUND} )
+#		add_custom_target ( ${ARMEMU_LIB_TARGET}-python
+#			ALL
+#			DEPENDS
+#				lib/${SIM_PYTHON_IMPORT_NAME}/simulator.so
+#				lib/${SIM_PYTHON_IMPORT_NAME}/variable.so
+#				lib/${SIM_PYTHON_IMPORT_NAME}/debugger.so
+#			COMMENT
+#				"Python target."
+#		)
+#	endif ( ${PYTHONINTERP_FOUND} )
+#
+#	if ( ${PYTHONINTERP_FOUND} )
+#		install (
+#			FILES
+#				${CMAKE_BINARY_DIR}/lib/${SIM_PYTHON_IMPORT_NAME}.so
+#			DESTINATION
+#				lib
+#			)
+#	endif ( ${PYTHONINTERP_FOUND} )
+#	if ( LIBEDIT )
+#		set ( PYTHON__ARMEMU__LIBS
+#			"${PYTHON__ARMEMU__LIBS},'edit'" )
+#	endif ( LIBEDIT )
 endif ( BUILD_ARMEMU_PYTHON_MODULE )
 
 install ( TARGETS ${ARMEMU_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}

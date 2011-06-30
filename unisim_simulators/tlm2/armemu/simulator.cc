@@ -529,16 +529,6 @@ SetTrapHandler (void (*function)(void *, unsigned int), void *context)
 	return true;
 }
 
-unisim::util::debug::debugger_handler::DebuggerHandler *
-Simulator::
-GetDebugger(const char *name)
-{
-	if ( enable_sim_debugger )
-		return sim_debugger;
-	else
-		return 0;
-}
-
 void
 Simulator::
 ExternalTrap (unsigned int id)
