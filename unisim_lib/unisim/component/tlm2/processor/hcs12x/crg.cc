@@ -586,9 +586,9 @@ void CRG::RunCOP() {
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
 			// PLLCLK at minimum frequency Fscm;
-			cop_timeout = pll_clock / ((2^14) * (copctl_register & 0x07));
+			cop_timeout = pll_clock / (pow(2,14) * (copctl_register & 0x07));
 		} else {
-			cop_timeout = oscillator_clock / ((2^14) * (copctl_register & 0x07));
+			cop_timeout = oscillator_clock / (pow(2,14) * (copctl_register & 0x07));
 		}
 
 		sc_time cop_timeout_75 = cop_timeout * 0.75;

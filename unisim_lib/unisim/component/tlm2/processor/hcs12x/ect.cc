@@ -47,35 +47,37 @@ template void ECT::Channel_t::checkChangeStateAndWait<uint8_t>(const sc_time clk
 template void ECT::Channel_t::checkChangeStateAndWait<uint16_t>(const sc_time clk);
 
 ECT::ECT(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
-	sc_module(name),
+	Object(name, parent)
+	, sc_module(name)
 
-	Client<TrapReporting>(name, parent),
-	Service<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
-	Client<Memory<service_address_t> >(name, parent),
+	, Client<TrapReporting>(name, parent)
+	, Service<Memory<service_address_t> >(name, parent)
+	, Service<Registers>(name, parent)
+	, Client<Memory<service_address_t> >(name, parent)
 
-	trap_reporting_import("trap_reporting_import", this),
+	, trap_reporting_import("trap_reporting_import", this)
 
-	slave_socket("slave_socket"),
+	, slave_socket("slave_socket")
 
-	memory_export("memory_export", this),
-	memory_import("memory_import", this),
-	registers_export("registers_export", this),
+	, memory_export("memory_export", this)
+	, memory_import("memory_import", this)
+	, registers_export("registers_export", this)
 
-	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+	, bus_cycle_time_int(0)
+	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
-	baseAddress(0x0040), // MC9S12XDP512V2 - ECT baseAddress
-	param_baseAddress("base-address", this, baseAddress),
+	 // MC9S12XDP512V2 - ECT baseAddress
+	, baseAddress(0x0040)
+	, param_baseAddress("base-address", this, baseAddress)
 
-	interrupt_offset_channel0(0xEE),
-	param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0),
-	interrupt_offset_overflow(0xDE),
-	param_interrupt_offset_overflow("interrupt-offset-overflow", this, interrupt_offset_overflow),
+	, interrupt_offset_channel0(0xEE)
+	, param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0)
+	, interrupt_offset_overflow(0xDE)
+	, param_interrupt_offset_overflow("interrupt-offset-overflow", this, interrupt_offset_overflow)
 
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled)
+	, debug_enabled(false)
+	, param_debug_enabled("debug-enabled", this, debug_enabled)
+	, prnt_write(false)
 {
 
 	uint8_t channel_number;
@@ -409,12 +411,29 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 */
 		} break;
 		case TSCR1: {
-			tscr1_register = (tscr1_register & 0x07) | (*((uint8_t *)value) & 0xF8);
+			uint8_t old_prnt_bit = tscr1_register & 0x04;
+			*((uint8_t *)value) = (tscr1_register & 0x07) | (*((uint8_t *)value) & 0xF8);
+
+			if (prnt_write) {
+				*((uint8_t *)value) = (*((uint8_t *)value) & 0xF7) | old_prnt_bit;
+			} else {
+				prnt_write = true;
+			}
+			tscr1_register = *((uint8_t *)value);
+
+			/**
+			 * TODO:
+			 *  - use TSCR1::TFFCA Timer Fast Flag Clear All
+			 *  - use TSCR1::PRNT Precision Timer (Figures 7-65 , 7-66 , 7-67 , 7-68
+			 */
 		} break;
 		case TTOF: {
 			ttof_register = *((uint8_t *)value);
 		} break;
 		case TCTL1: {
+			/**
+			 * TODO: perform the action depending on (OMx,OLx)
+			 */
 			if (size == 2) {
 				tctl12_register = *((uint16_t *)value);
 			} else {
@@ -442,10 +461,27 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)value) & 0x8F);
 		} break;
 		case TFLG1: {
-			tflg1_register = *((uint8_t *)value);
+			// writing a one to the flag clears the flag.
+			// writing a zero will not affect the current status of the bit
+			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
+
+			// chech TSCR1::TFFCA bit is cleared
+			if ((tscr1_register & 0x10) == 0) {
+				uint8_t val = *((uint8_t *)value);
+				tflg1_register = tflg1_register & ~val;
+			}
 		} break;
 		case TFLG2: {
-			tflg2_register = (tflg2_register & 0x7F) | (*((uint8_t *)value) & 0x80);
+			// writing a one to the flag clears the flag.
+			// writing a zero will not affect the current status of the bit
+			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
+
+			if ((tscr1_register & 0x10) == 0) {
+				uint8_t val = (*((uint8_t *)value) & 0x80);
+
+				tflg2_register = tflg2_register & ~val;
+			}
+
 		} break;
 		case PACTL: {
 			pactl_register = (pactl_register & 0x80) | (*((uint8_t *)value) & 0x7F);

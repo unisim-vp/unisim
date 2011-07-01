@@ -223,6 +223,8 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
+	bool prnt_write; // TSCR1::PRNT is write once bit
+
 	//==============================
 	//=            REGISTER SET    =
 	//==============================
