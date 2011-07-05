@@ -18,15 +18,47 @@ Several open source virtual platforms for different targets (ARM, PowerPC, Star1
 
 \subsection{Virtex 5 FXT Simulator}
 
-The UNISIM Virtex 5 FXT is a virtual platform that tries to mimic a Xilinx ML507 development board that include a Xilinx Virtex 5 FXT (FPGA + PPC440).
-
-\begin{figure}[!ht]
+\begin{figure}[p]
 	\begin{center}
 		\includegraphics[width=\textwidth]{virtex5fxt/fig_schematic.pdf}
 	\end{center}
 	\caption{UNISIM Virtex 5 FXT simulator schematic.}
 	\label{fig:simulator_schematic}
 \end{figure}
+
+\begin{table}[p]
+	\begin{center}
+		\begin{tabular}{|l|l|l|}
+		\hline
+		\multicolumn{1}{|c|}{\textbf{Address range}} & \multicolumn{1}{|c|}{\textbf{Component name}} & \multicolumn{1}{|c|}{\textbf{Hardware device}}\\
+		\hline
+		\texttt{0x00000000-0x0003ffff} & \texttt{ram} & 256 MB RAM\\
+		\hline
+		\texttt{0x81400000-0x8140ffff} & \texttt{gpio-leds-8bit} & XPS GPIO\\
+		\hline
+		\texttt{0x81420000-0x8142ffff} & \texttt{gpio-5-leds-positions} & XPS GPIO\\
+		\hline
+		\texttt{0x81440000-0x8144ffff} & \texttt{gpio-push-buttons-5bit} & XPS GPIO\\
+		\hline
+		\texttt{0x81460000-0x8146ffff} & \texttt{gpio-dip-switches-8bit} & XPS GPIO\\
+		\hline
+		\texttt{0x81800000-0x8180ffff} & \texttt{intc} & XPS IntC\\
+		\hline
+		\texttt{0x83c00000-0x83c0ffff} & \texttt{timer} & XPS Timer/Counter\\
+		\hline
+		\texttt{0x84000000-0x8400ffff} & \texttt{uart-lite} & XPS UART Lite\\
+		\hline
+		\texttt{0xfc000000-0xfdffffff} & \texttt{flash} & S29GL256P\\
+		\hline
+		\texttt{0xfffc0000-0xffffffff} & \texttt{bram} & 256 KB BRAM\\
+		\hline
+		\end{tabular}
+	\end{center}
+	\caption{Simulator memory mapping.}
+	\label{table:memory_mapping}
+\end{table}
+
+The UNISIM Virtex 5 FXT is a virtual platform that tries to mimic a Xilinx ML507 development board that include a Xilinx Virtex 5 FXT (FPGA + PPC440).
 
 \noindent The UNISIM Virtex 5 FXT simulator, which Figure~\ref{fig:simulator_schematic} shows the schematic, implements the following:
 \begin{itemize}
@@ -63,6 +95,8 @@ The UNISIM Virtex 5 FXT is a virtual platform that tries to mimic a Xilinx ML507
 \item DCR stubs
 \end{itemize}
 
+\cleardoublepage
+
 \noindent The simulator also supports the following features :
 \begin{itemize}
 \item Loading of ELF32, ELF64 \cite{ELF} and Motorola S19 (S-Record) \cite{S19} files
@@ -72,38 +106,6 @@ The UNISIM Virtex 5 FXT is a virtual platform that tries to mimic a Xilinx ML507
 \end{itemize}
 
 Table~\ref{table:memory_mapping} shows the simulator memory mapping.
-
-\begin{table}[!ht]
-	\begin{center}
-		\begin{tabular}{|l|l|l|}
-		\hline
-		\multicolumn{1}{|c|}{\textbf{Address range}} & \multicolumn{1}{|c|}{\textbf{Component name}} & \multicolumn{1}{|c|}{\textbf{Hardware device}}\\
-		\hline
-		\texttt{0x00000000-0x0003ffff} & \texttt{ram} & 256 MB RAM\\
-		\hline
-		\texttt{0x81400000-0x8140ffff} & \texttt{gpio-leds-8bit} & XPS GPIO\\
-		\hline
-		\texttt{0x81420000-0x8142ffff} & \texttt{gpio-5-leds-positions} & XPS GPIO\\
-		\hline
-		\texttt{0x81440000-0x8144ffff} & \texttt{gpio-push-buttons-5bit} & XPS GPIO\\
-		\hline
-		\texttt{0x81460000-0x8146ffff} & \texttt{gpio-dip-switches-8bit} & XPS GPIO\\
-		\hline
-		\texttt{0x81800000-0x8180ffff} & \texttt{intc} & XPS IntC\\
-		\hline
-		\texttt{0x83c00000-0x83c0ffff} & \texttt{timer} & XPS Timer/Counter\\
-		\hline
-		\texttt{0x84000000-0x8400ffff} & \texttt{uart-lite} & XPS UART Lite\\
-		\hline
-		\texttt{0xfc000000-0xfdffffff} & \texttt{flash} & S29GL256P\\
-		\hline
-		\texttt{0xfffc0000-0xffffffff} & \texttt{bram} & 256 KB BRAM\\
-		\hline
-		\end{tabular}
-	\end{center}
-	\caption{Simulator memory mapping.}
-	\label{table:memory_mapping}
-\end{table}
 
 \noindent The 1.0 release of the simulator is composed of:
 \begin{itemize}
@@ -348,7 +350,7 @@ $ ./ct-ng build
 \item You crosstool chain is ready in \texttt{\$\{HOME\}/crosstool/powerpc-440fp-linux-gnu}
 \end{enumerate}
 
-\begin{figure}[!ht]
+\begin{figure}[p]
 \begin{center}
 \begin{script}
 Paths and misc options  --->
@@ -396,6 +398,8 @@ Companion libraries  --->
 \caption{crosstool chain build configuration (changes from default only) for Crosstool-NG 1.11.3.}
 \label{fig:ctng_configuration}
 \end{figure}
+
+\cleardoublepage
 
 \subsubsection{Using cross-GCC}
 
@@ -448,7 +452,7 @@ $ ./build.sh all
 
 Table~\ref{table:basic_system_test_summary} shows a summary of basic system tests.
 
-\begin{table}[!ht]
+\begin{table}[p]
 	\begin{center}
 		\small
 		\begin{tabular}{|l|l|l|l|l|l|}
@@ -564,6 +568,8 @@ Table~\ref{table:basic_system_test_summary} shows a summary of basic system test
 	\label{table:basic_system_test_summary}
 \end{table}
 
+\cleardoublepage
+
 \subsubsection{Echo}
 
 The test reads characters from the serial console.
@@ -572,8 +578,8 @@ It prints the read characters on the serial console.
 \begin{enumerate}
 \item At the command prompt, do the following:
 \begin{script}
-$ cd basic_system/xps_uart_lite/echo
-$ unisim-virtex5fxt-wfpu-1.0 -c sim_config.xml
+$ cd basic_system
+$ unisim-virtex5fxt-wfpu-1.0 -c xps_uart_lite/echo/sim_config.xml
 \end{script}
 \item In another console, do the following at command prompt:
 \begin{script}
@@ -592,7 +598,7 @@ It prints some of the sampled values on the serial console.
 \item Enter Directory \texttt{basic\_system}, start the simulator:
 \begin{script}
 $ cd basic_system
-$ unisim-virtex5fxt-wfpu-1.0 -c s29gl256p/poll/sim_config.xml
+$ unisim-virtex5fxt-wfpu-1.0 -c xps_timer/poll/sim_config.xml
 \end{script}
 \item In another console, connect a telnet client to the simulator:
 \begin{script}
@@ -653,7 +659,7 @@ It prints the tick of timer on the serial console.
 \item Enter Directory \texttt{basic\_system}, start the simulator:
 \begin{script}
 $ cd basic_system
-$ unisim-virtex5fxt-wfpu-1.0 -c s29gl256p/gen/sim_config.xml
+$ unisim-virtex5fxt-wfpu-1.0 -c xps_timer/gen/sim_config.xml
 \end{script}
 \item In another console, connect a telnet client to the simulator:
 \begin{script}
@@ -712,7 +718,7 @@ It prints the captured time stamp on the serial console.
 \item Enter Directory \texttt{basic\_system}, start the simulator:
 \begin{script}
 $ cd basic_system
-$ unisim-virtex5fxt-wfpu-1.0 -c s29gl256p/cap/sim_config.xml
+$ unisim-virtex5fxt-wfpu-1.0 -c xps_timerp/cap/sim_config.xml
 \end{script}
 \item In another console, connect a telnet client to the simulator:
 \begin{script}
@@ -775,7 +781,7 @@ The test uses the timer in PWM (Pulse Width Modulation) mode with a period of 2 
 \item Enter Directory \texttt{basic\_system}, start the simulator and filter PWM0 activity:
 \begin{script}
 $ cd basic_system
-$ unisim-virtex5fxt-wfpu-1.0 -c s29gl256p/pwm/sim_config.xml \
+$ unisim-virtex5fxt-wfpu-1.0 -c xps_timer/pwm/sim_config.xml \
                              -s timer.verbose=true | grep 'PWM0 signal'
 \end{script}
 \item In another console, connect a telnet client to the simulator:
@@ -1169,7 +1175,7 @@ We provides you with prebuilt files to allow you quickly boot a minimalist Linux
 Go directly to Sub-section~\ref{running_a_linux_distro} if you don't bother about the technique behind creating a light weight Linux distribution for the simulator.
 To build such a minimalist Linux distribution, you need a working crosstool chain, see Section~\ref{building_crosstool_chain}.
 
-\begin{table}[!ht]
+\begin{table}[!h]
 	\begin{center}
 		\begin{tabular}{|l|l|l|l|}
 		\hline
@@ -1198,7 +1204,7 @@ Thus the boot program is located in memory so that it has an instruction (usuall
 The role of the boot program is to initialize early boot and provides the Kernel with some parameters in the processor registers.
 Table~\ref{table:linux_register_parameters} shows the registers that needs to be initialized before branching into the Linux Kernel entry point.
 
-\begin{table}[!ht]
+\begin{table}[p]
 	\begin{center}
 		\begin{tabular}{|l|l|}
 		\hline
@@ -1271,7 +1277,7 @@ $ make \
 \end{enumerate}
 
 
-\begin{figure}[!ht]
+\begin{figure}[p]
 \begin{center}
 \begin{script}
 Processor support  --->
@@ -1371,3 +1377,6 @@ The simulator acts as a telnet server to emulate a terminal over the XPS UART Li
 \begin{script}
 $ telnet localhost 1234
 \end{script}
+
+\textit{Note: The UNISIM Virtex 5 FXT Simulator must have the hardware FPU enabled (\texttt{unisim\--virtex5fxt\--1.0\--wfpu}) to run a Linux kernel for \texttt{powerpc\--440fp\--linux\--gnu} or \texttt{powerpc\--440\--linux\--gnu}. When the simulator has the hardware FPU disabled (\texttt{unisim\--virtex5fxt\--1.0}, the simulator can only use the Linux kernel for \texttt{powerpc\--440\--linux\--gnu}.}
+
