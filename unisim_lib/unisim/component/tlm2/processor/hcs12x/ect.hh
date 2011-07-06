@@ -51,6 +51,7 @@
 #include <tlm_utils/peq_with_get.h>
 #include "tlm_utils/simple_target_socket.h"
 
+#include "unisim/kernel/logger/logger.hh"
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
@@ -74,6 +75,15 @@ namespace hcs12x {
 using namespace std;
 using namespace tlm;
 using namespace tlm_utils;
+
+using unisim::kernel::logger::Logger;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebug;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
@@ -140,13 +150,36 @@ public:
 	ServiceImport<Memory<service_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
+	// the kernel logger
+	unisim::kernel::logger::Logger *logger;
+
 	ECT(const sc_module_name& name, Object *parent = 0);
 	virtual ~ECT();
 
-	void start();
+	void RunMainTimer();
+	inline void main_timer_enable();
+	inline void main_timer_disable();
+
+	void RunDownCounter();
+	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(); }
+	inline void down_counter_disable() {down_counter_enabled = false; }
+
+	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(); }
+	inline void delay_counter_disable() {delay_counter_enabled = false; }
+
+	inline void enterWaitMode();
+	inline void exitWaitMode();
+	inline void enterFreezeMode();
+	inline void exitFreezeMode();
+
 	void assertInterrupt(uint8_t interrupt_offset);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 	void runCaptureCompareAction();
+	void pulseAccumulatorA();
+	void pulseAccumulatorB();
+	inline void latchToHoldingRegisters();
+	inline void loadRegisterToModulusCounterCountregister();
+	inline void computeDelayCounter();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -197,6 +230,7 @@ public:
 protected:
     inline bool isInputCapture(uint8_t channel_index);
     inline bool transferOutputCompareToTimerPort(uint8_t channel_index);
+    inline void setTimerinterruptFlag(uint8_t timer_interrupt_flag_index);
 
 private:
 	void ComputeInternalTime();
@@ -208,14 +242,24 @@ private:
 	double	bus_cycle_time_int;	// The time unit is PS
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
+	sc_time		timer_delay;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
 	uint8_t interrupt_offset_channel0;
 	Parameter<uint8_t> param_interrupt_offset_channel0;
-	uint8_t interrupt_offset_overflow;
-	Parameter<uint8_t> param_interrupt_offset_overflow;
+	uint8_t interrupt_offset_timer_overflow;
+	Parameter<uint8_t> param_interrupt_offset_timer_overflow;
+
+	uint8_t interrupt_pulse_accumulatorA_overflow;
+	Parameter<uint8_t> param_interrupt_pulse_accumulatorA_overflow;
+
+	uint8_t interrupt_pulse_accumulatorB_overflow;
+	Parameter<uint8_t> param_interrupt_pulse_accumulatorB_overflow;
+
+	uint8_t interrupt_pulse_accumulator_input_edge;
+	Parameter<uint8_t> param_interrupt_pulse_accumulator_input_edge;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
@@ -224,6 +268,17 @@ private:
 	map<string, Register *> registers_registry;
 
 	bool prnt_write; // TSCR1::PRNT is write once bit
+	bool icsys_write; // ICSYS register is write once in normal mode
+
+	sc_event pulse_accumulatorA_enable_event;
+	sc_event pulse_accumulatorB_enable_event;
+
+	bool main_timer_enabled;
+	sc_event main_timer_enable_event;
+	bool down_counter_enabled;
+	sc_event down_counter_enable_event;
+	bool delay_counter_enabled;
+	sc_event delay_counter_enable_event;
 
 	//==============================
 	//=            REGISTER SET    =
@@ -231,35 +286,67 @@ private:
 
 	uint8_t	tios_register, cforc_register, oc7m_register, oc7d_register,
 			tscr1_register, tie_register, tscr2_register, tflg1_register, tflg2_register,
-			pactl_register, paflg_register, mcctl_register, mcflg_register, icpar_register,
+			pactl_register, paflg_register, pacn_register[4], mcctl_register, mcflg_register, icpar_register,
 			dlyct_register, icovw_register, icsys_register, reserved_address, timtst_register,
 			ptpsr_register, ptmcpsr_register, pbctl_register, pbflg_register, paxh_registers[4];
 
-	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register, pacn32_register,
-			pacn10_register, tc_registers[8], mccnt_register, tcxh_registers[4];
+	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register,
+			tc_registers[8], mccnt_load_register, mccnt_register, tcxh_registers[4];
 
-	class Channel_t : public sc_module {
+	class IOC_Channel_t : public sc_module {
 	public:
 
-		Channel_t(const sc_module_name& name, ECT *parent, const uint8_t channel_number, uint16_t *tc_ptr);
+		IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr);
 
 		void Run();
 		void runCaptureCompareAction();
-		void wakeup();
-		void disable();
+		void wakeup() { ioc_enabled = true; wakeup_event.notify(); }
+		void disable() { ioc_enabled = false; }
+		void latchToHoldingRegisters();
 
 	private:
+		uint8_t ioc_index;
+		uint8_t iocMask;
 
-		uint16_t *tc_register_ptr;
-
-		uint8_t channel_index;
-		uint8_t channelMask;
 		ECT	*ectParent;
 		sc_event wakeup_event;
+		bool ioc_enabled;
 
-		template <class T> void checkChangeStateAndWait(const sc_time clk);
+		uint16_t* tc_register_ptr;
+		uint16_t* tch_register_ptr;
 
-	} *channel[8];
+	} *ioc_channel[8];
+
+	class PulseAccumulator : public sc_module {
+	public:
+		PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr, IOC_Channel_t* ioc_channel);
+
+		void Run();
+		void wakeup() { pacn_enabled = true; wakeup_event.notify(); };
+		void disable() {pacn_enabled = false; };
+		void latchToHoldingRegisters();
+
+	protected:
+
+	private:
+		uint8_t pacn_index;
+		uint8_t pacnMask;
+
+		ECT	*ectParent;
+		sc_event wakeup_event;
+		bool pacn_enabled;
+
+		uint8_t *pacn_register_ptr;
+		uint8_t* pah_register_ptr;
+
+		IOC_Channel_t* ioc_channel_ptr;
+
+	};
+
+	PulseAccumulator* pc8bit[4];
+	/**
+	 * TODO: Each pair of pulse accumulator can be used as a 16-bit pulse accumulator.
+	 */
 
 }; /* end class ECT */
 
