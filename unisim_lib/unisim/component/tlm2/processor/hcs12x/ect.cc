@@ -85,6 +85,12 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
+
+	, buildin_edge_generator(true)
+	, param_buildin_edge_generator("buildin-edge-generator", this, buildin_edge_generator, "Use buildin edge generator or external instrument")
+	, buildin_edge_generator_period_int(1000)
+	, param_buildin_edge_generator_period("buildin_edge_generator_period", this, buildin_edge_generator_period_int, "Buildin edge generator in pico-seconds. Default 1000ps.")
+
 	, prnt_write(false)
 	, icsys_write(false)
 	, main_timer_enabled(false)
@@ -92,21 +98,8 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, delay_counter_enabled(false)
 {
 
-	char channelName[20];
-
-	for (uint8_t i=0; i<8; i++) {
-
-		sprintf (channelName, "channel_%d", i);
-
-		if (i < 4) {
-			ioc_channel[i] = new IOC_Channel_t(channelName, this, i, &tc_registers[i], &tcxh_registers[i]);
-		} else {
-			ioc_channel[i] = new IOC_Channel_t(channelName, this, i, &tc_registers[i], NULL);
-		}
-
-	}
-
 	uint8_t pacn_number;
+	char channelName[20];
 
 	for (uint8_t i=0; i<4; i++) {
 #if BYTE_ORDER == BIG_ENDIAN
@@ -116,8 +109,19 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 #endif
 
 		sprintf (channelName, "pa%d", i);
-		pc8bit[i] = new PulseAccumulator(channelName, this   , pacn_number, &pacn_register[i], &paxh_registers[i], ioc_channel[i]);
+		pc8bit[i] = new PulseAccumulator(channelName, this, pacn_number, &pacn_register[i], &paxh_registers[i]);
 	}
+
+	for (uint8_t i=0; i<8; i++) {
+
+		if (i < 4) {
+			ioc_channel[i] = new IOC_Channel_t(this, i, &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
+		} else {
+			ioc_channel[i] = new IOC_Channel_t(this, i, &tc_registers[i], NULL, NULL);
+		}
+
+	}
+
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
@@ -128,6 +132,9 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	SC_HAS_PROCESS(ECT);
 
 	SC_THREAD(RunMainTimer);
+	sensitive << main_timer_enable_event;
+
+	SC_THREAD(RunMainTimerCounter);
 	sensitive << main_timer_enable_event;
 
 	SC_THREAD(RunDownCounter);
@@ -197,7 +204,72 @@ void ECT::exitFreezeMode() {
 	main_timer_enable();
 }
 
+/**
+ * This thread emulate the edge detector using :
+ * - Edge configuration TCL3/TCL4,
+ * - Edge sharing ICSYS
+ * - Delay DLYCT
+ *
+ * 0: Capture disabled
+ * 1: Capture on rising edges only
+ * 2: Capture on falling edges only
+ * 3: Capture on any edge (rising or falling)
+ */
 void ECT::RunMainTimer() {
+
+	bool isValidEdge;
+
+	/* initialize random seed: */
+	srand (12345);
+
+	while (true) {
+		while (!buildin_edge_generator || !main_timer_enabled || ((tscr1_register & 0x80) == 0)) {
+			wait(main_timer_enable_event);
+		}
+
+		for (uint8_t i=0; i<8; i++) {
+
+			// is capture activated (and hence EdgeDetector Activated) ?
+			if (ioc_channel[i]->getValideEdge() != 0) {
+
+				// if edge sharing is enabled then channels [4,7] have been respectively stimulated by channels [0,3].
+				if ((i>4) && ((icsys_register & (1 << i)) != 0)) continue;
+
+				/* generate edge code */
+				uint8_t edge = (uint8_t) rand() % 3;
+				isValidEdge = false;
+				if ((edge == ioc_channel[i]->getValideEdge()) ||
+						((ioc_channel[i]->getValideEdge() == 3) && ((edge == 1) || (edge == 2))))
+				{
+					// channels [0,3] are associated with a delay counter
+					isValidEdge = true;
+					if (i<4) {
+						if (isDelayCounterEnabled()) {
+							uint16_t edgeDelay = (uint16_t) rand() % (edge_delay_counter * 2);
+							if (edgeDelay < edge_delay_counter) {
+								isValidEdge = false;
+							}
+						}
+					}
+
+					if (isValidEdge) {
+						ioc_channel[i]->RunInputCapture();
+						// is sharing edge enabled ?
+						if ((i<4) && (((icsys_register & (1 << (i+4))) != 0))) {
+							ioc_channel[i+4]->RunInputCapture();
+						}
+					}
+				}
+			}
+		}
+
+		// pause one period to generate new edge
+		wait(buildin_edge_generator_period);
+	}
+
+}
+
+void ECT::RunMainTimerCounter() {
 
 	while (true) {
 		while (!main_timer_enabled || ((tscr1_register & 0x80) == 0)) {
@@ -492,19 +564,19 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 				if ((tc_offset % 2) == 0) // TCx_High ?
 				{
 					if (size == 2) {
-						*((uint16_t *)value) = tc_registers[tc_offset];
-						tc_registers[tc_offset] = 0x0000;
+						*((uint16_t *)value) = tc_registers[tc_offset/2];
+						tc_registers[tc_offset/2] = 0x0000;
 					} else {
-						*((uint8_t *)value) =  tc_registers[tc_offset] >> 8;
+						*((uint8_t *)value) =  tc_registers[tc_offset/2] >> 8;
 						tc_registers[tc_offset] = tc_registers[tc_offset] & 0x00FF;
 					}
 				} else {
-					*((uint8_t *)value) =  tc_registers[tc_offset] & 0x00FF;
-					tc_registers[tc_offset] = tc_registers[tc_offset] & 0xFF00;
+					*((uint8_t *)value) =  tc_registers[tc_offset/2] & 0x00FF;
+					tc_registers[tc_offset] = tc_registers[tc_offset/2] & 0xFF00;
 				}
 
 				if ((tscr1_register & 0x10) != 0) {
-					tflg1_register = tflg1_register & ~(1 << tc_offset);
+					tflg1_register = tflg1_register & ~(1 << (tc_offset/2));
 				}
 			}
 			else if ((offset >= PA3H) && (offset <= PA0H)) {
@@ -517,16 +589,22 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 				if ((tcxh_offset % 2) == 0) // TCxH_High ?
 				{
 					if (size == 2) {
-						*((uint16_t *)value) = tcxh_registers[tcxh_offset];
-						tcxh_registers[tcxh_offset] = 0x0000;
+						*((uint16_t *)value) = tcxh_registers[tcxh_offset/2];
+						tcxh_registers[tcxh_offset/2] = 0x0000;
 					} else {
-						*((uint8_t *)value) = tcxh_registers[tcxh_offset] >> 8;
-						tcxh_registers[tcxh_offset] = tcxh_registers[tcxh_offset] & 0x00FF;
+						*((uint8_t *)value) = tcxh_registers[tcxh_offset/2] >> 8;
+						tcxh_registers[tcxh_offset/2] = tcxh_registers[tcxh_offset/2] & 0x00FF;
 					}
 
 				} else {
-					*((uint8_t *)value) = tcxh_registers[tcxh_offset] & 0x00FF;
-					tcxh_registers[tcxh_offset] = tcxh_registers[tcxh_offset] & 0xFF00;
+					*((uint8_t *)value) = tcxh_registers[tcxh_offset/2] & 0x00FF;
+					tcxh_registers[tcxh_offset/2] = tcxh_registers[tcxh_offset/2] & 0xFF00;
+				}
+				/**
+				 * In queue mode, reads of the holding register will latch the corresponding pulse accumulator value to its holding register
+				 */
+				if (((tcxh_offset/2) < 4) && (!isLatchMode())) {
+					paxh_registers[tcxh_offset/2] = pacn_register[tcxh_offset/2];
 				}
 			}
 
@@ -623,9 +701,11 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			} else {
 				tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 			}
+			configureEdgeDetector();
 		} break;
 		case TCTL4: {
 			tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)value);
+			configureEdgeDetector();
 		} break;
 		case TIE: {
 			tie_register = *((uint8_t *)value);
@@ -878,6 +958,15 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 	return true;
 }
 
+inline void ECT::configureEdgeDetector() {
+
+	for (uint8_t i=0; i<8; i++) {
+		uint8_t edgeConfig = ((uint16_t) (tctl34_register & (3 << (i*2))) >> (i*2)) & 0x03;
+
+		ioc_channel[i]->setValideEdge(edgeConfig);
+	}
+}
+
 inline void ECT::computeDelayCounter() {
 	// TSCR1::PRNT = 0 ?
 	if ((tscr1_register & 0x08) == 0) {
@@ -887,7 +976,7 @@ inline void ECT::computeDelayCounter() {
 			delay_counter_disable();
 
 		} else {
-			timer_delay = 32 * pow(2, dly10) * 4 * bus_cycle_time;
+			edge_delay_counter = 32 * pow(2, dly10) * 4;
 			delay_counter_enable();
 		}
 	} else {
@@ -895,16 +984,15 @@ inline void ECT::computeDelayCounter() {
 		if (dlyct_register == 0) {
 			delay_counter_disable();
 		} else {
-			timer_delay = (dlyct_register + 1) * 4 * bus_cycle_time;
+			edge_delay_counter = (dlyct_register + 1) * 4;
 			delay_counter_enable();
 		}
 	}
 }
 
-ECT::PulseAccumulator::PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr, IOC_Channel_t* ioc_channel) :
+ECT::PulseAccumulator::PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr) :
 	pacn_register_ptr(pacn_ptr)
 	, pah_register_ptr(pah_ptr)
-	, ioc_channel_ptr(ioc_channel)
 	, pacn_index(pacn_number)
 	, pacn_enabled(false)
 
@@ -921,16 +1009,8 @@ ECT::PulseAccumulator::PulseAccumulator(const sc_module_name& name, ECT *parent,
 
 void ECT::PulseAccumulator::latchToHoldingRegisters() {
 
-	/**
-	 * The contents of the input capture registers TC0 to TC3
-	 * and their corresponding 8-bit pulse accumulators to be latched into the associated holding registers.
-	 */
-
 	*pah_register_ptr = *pacn_register_ptr;
 	*pacn_register_ptr = 0x00;
-
-	ioc_channel_ptr->latchToHoldingRegisters();
-
 }
 
 void ECT::PulseAccumulator::Run() {
@@ -1024,37 +1104,59 @@ inline bool ECT::transferOutputCompareToTimerPort(uint8_t channel_index) {
 //=             ECT Channel methods                   =
 //=====================================================
 
-ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr) :
-	sc_module(name)
-	, ectParent(parent)
+ECT::IOC_Channel_t::IOC_Channel_t(ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit) :
+	  ectParent(parent)
 	, ioc_index(index)
 	, tc_register_ptr(tc_ptr)
 	, tch_register_ptr(tch_ptr)
+	, pulseAccumulator(pc8bit)
 
 {
 
 	iocMask = (0x01 << ioc_index);
 
-	SC_HAS_PROCESS(IOC_Channel_t);
-
-	SC_THREAD(Run);
-	sensitive << wakeup_event;
 }
 
-void ECT::IOC_Channel_t::Run() {
+void ECT::IOC_Channel_t::RunInputCapture() {
 
-	while (true) {
-
-		while (!ioc_enabled) {
-			wait(wakeup_event);
+	// Non-Buffered IC channels
+	if (tch_register_ptr == NULL) {
+		if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || (*tc_register_ptr == 0x0000)) {
+			*tc_register_ptr = ectParent->getMainTimerValue();
 		}
 	}
+	else //  buffered IC Channels
+	{
+		// IC latch mode (ICSYS::LATQ=1)
+		if (ectParent->isLatchMode()) {
+			if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || ((*tc_register_ptr == 0x0000) && (*tch_register_ptr == 0x0000))) {
+				// In case of latching, the contents of the holding register are overwritten
+				*tc_register_ptr = ectParent->getMainTimerValue();
+				*tch_register_ptr = *tc_register_ptr;
+			}
+		}
+		else // IC Queue Mode (ICSYS::LATQ=0)
+		{
+			if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || ((*tc_register_ptr == 0x0000) && (*tch_register_ptr == 0x0000))) {
+				*tch_register_ptr = *tc_register_ptr;
+				*tc_register_ptr = ectParent->getMainTimerValue();
+			}
+		}
 
+	}
 }
 
 void ECT::IOC_Channel_t::latchToHoldingRegisters() {
+
+	/**
+	 * The contents of the input capture registers TC0 to TC3
+	 * and their corresponding 8-bit pulse accumulators to be latched into the associated holding registers.
+	 */
+
 	*tch_register_ptr = *tc_register_ptr;
 	*tc_register_ptr = 0x0000;
+
+	pulseAccumulator->latchToHoldingRegisters();
 }
 
 void ECT::IOC_Channel_t::runCaptureCompareAction() {
@@ -1308,6 +1410,8 @@ void ECT::Reset() {
 void ECT::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+
+	buildin_edge_generator_period = sc_time(buildin_edge_generator_period_int, SC_PS);
 }
 
 void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {

@@ -157,6 +157,7 @@ public:
 	virtual ~ECT();
 
 	void RunMainTimer();
+	void RunMainTimerCounter();
 	inline void main_timer_enable();
 	inline void main_timer_disable();
 
@@ -165,7 +166,8 @@ public:
 	inline void down_counter_disable() {down_counter_enabled = false; }
 
 	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(); }
-	inline void delay_counter_disable() {delay_counter_enabled = false; }
+	inline void delay_counter_disable() { delay_counter_enabled = false; }
+	inline bool isDelayCounterEnabled() { return delay_counter_enabled; }
 
 	inline void enterWaitMode();
 	inline void exitWaitMode();
@@ -180,6 +182,7 @@ public:
 	inline void latchToHoldingRegisters();
 	inline void loadRegisterToModulusCounterCountregister();
 	inline void computeDelayCounter();
+	void handleEdgeDetector();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -231,9 +234,13 @@ protected:
     inline bool isInputCapture(uint8_t channel_index);
     inline bool transferOutputCompareToTimerPort(uint8_t channel_index);
     inline void setTimerinterruptFlag(uint8_t timer_interrupt_flag_index);
+    bool isNoInputCaptureOverWrite(uint8_t ioc_index) { return ((icovw_register & (1 << ioc_index)) != 0);  }
+    uint16_t getMainTimerValue() { return tcnt_register; }
+    bool isLatchMode() { ((icsys_register & 0x01) != 0); }
 
 private:
-	void ComputeInternalTime();
+	inline void ComputeInternalTime();
+	inline void configureEdgeDetector();
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
@@ -242,7 +249,8 @@ private:
 	double	bus_cycle_time_int;	// The time unit is PS
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
-	sc_time		timer_delay;
+
+	uint16_t	edge_delay_counter;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -263,6 +271,12 @@ private:
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	bool	buildin_edge_generator;
+	Parameter<bool>	param_buildin_edge_generator;
+	uint64_t	buildin_edge_generator_period_int;
+	Parameter<uint64_t>	param_buildin_edge_generator_period;
+	sc_time buildin_edge_generator_period;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -293,33 +307,9 @@ private:
 	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register,
 			tc_registers[8], mccnt_load_register, mccnt_register, tcxh_registers[4];
 
-	class IOC_Channel_t : public sc_module {
-	public:
-
-		IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr);
-
-		void Run();
-		void runCaptureCompareAction();
-		void wakeup() { ioc_enabled = true; wakeup_event.notify(); }
-		void disable() { ioc_enabled = false; }
-		void latchToHoldingRegisters();
-
-	private:
-		uint8_t ioc_index;
-		uint8_t iocMask;
-
-		ECT	*ectParent;
-		sc_event wakeup_event;
-		bool ioc_enabled;
-
-		uint16_t* tc_register_ptr;
-		uint16_t* tch_register_ptr;
-
-	} *ioc_channel[8];
-
 	class PulseAccumulator : public sc_module {
 	public:
-		PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr, IOC_Channel_t* ioc_channel);
+		PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr);
 
 		void Run();
 		void wakeup() { pacn_enabled = true; wakeup_event.notify(); };
@@ -339,14 +329,37 @@ private:
 		uint8_t *pacn_register_ptr;
 		uint8_t* pah_register_ptr;
 
-		IOC_Channel_t* ioc_channel_ptr;
-
 	};
 
 	PulseAccumulator* pc8bit[4];
 	/**
 	 * TODO: Each pair of pulse accumulator can be used as a 16-bit pulse accumulator.
 	 */
+
+	class IOC_Channel_t {
+	public:
+
+		IOC_Channel_t(ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit);
+
+		void runCaptureCompareAction();
+		void latchToHoldingRegisters();
+		void RunInputCapture();
+		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
+		uint8_t getValideEdge() { return valideEdge; }
+
+	private:
+		uint8_t ioc_index;
+		uint8_t iocMask;
+		uint8_t valideEdge;
+
+		ECT	*ectParent;
+
+		uint16_t* tc_register_ptr;
+		uint16_t* tch_register_ptr;
+		PulseAccumulator* pulseAccumulator;
+
+	} *ioc_channel[8];
+
 
 }; /* end class ECT */
 
