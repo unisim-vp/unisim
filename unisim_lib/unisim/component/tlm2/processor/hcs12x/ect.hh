@@ -92,6 +92,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::RegisterArray;
 using unisim::service::interfaces::TrapReporting;
 
 using unisim::service::interfaces::Memory;
@@ -176,13 +177,12 @@ public:
 
 	void assertInterrupt(uint8_t interrupt_offset);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
-	void runCaptureCompareAction();
+	void RunCaptureCompare();
 	void pulseAccumulatorA();
 	void pulseAccumulatorB();
 	inline void latchToHoldingRegisters();
 	inline void loadRegisterToModulusCounterCountregister();
 	inline void computeDelayCounter();
-	void handleEdgeDetector();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -233,14 +233,45 @@ public:
 protected:
     inline bool isInputCapture(uint8_t channel_index);
     inline bool transferOutputCompareToTimerPort(uint8_t channel_index);
-    inline void setTimerinterruptFlag(uint8_t timer_interrupt_flag_index);
+    inline void setTimerinterruptFlag(uint8_t ioc_index) { tflg1_register = tflg1_register | (1 << ioc_index); }
     bool isNoInputCaptureOverWrite(uint8_t ioc_index) { return ((icovw_register & (1 << ioc_index)) != 0);  }
     uint16_t getMainTimerValue() { return tcnt_register; }
-    bool isLatchMode() { ((icsys_register & 0x01) != 0); }
+    bool isLatchMode() { return ((icsys_register & 0x01) != 0); }
+    bool isBufferEnabled() { return ((icsys_register & 0x02) != 0); }
+    bool isPulseAccumulatorsMaximumCount() { return ((icsys_register & 0x04) != 0); }
+    bool isPulseAccumulatorAEnabled() { return ((pactl_register & 0x40) != 0); }
+    bool isPulseAccumulatorBEnabled() { return ((pbctl_register & 0x40) != 0); }
+    bool isPulseAccumulators8BitEnabled(uint8_t pac_index) {
+		if ((icpar_register & (1 << pac_index)) != 0) {
+	    	if (pac_index < 2) {
+	    		if (!isPulseAccumulatorAEnabled()) {
+	    			return true;
+	    		}
+	    	} else {
+	    		if (!isPulseAccumulatorBEnabled()) {
+	    			return true;
+	    		}
+	    	}
+		}
+
+    	return false;
+    }
+
+    bool isOutputCompareMaskEnabled(uint8_t ioc_index) { return ((oc7m_register & (1 << ioc_index)) != 0); }
+    uint8_t getInterruptOffsetChannel0() { return interrupt_offset_channel0; }
+    uint8_t getInterruptPulseAccumulatorAOverflow() { return interrupt_pulse_accumulatorA_overflow; }
+    uint8_t getInterruptPulseAccumulatorBOverflow() { return interrupt_pulse_accumulatorB_overflow; }
+    bool isInputOutputInterruptEnabled(uint8_t ioc_index) { return ((tie_register & (1 << ioc_index)) != 0); }
+    bool isTimerOverflowinterruptEnabled() { return ((tscr2_register & 0x80) != 0); }
+    bool isTimerCounterResetEnabled() { return ((tscr2_register & 0x08) != 0); }
+    uint8_t getTimerFlagSettingMode() { return (icsys_register & 0x08) >> 3; }
+    void setPulseAccumulatorAOverflowFlag() { paflg_register = paflg_register | 0x02; }
+    void setPulseAccumulatorBOverflowFlag() { pbflg_register = pbflg_register | 0x02; }
 
 private:
 	inline void ComputeInternalTime();
 	inline void configureEdgeDetector();
+    inline void configureOutputAction();
 
 	tlm_quantumkeeper quantumkeeper;
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
@@ -255,8 +286,18 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
+	// Enhanced Capture Timer Channel 0 : IVBR + 0xEE
+	// Enhanced Capture Timer Channel 1 : IVBR + 0xEC
+	// Enhanced Capture Timer Channel 2 : IVBR + 0xEA
+	// Enhanced Capture Timer Channel 3 : IVBR + 0xE8
+	// Enhanced Capture Timer Channel 4 : IVBR + 0xE6
+	// Enhanced Capture Timer Channel 5 : IVBR + 0xE4
+	// Enhanced Capture Timer Channel 6 : IVBR + 0xE2
+	// Enhanced Capture Timer Channel 7 : IVBR + 0xE0
+
 	uint8_t interrupt_offset_channel0;
 	Parameter<uint8_t> param_interrupt_offset_channel0;
+
 	uint8_t interrupt_offset_timer_overflow;
 	Parameter<uint8_t> param_interrupt_offset_timer_overflow;
 
@@ -266,8 +307,8 @@ private:
 	uint8_t interrupt_pulse_accumulatorB_overflow;
 	Parameter<uint8_t> param_interrupt_pulse_accumulatorB_overflow;
 
-	uint8_t interrupt_pulse_accumulator_input_edge;
-	Parameter<uint8_t> param_interrupt_pulse_accumulator_input_edge;
+	uint8_t interrupt_pulse_accumulatorA_input_edge;
+	Parameter<uint8_t> param_interrupt_pulse_accumulatorA_input_edge;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
@@ -298,14 +339,17 @@ private:
 	//=            REGISTER SET    =
 	//==============================
 
-	uint8_t	tios_register, cforc_register, oc7m_register, oc7d_register,
+	uint8_t	tios_register, cforc_register, oc7m_register, oc7d_register, pacn_register[4], paxh_registers[4],
 			tscr1_register, tie_register, tscr2_register, tflg1_register, tflg2_register,
-			pactl_register, paflg_register, pacn_register[4], mcctl_register, mcflg_register, icpar_register,
+			pactl_register, paflg_register, mcctl_register, mcflg_register, icpar_register,
 			dlyct_register, icovw_register, icsys_register, reserved_address, timtst_register,
-			ptpsr_register, ptmcpsr_register, pbctl_register, pbflg_register, paxh_registers[4];
+			ptpsr_register, ptmcpsr_register, pbctl_register, pbflg_register;
 
 	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register,
 			tc_registers[8], mccnt_load_register, mccnt_register, tcxh_registers[4];
+
+	bool pinLogic[8];
+	RegisterArray<bool> pinLogic_reg;
 
 	class PulseAccumulator : public sc_module {
 	public:
@@ -315,12 +359,12 @@ private:
 		void wakeup() { pacn_enabled = true; wakeup_event.notify(); };
 		void disable() {pacn_enabled = false; };
 		void latchToHoldingRegisters();
-
+		void countEdge8Bit(uint16_t edgeDelay);
+		uint8_t getIndex() { return pacn_index; }
 	protected:
 
 	private:
 		uint8_t pacn_index;
-		uint8_t pacnMask;
 
 		ECT	*ectParent;
 		sc_event wakeup_event;
@@ -339,24 +383,28 @@ private:
 	class IOC_Channel_t {
 	public:
 
-		IOC_Channel_t(ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit);
+		IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit);
 
-		void runCaptureCompareAction();
+		void RunCaptureCompare(bool forced);
 		void latchToHoldingRegisters();
-		void RunInputCapture();
+		void RunInputCapture(uint16_t edgeDelay);
 		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
 		uint8_t getValideEdge() { return valideEdge; }
+		void setOutputAction(uint8_t outputAction) { this->outputAction = outputAction; };
+		uint8_t getOutputAction() { return outputAction; };
 
 	private:
 		uint8_t ioc_index;
 		uint8_t iocMask;
 		uint8_t valideEdge;
+		uint8_t outputAction;
 
 		ECT	*ectParent;
 
 		uint16_t* tc_register_ptr;
 		uint16_t* tch_register_ptr;
 		PulseAccumulator* pulseAccumulator;
+		bool* channelPinLogic;
 
 	} *ioc_channel[8];
 

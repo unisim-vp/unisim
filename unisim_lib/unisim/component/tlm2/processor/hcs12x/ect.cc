@@ -80,16 +80,18 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, interrupt_pulse_accumulatorB_overflow(0xC8)
 	, param_interrupt_pulse_accumulatorB_overflow("interrupt-pulse-accumulatorB-overflow", this, interrupt_pulse_accumulatorB_overflow)
 
-	, interrupt_pulse_accumulator_input_edge(0xDA)
-	, param_interrupt_pulse_accumulator_input_edge("interrupt-pulse-accumulator-input-edge", this, interrupt_pulse_accumulator_input_edge)
+	, interrupt_pulse_accumulatorA_input_edge(0xDA)
+	, param_interrupt_pulse_accumulatorA_input_edge("interrupt-pulse-accumulator-input-edge", this, interrupt_pulse_accumulatorA_input_edge)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
 	, buildin_edge_generator(true)
 	, param_buildin_edge_generator("buildin-edge-generator", this, buildin_edge_generator, "Use buildin edge generator or external instrument")
-	, buildin_edge_generator_period_int(1000)
+	, buildin_edge_generator_period_int(25000)
 	, param_buildin_edge_generator_period("buildin_edge_generator_period", this, buildin_edge_generator_period_int, "Buildin edge generator in pico-seconds. Default 1000ps.")
+
+	, pinLogic_reg("pin", this, pinLogic, 8, "ECT input/output pin")
 
 	, prnt_write(false)
 	, icsys_write(false)
@@ -98,26 +100,22 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, delay_counter_enabled(false)
 {
 
-	uint8_t pacn_number;
 	char channelName[20];
 
 	for (uint8_t i=0; i<4; i++) {
-#if BYTE_ORDER == BIG_ENDIAN
-		pacn_number = i;
-#else
-		pacn_number =  4-i-1;
-#endif
-
 		sprintf (channelName, "pa%d", i);
-		pc8bit[i] = new PulseAccumulator(channelName, this, pacn_number, &pacn_register[i], &paxh_registers[i]);
+		pc8bit[i] = new PulseAccumulator(channelName, this, i, &pacn_register[i], &paxh_registers[i]);
 	}
 
 	for (uint8_t i=0; i<8; i++) {
 
+		pinLogic[i] = false;
+		pinLogic_reg[i].SetMutable(true);
+
 		if (i < 4) {
-			ioc_channel[i] = new IOC_Channel_t(this, i, &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
+			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
 		} else {
-			ioc_channel[i] = new IOC_Channel_t(this, i, &tc_registers[i], NULL, NULL);
+			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], NULL, NULL);
 		}
 
 	}
@@ -217,6 +215,12 @@ void ECT::exitFreezeMode() {
  */
 void ECT::RunMainTimer() {
 
+	/**
+	 * TODO:
+	 * - I have to choose edge frequency to emulate physical environment without causing system troubleshooting.
+	 * - I have to take into account the edge delay to generate next edge.
+	 */
+
 	bool isValidEdge;
 
 	/* initialize random seed: */
@@ -230,14 +234,22 @@ void ECT::RunMainTimer() {
 		for (uint8_t i=0; i<8; i++) {
 
 			// is capture activated (and hence EdgeDetector Activated) ?
-			if (ioc_channel[i]->getValideEdge() != 0) {
+			// is the channel selected as input capture ?
+			if ((ioc_channel[i]->getValideEdge() != 0) && isInputCapture(i)) {
 
 				// if edge sharing is enabled then channels [4,7] have been respectively stimulated by channels [0,3].
-				if ((i>4) && ((icsys_register & (1 << i)) != 0)) continue;
+				if ((i>4) && ((icsys_register & (1 << i)) != 0)) {
+					if (isInputCapture(i-4)) {
+						continue;
+					} else {
+						*logger << DebugWarning << "Share Input action of Input Capture Channels " << std::dec << i << " and " << std::dec << (i+4) << " is enabled while channel " << std::dec << i << " isn't selected as Input Capture channel" << std::endl << EndDebugWarning;
+					}
+				}
 
 				/* generate edge code */
 				uint8_t edge = (uint8_t) rand() % 3;
 				isValidEdge = false;
+				uint16_t edgeDelay = 0;
 				if ((edge == ioc_channel[i]->getValideEdge()) ||
 						((ioc_channel[i]->getValideEdge() == 3) && ((edge == 1) || (edge == 2))))
 				{
@@ -245,7 +257,7 @@ void ECT::RunMainTimer() {
 					isValidEdge = true;
 					if (i<4) {
 						if (isDelayCounterEnabled()) {
-							uint16_t edgeDelay = (uint16_t) rand() % (edge_delay_counter * 2);
+							edgeDelay = (uint16_t) rand() % (edge_delay_counter * 2);
 							if (edgeDelay < edge_delay_counter) {
 								isValidEdge = false;
 							}
@@ -253,13 +265,26 @@ void ECT::RunMainTimer() {
 					}
 
 					if (isValidEdge) {
-						ioc_channel[i]->RunInputCapture();
+
+						pinLogic[i] = (edge == 1);
+
+						ioc_channel[i]->RunInputCapture(edgeDelay);
 						// is sharing edge enabled ?
 						if ((i<4) && (((icsys_register & (1 << (i+4))) != 0))) {
-							ioc_channel[i+4]->RunInputCapture();
+							if (isInputCapture(i+4)) {
+								ioc_channel[i+4]->RunInputCapture(edgeDelay);
+							} else {
+								*logger << DebugWarning << "Share Input action of Input Capture Channels " << std::dec << i << " and " << std::dec << (i+4) << " is enabled while channel " << std::dec << (i+4) << " isn't selected as Input Capture channel" << std::endl << EndDebugWarning;
+							}
+
 						}
+
 					}
 				}
+			}
+			else	// The channel is selected to Output capture
+			{
+
 			}
 		}
 
@@ -286,7 +311,19 @@ void ECT::RunMainTimerCounter() {
 
 		while (main_timer_enabled && ((tscr1_register & 0x80) != 0)) {
 			wait(prescaled_time);
-			tcnt_register = (tcnt_register + 1) % 0x10000;
+			if (tcnt_register == 0xFFFF) {
+				// Timer overflow
+				tcnt_register = 0x0000;
+				if ((tc_registers[7] != 0xFFFF) || !isTimerCounterResetEnabled()) {
+					// set TFLG2::TOF timer overflow flag
+					tflg2_register = tflg2_register | 0x80;
+				}
+				assertInterrupt(interrupt_offset_timer_overflow);
+			} else {
+				if ((tc_registers[7] != 0x0000) || !isTimerCounterResetEnabled()) {
+					tcnt_register = tcnt_register + 1;
+				}
+			}
 		}
 	}
 }
@@ -308,19 +345,21 @@ void ECT::RunDownCounter() {
 	}
 }
 
-void ECT::runCaptureCompareAction() {
-	for (int i=0; i<8; i++) {
-		ioc_channel[i]->runCaptureCompareAction();
+void ECT::RunCaptureCompare() {
+	for (uint8_t i=0; i<8; i++) {
+		if (!isInputCapture(i)) {
+			ioc_channel[i]->RunCaptureCompare(false);
+		}
 	}
 }
 
 void ECT::assertInterrupt(uint8_t interrupt_offset) {
 
-	if ((interrupt_offset >= (interrupt_offset_channel0 - 14)) && (interrupt_offset <= interrupt_offset_channel0 )) ;
-	if (interrupt_offset == interrupt_offset_timer_overflow) ;
+	if ((interrupt_offset >= (interrupt_offset_channel0 - 0xE)) && (interrupt_offset <= interrupt_offset_channel0 ) && !isInputOutputInterruptEnabled((interrupt_offset_channel0 - interrupt_offset)/2)) return;
+	if ((interrupt_offset == interrupt_offset_timer_overflow) && !isTimerOverflowinterruptEnabled()) return;
 	if ((interrupt_offset == interrupt_pulse_accumulatorA_overflow) && ((pactl_register & 0x02) == 0)) return;
 	if ((interrupt_offset == interrupt_pulse_accumulatorB_overflow) && ((pbctl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == interrupt_pulse_accumulator_input_edge) && ((pactl_register & 0x01) == 0)) return;
+	if ((interrupt_offset == interrupt_pulse_accumulatorA_input_edge) && ((pactl_register & 0x01) == 0)) return;
 
 
 	tlm_phase phase = BEGIN_REQ;
@@ -623,7 +662,13 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		} break;
 		case CFORC: {
 			cforc_register = *((uint8_t *)value);
-			runCaptureCompareAction();
+
+			for (uint8_t i=0; i<8; i++) {
+				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
+					ioc_channel[i]->RunCaptureCompare(true);
+				}
+			}
+
 		} break;
 		case OC7M: {
 			oc7m_register = *((uint8_t *)value);
@@ -682,18 +727,16 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			ttof_register = *((uint8_t *)value);
 		} break;
 		case TCTL1: {
-			/**
-			 * TODO: perform the action depending on (OMx,OLx)
-			 */
 			if (size == 2) {
 				tctl12_register = *((uint16_t *)value);
 			} else {
 				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 			}
-
+			configureOutputAction();
 		} break;
 		case TCTL2: {
 			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)value);
+			configureOutputAction();
 		} break;
 		case TCTL3: {
 			if (size == 2) {
@@ -958,6 +1001,15 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 	return true;
 }
 
+inline void ECT::configureOutputAction() {
+
+	for (uint8_t i=0; i<8; i++) {
+		uint8_t outputAction = ((uint16_t) (tctl12_register & (3 << (i*2))) >> (i*2)) & 0x03;
+
+		ioc_channel[i]->setOutputAction(outputAction);
+	}
+}
+
 inline void ECT::configureEdgeDetector() {
 
 	for (uint8_t i=0; i<8; i++) {
@@ -998,13 +1050,31 @@ ECT::PulseAccumulator::PulseAccumulator(const sc_module_name& name, ECT *parent,
 
 {
 
-	pacnMask = (0x01 << pacn_number);
-
 	SC_HAS_PROCESS(PulseAccumulator);
 
 	SC_THREAD(Run);
 	sensitive << wakeup_event;
 
+}
+
+void ECT::PulseAccumulator::countEdge8Bit(uint16_t edgeDelay) {
+	if (edgeDelay > 2) {
+		if (*pacn_register_ptr == 0xFF) {
+			if (!ectParent->isPulseAccumulatorsMaximumCount()) {
+				*pacn_register_ptr = 0x00;
+			}
+			if (pacn_index == 3) {
+				ectParent->setPulseAccumulatorAOverflowFlag();
+				ectParent->assertInterrupt(ectParent->getInterruptPulseAccumulatorAOverflow());
+			} else if (pacn_index == 1) {
+				ectParent->setPulseAccumulatorBOverflowFlag();
+				ectParent->assertInterrupt(ectParent->getInterruptPulseAccumulatorBOverflow());
+			}
+		} else {
+			*pacn_register_ptr = *pacn_register_ptr + 1;
+		}
+
+	}
 }
 
 void ECT::PulseAccumulator::latchToHoldingRegisters() {
@@ -1104,12 +1174,13 @@ inline bool ECT::transferOutputCompareToTimerPort(uint8_t channel_index) {
 //=             ECT Channel methods                   =
 //=====================================================
 
-ECT::IOC_Channel_t::IOC_Channel_t(ECT *parent, const uint8_t index, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit) :
+ECT::IOC_Channel_t::IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit) :
 	  ectParent(parent)
 	, ioc_index(index)
 	, tc_register_ptr(tc_ptr)
 	, tch_register_ptr(tch_ptr)
 	, pulseAccumulator(pc8bit)
+	, channelPinLogic(pinLogic)
 
 {
 
@@ -1117,28 +1188,58 @@ ECT::IOC_Channel_t::IOC_Channel_t(ECT *parent, const uint8_t index, uint16_t *tc
 
 }
 
-void ECT::IOC_Channel_t::RunInputCapture() {
+void ECT::IOC_Channel_t::RunInputCapture(uint16_t edgeDelay) {
 
 	// Non-Buffered IC channels
 	if (tch_register_ptr == NULL) {
 		if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || (*tc_register_ptr == 0x0000)) {
 			*tc_register_ptr = ectParent->getMainTimerValue();
+			// set the TFLG1::CxF to show that input capture occurs
+			ectParent->setTimerinterruptFlag(ioc_index);
+			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
 		}
 	}
 	else //  buffered IC Channels
 	{
+		if (ectParent->isPulseAccumulators8BitEnabled(pulseAccumulator->getIndex())) {
+			pulseAccumulator->countEdge8Bit(edgeDelay);
+		}
+
 		// IC latch mode (ICSYS::LATQ=1)
 		if (ectParent->isLatchMode()) {
 			if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || ((*tc_register_ptr == 0x0000) && (*tch_register_ptr == 0x0000))) {
 				// In case of latching, the contents of the holding register are overwritten
 				*tc_register_ptr = ectParent->getMainTimerValue();
-				*tch_register_ptr = *tc_register_ptr;
+				if (ectParent->isBufferEnabled()) {
+					*tch_register_ptr = *tc_register_ptr;
+				}
 			}
+
+			/**
+			 *  ICSYS::TFMOD=0 : The timer flags C3F-C0F in the TFLG1 are set
+			 *                 when a valid input capture transition on the corresponding port pin occurs.
+			 *  ICSYS::LATQ=1  : If the queue mode is not engaged, the timer flags C3F–C0F are set the same way as for TFMOD = 0.
+			 */
+			ectParent->setTimerinterruptFlag(ioc_index);
+			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+
 		}
 		else // IC Queue Mode (ICSYS::LATQ=0)
 		{
 			if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || ((*tc_register_ptr == 0x0000) && (*tch_register_ptr == 0x0000))) {
-				*tch_register_ptr = *tc_register_ptr;
+				if (ectParent->isBufferEnabled()) {
+					*tch_register_ptr = *tc_register_ptr;
+					/**
+					 *  ICSYS::TFMOD=1 : If in queue mode (BUFEN = 1 and LATQ = 0), the timer flags C3F–C0F in TFLG1 are set only when a latch
+					 *                      on the corresponding holding register occurs.
+					 *                   If the queue mode is not engaged, the timer flags C3F–C0F are set the same way as for TFMOD = 0.
+					 */
+
+					if ((ectParent->getTimerFlagSettingMode() != 0) && (*tch_register_ptr != 0x0000)) {
+						ectParent->setTimerinterruptFlag(ioc_index);
+						ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+					}
+				}
 				*tc_register_ptr = ectParent->getMainTimerValue();
 			}
 		}
@@ -1159,28 +1260,47 @@ void ECT::IOC_Channel_t::latchToHoldingRegisters() {
 	pulseAccumulator->latchToHoldingRegisters();
 }
 
-void ECT::IOC_Channel_t::runCaptureCompareAction() {
+void ECT::IOC_Channel_t::RunCaptureCompare(bool forced) {
 	/**
 	 * This method is called by writing to "CFORC" register or by starting output compare thread.
-	 * Run the action which is programmed for output compare "x" to occur immediately.
-	 * The interrupt flag does not get set. It is set by the caller if required.
+	 * 1. Run the action which is programmed for output compare "x" to occur immediately.
+	 * 2. if (forced=true) then
+	 * 2.1.  The interrupt flag does not get set.
+	 * 2.2   The forced output compare take precedence over a successful channel 7 output compare
 	 */
 
-	// check the associated bit in TIOS_register
-	if (ectParent->isInputCapture(ioc_index))
-	{
-
-	}
-	else // the channel is set to output compare
-	{
-
+	if (ectParent->isOutputCompareMaskEnabled(ioc_index)) {
 		/**
-		 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
-		 * will be transfered to the timer port on a successful channel 7 output compare ?
+		 * TODO:
+		 * The corresponding OC7Dx bit in the OC7D register (output compare 7 data) will be transfered to the timer port
+		 * on a successful channel 7 output compare.
 		 */
-		if (ectParent->transferOutputCompareToTimerPort(ioc_index)) {
+	} else {
 
+		switch (getOutputAction()) {
+		case 0: /* Timer disconnected from output pin logic */ break;
+		case 1: {
+			// Toggle OCx output line
+			// TODO:
+		} break;
+		case 2: {
+			// Clear OCx output line to zero
+			*channelPinLogic = true;
+		} break;
+		case 3: {
+			// Set OCx output line to one
+
+		} break;
+		default: /* output action is encoded in TCTL1/TCTL2 registers on 2-bits */;
 		}
+	}
+
+	/**
+	 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
+	 * will be transfered to the timer port on a successful channel 7 output compare ?
+	 */
+	if (ectParent->transferOutputCompareToTimerPort(ioc_index)) {
+
 	}
 }
 
@@ -1264,14 +1384,21 @@ bool ECT::BeginSetup() {
 	uint8_t pacn_number;
 
 	for (uint8_t i=0; i<4; i++) {
+		sprintf(buf, "%s.PACN%d",name(), i);
 #if BYTE_ORDER == BIG_ENDIAN
-		pacn_number = i;
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) (&pacn_register[i]+1)));
 #else
-		pacn_number =  4-i-1;
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &pacn_register[i]));
 #endif
 
-		sprintf(buf, "%s.PACN%d",name(), pacn_number);
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pacn_register[i]);
+		sprintf(buf, "%s.PA%dH",name(), i);
+
+#if BYTE_ORDER == BIG_ENDIAN
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) (&paxh_registers[i+1])));
+#else
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &paxh_registers[i]));
+#endif
+
 	}
 
 	sprintf(buf, "%s.MCCTL",name());
@@ -1306,18 +1433,6 @@ bool ECT::BeginSetup() {
 
 	sprintf(buf, "%s.PBFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbflg_register);
-
-	sprintf(buf, "%s.PA3H",name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[3]);
-
-	sprintf(buf, "%s.PA2H",name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[2]);
-
-	sprintf(buf, "%s.PA1H",name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[1]);
-
-	sprintf(buf, "%s.PA0H",name());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paxh_registers[0]);
 
 	sprintf(buf, "%s.MCCNT",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &mccnt_register);
@@ -1405,6 +1520,9 @@ void ECT::Reset() {
 		main_timer_enabled = false;
 		down_counter_enabled = false;
 		delay_counter_enabled = false;
+
+		for (uint8_t i=0; i<8; i++) { pinLogic[i] = false; }
+
 }
 
 void ECT::ComputeInternalTime() {
