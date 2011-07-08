@@ -203,7 +203,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	}
 	
 	if(instructions_length > max_size) return -1;
-	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, instructions_length, rawdata);
+	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, instructions_length, rawdata, DW_CFP_INSTRUCTIONS);
 	size += instructions_length;
 
 	return size;
@@ -217,6 +217,22 @@ void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	{
 		std::cerr << "Can't find CIE at offset " << cie_pointer << std::endl;
 	}
+	else
+	{
+		dw_call_frame_prog->SetCIE(dw_cie);
+	}
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_FDE<MEMORY_ADDR>::GetInitialLocation() const
+{
+	return initial_location;
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_FDE<MEMORY_ADDR>::GetAddressRange() const
+{
+	return address_range;
 }
 
 // template <class MEMORY_ADDR>

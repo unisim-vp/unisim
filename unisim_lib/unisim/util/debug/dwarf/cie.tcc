@@ -43,6 +43,17 @@ namespace dwarf {
 template <class MEMORY_ADDR>
 DWARF_CIE<MEMORY_ADDR>::DWARF_CIE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
+	, dw_fmt(FMT_DWARF32)
+	, offset(0)
+	, id(0)
+	, length(0)
+	, cie_id(0)
+	, version(0)
+	, augmentation(0)
+	, code_alignment_factor()
+	, data_alignment_factor()
+	, dw2_return_address_register(0)
+	, dw3_return_address_register()
 	, dw_initial_call_frame_prog(0)
 {
 }
@@ -173,7 +184,8 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	}
 	
 	if(initial_instructions_length > max_size) return -1;
-	dw_initial_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, initial_instructions_length, rawdata);
+	dw_initial_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, initial_instructions_length, rawdata, DW_CFP_INITIAL_INSTRUCTIONS);
+	dw_initial_call_frame_prog->SetCIE(this);
 	size += initial_instructions_length;
 
 	return size;
@@ -197,6 +209,18 @@ template <class MEMORY_ADDR>
 unsigned int DWARF_CIE<MEMORY_ADDR>::GetId() const
 {
 	return id;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_LEB128& DWARF_CIE<MEMORY_ADDR>::GetCodeAlignmentFactor() const
+{
+	return code_alignment_factor;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_LEB128& DWARF_CIE<MEMORY_ADDR>::GetDataAlignmentFactor() const
+{
+	return data_alignment_factor;
 }
 
 template <class MEMORY_ADDR>

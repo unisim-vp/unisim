@@ -127,6 +127,7 @@ private:
 	sc_time max_idle_time;
 	sc_time run_time;
 	sc_time idle_time;
+	bool enable_host_idle;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
 	double ipc;
@@ -136,6 +137,7 @@ private:
 	Parameter<sc_time> param_ext_timer_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Parameter<bool> param_enable_host_idle;
 	Statistic<double> stat_one;
 	Statistic<sc_time> stat_run_time;
 	Statistic<sc_time> stat_idle_time;

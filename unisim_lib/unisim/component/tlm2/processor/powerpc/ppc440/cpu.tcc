@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_PPC440_CPU_TCC__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_PPC440_CPU_TCC__
 
+#include <unistd.h>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -69,6 +71,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, max_idle_time()
 	, run_time()
 	, idle_time()
+	, enable_host_idle(false)
 	, ev_max_idle()
 	, ev_irq()
 	, ipc(1.0)
@@ -77,6 +80,7 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
 	, stat_one("one", this, one, "one")
 	, stat_run_time("run-time", this, run_time, "run time")
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
@@ -439,9 +443,10 @@ void CPU<CONFIG>::Idle()
 		// CPU was really idle
 		sc_time true_idle_time(delta_time);
 		true_idle_time -= cpu_time;
-#if 0
-		usleep(true_idle_time.to_seconds() * 1.0e6);
-#endif
+		if(enable_host_idle)
+		{
+			usleep(true_idle_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
+		}
 		idle_time += true_idle_time;
 		cpu_time = SC_ZERO_TIME;
 	}
