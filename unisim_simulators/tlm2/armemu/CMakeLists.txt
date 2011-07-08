@@ -15,6 +15,27 @@ set ( SIM_DESCRIPTION "UNISIM ARMv5 User Level Simulator" )
 set ( SIM_PYTHON_MODULE_NAME "armemu" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
+# all the libraries need to be compiled with -fPIC otherwise dynamic linking
+#   might not work properly
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_CXX_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH "${FLAGS}" )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_CXX_FLAGS "${FLAGS} -fPIC" CACHE STRING "CMAKE_CXX_FLAGS" )
+endif ( FPIC_MATCH )
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_C_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH "${FLAGS}" )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_C_FLAGS "${FLAGS} -fPIC" CACHE STRING "CMAKE_C_FLAGS" )
+endif ( FPIC_MATCH )
+
 if ( UNIX AND NOT APPLE )
 	find_file ( LSB_RELEASE_FILE lsb-release /etc )
 	if ( LSB_RELEASE_FILE )
