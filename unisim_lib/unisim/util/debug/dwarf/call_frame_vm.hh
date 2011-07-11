@@ -57,168 +57,206 @@ const unsigned int DW_REG_RULE_EXPRESSION = 5;
 const unsigned int DW_REG_RULE_VAL_EXPRESSION = 6;
 
 template <class MEMORY_ADDR>
-class CFARule
+std::ostream& operator << (std::ostream& os, const DWARF_CFARule<MEMORY_ADDR>& cfa_rule);
+
+template <class MEMORY_ADDR>
+class DWARF_CFARule
 {
 public:
-	CFARule(unsigned int type);
-	virtual ~CFARule();
+	DWARF_CFARule(unsigned int type);
+	virtual ~DWARF_CFARule();
 	unsigned int GetType() const;
+	static DWARF_CFARule<MEMORY_ADDR> *Clone(const DWARF_CFARule<MEMORY_ADDR> *cfa_rule);
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CFARule<MEMORY_ADDR>& cfa_rule);
+protected:
+	virtual std::ostream& Print(std::ostream& os) const = 0;
 private:
 	unsigned int type;
 };
 
 template <class MEMORY_ADDR>
-class CFARuleRegisterOffset : public CFARule<MEMORY_ADDR>
+class DWARF_CFARuleRegisterOffset : public DWARF_CFARule<MEMORY_ADDR>
 {
 public:
-	CFARuleRegisterOffset(unsigned int dw_reg_num, int64_t dw_offset);
-	CFARuleRegisterOffset(const CFARuleRegisterOffset<MEMORY_ADDR>& cfa_rule_offset);
-	virtual ~CFARuleRegisterOffset();
+	DWARF_CFARuleRegisterOffset(unsigned int dw_reg_num, int64_t dw_offset);
+	DWARF_CFARuleRegisterOffset(const DWARF_CFARuleRegisterOffset<MEMORY_ADDR>& cfa_rule_offset);
+	virtual ~DWARF_CFARuleRegisterOffset();
 	void SetRegisterNumber(unsigned int dw_reg_num);
 	void SetOffset(int64_t dw_offset);
 	unsigned int GetRegisterNumber() const;
 	int64_t GetOffset() const;
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	unsigned int dw_reg_num;
 	int64_t dw_offset;
 };
 
 template <class MEMORY_ADDR>
-class CFARuleExpression : public CFARule<MEMORY_ADDR>
+class DWARF_CFARuleExpression : public DWARF_CFARule<MEMORY_ADDR>
 {
 public:
-	CFARuleExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
-	CFARuleExpression(const CFARuleExpression<MEMORY_ADDR>& cfa_rule_expression);
-	virtual ~CFARuleExpression();
+	DWARF_CFARuleExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
+	DWARF_CFARuleExpression(const DWARF_CFARuleExpression<MEMORY_ADDR>& cfa_rule_expression);
+	virtual ~DWARF_CFARuleExpression();
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	const DWARF_Expression<MEMORY_ADDR> *dw_expr;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRule
+std::ostream& operator << (std::ostream& os, const DWARF_RegisterRule<MEMORY_ADDR>& register_rule);
+
+template <class MEMORY_ADDR>
+class DWARF_RegisterRule
 {
 public:
-	RegisterRule(unsigned int dw_rule_type);
-	virtual ~RegisterRule();
+	DWARF_RegisterRule(unsigned int dw_rule_type);
+	virtual ~DWARF_RegisterRule();
 	unsigned int GetType() const;
+	static DWARF_RegisterRule<MEMORY_ADDR> *Clone(const DWARF_RegisterRule<MEMORY_ADDR> *register_rule);
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RegisterRule<MEMORY_ADDR>& register_rule);
+protected:
+	virtual std::ostream& Print(std::ostream& os) const = 0;
 private:
 	unsigned int dw_rule_type;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleUndefined : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleUndefined : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleUndefined(const RegisterRuleUndefined<MEMORY_ADDR>& rule);
-	RegisterRuleUndefined();
-	virtual ~RegisterRuleUndefined();
+	DWARF_RegisterRuleUndefined(const DWARF_RegisterRuleUndefined<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleUndefined();
+	virtual ~DWARF_RegisterRuleUndefined();
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleSameValue : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleSameValue : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleSameValue(const RegisterRuleSameValue<MEMORY_ADDR>& rule);
-	RegisterRuleSameValue();
-	virtual ~RegisterRuleSameValue();
+	DWARF_RegisterRuleSameValue(const DWARF_RegisterRuleSameValue<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleSameValue();
+	virtual ~DWARF_RegisterRuleSameValue();
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleOffset : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleOffset : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleOffset(const RegisterRuleOffset<MEMORY_ADDR>& rule);
-	RegisterRuleOffset(int64_t dw_offset);
-	virtual ~RegisterRuleOffset();
+	DWARF_RegisterRuleOffset(const DWARF_RegisterRuleOffset<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleOffset(int64_t dw_offset);
+	virtual ~DWARF_RegisterRuleOffset();
 	int64_t GetOffset() const;
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	int64_t dw_offset;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleValOffset : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleValOffset : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleValOffset(const RegisterRuleValOffset<MEMORY_ADDR>& rule);
-	RegisterRuleValOffset(int64_t dw_offset);
-	virtual ~RegisterRuleValOffset();
+	DWARF_RegisterRuleValOffset(const DWARF_RegisterRuleValOffset<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleValOffset(int64_t dw_offset);
+	virtual ~DWARF_RegisterRuleValOffset();
 	int64_t GetOffset() const;
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	int64_t dw_offset;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleRegister : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleRegister : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleRegister(const RegisterRuleRegister<MEMORY_ADDR>& rule);
-	RegisterRuleRegister(unsigned int dw_reg_num);
-	virtual ~RegisterRuleRegister();
+	DWARF_RegisterRuleRegister(const DWARF_RegisterRuleRegister<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleRegister(unsigned int dw_reg_num);
+	virtual ~DWARF_RegisterRuleRegister();
 	unsigned int GetRegisterNumber() const;
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	unsigned int dw_reg_num;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleExpression : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleExpression : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleExpression(const RegisterRuleExpression<MEMORY_ADDR>& rule);
-	RegisterRuleExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
-	virtual ~RegisterRuleExpression();
+	DWARF_RegisterRuleExpression(const DWARF_RegisterRuleExpression<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
+	virtual ~DWARF_RegisterRuleExpression();
 	const DWARF_Expression<MEMORY_ADDR> *GetExpression() const;
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	const DWARF_Expression<MEMORY_ADDR> *dw_expr;
 };
 
 template <class MEMORY_ADDR>
-class RegisterRuleValExpression : public RegisterRule<MEMORY_ADDR>
+class DWARF_RegisterRuleValExpression : public DWARF_RegisterRule<MEMORY_ADDR>
 {
 public:
-	RegisterRuleValExpression(const RegisterRuleValExpression<MEMORY_ADDR>& rule);
-	RegisterRuleValExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
-	virtual ~RegisterRuleValExpression();
+	DWARF_RegisterRuleValExpression(const DWARF_RegisterRuleValExpression<MEMORY_ADDR>& rule);
+	DWARF_RegisterRuleValExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
+	virtual ~DWARF_RegisterRuleValExpression();
 	const DWARF_Expression<MEMORY_ADDR> *GetExpression() const;
+protected:
+	virtual std::ostream& Print(std::ostream& os) const;
 private:
 	const DWARF_Expression<MEMORY_ADDR> *dw_expr;
 };
 
 template <class MEMORY_ADDR>
-class RuleMatrixRow
+std::ostream& operator << (std::ostream& os, const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row);
+
+template <class MEMORY_ADDR>
+class DWARF_RuleMatrixRow
 {
 public:
-	RuleMatrixRow(MEMORY_ADDR location);
-	RuleMatrixRow(MEMORY_ADDR location, const RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row);
-	~RuleMatrixRow();
-	void SetCFARule(CFARule<MEMORY_ADDR> *cfa_rule);
-	void SetRegisterRule(unsigned int reg_num, RegisterRule<MEMORY_ADDR> *reg_rule);
+	DWARF_RuleMatrixRow(MEMORY_ADDR location);
+	DWARF_RuleMatrixRow(MEMORY_ADDR location, const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row);
+	~DWARF_RuleMatrixRow();
+	void SetCFARule(DWARF_CFARule<MEMORY_ADDR> *cfa_rule);
+	void SetRegisterRule(unsigned int reg_num, DWARF_RegisterRule<MEMORY_ADDR> *reg_rule);
 	void RestoreRegisterRule(unsigned int reg_num);
 	MEMORY_ADDR GetLocation() const;
-	CFARule<MEMORY_ADDR> *GetCFARule() const;
-	RegisterRule<MEMORY_ADDR> *GetRegisterRule(unsigned int reg_num) const;
+	DWARF_CFARule<MEMORY_ADDR> *GetCFARule() const;
+	DWARF_RegisterRule<MEMORY_ADDR> *GetRegisterRule(unsigned int reg_num) const;
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row);
 private:
 	MEMORY_ADDR location;
-	CFARule<MEMORY_ADDR> *cfa_rule;
-	std::vector<RegisterRule<MEMORY_ADDR> *> reg_rules;
+	DWARF_CFARule<MEMORY_ADDR> *cfa_rule;
+	std::vector<DWARF_RegisterRule<MEMORY_ADDR> *> reg_rules;
 };
 
 template <class MEMORY_ADDR>
-class RuleMatrix
+std::ostream& operator << (std::ostream& os, const DWARF_RuleMatrix<MEMORY_ADDR>& rule_matrix);
+
+template <class MEMORY_ADDR>
+class DWARF_RuleMatrix
 {
 public:
-	RuleMatrix();
-	RuleMatrix(const RuleMatrix<MEMORY_ADDR>& rule_matrix);
-	~RuleMatrix();
+	DWARF_RuleMatrix();
+	DWARF_RuleMatrix(const DWARF_RuleMatrix<MEMORY_ADDR>& rule_matrix);
+	~DWARF_RuleMatrix();
 	
-	RuleMatrixRow<MEMORY_ADDR> *operator[](MEMORY_ADDR loc);
+	DWARF_RuleMatrixRow<MEMORY_ADDR> *operator[](MEMORY_ADDR loc) const;
+	DWARF_RuleMatrixRow<MEMORY_ADDR> *GetRow(MEMORY_ADDR loc) const;
 	bool HasRow(MEMORY_ADDR loc) const;
-	void InsertRow(RuleMatrixRow<MEMORY_ADDR> *rule_matrix_row);
+	void InsertRow(DWARF_RuleMatrixRow<MEMORY_ADDR> *rule_matrix_row);
 	void CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc);
-	void RememberState(MEMORY_ADDR loc);
-	void RestoreState(MEMORY_ADDR loc);
+	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RuleMatrix<MEMORY_ADDR>& rule_matrix);
 private:
-	std::map<MEMORY_ADDR, RuleMatrixRow<MEMORY_ADDR> *> rule_matrix_rows;
-	std::stack<RuleMatrixRow<MEMORY_ADDR> *> state_stack;
+	std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *> rule_matrix_rows;
 };
 
 template <class MEMORY_ADDR>
@@ -228,10 +266,14 @@ public:
 	DWARF_CallFrameVM();
 	~DWARF_CallFrameVM();
 	bool Disasm(std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
-	bool Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, RuleMatrix<MEMORY_ADDR> *rule_matrix);
+	bool Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix);
 private:
-	bool Run(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, std::ostream *os, MEMORY_ADDR *location, RuleMatrix<MEMORY_ADDR> *rule_matrix);
+	bool RememberState(DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix, MEMORY_ADDR loc);
+	bool RestoreState(DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix, MEMORY_ADDR loc);
+	void ResetState();
+	bool Run(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, std::ostream *os, MEMORY_ADDR *location, DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix);
 	
+	std::stack<DWARF_RuleMatrixRow<MEMORY_ADDR> *> row_stack;
 };
 
 } // end of namespace dwarf
