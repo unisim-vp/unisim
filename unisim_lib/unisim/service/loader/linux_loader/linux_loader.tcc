@@ -37,6 +37,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <vector>
 #include <stdlib.h>
 
 namespace unisim {
@@ -243,6 +244,169 @@ LinuxLoader<T>::SetupLoad()
 	return true;
 }
 
+template <class T>
+void
+LinuxLoader<T> ::
+DumpSection(unisim::util::debug::blob::Section<T> const &s, int indent)
+{
+	std::string s_indent_pre(indent + 1, '-');
+	std::stringstream ss_indent;
+	ss_indent << s_indent_pre << " ";
+	std::string s_indent(ss_indent.str().c_str());
+
+	logger << s_indent << "S ";
+	logger << "Name: " << s.GetName() << std::endl;
+	logger << s_indent << "  Type: ";
+	switch ( s.GetType() )
+	{
+		case unisim::util::debug::blob::Section<T>::TY_UNKNOWN:
+			logger << "Unknown ";
+			break;
+		case unisim::util::debug::blob::Section<T>::TY_NULL:
+			logger << "Null    ";
+			break;
+		case unisim::util::debug::blob::Section<T>::TY_PROGBITS:
+			logger << "Progbits";
+			break;
+		case unisim::util::debug::blob::Section<T>::TY_NOBITS:
+			logger << "Nobits  ";
+			break;
+		case unisim::util::debug::blob::Section<T>::TY_STAB:
+			logger << "Stab    ";
+			break;
+		case unisim::util::debug::blob::Section<T>::TY_STRTAB:
+			logger << "Strtab  ";
+			break;
+	}
+	logger << "  Attribute: ";
+	switch ( s.GetAttr() )
+	{
+		case unisim::util::debug::blob::Section<T>::SA_NULL:
+			logger << "(None)";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_A:
+			logger << "A     ";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_W:
+			logger << "W     ";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_AW:
+			logger << "AW    ";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_X:
+			logger << "X     ";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_AX:
+			logger << "AX    ";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_WX:
+			logger << "WX    ";
+			break;
+		case unisim::util::debug::blob::Section<T>::SA_AWX:
+			logger << "AWX   ";
+			break;
+	}
+	logger << "  Link: " << s.GetLink();
+	logger << "  Alignment: " << s.GetAlignment();
+	logger << "  Address: 0x" << std::hex << s.GetAddr() << std::dec;
+	logger << "  Size: " << s.GetSize();
+	T min_range, max_range;
+	s.GetAddrRange(min_range, max_range);
+	logger << "  Range: 0x" << std::hex << min_range
+		<< "-0x" << max_range << std::dec << std::endl;
+}
+
+template <class T>
+void
+LinuxLoader<T> ::
+DumpBlob(unisim::util::debug::blob::Blob<T> const &b, int indent)
+{
+	std::string s_indent_pre(indent + 1, '+');
+	std::stringstream ss_indent;
+	ss_indent << s_indent_pre << " ";
+	std::string s_indent(ss_indent.str().c_str());
+
+	typename unisim::util::debug::blob::Blob<T>::Capability cap =
+		b.GetCapability();
+	const char *filename = b.GetFilename();
+	T entry = b.GetEntryPoint();
+	T stack = b.GetStackBase();
+	unisim::util::endian::endian_type endian =
+		b.GetEndian();
+
+	if ( indent == 0 )
+		logger << DebugInfo
+			<< "Blob structure" << std::endl;
+	logger << s_indent << "+" << std::endl;
+	logger << s_indent << "Capabilities: ";
+	std::stringstream ss_cap;
+	bool first = true;
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_FILENAME ) { first = false; ss_cap << "Filename";}
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENTRY_POINT ) 
+	{
+		if ( first ) ss_cap << "|";
+		first = false; ss_cap << "EntryPoint";
+	}
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ARCHITECTURE )
+	{
+		if ( first ) ss_cap << "|";
+		first = false; ss_cap << "Architecture";
+	}
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_STACK_BASE )
+	{
+		if ( first ) ss_cap << "|";
+		first = false; ss_cap << "StackBase";
+	}
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENDIAN )
+	{
+		if ( first ) ss_cap << "|";
+		first = false; ss_cap << "Endian";
+	}
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ADDRESS_SIZE )
+	{
+		if ( first ) ss_cap << "|";
+		first = false; ss_cap << "AddressSize";
+	}
+	if ( first )
+		ss_cap << "(Default)";
+	logger << ss_cap.str() << std::endl;
+	
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_FILENAME )
+		logger << s_indent << "Filename: "
+			<< b.GetFilename() << std::endl;
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENTRY_POINT ) 
+		logger << s_indent << "Entry point: 0x"
+			<< std::hex << b.GetEntryPoint() << std::dec << std::endl;
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ARCHITECTURE )
+		logger << s_indent << "Architecture: "
+			<< b.GetArchitecture() << std::endl;
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_STACK_BASE )
+		logger << s_indent << "Stack base: "
+			<< b.GetStackBase() << std::endl;
+	if ( cap & unisim::util::debug::blob::Blob<T>::CAP_ENDIAN )
+		logger << s_indent << "Endian: "
+			<< (b.GetEndian() == unisim::util::endian::E_LITTLE_ENDIAN ?
+					"Little endian" : "Big endian") << std::endl;
+
+	const std::vector<const unisim::util::debug::blob::Section<T> *> &sections =
+		b.GetSections();
+	for ( typename std::vector<const unisim::util::debug::blob::Section<T> *>::const_iterator it = sections.begin();
+			it != sections.end();
+			it++ )
+		DumpSection(*(*it), indent);
+
+	const std::vector<const unisim::util::debug::blob::Blob<T> *> &blobs =
+		b.GetBlobs();
+	for ( typename std::vector<const unisim::util::debug::blob::Blob<T> *>::const_iterator it = blobs.begin();
+			it != blobs.end();
+			it++ )
+		DumpBlob(*(*it), indent + 1);
+
+	logger << s_indent << "+" << std::endl;
+	
+	if ( indent == 0 )
+		logger << EndDebugInfo;
+}
 template<class T>
 bool
 LinuxLoader<T>::SetupBlob()
@@ -251,6 +415,8 @@ LinuxLoader<T>::SetupBlob()
 	if(!loader_import) return false;
 	const unisim::util::debug::blob::Blob<T> *loader_blob = blob_import->GetBlob();
 	if(!loader_blob) return false;
+
+	DumpBlob(*loader_blob, 0);
 
 	// Compute the stack size
 	T stack_size = 0;

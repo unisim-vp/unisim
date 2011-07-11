@@ -118,6 +118,8 @@ private:
 	bool LoadStack();
 	bool SetupLoad();
 	bool SetupBlob();
+	void DumpBlob(unisim::util::debug::blob::Blob<T> const &, int);
+	void DumpSection(unisim::util::debug::blob::Section<T> const &, int);
 	
 	static const int size = sizeof(T);
 
