@@ -157,10 +157,12 @@ public:
 	ECT(const sc_module_name& name, Object *parent = 0);
 	virtual ~ECT();
 
-	void RunMainTimer();
+	void RunInputCapture();
 	void RunMainTimerCounter();
 	inline void main_timer_enable();
 	inline void main_timer_disable();
+
+	void RunCaptureCompare();
 
 	void RunDownCounter();
 	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(); }
@@ -177,9 +179,7 @@ public:
 
 	void assertInterrupt(uint8_t interrupt_offset);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
-	void RunCaptureCompare();
-	void pulseAccumulatorA();
-	void pulseAccumulatorB();
+
 	inline void latchToHoldingRegisters();
 	inline void loadRegisterToModulusCounterCountregister();
 	inline void computeDelayCounter();
@@ -239,8 +239,27 @@ protected:
     bool isLatchMode() { return ((icsys_register & 0x01) != 0); }
     bool isBufferEnabled() { return ((icsys_register & 0x02) != 0); }
     bool isPulseAccumulatorsMaximumCount() { return ((icsys_register & 0x04) != 0); }
-    bool isPulseAccumulatorAEnabled() { return ((pactl_register & 0x40) != 0); }
-    bool isPulseAccumulatorBEnabled() { return ((pbctl_register & 0x40) != 0); }
+
+	/**
+	 * To operate the 16-bit pulse accumulators A and B (PACA and PACB) independently of input capture or
+	 * output compare 7 and 0 respectively, the user must set the corresponding bits: IOSx = 1, OMx = 0, and
+	 * OLx = 0. OC7M7 or OC7M0 in the OC7M register must also be cleared
+	 */
+
+    bool isPulseAccumulatorAEnabled() {
+    	return ((pactl_register & 0x40) != 0) &&
+    			((tios_register & 0x0C) != 0) &&
+    			((tctl12_register & 0x00F0) == 0) &&
+    			((oc7m_register & 0x80) == 0);
+    }
+
+    bool isPulseAccumulatorBEnabled() {
+    	return ((pbctl_register & 0x40) != 0) &&
+    			((tios_register & 0x03) != 0) &&
+    			((tctl12_register & 0x000F) == 0) &&
+    			((oc7m_register & 0x01) == 0);
+    }
+
     bool isPulseAccumulators8BitEnabled(uint8_t pac_index) {
 		if ((icpar_register & (1 << pac_index)) != 0) {
 	    	if (pac_index < 2) {
@@ -267,6 +286,58 @@ protected:
     uint8_t getTimerFlagSettingMode() { return (icsys_register & 0x08) >> 3; }
     void setPulseAccumulatorAOverflowFlag() { paflg_register = paflg_register | 0x02; }
     void setPulseAccumulatorBOverflowFlag() { pbflg_register = pbflg_register | 0x02; }
+
+    /**
+     * isValidEdge() method model the "Edge Detector" circuit
+     */
+    bool isValidEdge(uint8_t channel_index, uint8_t& edgeValue, uint16_t& edgeDelay) {
+		bool isValid = false;
+		if (buildin_edge_generator) {
+			/* generate edge code */
+			edgeValue = (uint8_t) rand() % 3;
+			if (edge_delay_counter > 0) {
+				edgeDelay = (uint16_t) rand() % (edge_delay_counter * 2);
+			}
+
+			/**
+			 * TODO:
+			 * - I have to choose edge frequency to emulate physical environment without causing system troubleshooting.
+			 * - I have to take into account the edge delay to generate next edge.
+			 */
+
+		} else {
+			if (pinLogic[channel_index]) {
+				edgeValue = 1; // rising edge
+			} else {
+				edgeValue = 2; // falling edge
+			}
+			if (channel_index < 4) {
+				edgeDelay = edgeDelayArray[channel_index];
+			}
+		}
+
+
+		if ((edgeValue == ioc_channel[channel_index]->getValideEdge()) ||
+				((ioc_channel[channel_index]->getValideEdge() == 3) && ((edgeValue == 1) || (edgeValue == 2))))
+		{
+			// channels [0,3] are associated with a delay counter
+			isValid = true;
+			if (channel_index < 4) {
+				if (isDelayCounterEnabled()) {
+					if (edgeDelay < edge_delay_counter) {
+						isValid = false;
+					}
+				}
+			}
+
+		}
+
+		return isValid;
+    }
+
+    uint8_t getClockSelection() { return (pactl_register & 0x0C) >> 2; }
+
+	sc_time edge_detector_period;
 
 private:
 	inline void ComputeInternalTime();
@@ -315,9 +386,9 @@ private:
 
 	bool	buildin_edge_generator;
 	Parameter<bool>	param_buildin_edge_generator;
-	uint64_t	buildin_edge_generator_period_int;
-	Parameter<uint64_t>	param_buildin_edge_generator_period;
-	sc_time buildin_edge_generator_period;
+
+	uint64_t	edge_detector_period_int;
+	Parameter<uint64_t>	param_edge_detector_period;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -350,32 +421,87 @@ private:
 
 	bool pinLogic[8];
 	RegisterArray<bool> pinLogic_reg;
+	uint16_t edgeDelayArray[4];
+	RegisterArray<uint16_t> edgeDelayArray_reg;
 
-	class PulseAccumulator : public sc_module {
+	class PulseAccumulator8Bit {
 	public:
-		PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr);
+		PulseAccumulator8Bit(ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr);
 
-		void Run();
-		void wakeup() { pacn_enabled = true; wakeup_event.notify(); };
-		void disable() {pacn_enabled = false; };
 		void latchToHoldingRegisters();
-		void countEdge8Bit(uint16_t edgeDelay);
+		bool countEdge8Bit();
+		void clearPACN() {	*pacn_register_ptr = 0x00;}
 		uint8_t getIndex() { return pacn_index; }
+
 	protected:
 
 	private:
 		uint8_t pacn_index;
 
 		ECT	*ectParent;
-		sc_event wakeup_event;
-		bool pacn_enabled;
 
 		uint8_t *pacn_register_ptr;
 		uint8_t* pah_register_ptr;
 
 	};
 
-	PulseAccumulator* pc8bit[4];
+	PulseAccumulator8Bit* pc8bit[4];
+
+	class PulseAccumulator16Bit : public sc_module {
+	public:
+		PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low);
+
+		void process();
+		void latchToHoldingRegisters();
+		bool countEdge16Bit();
+
+		virtual void RunPulseAccumulator() = 0;
+		virtual void wakeup() = 0;
+
+	protected:
+		ECT	*ectParent;
+		sc_event pulse_accumulator_enable_event;
+
+	private:
+		PulseAccumulator8Bit *pacn_high_ptr;
+		PulseAccumulator8Bit *pacn_low_ptr;
+
+	};
+
+	class PulseAccumulatorA : public PulseAccumulator16Bit {
+	public:
+		PulseAccumulatorA(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low);
+
+		virtual void RunPulseAccumulator();
+		virtual void wakeup() {
+			 if (ectParent->isPulseAccumulatorAEnabled()) {
+				 pulse_accumulator_enable_event.notify();
+			 }
+		}
+
+	protected:
+
+	private:
+
+	} *pacA;
+
+	class PulseAccumulatorB : public PulseAccumulator16Bit {
+	public:
+		PulseAccumulatorB(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low);
+
+		virtual void RunPulseAccumulator();
+		virtual void wakeup() {
+			 if (ectParent->isPulseAccumulatorBEnabled()) {
+				 pulse_accumulator_enable_event.notify();
+			 }
+		}
+
+	protected:
+
+	private:
+
+	} *pacB;
+
 	/**
 	 * TODO: Each pair of pulse accumulator can be used as a 16-bit pulse accumulator.
 	 */
@@ -383,7 +509,7 @@ private:
 	class IOC_Channel_t {
 	public:
 
-		IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit);
+		IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit);
 
 		void RunCaptureCompare(bool forced);
 		void latchToHoldingRegisters();
@@ -403,7 +529,7 @@ private:
 
 		uint16_t* tc_register_ptr;
 		uint16_t* tch_register_ptr;
-		PulseAccumulator* pulseAccumulator;
+		PulseAccumulator8Bit* pulseAccumulator;
 		bool* channelPinLogic;
 
 	} *ioc_channel[8];

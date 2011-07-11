@@ -88,10 +88,11 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	, buildin_edge_generator(true)
 	, param_buildin_edge_generator("buildin-edge-generator", this, buildin_edge_generator, "Use buildin edge generator or external instrument")
-	, buildin_edge_generator_period_int(25000)
-	, param_buildin_edge_generator_period("buildin_edge_generator_period", this, buildin_edge_generator_period_int, "Buildin edge generator in pico-seconds. Default 1000ps.")
+	, edge_detector_period_int(25000)
+	, param_edge_detector_period("edge-detector-period", this, edge_detector_period_int, "Edge detector period in pico-seconds. Default 25000ps.")
 
 	, pinLogic_reg("pin", this, pinLogic, 8, "ECT input/output pin")
+	, edgeDelayArray_reg("edge-delay", this, edgeDelayArray, 4, "Edge Delay for Buffered IC channels. Associated to pins P0-P3.")
 
 	, prnt_write(false)
 	, icsys_write(false)
@@ -104,7 +105,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	for (uint8_t i=0; i<4; i++) {
 		sprintf (channelName, "pa%d", i);
-		pc8bit[i] = new PulseAccumulator(channelName, this, i, &pacn_register[i], &paxh_registers[i]);
+		pc8bit[i] = new PulseAccumulator8Bit(this, i, &pacn_register[i], &paxh_registers[i]);
 	}
 
 	for (uint8_t i=0; i<8; i++) {
@@ -113,6 +114,8 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 		pinLogic_reg[i].SetMutable(true);
 
 		if (i < 4) {
+			edgeDelayArray[i] = 0;
+			edgeDelayArray_reg[i].SetMutable(true);
 			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
 		} else {
 			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], NULL, NULL);
@@ -129,7 +132,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(ECT);
 
-	SC_THREAD(RunMainTimer);
+	SC_THREAD(RunInputCapture);
 	sensitive << main_timer_enable_event;
 
 	SC_THREAD(RunMainTimerCounter);
@@ -137,6 +140,9 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(RunDownCounter);
 	sensitive << down_counter_enable_event;
+
+	pacA = new PulseAccumulatorA("PACA", this, pc8bit[3], pc8bit[2]);
+	pacB = new PulseAccumulatorB("PACB", this, pc8bit[1], pc8bit[0]);
 
 	Reset();
 
@@ -213,21 +219,16 @@ void ECT::exitFreezeMode() {
  * 2: Capture on falling edges only
  * 3: Capture on any edge (rising or falling)
  */
-void ECT::RunMainTimer() {
-
-	/**
-	 * TODO:
-	 * - I have to choose edge frequency to emulate physical environment without causing system troubleshooting.
-	 * - I have to take into account the edge delay to generate next edge.
-	 */
-
-	bool isValidEdge;
+void ECT::RunInputCapture() {
 
 	/* initialize random seed: */
 	srand (12345);
 
+	uint8_t edge = 0;
+	uint16_t edgeDelay = 0;
+
 	while (true) {
-		while (!buildin_edge_generator || !main_timer_enabled || ((tscr1_register & 0x80) == 0)) {
+		while (!main_timer_enabled || ((tscr1_register & 0x80) == 0)) {
 			wait(main_timer_enable_event);
 		}
 
@@ -246,50 +247,40 @@ void ECT::RunMainTimer() {
 					}
 				}
 
-				/* generate edge code */
-				uint8_t edge = (uint8_t) rand() % 3;
-				isValidEdge = false;
-				uint16_t edgeDelay = 0;
-				if ((edge == ioc_channel[i]->getValideEdge()) ||
-						((ioc_channel[i]->getValideEdge() == 3) && ((edge == 1) || (edge == 2))))
-				{
-					// channels [0,3] are associated with a delay counter
-					isValidEdge = true;
-					if (i<4) {
-						if (isDelayCounterEnabled()) {
-							edgeDelay = (uint16_t) rand() % (edge_delay_counter * 2);
-							if (edgeDelay < edge_delay_counter) {
-								isValidEdge = false;
-							}
-						}
-					}
+				if (isValidEdge(i, edge, edgeDelay)) {
 
-					if (isValidEdge) {
+//					if (edge == 1) {
+//						pinLogic[i] = true;
+//						// I am not sure of this interpretation of using oc7d_register !!!
+//						oc7d_register = oc7d_register | ((uint8_t) 1 << i);
+//					} else {
+//						pinLogic[i] = false;
+//						// I am not sure of this interpretation of using oc7d_register !!!
+//						oc7d_register = oc7d_register & ~((uint8_t) 1 << i);
+//					}
 
-						pinLogic[i] = (edge == 1);
-
-						ioc_channel[i]->RunInputCapture(edgeDelay);
-						// is sharing edge enabled ?
-						if ((i<4) && (((icsys_register & (1 << (i+4))) != 0))) {
-							if (isInputCapture(i+4)) {
-								ioc_channel[i+4]->RunInputCapture(edgeDelay);
-							} else {
-								*logger << DebugWarning << "Share Input action of Input Capture Channels " << std::dec << i << " and " << std::dec << (i+4) << " is enabled while channel " << std::dec << (i+4) << " isn't selected as Input Capture channel" << std::endl << EndDebugWarning;
-							}
-
+					ioc_channel[i]->RunInputCapture(edgeDelay);
+					// is sharing edge enabled ?
+					if ((i<4) && (((icsys_register & (1 << (i+4))) != 0))) {
+						if (isInputCapture(i+4)) {
+							ioc_channel[i+4]->RunInputCapture(edgeDelay);
+						} else {
+							*logger << DebugWarning << "Share Input action of Input Capture Channels " << std::dec << i << " and " << std::dec << (i+4) << " is enabled while channel " << std::dec << (i+4) << " isn't selected as Input Capture channel" << std::endl << EndDebugWarning;
 						}
 
 					}
+
 				}
+
 			}
-			else	// The channel is selected to Output capture
+			else	// Capture is disabled or The channel is selected to Output capture
 			{
 
 			}
 		}
 
 		// pause one period to generate new edge
-		wait(buildin_edge_generator_period);
+		wait(edge_detector_period);
 	}
 
 }
@@ -659,6 +650,8 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 	switch (offset) {
 		case TIOS: {
 			 tios_register = *((uint8_t *)value);
+			 pacA->wakeup();
+			 pacB->wakeup();
 		} break;
 		case CFORC: {
 			cforc_register = *((uint8_t *)value);
@@ -672,6 +665,8 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		} break;
 		case OC7M: {
 			oc7m_register = *((uint8_t *)value);
+			 pacA->wakeup();
+			 pacB->wakeup();
 		} break;
 		case OC7D: {
 			oc7d_register = *((uint8_t *)value);
@@ -733,10 +728,16 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 			}
 			configureOutputAction();
+			 pacA->wakeup();
+			 pacB->wakeup();
+
 		} break;
 		case TCTL2: {
 			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)value);
 			configureOutputAction();
+			 pacA->wakeup();
+			 pacB->wakeup();
+
 		} break;
 		case TCTL3: {
 			if (size == 2) {
@@ -782,7 +783,8 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		case PACTL: {
 			uint8_t masked_value = (pactl_register & 0x80) | (*((uint8_t *)value) & 0x7F);
 			pactl_register = masked_value;
-			pulse_accumulatorA_enable_event.notify();
+			 pacA->wakeup();
+
 		} break;
 		case PAFLG: {
 			// writing a one to the flag clears the flag.
@@ -852,37 +854,6 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		} break;
 		case ICPAR: {
 			icpar_register = (icpar_register & 0xF0) | (*((uint8_t *)value) & 0x0F);
-			// is 16-bit pulse accumulator A not enabled ?
-			if ((pactl_register & 0x40) == 0) {
-
-				// is 8-bit pulse accumulator 3 enabled ?
-				if ((icpar_register & 0x08) != 0) {
-					pc8bit[3]->wakeup();
-				} else {
-					pc8bit[3]->disable();
-				}
-				// is 8-bit pulse accumulator 2 enabled ?
-				if ((icpar_register & 0x04) != 0) {
-					pc8bit[2]->wakeup();
-				} else {
-					pc8bit[2]->disable();
-				}
-			}
-
-			if ((pbctl_register & 0x40) == 0) {
-				// is 8-bit pulse accumulator 1 enabled ?
-				if ((icpar_register & 0x02) != 0) {
-					pc8bit[1]->wakeup();
-				} else {
-					pc8bit[1]->disable();
-				}
-				// is 8-bit pulse accumulator 0 enabled ?
-				if ((icpar_register & 0x01) != 0) {
-					pc8bit[0]->wakeup();
-				} else {
-					pc8bit[0]->disable();
-				}
-			}
 		} break;
 		case DLYCT: {
 			dlyct_register = *((uint8_t *)value);
@@ -910,7 +881,7 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		} break;
 		case PBCTL: {
 			pbctl_register = (pbctl_register & 0xBD) | (*((uint8_t *)value) & 0x42);
-			pulse_accumulatorB_enable_event.notify();
+			 pacB->wakeup();
 
 		} break;
 		case PBFLG: {
@@ -1042,66 +1013,115 @@ inline void ECT::computeDelayCounter() {
 	}
 }
 
-ECT::PulseAccumulator::PulseAccumulator(const sc_module_name& name, ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr) :
+ECT::PulseAccumulator8Bit::PulseAccumulator8Bit(ECT *parent, const uint8_t pacn_number, uint8_t *pacn_ptr, uint8_t* pah_ptr) :
 	pacn_register_ptr(pacn_ptr)
 	, pah_register_ptr(pah_ptr)
 	, pacn_index(pacn_number)
-	, pacn_enabled(false)
 
 {
 
-	SC_HAS_PROCESS(PulseAccumulator);
-
-	SC_THREAD(Run);
-	sensitive << wakeup_event;
-
 }
 
-void ECT::PulseAccumulator::countEdge8Bit(uint16_t edgeDelay) {
-	if (edgeDelay > 2) {
-		if (*pacn_register_ptr == 0xFF) {
-			if (!ectParent->isPulseAccumulatorsMaximumCount()) {
-				*pacn_register_ptr = 0x00;
-			}
-			if (pacn_index == 3) {
-				ectParent->setPulseAccumulatorAOverflowFlag();
-				ectParent->assertInterrupt(ectParent->getInterruptPulseAccumulatorAOverflow());
-			} else if (pacn_index == 1) {
-				ectParent->setPulseAccumulatorBOverflowFlag();
-				ectParent->assertInterrupt(ectParent->getInterruptPulseAccumulatorBOverflow());
-			}
-		} else {
-			*pacn_register_ptr = *pacn_register_ptr + 1;
+bool ECT::PulseAccumulator8Bit::countEdge8Bit() {
+
+	bool overflow = false;
+
+	if (*pacn_register_ptr == 0xFF) {
+		overflow = true;
+		if (!ectParent->isPulseAccumulatorsMaximumCount()) {
+			*pacn_register_ptr = 0x00;
 		}
-
+		if (pacn_index == 3) {
+			ectParent->setPulseAccumulatorAOverflowFlag();
+			ectParent->assertInterrupt(ectParent->getInterruptPulseAccumulatorAOverflow());
+		} else if (pacn_index == 1) {
+			ectParent->setPulseAccumulatorBOverflowFlag();
+			ectParent->assertInterrupt(ectParent->getInterruptPulseAccumulatorBOverflow());
+		}
+	} else {
+		*pacn_register_ptr = *pacn_register_ptr + 1;
 	}
+
+	return overflow;
 }
 
-void ECT::PulseAccumulator::latchToHoldingRegisters() {
+void ECT::PulseAccumulator8Bit::latchToHoldingRegisters() {
 
 	*pah_register_ptr = *pacn_register_ptr;
-	*pacn_register_ptr = 0x00;
+	clearPACN();
 }
 
-void ECT::PulseAccumulator::Run() {
+ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
+	sc_module(name)
+	, ectParent(parent)
+	, pacn_high_ptr(pacn_high)
+	, pacn_low_ptr(pacn_low)
+{
 
-	while (true) {
+	SC_HAS_PROCESS(ECT::PulseAccumulator16Bit);
 
-		while (!pacn_enabled) {
-			wait(wakeup_event);
-		}
+	SC_THREAD(process);
+	sensitive << pulse_accumulator_enable_event;
+
+}
+
+void ECT::PulseAccumulator16Bit::process() {
+	RunPulseAccumulator();
+}
+
+void ECT::PulseAccumulator16Bit::latchToHoldingRegisters() {
+	pacn_high_ptr->latchToHoldingRegisters();
+	pacn_low_ptr->latchToHoldingRegisters();
+
+}
+
+bool ECT::PulseAccumulator16Bit::countEdge16Bit() {
+	if (pacn_low_ptr->countEdge8Bit()) {
+		pacn_high_ptr->countEdge8Bit();
 	}
 }
 
-void ECT::pulseAccumulatorA() {
+ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
+		ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pacn_high, pacn_low)
+{
+
+}
+
+void ECT::PulseAccumulatorA::RunPulseAccumulator() {
 
 	while (true) {
 
-		while ((pactl_register & 0x40) == 0) {
-			wait(pulse_accumulatorA_enable_event);
+		while (!ectParent->isPulseAccumulatorAEnabled()) {
+			wait(pulse_accumulator_enable_event);
 		}
 
-		uint8_t clksel = (pactl_register & 0x0C) >> 2;
+		/**
+		 *  check PACTL::PAMOD
+		 *  0-> Event counter mode
+		 *  1-> Gated time accumulator mode
+		 */
+
+		/**
+		 * For PAMOD bit = 0 (event counter mode).
+		 *   0 Falling edges on PT7 pin cause the count to be incremented
+		 *   1 Rising edges on PT7 pin cause the count to be incremented
+		 *
+		 * For PAMOD bit = 1 (gated time accumulation mode).
+		 *   0 PT7 input pin high enables bus clock divided by 64 to Pulse Accumulator and
+		 *     the trailing falling edge on PT7 sets the PAIF flag.
+		 *   1 PT7 input pin low enables bus clock divided by 64 to Pulse Accumulator and
+		 *     the trailing rising edge on PT7 sets the PAIF flag.
+		 *
+		 * If the timer is not active (TEN = 0 in TSCR1), there is no divide-by-64 since the ÷64 clock is generated by the timer prescaler
+		 */
+
+		uint8_t edgeValue = 0;
+		uint16_t edgeDelay = 0;
+	    if (ectParent->isValidEdge(7, edgeValue, edgeDelay)) {
+
+	    }
+
+		uint8_t clksel = ectParent->getClockSelection();
 		switch (clksel) {
 			case 0: {
 				// TODO: Use timer prescaler clock as timer counter clock
@@ -1117,20 +1137,36 @@ void ECT::pulseAccumulatorA() {
 			} break;
 		}
 
+	    wait(ectParent->edge_detector_period);
+
 	}
 
 }
 
-void ECT::pulseAccumulatorB() {
 
+ECT::PulseAccumulatorB::PulseAccumulatorB(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
+	ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pacn_high, pacn_low)
+{
+
+}
+
+void ECT::PulseAccumulatorB::RunPulseAccumulator() {
 	while (true) {
 
-		while ((pbctl_register & 0x40) == 0) {
-			wait(pulse_accumulatorB_enable_event);
+		while (!ectParent->isPulseAccumulatorBEnabled()) {
+			wait(pulse_accumulator_enable_event);
 		}
 
-	}
+		uint8_t edgeValue = 0;
+		uint16_t edgeDelay = 0;
+	    if (ectParent->isValidEdge(0, edgeValue, edgeDelay)) {
+	    	if (edgeDelay > 2) {
+	    		countEdge16Bit();
+	    	}
+	    }
 
+	    wait(ectParent->edge_detector_period);
+	}
 }
 
 inline void ECT::latchToHoldingRegisters() {
@@ -1174,7 +1210,7 @@ inline bool ECT::transferOutputCompareToTimerPort(uint8_t channel_index) {
 //=             ECT Channel methods                   =
 //=====================================================
 
-ECT::IOC_Channel_t::IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator* pc8bit) :
+ECT::IOC_Channel_t::IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit) :
 	  ectParent(parent)
 	, ioc_index(index)
 	, tc_register_ptr(tc_ptr)
@@ -1202,7 +1238,9 @@ void ECT::IOC_Channel_t::RunInputCapture(uint16_t edgeDelay) {
 	else //  buffered IC Channels
 	{
 		if (ectParent->isPulseAccumulators8BitEnabled(pulseAccumulator->getIndex())) {
-			pulseAccumulator->countEdge8Bit(edgeDelay);
+			if (edgeDelay > 2) {
+				pulseAccumulator->countEdge8Bit();
+			}
 		}
 
 		// IC latch mode (ICSYS::LATQ=1)
@@ -1529,7 +1567,7 @@ void ECT::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
-	buildin_edge_generator_period = sc_time(buildin_edge_generator_period_int, SC_PS);
+	edge_detector_period = sc_time(edge_detector_period_int, SC_PS);
 }
 
 void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
