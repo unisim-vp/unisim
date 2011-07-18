@@ -124,7 +124,7 @@ private:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ExternalReadMemory(uint64_t addr, 
+	virtual bool ExternalReadMemory(uint32_t addr, 
 			void *buffer, 
 			uint32_t size);
 	/** Non intrusive memory write method.
@@ -137,7 +137,7 @@ private:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ExternalWriteMemory(uint64_t addr, 
+	virtual bool ExternalWriteMemory(uint32_t addr, 
 			const void *buffer, 
 			uint32_t size);
 	

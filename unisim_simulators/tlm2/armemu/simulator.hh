@@ -184,24 +184,24 @@ protected:
 private:
 	static void DefaultConfiguration(unisim::kernel::service::Simulator *sim);
 	typedef unisim::component::tlm2::processor::arm::armemu::ARMEMU CPU;
-	typedef unisim::component::tlm2::memory::ram::Memory<32, uint64_t, 8, 1024 * 1024, true> MEMORY;
-	typedef unisim::service::loader::linux_loader::LinuxLoader<uint64_t> LINUX_LOADER;
-	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, uint32_t, 8, 1024 * 1024, true> MEMORY;
+	typedef unisim::service::loader::linux_loader::LinuxLoader<uint32_t> LINUX_LOADER;
+	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint32_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> ELF32_LOADER;
 	typedef unisim::service::os::linux_os::linux_os_32::LinuxOS32 LINUX_OS;
 	typedef unisim::service::trap_handler::TrapHandler TRAP_HANDLER;
 
 #ifdef SIM_PIM_SUPPORT
-	typedef unisim::service::pim::PIMServer<uint64_t> PIM_SERVER;
+	typedef unisim::service::pim::PIMServer<uint32_t> PIM_SERVER;
 #endif
 
 #ifdef SIM_GDB_SERVER_SUPPORT
-	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
+	typedef unisim::service::debug::gdb_server::GDBServer<uint32_t> GDB_SERVER;
 #endif // SIM_GDB_SERVER_SUPPORT
 #ifdef SIM_INLINE_DEBUGGER_SUPPORT
-	typedef unisim::service::debug::inline_debugger::InlineDebugger<uint64_t> INLINE_DEBUGGER;
+	typedef unisim::service::debug::inline_debugger::InlineDebugger<uint32_t> INLINE_DEBUGGER;
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
 #ifdef SIM_SIM_DEBUGGER_SUPPORT
-	typedef unisim::service::debug::sim_debugger::SimDebugger<uint64_t> SIM_DEBUGGER;
+	typedef unisim::service::debug::sim_debugger::SimDebugger<uint32_t> SIM_DEBUGGER;
 #endif // SIM_SIM_DEBUGGER_SUPPORT
 #ifdef SIM_POWER_ESTIMATOR_SUPPORT
 	typedef unisim::service::power::CachePowerEstimator POWER_ESTIMATOR;
@@ -223,7 +223,7 @@ private:
 	unisim::kernel::service::Parameter<bool> param_enable_pim_server;
 
 	// PIM server
-	unisim::service::pim::PIMServer<uint64_t> *pim_server;
+	PIM_SERVER *pim_server;
 
 	void EnablePimServer();
 

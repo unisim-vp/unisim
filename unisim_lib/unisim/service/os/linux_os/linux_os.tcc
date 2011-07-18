@@ -370,6 +370,9 @@ SetupLinuxOS()
 	mmap_brk_point = mmap_base;
 
 	ADDRESS_TYPE top_addr = blob->GetStackBase() + 1;
+	logger << DebugInfo
+		<< "top_addr = 0x" << std::hex << top_addr << std::dec
+		<< EndDebugInfo;
 	
 	brk_point = top_addr +
     	(memory_page_size - (top_addr % memory_page_size));

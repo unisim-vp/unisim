@@ -101,6 +101,7 @@ public:
 protected:
 	endian_type endianness;
 	T stack_base;
+	T stack_size;
 	T max_environ;
 	unsigned int argc;
 	std::vector<std::string *> argv;
@@ -121,11 +122,12 @@ private:
 	void DumpBlob(unisim::util::debug::blob::Blob<T> const &, int);
 	void DumpSection(unisim::util::debug::blob::Section<T> const &, int);
 	
-	static const int size = sizeof(T);
+	static const int arch_size = sizeof(uint32_t); // this works for 32 bits which is the case of arm and powerpc
 
 	string endianness_string;
 	Parameter<string> param_endian;
 	Parameter<T> param_stack_base;
+	Parameter<T> param_stack_size;
 	Parameter<T> param_max_environ;
 	Parameter<unsigned int> param_argc;
 	std::vector<Parameter<string> *> param_argv;
