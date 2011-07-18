@@ -152,8 +152,8 @@ tms320c3x/fig_bp_output.pdf
 TMS320C3X_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(TMS320C3X_CPP_SOURCES))
 
 # virtex5fxt
-VIRTEX5FXT_LATEX_SOURCES=virtex5fxt/virtex5fxt.tex
-VIRTEX5FXT_CPP_SOURCES=
+VIRTEX5FXT_LATEX_SOURCES=virtex5fxt/virtex5fxt.tex virtex5fxt/techref.tex
+VIRTEX5FXT_CPP_SOURCES=virtex5fxt/boot.cpp
 VIRTEX5FXT_FIGURES=virtex5fxt/fig_schematic.pdf
 
 VIRTEX5FXT_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(VIRTEX5FXT_CPP_SOURCES))

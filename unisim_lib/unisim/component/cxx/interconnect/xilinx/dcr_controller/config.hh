@@ -182,14 +182,11 @@ class Config
 public:
 	static const uint8_t TIEDCRBASEADDR = 0x0;              // 2-bit tie-off-pins
 	
-	static const uint32_t DCR_CONTROLLER_BASEADDR = (TIEDCRBASEADDR << 8); // DCR controller base address
-	
 	static const unsigned int C440_MASTER_NUM = 0;
 	static const unsigned int XM_MASTER_NUM = 1;
 	
 	static const bool DCR_AUTOLOCK_ENABLE = true;
 	
-	static const uint32_t DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_RESET_VALUE = DCR_AUTOLOCK_ENABLE ? DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_AUTOLOCK_MASK : 0;
 };
 
 } // end of namespace dcr_controller

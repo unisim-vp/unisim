@@ -113,23 +113,6 @@ using unisim::component::cxx::tlb::TLBEntry;
 using unisim::component::cxx::tlb::TLBSet;
 using unisim::component::cxx::tlb::TLB;
 
-
-typedef enum {
-	LSM_DEFAULT = 0,
-	LSM_FLOATING_POINT = 1,
-	LSM_BYTE_REVERSE = 2,
-	LSM_SIGN_EXTEND = 4,
-	LSM_MSB_FIRST = 8,
-	LSM_RAW_FLOAT = 16
-} LoadStoreMode;
-
-typedef union
-{
-	uint8_t b[16];
-	uint16_t h[8];
-	uint32_t w[4];
-} vr_t;
-
 template <class CONFIG>
 class CPU;
 
@@ -461,6 +444,7 @@ public:
 	inline void SetCCR0(uint32_t value) { ccr0 = value; }
 	inline uint32_t GetCCR0() const { return ccr0; }
 	inline uint32_t GetCCR0_CRPE() const { return (GetCCR0() & CONFIG::CCR0_CRPE_MASK) >> CONFIG::CCR0_CRPE_OFFSET; }
+	inline uint32_t GetCCR0_FLSTA() const { return (GetCCR0() & CONFIG::CCR0_FLSTA_MASK) >> CONFIG::CCR0_FLSTA_OFFSET; }
 	inline void SetCCR1(uint32_t value) { ccr1 = value; }
 	inline uint32_t GetCCR1() const { return ccr1; }
 	inline uint32_t GetCCR1_FFF() const { return (GetCCR1() & CONFIG::CCR1_FFF_MASK) >> CONFIG::CCR1_FFF_OFFSET; }
@@ -530,8 +514,7 @@ public:
 		uint32_t old_dec = GetDEC();
 		if(old_dec > 0)
 		{
-			assert(delta <= old_dec);
-			uint32_t new_dec = old_dec - delta;
+			uint32_t new_dec = (delta <= old_dec) ? old_dec - delta : 0;
 			
 			SetDEC(new_dec);
 			

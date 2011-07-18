@@ -48,7 +48,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;
 
 CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A stub that, if enabled, can generate random inputs for a capture timer")
 	, sc_module(name)
 	, master_sock("master-sock")
 	, logger(*this)
@@ -61,8 +61,8 @@ CaptureTriggerStub::CaptureTriggerStub(const sc_module_name& name, Object *paren
 	, enable(true)
 	, randomized_output(false)
 	, random_seed(-123456)
-	, random_period_min(80)
-	, random_period_max(399)
+	, random_period_min(200)
+	, random_period_max(799)
 	, param_cycle_time("cycle-time", this, cycle_time, "cycle time")
 	, param_nice_time("nice-time", this, nice_time, "nice time")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")

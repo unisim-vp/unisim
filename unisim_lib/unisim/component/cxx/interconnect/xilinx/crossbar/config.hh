@@ -1341,7 +1341,7 @@ class Config
 public:
 	typedef uint64_t ADDRESS;
 	static const unsigned int PLB_WIDTH = 16; // PLB Width in bytes
-	static const unsigned int MCI_WIDTH = 16; // PLB Width in bytes
+	static const unsigned int MCI_WIDTH = 16; // MCI Width in bytes
 	
 	// interrupt masking at reset
 	static const uint32_t IMASK_RESET_VALUE = 0xffffffffUL; // all 1's

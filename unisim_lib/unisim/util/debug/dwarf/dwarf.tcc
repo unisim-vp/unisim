@@ -2123,7 +2123,66 @@ void DWARF_Handler<MEMORY_ADDR>::BuildStatementMatrix()
 	}
 }
 
+/*
+template <class MEMORY_ADDR>
+bool DWARF_Handler<MEMORY_ADDR>::GetCFI(MEMORY_ADDR pc, std::vector<DWARF_RuleMatrixRow<MEMORY_ADDR> *>& backtrace) const
+{
+	unsigned int i;
+	unsigned int num_fdes = dw_fdes.size();
+	for(i = 0; i < num_fdes; i++)
+	{
+		DWARF_FDE<MEMORY_ADDR> *dw_fde = dw_fdes[i];
+		MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
+		MEMORY_ADDR address_range = dw_fde->GetAddressRange();
+		
+		if((pc >= initial_location) && (pc < (initial_location + address_range)))
+		{
+			// found FDE
+			
+			DWARF_RuleMatrix<MEMORY_ADDR> rule_matrix;
+			
+			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
+			
+			const DWARF_CallFrameProgram<MEMORY_ADDR> *initial_instructions = dw_cie->GetInitialInstructions();
+			
+			MEMORY_ADDR location = initial_location;
+			
+			DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+			if(!dw_call_frame_vm.Execute(*initial_instructions, location, rule_matrix))
+			{
+				return false;
+			}
+			
+			const DWARF_CallFrameProgram<MEMORY_ADDR> *instructions = dw_fde->GetInstructions();
+			if(!dw_call_frame_vm.Execute(*instructions, location, rule_matrix))
+			{
+				return false;
+			}
+			
+			DWARF_RuleMatrixRow<MEMORY_ADDR> *rule_matrix_row = rule_matrix->GetRow(pc);
+			
+			if(!rule_matrix_row) return false;
+			
+			unsigned int return_address_register = dw_cie->GetReturnAddressRegister();
+			
+			DWARF_RegisterRule<MEMORY_ADDR> *return_address_register_rule = rule_matrix_row->GetRegisterRule(return_address_register);
+			
+			if(!return_address_register_rule) return false;
+			
+			
+		}
+	}
+}
+*/
+template <class MEMORY_ADDR>
+std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR pc) const
+{
+	std::vector<MEMORY_ADDR> *backtrace = new std::vector<MEMORY_ADDR>();
+	
+	//GetBackTrace(pc, *back_trace);
 
+	return backtrace;
+}
 
 } // end of namespace dwarf
 } // end of namespace debug

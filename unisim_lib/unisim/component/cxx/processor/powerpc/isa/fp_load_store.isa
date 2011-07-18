@@ -49,11 +49,6 @@ lfd.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	// do the memory access
 	cpu->Fp64Load(fd, ea);
@@ -78,11 +73,6 @@ lfdu.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	// do the memory access
 	cpu->Fp64Load(fd, ea);
@@ -109,11 +99,6 @@ lfdux.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp64Load(fd, ea);
 	// update the address register
@@ -139,12 +124,6 @@ lfdx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
-
 	// do the memory access
 	cpu->Fp64Load(fd, ea);
 }
@@ -167,12 +146,6 @@ lfs.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	// do the memory access
 	cpu->Fp32Load(fd, ea);
@@ -198,11 +171,6 @@ lfsu.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
 
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 	// do the memory access
 	cpu->Fp32Load(fd, ea);
 	// update the address register
@@ -228,11 +196,6 @@ lfsux.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	// do the memory access
 	cpu->Fp32Load(fd, ea);
@@ -258,12 +221,6 @@ lfsx.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	// do the memory access
 	cpu->Fp32Load(fd, ea);
@@ -294,12 +251,6 @@ stfd.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
 
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
-
 	cpu->Fp64Store(fs, ea);
 }
 stfd.disasm = {
@@ -322,12 +273,6 @@ stfdu.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
-
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp64Store(fs, ea);
 	// update the address register
@@ -354,12 +299,6 @@ stfdux.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
 
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
-
 	cpu->Fp64Store(fs, ea);
 	// update the address register
 	cpu->SetGPR(ra, ea);
@@ -383,11 +322,6 @@ stfdx.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp64Store(fs, ea);
 }
@@ -410,12 +344,6 @@ stfiwx.execute = {
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
 
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
-
 	cpu->FpStoreLSW(fs, ea);
 }
 stfiwx.disasm = {
@@ -436,11 +364,6 @@ stfs.execute = {
 	}
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + d : d);
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp32Store(fs, ea);
 }
@@ -464,11 +387,6 @@ stfsu.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + d);
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp32Store(fs, ea);
 	// update the address register
@@ -494,11 +412,6 @@ stfsux.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (cpu->GetGPR(ra) + cpu->GetGPR(rb));
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp32Store(fs, ea);
 	// update the address register
@@ -523,11 +436,6 @@ stfsx.execute = {
 
 	// compute the effective address
 	typename CONFIG::address_t ea = (ra ? cpu->GetGPR(ra) + cpu->GetGPR(rb) : cpu->GetGPR(rb));
-	// check alignment
-	if(unlikely(ea & 3))
-	{
-		if(!cpu->linux_os_import) throw AlignmentException<CONFIG>(ea);
-	}
 
 	cpu->Fp32Store(fs, ea);
 }

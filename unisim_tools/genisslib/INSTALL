@@ -1,1 +1,19 @@
-See the top level file INSTALL
+INSTALLATION
+------------
+
+Requirements:
+  - GNU C++ compiler
+  - GNU C++ standard library
+  - GNU bash
+  - GNU make
+  - GNU autoconf
+  - GNU automake
+  - GNU flex
+  - GNU bison
+
+Building instructions:
+  $ ./configure
+  $ make
+
+Installing (optional):
+  $ make install

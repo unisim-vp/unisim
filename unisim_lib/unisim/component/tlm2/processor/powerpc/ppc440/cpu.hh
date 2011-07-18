@@ -58,6 +58,7 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
+using unisim::kernel::service::Formula;
 using unisim::kernel::logger::Logger;
 using unisim::component::tlm2::interrupt::InterruptProtocolTypes;
 using unisim::component::tlm2::interrupt::InterruptPayload;
@@ -124,17 +125,24 @@ private:
 	sc_time timer_time;
 	sc_time nice_time;
 	sc_time max_idle_time;
-	sc_time global_time;
+	sc_time run_time;
 	sc_time idle_time;
+	bool enable_host_idle;
 	sc_event ev_max_idle;
 	sc_event ev_irq;
 	double ipc;
+	double one;
 
 	Parameter<sc_time> param_bus_cycle_time;
 	Parameter<sc_time> param_ext_timer_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Parameter<bool> param_enable_host_idle;
+	Statistic<double> stat_one;
+	Statistic<sc_time> stat_run_time;
 	Statistic<sc_time> stat_idle_time;
+	Formula<double> formula_idle_rate;
+	Formula<double> formula_load_rate;
 	
 	class Event
 	{

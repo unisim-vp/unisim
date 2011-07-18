@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A crossbar")
 	, unisim::component::cxx::interconnect::xilinx::crossbar::Crossbar<CONFIG>(name, parent)
 	, sc_module(name)
 	, icurd_plb_slave_sock("icurd-plb-slave-sock")
@@ -521,12 +521,14 @@ void Crossbar<CONFIG>::ProcessBackwardEvent(Event *event)
 		return;
 	}
 	
-	//CheckResponseStatus(dst_if, event->GetInterface(), payload);
+	typename inherited::Interface dst_if = event->GetInterface();
 	
 	schedule.FreeEvent(event);
 	event = (*it).second;
 	pending_requests.erase(it);
 
+	CheckResponseStatus(event->GetInterface(), dst_if, payload);
+	
 	sc_time t(cycle_time);
 	
 	sc_event *ev_completed = event->GetCompletionEvent();

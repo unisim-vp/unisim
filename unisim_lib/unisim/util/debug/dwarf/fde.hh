@@ -54,6 +54,10 @@ public:
 	
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	const DWARF_CIE<MEMORY_ADDR> *GetCIE() const;
+	const DWARF_CallFrameProgram<MEMORY_ADDR> *GetInstructions() const;
+	MEMORY_ADDR GetInitialLocation() const;
+	MEMORY_ADDR GetAddressRange() const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
