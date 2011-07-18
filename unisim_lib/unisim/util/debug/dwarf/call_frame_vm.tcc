@@ -927,7 +927,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									cur_row->SetRegisterRule(reg_num, new_rule);
 								}
 
-								if(os) *os << "DW_CFA_offset_extended " << reg_num.to_string(false) << ", cfa" << (n >= 0 ? "+" : "") << n << " /* r" << reg_num.to_string(false) << "=cfa" << (n >= 0 ? "+" : "") << n << " */";
+								if(os) *os << "DW_CFA_offset_extended " << reg_num.to_string(false) << ", cfa" << (n >= 0 ? "+" : "") << n << " /* r" << reg_num.to_string(false) << " at cfa" << (n >= 0 ? "+" : "") << n << " */";
 							}
 							break;
 						case DW_CFA_restore_extended:
@@ -1066,7 +1066,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									cur_row->SetRegisterRule(reg_num1, new_rule);
 								}
 
-								if(os) *os << "DW_CFA_register " << reg_num1.to_string(false) << ", " << reg_num2.to_string(false) << " /* r" << reg_num1.to_string(false) << " = " << reg_num2.to_string(false) << " */";
+								if(os) *os << "DW_CFA_register " << reg_num1.to_string(false) << ", " << reg_num2.to_string(false) << " /* r" << reg_num1.to_string(false) << "=r" << reg_num2.to_string(false) << " */";
 							}
 							break;
 						case DW_CFA_remember_state:
@@ -1352,7 +1352,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								program += sz;
 								program_length -= sz;
 								int64_t n = (int64_t) signed_factored_offset * (int64_t) dw_cie->GetDataAlignmentFactor();
-								if(os) *os << "DW_CFA_def_cfa_sf " << reg_num.to_string(false) << ", " << signed_factored_offset.to_string(true) << " /* cfa=[" << reg_num.to_string(false) << "]=" << (n > 0 ? "+":"") << n << " */";
+								if(os) *os << "DW_CFA_def_cfa_sf " << reg_num.to_string(false) << ", " << signed_factored_offset.to_string(true) << " /* cfa=[" << reg_num.to_string(false) << "]+" << (n > 0 ? "+":"") << n << " */";
 							}
 							break;
 						case DW_CFA_def_cfa_offset_sf:

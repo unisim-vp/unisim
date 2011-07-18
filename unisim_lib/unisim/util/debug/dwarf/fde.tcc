@@ -224,6 +224,18 @@ void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 }
 
 template <class MEMORY_ADDR>
+const DWARF_CIE<MEMORY_ADDR> *DWARF_FDE<MEMORY_ADDR>::GetCIE() const
+{
+	return dw_cie;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_CallFrameProgram<MEMORY_ADDR> *DWARF_FDE<MEMORY_ADDR>::GetInstructions() const
+{
+	return dw_call_frame_prog;
+}
+
+template <class MEMORY_ADDR>
 MEMORY_ADDR DWARF_FDE<MEMORY_ADDR>::GetInitialLocation() const
 {
 	return initial_location;

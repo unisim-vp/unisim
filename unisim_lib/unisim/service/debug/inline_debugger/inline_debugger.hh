@@ -44,6 +44,7 @@
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
+#include <unisim/service/interfaces/backtrace.hh>
 
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
@@ -73,6 +74,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::StatementLookup;
+using unisim::service::interfaces::BackTrace;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::Breakpoint;
@@ -129,6 +131,7 @@ class InlineDebugger :
 	public Client<SymbolTableLookup<ADDRESS> >,
 	public Client<Loader>,
 	public Client<StatementLookup<ADDRESS> >,
+	public Client<BackTrace<ADDRESS> >,
 	public InlineDebuggerBase
 {
 public:
@@ -142,6 +145,7 @@ public:
 	ServiceImport<SymbolTableLookup<ADDRESS> > **symbol_table_lookup_import;
 	ServiceImport<Loader> **loader_import;
 	ServiceImport<StatementLookup<ADDRESS> > **stmt_lookup_import;
+	ServiceImport<BackTrace<ADDRESS> > **backtrace_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -208,6 +212,7 @@ private:
 	bool IsMonitorSetCommand(const char *cmd);
 	bool IsProfileCommand(const char *cmd);
 	bool IsLoadCommand(const char *cmd);
+	bool IsBackTraceCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -238,6 +243,7 @@ private:
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
+	void DumpBackTrace(ADDRESS cia);
 };
 
 } // end of namespace inline_debugger

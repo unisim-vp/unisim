@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_SECTION_TCC__
-#define __UNISIM_UTIL_DEBUG_BLOB_SECTION_TCC__
+#ifndef __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_TCC__
+#define __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_TCC__
 
 #include <stdlib.h>
 #include <string.h>
@@ -44,12 +44,10 @@ namespace debug {
 namespace blob {
 
 template <class MEMORY_ADDR>
-Section<MEMORY_ADDR>::Section(Type _type, Attribute _attr, const char *_name, unsigned int _alignment, unsigned int _link, MEMORY_ADDR _addr, MEMORY_ADDR _size, void *_data)
+Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment, MEMORY_ADDR _addr, MEMORY_ADDR _size, void *_data)
 	: type(_type)
 	, attr(_attr)
-	, name(_name)
 	, alignment(_alignment)
-	, link(_link)
 	, addr(_addr)
 	, size(_size)
 	, data(_data)
@@ -60,29 +58,27 @@ Section<MEMORY_ADDR>::Section(Type _type, Attribute _attr, const char *_name, un
 }
 
 template <class MEMORY_ADDR>
-Section<MEMORY_ADDR>::Section(const Section<MEMORY_ADDR>& section)
-	: type(section.type)
-	, attr(section.attr)
-	, name(section.name)
-	, alignment(section.alignment)
-	, link(section.link)
-	, addr(section.addr)
-	, size(section.size)
+Segment<MEMORY_ADDR>::Segment(const Segment<MEMORY_ADDR>& segment)
+	: type(segment.type)
+	, attr(segment.attr)
+	, alignment(segment.alignment)
+	, addr(segment.addr)
+	, size(segment.size)
 	, data(0)
 	, refcount(0)
 {
 	refcount = new unsigned int();
 	*refcount = 0;
 
-	if(section.data)
+	if(segment.data)
 	{
 		data = malloc(size);
-		memcpy(data, section.data, size);
+		memcpy(data, segment.data, size);
 	}
 }
 
 template <class MEMORY_ADDR>
-Section<MEMORY_ADDR>::~Section()
+Segment<MEMORY_ADDR>::~Segment()
 {
 	if(data)
 	{
@@ -92,68 +88,56 @@ Section<MEMORY_ADDR>::~Section()
 }
 
 template <class MEMORY_ADDR>
-typename Section<MEMORY_ADDR>::Type Section<MEMORY_ADDR>::GetType() const
+typename Segment<MEMORY_ADDR>::Type Segment<MEMORY_ADDR>::GetType() const
 {
 	return type;
 }
 
 template <class MEMORY_ADDR>
-typename Section<MEMORY_ADDR>::Attribute Section<MEMORY_ADDR>::GetAttr() const
+typename Segment<MEMORY_ADDR>::Attribute Segment<MEMORY_ADDR>::GetAttr() const
 {
 	return attr;
 }
 
 template <class MEMORY_ADDR>
-const char *Section<MEMORY_ADDR>::GetName() const
-{
-	return name.c_str();
-}
-
-template <class MEMORY_ADDR>
-unsigned int Section<MEMORY_ADDR>::GetAlignment() const
+unsigned int Segment<MEMORY_ADDR>::GetAlignment() const
 {
 	return alignment;
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR Section<MEMORY_ADDR>::GetAddr() const
+MEMORY_ADDR Segment<MEMORY_ADDR>::GetAddr() const
 {
 	return addr;
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR Section<MEMORY_ADDR>::GetSize() const
+MEMORY_ADDR Segment<MEMORY_ADDR>::GetSize() const
 {
 	return size;
 }
 
 template <class MEMORY_ADDR>
-unsigned int Section<MEMORY_ADDR>::GetLink() const
-{
-	return link;
-}
-
-template <class MEMORY_ADDR>
-const void *Section<MEMORY_ADDR>::GetData() const
+const void *Segment<MEMORY_ADDR>::GetData() const
 {
 	return data;
 }
 
 template <class MEMORY_ADDR>
-void Section<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const
+void Segment<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const
 {
 	min_addr = addr;
 	max_addr = addr + size - 1;
 }
 
 template <class MEMORY_ADDR>
-void Section<MEMORY_ADDR>::Catch() const
+void Segment<MEMORY_ADDR>::Catch() const
 {
 	(*refcount)++;
 }
 
 template <class MEMORY_ADDR>
-void Section<MEMORY_ADDR>::Release() const
+void Segment<MEMORY_ADDR>::Release() const
 {
 	if(--(*refcount) == 0)
 	{

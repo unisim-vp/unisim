@@ -224,6 +224,18 @@ const DWARF_LEB128& DWARF_CIE<MEMORY_ADDR>::GetDataAlignmentFactor() const
 }
 
 template <class MEMORY_ADDR>
+unsigned int DWARF_CIE<MEMORY_ADDR>::GetReturnAddressRegister() const
+{
+	return (version == 1) ? dw2_return_address_register : dw3_return_address_register;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_CallFrameProgram<MEMORY_ADDR> *DWARF_CIE<MEMORY_ADDR>::GetInitialInstructions() const
+{
+	return dw_initial_call_frame_prog;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_CIE<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
 	os << "<DW_CIE offset=\"" << offset << "\" version=\"" << (uint32_t) version << "\" augmentation=\"";

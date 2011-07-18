@@ -32,65 +32,18 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_CIE_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_CIE_HH__
-
-#include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/util/debug/dwarf/fmt.hh>
+#include <unisim/util/debug/blob/segment.hh>
+#include <unisim/util/debug/blob/segment.tcc>
+#include <inttypes.h>
 
 namespace unisim {
 namespace util {
 namespace debug {
-namespace dwarf {
+namespace blob {
 
-template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_cie);
+template class Segment<uint64_t>;
 
-template <class MEMORY_ADDR>
-class DWARF_CIE
-{
-public:
-	DWARF_CIE(DWARF_Handler<MEMORY_ADDR> *dw_handler);
-	~DWARF_CIE();
-	
-	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
-	unsigned int GetId() const;
-	std::string GetHREF() const;
-	const DWARF_LEB128& GetCodeAlignmentFactor() const;
-	const DWARF_LEB128& GetDataAlignmentFactor() const;
-	unsigned int GetReturnAddressRegister() const;
-	const DWARF_CallFrameProgram<MEMORY_ADDR> *GetInitialInstructions() const;
-	std::ostream& to_XML(std::ostream& os) const;
-	std::ostream& to_HTML(std::ostream& os) const;
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_cie);
-private:
-	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	DWARF_Format dw_fmt;
-	uint64_t offset;
-	unsigned int id;
-	
-	uint64_t length;          // length not including field 'length'
-	
-	uint64_t cie_id;          // 32-bit all 1's for 32-bit DWARF, 64-bit all 1's for 64-bit DWARF
-	
-	uint8_t version;          // Independent of DWARF version number. DWARF v2/version=1; DWARF v3/version=3
-	
-	const char *augmentation; // UTF-8 string
-	
-	DWARF_LEB128 code_alignment_factor; // unsigned
-	
-	DWARF_LEB128 data_alignment_factor; // signed
-	
-	uint8_t dw2_return_address_register;
-	DWARF_LEB128 dw3_return_address_register; // unsigned
-	
-	DWARF_CallFrameProgram<MEMORY_ADDR> *dw_initial_call_frame_prog;
-};
-
-} // end of namespace dwarf
+} // end of namespace blob
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
-
-#endif

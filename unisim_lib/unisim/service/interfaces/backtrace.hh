@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,55 +32,25 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_FDE_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_FDE_HH__
+#ifndef __UNISIM_SERVICE_INTERFACES_BACKTRACE_HH__
+#define __UNISIM_SERVICE_INTERFACES_BACKTRACE_HH__
 
-#include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/kernel/service/service.hh>
+#include <inttypes.h>
 
 namespace unisim {
-namespace util {
-namespace debug {
-namespace dwarf {
+namespace service {
+namespace interfaces {
 
 template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
-
-template <class MEMORY_ADDR>
-class DWARF_FDE
+class BackTrace : public unisim::kernel::service::ServiceInterface
 {
 public:
-	DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *dw_handler);
-	~DWARF_FDE();
-	
-	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
-	const DWARF_CIE<MEMORY_ADDR> *GetCIE() const;
-	const DWARF_CallFrameProgram<MEMORY_ADDR> *GetInstructions() const;
-	MEMORY_ADDR GetInitialLocation() const;
-	MEMORY_ADDR GetAddressRange() const;
-	std::ostream& to_XML(std::ostream& os) const;
-	std::ostream& to_HTML(std::ostream& os) const;
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fde);
-private:
-	DWARF_Handler<MEMORY_ADDR> *dw_handler;
-	DWARF_Format dw_fmt;
-	uint64_t offset;
-
-	uint64_t length;               // length not including field 'length'
-	
-	uint64_t cie_pointer;          // A constant offset into the .debug_frame section that denotes the CIE that is associated with this FDE.
-
-	MEMORY_ADDR initial_location;  // An addressing-unit sized constant indicating the address of the first location associated with this table entry.
-
-	MEMORY_ADDR address_range;     // An addressing unit sized constant indicating the number of bytes of program instructions described by this entry.
-
-	DWARF_CallFrameProgram<MEMORY_ADDR> *dw_call_frame_prog;
-	const DWARF_CIE<MEMORY_ADDR> *dw_cie;
+	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const = 0;
 };
 
-} // end of namespace dwarf
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
 #endif

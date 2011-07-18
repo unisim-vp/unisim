@@ -593,6 +593,7 @@ Simulator::Simulator(int argc, char **argv)
 		*inline_debugger->loader_import[0] >> loader->loader_export;
 		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
 		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
+		*inline_debugger->backtrace_import[0] >> loader->backtrace_export;
 	}
 	else if(enable_gdb_server)
 	{

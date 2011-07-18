@@ -128,6 +128,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/segment32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
@@ -155,6 +156,7 @@ unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
@@ -255,6 +257,7 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
+unisim/util/debug/blob/segment.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -285,6 +288,7 @@ unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/char_io.hh \
 unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/led_board.hh \
+unisim/service/interfaces/backtrace.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
@@ -310,6 +314,7 @@ unisim/service/tee/loader/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
+unisim/service/tee/backtrace/tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
@@ -381,6 +386,7 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
+unisim/util/debug/blob/segment.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
@@ -398,6 +404,7 @@ unisim/service/tee/loader/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \

@@ -41,6 +41,7 @@
 #include <unisim/service/interfaces/stmt_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/blob.hh>
+#include <unisim/service/interfaces/backtrace.hh>
 
 #include <unisim/service/loader/elf_loader/elf32.h>
 #include <unisim/service/loader/elf_loader/elf64.h>
@@ -76,6 +77,7 @@ using unisim::service::interfaces::StatementLookup;
 using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::Blob;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::BackTrace;
 
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
@@ -83,7 +85,8 @@ class ElfLoaderImpl :
 	public Service<Loader>,
 	public Service<Blob<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
-	public Service<StatementLookup<MEMORY_ADDR> >
+	public Service<StatementLookup<MEMORY_ADDR> >,
+	public Service<BackTrace<MEMORY_ADDR> >
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
@@ -91,6 +94,7 @@ public:
 	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;
+	ServiceExport<BackTrace<MEMORY_ADDR> > backtrace_export;
 
 	ElfLoaderImpl(const char *name, Object *parent = 0);
 	virtual ~ElfLoaderImpl();
@@ -117,6 +121,9 @@ public:
 	// unisim::service::interfaces::StatementLookup
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
+	
+	// unisim::service::interfaces::BackTrace
+	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 private:
 	string filename;
 	MEMORY_ADDR base_addr;
@@ -182,6 +189,7 @@ private:
 	bool SetupLoad();
 	bool SetupBlob();
 	bool SetupStatementLookup();
+	bool SetupBackTrace();
 	bool SetupDWARF();
 	
 	void Reset(); // To remove ?

@@ -60,11 +60,13 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
+	, Service<BackTrace<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
 	, stmt_lookup_export("stmt-lookup-export", this)
+	, backtrace_export("backtrace-export", this)
 	, filename()
 	, base_addr(0)
 	, force_base_addr(false)
@@ -132,23 +134,21 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(!blob) return false;
 	
 	bool success = true;
-	const typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>& sections = blob->GetSections();
-	typename std::vector<const unisim::util::debug::blob::Section<MEMORY_ADDR> *>::const_iterator section_iter;
-	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
+	const typename std::vector<const unisim::util::debug::blob::Segment<MEMORY_ADDR> *>& segments = blob->GetSegments();
+	typename std::vector<const unisim::util::debug::blob::Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
 	{
-		const unisim::util::debug::blob::Section<MEMORY_ADDR> *section = *section_iter;
+		const unisim::util::debug::blob::Segment<MEMORY_ADDR> *segment = *segment_iter;
 		
-		if((section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NULL) &&
-		   (section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_NOBITS) &&
-		   (section->GetAttr() & unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A))
+		if(segment->GetType() == unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
 		{
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "Writing section " << section->GetName() << " (" << section->GetSize() << " bytes) at @0x" << std::hex << section->GetAddr() << " - @0x" << (section->GetAddr() +  section->GetSize() - 1) << std::dec << EndDebugInfo;
+				logger << DebugInfo << "Writing segment (" << segment->GetSize() << " bytes) at @0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  segment->GetSize() - 1) << std::dec << EndDebugInfo;
 			}
-			if(!memory_import->WriteMemory(section->GetAddr(), section->GetData(), section->GetSize()))
+			if(!memory_import->WriteMemory(segment->GetAddr(), segment->GetData(), segment->GetSize()))
 			{
-				logger << DebugError << "Can't write into memory (@0x" << std::hex << section->GetAddr() << " - @0x" << (section->GetAddr() +  section->GetSize() - 1) << std::dec << ")" << EndDebugError;
+				logger << DebugError << "Can't write into memory (@0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  segment->GetSize() - 1) << std::dec << ")" << EndDebugError;
 				success = false;
 			}
 		}
@@ -188,6 +188,12 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupStatementLookup()
+{
+	return SetupDWARF();
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::SetupBackTrace()
 {
 	return SetupDWARF();
 }
@@ -430,53 +436,60 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			blob->AddSection(section);
 		}
 	}
-	else
+
+	for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
 	{
-		// There's no section headers (optional)
-
-		for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
+		if(GetSegmentType(phdr) == PT_LOAD) /* Loadable Program Segment */
 		{
-			if(GetSegmentType(phdr) == PT_LOAD) /* Loadable Program Segment */
+			MEMORY_ADDR ph_type = GetSegmentType(phdr);
+			MEMORY_ADDR segment_addr = force_base_addr ? base_addr : GetSegmentAddr(phdr);
+			MEMORY_ADDR segment_mem_size = GetSegmentMemSize(phdr);
+			//MEMORY_ADDR segment_file_size = GetSegmentFileSize(phdr);
+			MEMORY_ADDR ph_flags = GetSegmentFlags(phdr);
+			MEMORY_ADDR segment_alignment = GetSegmentAlignment(phdr);
+			
+		
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
+			
+			switch(ph_type)
 			{
-				MEMORY_ADDR segment_addr = force_base_addr ? base_addr : GetSegmentAddr(phdr);
-				MEMORY_ADDR segment_mem_size = GetSegmentMemSize(phdr);
-				//MEMORY_ADDR segment_file_size = GetSegmentFileSize(phdr);
-				MEMORY_ADDR segment_flags = GetSegmentFlags(phdr);
-				MEMORY_ADDR segment_alignment = GetSegmentAlignment(phdr);
-				
-				const char *section_name = "";
-				
-				typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Type section_type = unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_UNKNOWN;
-				typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute section_attr = unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_A;
-				if(segment_flags & PF_W) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_W);
-				if(segment_flags & PF_X) section_attr = (typename unisim::util::debug::blob::Section<MEMORY_ADDR>::Attribute)(section_attr | unisim::util::debug::blob::Section<MEMORY_ADDR>::SA_X);
-
-				if(unlikely(verbose))
-				{
-					logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << segment_mem_size << " bytes) " << EndDebugInfo;
-				}
-				
-				void *segment_data = calloc(segment_mem_size + 1, 1); // Allocate one additional byte for zero-terminated strings
-				
-				if(!LoadSegment(hdr, phdr, segment_data, is))
-				{
-					logger << DebugError << "Can't load segment" << EndDebugError;
-					success = false;
-				}
-
-				unisim::util::debug::blob::Section<MEMORY_ADDR> *section = new unisim::util::debug::blob::Section<MEMORY_ADDR>(
-					section_type,
-					section_attr,
-					section_name,
-					segment_alignment,
-					0,
-					segment_addr,
-					segment_mem_size,
-					segment_data
-				);
-				
-				blob->AddSection(section);
+				case PT_LOAD:
+					segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+					break;
+				default:
+					segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_UNKNOWN;
+					break;
 			}
+			
+			
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_NULL;
+			if(ph_flags & PF_W) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_W);
+			if(ph_flags & PF_R) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_R);
+			if(ph_flags & PF_X) segment_attr = (typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute)(segment_attr | unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_X);
+			
+			if(unlikely(verbose))
+			{
+				logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << segment_mem_size << " bytes) " << EndDebugInfo;
+			}
+			
+			void *segment_data = calloc(segment_mem_size + 1, 1); // Allocate one additional byte for zero-terminated strings
+			
+			if(!LoadSegment(hdr, phdr, segment_data, is))
+			{
+				logger << DebugError << "Can't load segment" << EndDebugError;
+				success = false;
+			}
+
+			unisim::util::debug::blob::Segment<MEMORY_ADDR> *segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+				segment_type,
+				segment_attr,
+				segment_alignment,
+				segment_addr,
+				segment_mem_size,
+				segment_data
+			);
+			
+			blob->AddSegment(segment);
 		}
 	}
 
@@ -589,6 +602,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(srv_export == &loader_export) return SetupLoad();
 	if(srv_export == &blob_export) return SetupBlob();
 	if(srv_export == &stmt_lookup_export) return SetupStatementLookup();
+	if(srv_export == &backtrace_export) return SetupBackTrace();
 
 	logger << DebugError << "Internal Error" << EndDebugError;
 	return false;
@@ -1382,6 +1396,12 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
 {
 	return dw_handler ? dw_handler->FindStatement(filename, lineno, colno) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
+{
+	return dw_handler ? dw_handler->GetBackTrace(pc) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
