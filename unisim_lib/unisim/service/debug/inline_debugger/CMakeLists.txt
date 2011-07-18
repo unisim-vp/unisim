@@ -28,6 +28,7 @@ set ( inline_debugger_subdirs
 	unisim/service/interfaces/trap_reporting
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/symbol_table_lookup
+	unisim/service/interfaces/backtrace
 	unisim/util/debug
 	unisim/util/endian
 	unisim/kernel
