@@ -675,115 +675,23 @@ LinuxLoader<T>::SetupBlob()
 		addr = stack_data + sp;
 		memcpy(addr, &value, sizeof(argc));
 	}
-#if 0
-	// Compute the stack size
-	T stack_size = 0;
-	stack_size += arch_size;                     // account for argc
-	stack_size += (argc + 1) * arch_size;        // account for argv and null pointer
-	stack_size += (envc + 1) * arch_size;        // account for envp and null pointer
-	stack_size += 2 * arch_size;                 // 16 to account for the AUX_VECTOR
-	for(unsigned int i = 0; i < argc; i++)
-	{
-		stack_size += argv[i]->length() + 1; // account for null terminated string argv[i]
-	}
-	for(unsigned int i = 0; i < envc; i++)
-	{
-		stack_size += envp[i]->length() + 1; // account for null terminated string envp[i]
-	}
 	
-	/* checking stack overflow */
-	if(stack_size >= max_environ) {
-		logger << DebugError << __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): Environment overflow. Need to increase max_environ."
-				<< EndDebugError;
-		return false;
-	}
-
-	stack_size += ((stack_size % arch_size) != 0) ? (arch_size - (stack_size % arch_size)) : 0;
-	T stack_address = stack_base - stack_size;
-	
-	// Fill stack data
-	uint8_t *stack_data = (uint8_t *) calloc(stack_size, 1);
-	
-	T stack_ptr = 0;
-
-	/* Set the stack pointer. Subtract 16 to account for the AUX_VECTOR. */
-	/* write argc to stack */
-	T target_argc = Host2Target(endianness, (T)argc);
-	memcpy(stack_data + stack_ptr, &target_argc, arch_size);
-	if ( verbose ) Log(stack_address + stack_ptr, (uint8_t *)&target_argc, arch_size);
-
-	stack_ptr += arch_size;
-
-	/* skip stack_ptr past argv pointer array */
-	T arg_address = stack_ptr;
-	stack_ptr += (argc + 1) * arch_size; // Note: there's a null pointer after argv
-
-	/* skip env pointer array */
-	T env_address = stack_ptr;
-	stack_ptr += (envc + 1) * arch_size; // Note: there's a null pointer after envp
-
-	T aux_v_address = stack_ptr;
-	stack_ptr += arch_size * 2; /* for aux_v */
-
-	/* write argv to stack */
-	for(unsigned int i = 0; i < argc; i++) {
-		T target_argv = Host2Target(endianness, stack_address + stack_ptr);
-		memcpy(stack_data + (arg_address + (i * arch_size)), &target_argv, arch_size);
-		memcpy(stack_data + stack_ptr, argv[i]->c_str(), argv[i]->length() + 1);
-		if ( verbose )
-		{
-			Log(stack_address + arg_address + i * arch_size, (uint8_t *)&target_argv, arch_size);
-			Log(stack_address + stack_ptr, (uint8_t *)argv[i]->c_str(), argv[i]->length());
-		}
-		stack_ptr += argv[i]->length() + 1;
-	}
-
-	/* write env to stack */
-	for(unsigned int i = 0; i < envc; i++) {
-		T target_envp = Host2Target(endianness, stack_address + stack_ptr);
-		memcpy(stack_data + (env_address + (i * arch_size)), &target_envp, arch_size);
-		memcpy(stack_data + stack_ptr, envp[i]->c_str(), envp[i]->length() + 1);
-		if ( verbose )
-		{
-			Log(stack_address + env_address + i * arch_size, (uint8_t *)&target_envp, arch_size);
-			Log(stack_address + stack_ptr, (uint8_t *)envp[i]->c_str(), envp[i]->length());
-		}
-		stack_ptr += envp[i]->length() + 1;
-	}
-	
-	/* The following two words on the stack are needed on Linux for IA64 !!!! */
-	/* This is filling in the AUX_VECTOR */
-	T target_at_pagesz = Host2Target(endianness, (T)6); /* AT_PAGESZ */
-	memcpy(stack_data + aux_v_address, &target_at_pagesz, arch_size);
-	if ( verbose )
-		Log(stack_address + aux_v_address, (uint8_t *)&target_at_pagesz, arch_size);
-	T target_page_size = Host2Target(endianness, (T)0x4000ULL); /* PAGE_SIZE */
-	memcpy(stack_data + (aux_v_address + arch_size), &target_page_size, arch_size);
-	if ( verbose )
-		Log(stack_address + aux_v_address + arch_size, (uint8_t *)&target_page_size, arch_size);
-#endif
-
 	stack_blob = new unisim::util::debug::blob::Blob<T>();
 	stack_blob->Catch();
 	
 	stack_blob->SetEndian(endianness);
 	
-	stack_blob->SetStackBase(stack_base);
-	
-	unisim::util::debug::blob::Section<T> *stack_section = new unisim::util::debug::blob::Section<T>(
-		unisim::util::debug::blob::Section<T>::TY_UNKNOWN,
-		unisim::util::debug::blob::Section<T>::SA_A,
-		"",
-		0,
-		0,
-		stack_base,
-		stack_size,
-		stack_data
-	);
+	stack_blob->SetStackBase(stack_base + sp);
 
-	stack_blob->AddSection(stack_section);
+	unisim::util::debug::blob::Segment<T> *stack_segment = new unisim::util::debug::blob::Segment<T>(
+			unisim::util::debug::blob::Segment<T>::TY_LOADABLE,
+			unisim::util::debug::blob::Segment<T>::SA_RW,
+			0,
+			stack_base,
+			stack_size,
+			stack_data);
+	
+	stack_blob->AddSegment(stack_segment);
 	
 	blob = new unisim::util::debug::blob::Blob<T>();
 	blob->Catch();
@@ -825,20 +733,30 @@ LinuxLoader<T>::
 LoadStack()
 {
 	if(!memory_import) return false;
-	const unisim::util::debug::blob::Section<T> *stack_section = stack_blob->GetSection(0);
 	if(!stack_blob) return false;
+	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+		stack_blob->GetSegments();
 
-	T stack_start;
-	T stack_end;
-
-	stack_blob->GetAddrRange(stack_start, stack_end);
-
-	if(verbose)
+	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+			it != segments.end();
+			it++ )
 	{
-		logger << DebugInfo << "Initializing stack at @0x" << std::hex << stack_start << " - @0x" << stack_end << std::dec << EndDebugInfo;
-	}
+		T stack_start;
+		T stack_end;
 
-	if(!memory_import->WriteMemory(stack_section->GetAddr(), stack_section->GetData(), stack_section->GetSize())) return false;
+		(*it)->GetAddrRange(stack_start, stack_end);
+		if(verbose)
+		{
+			logger << DebugInfo 
+				<< "Initializing stack at @0x" << std::hex << stack_start 
+				<< " - @0x" << stack_end << std::dec << EndDebugInfo;
+		}
+	
+		if ( !memory_import->WriteMemory((*it)->GetAddr(), 
+					(*it)->GetData(), 
+					(*it)->GetSize()) ) 
+			return false;
+	}
 	
 	return true;
 }
