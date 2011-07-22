@@ -123,6 +123,12 @@ Blob<MEMORY_ADDR>::~Blob()
 		(*section_iter)->Release();
 	}
 	
+	typename std::vector<const Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
+	{
+		(*segment_iter)->Release();
+	}
+
 	delete refcount;
 }
 	

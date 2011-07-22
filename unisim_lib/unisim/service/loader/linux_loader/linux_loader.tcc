@@ -39,6 +39,7 @@
 #include <iostream>
 #include <vector>
 #include <stdlib.h>
+#include <unistd.h>
 
 namespace unisim {
 namespace service {
@@ -66,10 +67,13 @@ endianness(E_LITTLE_ENDIAN),
 stack_base(0x4000000UL),
 stack_size(0x800000UL),
 max_environ(0),
+memory_page_size(4096),
 argc(0),
 argv(),
+apply_host_environ(true),
 envc(0),
 envp(),
+target_envp(),
 blob(0),
 stack_blob(0),
 verbose(false),
@@ -91,11 +95,16 @@ param_argc("argc", this, argc,
 		" can be set up with the parameters argv[<n>] where <n> can go up to"
 		" argc - 1."),
 param_argv(),
+param_apply_host_environ("apply-host-environ", this, apply_host_environ,
+		"Wether to apply the host environment on the target simulator or use"
+		" the provided envc and envp."),
 param_envc("envc", this, envc,
 		"Number of environment variables defined for the program execution."
 		" The different variables can be set up with the parameters envp[<n>]"
 		" where <n> can go up to envc - 1."),
 param_envp(),
+param_memory_page_size("memory-page-size", this, memory_page_size,
+		"The memory page size to use."),
 param_verbose("verbose", this, verbose, "Display verbose information"),
 logger(*this)
 {
@@ -220,6 +229,15 @@ LinuxLoader<T>::BeginSetup()
 			endianness = E_BIG_ENDIAN;
 	}
 
+	// Fetch the environment to apply it to the target environmment
+	if ( apply_host_environ )
+	{
+		for ( char **env = environ; *env != NULL; env++ )
+		{
+			target_envp.push_back(new std::string(*env));
+		}
+	}
+
 	return true;
 }
 
@@ -251,14 +269,73 @@ LinuxLoader<T>::SetupLoad()
 template <class T>
 void
 LinuxLoader<T> ::
+DumpSegment(unisim::util::debug::blob::Segment<T> const &s, int indent)
+{
+	std::string s_indent_pre(indent + 1, '*');
+	std::stringstream ss_indent;
+	ss_indent << s_indent_pre << " ";
+	std::string s_indent(ss_indent.str());
+
+	logger << s_indent << "S ";
+	logger << "Type: ";
+	switch ( s.GetType() )
+	{
+		case unisim::util::debug::blob::Segment<T>::TY_LOADABLE:
+			logger << "Loadable ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::TY_UNKNOWN:
+		default:
+			logger << "Unknown  ";
+			break;
+	}
+	logger << " Attribute: ";
+	switch ( s.GetAttr() )
+	{
+		case unisim::util::debug::blob::Segment<T>::SA_NULL:
+			logger << "NULL ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_R:
+			logger << "R    ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_W:
+			logger << "W    ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_X:
+			logger << "X    ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_RW:
+			logger << "RW   ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_RX:
+			logger << "RX   ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_WX:
+			logger << "WX   ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_RWX:
+			logger << "RWX  ";
+			break;
+		default:
+			logger << "?    ";
+			break;
+	}
+	logger << " Alignment: " << s.GetAlignment();
+	logger << "  Address: 0x" << std::hex << s.GetAddr() << std::dec;
+	logger << "  Size: " << s.GetSize();
+	logger << std::endl;
+}
+
+template <class T>
+void
+LinuxLoader<T> ::
 DumpSection(unisim::util::debug::blob::Section<T> const &s, int indent)
 {
 	std::string s_indent_pre(indent + 1, '-');
 	std::stringstream ss_indent;
 	ss_indent << s_indent_pre << " ";
-	std::string s_indent(ss_indent.str().c_str());
+	std::string s_indent(ss_indent.str());
 
-	logger << s_indent << "S ";
+	logger << s_indent << "s ";
 	logger << "Name: " << s.GetName() << std::endl;
 	logger << s_indent << "  Type: ";
 	switch ( s.GetType() )
@@ -392,6 +469,13 @@ DumpBlob(unisim::util::debug::blob::Blob<T> const &b, int indent)
 			<< (b.GetEndian() == unisim::util::endian::E_LITTLE_ENDIAN ?
 					"Little endian" : "Big endian") << std::endl;
 
+	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+		b.GetSegments();
+	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+			it != segments.end();
+			++it )
+		DumpSegment(*(*it), indent);
+
 	const std::vector<const unisim::util::debug::blob::Section<T> *> &sections =
 		b.GetSections();
 	for ( typename std::vector<const unisim::util::debug::blob::Section<T> *>::const_iterator it = sections.begin();
@@ -421,58 +505,55 @@ LinuxLoader<T>::SetupBlob()
 	if(!loader_blob) return false;
 
 	DumpBlob(*loader_blob, 0);
+	T entry_point = loader_blob->GetEntryPoint();
+	bool load_addr_set = false;
+	T load_addr = ~((T)0);
 	T start_code = ~((T)0);
 	T end_code = 0;
 	T start_data = 0;
 	T end_data = 0;
 	T elf_stack = ~((T)0);
-	T elf_bss = 0;
 	T elf_brk = 0;
+	T num_segments = 0;
 
-	const std::vector<const unisim::util::debug::blob::Section<T> *> &sections =
-		loader_blob->GetSections();
-	for ( typename std::vector<const unisim::util::debug::blob::Section<T> *>::const_iterator it = sections.begin();
-			it != sections.end();
+	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+		loader_blob->GetSegments();
+	num_segments = segments.size();
+	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+			it != segments.end();
 			it++ )
 	{
-		typename unisim::util::debug::blob::Section<T>::Attribute attr = (*it)->GetAttr();
-		if ( (attr != unisim::util::debug::blob::Section<T>::SA_A) &&
-				(attr != unisim::util::debug::blob::Section<T>::SA_AW) &&
-				(attr != unisim::util::debug::blob::Section<T>::SA_AX) &&
-				(attr != unisim::util::debug::blob::Section<T>::SA_AWX) )
+		typename unisim::util::debug::blob::Segment<T>::Type type = (*it)->GetType();
+		if ( type != unisim::util::debug::blob::Segment<T>::TY_LOADABLE )
 			continue;
 
-		T sec_addr = (*it)->GetAddr();
-		T sec_end_addr = sec_addr + (*it)->GetSize();
-		if ( sec_addr < start_code )
-			start_code = sec_addr;
-		if ( start_data < sec_addr )
-			start_data = sec_addr;
-
-
-		if ( (*it)->GetType() == unisim::util::debug::blob::Section<T>::TY_NOBITS )
+		T segment_addr = (*it)->GetAddr();
+		T segment_end_addr = segment_addr + (*it)->GetSize();
+		if ( !load_addr_set )
 		{
-			if ( sec_addr > elf_bss )
-				elf_bss = sec_addr;
-			if ( attr & unisim::util::debug::blob::Section<T>::SA_X )
-				if ( end_code < sec_addr )
-					end_code = sec_addr;
-			if ( end_data < sec_addr)
-				end_data = sec_addr;
+			load_addr_set = true;
+			/* TODO
+			 * WARNING
+			 * We are not considering the offset in the elf file. It would be better to set
+			 *   load_addr = segment_addr - segment_offset
+			 */
+			load_addr = segment_addr;
 		}
-		else
-		{
-			if ( sec_end_addr > elf_bss )
-				elf_bss = sec_end_addr;
-			if ( attr & unisim::util::debug::blob::Section<T>::SA_X )
-				if ( end_code < sec_end_addr )
-					end_code = sec_end_addr;
-			if ( end_data < sec_end_addr)
-				end_data = sec_end_addr;
-		}
+		if ( segment_addr < start_code )
+			start_code = segment_addr;
+		if ( start_data < segment_addr )
+			start_data = segment_addr;
 
-		if ( sec_end_addr > elf_brk )
-			elf_brk = sec_end_addr;
+		if ( (*it)->GetAttr() & unisim::util::debug::blob::Segment<T>::SA_X )
+		{
+			if ( end_code < segment_end_addr )
+				end_code = segment_end_addr;
+		}
+		if ( end_data < segment_end_addr )
+			end_data = segment_end_addr;
+
+		if ( segment_end_addr > elf_brk )
+			elf_brk = segment_end_addr;
 
 	}
 	logger << DebugInfo
@@ -482,120 +563,201 @@ LinuxLoader<T>::SetupBlob()
 		<< " start_data = 0x" << start_data << std::endl
 		<< " end_data   = 0x" << end_data << std::endl
 		<< " elf_stack  = 0x" << elf_stack << std::endl
-		<< " elf_bss    = 0x" << elf_bss << std::endl
 		<< " elf_brk    = 0x" << elf_brk << std::dec
 		<< EndDebugInfo;
 
+	// Create the stack
+	uint8_t *stack_data = (uint8_t *)calloc(stack_size, 1);
 	// Fill the stack
-	T sp = stack_base + stack_size;
-
-	// Compute the stack size
-	T stack_size = 0;
-	stack_size += arch_size;                     // account for argc
-	stack_size += (argc + 1) * arch_size;        // account for argv and null pointer
-	stack_size += (envc + 1) * arch_size;        // account for envp and null pointer
-	stack_size += 2 * arch_size;                 // 16 to account for the AUX_VECTOR
-	for(unsigned int i = 0; i < argc; i++)
+	T sp = stack_size - sizeof(T);
+	// - copy the filename
+	T cur_length = argv[0]->length() + 1;
+	sp = sp - cur_length;
+	T sp_argc = sp;
+	memcpy(stack_data + sp, argv[0]->c_str(), cur_length);
+	// - copy envp
+	std::vector<T> sp_envp;
+	if ( apply_host_environ )
 	{
-		stack_size += argv[i]->length() + 1; // account for null terminated string argv[i]
+		for ( unsigned int i = 0; i < target_envp.size(); i++ )
+		{
+			cur_length = target_envp[i]->length() + 1;
+			sp = sp - cur_length;
+			sp_envp.push_back(sp);
+			memcpy(stack_data + sp, target_envp[i]->c_str(), cur_length);
+		}
 	}
-	for(unsigned int i = 0; i < envc; i++)
+	else
 	{
-		stack_size += envp[i]->length() + 1; // account for null terminated string envp[i]
-	}
-	
-	/* checking stack overflow */
-	if(stack_size >= max_environ) {
-		logger << DebugError << __FUNCTION__ << ":"
-				<< __FILE__ << ":"
-				<< __LINE__ << "): Environment overflow. Need to increase max_environ."
-				<< EndDebugError;
-		return false;
-	}
-
-	stack_size += ((stack_size % arch_size) != 0) ? (arch_size - (stack_size % arch_size)) : 0;
-	T stack_address = stack_base - stack_size;
-	
-	// Fill stack data
-	uint8_t *stack_data = (uint8_t *) calloc(stack_size, 1);
-	
-	T stack_ptr = 0;
-
-	/* Set the stack pointer. Subtract 16 to account for the AUX_VECTOR. */
-	/* write argc to stack */
-	T target_argc = Host2Target(endianness, (T)argc);
-	memcpy(stack_data + stack_ptr, &target_argc, arch_size);
-	if ( verbose ) Log(stack_address + stack_ptr, (uint8_t *)&target_argc, arch_size);
-
-	stack_ptr += arch_size;
-
-	/* skip stack_ptr past argv pointer array */
-	T arg_address = stack_ptr;
-	stack_ptr += (argc + 1) * arch_size; // Note: there's a null pointer after argv
-
-	/* skip env pointer array */
-	T env_address = stack_ptr;
-	stack_ptr += (envc + 1) * arch_size; // Note: there's a null pointer after envp
-
-	T aux_v_address = stack_ptr;
-	stack_ptr += arch_size * 2; /* for aux_v */
-
-	/* write argv to stack */
-	for(unsigned int i = 0; i < argc; i++) {
-		T target_argv = Host2Target(endianness, stack_address + stack_ptr);
-		memcpy(stack_data + (arg_address + (i * arch_size)), &target_argv, arch_size);
-		memcpy(stack_data + stack_ptr, argv[i]->c_str(), argv[i]->length() + 1);
-		if ( verbose )
+		for ( unsigned int i = 0; i < envc; i++ )
 		{
-			Log(stack_address + arg_address + i * arch_size, (uint8_t *)&target_argv, arch_size);
-			Log(stack_address + stack_ptr, (uint8_t *)argv[i]->c_str(), argv[i]->length());
+			cur_length = envp[i]->length() + 1;
+			sp = sp - cur_length;
+			sp_envp.push_back(sp);
+			memcpy(stack_data + sp, envp[i]->c_str(), cur_length);
 		}
-		stack_ptr += argv[i]->length() + 1;
+	}
+	// - copy argv
+	std::vector<T> sp_argv;
+	for ( unsigned int i = argc; i > 0; i-- )
+	{
+		cur_length = argv[i - 1]->length() + 1;
+		sp = sp - cur_length;
+		sp_argv.push_back(sp);
+		memcpy(stack_data + sp, argv[i - 1]->c_str(), cur_length);
 	}
 
-	/* write env to stack */
-	for(unsigned int i = 0; i < envc; i++) {
-		T target_envp = Host2Target(endianness, stack_address + stack_ptr);
-		memcpy(stack_data + (env_address + (i * arch_size)), &target_envp, arch_size);
-		memcpy(stack_data + stack_ptr, envp[i]->c_str(), envp[i]->length() + 1);
-		if ( verbose )
-		{
-			Log(stack_address + env_address + i * arch_size, (uint8_t *)&target_envp, arch_size);
-			Log(stack_address + stack_ptr, (uint8_t *)envp[i]->c_str(), envp[i]->length());
-		}
-		stack_ptr += envp[i]->length() + 1;
+	// force 16 byte alignment
+	sp = sp & ~(T)0x0f;
+	std::cerr << "+++ argc = " << argc << std::endl;
+	std::cerr << "+++ envc = " << envc << std::endl;
+	T sp_content_size = 0;
+	sp_content_size += (13 * 2) * sizeof(T); // number of aux table entries and their values
+	if ( apply_host_environ )
+	{
+		sp_content_size += (target_envp.size() + 1) * sizeof(T);
 	}
+	else
+	{
+		sp_content_size += (envc + 1) * sizeof(T); // pointers to the env and null pointer
+	}
+	sp_content_size += (argc + 1) * sizeof(T); // pointers to the arg and null pointer
+	sp_content_size += 1 * sizeof(T); // argc itself
+	if ( sp_content_size & 0x0f ) // force aligned start
+		sp = sp - (16 - (sp_content_size & 0x0f));
+
+	T aux_table_symbol;
+	T aux_table_value;
+
+	aux_table_symbol = AT_NULL;
+	aux_table_value = 0;
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_PHDR;
+	/* TODO
+	 * WARNING
+	 * load_addr does not consider the segments offsets in the elf file (see previous warning).
+	 * The elf library should provide information on the size of the elf header.
+	 */
+	aux_table_value = load_addr + 52; // 52 = size of the elf32 header
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_PHENT;
+	/* TODO
+	 * WARNING
+	 * The elf library should provide information on the size of the program header.
+	 */
+	aux_table_value = 32; // 32 = size of the program header
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_PHNUM;
+	aux_table_value = num_segments;
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_PAGESZ;
+	aux_table_value = memory_page_size;
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	/* TODO
+	 * Add support for interpreter.
+	 */
+	aux_table_symbol = AT_BASE;
+	aux_table_value = 0; // 0 to signal no interpreter
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_FLAGS;
+	aux_table_value = 0;
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_ENTRY;
+	aux_table_value = entry_point;
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_UID;
+	aux_table_value = (T)getuid();
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_EUID;
+	aux_table_value = (T)geteuid();
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 	
-	/* The following two words on the stack are needed on Linux for IA64 !!!! */
-	/* This is filling in the AUX_VECTOR */
-	T target_at_pagesz = Host2Target(endianness, (T)6); /* AT_PAGESZ */
-	memcpy(stack_data + aux_v_address, &target_at_pagesz, arch_size);
-	if ( verbose )
-		Log(stack_address + aux_v_address, (uint8_t *)&target_at_pagesz, arch_size);
-	T target_page_size = Host2Target(endianness, (T)0x4000ULL); /* PAGE_SIZE */
-	memcpy(stack_data + (aux_v_address + arch_size), &target_page_size, arch_size);
-	if ( verbose )
-		Log(stack_address + aux_v_address + arch_size, (uint8_t *)&target_page_size, arch_size);
+	aux_table_symbol = AT_GID;
+	aux_table_value = (T)getgid();
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_EGID;
+	aux_table_value = (T)getegid();
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	/* TODO
+	 * Adapt for other architectures as PowerPC,...
+	 */
+	aux_table_symbol = AT_HWCAP;
+	aux_table_value = ARM_ELF_HWCAP;
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	aux_table_symbol = AT_CLKTCK;
+	aux_table_value = (T)sysconf(_SC_CLK_TCK);
+	sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+
+	/* TODO
+	 * Enforce required alignment necessary in some architectures (i.e., PowerPC).
+	 */
+
+	T saved_aux = sp;
+
+	// Now we have to put the pointers to the different argv and envp
+	//   remark that we are decrementing the stack pointer so we start by the end,
+	//   that is envp
+	{
+		sp -= sizeof(T);
+		T value = 0;
+		uint8_t *addr = stack_data + sp;
+		memcpy(addr, &value, sizeof(value));
+		for ( typename std::vector<T>::iterator it_envp = sp_envp.begin();
+				it_envp != sp_envp.end();
+				++it_envp )
+		{
+			sp -= sizeof(T);
+			value = (*it_envp) + stack_base;
+			addr = stack_data + sp;
+			memcpy(addr, &value, sizeof(value));
+		}
+		sp -= sizeof(T);
+		value = 0;
+		addr = stack_data + sp;
+		memcpy(addr, &value, sizeof(value));
+		for ( typename std::vector<T>::iterator it_argv = sp_argv.begin();
+				it_argv != sp_argv.end();
+				++it_argv )
+		{
+			sp -= sizeof(T);
+			value = (*it_argv) + stack_base;
+			addr = stack_data + sp;
+			memcpy(addr, &value, sizeof(value));
+		}
+		sp -= sizeof(T);
+		value = argc;
+		addr = stack_data + sp;
+		memcpy(addr, &value, sizeof(argc));
+	}
 	
 	stack_blob = new unisim::util::debug::blob::Blob<T>();
 	stack_blob->Catch();
 	
 	stack_blob->SetEndian(endianness);
 	
-	stack_blob->SetStackBase(stack_address);
-	
-	unisim::util::debug::blob::Section<T> *stack_section = new unisim::util::debug::blob::Section<T>(
-		unisim::util::debug::blob::Section<T>::TY_UNKNOWN,
-		unisim::util::debug::blob::Section<T>::SA_A,
-		"",
-		0,
-		0,
-		stack_address,
-		stack_size,
-		stack_data
-	);
+	stack_blob->SetStackBase(stack_base + sp);
 
-	stack_blob->AddSection(stack_section);
+	unisim::util::debug::blob::Segment<T> *stack_segment = new unisim::util::debug::blob::Segment<T>(
+			unisim::util::debug::blob::Segment<T>::TY_LOADABLE,
+			unisim::util::debug::blob::Segment<T>::SA_RW,
+			0,
+			stack_base,
+			stack_size,
+			stack_data);
+	
+	stack_blob->AddSegment(stack_segment);
 	
 	blob = new unisim::util::debug::blob::Blob<T>();
 	blob->Catch();
@@ -637,20 +799,30 @@ LinuxLoader<T>::
 LoadStack()
 {
 	if(!memory_import) return false;
-	const unisim::util::debug::blob::Section<T> *stack_section = stack_blob->GetSection(0);
 	if(!stack_blob) return false;
+	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+		stack_blob->GetSegments();
 
-	T stack_start;
-	T stack_end;
-
-	stack_blob->GetAddrRange(stack_start, stack_end);
-
-	if(verbose)
+	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+			it != segments.end();
+			it++ )
 	{
-		logger << DebugInfo << "Initializing stack at @0x" << std::hex << stack_start << " - @0x" << stack_end << std::dec << EndDebugInfo;
-	}
+		T stack_start;
+		T stack_end;
 
-	if(!memory_import->WriteMemory(stack_section->GetAddr(), stack_section->GetData(), stack_section->GetSize())) return false;
+		(*it)->GetAddrRange(stack_start, stack_end);
+		if(verbose)
+		{
+			logger << DebugInfo 
+				<< "Initializing stack at @0x" << std::hex << stack_start 
+				<< " - @0x" << stack_end << std::dec << EndDebugInfo;
+		}
+	
+		if ( !memory_import->WriteMemory((*it)->GetAddr(), 
+					(*it)->GetData(), 
+					(*it)->GetSize()) ) 
+			return false;
+	}
 	
 	return true;
 }

@@ -133,6 +133,8 @@ unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
+unisim/util/loader/elf_loader/elf32_loader.cc \
+unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -269,6 +271,12 @@ unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
 unisim/util/random/random.hh \
 unisim/util/allocator/allocator.hh \
+unisim/util/loader/elf_loader/elf_common.h \
+unisim/util/loader/elf_loader/elf_loader.hh \
+unisim/util/loader/elf_loader/elf32.h \
+unisim/util/loader/elf_loader/elf64.h \
+unisim/util/loader/elf_loader/elf32_loader.hh \
+unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
@@ -391,6 +399,7 @@ unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
 unisim/util/simfloat/host_floating.tcc \
+unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \

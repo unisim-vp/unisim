@@ -1020,7 +1020,13 @@ LoadARM()
 			<< LOCATION
 			<< EndDebugInfo;
 	arm_regs[13]->SetValue(&st);
-	
+
+	PARAMETER_TYPE envp4;
+	PARAMETER_TYPE envp8;
+	memory_import->ReadMemory(st + 4, &envp4, sizeof(envp4));
+	memory_import->ReadMemory(st + 8, &envp8, sizeof(envp4));	
+	arm_regs[1]->SetValue(&envp4);
+	arm_regs[2]->SetValue(&envp8);
 	return status;
 }
 
