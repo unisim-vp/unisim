@@ -269,14 +269,73 @@ LinuxLoader<T>::SetupLoad()
 template <class T>
 void
 LinuxLoader<T> ::
+DumpSegment(unisim::util::debug::blob::Segment<T> const &s, int indent)
+{
+	std::string s_indent_pre(indent + 1, '*');
+	std::stringstream ss_indent;
+	ss_indent << s_indent_pre << " ";
+	std::string s_indent(ss_indent.str());
+
+	logger << s_indent << "S ";
+	logger << "Type: ";
+	switch ( s.GetType() )
+	{
+		case unisim::util::debug::blob::Segment<T>::TY_LOADABLE:
+			logger << "Loadable ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::TY_UNKNOWN:
+		default:
+			logger << "Unknown  ";
+			break;
+	}
+	logger << " Attribute: ";
+	switch ( s.GetAttr() )
+	{
+		case unisim::util::debug::blob::Segment<T>::SA_NULL:
+			logger << "NULL ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_R:
+			logger << "R    ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_W:
+			logger << "W    ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_X:
+			logger << "X    ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_RW:
+			logger << "RW   ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_RX:
+			logger << "RX   ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_WX:
+			logger << "WX   ";
+			break;
+		case unisim::util::debug::blob::Segment<T>::SA_RWX:
+			logger << "RWX  ";
+			break;
+		default:
+			logger << "?    ";
+			break;
+	}
+	logger << " Alignment: " << s.GetAlignment();
+	logger << "  Address: 0x" << std::hex << s.GetAddr() << std::dec;
+	logger << "  Size: " << s.GetSize();
+	logger << std::endl;
+}
+
+template <class T>
+void
+LinuxLoader<T> ::
 DumpSection(unisim::util::debug::blob::Section<T> const &s, int indent)
 {
 	std::string s_indent_pre(indent + 1, '-');
 	std::stringstream ss_indent;
 	ss_indent << s_indent_pre << " ";
-	std::string s_indent(ss_indent.str().c_str());
+	std::string s_indent(ss_indent.str());
 
-	logger << s_indent << "S ";
+	logger << s_indent << "s ";
 	logger << "Name: " << s.GetName() << std::endl;
 	logger << s_indent << "  Type: ";
 	switch ( s.GetType() )
@@ -409,6 +468,13 @@ DumpBlob(unisim::util::debug::blob::Blob<T> const &b, int indent)
 		logger << s_indent << "Endian: "
 			<< (b.GetEndian() == unisim::util::endian::E_LITTLE_ENDIAN ?
 					"Little endian" : "Big endian") << std::endl;
+
+	const std::vector<const unisim::util::debug::blob::Segment<T> *> &segments =
+		b.GetSegments();
+	for ( typename std::vector<const unisim::util::debug::blob::Segment<T> *>::const_iterator it = segments.begin();
+			it != segments.end();
+			++it )
+		DumpSegment(*(*it), indent);
 
 	const std::vector<const unisim::util::debug::blob::Section<T> *> &sections =
 		b.GetSections();

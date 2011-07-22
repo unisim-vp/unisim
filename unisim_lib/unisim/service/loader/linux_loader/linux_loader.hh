@@ -124,6 +124,7 @@ private:
 	bool SetupBlob();
 	void DumpBlob(unisim::util::debug::blob::Blob<T> const &, int);
 	void DumpSection(unisim::util::debug::blob::Section<T> const &, int);
+	void DumpSegment(unisim::util::debug::blob::Segment<T> const &, int);
 	
 	static const int arch_size = sizeof(uint32_t); // this works for 32 bits which is the case of arm and powerpc
 
