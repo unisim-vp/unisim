@@ -33,7 +33,7 @@ fi
 
 
 # create src and build directories (remove if they already exist)
-rm -rf src build
+rm -rf src build install simulator.tar.bz2
 mkdir src
 mkdir build
 mkdir install
