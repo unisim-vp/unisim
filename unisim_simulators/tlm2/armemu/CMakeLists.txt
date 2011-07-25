@@ -558,6 +558,18 @@ add_custom_command (
 		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
 	)
 
+if ( UNIX )
+	add_custom_command (
+		TARGET ${ARMEMU_EXEC_TARGET}
+		POST_BUILD
+		COMMAND
+			${CMAKE_COMMAND} -E create_symlink ${ARMEMU_EXEC_NAME} unisim-armemu
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+		COMMENT
+			"Creating a symbolic link with the generic name \"bin/unisim-armemu\" to \"bin/${ARMEMU_EXEC_NAME}\""
+			)
+endif ( UNIX )
+
 if ( BUILD_ARMEMU_PYTHON_MODULE )
 	set ( PYTHON__SIM__MODULE_NAME "armemu" )
 	set ( PYTHON__SIM__IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}" )
@@ -674,6 +686,12 @@ install ( TARGETS ${ARMEMU_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}
 # 	install ( TARGETS ${ARMEMU_EXEC_TARGET}-apple
 # 		BUNDLE DESTINATION applications )
 # endif ( APPLE )
+if ( UNIX )
+	install (
+		FILES ${CMAKE_BINARY_DIR}/bin/unisim-armemu
+		DESTINATION bin
+		)
+endif ( UNIX )
 install (
 	FILES
 		${SHARE_DIRECTORY}/AUTHORS.txt
