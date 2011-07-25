@@ -68,5 +68,5 @@ INSTALL_PATH=./install
 cmake ../src -Dwith_osci_systemc=$SYSTEMC_PATH -Dwith_osci_tlm2=$TLM2_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
 make -j
 make install
-tar jcvf simulator.tar.gz install
+tar jcvf simulator.tar.bz2 install
 
