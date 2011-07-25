@@ -36,6 +36,7 @@ fi
 rm -rf src build
 mkdir src
 mkdir build
+mkdir install
 
 # create config.xml
 BUILD_SH_PATH=`dirname $0`
@@ -64,9 +65,9 @@ python3.1 ${REPO_PATH}/package/puscomp/puscomp.py -c config.xml -o src unisim_si
 
 # configure and build the simulator
 cd build
-INSTALL_PATH=./install
-cmake ../src -Dwith_osci_systemc=$SYSTEMC_PATH -Dwith_osci_tlm2=$TLM2_PATH -DCMAKE_INSTALL_PREFIX=$INSTALL_PATH
+cmake ../src -Dwith_osci_systemc=$SYSTEMC_PATH -Dwith_osci_tlm2=$TLM2_PATH -DCMAKE_INSTALL_PREFIX=../install
 make -j
 make install
+cd ..
 tar jcvf simulator.tar.bz2 install
 
