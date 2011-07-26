@@ -1,6 +1,7 @@
 import shlex
 import subprocess
 import os
+import os.path
 import shutil
 import filecmp
 import time
@@ -119,9 +120,9 @@ if not options.config_path:
 	parser.print_help()
 	parser.error("missing directory containing the simulator configuration for each benchmark")
 
-benchmarks_path = options.benchmarks_path
-simulator = options.simulator
-config_path = options.config_path
+benchmarks_path = os.path(options.benchmarks_path)
+simulator = os.path(options.simulator)
+config_path = os.path(options.config_path)
 xunit = XUnit("mibench", time.time())
 automotive_basicmath()
 xunit.write()
