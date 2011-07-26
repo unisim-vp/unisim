@@ -430,7 +430,7 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("memory.cycle-time",        "31250 ps");
 	sim->SetVariable("memory.read-latency",      "31250 ps");
 	sim->SetVariable("memory.write-latency",     "0 ps");
-	sim->SetVariable("linux-loader.stack-base",  0xc0000000UL);
+	sim->SetVariable("linux-loader.stack-base",  0x40000000UL);
 	sim->SetVariable("linux-loader.max-environ", 0x4000UL);
 	sim->SetVariable("linux-loader.endianness",  "little-endian");
 	sim->SetVariable("linux-loader.argc",        1);

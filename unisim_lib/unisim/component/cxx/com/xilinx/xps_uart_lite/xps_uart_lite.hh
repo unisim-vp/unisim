@@ -111,8 +111,10 @@ protected:
 	uint8_t GetSTAT_REG_RX_FIFO_VALID_DATA() const;
 	uint8_t GetSTAT_REG_INTR_ENABLED() const;
 	uint8_t ReadSTAT_REG();
-	bool TXT_FIFO_BecomesEmpty() const;
-	
+	bool TX_FIFO_BecomesEmpty() const;
+	void ResetTX_FIFO_BecomesEmpty();
+	bool HasInterrupt() const;
+
 	void SetTX_FIFO(uint8_t value);
 	void WriteTX_FIFO(uint8_t value);
 	void WriteCTRL_REG(uint8_t value);

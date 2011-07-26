@@ -84,6 +84,8 @@ public:
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
+	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
+
 private:
 	endian_type endianness;
 	uint8_t address_size;

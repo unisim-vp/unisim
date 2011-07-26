@@ -15,6 +15,27 @@ set ( SIM_DESCRIPTION "UNISIM ARMv5 User Level Simulator" )
 set ( SIM_PYTHON_MODULE_NAME "armemu" )
 set ( SIM_PYTHON_IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}")
 
+# all the libraries need to be compiled with -fPIC otherwise dynamic linking
+#   might not work properly
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_CXX_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH "${FLAGS}" )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_CXX_FLAGS "${FLAGS} -fPIC" CACHE STRING "CMAKE_CXX_FLAGS" )
+endif ( FPIC_MATCH )
+get_property ( FLAGS
+	VARIABLE
+	PROPERTY CMAKE_C_FLAGS )
+string ( REGEX MATCH "-fPIC"
+	FPIC_MATCH "${FLAGS}" )
+if ( FPIC_MATCH )
+else ( FPIC_MATCH )
+	set ( CMAKE_C_FLAGS "${FLAGS} -fPIC" CACHE STRING "CMAKE_C_FLAGS" )
+endif ( FPIC_MATCH )
+
 if ( UNIX AND NOT APPLE )
 	find_file ( LSB_RELEASE_FILE lsb-release /etc )
 	if ( LSB_RELEASE_FILE )
@@ -209,6 +230,16 @@ add_custom_target ( armemu__share_test
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/test.armv5l
 			${SHARE_DIRECTORY}/test/install/test.armv5l
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/mibench
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/test/mibench/run.py
+			${SHARE_DIRECTORY}/test/mibench/run.py
+	COMMAND
+		${CMAKE_COMMAND} -E copy_directory 
+			${CMAKE_SOURCE_DIR}/share/test/mibench/automotive
+			${SHARE_DIRECTORY}/test/mibench/automotive
 	COMMENT
 		"Setting test program source files"
 	)
@@ -537,6 +568,18 @@ add_custom_command (
 		"Creating simulator default configuration in \"${RELATIVE_SHARE_DIRECTORY}/template-default-config.xml\""
 	)
 
+if ( UNIX )
+	add_custom_command (
+		TARGET ${ARMEMU_EXEC_TARGET}
+		POST_BUILD
+		COMMAND
+			${CMAKE_COMMAND} -E create_symlink ${ARMEMU_EXEC_NAME} unisim-armemu
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/bin
+		COMMENT
+			"Creating a symbolic link with the generic name \"bin/unisim-armemu\" to \"bin/${ARMEMU_EXEC_NAME}\""
+			)
+endif ( UNIX )
+
 if ( BUILD_ARMEMU_PYTHON_MODULE )
 	set ( PYTHON__SIM__MODULE_NAME "armemu" )
 	set ( PYTHON__SIM__IMPORT_NAME "armemu${SIM_VERSION_MAJOR}${SIM_VERSION_MINOR}${SIM_VERSION_PATCH}" )
@@ -653,6 +696,12 @@ install ( TARGETS ${ARMEMU_EXEC_TARGET} # ${ARMEMU_LIB_TARGET}
 # 	install ( TARGETS ${ARMEMU_EXEC_TARGET}-apple
 # 		BUNDLE DESTINATION applications )
 # endif ( APPLE )
+if ( UNIX )
+	install (
+		FILES ${CMAKE_BINARY_DIR}/bin/unisim-armemu
+		DESTINATION bin
+		)
+endif ( UNIX )
 install (
 	FILES
 		${SHARE_DIRECTORY}/AUTHORS.txt
@@ -691,6 +740,21 @@ install (
 		${RELATIVE_SHARE_DIRECTORY}/test/install
 	OPTIONAL
 	)
+install (
+	FILES 
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/config_large.xml
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/config_small.xml
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/output_large.txt
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/output_small.txt
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/test/mibench/automotive/basicmath
+		)
+install (
+	FILES
+		${SHARE_DIRECTORY}/test/mibench/run.py
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/test/mibench
+		)
 install (
 	FILES
 		${SHARE_DIRECTORY}/logo/logo_unisim.icns

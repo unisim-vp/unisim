@@ -56,6 +56,7 @@ Blob<MEMORY_ADDR>::Blob()
 	, address_size(0)
 	, blobs()
 	, sections()
+	, segments()
 	, refcount(0)
 {
 	refcount = new unsigned int();
@@ -73,6 +74,7 @@ Blob<MEMORY_ADDR>::Blob(const Blob<MEMORY_ADDR>& _blob)
 	, address_size(_blob.address_size)
 	, blobs()
 	, sections()
+	, segments()
 	, refcount(0)
 {
 	refcount = new unsigned int();
@@ -95,6 +97,15 @@ Blob<MEMORY_ADDR>::Blob(const Blob<MEMORY_ADDR>& _blob)
 		
 		AddSection(section);
 	}
+
+	const std::vector<const Segment<MEMORY_ADDR> *>& _segments = _blob.segments;
+	typename std::vector<const Segment<MEMORY_ADDR> *>::const_iterator _segment_iter;
+	for(_segment_iter = _segments.begin(); _segment_iter != _segments.end(); _segment_iter++)
+	{
+		const Segment<MEMORY_ADDR> *segment = *_segment_iter;
+		
+		AddSegment(segment);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -112,6 +123,12 @@ Blob<MEMORY_ADDR>::~Blob()
 		(*section_iter)->Release();
 	}
 	
+	typename std::vector<const Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
+	{
+		(*segment_iter)->Release();
+	}
+
 	delete refcount;
 }
 	
@@ -294,6 +311,20 @@ void Blob<MEMORY_ADDR>::GetAddrRange(MEMORY_ADDR& _min_addr, MEMORY_ADDR& _max_a
 		}
 	}
 	
+	typename std::vector<const Segment<MEMORY_ADDR> *>::const_iterator segment_iter;
+	for(segment_iter = segments.begin(); segment_iter != segments.end(); segment_iter++)
+	{
+		const Segment<MEMORY_ADDR> *segment = *segment_iter;
+		if(segment->GetType() == Segment<MEMORY_ADDR>::TY_LOADABLE)
+		{
+			MEMORY_ADDR segment_min_addr;
+			MEMORY_ADDR segment_max_addr;
+			segment->GetAddrRange(segment_min_addr, segment_max_addr);
+			if(segment_min_addr < min_addr) min_addr = segment_min_addr;
+			if(segment_max_addr > max_addr) max_addr = segment_max_addr;
+		}
+	}
+
 	_min_addr = min_addr;
 	_max_addr = max_addr;
 }
@@ -311,9 +342,21 @@ const std::vector<const Section<MEMORY_ADDR> *>& Blob<MEMORY_ADDR>::GetSections(
 }
 
 template <class MEMORY_ADDR>
+const std::vector<const Segment<MEMORY_ADDR> *>& Blob<MEMORY_ADDR>::GetSegments() const
+{
+	return segments;
+}
+
+template <class MEMORY_ADDR>
 const Section<MEMORY_ADDR> *Blob<MEMORY_ADDR>::GetSection(unsigned int index) const
 {
 	return (index < sections.size()) ? sections[index] : 0;
+}
+
+template <class MEMORY_ADDR>
+const Segment<MEMORY_ADDR> *Blob<MEMORY_ADDR>::GetSegment(unsigned int index) const
+{
+	return (index < segments.size()) ? segments[index] : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -328,6 +371,13 @@ void Blob<MEMORY_ADDR>::AddSection(const Section<MEMORY_ADDR> *section)
 {
 	section->Catch();
 	sections.push_back(section);
+}
+
+template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::AddSegment(const Segment<MEMORY_ADDR> *segment)
+{
+	segment->Catch();
+	segments.push_back(segment);
 }
 
 template <class MEMORY_ADDR>

@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_PPC440_CPU_TCC__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_POWERPC_PPC440_CPU_TCC__
 
+#include <unistd.h>
+
 namespace unisim {
 namespace component {
 namespace tlm2 {
@@ -67,16 +69,23 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, cpu_time()
 	, nice_time()
 	, max_idle_time()
-	, global_time()
+	, run_time()
 	, idle_time()
+	, enable_host_idle(false)
 	, ev_max_idle()
 	, ev_irq()
 	, ipc(1.0)
+	, one(1.0)
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
+	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
+	, stat_one("one", this, one, "one")
+	, stat_run_time("run-time", this, run_time, "run time")
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
+	, formula_idle_rate("idle-rate", this, Formula<double>::OP_DIV, &stat_idle_time, &stat_run_time, "idle rate")
+	, formula_load_rate("load-rate", this, Formula<double>::OP_SUB, &stat_one, &formula_idle_rate, "load rate")
 	, external_event_schedule()
 	, critical_input_interrupt_redirector(0)
 	, external_input_interrupt_redirector(0)
@@ -85,6 +94,10 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, dcurd_plb_redirector(0)
 	, dcr_redirector(0)
 {
+	stat_one.SetMutable(false);
+	stat_one.SetSerializable(false);
+	stat_one.SetVisible(false);
+	
 	icurd_plb_redirector = new unisim::kernel::tlm2::BwRedirector<CPU<CONFIG> >(
 		IF_ICURD_PLB,
 		this,
@@ -206,7 +219,7 @@ void CPU<CONFIG>::Synchronize()
 {
 	wait(cpu_time);
 	cpu_time = SC_ZERO_TIME;
-	global_time = sc_time_stamp();
+	run_time = sc_time_stamp();
 }
 
 template <class CONFIG>
@@ -216,7 +229,7 @@ void CPU<CONFIG>::ProcessExternalEvents()
 	time_stamp += cpu_time;
 	Event *event = external_event_schedule.GetNextEvent(time_stamp);
 	
-	if(event)
+	if(unlikely(event != 0))
 	{
 		do
 		{
@@ -336,16 +349,38 @@ bool CPU<CONFIG>::interrupt_get_direct_mem_ptr(unsigned int, InterruptPayload& p
 template <class CONFIG>
 inline void CPU<CONFIG>::UpdateTime()
 {
-	if(unlikely(global_time > timer_time))
+	if(unlikely(run_time > timer_time))
 	{
 		const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
+		
+#if 0
 		do
 		{
 			//std::cerr << "timer_time=" << timer_time << std::endl;
 			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
-		while(unlikely(global_time > timer_time));
+		while(unlikely(run_time > timer_time));
+#else
+		// Note: this code brings a slight speed improvement (6 %)
+#if 0
+		sc_time delta_time(run_time);
+		delta_time -= timer_time;
+		uint64_t delta = (uint64_t) ceil(delta_time / timer_cycle_time);
+		inherited::RunTimers(delta);
+		sc_time t(timer_cycle_time);
+		t *= (double) delta;
+		timer_time += t;
+#else
+		sc_dt::uint64 delta_time_tu = run_time.value() - timer_time.value();
+		sc_dt::uint64 timer_cycle_time_tu = timer_cycle_time.value();
+		uint64_t delta = (delta_time_tu + timer_cycle_time_tu - 1) / timer_cycle_time_tu;
+		inherited::RunTimers(delta);
+		sc_dt::uint64 t_tu = timer_cycle_time_tu * delta;
+		sc_time t(t_tu, false);
+		timer_time += t;
+#endif
+#endif
 	}
 }
 
@@ -378,35 +413,57 @@ template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
 	// This is called within thread Run()
+	
+	// Compute the time to consume before an internal timer event occurs
 	const sc_time& timer_cycle_time = inherited::GetCCR1_TCS() ? ext_timer_cycle_time : cpu_cycle_time;
 	max_idle_time = timer_cycle_time;
 	max_idle_time *= inherited::GetMaxIdleTime();
-#if 0
-	usleep(max_idle_time.to_seconds() * 1.0e6);
-#endif
+	// Also account for locally spent time from the time decoupling point of view
+	max_idle_time += cpu_time;
+	
+	// Notify an event
 	ev_max_idle.notify(max_idle_time);
-	//std::cerr << sc_time_stamp() << ": Idle wait for at most " << max_idle_time << std::endl;
+	
+	
+	// wait for either an internal timer event or an external event
 	sc_time old_time_stamp(sc_time_stamp());
 	wait(ev_max_idle | ev_irq);
-	ev_max_idle.cancel();
 	sc_time new_time_stamp(sc_time_stamp());
 	
+	// cancel event because we can't know which wake up condition occured
+	ev_max_idle.cancel();
+	
+	// compute the time spent by the SystemC wait
 	sc_time delta_time(new_time_stamp);
 	delta_time -= old_time_stamp;
 	
+	// Check whether CPU was really idle
 	if(delta_time > cpu_time)
 	{
-		idle_time += delta_time;
-		idle_time -= cpu_time;
+		// CPU was really idle
+		sc_time true_idle_time(delta_time);
+		true_idle_time -= cpu_time;
+		if(enable_host_idle)
+		{
+			usleep(true_idle_time.to_seconds() * 1.0e6); // leave host CPU when target CPU is idle
+		}
+		idle_time += true_idle_time;
 		cpu_time = SC_ZERO_TIME;
 	}
 	else
 	{
+		// CPU was not really idle because an external event was delayed because of time decoupling
 		cpu_time -= delta_time;
 	}
-	global_time = new_time_stamp;
-	global_time += cpu_time;
+	
+	// update overall run time
+	run_time = new_time_stamp;
+	run_time += cpu_time;
+	
+	// run internal timers
 	UpdateTime();
+	
+	// check for external events
 	ProcessExternalEvents();
 }
 
@@ -442,8 +499,8 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	icurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -466,8 +523,8 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	
 	dcurd_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -490,8 +547,8 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	
 	dcuwr_plb_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 
@@ -516,8 +573,8 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
@@ -542,8 +599,8 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	
 	dcr_master_sock->b_transport(*payload, cpu_time);
 	
-	global_time = sc_time_stamp();
-	global_time += cpu_time;
+	run_time = sc_time_stamp();
+	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
 

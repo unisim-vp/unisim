@@ -56,8 +56,8 @@ function BuildRPM
 	START_PARAMS="$1"
 	shift
 
-	DISTRIB_ID=$(cat /etc/lsb-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
-	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_ID=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
 	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	TOP_DIR="${HOME}/tmp/rpm"
@@ -217,8 +217,8 @@ function BuildDEB
 	START_PARAMS="$1"
 	shift
 
-	DISTRIB_ID=$(cat /etc/lsb-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
-	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_ID=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
 	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	PREFIX=/usr

@@ -61,7 +61,8 @@ Section<MEMORY_ADDR>::Section(Type _type, Attribute _attr, const char *_name, un
 
 template <class MEMORY_ADDR>
 Section<MEMORY_ADDR>::Section(const Section<MEMORY_ADDR>& section)
-	: attr(section.attr)
+	: type(section.type)
+	, attr(section.attr)
 	, name(section.name)
 	, alignment(section.alignment)
 	, link(section.link)

@@ -46,7 +46,7 @@ namespace linux_os_32 {
 LinuxOS32::
 LinuxOS32(const char *name, unisim::kernel::service::Object *parent) :
 	unisim::kernel::service::Object(name, parent),
-	unisim::service::os::linux_os::LinuxOS<uint64_t, uint32_t>(name, parent)
+	unisim::service::os::linux_os::LinuxOS<uint32_t, uint32_t>(name, parent)
 {
 }
 

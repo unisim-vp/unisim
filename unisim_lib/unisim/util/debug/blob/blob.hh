@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_BLOB_BLOB_HH__
 
 #include <unisim/util/debug/blob/section.hh>
+#include <unisim/util/debug/blob/segment.hh>
 #include <unisim/util/endian/endian.hh>
 #include <string>
 #include <vector>
@@ -83,11 +84,14 @@ public:
 	unsigned int GetAddressSize() const;
 	const std::vector<const Blob<MEMORY_ADDR> *>& GetBlobs() const;
 	const std::vector<const Section<MEMORY_ADDR> *>& GetSections() const;
+	const std::vector<const Segment<MEMORY_ADDR> *>& GetSegments() const;
 	const Section<MEMORY_ADDR> *GetSection(unsigned int index) const;
+	const Segment<MEMORY_ADDR> *GetSegment(unsigned int index) const;
 	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
 	
 	void AddBlob(const Blob<MEMORY_ADDR> *blob);
 	void AddSection(const Section<MEMORY_ADDR> *section);
+	void AddSegment(const Segment<MEMORY_ADDR> *segment);
 	
 	const Section<MEMORY_ADDR> *FindSection(const char *name) const;
 	
@@ -103,6 +107,7 @@ private:
 	unsigned int address_size;
 	std::vector<const Blob<MEMORY_ADDR> *> blobs;
 	std::vector<const Section<MEMORY_ADDR> *> sections;
+	std::vector<const Segment<MEMORY_ADDR> *> segments;
 	unsigned int *refcount;
 };
 

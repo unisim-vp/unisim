@@ -33,7 +33,11 @@
  */
  
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+
+#ifndef WIN32
 #include <signal.h>
+#endif
+
 #include <iostream>
 
 namespace unisim {
@@ -46,13 +50,19 @@ using std::endl;
 
 bool InlineDebuggerBase::trap = false;
 int InlineDebuggerBase::alive_instances = 0;
+#ifndef WIN32
 void (*InlineDebuggerBase::prev_sig_int_handler)(int);
+#endif
 
 InlineDebuggerBase::InlineDebuggerBase()
 {
 	if(alive_instances == 0)
 	{
+#ifdef WIN32
+		SetConsoleCtrlHandler(&InlineDebuggerBase::ConsoleCtrlHandler, TRUE);
+#else
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+#endif
 	}
 	alive_instances++;
 }
@@ -61,15 +71,49 @@ InlineDebuggerBase::~InlineDebuggerBase()
 {
 	if(--alive_instances > 0)
 	{
+#ifdef WIN32
+		SetConsoleCtrlHandler(&InlineDebuggerBase::ConsoleCtrlHandler, FALSE);
+#else
 		signal(SIGINT, prev_sig_int_handler);
+#endif
 	}
 }
 
+#ifdef WIN32
+BOOL WINAPI InlineDebuggerBase::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			cerr << "Interrupted by Ctrl-C" << endl;
+			trap = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			cerr << "Interrupted by Ctrl-Break" << endl;
+			trap = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			cerr << "Interrupted by a console close" << endl;
+			trap = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			cerr << "Interrupted because of logoff" << endl;
+			trap = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			cerr << "Interrupted because of shutdown" << endl;
+			trap = true;
+			break;
+	}
+	return trap ? TRUE : FALSE;
+}
+#else
 void InlineDebuggerBase::SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
 	trap = true;
 }
+#endif
 
 } // end of namespace inline_debugger
 } // end of namespace debug

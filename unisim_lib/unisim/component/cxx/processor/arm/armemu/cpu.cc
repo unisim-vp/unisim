@@ -99,14 +99,14 @@ CPU(const char *name, Object *parent)
 	: Object(name, parent)
 	, unisim::component::cxx::processor::arm::CPU()
 	, Client<LinuxOS>(name, parent)
-	, Service<MemoryInjection<uint64_t> >(name, parent)
-	, Client<DebugControl<uint64_t> >(name, parent)
-	, Client<MemoryAccessReporting<uint64_t> >(name, parent)
+	, Service<MemoryInjection<uint32_t> >(name, parent)
+	, Client<DebugControl<uint32_t> >(name, parent)
+	, Client<MemoryAccessReporting<uint32_t> >(name, parent)
 	, Client<TrapReporting>(name, parent)
 	, Service<MemoryAccessReportingControl>(name, parent)
-	, Service<Disassembly<uint64_t> >(name, parent)
+	, Service<Disassembly<uint32_t> >(name, parent)
 	, Service<Registers>(name, parent)
-	, Service<Memory<uint64_t> >(name, parent)
+	, Service<Memory<uint32_t> >(name, parent)
 	, disasm_export("disasm-export", this)
 	, registers_export("registers-export", this)
 	, memory_injection_export("memory-injection-export", this)
@@ -422,27 +422,27 @@ StepInstruction()
 
 	if (debug_control_import) 
 	{
-		DebugControl<uint64_t>::DebugCommand dbg_cmd;
+		DebugControl<uint32_t>::DebugCommand dbg_cmd;
 
 		do 
 		{
 			dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 	
-			if (dbg_cmd == DebugControl<uint64_t>::DBG_STEP) 
+			if (dbg_cmd == DebugControl<uint32_t>::DBG_STEP) 
 			{
 				/* Nothing to do */
 				break;
 			}
-			if (dbg_cmd == DebugControl<uint64_t>::DBG_SYNC) 
+			if (dbg_cmd == DebugControl<uint32_t>::DBG_SYNC) 
 			{
 				// Sync();
 				continue;
 			}
 
-			if (dbg_cmd == DebugControl<uint64_t>::DBG_KILL) {
+			if (dbg_cmd == DebugControl<uint32_t>::DBG_KILL) {
 				Stop(0);
 			}
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_RESET) {
+			if(dbg_cmd == DebugControl<uint32_t>::DBG_RESET) {
 				// TODO : memory_interface->Reset(); 
 			}
 		} while(1);
@@ -463,8 +463,8 @@ StepInstruction()
 			else
 				insn_size = 4;
 			memory_access_reporting_import->ReportMemoryAccess(
-				MemoryAccessReporting<uint64_t>::MAT_READ, 
-				MemoryAccessReporting<uint64_t>::MT_INSN, 
+				MemoryAccessReporting<uint32_t>::MAT_READ, 
+				MemoryAccessReporting<uint32_t>::MT_INSN, 
 				current_pc, insn_size);
 		}
 	}
@@ -519,7 +519,7 @@ StepInstruction()
  */
 bool 
 CPU::
-InjectReadMemory(uint64_t addr, 
+InjectReadMemory(uint32_t addr, 
 	void *buffer,
 	uint32_t size)
 {
@@ -592,7 +592,7 @@ InjectReadMemory(uint64_t addr,
  */
 bool 
 CPU::
-InjectWriteMemory(uint64_t addr, 
+InjectWriteMemory(uint32_t addr, 
 	const void *buffer, 
 	uint32_t size)
 {
@@ -695,7 +695,7 @@ RequiresFinishedInstructionReporting(bool report)
  */
 bool 
 CPU::
-ReadMemory(uint64_t addr, 
+ReadMemory(uint32_t addr, 
 		void *buffer, 
 		uint32_t size)
 {
@@ -777,7 +777,7 @@ ReadMemory(uint64_t addr,
  */
 bool 
 CPU::
-WriteMemory(uint64_t addr, 
+WriteMemory(uint32_t addr, 
 		const void *buffer, 
 		uint32_t size)
 {
@@ -872,7 +872,7 @@ GetRegister(const char *name)
  */
 string 
 CPU::
-Disasm(uint64_t addr, uint64_t &next_addr)
+Disasm(uint32_t addr, uint32_t &next_addr)
 {
 	isa::arm32::Operation<unisim::component::cxx::processor::arm::armemu::CPU> *
 		op = NULL;
@@ -1042,8 +1042,8 @@ Read32toPCUpdateT(uint32_t address)
 	if (requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address & ~((uint32_t)0x3), 4);
 }
 
@@ -1072,8 +1072,8 @@ Read32toPC(uint32_t address)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,				
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,				
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address & ~((uint32_t)0x3), 4);
 }
 
@@ -1103,8 +1103,8 @@ Read32toGPR(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address & ~((uint32_t)0x3), 4);
 }
 
@@ -1137,8 +1137,8 @@ Read32toGPRAligned(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 4);
 }
 
@@ -1171,8 +1171,8 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 2);
 }
 
@@ -1205,8 +1205,8 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 2);
 }
 
@@ -1236,8 +1236,8 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 1);
 }
 
@@ -1268,8 +1268,8 @@ Read8toGPR(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 1);
 }
 
@@ -1299,8 +1299,8 @@ Write32(uint32_t address, uint32_t value)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 4);
 }
 
@@ -1330,8 +1330,8 @@ Write16(uint32_t address, uint16_t value)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 2);
 }
 
@@ -1360,8 +1360,8 @@ Write8(uint32_t address, uint8_t value)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 1);
 }
 
@@ -1724,8 +1724,8 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 
@@ -1876,8 +1876,8 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 
@@ -1997,8 +1997,8 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 
@@ -2122,8 +2122,8 @@ PerformReadToPCUpdateTAccess(
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
+					MemoryAccessReporting<uint32_t>::MAT_READ,
+					MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 

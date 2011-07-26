@@ -370,6 +370,9 @@ SetupLinuxOS()
 	mmap_brk_point = mmap_base;
 
 	ADDRESS_TYPE top_addr = blob->GetStackBase() + 1;
+	logger << DebugInfo
+		<< "top_addr = 0x" << std::hex << top_addr << std::dec
+		<< EndDebugInfo;
 	
 	brk_point = top_addr +
     	(memory_page_size - (top_addr % memory_page_size));
@@ -1017,7 +1020,13 @@ LoadARM()
 			<< LOCATION
 			<< EndDebugInfo;
 	arm_regs[13]->SetValue(&st);
-	
+
+	PARAMETER_TYPE envp4;
+	PARAMETER_TYPE envp8;
+	memory_import->ReadMemory(st + 4, &envp4, sizeof(envp4));
+	memory_import->ReadMemory(st + 8, &envp8, sizeof(envp4));	
+	arm_regs[1]->SetValue(&envp4);
+	arm_regs[2]->SetValue(&envp8);
 	return status;
 }
 

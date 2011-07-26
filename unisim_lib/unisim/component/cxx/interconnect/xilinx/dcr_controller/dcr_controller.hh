@@ -54,6 +54,9 @@ class DCRController
 	: public virtual Object
 {
 public:
+	static const uint32_t DCR_CONTROLLER_BASEADDR = (CONFIG::TIEDCRBASEADDR << 8); // DCR controller base address
+	static const uint32_t DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_RESET_VALUE = CONFIG::DCR_AUTOLOCK_ENABLE ? CONFIG::DCR_CONTROLLER_STATUS_AND_CONTROL_REGISTER_AUTOLOCK_MASK : 0;
+	
 	typedef enum
 	{
 		ST_IDLE = 0,

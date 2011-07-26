@@ -464,7 +464,7 @@ invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 bool 
 ARMEMU ::
-ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
+ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
 	transaction_type *trans;
 	unsigned int read_size;
@@ -498,7 +498,7 @@ ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
  */
 bool 
 ARMEMU ::
-ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
 	transaction_type *trans;
 	unsigned int write_size;

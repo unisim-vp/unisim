@@ -38,6 +38,10 @@ add_library ( unisim__util__debug__blob
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/section.tcc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/section32.cc
 		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/section64.cc
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/segment.hh
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/segment.tcc
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/segment32.cc
+		${CMAKE_SOURCE_DIR}/unisim/util/debug/blob/segment64.cc
 	)
 
 target_link_libraries ( unisim__util__debug__blob

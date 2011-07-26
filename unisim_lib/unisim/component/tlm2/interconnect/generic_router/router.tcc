@@ -134,7 +134,7 @@ template <class CONFIG> const unsigned int unisim::component::tlm2::interconnect
 template<class CONFIG>
 Router<CONFIG>::
 Router(const sc_module_name &name, Object *parent) :
-unisim::kernel::service::Object(name, parent),
+unisim::kernel::service::Object(name, parent, "A memory-mapped router"),
 unisim::kernel::service::Service<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
 unisim::kernel::service::Client<unisim::service::interfaces::Memory<uint64_t> >(name, parent),
 sc_module(name),
