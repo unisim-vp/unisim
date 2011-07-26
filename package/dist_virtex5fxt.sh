@@ -129,6 +129,8 @@ unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/section32.cc \
 unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/elf_symtab/elf_symtab32.cc \
+unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
@@ -260,6 +262,7 @@ unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
+unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -395,6 +398,7 @@ unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
+unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \

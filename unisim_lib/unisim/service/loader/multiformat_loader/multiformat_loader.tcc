@@ -636,13 +636,26 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoa
 		logger << DebugError << "Can't open input \"" << location << "\"" << EndDebugError;
 		return FFMT_RAW;
 	}
-	
-	std::streampos size = f.readsome((char *) magic, sizeof(magic));
-	
-	if(f.fail())
+
+	// Note: code below is nearly equivalent to istream::readsome
+	// I no longer use it because it is bugged with i586-mingw32msvc-g++ (version 4.2.1-sjlj on Ubuntu)
+	unsigned int size;
+	for(size = 0; size < sizeof(magic); size++)
 	{
-		logger << DebugError << "Input/Ouput error while reading file \"" << location << "\"" << EndDebugError;
-		return FFMT_RAW;
+		f.read((char *) &magic[size], 1);
+		if(!f.good()) break;
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "Magic: ";
+		std::streamoff i;
+		for(i = 0; i < size; i++)
+		{
+			logger << "0x" << std::hex << (unsigned int) magic[i] << std::dec;
+			if(i != (size - 1)) logger << " ";
+		}
+		logger << EndDebugInfo;
 	}
 	
 	if(size >= 5)

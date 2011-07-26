@@ -41,7 +41,7 @@
 #include <unisim/util/debug/dwarf/dwarf.hh>
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/symbol_table.hh>
+#include <unisim/util/debug/elf_symtab/elf_symtab.hh>
 
 #include <iosfwd>
 
@@ -54,7 +54,7 @@ using namespace std;
 using namespace unisim::util::endian;
 using unisim::util::debug::Statement;
 using unisim::util::debug::Symbol;
-using unisim::util::debug::SymbolTable;
+using unisim::util::debug::elf_symtab::ELF_SymtabHandler;
 using unisim::util::debug::blob::Blob;
 
 typedef enum
@@ -105,7 +105,7 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	SymbolTable<MEMORY_ADDR> *symbol_table;
+	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	string dwarf_to_html_output_directory;
 	bool verbose;
@@ -115,12 +115,9 @@ private:
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);
 	void SwapSectionHeader(Elf_Shdr *shdr);
-	void SwapSymbolEntry(Elf_Sym *sym);
 	void AdjustElfHeader(Elf_Ehdr *hdr);
 	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
 	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	void AdjustSymbolEntry(const Elf_Ehdr *hdr, Elf_Sym *sym);
-	void AdjustSymbolTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, Elf_Sym *sym);
 	Elf_Ehdr *ReadElfHeader(istream& is);
 	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is);
 	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is);

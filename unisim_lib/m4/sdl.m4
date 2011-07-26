@@ -18,7 +18,7 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 		sdl_libs="`$with_sdl/bin/sdl-config --libs`"
 		AC_MSG_NOTICE([sdl-config says compiler needs option ${sdl_cflags} ${sdl_libs} to compile and link with SDL])
 		CPPFLAGS=${CPPFLAGS}" ${sdl_cflags}"
-		LDFLAGS=${LDFLAGS}" ${sdl_libs}"
+		LIBS=${LIBS}" ${sdl_libs}"
     else
 		if test $host = $build; then
 			# We are not crosscompiling so we can execute sdl-config in the PATH on the 'build' machine
@@ -31,14 +31,14 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
 			sdl_libs="`sdl-config --libs`"
 			AC_MSG_NOTICE([sdl-config says compiler needs option ${sdl_cflags} ${sdl_libs} to compile and link with SDL])
 			CPPFLAGS=${CPPFLAGS}" ${sdl_cflags}"
-			LDFLAGS=${LDFLAGS}" ${sdl_libs}"
+			LIBS=${LIBS}" ${sdl_libs}"
 		else
 			# We are crosscompiling and we can't use sdl-config of the 'build' machine.
 			sdl_cflags="-I/usr/include"
 			sdl_libs="-L/usr/lib"
 			AC_MSG_NOTICE([Trying with compiler option ${sdl_cflags} ${sdl_libs} to compile and link with SDL.])
 			CPPFLAGS=${CPPFLAGS}" ${sdl_cflags}"
-			LDFLAGS=${LDFLAGS}" ${sdl_libs}"
+			LIBS=${LIBS}" ${sdl_libs}"
 		fi
 	fi
 
@@ -90,7 +90,6 @@ AC_DEFUN([UNISIM_CHECK_SDL], [
     if test "$broken_sdl" == "yes"; then
 		AC_MSG_NOTICE([SDL not found. No video frame buffer or input devices will be available.])
     else
-		LIBS="-lSDL ${LIBS}"
 		AC_DEFINE([HAVE_SDL], [], [Whether SDL is available])
     fi
 ])
