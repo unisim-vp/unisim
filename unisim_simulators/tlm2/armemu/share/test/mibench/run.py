@@ -55,6 +55,7 @@ def run_benchmark(benchmark_path, output_path, config_file):
 	stdout_file = open(output_directory + "/stdout.txt", "w")
 	stderr_file = open(output_directory + "/stderr.txt", "w")
 	t_init = time.time()
+	print("args = ", args)
 	print("t_init = ", t_init)
 	subprocess.call(args, cwd = run_directory, stdout = stdout_file, stderr = stderr_file)
 	t_end = time.time()
