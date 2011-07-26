@@ -13,6 +13,11 @@
 			<file>share/test/src/CMakeLists.txt</file>
 			<file>share/test/src/toolchain-armv5l.cmake</file>
 			<file>share/test/test.armv5l</file>
+			<file>share/test/mibench/automotive/basicmath/config_large.xml</file>
+			<file>share/test/mibench/automotive/basicmath/config_small.xml</file>
+			<file>share/test/mibench/automotive/basicmath/output_large.txt</file>
+			<file>share/test/mibench/automotive/basicmath/output_small.txt</file>
+			<file>share/test/mibench/run.py</file>
 			<file>share/logo/logo_unisim.icns</file>
 			<file>share/logo/logo_unisim.png</file>
 			<file>share/logo/logo_unisim256.png</file>
