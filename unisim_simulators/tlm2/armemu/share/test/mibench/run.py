@@ -16,6 +16,10 @@ class XUnit:
 		self.root = ElementTree.Element("testsuite")
 		self.root.attrib['name'] = name
 		self.root.attrib['timestamp'] = str(timestamp)
+		self.errors = 0
+		self.failures = 0
+		self.tests = 0
+		self.time = 0.0
 		return
 
 	def add_testcase(self, classname, name, time, error = None):
@@ -25,9 +29,15 @@ class XUnit:
 		el.attrib['time'] = str(time)
 		if error is not None:
 			el.text = error
+			self.failures = self.failures + 1
 		self.root.append(el)
+		self.tests = self.tests + 1
 	
-	def write(self, filename="xunit.xml"):
+	def write(self, time, filename="xunit.xml"):
+		self.root.attrib['errors'] = str(self.errors)
+		self.root.attrib['failures'] = str(self.failures)
+		self.root.attrib['tests'] = str(self.tests)
+		self.root.attrib['time'] = str(self.time)
 		ElementTree.ElementTree(self.root).write(filename, "utf-8")
 
 def create_run_directory(benchmark_path, output_path, config_file):
@@ -139,6 +149,8 @@ benchmarks_path = os.path.abspath(options.benchmarks_path)
 simulator = os.path.abspath(options.simulator)
 config_path = os.path.abspath(options.config_path)
 xunit = XUnit("mibench", time.time())
+t_init = time.time()
 automotive_basicmath()
-xunit.write()
+t_end = time.time()
+xunit.write(t_end - t_init)
 # automotive_basicmath("/opt/unisim/benchmarks", "/home/gracia/Developer/unisim/armemu/build/bin/unisim-armemu")
