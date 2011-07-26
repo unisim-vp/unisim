@@ -65,7 +65,7 @@ python3.1 ${REPO_PATH}/package/puscomp/puscomp.py -c config.xml -o src unisim_si
 
 # configure and build the simulator
 cd build
-cmake ../src -Dwith_osci_systemc=$SYSTEMC_PATH -Dwith_osci_tlm2=$TLM2_PATH -DCMAKE_INSTALL_PREFIX=../install
+cmake ../src -DCMAKE_BUILD_TYPE=RELEASE -Dwith_osci_systemc=$SYSTEMC_PATH -Dwith_osci_tlm2=$TLM2_PATH -DCMAKE_INSTALL_PREFIX=../install
 make -j
 make install
 cd ..
