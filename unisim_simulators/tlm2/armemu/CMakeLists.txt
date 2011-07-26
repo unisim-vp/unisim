@@ -230,6 +230,16 @@ add_custom_target ( armemu__share_test
 		${CMAKE_COMMAND} -E copy_if_different
 			${CMAKE_SOURCE_DIR}/share/test/test.armv5l
 			${SHARE_DIRECTORY}/test/install/test.armv5l
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/test/mibench
+	COMMAND
+		${CMAKE_COMMAND} -E copy_if_different
+			${CMAKE_SOURCE_DIR}/share/test/mibench/run.py
+			${SHARE_DIRECTORY}/test/mibench/run.py
+	COMMAND
+		${CMAKE_COMMAND} -E copy_directory 
+			${CMAKE_SOURCE_DIR}/share/test/mibench/automotive
+			${SHARE_DIRECTORY}/test/mibench/automotive
 	COMMENT
 		"Setting test program source files"
 	)
@@ -730,6 +740,21 @@ install (
 		${RELATIVE_SHARE_DIRECTORY}/test/install
 	OPTIONAL
 	)
+install (
+	FILES 
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/config_large.xml
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/config_small.xml
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/output_large.txt
+		${SHARE_DIRECTORY}/test/mibench/automotive/basicmath/output_small.txt
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/test/mibench/automotive/basicmath
+		)
+install (
+	FILES
+		${SHARE_DIRECTORY}/test/mibench/run.py
+	DESTINATION
+		${RELATIVE_SHARE_DIRECTORY}/test/mibench
+		)
 install (
 	FILES
 		${SHARE_DIRECTORY}/logo/logo_unisim.icns
