@@ -35,11 +35,16 @@
 #ifndef __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_LINUX_LOADER_LINUX_LOADER_TCC__
 
+#include <stdlib.h>
+#include <unistd.h>
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#endif
+
 #include <sstream>
 #include <iostream>
 #include <vector>
-#include <stdlib.h>
-#include <unistd.h>
 
 namespace unisim {
 namespace service {
