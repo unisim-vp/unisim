@@ -58,11 +58,9 @@ def run_benchmark(benchmark_path, output_path, config_file):
 	t_init = time.time()
 	print("args = ", args)
 	print("t_init = ", t_init)
-	sys.stdout.flush()
 	subprocess.call(args, cwd = run_directory, stdout = stdout_file, stderr = stderr_file)
 	t_end = time.time()
 	print("t_end = ", t_end)
-	sys.stdout.flush()
 	stdout_file.close()
 	stderr_file.close()
 	delete_systemc_from_output(output_directory + "/stdout.txt")
@@ -75,7 +73,6 @@ def run_benchmark(benchmark_path, output_path, config_file):
 # basicmath
 def automotive_basicmath():
 	print("Launching mibench/automotive/basicmath (small).")
-	sys.stdout.flush()
 	(run_directory, output_directory, run_time) = run_benchmark("mibench/automotive/basicmath", "mibench/automotive/basicmath/small", "config_small.xml")
 	print("--> ", run_time, " seconds")
 	error = ""
@@ -89,7 +86,6 @@ def automotive_basicmath():
 	xunit.add_testcase("automotive", "basicmath_small", run_time, error)
 	
 	print("Launching mibench/automotive/basicmath (large).")
-	sys.stdout.flush()
 	(run_directory, output_directory, run_time) = run_benchmark("mibench/automotive/basicmath", "mibench/automotive/basicmath/large", "config_large.xml")
 	print("--> ", run_time, " seconds")
 	error = ""
@@ -101,6 +97,18 @@ def automotive_basicmath():
 		error = "Did not work"
 	
 	xunit.add_testcase("automotive", "basicmath_large", run_time, error)
+
+# BEGIN: small trick to force flush on sys.stdout after each print
+class flushfile(io.TextIOWrapper):
+	def __init__(self, f):
+		self.f = f
+
+	def write(self, x):
+		self.f.write(x)
+		self.f.flush()
+
+sys.stdout = flushfile(sys.stdout)
+# END
 
 usage = """usage: %prog [options]
 NOTE: options -b, -s and -c must be defined"""
