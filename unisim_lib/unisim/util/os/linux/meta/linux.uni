@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<package>
+	<unit>
+		<name>unisim::util::os::linux</name>
+		<files>
+			<file>unisim/util/os/linux/linux.hh</file>
+			<file>unisim/util/os/linux/linux.tcc</file>
+			<file>unisim/util/os/linux/linux.cc</file>
+			<file>unisim/util/os/linux/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::util::loader::elf_loader</dep>
+		</depends>
+	</unit>
+</package>
+
+

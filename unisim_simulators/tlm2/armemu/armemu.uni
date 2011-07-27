@@ -67,6 +67,9 @@
 			<dep>unisim::service::os::linux_os::linux_os_32</dep>
 			<dep>unisim::service::power</dep>
 			<dep>unisim::service::trap_handler</dep>
+			<!-- TODO to remove -->
+			<dep>unisim::util::os::linux</dep>
+			<!-- END TODO -->
 		</depends>
 		<autotools>
 			<automake>armemu.am</automake>
