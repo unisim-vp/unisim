@@ -206,7 +206,7 @@ function InstallBinArchive
 		printf "\n"
 	fi
 
-	echo "Unpacking ${ARCHIVE_NAME}"
+	echo "Unpacking ${ARCHIVE_NAME} into ${SUBDIR}"
 	mkdir -p ${INSTALL_DIR}/${SUBDIR}
 	cd ${INSTALL_DIR}/${SUBDIR}
 	ext=`echo "${ARCHIVE}" | awk -F . '{print $NF}'`
@@ -232,19 +232,6 @@ mkdir -p ${INSTALL_DIR}
 # Compile some missing libraries
 ${MY_DIR}/bootstrap-mingw32.sh all
 cp -f ${HERE}/mingw32-packages/*.bz2 ${TMP_DIR}/.
-
-InstallBinArchive expat-2.0.1-mingw32.tar.bz2 mingw
-InstallBinArchive zlib-1.2.5-mingw32.tar.bz2 mingw
-InstallBinArchive libxml2-2.7.8-mingw32.tar.bz2 mingw
-sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/xml2-config
-InstallBinArchive boost_1_47_0-mingw32.tar.bz2 mingw
-InstallBinArchive SDL-1.2.14-mingw32.tar.bz2 mingw
-sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/sdl-config
-InstallBinArchive cross-gdb-powerpc-440fp-linux-gnu-7.2.tar.bz2 mingw
-InstallBinArchive cross-gdb-powerpc-7450-linux-gnu-7.2.tar.bz2 mingw
-InstallBinArchive cross-gdb-armel-linux-gnu-7.2.tar.bz2 mingw
-InstallBinArchive cross-gdb-m6811-elf-7.2.tar.bz2 mingw
-
 
 # expat
 # if [ ! -e ${TMP_DIR}/expat-2.0.1-mingw32.tar.bz2 ]; then
@@ -530,16 +517,17 @@ do
 done
 
 # Install cross-compiled packages
-#InstallBinArchive expat-2.0.1-mingw32.tar.bz2
-#InstallBinArchive gdb-7.2-mingw32.tar.bz2
-InstallBinArchive SDL-1.2.14-mingw32.tar.bz2
-InstallBinArchive libxml2-2.7.8-mingw32.tar.bz2
-InstallBinArchive boost_1_47_0-mingw32.tar.bz2
-
-for CROSS_GDB_ARCH in ${CROSS_GDB_ARCHITECTURES}
-do
-	InstallBinArchive cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2
-done
+InstallBinArchive expat-2.0.1-mingw32.tar.bz2 '.' mingw
+InstallBinArchive zlib-1.2.5-mingw32.tar.bz2 '.' mingw
+InstallBinArchive libxml2-2.7.8-mingw32.tar.bz2 '.' mingw
+sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/xml2-config
+InstallBinArchive boost_1_47_0-mingw32.tar.bz2 '.' mingw
+InstallBinArchive SDL-1.2.14-mingw32.tar.bz2 '.' mingw
+sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/sdl-config
+InstallBinArchive cross-gdb-powerpc-440fp-linux-gnu-7.2-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-powerpc-7450-linux-gnu-7.2-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-armel-linux-gnu-7.2-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-m6811-elf-7.2-mingw32.tar.bz2 '.' mingw
 
 # cp -rf ${INSTALL_DIR}/usr/local ${INSTALL_DIR}/.
 # cp -rf ${INSTALL_DIR}/usr/spool ${INSTALL_DIR}/.
