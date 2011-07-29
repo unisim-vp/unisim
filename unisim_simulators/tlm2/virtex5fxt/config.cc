@@ -34,8 +34,13 @@
 
 #include "config.hh"
 
-const bool TIMER_CONFIG::C_ONE_TIMER_ONLY;
-const bool TIMER_CONFIG::C_TRIG0_ASSERT;
-const bool TIMER_CONFIG::C_TRIG1_ASSERT;
-const bool TIMER_CONFIG::C_GEN0_ASSERT;
-const bool TIMER_CONFIG::C_GEN1_ASSERT;
+const bool SimConfig::TIMER_CONFIG::C_ONE_TIMER_ONLY;
+const bool SimConfig::TIMER_CONFIG::C_TRIG0_ASSERT;
+const bool SimConfig::TIMER_CONFIG::C_TRIG1_ASSERT;
+const bool SimConfig::TIMER_CONFIG::C_GEN0_ASSERT;
+const bool SimConfig::TIMER_CONFIG::C_GEN1_ASSERT;
+
+const unsigned int SimConfig::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int SimConfig::GPIO_LEDS_8BIT_CONFIG::C_GPIO_WIDTH;
+const unsigned int SimConfig::GPIO_5_LEDS_POSITIONS_CONFIG::C_GPIO_WIDTH;
+const unsigned int SimConfig::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_GPIO_WIDTH;

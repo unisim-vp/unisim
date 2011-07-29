@@ -2276,6 +2276,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetVisible(false);
 	param_cmd_args->SetMutable(false);
 	param_cmd_args->SetSerializable(false);
+	
+	// Setup logger
+	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 }
 
 Simulator::~Simulator()
@@ -2830,9 +2833,6 @@ Simulator::SetupStatus Simulator::Setup()
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
 	SetupStatus status = ST_OK_TO_START;
-	
-	// Setup logger
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 	
 	// Call all methods "BeginSetup()"
 	map<const char *, Object *, ltstr>::iterator object_iter;

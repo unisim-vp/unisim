@@ -38,4 +38,4 @@
 #include "unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<CROSSBAR_CONFIG>;
+template class unisim::component::tlm2::interconnect::xilinx::crossbar::Crossbar<SimConfig::CROSSBAR_CONFIG>;

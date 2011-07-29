@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010-2011,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,11 +31,9 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
-
-#include "unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh"
-#include "unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh"
-#include "unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.tcc"
-#include "unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc"
+ 
+#include "unisim/component/tlm2/interconnect/generic_router/router.hh"
+#include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::com::xilinx::xps_uart_lite::XPS_UARTLite<SimConfig::UART_LITE_CONFIG>;
+template class unisim::component::tlm2::interconnect::generic_router::Router<MPLBDebugConfig>;

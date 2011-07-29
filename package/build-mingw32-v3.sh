@@ -5,12 +5,7 @@ CROSS_GDB_ARCHITECTURES="powerpc-440fp-linux-gnu powerpc-7450-linux-gnu armel-li
 TMP_DIR=${HOME}/tmp
 INSTALL_DIR=${TMP_DIR}/mingw32_install
 HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
+MY_DIR=$(cd $(dirname $0); pwd)
 
 HOST=i586-pc-mingw32
 BUILD=i686-pc-linux-gnu
@@ -235,6 +230,21 @@ rm -rf ${INSTALL_DIR}
 mkdir -p ${INSTALL_DIR}
 
 # Compile some missing libraries
+${MY_DIR}/bootstrap-mingw32.sh all
+cp -f ${HERE}/mingw32-packages/*.bz2 ${TMP_DIR}/.
+
+InstallBinArchive expat-2.0.1-mingw32.tar.bz2 mingw
+InstallBinArchive zlib-1.2.5-mingw32.tar.bz2 mingw
+InstallBinArchive libxml2-2.7.8-mingw32.tar.bz2 mingw
+sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/xml2-config
+InstallBinArchive boost_1_47_0-mingw32.tar.bz2 mingw
+InstallBinArchive SDL-1.2.14-mingw32.tar.bz2 mingw
+sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/sdl-config
+InstallBinArchive cross-gdb-powerpc-440fp-linux-gnu-7.2.tar.bz2 mingw
+InstallBinArchive cross-gdb-powerpc-7450-linux-gnu-7.2.tar.bz2 mingw
+InstallBinArchive cross-gdb-armel-linux-gnu-7.2.tar.bz2 mingw
+InstallBinArchive cross-gdb-m6811-elf-7.2.tar.bz2 mingw
+
 
 # expat
 # if [ ! -e ${TMP_DIR}/expat-2.0.1-mingw32.tar.bz2 ]; then
@@ -263,69 +273,69 @@ mkdir -p ${INSTALL_DIR}
 # fi
 
 # cross-GDB
-for CROSS_GDB_ARCH in ${CROSS_GDB_ARCHITECTURES}
-do
-	if [ ! -e ${TMP_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2 ]; then
-		Download gdb-7.2 gdb-7.2.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-7.2.tar.bz2
-		Configure gdb-7.2 --host=${HOST} --build=${BUILD} --target=${CROSS_GDB_ARCH} \
-					--disable-sim --disable-werror
-		Compile gdb-7.2
-		Install gdb-7.2
-		cd ${INSTALL_DIR}
-		tar jcvf ${TMP_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2 *
-		rm -rf ${INSTALL_DIR}/*
-	fi
-done
+# for CROSS_GDB_ARCH in ${CROSS_GDB_ARCHITECTURES}
+# do
+# 	if [ ! -e ${TMP_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2 ]; then
+# 		Download gdb-7.2 gdb-7.2.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-7.2.tar.bz2
+# 		Configure gdb-7.2 --host=${HOST} --build=${BUILD} --target=${CROSS_GDB_ARCH} \
+# 					--disable-sim --disable-werror
+# 		Compile gdb-7.2
+# 		Install gdb-7.2
+# 		cd ${INSTALL_DIR}
+# 		tar jcvf ${TMP_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2 *
+# 		rm -rf ${INSTALL_DIR}/*
+# 	fi
+# done
 
 # SDL
-if [ ! -e ${TMP_DIR}/SDL-1.2.14-mingw32.tar.bz2 ]; then
-	Download SDL-1.2.14 SDL-1.2.14.tar.gz http://www.libsdl.org/release/SDL-1.2.14.tar.gz
-	#sed -i -e 's/SDL_main(/main(/g' ${TMP_DIR}/SDL-1.2.14/src/main/win32/SDL_win32_main.c
-	Configure SDL-1.2.14 --host=${HOST} --build=${BUILD}
-	Compile SDL-1.2.14
-	Install SDL-1.2.14
-	#sed -i -e 's/-lSDLmain//g' -e 's/-Dmain=SDL_main//g' -e 's/-lmingw32//g' -e 's/-mwindows//g' ${INSTALL_DIR}/bin/sdl-config
-	#sed -i -e 's/-lSDLmain//g' -e 's/-Dmain=SDL_main//g' -e 's/-lmingw32//g' ${INSTALL_DIR}/bin/sdl-config
-	cd ${INSTALL_DIR}
-	tar jcvf ${TMP_DIR}/SDL-1.2.14-mingw32.tar.bz2 *
-	rm -rf ${INSTALL_DIR}/*
-fi
+# if [ ! -e ${TMP_DIR}/SDL-1.2.14-mingw32.tar.bz2 ]; then
+# 	Download SDL-1.2.14 SDL-1.2.14.tar.gz http://www.libsdl.org/release/SDL-1.2.14.tar.gz
+# 	#sed -i -e 's/SDL_main(/main(/g' ${TMP_DIR}/SDL-1.2.14/src/main/win32/SDL_win32_main.c
+# 	Configure SDL-1.2.14 --host=${HOST} --build=${BUILD}
+# 	Compile SDL-1.2.14
+# 	Install SDL-1.2.14
+# 	#sed -i -e 's/-lSDLmain//g' -e 's/-Dmain=SDL_main//g' -e 's/-lmingw32//g' -e 's/-mwindows//g' ${INSTALL_DIR}/bin/sdl-config
+# 	#sed -i -e 's/-lSDLmain//g' -e 's/-Dmain=SDL_main//g' -e 's/-lmingw32//g' ${INSTALL_DIR}/bin/sdl-config
+# 	cd ${INSTALL_DIR}
+# 	tar jcvf ${TMP_DIR}/SDL-1.2.14-mingw32.tar.bz2 *
+# 	rm -rf ${INSTALL_DIR}/*
+# fi
 
 # libxml2
-if [ ! -e ${TMP_DIR}/libxml2-2.7.8-mingw32.tar.bz2 ]; then
-	Download libxml2-2.7.8 libxml2-2.7.8.tar.gz ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz
-	cd ${TMP_DIR}/libxml2-2.7.8
-	Configure libxml2-2.7.8 --host=${HOST} --build=${BUILD} --without-python
-	Compile libxml2-2.7.8
-	Install libxml2-2.7.8
-	cd ${INSTALL_DIR}
-	tar jcvf ${TMP_DIR}/libxml2-2.7.8-mingw32.tar.bz2 *
-	rm -rf ${INSTALL_DIR}/*
-fi
+# if [ ! -e ${TMP_DIR}/libxml2-2.7.8-mingw32.tar.bz2 ]; then
+# 	Download libxml2-2.7.8 libxml2-2.7.8.tar.gz ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz
+# 	cd ${TMP_DIR}/libxml2-2.7.8
+# 	Configure libxml2-2.7.8 --host=${HOST} --build=${BUILD} --without-python
+# 	Compile libxml2-2.7.8
+# 	Install libxml2-2.7.8
+# 	cd ${INSTALL_DIR}
+# 	tar jcvf ${TMP_DIR}/libxml2-2.7.8-mingw32.tar.bz2 *
+# 	rm -rf ${INSTALL_DIR}/*
+# fi
 
-if [ ! -e ${TMP_DIR}/boost_1_47_0-mingw32.tar.bz2 ]; then
-	Download boost_1_47_0 boost_1_47_0.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_1_47_0.tar.bz2
-	cd ${TMP_DIR}/boost_1_47_0
-	rm -f g++
-	ln -s `which ${HOST}-g++` g++
-	rm -f gcc
-	ln -s `which ${HOST}-gcc` gcc
-	rm -f ar
-	ln -s `which ${HOST}-ar` ar
-	rm -f ranlib
-	ln -s `which ${HOST}-ranlib` ranlib
-	rm -f as
-	ln -s `which ${HOST}-as` as
-	rm -f ld
-	ln -s `which ${HOST}-ld` ld
-	BJAM_OPTIONS="--prefix=${INSTALL_DIR} -j ${NUM_PROCESSORS} --without-mpi"
-	PATH=./:${PATH} ./bootstrap.sh --without-icu
-	PATH=./:${PATH} ./bjam ${BJAM_OPTIONS}
-	PATH=./:${PATH} ./bjam ${BJAM_OPTIONS} install
-	cd ${INSTALL_DIR}
-	tar jcvf ${TMP_DIR}/boost_1_47_0-mingw32.tar.bz2 *
-	rm -rf ${INSTALL_DIR}/*
-fi
+# if [ ! -e ${TMP_DIR}/boost_1_47_0-mingw32.tar.bz2 ]; then
+# 	Download boost_1_47_0 boost_1_47_0.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_1_47_0.tar.bz2
+# 	cd ${TMP_DIR}/boost_1_47_0
+# 	rm -f g++
+# 	ln -s `which ${HOST}-g++` g++
+# 	rm -f gcc
+# 	ln -s `which ${HOST}-gcc` gcc
+# 	rm -f ar
+# 	ln -s `which ${HOST}-ar` ar
+# 	rm -f ranlib
+# 	ln -s `which ${HOST}-ranlib` ranlib
+# 	rm -f as
+# 	ln -s `which ${HOST}-as` as
+# 	rm -f ld
+# 	ln -s `which ${HOST}-ld` ld
+# 	BJAM_OPTIONS="--prefix=${INSTALL_DIR} -j ${NUM_PROCESSORS} --without-mpi"
+# 	PATH=./:${PATH} ./bootstrap.sh --without-icu
+# 	PATH=./:${PATH} ./bjam ${BJAM_OPTIONS}
+# 	PATH=./:${PATH} ./bjam ${BJAM_OPTIONS} install
+# 	cd ${INSTALL_DIR}
+# 	tar jcvf ${TMP_DIR}/boost_1_47_0-mingw32.tar.bz2 *
+# 	rm -rf ${INSTALL_DIR}/*
+# fi
 
 # Install MSYS and MINGW
 mingw_url="http://downloads.sourceforge.net/mingw"

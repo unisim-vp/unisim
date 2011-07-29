@@ -225,6 +225,168 @@ The simulators comes in four flavors in:
 \item \texttt{unisim-virtex5fxt-wfpu-debug-1.0}: developement simulator with FPU
 \end{itemize}
 
+\section{Cross-compiling the simulator}
+
+This section explains how to build (i.e. cross-compile) the simulator for a host system type (e.g. Windows) from another build system type (e.g. Linux/i386).
+The simulator is built on the build machine whereas it will run on the host machine.
+In later sub-sections, we consider cross-compiling the simulator for Windows from a Linux distribution using the mingw32 GCC cross-compiler.
+Most Linux distributions provide a mingw32 tool chain as a set of packages.
+Once installed the mingw32 tool chain binary file names are prefixed with:
+\begin{itemize}
+\item \texttt{i586-mingw32msvc-} on Ubuntu and Debian Linux distributions
+\item \texttt{i686-pc-mingw32-} on RedHat, Fedora, and SUSE Linux distributions
+\item \texttt{i586-pc-mingw32-} on Mandriva and Mageia Linux distributions
+\end{itemize}
+The later sub-sections will refer to the mingw32 tool chain of Ubuntu and Debian Linux distributions.
+
+\subsection{Requirements}
+
+\noindent The following tools must be installed on the Linux build system:
+\begin{itemize}
+\item GNU C++ cross-compiler for the host system type (aka. i586-mingw32msvc-g++)
+\item GNU Flex (aka. flex)
+\item GNU Bison (aka. bison)
+\item Standard GNU C++ library for the host machine (aka. libstdc++)
+\end{itemize}
+
+\subsection{Installing a cross-compiled SystemC 2.2.0 and SystemC TLM 2.0.1}
+\subsubsection{Download the source code}
+Register at \url{http://www.systemc.org} and then download systemc-2.2.0.tgz and TLM-2.0.1.tgz from the OSCI standards download page.
+
+\subsubsection{Uncompressing the source code tarballs}
+\begin{script}
+   $ tar zxvf systemc-2.2.0.tgz
+   $ tar zxvf TLM-2.0.1.tgz
+\end{script}
+  
+This will uncompress the source of SystemC in directory systemc-2.2.0 and the source TLM 2.0.1 in directory TLM-2009-07-15 
+\subsubsection{Patching the source code (recommended for g++ $\geq$ 4.1)}
+Apply the following patch to SystemC 2.2.0: patch-systemc-2.2.0.gz 
+
+\begin{script}
+   $ cd systemc-2.2.0
+   $ gzip -dc patch-systemc-2.2.0.gz | patch -p1
+\end{script}
+
+\subsubsection{Configuring SystemC}
+To configure, cross-compile, and install SystemC in your home directory, do the following at the command prompt: 
+
+\begin{script}
+   $ cd systemc-2.2.0
+   $ mkdir objdir
+   $ cd objdir
+   $ mkdir ${HOME}/systemc-mingw32
+   $ ../configure --prefix=${HOME}/systemc-mingw32 --host=i586-mingw32msvc
+\end{script}
+
+Note : if configure needs automake or autoconf, please install these tools, then rebuild SystemC configure script by running these commands before actually running the configure script:
+
+\begin{script}
+   $ cd systemc-2.2.0
+   $ aclocal
+   $ automake
+\end{script}
+
+\subsubsection{Cross-compiling and installing SystemC}
+To cross-compile SystemC, do the following at the command prompt: 
+\begin{script}
+   $ make
+   $ make install
+\end{script}
+
+\subsection{Cross-compiling zlib}
+
+Download the source code tarball at \url{http://zlib.net/zlib-1.2.5.tar.gz}.
+Uncompress the source code tarball and cross-compile the library:
+\begin{script}
+   $ tar zxvf zlib-1.2.5.tar.gz
+   $ cd zlib-1.2.5
+   $ mkdir ${HOME}/zlib-mingw32
+   $ make -f win32/Makefile.gcc \
+     PREFIX=i586-mingw32msvc- \
+     BINARY_PATH=${HOME}/zlib-mingw32/bin \
+     INCLUDE_PATH=${HOME}/zlib-mingw32/include \
+     LIBRARY_PATH=${HOME}/zlib-mingw32/lib \
+     SHARED_MODE=1 install
+   $ mv ${HOME}/zlib-mingw32/bin/zdll.a ${HOME}/zlib-mingw32/bin/z.dll.a
+\end{script}
+
+\subsection{Cross-compiling libxml2}
+
+Download the source code tarball at \url{ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz}.
+Uncompress the source code tarball and cross-compile the library:
+\begin{script}
+   $ tar zxvf libxml2-2.7.8.tar.gz
+   $ cd libxml2-2.7.8
+   $ mkdir ${HOME}/libxml2-mingw32
+   $ ./configure  --host=i586-mingw32msvc \
+         --without-python --with-zlib=${HOME}/zlib-mingw32 \
+          CPPFLAGS='-DLIBXML_STATIC'
+   $ make
+   $ make install prefix=${HOME}/libxml2-mingw32
+\end{script}
+
+\subsection{Cross-compiling Boost}
+
+Download the source code tarball at \url{http://downloads.sourceforge.net/boost/boost\_1\_47\_0.tar.bz2}.
+Uncompress the source code tarball and cross-compile the library:
+
+\begin{script}
+   $ tar jxvf boost_1_47_0.tar.bz2
+   $ cd boost_1_47_0
+   $ mkdir ${HOME}/boost-mingw32
+   $ ./bootstrap.sh --without-icu
+   $ MINGW32_VERSION=$(i586-mingw32msvc-g++ -v 2>&1 | tail -1 | awk '{print $3}' | cut -f 1 -d '-')
+   $ echo "using gcc : ${MINGW32_VERSION} :
+                 i586-mingw32msvc-g++ :
+                 <rc>i586-mingw32msvc-windres
+                 <archiver>i586-mingw32msvc-ar
+            ;" > user-config.jam
+   $ ./bjam toolset=gcc target-os=windows variant=release threading=multi threadapi=win32 \
+          link=shared runtime-link=shared --prefix=${HOME}/boost-mingw32 --user-config=user-config.jam \
+          --without-mpi --without-python -sNO_BZIP2=1 -sZLIB_BINARY=z.dll \
+          -sZLIB_INCLUDE=${HOME}/zlib-mingw32/include -sZLIB_LIBPATH=${HOME}/zlib-mingw32/lib \
+          --layout=tagged install
+\end{script}
+
+\subsection{Cross-compiling the UNISIM Virtex 5 FXT simulator}
+\subsubsection{Uncompressing the source code tarball}
+\begin{script}
+   $ tar zxvf unisim-virtex5fxt-1.0.tar.gz
+\end{script}
+
+\subsubsection{Configuring the simulator building process}
+\begin{script}
+  $ cd unisim-virtex5fxt-1.0
+  $ ./configure.cross \
+          --host=i586-mingw32msvc \
+          --with-systemc=${HOME}/systemc-mingw32 \
+          --with-tlm20=${HOME}/TLM-2009-07-15 \
+          --with-zlib=${HOME}/zlib-mingw32 \
+          --with-libxml2=${HOME}/libxml2-mingw32 \
+          --with-boost=${HOME}/boost-mingw32 \
+          CXXFLAGS='-O3 -g3 -Wall'
+\end{script}
+
+\subsubsection{Cross-compiling the simulator}
+\begin{script}
+   $ make -f Makefile.cross
+\end{script}
+
+\noindent The simulator binaries are in \texttt{virtex5fxt/bin} subdirectory.
+The simulators comes in four flavors in:
+\begin{itemize}
+\item \texttt{unisim-virtex5fxt-1.0.exe}: release simulator without FPU
+\item \texttt{unisim-virtex5fxt-wfpu-1.0.exe}: release simulator with FPU
+\item \texttt{unisim-virtex5fxt-debug-1.0.exe}: developement simulator
+\item \texttt{unisim-virtex5fxt-wfpu-debug-1.0.exe}: developement simulator with FPU
+\end{itemize}
+
+The simulator binaries may need some DLLs from mingw32 (e.g. \texttt{libgcc\_s*.dll}) or third party libraries (e.g. \texttt{libxml2-2.dll}).
+Place these DLLs in the \texttt{virtex5fxt/bin} subdirectory.
+If you prefer not to use DLLs, add \texttt{LDFLAGS=-static} to the \texttt{configure.cross} command line arguments.
+The simulator binaries can run natively run on a Windows host system, or an emulated Windows using \texttt{wine} windows emulator.
+
 \section{Getting started}
 \label{getting_started}
 

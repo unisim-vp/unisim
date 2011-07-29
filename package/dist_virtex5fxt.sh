@@ -484,7 +484,6 @@ errno.h \
 fcntl.h \
 fenv.h \
 float.h \
-fstream \
 getopt.h \
 inttypes.h \
 limits.h \
@@ -494,14 +493,18 @@ stdarg.h \
 stdio.h \
 stdlib.h \
 string.h \
+ctype.h \
 sys/types.h \
 unistd.h \
+fstream \
 cassert \
+cmath \
 cerrno \
 cstddef \
 cstdio \
 cstdlib \
 cstring \
+iomanip \
 stdexcept \
 deque \
 list \
@@ -513,12 +516,13 @@ map \
 ostream \
 queue \
 vector \
-string"
+string \
+set"
 
 UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES="\
-main.cc \
 config.cc \
 mplb.cc \
+mplb_debug.cc \
 intc.cc \
 timer.cc \
 dcr_controller.cc \
@@ -534,10 +538,14 @@ leds_8bit.cc \
 push_buttons_5bit.cc \
 "
 UNISIM_SIMULATORS_VIRTEX5FXT_HEADER_FILES="\
+simulator.hh \
 config.hh \
 "
 
-UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES=
+UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES="\
+simulator.tcc \
+"
+
 UNISIM_SIMULATORS_VIRTEX5FXT_DATA_FILES="\
 COPYING \
 INSTALL \
@@ -548,9 +556,15 @@ ChangeLog \
 template_default_config.xml \
 unisim.ico"
 
-UNISIM_SIMULATORS_VIRTEX5FXT_TESTBENCH_FILES=""
+UNISIM_SIMULATORS_VIRTEX5FXT_TESTBENCH_FILES="\
+main.cc \
+main_wfpu.cc \
+main_debug.cc \
+main_wfpu_debug.cc \
+"
 
 has_to_build_configure=no
+has_to_build_configure_cross=no
 has_to_build_genisslib_configure=no
 has_to_build_virtex5fxt_configure=no
 
@@ -709,7 +723,7 @@ EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-
+CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
@@ -724,6 +738,14 @@ if [ ! -e "${MAKEFILE_AM}" ]; then
 else
 	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
 		has_to_build_configure=yes
+	fi
+fi
+
+if [ ! -e "${CONFIGURE_CROSS}" ]; then
+	has_to_build_configure_cross=yes
+else
+	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
+		has_to_build_configure_cross=yes
 	fi
 fi
 
@@ -745,10 +767,127 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 
 	echo "Generating Makefile.am"
 	echo "SUBDIRS=genisslib virtex5fxt" > "${MAKEFILE_AM}"
+	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
+
+if [ "${has_to_build_configure_cross}" = "yes" ]; then
+	echo "Building configure.cross"
+	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
+#!/bin/bash
+HERE=\$(pwd)
+MY_DIR=\$(dirname \$0)
+if test \${MY_DIR} = "."; then
+	MY_DIR=\${HERE}
+elif test \${MY_DIR} = ".."; then
+	MY_DIR=\${HERE}/..
+fi
+
+# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+host=""
+help=""
+old_args=$@
+i=0
+j=0
+for arg in "\$@"
+do
+	case "\${arg}" in
+		--host=*)
+			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
+			;;
+		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+			;;
+		--help=* | --help)
+			help="yes"
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+		*)
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+	esac
+	i=\$((\${i}+1))
+done
+
+if test "\${help}" != "yes"; then
+	if test -z "\${host}"; then
+		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
+		exit -1
+	fi
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for genisslib"
+else
+	echo "=== configuring in genisslib (\${HERE}/genisslib)"
+	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
+fi
+if test ! -d \${HERE}/genisslib; then
+	mkdir "\${HERE}/genisslib"
+fi
+cd "\${HERE}/genisslib"
+\${MY_DIR}/genisslib/configure "\${args[@]}"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for virtex5fxt"
+else
+	echo "=== configuring in virtex5fxt (\${HERE}/virtex5fxt) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/virtex5fxt/configure \$@"
+fi
+
+if test ! -d \${HERE}/virtex5fxt; then
+	mkdir \${HERE}/virtex5fxt
+fi
+cd \${HERE}/virtex5fxt
+\${MY_DIR}/virtex5fxt/configure "\$@"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	exit 0
+fi
+
+echo "\$(basename \$0): creating Makefile.cross"
+cat << EOF_MAKEFILE_CROSS > Makefile.cross
+#!/usr/bin/make -f
+all: virtex5fxt-all
+clean: genisslib-clean virtex5fxt-clean
+distclean: genisslib-distclean virtex5fxt-distclean
+	rm -f \${HERE}/Makefile.cross
+install: virtex5fxt-install
+
+genisslib-all:
+	@\\\$(MAKE) -C \${HERE}/genisslib all
+virtex5fxt-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt all
+genisslib-clean:
+	@\\\$(MAKE) -C \${HERE}/genisslib clean
+virtex5fxt-clean:
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt clean
+genisslib-distclean:
+	@\\\$(MAKE) -C \${HERE}/genisslib distclean
+virtex5fxt-distclean:
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt distclean
+virtex5fxt-install:
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt install
+EOF_MAKEFILE_CROSS
+
+chmod +x Makefile.cross
+
+echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
+EOF_CONFIGURE_CROSS
+fi  # has_to_build_configure_cross = "yes"
 
 # GENISSLIB
 
@@ -880,13 +1019,10 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "noinst_LIBRARIES = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "libvirtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_CPPFLAGS = -DWITH_FPU" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_CPPFLAGS = -DDEBUG_VIRTEX5FXT" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_CPPFLAGS = -DWITH_FPU -DDEBUG_VIRTEX5FXT" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"

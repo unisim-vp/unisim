@@ -189,7 +189,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 
 			if(tok != TOK_COMMA)
 			{
-				logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" <<EndDebugWarning;
+				logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" << EndDebugWarning;
 				PrettyPrintSyntaxErrorLocation(filename.c_str(), pos);
 				break;
 			}
@@ -898,7 +898,7 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 
 			if(tok != TOK_COMMA)
 			{
-				logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" <<EndDebugWarning;
+				logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" << EndDebugWarning;
 				PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
 				break;
 			}

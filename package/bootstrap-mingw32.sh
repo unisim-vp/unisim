@@ -24,12 +24,7 @@ ZLIB_VERSION=1.2.5
 BOOST_VERSION=1_47_0
 
 HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
+MY_DIR=$(cd $(dirname $0); pwd)
 
 TMP_DIR=${HOME}/tmp
 
@@ -222,6 +217,7 @@ case ${CMD} in
 			Clean
 			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz
 			make -C ${BUILD_DIR}/zlib-${ZLIB_VERSION} -f win32/Makefile.gcc PREFIX=${HOST}- BINARY_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/bin INCLUDE_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/include LIBRARY_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib SHARED_MODE=1 install
+			mv ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libz.dll.a
 			Package zlib-${ZLIB_VERSION}
 			Clean
 		fi
@@ -251,7 +247,6 @@ case ${CMD} in
 			Configure SDL-${SDL_VERSION} --host=${HOST}
 			Compile SDL-${SDL_VERSION}
 			Install SDL-${SDL_VERSION}
-			sed -i "s#^\(prefix=\).*\$#\1\$\(dirname \$0\)/..#" ${INSTALL_DIR}/SDL-${SDL_VERSION}/bin/sdl-config
 			Package SDL-${SDL_VERSION}
 			Clean
 		fi
@@ -260,10 +255,10 @@ case ${CMD} in
 		if [ ! -e ${PACKAGES_DIR}/libxml2-${LIBXML2_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
 			Download libxml2-${LIBXML2_VERSION} libxml2-${LIBXML2_VERSION}.tar.gz ftp://xmlsoft.org/libxml2/libxml2-${LIBXML2_VERSION}.tar.gz
-			Configure libxml2-${LIBXML2_VERSION} --host=${HOST} --without-python
+			InstallBinArchive zlib-${ZLIB_VERSION}-mingw32.tar.bz2 '' zlib-${ZLIB_VERSION}
+			Configure libxml2-${LIBXML2_VERSION} --host=${HOST} --without-python --with-zlib=${INSTALL_DIR}/zlib-${ZLIB_VERSION} CPPFLAGS=-DLIBXML_STATIC
 			Compile libxml2-${LIBXML2_VERSION}
 			Install libxml2-${LIBXML2_VERSION}
-			sed -i "s#^\(prefix=\).*\$#\1\$\(dirname \$0\)/..#" ${INSTALL_DIR}/libxml2-${LIBXML2_VERSION}/bin/xml2-config
 			Package libxml2-${LIBXML2_VERSION}
 			Clean
 		fi
@@ -271,6 +266,7 @@ case ${CMD} in
 		if [ ! -e ${PACKAGES_DIR}/boost_${BOOST_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
 			Download boost_${BOOST_VERSION} boost_${BOOST_VERSION}.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_${BOOST_VERSION}.tar.bz2
+			InstallBinArchive zlib-${ZLIB_VERSION}-mingw32.tar.bz2 '' zlib-${ZLIB_VERSION}
 			cd ${BUILD_DIR}/boost_${BOOST_VERSION}
 			mkdir -p ${INSTALL_DIR}/boost_${BOOST_VERSION}
 			./bootstrap.sh --without-icu || exit -1
@@ -280,8 +276,10 @@ case ${CMD} in
 				<archiver>${HOST}-ar
 		;" > user-config.jam
 			./bjam -j ${NUM_PROCESSORS} toolset=gcc target-os=windows variant=release threading=multi threadapi=win32\
-			link=shared runtime-link=shared --prefix=${INSTALL_DIR}/boost_${BOOST_VERSION} --user-config=user-config.jam -j 2\
-			--without-mpi --without-python -sNO_BZIP2=1 -sNO_ZLIB=1 --layout=tagged install || exit -1
+			link=shared runtime-link=shared --prefix=${INSTALL_DIR}/boost_${BOOST_VERSION} --user-config=user-config.jam \
+			--without-mpi --without-python -sNO_BZIP2=1 -sZLIB_BINARY=z.dll \
+			-sZLIB_INCLUDE=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/include -sZLIB_LIBPATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib \
+			--layout=tagged install || exit -1
 			Package boost_${BOOST_VERSION}
 			Clean
 		fi
