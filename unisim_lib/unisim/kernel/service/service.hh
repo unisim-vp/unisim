@@ -64,22 +64,6 @@ class APIBase;
 
 #include "unisim/kernel/api/api.hh"
 
-#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-#if defined(likely)
-#undef likely
-#endif
-
-#if defined(unlikely)
-#undef unlikely
-#endif
-
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-#else
-#define likely(x) (x)
-#define unlikely(x) (x)
-#endif
-
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size);
 void *operator new[](std::size_t size);

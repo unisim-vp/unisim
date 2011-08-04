@@ -33,19 +33,22 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 #include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
+
+#include <string.h>
+#include <assert.h>
+#include <stdint.h>
+
+#include <sstream>
+#include <string>
+
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-#include <sstream>
-#include <string>
-#include <string.h>
-#include <assert.h>
-
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/simple_register.hh"
-#include <stdint.h>
+#include "unisim/util/likely/likely.hh"
 
 #if (defined(__GNUC__) && (__GNUC__ >= 3))
 #define INLINE __attribute__((always_inline))

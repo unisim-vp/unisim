@@ -35,10 +35,13 @@
 #ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
-#include <unisim/util/endian/endian.hh>
+#include <stdlib.h>
+
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
+
+#include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {

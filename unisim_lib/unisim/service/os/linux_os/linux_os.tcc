@@ -67,6 +67,7 @@
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/likely/likely.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 

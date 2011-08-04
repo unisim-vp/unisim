@@ -73,7 +73,8 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
-#include <unisim/kernel/debug/debug.hh>
+#include "unisim/kernel/debug/debug.hh"
+#include "unisim/util/likely/likely.hh"
 
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size)

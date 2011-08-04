@@ -39,6 +39,7 @@
 			<dep>unisim::util::garbage_collector</dep>
 			<dep>stl_iosfwd</dep>
 			<dep>clib_stdlib_h</dep>
+			<dep>unisim::util::likely</dep>
 		</depends>
 	</unit>
 	<unit>
