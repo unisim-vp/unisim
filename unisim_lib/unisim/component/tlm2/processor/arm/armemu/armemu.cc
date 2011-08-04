@@ -32,11 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
+
 #include <systemc.h>
 #include <tlm.h>
+
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/likely/likely.hh"
 
 #define LOCATION \
 	" - location = " \

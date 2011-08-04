@@ -21,6 +21,7 @@
 			<dep>unisim::service::interfaces::blob</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::util::debug</dep>
+			<dep>unisim::util::likely</dep>
 			<dep>stl_map</dep>
 			<dep>stl_fstream</dep>
 			<dep>stl_sstream</dep>

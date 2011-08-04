@@ -35,10 +35,13 @@
 #ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
-#include <unisim/util/endian/endian.hh>
+#include <stdlib.h>
+
 #include <iostream>
 #include <fstream>
-#include <stdlib.h>
+
+#include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {
@@ -119,7 +122,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 {
 	if(!memory_import) return false;
 
+  logger << DebugInfo;
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = elf_loader->GetBlob();
+  logger << EndDebugInfo;
 	if(!blob) return false;
 	
 	bool success = true;
@@ -154,8 +159,11 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		elf_loader = 0;
 	}
 
-	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger);
+  logger << DebugInfo;
+	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger.GetStream());
+  logger << EndDebugInfo;
 
+  logger << DebugInfo;
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename.c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_BASE_ADDR, force_base_addr);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_USE_VIRTUAL_ADDRESS, force_use_virtual_address);
@@ -164,8 +172,12 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory.c_str());
-	
-	return elf_loader->Load();
+  logger << EndDebugInfo;
+
+  logger << DebugInfo;
+  bool load_result = elf_loader->Load();
+  logger << EndDebugInfo;
+	return load_result;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -192,62 +204,122 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
+const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob()
 {
-	return elf_loader ? elf_loader->GetBlob() : 0;
+  const unisim::util::debug::blob::Blob<MEMORY_ADDR>* blob = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    blob = elf_loader->GetBlob();
+    logger << EndDebugInfo;
+  }
+  return blob;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols() const {
-	return elf_loader ? elf_loader->GetSymbols() : 0;
+const std::list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols() {
+  const std::list<unisim::util::debug::Symbol<MEMORY_ADDR>* >* symbol_list = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    symbol_list = elf_loader->GetSymbols();
+    logger << EndDebugInfo;
+  }
+  return symbol_list;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type)
 {
-	return elf_loader ? elf_loader->FindSymbol(name, addr, type) : 0;
+  const unisim::util::debug::Symbol<MEMORY_ADDR>* symbol = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    symbol = elf_loader->FindSymbol(name, addr, type);
+    logger << EndDebugInfo;
+  }
+  return symbol;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr)
 {
-	return elf_loader ? elf_loader->FindSymbolByAddr(addr) : 0;
+  const unisim::util::debug::Symbol<MEMORY_ADDR>* symbol = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    symbol = elf_loader->FindSymbolByAddr(addr);
+    logger << EndDebugInfo;
+  }
+  return symbol;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name)
 {
-	return elf_loader ? elf_loader->FindSymbolByName(name) : 0;
+  const unisim::util::debug::Symbol<MEMORY_ADDR>* symbol = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    symbol = elf_loader->FindSymbolByName(name);
+    logger << EndDebugInfo;
+  }
+  return symbol;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type)
 {
-	return elf_loader ? elf_loader->FindSymbolByName(name, type) : 0;
+  const unisim::util::debug::Symbol<MEMORY_ADDR>* symbol = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    symbol = elf_loader->FindSymbolByName(name, type);
+    logger << EndDebugInfo;
+  }
+  return symbol;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type)
 {
-	return elf_loader ? elf_loader->FindSymbolByAddr(addr, type) : 0;
+  const unisim::util::debug::Symbol<MEMORY_ADDR>* symbol = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    symbol = elf_loader->FindSymbolByAddr(addr, type);
+    logger << EndDebugInfo;
+  }
+  return symbol;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr)
 {
-	return elf_loader ? elf_loader->FindStatement(addr) : 0;
+  const unisim::util::debug::Statement<MEMORY_ADDR>* statement = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    statement = elf_loader->FindStatement(addr);
+    logger << EndDebugInfo;
+  }
+  return statement;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
 {
-	return elf_loader ? elf_loader->FindStatement(filename, lineno, colno) : 0;
+  const unisim::util::debug::Statement<MEMORY_ADDR>* statement = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    statement = elf_loader->FindStatement(filename, lineno, colno);
+    logger << EndDebugInfo;
+  }
+  return statement;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
+std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc)
 {
-	return elf_loader ? elf_loader->GetBackTrace(pc) : 0;
+  std::vector<MEMORY_ADDR>* backtrace = NULL;
+  if (elf_loader != NULL) {
+    logger << DebugInfo;
+    backtrace = elf_loader->GetBackTrace(pc);
+    logger << EndDebugInfo;
+  }
+  return backtrace;
 }
 
 } // end of namespace elf_loader

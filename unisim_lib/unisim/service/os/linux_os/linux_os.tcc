@@ -67,6 +67,7 @@
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/likely/likely.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 
@@ -1079,7 +1080,7 @@ Load()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 const typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetBlob() const
+GetBlob()
 {
 	return blob;
 }
