@@ -70,6 +70,10 @@ Logger& operator <<(Logger& logger, Logger& (*f)(Logger &)) {
 	return f(logger);
 }
 
+std::ostream& Logger::GetStream() {
+  return buffer_;
+}
+
 void Logger::PrintMode() {
   std::cerr << "Current mode (" << obj_.GetName() << "): ";
 	switch (mode_) {

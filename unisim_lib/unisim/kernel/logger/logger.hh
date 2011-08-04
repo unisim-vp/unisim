@@ -69,6 +69,25 @@ public:
 		return *this;
 	}
 
+  // Returns the raw STL output stream that is used to print out the log.
+  // Use this method with caution. Before handling the stream one of the open
+  // debug tags should have been used, and after the close of the debug tags the
+  // stream should not be used any longer.
+  // Example of usage:
+  //   logger << DebugInfo; // start debug info message
+  //   {
+  //     std::ostream& log_stream = logger.GetStream(); // get the raw output
+  //                                                    // stream
+  //     // send whatever you want to the output stream
+  //     log_stream << "Hello world";
+  //     // ...
+  //   } // we ensure that the log_stream liveness is in between DebugInfo and
+  //     // EndDebugInfo tags, so it is not used outside that scope
+  //   logger << EndDebugInfo;
+  //
+  // More tricky usages are possible, but not recommended.
+  std::ostream& GetStream();
+
 	void DebugInfo();
 	void EndDebugInfo();
 	void DebugWarning();
