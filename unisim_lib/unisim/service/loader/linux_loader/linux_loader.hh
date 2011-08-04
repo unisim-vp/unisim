@@ -96,7 +96,7 @@ public:
 
 	/* Service interface methods */
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<T> *GetBlob() const;
+	virtual const unisim::util::debug::blob::Blob<T> *GetBlob();
 
 protected:
 	endian_type endianness;

@@ -46,7 +46,7 @@ template <class MEMORY_ADDR>
 class Blob : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const = 0;
+	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() = 0;
 };
 
 	

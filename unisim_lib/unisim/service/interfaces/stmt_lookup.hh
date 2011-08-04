@@ -46,8 +46,8 @@ template <class MEMORY_ADDR>
 class StatementLookup : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) = 0;
 };
 
 } // end of namespace interfaces

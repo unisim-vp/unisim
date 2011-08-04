@@ -835,7 +835,7 @@ LoadStack()
 template<class T>
 const typename unisim::util::debug::blob::Blob<T> *
 LinuxLoader<T>::
-GetBlob() const
+GetBlob()
 {
 	return blob;
 }
