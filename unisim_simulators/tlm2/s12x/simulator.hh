@@ -37,9 +37,6 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
-#include <unisim/service/pim/pim.hh>
-#include <unisim/service/pim/pim_server.hh>
-
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
@@ -55,6 +52,10 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
+
+#include <unisim/service/pim/pim.hh>
+#include <unisim/service/pim/pim_server.hh>
+
 
 #include <xml_atd_pwm_stub.hh>
 

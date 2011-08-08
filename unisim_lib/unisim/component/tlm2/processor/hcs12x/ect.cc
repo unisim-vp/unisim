@@ -64,7 +64,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, registers_export("registers_export", this)
 	, logger(0)
 
-	, bus_cycle_time_int(0)
+	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 	 // MC9S12XDP512V2 - ECT baseAddress
@@ -86,13 +86,13 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
 
-	, buildin_edge_generator(true)
-	, param_buildin_edge_generator("buildin-edge-generator", this, buildin_edge_generator, "Use buildin edge generator or external instrument")
+	, buildin_signal_generator(true)
+	, param_buildin_signal_generator("buildin-signal-generator", this, buildin_signal_generator, "Use buildin signal generator or external instrument")
 	, edge_detector_period_int(25000)
 	, param_edge_detector_period("edge-detector-period", this, edge_detector_period_int, "Edge detector period in pico-seconds. Default 25000ps.")
 
 	, pinLogic_reg("pin", this, pinLogic, 8, "ECT input/output pin")
-	, edgeDelayArray_reg("edge-delay", this, edgeDelayArray, 4, "Edge Delay for Buffered IC channels. Associated to pins P0-P3.")
+	, signalLengthArray_reg("signal-length-array", this, signalLengthArray, 8, "Signal length for Buffered IC channels. Associated to pins P0-P3.")
 
 	, prnt_write(false)
 	, icsys_write(false)
@@ -112,10 +112,10 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 		pinLogic[i] = false;
 		pinLogic_reg[i].SetMutable(true);
+		signalLengthArray[i] = 0;
+		signalLengthArray_reg[i].SetMutable(true);
 
 		if (i < 4) {
-			edgeDelayArray[i] = 0;
-			edgeDelayArray_reg[i].SetMutable(true);
 			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
 		} else {
 			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], NULL, NULL);
@@ -133,16 +133,13 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	SC_HAS_PROCESS(ECT);
 
 	SC_THREAD(RunInputCapture);
-	sensitive << main_timer_enable_event;
 
 	SC_THREAD(RunMainTimerCounter);
-	sensitive << main_timer_enable_event;
 
 	SC_THREAD(RunDownCounter);
-	sensitive << down_counter_enable_event;
 
-	pacA = new PulseAccumulatorA("PACA", this, pc8bit[3], pc8bit[2]);
-	pacB = new PulseAccumulatorB("PACB", this, pc8bit[1], pc8bit[0]);
+	pacA = new PulseAccumulatorA("PACA", this, &pinLogic[7], &signalLengthArray[7], pc8bit[3], pc8bit[2]);
+	pacB = new PulseAccumulatorB("PACB", this, &pinLogic[0], &signalLengthArray[0], pc8bit[1], pc8bit[0]);
 
 	Reset();
 
@@ -247,17 +244,7 @@ void ECT::RunInputCapture() {
 					}
 				}
 
-				if (isValidEdge(i, edge, edgeDelay)) {
-
-//					if (edge == 1) {
-//						pinLogic[i] = true;
-//						// I am not sure of this interpretation of using oc7d_register !!!
-//						oc7d_register = oc7d_register | ((uint8_t) 1 << i);
-//					} else {
-//						pinLogic[i] = false;
-//						// I am not sure of this interpretation of using oc7d_register !!!
-//						oc7d_register = oc7d_register & ~((uint8_t) 1 << i);
-//					}
+				if (isValidSignal(i, edge, edgeDelay)) {
 
 					ioc_channel[i]->RunInputCapture(edgeDelay);
 					// is sharing edge enabled ?
@@ -292,16 +279,30 @@ void ECT::RunMainTimerCounter() {
 			wait(main_timer_enable_event);
 		}
 
-		sc_time prescaled_time;
-		// is TSCR1::PRNT=0 ?
-		if ((tscr1_register & 0x08) == 0) {
-			prescaled_time = pow(2, (tscr2_register & 0x07)) * bus_cycle_time;
-		} else {
-			prescaled_time = (ptpsr_register + 1) * bus_cycle_time;
-		}
-
 		while (main_timer_enabled && ((tscr1_register & 0x80) != 0)) {
-			wait(prescaled_time);
+			/**
+			 * If the pulse accumulator is disabled (PACTL::PAEN=0) then
+			 *     the prescaler clock from the timer is always used as an input clock to the timer counter.
+			 * else
+			 *     the pulse accumulator clock (PACLK) is used depending on PACTL::CLK[1:] bits configuration.
+			 *
+			 * The change from one selected clock to the other  happens immediately after these bits are written.
+			 */
+			if ((pactl_register & 0x40) == 0) {
+				sc_time prescaled_time;
+				// is TSCR1::PRNT=0 ?
+				if ((tscr1_register & 0x08) == 0) {
+					prescaled_time = pow(2, (tscr2_register & 0x07)) * bus_cycle_time;
+				} else {
+					prescaled_time = (ptpsr_register + 1) * bus_cycle_time;
+				}
+
+				wait(prescaled_time);
+
+			} else {
+				wait(paclk_event);
+			}
+
 			if (tcnt_register == 0xFFFF) {
 				// Timer overflow
 				tcnt_register = 0x0000;
@@ -321,18 +322,29 @@ void ECT::RunMainTimerCounter() {
 
 void ECT::RunDownCounter() {
 
+	/**
+	 * The 16-bit modulus down-counter can control the transfer of the IC registers and the pulse accumulators
+	 * contents to the respective holding registers for a given period, every time the count reaches zero.
+	 *
+	 * The modulus down-counter can also be used as a stand-alone time base with periodic interrupt capability.
+	 */
+
 	while (true) {
-		while (!down_counter_enabled) {
+		while ((!down_counter_enabled) || ((mcctl_register & 0x04) == 0)) {
 			wait(down_counter_enable_event);
 		}
 
-		/**
-		 * TODO:
-		 * The 16-bit modulus down-counter can control the transfer of the IC registers and the pulse accumulators
-		 * contents to the respective holding registers for a given period, every time the count reaches zero.
-		 *
-		 * The modulus down-counter can also be used as a stand-alone time base with periodic interrupt capability.
-		 */
+		uint8_t mccnt_prescaler = mcctl_register & 0x03;
+		sc_time mccnt_period = bus_cycle_time;
+		if (mccnt_prescaler > 0) {
+			mccnt_period = bus_cycle_time * pow(2, mccnt_prescaler+1);
+		}
+
+		while ((down_counter_enabled) && ((mcctl_register & 0x04) != 0)) {
+
+			wait(mccnt_period);
+		}
+
 	}
 }
 
@@ -783,7 +795,38 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		case PACTL: {
 			uint8_t masked_value = (pactl_register & 0x80) | (*((uint8_t *)value) & 0x7F);
 			pactl_register = masked_value;
-			 pacA->wakeup();
+
+			switch ((pactl_register & 0x30) >> 4) {
+				case 0:  // Falling edge
+				{
+					// For edge detector configuration, I use the same codification as for TCTL3/TCTL4 register
+					pacA->setValideEdge(2);
+					pacA->setMode(false);
+				} break;
+				case 1: // Rising edge
+				{
+					// For edge detector configuration, I use the same codification as for TCTL3/TCTL4 register
+					pacA->setValideEdge(1);
+					pacA->setMode(false);
+				} break;
+				case 2: // Divide by 64 clock enabled with pin high level
+				{
+					pacA->setValideEdge(1); // I use rising edge code for High level
+					pacA->setMode(true);
+				} break;
+				case 3: // Divide by 64 clock enabled with pin low level
+				{
+					pacA->setValideEdge(2); // I use falling edge code for Low level
+					pacA->setMode(true);
+				} break;
+
+
+			}
+
+			if ((pactl_register & 0x40) != 0) {
+				pacA->wakeup();
+			}
+
 
 		} break;
 		case PAFLG: {
@@ -844,6 +887,13 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			if ((mcctl_register && 0x06) != 0) {
 				loadRegisterToModulusCounterCountregister();
 			}
+
+			if ((mcctl_register & 0x04) == 0) {
+				down_counter_disable();
+				mccnt_register = 0xFFFF;
+			} else {
+				down_counter_enable();
+			}
 		} break;
 		case MCFLG: {
 			if ((tscr1_register & 0x10) == 0) {
@@ -895,44 +945,55 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 
 		default: {
 			if ((offset == MCCNT_HIGH) || (offset == MCCNT_LOW)) {
+				uint16_t old_mccnt_register = mccnt_register;
+
 				if ((tscr1_register & 0x10) != 0) {
 					mcflg_register = mcflg_register & 0x7F;
 				}
 
 				if (offset == MCCNT_HIGH) {
 					if (size == 2) {
-						mccnt_register = *((uint16_t *)value);
+						mccnt_load_register = *((uint16_t *)value);
 					} else {
-						mccnt_register = (mccnt_register & 0x00FF) | ((uint16_t) (*((uint8_t *)value) << 8));
+						mccnt_load_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)value) << 8));
 					}
 				} else {
-					mccnt_register = (mccnt_register & 0xFF00) | *((uint8_t *)value);
+					mccnt_load_register = (mccnt_load_register & 0xFF00) | *((uint8_t *)value);
 				}
 
-				mccnt_load_register = mccnt_register;
+				/**
+				 * If the modulus down counter is enabled (MCCTL::MCEN=1) and modulus mode is enabled (MCCTL::MODMC=1),
+				 * a write to MCCNT will update the load register with the value written to it. The count register
+				 * will not be updated with the new value until the next counter underflow.
+				 *
+				 * The FLMC bit in MCCTL can be used to immediately update the count register with the new value
+				 * if an immediate load is desired
+				 *
+				 *  If the modulus mode is not enabled (MCCTL::MODMC=0), a write to MCCNT will clear the modulus prescaler and
+				 *  will immediately update the counter register with the value written to it
+				 *  and down-counts to 0x0000 and stops.
+				 *
+				 */
 
-				if (mccnt_register == 0x0000) {
-					if ((icsys_register & 0x03) == 0x03) {
-						// TODO: the input capture and pulse accumulator registers will be latched.
+				if (((mcctl_register & 0x44) != 0x44) || ((mcctl_register & 0x08) != 0)) {
+					mccnt_register = mccnt_load_register;
+
+					if ((mcctl_register & 0x40) == 0) {
+						mcctl_register = mcctl_register & 0xFC;
 					}
 				}
 
-				if ((mcctl_register & 0x44) == 0x44) {
-					mccnt_load_register = mccnt_register;
-				} else if ((mcctl_register & 0x40) == 0) {
-					/**
-					 *  TODO: a write to MCCNT will clear the modulus prescaler and
-					 *  will immediately update the counter register with the value written to it
-					 *  and down-counts to 0x0000 and stops.
-					 */
-				}
+				/**
+				 * If a 0x0000 is written into MCCNT when LATQ and BUFFEN in ICSYS register are set,
+				 * the input capture and pulse accumulator registers will be latched.
+				 */
+				if ((mccnt_register == 0x0000) && (old_mccnt_register != 0)) {
+					if ((icsys_register & 0x03) == 0x03) {
+						for (uint8_t i=0; i < 3; i++) {
+							ioc_channel[i]->latchToHoldingRegisters();
+						}
 
-				if ((mcctl_register & 0x08) != 0) {
-					/**
-					 * TODO:
-					 * The FLMC bit in MCCTL can be used to immediately update the count register with the new value
-					 * if an immediate load is desired
-					 */
+					}
 				}
 
 			} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
@@ -1051,11 +1112,13 @@ void ECT::PulseAccumulator8Bit::latchToHoldingRegisters() {
 	clearPACN();
 }
 
-ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
+ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, bool* pinLogic, uint16_t* signalLength, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
 	sc_module(name)
 	, ectParent(parent)
 	, pacn_high_ptr(pacn_high)
 	, pacn_low_ptr(pacn_low)
+	, channelPinLogic(pinLogic)
+	, channelSignalLength(signalLength)
 {
 
 	SC_HAS_PROCESS(ECT::PulseAccumulator16Bit);
@@ -1075,14 +1138,9 @@ void ECT::PulseAccumulator16Bit::latchToHoldingRegisters() {
 
 }
 
-bool ECT::PulseAccumulator16Bit::countEdge16Bit() {
-	if (pacn_low_ptr->countEdge8Bit()) {
-		pacn_high_ptr->countEdge8Bit();
-	}
-}
-
-ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
-		ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pacn_high, pacn_low)
+ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *parent, bool* pinLogic, uint16_t* signalLength, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
+	ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pinLogic, signalLength, pacn_high, pacn_low)
+	, isGatedTimeMode(false)
 {
 
 }
@@ -1103,39 +1161,78 @@ void ECT::PulseAccumulatorA::RunPulseAccumulator() {
 
 		/**
 		 * For PAMOD bit = 0 (event counter mode).
-		 *   0 Falling edges on PT7 pin cause the count to be incremented
-		 *   1 Rising edges on PT7 pin cause the count to be incremented
+		 *   PACTL::PEDGE = 0 Falling edges on PT7 pin cause the count to be incremented
+		 *   PACTL::PEDGE = 1 Rising edges on PT7 pin cause the count to be incremented
 		 *
 		 * For PAMOD bit = 1 (gated time accumulation mode).
-		 *   0 PT7 input pin high enables bus clock divided by 64 to Pulse Accumulator and
+		 *   PACTL::PEDGE = 0 PT7 input pin high enables bus clock divided by 64 to Pulse Accumulator and
 		 *     the trailing falling edge on PT7 sets the PAIF flag.
-		 *   1 PT7 input pin low enables bus clock divided by 64 to Pulse Accumulator and
+		 *   PACTL::PEDGE = 1 PT7 input pin low enables bus clock divided by 64 to Pulse Accumulator and
 		 *     the trailing rising edge on PT7 sets the PAIF flag.
 		 *
 		 * If the timer is not active (TEN = 0 in TSCR1), there is no divide-by-64 since the ÷64 clock is generated by the timer prescaler
 		 */
 
-		uint8_t edgeValue = 0;
-		uint16_t edgeDelay = 0;
-	    if (ectParent->isValidEdge(7, edgeValue, edgeDelay)) {
+		bool canCount = false;
 
-	    }
+		if (!isGatedTimeModeEnabled()) // if (PACTL::PAMOD = 0) then Event counter
+		{
+			uint8_t edgeValue = 0;
+			uint16_t edgeDelay = 0;
+			canCount = (ectParent->isValidSignal(7, edgeValue, edgeDelay));
+
+		}
+		else  // if (PACTL::PAMOD != 0) then gated time accumulation mode
+		{
+			bool isValid = false;
+			uint8_t edgeValue;
+			uint16_t edgeDelay;
+			if (ectParent->isBuildin_edge_generator()) {
+				/* generate edge code */
+				do {
+					edgeValue = (uint8_t) rand() % 3;
+				} while (edgeValue == 0);
+
+				// Divide bus clock by 64
+				edgeDelay = (uint16_t) rand() % (64 * 2);
+
+			} else {
+				if (*channelPinLogic) {
+					edgeValue = 1; // rising edge => High level
+				} else {
+					edgeValue = 2; // falling edge => Low level
+				}
+				edgeDelay = *channelSignalLength;
+			}
+
+			canCount = ((edgeValue == getValideEdge()) && (edgeDelay >= 64));
+		}
 
 		uint8_t clksel = ectParent->getClockSelection();
-		switch (clksel) {
-			case 0: {
-				// TODO: Use timer prescaler clock as timer counter clock
-			} break;
-			case 1: {
-				// TODO: Use PACLK as input to timer counter clock
-			} break;
-			case 2: {
-				// TODO: Use PACLK/256 as timer counter clock frequency
-			} break;
-			case 3: {
-				// TODO: Use PACLK/65536 as timer counter clock frequency
-			} break;
-		}
+
+		if (canCount) {
+			if (clksel == 1) {
+				// Main timer counter use PACLK as input to timer counter clock
+				ectParent->notify_paclk_event();
+			}
+
+			bool pacn_low_overflow = pacn_low_ptr->countEdge8Bit();
+	    	if (pacn_low_overflow) {
+				if (clksel == 2) {
+					// Main timer counter use PACLK/256 as timer counter clock frequency
+					ectParent->notify_paclk_event();
+				}
+
+	    		pacn_low_ptr->clearPACN();
+	    		bool pacn_high_overflow = pacn_high_ptr->countEdge8Bit();
+
+				if (pacn_high_overflow && (clksel == 3)) {
+					// Main Timer counter use PACLK/65536 as timer counter clock frequency
+					ectParent->notify_paclk_event();
+				}
+
+	    	}
+	    }
 
 	    wait(ectParent->edge_detector_period);
 
@@ -1144,8 +1241,8 @@ void ECT::PulseAccumulatorA::RunPulseAccumulator() {
 }
 
 
-ECT::PulseAccumulatorB::PulseAccumulatorB(const sc_module_name& name, ECT *parent, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
-	ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pacn_high, pacn_low)
+ECT::PulseAccumulatorB::PulseAccumulatorB(const sc_module_name& name, ECT *parent, bool* pinLogic, uint16_t* signalLength, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low) :
+	ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(name, parent, pinLogic, signalLength, pacn_high, pacn_low)
 {
 
 }
@@ -1159,9 +1256,13 @@ void ECT::PulseAccumulatorB::RunPulseAccumulator() {
 
 		uint8_t edgeValue = 0;
 		uint16_t edgeDelay = 0;
-	    if (ectParent->isValidEdge(0, edgeValue, edgeDelay)) {
+	    if (ectParent->isValidSignal(0, edgeValue, edgeDelay)) {
 	    	if (edgeDelay > 2) {
-	    		countEdge16Bit();
+	    		if (pacn_low_ptr->countEdge8Bit()) {
+	    			pacn_low_ptr->clearPACN();
+	    			pacn_high_ptr->countEdge8Bit();
+	    		}
+
 	    	}
 	    }
 
@@ -1231,7 +1332,7 @@ void ECT::IOC_Channel_t::RunInputCapture(uint16_t edgeDelay) {
 		if (!ectParent->isNoInputCaptureOverWrite(ioc_index) || (*tc_register_ptr == 0x0000)) {
 			*tc_register_ptr = ectParent->getMainTimerValue();
 			// set the TFLG1::CxF to show that input capture occurs
-			ectParent->setTimerinterruptFlag(ioc_index);
+			ectParent->setTimerInterruptFlag(ioc_index);
 			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
 		}
 	}
@@ -1258,7 +1359,7 @@ void ECT::IOC_Channel_t::RunInputCapture(uint16_t edgeDelay) {
 			 *                 when a valid input capture transition on the corresponding port pin occurs.
 			 *  ICSYS::LATQ=1  : If the queue mode is not engaged, the timer flags C3F–C0F are set the same way as for TFMOD = 0.
 			 */
-			ectParent->setTimerinterruptFlag(ioc_index);
+			ectParent->setTimerInterruptFlag(ioc_index);
 			ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
 
 		}
@@ -1274,7 +1375,7 @@ void ECT::IOC_Channel_t::RunInputCapture(uint16_t edgeDelay) {
 					 */
 
 					if ((ectParent->getTimerFlagSettingMode() != 0) && (*tch_register_ptr != 0x0000)) {
-						ectParent->setTimerinterruptFlag(ioc_index);
+						ectParent->setTimerInterruptFlag(ioc_index);
 						ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
 					}
 				}
@@ -1567,7 +1668,8 @@ void ECT::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
-	edge_detector_period = sc_time(edge_detector_period_int, SC_PS);
+	edge_detector_period = sc_time((double) edge_detector_period_int, SC_PS);
+
 }
 
 void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
