@@ -277,9 +277,9 @@ protected:
     }
 
     bool isOutputCompareMaskEnabled(uint8_t ioc_index) { return ((oc7m_register & (1 << ioc_index)) != 0); }
-    uint8_t getInterruptOffsetChannel0() { return interrupt_offset_channel0; }
-    uint8_t getInterruptPulseAccumulatorAOverflow() { return interrupt_pulse_accumulatorA_overflow; }
-    uint8_t getInterruptPulseAccumulatorBOverflow() { return interrupt_pulse_accumulatorB_overflow; }
+    uint8_t getInterruptOffsetChannel0() { return offset_channel0_interrupt; }
+    uint8_t getInterruptPulseAccumulatorAOverflow() { return pulse_accumulatorA_overflow_interrupt; }
+    uint8_t getInterruptPulseAccumulatorBOverflow() { return pulse_accumulatorB_overflow_interrupt; }
     bool isInputOutputInterruptEnabled(uint8_t ioc_index) { return ((tie_register & (1 << ioc_index)) != 0); }
     bool isTimerOverflowinterruptEnabled() { return ((tscr2_register & 0x80) != 0); }
     bool isTimerCounterResetEnabled() { return ((tscr2_register & 0x08) != 0); }
@@ -308,7 +308,7 @@ protected:
 			 */
 
 		} else {
-			if (pinLogic[channel_index]) {
+			if (ioc_pin[channel_index]) {
 				signalValue = 1; // rising edge
 			} else {
 				signalValue = 2; // falling edge
@@ -374,20 +374,23 @@ private:
 	// Enhanced Capture Timer Channel 6 : IVBR + 0xE2
 	// Enhanced Capture Timer Channel 7 : IVBR + 0xE0
 
-	uint8_t interrupt_offset_channel0;
-	Parameter<uint8_t> param_interrupt_offset_channel0;
+	uint8_t offset_channel0_interrupt;
+	Parameter<uint8_t> param_offset_channel0_interrupt;
 
-	uint8_t interrupt_offset_timer_overflow;
-	Parameter<uint8_t> param_interrupt_offset_timer_overflow;
+	uint8_t offset_timer_overflow_interrupt;
+	Parameter<uint8_t> param_offset_timer_overflow_interrupt;
 
-	uint8_t interrupt_pulse_accumulatorA_overflow;
-	Parameter<uint8_t> param_interrupt_pulse_accumulatorA_overflow;
+	uint8_t pulse_accumulatorA_overflow_interrupt;
+	Parameter<uint8_t> param_pulse_accumulatorA_overflow_interrupt;
 
-	uint8_t interrupt_pulse_accumulatorB_overflow;
-	Parameter<uint8_t> param_interrupt_pulse_accumulatorB_overflow;
+	uint8_t pulse_accumulatorB_overflow_interrupt;
+	Parameter<uint8_t> param_pulse_accumulatorB_overflow_interrupt;
 
-	uint8_t interrupt_pulse_accumulatorA_input_edge;
-	Parameter<uint8_t> param_interrupt_pulse_accumulatorA_input_edge;
+	uint8_t pulse_accumulatorA_input_edge_interrupt;
+	Parameter<uint8_t> param_pulse_accumulatorA_input_edge_interrupt;
+
+	uint8_t modulus_counter_interrupt;
+	Parameter<uint8_t> param_modulus_counter_interrupt;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
@@ -397,6 +400,11 @@ private:
 
 	uint64_t	edge_detector_period_int;
 	Parameter<uint64_t>	param_edge_detector_period;
+
+	bool ioc_pin[8];
+	RegisterArray<bool> ioc_pin_reg;
+	uint16_t signalLengthArray[8];
+	RegisterArray<uint16_t> signalLengthArray_reg;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -426,10 +434,6 @@ private:
 	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register,
 			tc_registers[8], mccnt_load_register, mccnt_register, tcxh_registers[4];
 
-	bool pinLogic[8];
-	RegisterArray<bool> pinLogic_reg;
-	uint16_t signalLengthArray[8];
-	RegisterArray<uint16_t> signalLengthArray_reg;
 
 	class PulseAccumulator8Bit {
 	public:

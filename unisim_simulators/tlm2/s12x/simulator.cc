@@ -463,11 +463,21 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CRG.debug-enabled", false);
 	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
 	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
+
+
 	simulator->SetVariable("ECT.bus-cycle-time", 250000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
-	simulator->SetVariable("ECT.interrupt-offset-overflow", 0xde);
+	simulator->SetVariable("ECT.interrupt-offset-timer-overflow", 0xde);
+	simulator->SetVariable("ECT.pulse-accumulatorA-overflow-interrupt", 0xDC);
+	simulator->SetVariable("ECT.pulse-accumulatorB-overflow-interrupt", 0xC8);
+	simulator->SetVariable("ECT.pulse-accumulatorA-input-edge-interrupt", 0xDA);
+	simulator->SetVariable("ECT.modulus-counter-interrupt", 0xCA);
+	simulator->SetVariable("ECT.edge-detector-period", 25000);
 	simulator->SetVariable("ECT.debug-enabled", false);
+	simulator->SetVariable("ECT.buildin-signal-generator", true);
+
+
 	simulator->SetVariable("external-memory.org", 0x0);
 	simulator->SetVariable("external-memory.bytesize", 0x800000);
 	simulator->SetVariable("external-memory.cycle-time", 250000);

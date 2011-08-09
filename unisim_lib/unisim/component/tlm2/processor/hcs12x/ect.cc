@@ -71,17 +71,18 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, baseAddress(0x0040)
 	, param_baseAddress("base-address", this, baseAddress)
 
-	, interrupt_offset_channel0(0xEE)
-	, param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0)
-	, interrupt_offset_timer_overflow(0xDE)
-	, param_interrupt_offset_timer_overflow("interrupt-offset-timer-overflow", this, interrupt_offset_timer_overflow)
-	, interrupt_pulse_accumulatorA_overflow(0xDC)
-	, param_interrupt_pulse_accumulatorA_overflow("interrupt-pulse-accumulatorA-overflow", this, interrupt_pulse_accumulatorA_overflow)
-	, interrupt_pulse_accumulatorB_overflow(0xC8)
-	, param_interrupt_pulse_accumulatorB_overflow("interrupt-pulse-accumulatorB-overflow", this, interrupt_pulse_accumulatorB_overflow)
-
-	, interrupt_pulse_accumulatorA_input_edge(0xDA)
-	, param_interrupt_pulse_accumulatorA_input_edge("interrupt-pulse-accumulator-input-edge", this, interrupt_pulse_accumulatorA_input_edge)
+	, offset_channel0_interrupt(0xEE)
+	, param_offset_channel0_interrupt("interrupt-offset-channel0", this, offset_channel0_interrupt)
+	, offset_timer_overflow_interrupt(0xDE)
+	, param_offset_timer_overflow_interrupt("interrupt-offset-timer-overflow", this, offset_timer_overflow_interrupt)
+	, pulse_accumulatorA_overflow_interrupt(0xDC)
+	, param_pulse_accumulatorA_overflow_interrupt("interrupt-pulse-accumulatorA-overflow", this, pulse_accumulatorA_overflow_interrupt)
+	, pulse_accumulatorB_overflow_interrupt(0xC8)
+	, param_pulse_accumulatorB_overflow_interrupt("interrupt-pulse-accumulatorB-overflow", this, pulse_accumulatorB_overflow_interrupt)
+	, pulse_accumulatorA_input_edge_interrupt(0xDA)
+	, param_pulse_accumulatorA_input_edge_interrupt("interrupt-pulse-accumulator-input-edge", this, pulse_accumulatorA_input_edge_interrupt)
+	, modulus_counter_interrupt(0xCA)
+	, param_modulus_counter_interrupt("modulus-counter-interrupt", this, modulus_counter_interrupt)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
@@ -91,7 +92,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, edge_detector_period_int(25000)
 	, param_edge_detector_period("edge-detector-period", this, edge_detector_period_int, "Edge detector period in pico-seconds. Default 25000ps.")
 
-	, pinLogic_reg("pin", this, pinLogic, 8, "ECT input/output pin")
+	, ioc_pin_reg("ioc", this, ioc_pin, 8, "ECT input/output pin")
 	, signalLengthArray_reg("signal-length-array", this, signalLengthArray, 8, "Signal length for Buffered IC channels. Associated to pins P0-P3.")
 
 	, prnt_write(false)
@@ -110,15 +111,15 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	for (uint8_t i=0; i<8; i++) {
 
-		pinLogic[i] = false;
-		pinLogic_reg[i].SetMutable(true);
+		ioc_pin[i] = false;
+		ioc_pin_reg[i].SetMutable(true);
 		signalLengthArray[i] = 0;
 		signalLengthArray_reg[i].SetMutable(true);
 
 		if (i < 4) {
-			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
+			ioc_channel[i] = new IOC_Channel_t(this, i, &ioc_pin[i], &tc_registers[i], &tcxh_registers[i], pc8bit[i]);
 		} else {
-			ioc_channel[i] = new IOC_Channel_t(this, i, &pinLogic[i], &tc_registers[i], NULL, NULL);
+			ioc_channel[i] = new IOC_Channel_t(this, i, &ioc_pin[i], &tc_registers[i], NULL, NULL);
 		}
 
 	}
@@ -138,8 +139,8 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(RunDownCounter);
 
-	pacA = new PulseAccumulatorA("PACA", this, &pinLogic[7], &signalLengthArray[7], pc8bit[3], pc8bit[2]);
-	pacB = new PulseAccumulatorB("PACB", this, &pinLogic[0], &signalLengthArray[0], pc8bit[1], pc8bit[0]);
+	pacA = new PulseAccumulatorA("PACA", this, &ioc_pin[7], &signalLengthArray[7], pc8bit[3], pc8bit[2]);
+	pacB = new PulseAccumulatorB("PACB", this, &ioc_pin[0], &signalLengthArray[0], pc8bit[1], pc8bit[0]);
 
 	Reset();
 
@@ -246,6 +247,23 @@ void ECT::RunInputCapture() {
 
 				if (isValidSignal(i, edge, edgeDelay)) {
 
+					if (i < 4) {
+						/**
+						 * MCFLG::POLF[3:0] First Input Capture polarity status.
+						 * These are read only bits. Writes to these bits have no effect.
+						 * Each status bit gives the polarity of the first edge which has caused
+						 * an input capture to occur after capture latch has been read.
+						 */
+						if (tc_registers[i] == 0) {
+							// is rising edge ?
+							uint8_t polf = (edge == 1);
+
+							uint8_t mask = (1 << i);
+							uint8_t mcflg_register_tmp = mcflg_register & ~mask;
+							mcflg_register = mcflg_register_tmp | (polf << i) ;
+						}
+					}
+
 					ioc_channel[i]->RunInputCapture(edgeDelay);
 					// is sharing edge enabled ?
 					if ((i<4) && (((icsys_register & (1 << (i+4))) != 0))) {
@@ -310,7 +328,7 @@ void ECT::RunMainTimerCounter() {
 					// set TFLG2::TOF timer overflow flag
 					tflg2_register = tflg2_register | 0x80;
 				}
-				assertInterrupt(interrupt_offset_timer_overflow);
+				assertInterrupt(offset_timer_overflow_interrupt);
 			} else {
 				if ((tc_registers[7] != 0x0000) || !isTimerCounterResetEnabled()) {
 					tcnt_register = tcnt_register + 1;
@@ -343,6 +361,20 @@ void ECT::RunDownCounter() {
 		while ((down_counter_enabled) && ((mcctl_register & 0x04) != 0)) {
 
 			wait(mccnt_period);
+
+			mccnt_register = mccnt_register - 1;
+			if (mccnt_register == 0) {
+				// set MCFLG::MCZF flag
+				mcflg_register = mcflg_register | 0x80;
+
+				latchToHoldingRegisters();
+
+				assertInterrupt(modulus_counter_interrupt);
+
+				if ((mcctl_register & 0x40) != 0) {
+					mccnt_register = mccnt_load_register;
+				}
+			}
 		}
 
 	}
@@ -358,11 +390,12 @@ void ECT::RunCaptureCompare() {
 
 void ECT::assertInterrupt(uint8_t interrupt_offset) {
 
-	if ((interrupt_offset >= (interrupt_offset_channel0 - 0xE)) && (interrupt_offset <= interrupt_offset_channel0 ) && !isInputOutputInterruptEnabled((interrupt_offset_channel0 - interrupt_offset)/2)) return;
-	if ((interrupt_offset == interrupt_offset_timer_overflow) && !isTimerOverflowinterruptEnabled()) return;
-	if ((interrupt_offset == interrupt_pulse_accumulatorA_overflow) && ((pactl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == interrupt_pulse_accumulatorB_overflow) && ((pbctl_register & 0x02) == 0)) return;
-	if ((interrupt_offset == interrupt_pulse_accumulatorA_input_edge) && ((pactl_register & 0x01) == 0)) return;
+	if ((interrupt_offset >= (offset_channel0_interrupt - 0xE)) && (interrupt_offset <= offset_channel0_interrupt ) && !isInputOutputInterruptEnabled((offset_channel0_interrupt - interrupt_offset)/2)) return;
+	if ((interrupt_offset == offset_timer_overflow_interrupt) && !isTimerOverflowinterruptEnabled()) return;
+	if ((interrupt_offset == pulse_accumulatorA_overflow_interrupt) && ((pactl_register & 0x02) == 0)) return;
+	if ((interrupt_offset == pulse_accumulatorB_overflow_interrupt) && ((pbctl_register & 0x02) == 0)) return;
+	if ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) == 0)) return;
+	if ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) == 0) return;
 
 
 	tlm_phase phase = BEGIN_REQ;
@@ -1276,8 +1309,12 @@ inline void ECT::latchToHoldingRegisters() {
 	 * and their corresponding 8-bit pulse accumulators to be latched into the associated holding registers.
 	 * The pulse accumulators will be automatically cleared when the latch action occurs;
 	 */
-	for (uint8_t i=0; i<4; i++) {
-		pc8bit[i]->latchToHoldingRegisters();
+
+	// is latch mode enabled (ICSYS::LATQ=1)
+	if ((icsys_register & 0x01) != 0) {
+		for (uint8_t i=0; i<4; i++) {
+			ioc_channel[i]->latchToHoldingRegisters();
+		}
 	}
 }
 
@@ -1660,7 +1697,7 @@ void ECT::Reset() {
 		down_counter_enabled = false;
 		delay_counter_enabled = false;
 
-		for (uint8_t i=0; i<8; i++) { pinLogic[i] = false; }
+		for (uint8_t i=0; i<8; i++) { ioc_pin[i] = false; }
 
 }
 
