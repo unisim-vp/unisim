@@ -181,7 +181,6 @@ public:
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	inline void latchToHoldingRegisters();
-	inline void loadRegisterToModulusCounterCountregister();
 	inline void computeDelayCounter();
 
     //================================================================
@@ -294,10 +293,18 @@ protected:
 		bool isValid = false;
 		if (buildin_signal_generator) {
 			/* generate signal code */
-			signalValue = (uint8_t) rand() % 3;
+			do {
+				signalValue = (uint8_t) rand() % 3;
+			} while (signalValue == 0);
+
+			ioc_pin[channel_index] = (signalValue == 1);
+
 			if (channel_index < 4) {
 				if (isDelayCounterEnabled()) {
-					signalDelay = (uint16_t) rand() % (edge_delay_counter * 2);
+					do {
+						signalDelay = (uint16_t) rand() % (edge_delay_counter * 2);
+					} while (signalDelay == 0);
+
 				}
 			}
 
@@ -349,6 +356,7 @@ protected:
 
 private:
 	inline void ComputeInternalTime();
+	inline void ComputeModulusCounterPrescaler();
 	inline void configureEdgeDetector();
     inline void configureOutputAction();
 
@@ -359,6 +367,8 @@ private:
 	double	bus_cycle_time_int;	// The time unit is PS
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
+
+	sc_time mccnt_period;
 
 	uint16_t	edge_delay_counter;
 

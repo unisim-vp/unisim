@@ -334,6 +334,8 @@ void ECT::RunMainTimerCounter() {
 					tcnt_register = tcnt_register + 1;
 				}
 			}
+
+			RunCaptureCompare();
 		}
 	}
 }
@@ -352,12 +354,6 @@ void ECT::RunDownCounter() {
 			wait(down_counter_enable_event);
 		}
 
-		uint8_t mccnt_prescaler = mcctl_register & 0x03;
-		sc_time mccnt_period = bus_cycle_time;
-		if (mccnt_prescaler > 0) {
-			mccnt_period = bus_cycle_time * pow(2, mccnt_prescaler+1);
-		}
-
 		while ((down_counter_enabled) && ((mcctl_register & 0x04) != 0)) {
 
 			wait(mccnt_period);
@@ -373,6 +369,7 @@ void ECT::RunDownCounter() {
 
 				if ((mcctl_register & 0x40) != 0) {
 					mccnt_register = mccnt_load_register;
+					ComputeModulusCounterPrescaler();
 				}
 			}
 		}
@@ -917,8 +914,12 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			}
 
 			// Force Load Register into the Modulus Counter count register ? (MCCTL::FLMC=1 and MCCTL::MCEN=1)
-			if ((mcctl_register && 0x06) != 0) {
-				loadRegisterToModulusCounterCountregister();
+			if ((mcctl_register && 0x0C) != 0) {
+				/**
+				 * Loads the load register into the modulus counter count register (MCCNT).
+				 * And resets the modulus counter prescaler.
+				 */
+				mccnt_register = mccnt_load_register;
 			}
 
 			if ((mcctl_register & 0x04) == 0) {
@@ -1010,6 +1011,7 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 
 				if (((mcctl_register & 0x44) != 0x44) || ((mcctl_register & 0x08) != 0)) {
 					mccnt_register = mccnt_load_register;
+					ComputeModulusCounterPrescaler();
 
 					if ((mcctl_register & 0x40) == 0) {
 						mcctl_register = mcctl_register & 0xFC;
@@ -1318,16 +1320,6 @@ inline void ECT::latchToHoldingRegisters() {
 	}
 }
 
-inline void ECT::loadRegisterToModulusCounterCountregister() {
-	/**
-	 * TODO:
-	 * Loads the load register into the modulus counter count register (MCCNT).
-	 * And resets the modulus counter prescaler. This means, the selected prescaler division rate become effective.
-	 */
-
-	uint8_t mcpr = mcctl_register & 0x03; // the prescaler division values are {1, 4, 8, 16}
-}
-
 inline bool ECT::isInputCapture(uint8_t channel_index) {
 	if ((tios_register & (1 << channel_index)) == 0) {
 		return true;
@@ -1445,39 +1437,42 @@ void ECT::IOC_Channel_t::RunCaptureCompare(bool forced) {
 	 * 2.2   The forced output compare take precedence over a successful channel 7 output compare
 	 */
 
-	if (ectParent->isOutputCompareMaskEnabled(ioc_index)) {
+	if (*tc_register_ptr == ectParent->getMainTimerValue()) {
+		if (ectParent->isOutputCompareMaskEnabled(ioc_index)) {
+			/**
+			 * TODO:
+			 * The corresponding OC7Dx bit in the OC7D register (output compare 7 data) will be transfered to the timer port
+			 * on a successful channel 7 output compare.
+			 */
+		} else {
+
+			switch (getOutputAction()) {
+			case 0: /* Timer disconnected from output pin logic */ break;
+			case 1: {
+				// Toggle OCx output line
+				// TODO:
+			} break;
+			case 2: {
+				// Clear OCx output line to zero
+				*channelPinLogic = true;
+			} break;
+			case 3: {
+				// Set OCx output line to one
+
+			} break;
+			default: /* output action is encoded in TCTL1/TCTL2 registers on 2-bits */;
+			}
+		}
+
 		/**
-		 * TODO:
-		 * The corresponding OC7Dx bit in the OC7D register (output compare 7 data) will be transfered to the timer port
-		 * on a successful channel 7 output compare.
+		 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
+		 * will be transfered to the timer port on a successful channel 7 output compare ?
 		 */
-	} else {
+		if (ectParent->transferOutputCompareToTimerPort(ioc_index)) {
 
-		switch (getOutputAction()) {
-		case 0: /* Timer disconnected from output pin logic */ break;
-		case 1: {
-			// Toggle OCx output line
-			// TODO:
-		} break;
-		case 2: {
-			// Clear OCx output line to zero
-			*channelPinLogic = true;
-		} break;
-		case 3: {
-			// Set OCx output line to one
-
-		} break;
-		default: /* output action is encoded in TCTL1/TCTL2 registers on 2-bits */;
 		}
 	}
 
-	/**
-	 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
-	 * will be transfered to the timer port on a successful channel 7 output compare ?
-	 */
-	if (ectParent->transferOutputCompareToTimerPort(ioc_index)) {
-
-	}
 }
 
 //=====================================================================
@@ -1706,6 +1701,24 @@ void ECT::ComputeInternalTime() {
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
 	edge_detector_period = sc_time((double) edge_detector_period_int, SC_PS);
+
+	ComputeModulusCounterPrescaler();
+
+}
+
+void ECT::ComputeModulusCounterPrescaler() {
+
+	mccnt_period = bus_cycle_time;
+
+	// check TSCR1::PRNT Precision Timer bit
+	if ((tscr1_register & 0x08) != 0) {
+		mccnt_period = bus_cycle_time * (ptmcpsr_register+1);
+	} else {
+		uint8_t mccnt_prescaler = mcctl_register & 0x03;
+		if (mccnt_prescaler > 0) {
+			mccnt_period = bus_cycle_time * pow(2, mccnt_prescaler+1);
+		}
+	}
 
 }
 
