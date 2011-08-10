@@ -225,17 +225,17 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, unsigned char* value, uint8_t size);
-    bool write(uint8_t offset, unsigned char* value, uint8_t size);
+    bool read(uint8_t offset, uint8_t* value, uint32_t size);
+    bool write(uint8_t offset, uint8_t* value, uint32_t size);
 
 
 protected:
     inline bool isInputCapture(uint8_t channel_index);
-    inline bool transferOutputCompareToTimerPort(uint8_t channel_index);
     inline void setTimerInterruptFlag(uint8_t ioc_index) { tflg1_register = tflg1_register | (1 << ioc_index); }
     bool isNoInputCaptureOverWrite(uint8_t ioc_index) { return ((icovw_register & (1 << ioc_index)) != 0);  }
     uint16_t getMainTimerValue() { return tcnt_register; }
     bool isLatchMode() { return ((icsys_register & 0x01) != 0); }
+
     bool isBufferEnabled() { return ((icsys_register & 0x02) != 0); }
     bool isPulseAccumulatorsMaximumCount() { return ((icsys_register & 0x04) != 0); }
 
@@ -285,6 +285,15 @@ protected:
     uint8_t getTimerFlagSettingMode() { return (icsys_register & 0x08) >> 3; }
     void setPulseAccumulatorAOverflowFlag() { paflg_register = paflg_register | 0x02; }
     void setPulseAccumulatorBOverflowFlag() { pbflg_register = pbflg_register | 0x02; }
+
+	void setOC7Dx(uint8_t ioc_index, bool data) {
+		uint8_t val = (data)? 1 : 0;
+		uint8_t mask = 1 << ioc_index;
+
+		oc7d_register = (oc7d_register & ~mask) | (val << ioc_index);
+	}
+
+	bool getOC7Dx(uint8_t ioc_index) { return ((oc7d_register & (1 << ioc_index)) != 0); }
 
     /**
      * isValidSignal() method model the "Edge Detector" circuit
@@ -441,7 +450,7 @@ private:
 			dlyct_register, icovw_register, icsys_register, reserved_address, timtst_register,
 			ptpsr_register, ptmcpsr_register, pbctl_register, pbflg_register;
 
-	uint16_t tcnt_register, ttof_register, tctl12_register, tctl34_register,
+	uint16_t tcnt_register, ttov_register, tctl12_register, tctl34_register,
 			tc_registers[8], mccnt_load_register, mccnt_register, tcxh_registers[4];
 
 
@@ -473,13 +482,14 @@ private:
 
 		IOC_Channel_t(ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit);
 
-		void RunCaptureCompare(bool forced);
+		void RunCaptureCompare();
 		void latchToHoldingRegisters();
 		void RunInputCapture(uint16_t edgeDelay);
 		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
 		uint8_t getValideEdge() { return valideEdge; }
 		void setOutputAction(uint8_t outputAction) { this->outputAction = outputAction; };
 		uint8_t getOutputAction() { return outputAction; };
+		void toggleOutputComparePin();
 
 	private:
 		uint8_t ioc_index;

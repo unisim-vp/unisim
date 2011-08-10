@@ -324,11 +324,20 @@ void ECT::RunMainTimerCounter() {
 			if (tcnt_register == 0xFFFF) {
 				// Timer overflow
 				tcnt_register = 0x0000;
+
+				for (uint8_t i=0; i<8; i++) {
+					if (!isInputCapture(i) && ((ttov_register & (1 << i)) != 0)) {
+						ioc_channel[i]->toggleOutputComparePin();
+					}
+				}
+
 				if ((tc_registers[7] != 0xFFFF) || !isTimerCounterResetEnabled()) {
 					// set TFLG2::TOF timer overflow flag
 					tflg2_register = tflg2_register | 0x80;
 				}
+
 				assertInterrupt(offset_timer_overflow_interrupt);
+
 			} else {
 				if ((tc_registers[7] != 0x0000) || !isTimerCounterResetEnabled()) {
 					tcnt_register = tcnt_register + 1;
@@ -380,7 +389,7 @@ void ECT::RunDownCounter() {
 void ECT::RunCaptureCompare() {
 	for (uint8_t i=0; i<8; i++) {
 		if (!isInputCapture(i)) {
-			ioc_channel[i]->RunCaptureCompare(false);
+			ioc_channel[i]->RunCaptureCompare();
 		}
 	}
 }
@@ -461,7 +470,7 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
+bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 
 	memset(value, 0, size);
 
@@ -495,7 +504,7 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 			*((uint8_t *)value) = tscr1_register & 0xF8;
 		} break;
 		case TTOF: {
-			*((uint8_t *)value) = ttof_register;
+			*((uint8_t *)value) = ttov_register;
 		} break;
 		case TCTL1: {
 			if (size == 2) {
@@ -611,10 +620,10 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 				uint16_t readed_value = mccnt_register;
 				if ((mcctl_register & 0x20) != 0) {
 					readed_value = mccnt_load_register;
-				} else {
-					if ((tscr1_register & 0x10) != 0) {
-						mcflg_register = mcflg_register & 0x7F;
-					}
+				}
+
+				if ((tscr1_register & 0x10) != 0) {
+					mcflg_register = mcflg_register & 0x7F;
 				}
 
 				if (offset == MCCNT_HIGH) {
@@ -675,19 +684,20 @@ bool ECT::read(uint8_t offset, unsigned char* value, uint8_t size) {
 				/**
 				 * In queue mode, reads of the holding register will latch the corresponding pulse accumulator value to its holding register
 				 */
-				if (((tcxh_offset/2) < 4) && (!isLatchMode())) {
+				if (((tcxh_offset/2) < 4) && !isLatchMode()) {
 					paxh_registers[tcxh_offset/2] = pacn_register[tcxh_offset/2];
 				}
+			} else {
+				return false;
 			}
 
-			return false;
 		}
 	}
 
 	return true;
 }
 
-bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
+bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 	switch (offset) {
 		case TIOS: {
@@ -700,7 +710,7 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 
 			for (uint8_t i=0; i<8; i++) {
 				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
-					ioc_channel[i]->RunCaptureCompare(true);
+					ioc_channel[i]->toggleOutputComparePin();
 				}
 			}
 
@@ -754,14 +764,10 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			} else {
 				main_timer_disable();
 			}
-			/**
-			 * TODO:
-			 *  - use TSCR1::TFFCA Timer Fast Flag Clear All
-			 *  - use TSCR1::PRNT Precision Timer (Figures 7-65 , 7-66 , 7-67 , 7-68
-			 */
+
 		} break;
 		case TTOF: {
-			ttof_register = *((uint8_t *)value);
+			ttov_register = *((uint8_t *)value);
 		} break;
 		case TCTL1: {
 			if (size == 2) {
@@ -908,8 +914,8 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 		case MCCTL: {
 			mcctl_register = *((uint8_t *)value);
 
-			// input Capture Force latch Action ?
-			if (((mcctl_register & 0x10) !=0) && ((icsys_register & 0x03) != 0)) {
+			// MCCTL::ICLAT input Capture Force latch Action ?
+			if ((mcctl_register & 0x10) !=0) {
 				latchToHoldingRegisters();
 			}
 
@@ -1059,10 +1065,11 @@ bool ECT::write(uint8_t offset, unsigned char* value, uint8_t size) {
 			}
 			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 				/* don't accept write */;
+			} else {
+				return false;
 			}
-
-			return false;
 		}
+
 	}
 
 	return true;
@@ -1312,8 +1319,8 @@ inline void ECT::latchToHoldingRegisters() {
 	 * The pulse accumulators will be automatically cleared when the latch action occurs;
 	 */
 
-	// is latch mode enabled (ICSYS::LATQ=1)
-	if ((icsys_register & 0x01) != 0) {
+	// is latch mode enabled (ICSYS::LATQ=1 and ICSYS::BUFFEN=1)
+	if (isLatchMode() && isBufferEnabled()) {
 		for (uint8_t i=0; i<4; i++) {
 			ioc_channel[i]->latchToHoldingRegisters();
 		}
@@ -1322,14 +1329,6 @@ inline void ECT::latchToHoldingRegisters() {
 
 inline bool ECT::isInputCapture(uint8_t channel_index) {
 	if ((tios_register & (1 << channel_index)) == 0) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-inline bool ECT::transferOutputCompareToTimerPort(uint8_t channel_index) {
-	if ((oc7m_register & (1 << channel_index)) != 0) {
 		return true;
 	} else {
 		return false;
@@ -1428,49 +1427,49 @@ void ECT::IOC_Channel_t::latchToHoldingRegisters() {
 	pulseAccumulator->latchToHoldingRegisters();
 }
 
-void ECT::IOC_Channel_t::RunCaptureCompare(bool forced) {
+void ECT::IOC_Channel_t::RunCaptureCompare() {
+
+	bool result = (*tc_register_ptr == ectParent->getMainTimerValue());
+	ectParent->setOC7Dx(ioc_index, result);
+	if (result) {
+		toggleOutputComparePin();
+		// set the TFLG1::CxF to show that output compare is detected
+		ectParent->setTimerInterruptFlag(ioc_index);
+		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+	}
+
+}
+
+void ECT::IOC_Channel_t::toggleOutputComparePin() {
 	/**
-	 * This method is called by writing to "CFORC" register or by starting output compare thread.
+	 * This method is called by writing to "CFORC" register or by starting output compare thread or by main timer overflow.
 	 * 1. Run the action which is programmed for output compare "x" to occur immediately.
-	 * 2. if (forced=true) then
-	 * 2.1.  The interrupt flag does not get set.
-	 * 2.2   The forced output compare take precedence over a successful channel 7 output compare
+	 * 2. The interrupt flag does not get set.
+	 * 3. The forced output compare take precedence over a successful channel 7 output compare
 	 */
 
-	if (*tc_register_ptr == ectParent->getMainTimerValue()) {
-		if (ectParent->isOutputCompareMaskEnabled(ioc_index)) {
+	switch (getOutputAction()) {
+		case 0: /* Timer disconnected from output pin logic */ break;
+		case 1: {
+			// Toggle OCx output line
+
 			/**
-			 * TODO:
-			 * The corresponding OC7Dx bit in the OC7D register (output compare 7 data) will be transfered to the timer port
-			 * on a successful channel 7 output compare.
+			 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
+			 * will be transfered to the timer port on a successful channel 7 output compare ?
 			 */
-		} else {
-
-			switch (getOutputAction()) {
-			case 0: /* Timer disconnected from output pin logic */ break;
-			case 1: {
-				// Toggle OCx output line
-				// TODO:
-			} break;
-			case 2: {
-				// Clear OCx output line to zero
-				*channelPinLogic = true;
-			} break;
-			case 3: {
-				// Set OCx output line to one
-
-			} break;
-			default: /* output action is encoded in TCTL1/TCTL2 registers on 2-bits */;
+			if (ectParent->isOutputCompareMaskEnabled(ioc_index)) {
+				*channelPinLogic = ectParent->getOC7Dx(ioc_index);
 			}
-		}
 
-		/**
-		 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
-		 * will be transfered to the timer port on a successful channel 7 output compare ?
-		 */
-		if (ectParent->transferOutputCompareToTimerPort(ioc_index)) {
-
-		}
+		} break;
+		case 2: {
+			// Clear OCx output line to zero
+			*channelPinLogic = false;
+		} break;
+		case 3: {
+			// Set OCx output line to one
+			*channelPinLogic = true;
+		} break;
 	}
 
 }
@@ -1502,7 +1501,7 @@ bool ECT::BeginSetup() {
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr1_register);
 
 	sprintf(buf, "%s.TTOF",name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttof_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttov_register);
 
 	sprintf(buf, "%s.TCTL12",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl12_register);
@@ -1660,7 +1659,7 @@ void ECT::Reset() {
 		oc7d_register = 0x00;
 		tcnt_register = 0x0000;
 		tscr1_register = 0x0000;
-		ttof_register = 0x00;
+		ttov_register = 0x00;
 		tctl12_register = 0x0000;
 		tctl34_register = 0x0000;
 		tie_register = 0x0000;
@@ -1738,29 +1737,207 @@ void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	// TODO: This is a temporary code. The ECT is not implemented yet
-	if (addr-baseAddress < 0x40) {
-		*((uint8_t *) buffer) = 0x0;
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= TC3H_LOW) {
+		memset(buffer, 0, size);
+
+		switch (offset) {
+			case TIOS: {
+				*((uint8_t *)buffer) =  tios_register;
+			} break;
+			case CFORC: {
+				*((uint8_t *)buffer) = cforc_register;
+			} break;
+			case OC7M: {
+				*((uint8_t *)buffer) = oc7m_register;
+			} break;
+			case OC7D: {
+				*((uint8_t *)buffer) =  oc7d_register;
+			} break;
+			case TCNT_HIGH: {
+				if (size == 2) {
+					*((uint16_t *)buffer) = tcnt_register;
+				} else {
+					*((uint8_t *)buffer) = tcnt_register >> 8;
+				}
+				if ((tscr1_register & 0x10) != 0) {
+					tflg2_register = tflg2_register & 0x7F;
+				}
+			} break;
+			case TCNT_LOW: {
+				*((uint8_t *)buffer) = tcnt_register & 0x00FF;
+			} break;
+			case TSCR1: {
+				*((uint8_t *)buffer) = tscr1_register;
+			} break;
+			case TTOF: {
+				*((uint8_t *)buffer) = ttov_register;
+			} break;
+			case TCTL1: {
+				if (size == 2) {
+					*((uint16_t *)buffer) = tctl12_register;
+				} else {
+					*((uint8_t *)buffer) =  tctl12_register >> 8;
+				}
+
+			} break;
+			case TCTL2: {
+				*((uint8_t *)buffer) =  tctl12_register & 0x00FF;
+			} break;
+			case TCTL3: {
+				if (size == 2) {
+					*((uint16_t *)buffer) = tctl34_register;
+				} else {
+					*((uint8_t *)buffer) = tctl34_register >> 8;
+				}
+
+			} break;
+			case TCTL4: {
+				*((uint8_t *)buffer) = tctl34_register & 0x00FF;
+			} break;
+			case TIE: {
+				*((uint8_t *)buffer) =  tie_register;
+			} break;
+			case TSCR2: {
+				*((uint8_t *)buffer) =  tscr2_register;
+			} break;
+			case TFLG1: {
+				*((uint8_t *)buffer) = tflg1_register;
+			} break;
+			case TFLG2: {
+				*((uint8_t *)buffer) = tflg2_register;
+			} break;
+			case PACTL: {
+				*((uint8_t *)buffer) =  pactl_register;
+			} break;
+			case PAFLG: {
+				*((uint8_t *)buffer) = paflg_register;
+			} break;
+			case PACN3: {
+				if (size == 2) {
+					*((uint16_t *)buffer) = (((uint16_t) pacn_register[3]) << 8) | pacn_register[2];
+				} else {
+					*((uint8_t *)buffer) = pacn_register[3];
+				}
+
+			} break;
+			case PACN2: {
+				*((uint8_t *)buffer) = pacn_register[2];
+
+			} break;
+			case PACN1: {
+				if (size == 2) {
+					*((uint16_t *)buffer) = (((uint16_t) pacn_register[1]) << 8) | pacn_register[0];
+				} else {
+					*((uint8_t *)buffer) = pacn_register[1];
+				}
+
+			} break;
+			case PACN0: {
+				*((uint8_t *)buffer) = pacn_register[0];
+			} break;
+			case MCCTL: {
+				*((uint8_t *)buffer) = mcctl_register;
+			} break;
+			case MCFLG: {
+				*((uint8_t *)buffer) = mcflg_register;
+			} break;
+			case ICPAR: {
+				*((uint8_t *)buffer) = icpar_register;
+			} break;
+			case DLYCT: {
+				*((uint8_t *)buffer) = dlyct_register;
+			} break;
+			case ICOVW: {
+				*((uint8_t *)buffer) = icovw_register;
+			} break;
+			case ICSYS: {
+				*((uint8_t *)buffer) = icsys_register;
+			} break;
+			case RESERVED: { *((uint8_t *)buffer) = 0; } break;
+			case TIMTST: { *((uint8_t *)buffer) = 0; } break;
+			case PTPSR: {
+				*((uint8_t *)buffer) = ptpsr_register;
+			} break;
+			case PTMCPSR: {
+				*((uint8_t *)buffer) = ptmcpsr_register;
+			} break;
+			case PBCTL: {
+				*((uint8_t *)buffer) = pbctl_register;
+			} break;
+			case PBFLG: {
+				*((uint8_t *)buffer) = pbflg_register;
+			} break;
+
+			default: {
+
+				if ((offset == MCCNT_HIGH) || (offset == MCCNT_LOW)) {
+
+					if (offset == MCCNT_HIGH) {
+						if (size == 2) {
+							*((uint16_t *)buffer) = mccnt_register;
+						} else {
+							*((uint8_t *)buffer) = mccnt_register >> 8;
+						}
+					} else {
+						*((uint8_t *)buffer) = mccnt_register & 0x00FF;
+					}
+				} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
+
+					uint8_t tc_offset = offset - TC0_HIGH;
+					if ((tc_offset % 2) == 0) // TCx_High ?
+					{
+						if (size == 2) {
+							*((uint16_t *)buffer) = tc_registers[tc_offset/2];
+						} else {
+							*((uint8_t *)buffer) =  tc_registers[tc_offset/2] >> 8;
+						}
+					} else {
+						*((uint8_t *)buffer) =  tc_registers[tc_offset/2] & 0x00FF;
+					}
+
+				}
+				else if ((offset >= PA3H) && (offset <= PA0H)) {
+					uint8_t paxh_offset = offset - PA3H;
+					*((uint8_t *)buffer) = paxh_registers[paxh_offset];
+				}
+				else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
+					uint8_t tcxh_offset = offset - TC0H_HIGH;
+
+					if ((tcxh_offset % 2) == 0) // TCxH_High ?
+					{
+						if (size == 2) {
+							*((uint16_t *)buffer) = tcxh_registers[tcxh_offset/2];
+						} else {
+							*((uint8_t *)buffer) = tcxh_registers[tcxh_offset/2] >> 8;
+						}
+
+					} else {
+						*((uint8_t *)buffer) = tcxh_registers[tcxh_offset/2] & 0x00FF;
+					}
+				} else {
+					return false;
+				}
+			}
+		}
+
 		return true;
-	} else {
-		return false;
 	}
 
-	// TODO: the code below has to be used once the ECT is implemented
-//	return read(addr-baseAddress, *(uint8_t *) buffer);
+	return false;
+
 }
 
 bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	// TODO: This is a temporary code. The ECT is not implemented yet
-	if (addr-baseAddress < 0x40) {
-		return true;
-	} else {
-		return false;
+	service_address_t offset = addr-baseAddress;
+
+	if (offset <= TC3H_LOW) {
+		return write(offset, (uint8_t *) buffer, size);
 	}
 
-	// TODO: the code below has to be used once the ECT is implemented
-//	return write(addr-baseAddress, *(uint8_t *) buffer);
+	return false;
 }
 
 
