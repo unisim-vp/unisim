@@ -444,7 +444,7 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="buildin-signal-generator">
+		<variable name="buildin-signal-generator-enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>
@@ -454,11 +454,11 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="edge-detector-period">
+		<variable name="buildin-signal-generator-period">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
 			<value>0x61a8</value>
-			<description>Edge detector period in pico-seconds. Default 25000ps.</description>
+			<description>Signal generator period in pico-seconds. Default 25000ps.</description>
 		</variable>
 	</object>
 	<object name="MMC">

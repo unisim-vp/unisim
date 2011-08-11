@@ -473,9 +473,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.pulse-accumulatorB-overflow-interrupt", 0xC8);
 	simulator->SetVariable("ECT.pulse-accumulatorA-input-edge-interrupt", 0xDA);
 	simulator->SetVariable("ECT.modulus-counter-interrupt", 0xCA);
-	simulator->SetVariable("ECT.edge-detector-period", 25000);
 	simulator->SetVariable("ECT.debug-enabled", false);
-	simulator->SetVariable("ECT.buildin-signal-generator", true);
+
+	simulator->SetVariable("ECT.buildin-signal-generator-enable", true);
+	simulator->SetVariable("ECT.buildin-signal-generator-period", 25000);
 
 
 	simulator->SetVariable("external-memory.org", 0x0);

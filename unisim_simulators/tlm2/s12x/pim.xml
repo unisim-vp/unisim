@@ -161,46 +161,6 @@
         <description>bla bla</description>
         <pin isMutable="true" dataType="boolean">ioc[7]</pin>
     </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[0]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[1]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[2]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[3]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[4]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[5]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[6]</pin>
-    </component>
-    <component name="ECT">
-        <!--ECT exported interface-->
-        <description>bla bla</description>
-        <pin isMutable="true" dataType="unsigned 16-bit integer">signal-length-array[7]</pin>
-    </component>
     <component name="PWM">
         <!--PWM exported interface-->
         <description>bla bla</description>
