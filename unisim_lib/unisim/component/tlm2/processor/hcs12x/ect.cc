@@ -89,10 +89,10 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	, portt_pin_reg("ioc", this, portt_pin, 8, "ECT pins")
 
-	, buildin_signal_generator(true)
-	, param_buildin_signal_generator("buildin-signal-generator-enable", this, buildin_signal_generator, "Use buildin signal generator or external instrument")
+	, builtin_signal_generator(true)
+	, param_builtin_signal_generator("built-in-signal-generator-enable", this, builtin_signal_generator, "Use built-in signal generator or external instrument")
 	, signal_generator_period_int(25000)
-	, param_signal_generator_period("buildin-signal-generator-period", this, signal_generator_period_int, "Signal generator period in pico-seconds. Default 25000ps.")
+	, param_signal_generator_period("built-in-signal-generator-period", this, signal_generator_period_int, "Built-in Signal generator period in pico-seconds. Default 25000ps.")
 
 	, prnt_write(false)
 	, icsys_write(false)
@@ -111,7 +111,6 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	for (uint8_t i=0; i<8; i++) {
 
 		portt_pin[i] = false;
-		old_portt_pin[i] = false;
 
 		portt_pin_reg[i].SetMutable(true);
 
@@ -124,6 +123,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 		} else {
 			ioc_channel[i] = new IOC_Channel_t(channelName, this, i, &portt_pin[i], &tc_registers[i], NULL, NULL);
 		}
+		portt_pin_reg[i].AddListener(ioc_channel[i]);
 
 	}
 
@@ -143,7 +143,10 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	SC_THREAD(RunBuildinSignalGenerator);
 
 	pacA = new PulseAccumulatorA("PACA", this, &portt_pin[7], pc8bit[3], pc8bit[2]);
+	portt_pin_reg[7].AddListener(pacA);
+
 	pacB = new PulseAccumulatorB("PACB", this, &portt_pin[0], pc8bit[1], pc8bit[0]);
+	portt_pin_reg[0].AddListener(pacB);
 
 	Reset();
 
@@ -171,7 +174,7 @@ void ECT::RunBuildinSignalGenerator() {
 	/* initialize random seed: */
 	srand (12345);
 
-	if (buildin_signal_generator) {
+	if (builtin_signal_generator) {
 		while (true) {
 
 			for (uint8_t i=0; i<8; i++) {
@@ -179,41 +182,7 @@ void ECT::RunBuildinSignalGenerator() {
 				bool signalValue = (1 == (uint8_t) rand() % 2);
 
 				if (portt_pin[i] != signalValue) {
-
-					old_portt_pin[i] = portt_pin[i];
-					portt_pin[i] = signalValue;
-
-					// check pulse accumulator A enable
-					if ((i==7) && isPulseAccumulatorAEnabled()) {
-						pacA->notifyEdge();
-					}
-					// check pulse accumulator B enable
-					if ((i==0) && isPulseAccumulatorBEnabled()) {
-						pacB->notifyEdge();
-					}
-
-					if (isInputCapture(i)) {
-
-						ioc_channel[i]->notifyEdge();
-
-						// if edge sharing is enabled then channels [4,7] have been respectively stimulated by channels [0,3].
-						if ((i>4) && ((icsys_register & (1 << i)) != 0)) {
-							if (isInputCapture(i-4)) {
-								continue;
-							} else {
-								*logger << DebugWarning << "Share Input action of Input Capture Channels " << std::dec << (i-4) << " and " << std::dec << i << " is enabled while channel " << std::dec << (i-4) << " isn't selected as Input Capture channel" << std::endl << EndDebugWarning;
-							}
-						}
-
-						// is sharing edge enabled ?
-						if ((i<4) && (((icsys_register & (1 << (i+4))) != 0))) {
-							if (isInputCapture(i+4)) {
-								ioc_channel[i+4]->notifyEdge();
-							} else {
-								*logger << DebugWarning << "Share Input action of Input Capture Channels " << std::dec << i << " and " << std::dec << (i+4) << " is enabled while channel " << std::dec << (i+4) << " isn't selected as Input Capture channel" << std::endl << EndDebugWarning;
-							}
-						}
-					}
+					portt_pin_reg[i] = signalValue;
 				}
 			}
 
@@ -1334,16 +1303,26 @@ void ECT::IOC_Channel_t::RunInputCapture() {
 
 		wait(edge_event);
 
-		if (!ectParent->isValidEdge(ioc_index)) { continue; }
-		if ((ioc_index < 4) && ectParent->isDelayCounterEnabled()) {
-			bool detected_signal = *channelPinLogic;
+		if ((ioc_index < 4) || ((ioc_index > 3) && !ectParent->isSharingEdgeEnabled(1 << ioc_index))) {
 
-			wait(ectParent->getEdgeDelayCounter());
+			if (!ectParent->isValidEdge(ioc_index)) { continue; }
+			if ((ioc_index < 4) && ectParent->isDelayCounterEnabled()) {
+				bool detected_signal = *channelPinLogic;
 
-			if (detected_signal != *channelPinLogic) {
-				continue;
+				wait(ectParent->getEdgeDelayCounter());
+
+				if (detected_signal != *channelPinLogic) {
+					continue;
+				}
 			}
+
+			// is sharing edge enabled ?
+			if ((ioc_index < 4) && ectParent->isSharingEdgeEnabled(1 << (ioc_index+4))) {
+				ectParent->notifySharedEdgeTo(ioc_index+4);
+			}
+
 		}
+
 
 		if (ioc_index < 4) {
 			/**
@@ -1451,7 +1430,7 @@ void ECT::toggleOutputComparePin(uint8_t ioc_index) {
 	 * 3. The forced output compare take precedence over a successful channel 7 output compare
 	 */
 
-	old_portt_pin[ioc_index] = portt_pin[ioc_index];
+	bool old_portt_value = portt_pin[ioc_index];
 
 	switch (ioc_channel[ioc_index]->getOutputAction()) {
 		case 0: /* Timer disconnected from output pin logic */ break;
@@ -1477,7 +1456,7 @@ void ECT::toggleOutputComparePin(uint8_t ioc_index) {
 		} break;
 	}
 
-	if (portt_pin[ioc_index] != old_portt_pin[ioc_index]) {
+	if (portt_pin[ioc_index] != old_portt_value) {
 		if ((ioc_index == 0) && isPulseAccumulatorBEnabled()) {
 			pacB->notifyEdge();
 		}

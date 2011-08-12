@@ -93,6 +93,8 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::RegisterArray;
+using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::VariableBaseListener;
 using unisim::service::interfaces::TrapReporting;
 
 using unisim::service::interfaces::Memory;
@@ -299,7 +301,7 @@ protected:
 
     uint8_t getClockSelection() { return (pactl_register & 0x0C) >> 2; }
 
-    bool isBuildin_edge_generator() { return buildin_signal_generator; }
+    bool isBuildin_edge_generator() { return builtin_signal_generator; }
 
     void notify_paclk_event() { paclk_event.notify(); }
 
@@ -310,11 +312,7 @@ protected:
 
     	uint8_t signalValue;
 
-    	if (old_portt_pin[ioc_index] && !portt_pin[ioc_index]) {
-    		signalValue = 2; // falling edge
-    	} else {
-    		signalValue = 1; // rising edge
-    	}
+    	signalValue = (portt_pin[ioc_index])? 1 /* rising edge */: 2 /* falling edge */;
 
 		return ((signalValue == ioc_channel[ioc_index]->getValideEdge()) ||
 				((ioc_channel[ioc_index]->getValideEdge() == 3) && ((signalValue == 1) || (signalValue == 2))));
@@ -383,15 +381,14 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	bool	buildin_signal_generator;
-	Parameter<bool>	param_buildin_signal_generator;
+	bool	builtin_signal_generator;
+	Parameter<bool>	param_builtin_signal_generator;
 
 	uint64_t	signal_generator_period_int;
 	Parameter<uint64_t>	param_signal_generator_period;
 	sc_time signal_generator_period;
 
 	bool portt_pin[8];
-	bool old_portt_pin[8];
 	RegisterArray<bool> portt_pin_reg;
 
 	// Registers map
@@ -462,7 +459,11 @@ private:
 
 	PulseAccumulator8Bit* pc8bit[4];
 
-	class IOC_Channel_t : public sc_module {
+	bool isSharingEdgeEnabled(uint8_t mask) { return ((icsys_register & mask) != 0); }
+	void notifySharedEdgeTo(uint8_t index) { ioc_channel[index]->notifyEdge(); }
+
+
+	class IOC_Channel_t : public sc_module, public VariableBaseListener {
 	public:
 
 		IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit);
@@ -477,8 +478,20 @@ private:
 
 		void notifyEdge() { edge_event.notify(); }
 
+		virtual void VariableBaseNotify(const VariableBase *var) {
+			if (ectParent->isInputCapture(ioc_index)) {
+
+				// if edge sharing is enabled then channels [4,7] have been respectively stimulated by channels [0,3].
+				if ((ioc_index > 3) && !ectParent->isSharingEdgeEnabled(1 << ioc_index)) {
+					notifyEdge();
+				}
+
+			}
+		}
+
 	private:
 		sc_event edge_event;
+		sc_event shared_edge_event;
 
 		uint8_t ioc_index;
 		uint8_t iocMask;
@@ -492,9 +505,10 @@ private:
 		PulseAccumulator8Bit* pulseAccumulator;
 		bool* channelPinLogic;
 
+
 	} *ioc_channel[8];
 
-	class PulseAccumulator16Bit : public sc_module {
+	class PulseAccumulator16Bit : public sc_module, public VariableBaseListener {
 	public:
 		PulseAccumulator16Bit(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low);
 
@@ -504,6 +518,8 @@ private:
 		virtual void RunPulseAccumulator() = 0;
 		virtual void wakeup() = 0;
 		void notifyEdge() { edge_event.notify(); }
+
+		virtual void VariableBaseNotify(const VariableBase *var) = 0;
 
 	protected:
 		ECT	*ectParent;
@@ -537,6 +553,14 @@ private:
 		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
 		uint8_t getValideEdge() { return valideEdge; }
 
+		virtual void VariableBaseNotify(const VariableBase *var) {
+			// check pulse accumulator A enable
+			if (ectParent->isPulseAccumulatorAEnabled()) {
+				notifyEdge();
+			}
+		}
+
+
 	protected:
 
 	private:
@@ -556,6 +580,13 @@ private:
 			 if (ectParent->isPulseAccumulatorBEnabled()) {
 				 pulse_accumulator_enable_event.notify();
 			 }
+		}
+
+		virtual void VariableBaseNotify(const VariableBase *var) {
+			// check pulse accumulator B enable
+			if (ectParent->isPulseAccumulatorBEnabled()) {
+				notifyEdge();
+			}
 		}
 
 	protected:

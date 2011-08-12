@@ -475,8 +475,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.modulus-counter-interrupt", 0xCA);
 	simulator->SetVariable("ECT.debug-enabled", false);
 
-	simulator->SetVariable("ECT.buildin-signal-generator-enable", true);
-	simulator->SetVariable("ECT.buildin-signal-generator-period", 25000);
+	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
+	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
 
 
 	simulator->SetVariable("external-memory.org", 0x0);

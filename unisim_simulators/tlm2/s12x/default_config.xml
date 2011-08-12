@@ -444,21 +444,21 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="buildin-signal-generator-enable">
+		<variable name="built-in-signal-generator-enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>true</value>
-			<description>Use buildin signal generator or external instrument</description>
+			<description>Use built-in signal generator or external instrument</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="buildin-signal-generator-period">
+		<variable name="built-in-signal-generator-period">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
 			<value>0x61a8</value>
-			<description>Signal generator period in pico-seconds. Default 25000ps.</description>
+			<description>Built-in Signal generator period in pico-seconds. Default 25000ps.</description>
 		</variable>
 	</object>
 	<object name="MMC">
