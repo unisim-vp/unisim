@@ -254,20 +254,18 @@ void ECT::RunMainTimerCounter() {
 			 * The change from one selected clock to the other  happens immediately after these bits are written.
 			 */
 			if ((pactl_register & 0x40) == 0) {
-				sc_time prescaled_time;
-				// is TSCR1::PRNT=0 ?
-				if ((tscr1_register & 0x08) == 0) {
-					prescaled_time = pow(2, (tscr2_register & 0x07)) * bus_cycle_time;
-				} else {
-					prescaled_time = (ptpsr_register + 1) * bus_cycle_time;
-				}
 
-				wait(prescaled_time);
+				wait(prescaled_clock);
 
 			} else {
 				wait(paclk_event);
 			}
 
+			/**
+			 * Note:
+			 * If register TC7=0x0000 and TSCR2::TCRE=1, then the TCNT register will stay at 0x0000 continuously.
+			 * If register TC7=0xFFFF and TSCR2::TCRE=1, then TFLG2::TOF flag will never be set when TCNT is reset from 0xFFFF to 0x0000.
+			 */
 			if (tcnt_register == 0xFFFF) {
 				// Timer overflow
 				tcnt_register = 0x0000;
@@ -291,7 +289,7 @@ void ECT::RunMainTimerCounter() {
 				}
 			}
 
-			RunCaptureCompare();
+			RunOutputCompare();
 		}
 	}
 }
@@ -333,10 +331,10 @@ void ECT::RunDownCounter() {
 	}
 }
 
-void ECT::RunCaptureCompare() {
+void ECT::RunOutputCompare() {
 	for (uint8_t i=0; i<8; i++) {
 		if (!isInputCapture(i)) {
-			ioc_channel[i]->RunCaptureCompare();
+			ioc_channel[i]->RunOutputCompare();
 		}
 	}
 }
@@ -446,6 +444,9 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TCNT_LOW: {
 			*((uint8_t *)value) = tcnt_register & 0x00FF;
+			if ((tscr1_register & 0x10) != 0) {
+				tflg2_register = tflg2_register & 0x7F;
+			}
 		} break;
 		case TSCR1: {
 			*((uint8_t *)value) = tscr1_register & 0xF8;
@@ -635,6 +636,11 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 					paxh_registers[tcxh_offset/2] = pacn_register[tcxh_offset/2];
 					pacn_register[tcxh_offset/2] = 0x00;
 				}
+
+				if ((tscr1_register & 0x10) != 0) {
+					tflg1_register = tflg1_register & ~(1 << (tcxh_offset/2));
+				}
+
 			} else {
 				return false;
 			}
@@ -660,6 +666,9 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 				}
 			}
 
+			// 1 state is transient in the case of CFORC register
+			cforc_register = 0;
+
 		} break;
 		case OC7M: {
 			oc7m_register = *((uint8_t *)value);
@@ -670,30 +679,30 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 		case TCNT_HIGH: {
 
 			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
-			if ((tscr1_register & 0x10) != 0) {
-				tflg2_register = tflg2_register & 0x7F;
-			}
 
-/*
 			if (size == 2) {
 				tcnt_register = *((uint16_t *)value);
 			} else {
 				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 			}
-*/
-		} break;
-		case TCNT_LOW: {
-			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
+
 			if ((tscr1_register & 0x10) != 0) {
 				tflg2_register = tflg2_register & 0x7F;
 			}
 
-/*
+		} break;
+		case TCNT_LOW: {
+			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
+
 			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value);
-*/
+
+			if ((tscr1_register & 0x10) != 0) {
+				tflg2_register = tflg2_register & 0x7F;
+			}
+
 		} break;
 		case TSCR1: {
-			uint8_t old_prnt_bit = tscr1_register & 0x04;
+			uint8_t old_prnt_bit = tscr1_register & 0x08;
 			*((uint8_t *)value) = (tscr1_register & 0x07) | (*((uint8_t *)value) & 0xF8);
 
 			if (prnt_write) {
@@ -744,6 +753,8 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TSCR2: {
 			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)value) & 0x8F);
+			ComputeMainTimerPrescaledClock();
+
 		} break;
 		case TFLG1: {
 			// writing a one to the flag clears the flag.
@@ -999,6 +1010,11 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)value);
 					}
 				}
+
+				if ((tscr1_register & 0x10) != 0) {
+					tflg1_register = tflg1_register & ~(1 << (tc_offset/2));
+				}
+
 			}
 			else if ((offset >= PA3H) && (offset <= PA0H)) {
 				/* don't accept write */;
@@ -1159,16 +1175,18 @@ void ECT::PulseAccumulatorA::RunPulseAccumulator() {
 
 		wait(edge_event);
 
-		if (!isGatedTimeModeEnabled()) // if (PACTL::PAMOD = 0) then Event counter
-		{
-			if (!ectParent->isValidEdge(7)) { continue; }
-		}
-		else  // if (PACTL::PAMOD != 0) then gated time accumulation mode
+		if (!ectParent->isValidEdge(7)) { continue; }
+
+		if (isGatedTimeModeEnabled())  // if (PACTL::PAMOD != 0) then gated time accumulation mode
 		{
 
 			bool detected_signal = *channelPinLogic;
 
-			wait(gate_time);
+			if (ectParent->isTimerEnabled()) {
+				wait(gate_time);
+			} else {
+				wait(ectParent->getBusClock());
+			}
 
 			if (detected_signal != *channelPinLogic) {
 				continue;
@@ -1409,7 +1427,7 @@ void ECT::IOC_Channel_t::latchToHoldingRegisters() {
 	pulseAccumulator->latchToHoldingRegisters();
 }
 
-void ECT::IOC_Channel_t::RunCaptureCompare() {
+void ECT::IOC_Channel_t::RunOutputCompare() {
 
 	bool result = (*tc_register_ptr == ectParent->getMainTimerValue());
 	ectParent->setOC7Dx(ioc_index, result);
@@ -1418,6 +1436,14 @@ void ECT::IOC_Channel_t::RunCaptureCompare() {
 		// set the TFLG1::CxF to show that output compare is detected
 		ectParent->setTimerInterruptFlag(ioc_index);
 		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
+
+		/**
+		 * if TSCR2::TCRE=1, then the timer counter is reset by a successful channel 7 output compare.
+		 * This mode of operation is similar to an up-counting modulus counter.
+		 */
+		if ((ioc_index == 7) && ectParent->isTimerCounterResetEnabled()) {
+			ectParent->resetTimerCounter();
+		}
 	}
 
 }
@@ -1441,18 +1467,22 @@ void ECT::toggleOutputComparePin(uint8_t ioc_index) {
 			 * check if channel corresponding OC7Dx bit in the output compare 7 data register (OC7D)
 			 * will be transfered to the timer port on a successful channel 7 output compare ?
 			 */
-			if (isOutputCompareMaskEnabled(ioc_index)) {
+			if (isOutputCompareMaskSet(ioc_index) && !isInputCapture(ioc_index)) {
 				portt_pin[ioc_index] = getOC7Dx(ioc_index);
 			}
 
 		} break;
 		case 2: {
 			// Clear OCx output line to zero
-			portt_pin[ioc_index] = false;
+			if (!isOutputCompareMaskSet(ioc_index)) {
+				portt_pin[ioc_index] = false;
+			}
 		} break;
 		case 3: {
 			// Set OCx output line to one
-			portt_pin[ioc_index] = true;
+			if (!isOutputCompareMaskSet(ioc_index)) {
+				portt_pin[ioc_index] = true;
+			}
 		} break;
 	}
 
@@ -1698,9 +1728,23 @@ void ECT::ComputeInternalTime() {
 
 	pacA->setGateTime(bus_cycle_time);
 
+	ComputeMainTimerPrescaledClock();
+
 	ComputeModulusCounterPrescaler();
 
 }
+
+void ECT::ComputeMainTimerPrescaledClock() {
+
+	// is TSCR1::PRNT=0 ?
+	if ((tscr1_register & 0x08) == 0) {
+		prescaled_clock = pow(2, (tscr2_register & 0x07)) * bus_cycle_time;
+	} else {
+		prescaled_clock = (ptpsr_register + 1) * bus_cycle_time;
+	}
+
+}
+
 
 void ECT::ComputeModulusCounterPrescaler() {
 
@@ -1757,9 +1801,6 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 					*((uint16_t *)buffer) = tcnt_register;
 				} else {
 					*((uint8_t *)buffer) = tcnt_register >> 8;
-				}
-				if ((tscr1_register & 0x10) != 0) {
-					tflg2_register = tflg2_register & 0x7F;
 				}
 			} break;
 			case TCNT_LOW: {

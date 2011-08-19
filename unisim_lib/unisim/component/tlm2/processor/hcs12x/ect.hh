@@ -165,7 +165,7 @@ public:
 	inline void main_timer_enable();
 	inline void main_timer_disable();
 
-	void RunCaptureCompare();
+	void RunOutputCompare();
 
 	void RunDownCounter();
 	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(); }
@@ -279,7 +279,7 @@ protected:
     	return false;
     }
 
-    bool isOutputCompareMaskEnabled(uint8_t ioc_index) { return ((oc7m_register & (1 << ioc_index)) != 0); }
+    bool isOutputCompareMaskSet(uint8_t ioc_index) { return ((oc7m_register & (1 << ioc_index)) != 0); }
     uint8_t getInterruptOffsetChannel0() { return offset_channel0_interrupt; }
     uint8_t getInterruptPulseAccumulatorAOverflow() { return pulse_accumulatorA_overflow_interrupt; }
     uint8_t getInterruptPulseAccumulatorBOverflow() { return pulse_accumulatorB_overflow_interrupt; }
@@ -327,11 +327,17 @@ protected:
 		mcflg_register = mcflg_register_tmp | (polf << ioc_index) ;
 	}
 
+	bool isTimerEnabled() { return ((tscr1_register & 0x80) != 0); }
+	sc_time getBusClock() { return bus_cycle_time; }
+
+	void resetTimerCounter() { tcnt_register = 0x0000; }
+
 	void toggleOutputComparePin(uint8_t ioc_index);
 
 private:
 	inline void ComputeInternalTime();
 	inline void ComputeModulusCounterPrescaler();
+	inline void ComputeMainTimerPrescaledClock();
 	inline void configureEdgeDetector();
     inline void configureOutputAction();
 
@@ -342,6 +348,8 @@ private:
 	double	bus_cycle_time_int;	// The time unit is PS
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
+
+	sc_time prescaled_clock;
 
 	sc_time mccnt_period;
 
@@ -468,7 +476,7 @@ private:
 
 		IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit);
 
-		void RunCaptureCompare();
+		void RunOutputCompare();
 		void latchToHoldingRegisters();
 		void RunInputCapture();
 		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
