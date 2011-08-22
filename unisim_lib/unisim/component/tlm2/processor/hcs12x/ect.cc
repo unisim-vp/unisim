@@ -244,6 +244,7 @@ void ECT::RunMainTimerCounter() {
 			wait(main_timer_enable_event);
 		}
 
+		ComputeTimerPrescaledClock();
 		while (main_timer_enabled && ((tscr1_register & 0x80) != 0)) {
 			/**
 			 * If the pulse accumulator is disabled (PACTL::PAEN=0) then
@@ -269,10 +270,11 @@ void ECT::RunMainTimerCounter() {
 			if (tcnt_register == 0xFFFF) {
 				// Timer overflow
 				tcnt_register = 0x0000;
+				ComputeTimerPrescaledClock();
 
 				for (uint8_t i=0; i<8; i++) {
 					if (!isInputCapture(i) && ((ttov_register & (1 << i)) != 0)) {
-						toggleOutputComparePin(i);
+						RunChannelOutputCompareAction(i);
 					}
 				}
 
@@ -308,9 +310,12 @@ void ECT::RunDownCounter() {
 			wait(down_counter_enable_event);
 		}
 
+		mccnt_register = mccnt_load_register;
+		ComputeModulusCounterClock();
+
 		while ((down_counter_enabled) && ((mcctl_register & 0x04) != 0)) {
 
-			wait(mccnt_period);
+			wait(mccnt_clock);
 
 			mccnt_register = mccnt_register - 1;
 			if (mccnt_register == 0) {
@@ -323,7 +328,7 @@ void ECT::RunDownCounter() {
 
 				if ((mcctl_register & 0x40) != 0) {
 					mccnt_register = mccnt_load_register;
-					ComputeModulusCounterPrescaler();
+					ComputeModulusCounterClock();
 				}
 			}
 		}
@@ -662,7 +667,7 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 			for (uint8_t i=0; i<8; i++) {
 				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
-					toggleOutputComparePin(i);
+					RunChannelOutputCompareAction(i);
 				}
 			}
 
@@ -753,7 +758,7 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TSCR2: {
 			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)value) & 0x8F);
-			ComputeMainTimerPrescaledClock();
+			ComputeTimerPrescaledClock();
 
 		} break;
 		case TFLG1: {
@@ -868,15 +873,19 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 			// MCCTL::ICLAT input Capture Force latch Action ?
 			if ((mcctl_register & 0x10) !=0) {
 				latchToHoldingRegisters();
+				mcctl_register = mcctl_register & 0xEF;
 			}
 
 			// Force Load Register into the Modulus Counter count register ? (MCCTL::FLMC=1 and MCCTL::MCEN=1)
-			if ((mcctl_register && 0x0C) != 0) {
-				/**
-				 * Loads the load register into the modulus counter count register (MCCNT).
-				 * And resets the modulus counter prescaler.
-				 */
-				mccnt_register = mccnt_load_register;
+			if ((mcctl_register && 0x08) != 0) {
+				if ((mcctl_register & 0x04) != 0) {
+					/**
+					 * Loads the load register into the modulus counter count register (MCCNT).
+					 * And resets the modulus counter prescaler.
+					 */
+					mccnt_register = mccnt_load_register;
+				}
+				mcctl_register = mcctl_register & 0xF7;
 			}
 
 			if ((mcctl_register & 0x04) == 0) {
@@ -968,7 +977,7 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 				if (((mcctl_register & 0x44) != 0x44) || ((mcctl_register & 0x08) != 0)) {
 					mccnt_register = mccnt_load_register;
-					ComputeModulusCounterPrescaler();
+					ComputeModulusCounterClock();
 
 					if ((mcctl_register & 0x40) == 0) {
 						mcctl_register = mcctl_register & 0xFC;
@@ -1193,6 +1202,13 @@ void ECT::PulseAccumulatorA::RunPulseAccumulator() {
 			}
 		}
 
+		/**
+		 * PAFLG::PAIF Pulse Accumulator Input edge Flag - Set when the selected edge is detected at PT7 input pin.
+		 * In event mode the event edge triggers PAIF,
+		 * and in gated time accumulation mode the trailing edge of the gate signal at the PT7 input pin triggers PAIF.
+		 */
+		ectParent->setPulseAccumulatorAInputEdgeFlag();
+
 		uint8_t clksel = ectParent->getClockSelection();
 
 		if (clksel == 1) {
@@ -1271,7 +1287,7 @@ inline void ECT::latchToHoldingRegisters() {
 	}
 }
 
-inline bool ECT::isInputCapture(uint8_t channel_index) {
+bool ECT::isInputCapture(uint8_t channel_index) {
 	if ((tios_register & (1 << channel_index)) == 0) {
 		return true;
 	} else {
@@ -1348,6 +1364,8 @@ void ECT::IOC_Channel_t::RunInputCapture() {
 			 * These are read only bits. Writes to these bits have no effect.
 			 * Each status bit gives the polarity of the first edge which has caused
 			 * an input capture to occur after capture latch has been read.
+			 *
+			 * An IC register is empty when it has been read or latched into the holding register.
 			 */
 			if (*tc_register_ptr == 0) {
 				ectParent->setPOLF(ioc_index, channelPinLogic);
@@ -1399,7 +1417,7 @@ void ECT::IOC_Channel_t::RunInputCapture() {
 						 *                   If the queue mode is not engaged, the timer flags C3F–C0F are set the same way as for TFMOD = 0.
 						 */
 
-						if ((ectParent->getTimerFlagSettingMode() != 0) && (*tch_register_ptr != 0x0000)) {
+						if (ectParent->isTimerFlagSettingModeSet() && (*tch_register_ptr != 0x0000)) {
 							ectParent->setTimerInterruptFlag(ioc_index);
 							ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
 						}
@@ -1432,7 +1450,7 @@ void ECT::IOC_Channel_t::RunOutputCompare() {
 	bool result = (*tc_register_ptr == ectParent->getMainTimerValue());
 	ectParent->setOC7Dx(ioc_index, result);
 	if (result) {
-		ectParent->toggleOutputComparePin(ioc_index);
+		ectParent->RunChannelOutputCompareAction(ioc_index);
 		// set the TFLG1::CxF to show that output compare is detected
 		ectParent->setTimerInterruptFlag(ioc_index);
 		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
@@ -1448,7 +1466,7 @@ void ECT::IOC_Channel_t::RunOutputCompare() {
 
 }
 
-void ECT::toggleOutputComparePin(uint8_t ioc_index) {
+void ECT::RunChannelOutputCompareAction(uint8_t ioc_index) {
 	/**
 	 * This method is called by writing to "CFORC" register or by starting output compare thread or by main timer overflow.
 	 * 1. Run the action which is programmed for output compare "x" to occur immediately.
@@ -1728,13 +1746,9 @@ void ECT::ComputeInternalTime() {
 
 	pacA->setGateTime(bus_cycle_time);
 
-	ComputeMainTimerPrescaledClock();
-
-	ComputeModulusCounterPrescaler();
-
 }
 
-void ECT::ComputeMainTimerPrescaledClock() {
+void ECT::ComputeTimerPrescaledClock() {
 
 	// is TSCR1::PRNT=0 ?
 	if ((tscr1_register & 0x08) == 0) {
@@ -1746,17 +1760,17 @@ void ECT::ComputeMainTimerPrescaledClock() {
 }
 
 
-void ECT::ComputeModulusCounterPrescaler() {
+void ECT::ComputeModulusCounterClock() {
 
-	mccnt_period = bus_cycle_time;
+	mccnt_clock = bus_cycle_time;
 
 	// check TSCR1::PRNT Precision Timer bit
 	if ((tscr1_register & 0x08) != 0) {
-		mccnt_period = bus_cycle_time * (ptmcpsr_register+1);
+		mccnt_clock = bus_cycle_time * (ptmcpsr_register+1);
 	} else {
 		uint8_t mccnt_prescaler = mcctl_register & 0x03;
 		if (mccnt_prescaler > 0) {
-			mccnt_period = bus_cycle_time * pow(2, mccnt_prescaler+1);
+			mccnt_clock = bus_cycle_time * pow(2, mccnt_prescaler+1);
 		}
 	}
 

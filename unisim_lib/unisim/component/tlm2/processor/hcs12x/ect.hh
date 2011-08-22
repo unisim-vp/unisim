@@ -286,9 +286,10 @@ protected:
     bool isInputOutputInterruptEnabled(uint8_t ioc_index) { return ((tie_register & (1 << ioc_index)) != 0); }
     bool isTimerOverflowinterruptEnabled() { return ((tscr2_register & 0x80) != 0); }
     bool isTimerCounterResetEnabled() { return ((tscr2_register & 0x08) != 0); }
-    uint8_t getTimerFlagSettingMode() { return (icsys_register & 0x08) >> 3; }
+    bool isTimerFlagSettingModeSet() { return (((icsys_register & 0x08) >> 3) != 0); }
     void setPulseAccumulatorAOverflowFlag() { paflg_register = paflg_register | 0x02; }
     void setPulseAccumulatorBOverflowFlag() { pbflg_register = pbflg_register | 0x02; }
+    void setPulseAccumulatorAInputEdgeFlag() { paflg_register = paflg_register | 0x01; }
 
 	void setOC7Dx(uint8_t ioc_index, bool data) {
 		uint8_t val = (data)? 1 : 0;
@@ -332,12 +333,12 @@ protected:
 
 	void resetTimerCounter() { tcnt_register = 0x0000; }
 
-	void toggleOutputComparePin(uint8_t ioc_index);
+	void RunChannelOutputCompareAction(uint8_t ioc_index);
 
 private:
 	inline void ComputeInternalTime();
-	inline void ComputeModulusCounterPrescaler();
-	inline void ComputeMainTimerPrescaledClock();
+	inline void ComputeModulusCounterClock();
+	inline void ComputeTimerPrescaledClock();
 	inline void configureEdgeDetector();
     inline void configureOutputAction();
 
@@ -351,7 +352,7 @@ private:
 
 	sc_time prescaled_clock;
 
-	sc_time mccnt_period;
+	sc_time mccnt_clock;
 
 	uint16_t	edge_delay_counter;
 	sc_time		edge_delay_counter_time;
