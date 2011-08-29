@@ -45,6 +45,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <fstream>
@@ -2156,6 +2157,72 @@ GetTimeOfDay(struct powerpc_timeval_t *target_tv)
 	return ret;
 }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetRUsage(PARAMETER_TYPE who, struct arm_rusage_t *target_ru)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct rusage host_ru;
+
+	ret = (int)getrusage((int)who, &host_ru);
+	target_ru->ru_utime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_sec);
+	target_ru->ru_utime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_usec);
+	target_ru->ru_stime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_sec);
+	target_ru->ru_stime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_usec);
+	target_ru->ru_maxrss = Host2Target(endianess, (int32_t) host_ru.ru_maxrss);
+	target_ru->ru_ixrss = Host2Target(endianess, (int32_t) host_ru.ru_ixrss);
+	target_ru->ru_idrss = Host2Target(endianess, (int32_t) host_ru.ru_idrss);
+	target_ru->ru_isrss = Host2Target(endianess, (int32_t) host_ru.ru_isrss);
+	target_ru->ru_minflt = Host2Target(endianess, (int32_t) host_ru.ru_minflt);
+	target_ru->ru_majflt = Host2Target(endianess, (int32_t) host_ru.ru_majflt);
+	target_ru->ru_nswap = Host2Target(endianess, (int32_t) host_ru.ru_nswap);
+	target_ru->ru_inblock = Host2Target(endianess, (int32_t) host_ru.ru_inblock);
+	target_ru->ru_oublock = Host2Target(endianess, (int32_t) host_ru.ru_oublock);
+	target_ru->ru_msgsnd = Host2Target(endianess, (int32_t) host_ru.ru_msgsnd);
+	target_ru->ru_msgrcv = Host2Target(endianess, (int32_t) host_ru.ru_msgrcv);
+	target_ru->ru_nsignals = Host2Target(endianess, (int32_t) host_ru.ru_nsignals);
+	target_ru->ru_nvcsw = Host2Target(endianess, (int32_t) host_ru.ru_nvcsw);
+	target_ru->ru_nivcsw = Host2Target(endianess, (int32_t) host_ru.ru_nivcsw);
+#endif
+	return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetRUsage(PARAMETER_TYPE who, struct powerpc_rusage_t *target_ru)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct rusage host_ru;
+
+	ret = (int)getrusage((int)who, &host_ru);
+	target_ru->ru_utime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_sec);
+	target_ru->ru_utime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_usec);
+	target_ru->ru_stime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_sec);
+	target_ru->ru_stime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_usec);
+	target_ru->ru_maxrss = Host2Target(endianess, (int32_t) host_ru.ru_maxrss);
+	target_ru->ru_ixrss = Host2Target(endianess, (int32_t) host_ru.ru_ixrss);
+	target_ru->ru_idrss = Host2Target(endianess, (int32_t) host_ru.ru_idrss);
+	target_ru->ru_isrss = Host2Target(endianess, (int32_t) host_ru.ru_isrss);
+	target_ru->ru_minflt = Host2Target(endianess, (int32_t) host_ru.ru_minflt);
+	target_ru->ru_majflt = Host2Target(endianess, (int32_t) host_ru.ru_majflt);
+	target_ru->ru_nswap = Host2Target(endianess, (int32_t) host_ru.ru_nswap);
+	target_ru->ru_inblock = Host2Target(endianess, (int32_t) host_ru.ru_inblock);
+	target_ru->ru_oublock = Host2Target(endianess, (int32_t) host_ru.ru_oublock);
+	target_ru->ru_msgsnd = Host2Target(endianess, (int32_t) host_ru.ru_msgsnd);
+	target_ru->ru_msgrcv = Host2Target(endianess, (int32_t) host_ru.ru_msgrcv);
+	target_ru->ru_nsignals = Host2Target(endianess, (int32_t) host_ru.ru_nsignals);
+	target_ru->ru_nvcsw = Host2Target(endianess, (int32_t) host_ru.ru_nvcsw);
+	target_ru->ru_nivcsw = Host2Target(endianess, (int32_t) host_ru.ru_nivcsw);
+#endif
+	return ret;
+}
+
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
@@ -2627,11 +2694,39 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getrusage() 
 {
+	int ret;
+	ADDRESS_TYPE buf_addr;
+	PARAMETER_TYPE who;
+	who = GetSystemCallParam(0);
+	buf_addr = GetSystemCallParam(1);
+
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		struct arm_rusage_t target_ru;
+		ret = GetRUsage(who, &target_ru);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_ru, sizeof(target_ru));
+		}
+	}
+	else if (system == "powerpc")
+	{
+		struct powerpc_rusage_t target_ru;
+		ret = GetRUsage(who, &target_ru);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_ru, sizeof(target_ru));
+		}
+	}
+	else ret = -1;
+
 	if(unlikely(verbose))
 		logger << DebugInfo
-			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
-			<< endl << LOCATION << EndDebugInfo;
-	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+			<< "GetRUsage(who=" << who << ", buf=0x" << hex << buf_addr << dec << ") return " << ret 
+			<< endl 
+			<< LOCATION
+			<< EndDebugInfo;
+	SetSystemCallStatus(ret, ret != -1);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2662,30 +2757,6 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_time() 
-{
-	if(unlikely(verbose))
-		logger << DebugInfo
-			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
-			<< endl << LOCATION << EndDebugInfo;
-	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
-}
-	
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_socketcall() 
-{
-	if(unlikely(verbose))
-		logger << DebugInfo
-			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
-			<< endl << LOCATION << EndDebugInfo;
-	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
-}
-	
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-LSC_rt_sigprocmask() 
 {
 	if(unlikely(verbose))
 		logger << DebugInfo
@@ -2730,6 +2801,30 @@ LSC_gettimeofday()
 			<< LOCATION
 			<< EndDebugInfo;
 	SetSystemCallStatus(ret, ret != -1);
+}
+	
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_socketcall() 
+{
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+}
+	
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_rt_sigprocmask() 
+{
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
+			<< endl << LOCATION << EndDebugInfo;
+	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
