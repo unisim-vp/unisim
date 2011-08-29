@@ -74,7 +74,6 @@ using std::dec;
 using std::streamsize;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
-using unisim::util::debug::Statement;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
@@ -102,6 +101,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, loader_import(0)
 	, stmt_lookup_import(0)
 	, backtrace_import(0)
+	, logger(*this)
 	, memory_atom_size(1)
 	, num_loaders(0)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -206,12 +206,13 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::~InlineDebugger()
 {
+	unsigned int i;
+	
 	free(hex_addr_fmt);
 	free(int_addr_fmt);
 
 	if(num_loaders)
 	{
-		unsigned int i;
 		
 		for(i = 0; i < num_loaders; i++)
 		{
@@ -224,6 +225,18 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 		delete[] symbol_table_lookup_import;
 		delete[] stmt_lookup_import;
 		delete[] backtrace_import;
+	}
+	
+	for(i = 0; i < elf32_loaders.size(); i++)
+	{
+		unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		delete elf32_loader;
+	}
+
+	for(i = 0; i < elf64_loaders.size(); i++)
+	{
+		unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		delete elf64_loader;
 	}
 }
 
@@ -652,6 +665,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					Load(parm[1]);
 					break;
 				}
+
+				if(IsLoadSymbolTableCommand(parm[0]))
+				{
+					recognized = true;
+					LoadSymbolTable(parm[1]);
+					break;
+				}
 				break;
 			case 3:
 				if(IsWatchCommand(parm[0]) && ParseAddrRange(parm[1], addr, size))
@@ -877,15 +897,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 		ADDRESS next_addr;
 		do
 		{
-			const Statement<ADDRESS> *stmt = 0;
-			unsigned int i;
-			for(i = 0; (!stmt) && (i < num_loaders); i++)
-			{
-				if(*stmt_lookup_import[i])
-				{
-					stmt = (*stmt_lookup_import[i])->FindStatement(addr);
-				}
-			}
+			const Statement<ADDRESS> *stmt = FindStatement(addr);
 			
 			if(stmt)
 			{
@@ -907,15 +919,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 			}
 			
 			cout.fill('0');
-			const Symbol<ADDRESS> *symbol = 0;
-			
-			for(i = 0; (!symbol) && (i < num_loaders); i++)
-			{
-				if(*symbol_table_lookup_import[i])
-				{
-					symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-				}
-			}
+			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 			string s = disasm_import->Disasm(addr, next_addr);
 			
 			if(symbol)
@@ -1046,16 +1050,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 		
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1067,15 +1062,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		}
 		cout << ")";
 		
-		const Statement<ADDRESS> *stmt = 0;
-		//unsigned int i;
-		for(i = 0; (!stmt) && (i < num_loaders); i++)
-		{
-			if(*stmt_lookup_import[i])
-			{
-				stmt = (*stmt_lookup_import[i])->FindStatement(addr);
-			}
-		}
+		const Statement<ADDRESS> *stmt = FindStatement(addr);
 		
 		if(stmt)
 		{
@@ -1140,16 +1127,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << ":" << (size / memory_atom_size) << " (";
 		
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1529,16 +1507,7 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		ADDRESS next_addr;
 
@@ -1622,6 +1591,77 @@ void InlineDebugger<ADDRESS>::Load(const char *loader_name)
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
+{
+	uint8_t magic[8];
+	
+	std::ifstream f(filename, std::ifstream::in | std::ifstream::binary);
+	
+	if(f.fail())
+	{
+		cerr << "ERROR! Can't open input \"" << filename << "\"" << endl;
+	}
+
+	// Note: code below is nearly equivalent to istream::readsome
+	// I no longer use it because it is bugged with i586-mingw32msvc-g++ (version 4.2.1-sjlj on Ubuntu)
+	unsigned int size;
+	for(size = 0; size < sizeof(magic); size++)
+	{
+		f.read((char *) &magic[size], 1);
+		if(!f.good()) break;
+	}
+	
+	if(size >= 5)
+	{
+		if((magic[0] == 0x7f) && (magic[1] == 'E') && (magic[2] == 'L') && (magic[3] == 'F'))
+		{
+			switch(magic[4])
+			{
+				case 1:
+					{
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
+						
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+						
+						if(!elf32_loader->Load())
+						{
+							cerr << "ERROR! Loading input \"" << filename << "\" failed" << endl;
+							delete elf32_loader;
+						}
+						else
+						{
+							cerr << "Symbols from \"" << filename << "\" loaded" << endl;
+							elf32_loaders.push_back(elf32_loader);
+						}
+					}
+					break;
+				case 2:
+					{
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
+						
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+
+						if(!elf64_loader->Load())
+						{
+							cerr << "ERROR! Loading input \"" << filename << "\" failed" << endl;
+							delete elf64_loader;
+						}
+						else
+						{
+							cerr << "Symbols from \"" << filename << "\" loaded" << endl;
+							elf64_loaders.push_back(elf64_loader);
+						}
+					}
+					break;
+				default:
+					cerr << "ERROR! Can't handle symbol table of input \"" << filename << "\"" << endl;
+					break;
+			}
+		}
+	}
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
 	cout << "Data " << (write ? "write" : "read") << " profile:" << endl;
@@ -1631,16 +1671,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		cout << "0x" << hex;
 		cout.fill('0');
@@ -1809,15 +1840,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 			
 			ADDRESS return_addr = (*backtrace)[i];
 			
-			const Symbol<ADDRESS> *symbol = 0;
-			
-			for(i = 0; (!symbol) && (i < num_loaders); i++)
-			{
-				if(*symbol_table_lookup_import[i])
-				{
-					symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(return_addr);
-				}
-			}
+			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(return_addr);
 			
 			std::cout << "0x" << std::hex;
 			std::cout << (return_addr / memory_atom_size) << std::dec;
@@ -1864,16 +1887,7 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		return true;
 	}
 
-	const Symbol<ADDRESS> *symbol = 0;
-	
-	unsigned int i;
-	for(i = 0; (!symbol) && (i < num_loaders); i++)
-	{
-		if(*symbol_table_lookup_import[i])
-		{
-			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
-		}
-	}
+	const Symbol<ADDRESS> *symbol = FindSymbolByName(s);
 	
 	if(symbol)
 	{
@@ -1902,17 +1916,8 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		return true;
 	}
 	
-	const Symbol<ADDRESS> *symbol = 0;
+	const Symbol<ADDRESS> *symbol = FindSymbolByName(s);
 	
-	unsigned int i;
-	for(i = 0; (!symbol) && (i < num_loaders); i++)
-	{
-		if(*symbol_table_lookup_import[i])
-		{
-			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
-		}
-	}
-
 	if(symbol)
 	{
 		addr = symbol->GetAddress();
@@ -1929,14 +1934,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	if(*s == '#') s++;
 	if(sscanf(s, "%u", &lineno) != 1) return false;
 	
-	const Statement<ADDRESS> *stmt = 0;
-	for(i = 0; (!stmt) && (i < num_loaders); i++)
-	{
-		if(*stmt_lookup_import[i])
-		{
-			stmt = (*stmt_lookup_import[i])->FindStatement(filename.c_str(), lineno, 0);
-		}
-	}
+	const Statement<ADDRESS> *stmt = FindStatement(filename.c_str(), lineno, 0);
 	
 	if(stmt)
 	{
@@ -1947,6 +1945,119 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	return false;
 }
 
+template <class ADDRESS>
+const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByAddr(ADDRESS addr)
+{
+	unsigned int i;
+	const Symbol<ADDRESS> *symbol = 0;
+	
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
+	{
+		if(*symbol_table_lookup_import[i])
+		{
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
+		}
+	}
+	if(!symbol)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf32_loaders); i++)
+		{
+			symbol = elf32_loaders[i]->FindSymbolByAddr(addr);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf64_loaders); i++)
+		{
+			symbol = elf64_loaders[i]->FindSymbolByAddr(addr);
+		}
+	}
+	
+	return symbol;
+}
+
+template <class ADDRESS>
+const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByName(const char *s)
+{
+	unsigned int i;
+	const Symbol<ADDRESS> *symbol = 0;
+	
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
+	{
+		if(*symbol_table_lookup_import[i])
+		{
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
+		}
+	}
+	if(!symbol)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf32_loaders); i++)
+		{
+			symbol = elf32_loaders[i]->FindSymbolByName(s);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf64_loaders); i++)
+		{
+			symbol = elf64_loaders[i]->FindSymbolByName(s);
+		}
+	}
+	return symbol;
+}
+
+template <class ADDRESS>
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr)
+{
+	const Statement<ADDRESS> *stmt = 0;
+	unsigned int i;
+	for(i = 0; (!stmt) && (i < num_loaders); i++)
+	{
+		if(*stmt_lookup_import[i])
+		{
+			stmt = (*stmt_lookup_import[i])->FindStatement(addr);
+		}
+	}
+	if(!stmt)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf32_loaders); i++)
+		{
+			stmt = elf32_loaders[i]->FindStatement(addr);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf64_loaders); i++)
+		{
+			stmt = elf64_loaders[i]->FindStatement(addr);
+		}
+	}
+	return stmt;
+}
+
+template <class ADDRESS>
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
+{
+	unsigned int i;
+	const Statement<ADDRESS> *stmt = 0;
+	for(i = 0; (!stmt) && (i < num_loaders); i++)
+	{
+		if(*stmt_lookup_import[i])
+		{
+			stmt = (*stmt_lookup_import[i])->FindStatement(filename, lineno, 0);
+		}
+	}
+	if(!stmt)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf32_loaders); i++)
+		{
+			stmt = elf32_loaders[i]->FindStatement(filename, lineno, 0);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf64_loaders); i++)
+		{
+			stmt = elf64_loaders[i]->FindStatement(filename, lineno, 0);
+		}
+	}
+}
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetLine(char *line, int size)
@@ -2134,6 +2245,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsBackTraceCommand(const char *cmd)
 {
 	return strcmp(cmd, "bt") == 0 || strcmp(cmd, "backtrace") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsLoadSymbolTableCommand(const char *cmd)
+{
+	return strcmp(cmd, "sym") == 0 || strcmp(cmd, "symbol") == 0;
 }
 
 } // end of namespace inline_debugger

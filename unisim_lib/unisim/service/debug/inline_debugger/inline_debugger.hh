@@ -49,11 +49,15 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
+#include <unisim/util/loader/elf_loader/elf32_loader.hh>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <inttypes.h>
 #include <string>
+#include <vector>
 
 #ifdef WIN32
 #include <windows.h>
@@ -81,6 +85,7 @@ using unisim::util::debug::Breakpoint;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
+using unisim::util::debug::Statement;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
@@ -166,6 +171,7 @@ public:
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
 private:
+	unisim::kernel::logger::Logger logger;
 	unsigned int memory_atom_size;
 	unsigned int num_loaders;
 	std::string search_path;
@@ -179,6 +185,8 @@ private:
 	unisim::util::debug::Profile<ADDRESS> data_read_profile;
 	unisim::util::debug::Profile<ADDRESS> data_write_profile;
 	InlineDebuggerRunningMode running_mode;
+	std::vector<unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *> elf32_loaders;
+	std::vector<unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *> elf64_loaders;
 
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
@@ -213,6 +221,7 @@ private:
 	bool IsProfileCommand(const char *cmd);
 	bool IsLoadCommand(const char *cmd);
 	bool IsBackTraceCommand(const char *cmd);
+	bool IsLoadSymbolTableCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -242,8 +251,13 @@ private:
 	void DumpDataProfile(bool write);
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name);
+	void LoadSymbolTable(const char *filename);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace(ADDRESS cia);
+	const Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr);
+	const Symbol<ADDRESS> *FindSymbolByName(const char *s);
+	const Statement<ADDRESS> *FindStatement(ADDRESS addr);
+	const Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno);
 };
 
 } // end of namespace inline_debugger
