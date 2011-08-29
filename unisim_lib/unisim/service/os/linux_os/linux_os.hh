@@ -265,6 +265,7 @@ private:
 	void LSC_unlink();
 	void LSC_rename();
 	void LSC_time();
+	void LSC_gettimeofday();
 	void LSC_socketcall();
 	void LSC_rt_sigprocmask();
 	void LSC_kill();
@@ -311,6 +312,11 @@ private:
     struct arm_timespec_t {
     	uint32_t tv_sec;		/* Seconds.  */
     	uint32_t tv_nsec;		/* Nanoseconds.  */
+    };
+
+    struct arm_timeval_t {
+	int32_t tv_sec;
+	int32_t tv_usec;
     };
     
     // this structure supposes that the arm file was compiled with
@@ -411,6 +417,11 @@ private:
     struct powerpc_timespec_t {
         int32_t tv_sec;        /* Seconds.  */
         int32_t tv_nsec;       /* Nanoseconds.  */
+    };
+    
+    struct powerpc_timeval_t {
+	int32_t tv_sec;
+	int32_t tv_usec;
     };
     
     // this structure supposes that the powerpc file was compiled with
@@ -527,6 +538,8 @@ private:
 	int Stat64(int fd, struct arm_stat64_t *target_stat);
 	int Times(struct powerpc_tms_t *target_tms);
 	int Times(struct arm_tms_t *target_tms);
+	int GetTimeOfDay(struct powerpc_timeval_t *target_tv);
+	int GetTimeOfDay(struct arm_timeval_t *target_tv);
 
 	static const int LINUX_O_ACCMODE = 00000003;
 	static const int LINUX_O_RDONLY = 00000000;

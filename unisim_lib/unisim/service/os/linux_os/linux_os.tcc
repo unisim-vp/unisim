@@ -44,6 +44,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <fstream>
@@ -783,8 +784,9 @@ SetupLinuxOSARM()
 	SetSyscallId(string("ioctl"), 54);
 	SetSyscallId(string("setrlimit"), 75);
 	SetSyscallId(string("getrusage"), 77);
+	SetSyscallId(string("gettimeofday"), 78);
 	SetSyscallId(string("munmap"), 91);
-    SetSyscallId(string("ftruncate"), 93);
+    	SetSyscallId(string("ftruncate"), 93);
 	SetSyscallId(string("socketcall"), 102);
 	SetSyscallId(string("stat"), 106);
 	SetSyscallId(string("fstat"), 108);
@@ -841,6 +843,7 @@ SetupLinuxOSPPC()
     SetSyscallId(string("setrlimit"), 75);
     SetSyscallId(string("getrlimit"), 76);
     SetSyscallId(string("getrusage"), 77);
+    SetSyscallId(string("gettimeofday"), 78);
     SetSyscallId(string("mmap"), 90);
     SetSyscallId(string("munmap"), 91);
     SetSyscallId(string("ftruncate"), 93);
@@ -2119,6 +2122,40 @@ Times(struct arm_tms_t *target_tms)
 	return ret;
 }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetTimeOfDay(struct arm_timeval_t *target_tv)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct timeval host_tv;
+
+	ret = (int)gettimeofday(&host_tv, NULL);
+	target_tv->tv_sec = Host2Target(endianess, (int32_t) host_tv.tv_sec);
+	target_tv->tv_usec = Host2Target(endianess, (int32_t) host_tv.tv_usec);
+#endif
+	return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetTimeOfDay(struct powerpc_timeval_t *target_tv)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct timeval host_tv;
+
+	ret = (int) gettimeofday(&host_tv, NULL);
+	target_tv->tv_sec = Host2Target(endianess, (int32_t) host_tv.tv_sec);
+	target_tv->tv_usec = Host2Target(endianess, (int32_t) host_tv.tv_usec);
+#endif
+	return ret;
+}
+
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
@@ -2656,6 +2693,44 @@ LSC_rt_sigprocmask()
 			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_gettimeofday()
+{
+	int ret;
+	ADDRESS_TYPE buf_addr;
+	buf_addr = GetSystemCallParam(0);
+
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		struct arm_timeval_t target_tv;
+		ret = GetTimeOfDay(&target_tv);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_tv, sizeof(target_tv));
+		}
+	}
+	else if (system == "powerpc")
+	{
+		struct powerpc_timeval_t target_tv;
+		ret = GetTimeOfDay(&target_tv);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_tv, sizeof(target_tv));
+		}
+	}
+	else ret = -1;
+
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "GetTimeOfDay(buf=0x" << hex << buf_addr << dec << ") return " << ret 
+			<< endl 
+			<< LOCATION
+			<< EndDebugInfo;
+	SetSystemCallStatus(ret, ret != -1);
+}
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
@@ -2797,6 +2872,7 @@ SetSyscallNameMap()
 	syscall_name_map[string("unlink")] = &thistype::LSC_unlink;
 	syscall_name_map[string("rename")] = &thistype::LSC_rename;
 	syscall_name_map[string("time")] = &thistype::LSC_time;
+	syscall_name_map[string("gettimeofday")] = &thistype::LSC_gettimeofday;
 	syscall_name_map[string("socketcall")] = &thistype::LSC_socketcall;
 	syscall_name_map[string("rt_sigprocmask")] = &thistype::LSC_rt_sigprocmask;
 	syscall_name_map[string("kill")] = &thistype::LSC_kill;
