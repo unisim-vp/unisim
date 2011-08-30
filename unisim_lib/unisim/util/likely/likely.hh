@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,34 +29,27 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
-#define __UNISIM_SERVICE_INTERFACES_SYMBOL_TABLE_LOOKUP_HH__
+#ifndef __UNISIM_UTIL_LIKELY_LIKELY_HH__
+#define __UNISIM_UTIL_LIKELY_LIKELY_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <list>
-#include <unisim/util/debug/symbol.hh>
-
-namespace unisim {
-namespace service {
-namespace interfaces {
-
-template <class T>
-class SymbolTableLookup : public unisim::kernel::service::ServiceInterface
-{
-public:
-	virtual const typename std::list<unisim::util::debug::Symbol<T> *> *GetSymbols() = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-};
-
-} // end of namespace interfaces
-} // end of namespace service
-} // end of namespace unisim
-
+#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
+#if defined(likely)
+#undef likely
 #endif
+
+#if defined(unlikely)
+#undef unlikely
+#endif
+
+#define likely(x)       __builtin_expect((x),1)
+#define unlikely(x)     __builtin_expect((x),0)
+#else
+#define likely(x) (x)
+#define unlikely(x) (x)
+#endif
+
+#endif // __UNISIM_UTIL_LIKELY_LIKELY_HH__
+

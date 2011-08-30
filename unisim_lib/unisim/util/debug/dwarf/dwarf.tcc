@@ -55,15 +55,8 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugError;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugInfo;
-	
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, unisim::kernel::logger::Logger& _logger)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, std::ostream& _logger)
 	: endianness(_blob->GetEndian())
 	, address_size(_blob->GetAddressSize())
 	, debug_line_section(_blob->FindSection(".debug_line"))
@@ -248,7 +241,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_abbrev->Load((const uint8_t *) debug_abbrev_section->GetData() + debug_abbrev_offset, debug_abbrev_section->GetSize() - debug_abbrev_offset, debug_abbrev_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 abbreviation informations at offset 0x" << std::hex << debug_abbrev_offset << std::dec << EndDebugWarning;
+				logger << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 abbreviation informations at offset 0x" << std::hex << debug_abbrev_offset << std::dec;
 				delete dw_abbrev;
 				break;
 			}
@@ -270,7 +263,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_abbrev section found" << EndDebugWarning;
+		logger << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_abbrev section found";
 	}
 
 	if(debug_info_section)
@@ -282,7 +275,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_cu->Load((const uint8_t *) debug_info_section->GetData() + debug_info_offset, debug_info_section->GetSize() - debug_info_offset, debug_info_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug informations at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugWarning;
+				logger << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug informations at offset 0x" << std::hex << debug_info_offset << std::dec;
 				delete dw_cu;
 				break;
 			}
@@ -297,7 +290,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_info section found" << EndDebugWarning;
+		logger << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_info section found";
 	}
 
 	if(debug_frame_section)
@@ -317,8 +310,8 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 				{
 					delete dw_cie;
 					
-					logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug frame at offset 0x" << std::hex << debug_frame_offset << std::dec << EndDebugWarning;
-					break;
+					logger << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug frame at offset 0x" << std::hex << debug_frame_offset << std::dec;
+ 					break;
 				}
 				
 				//std::cerr << *dw_cie << std::endl;
@@ -336,7 +329,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_frame section found" << EndDebugWarning;
+		logger << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_frame section found";
 	}
 
 	if(debug_aranges_section)
@@ -348,7 +341,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_address_ranges->Load((const uint8_t *) debug_aranges_section->GetData() + debug_aranges_offset, debug_aranges_section->GetSize() - debug_aranges_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug aranges at offset 0x" << std::hex << debug_aranges_offset << std::dec << EndDebugWarning;
+				logger << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug aranges at offset 0x" << std::hex << debug_aranges_offset << std::dec << std::endl;
 				delete dw_address_ranges;
 				break;
 			}
@@ -363,7 +356,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_aranges section found" << EndDebugWarning;
+		logger << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_aranges section found" << std::endl;
 	}
 
 	if(debug_pubnames_section)
@@ -375,7 +368,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_public_names->Load((const uint8_t *) debug_pubnames_section->GetData() + debug_pubnames_offset, debug_pubnames_section->GetSize() - debug_pubnames_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug pubnames at offset 0x" << std::hex << debug_pubnames_offset << std::dec << EndDebugWarning;
+				logger << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug pubnames at offset 0x" << std::hex << debug_pubnames_offset << std::dec << std::endl;
 				delete dw_public_names;
 				break;
 			}
@@ -390,7 +383,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_pubnames section found" << EndDebugWarning;
+		logger << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_pubnames section found" << std::endl;
 	}
 
 	if(debug_pubtypes_section)
@@ -402,7 +395,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_public_types->Load((const uint8_t *) debug_pubtypes_section->GetData() + debug_pubtypes_offset, debug_pubtypes_section->GetSize() - debug_pubtypes_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << EndDebugWarning;
+				logger << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << std::endl;
 				delete dw_public_types;
 				break;
 			}
@@ -1937,7 +1930,7 @@ const DWARF_StatementProgram<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindState
 	int64_t sz;
 	if((sz = dw_stmt_prog->Load((const uint8_t *) debug_line_section->GetData() + debug_line_offset, debug_line_section->GetSize() - debug_line_offset, debug_line_offset)) < 0)
 	{
-		logger << DebugWarning << "Invalid DWARF v2/v3 statement program prologue at offset 0x" << std::hex << debug_line_offset << std::dec << EndDebugWarning;
+		logger << "Invalid DWARF v2/v3 statement program prologue at offset 0x" << std::hex << debug_line_offset << std::dec << std::endl;
 		delete dw_stmt_prog;
 		return 0;
 	}
@@ -1975,7 +1968,7 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeLi
 			
 		if((sz = dw_range_list_entry->Load((const uint8_t *) debug_ranges_section->GetData() + debug_ranges_offset, debug_ranges_section->GetSize() - debug_ranges_offset, debug_ranges_offset)) < 0)
 		{
-			logger << DebugWarning << "Invalid DWARF v2/v3 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << EndDebugWarning;
+			logger << "Invalid DWARF v2/v3 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << std::endl;
 			delete dw_range_list_entry;
 			return head;
 		}
@@ -2030,7 +2023,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 				dw_macinfo_list_entry = new DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>();
 				break;
 			default:
-				logger << DebugWarning << "Invalid DWARF v2/v3 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (unknown type " << ((unsigned int) dw_mac_info_type) << ")" << EndDebugWarning;
+				logger << "Invalid DWARF v2/v3 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (unknown type " << ((unsigned int) dw_mac_info_type) << ")" << std::endl;
 				return 0;
 		}
 			
@@ -2040,7 +2033,7 @@ const DWARF_MacInfoListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindMacIn
 			
 		if((sz = dw_macinfo_list_entry->Load((const uint8_t *) debug_macinfo_section->GetData() + debug_macinfo_offset, debug_macinfo_section->GetSize() - debug_macinfo_offset, debug_macinfo_offset)) < 0)
 		{
-			logger << DebugWarning << "Invalid DWARF v2/v3 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (type " << ((unsigned int) dw_mac_info_type) << ")" << EndDebugWarning;
+			logger << "Invalid DWARF v2/v3 debug macinfo at offset 0x" << std::hex << debug_macinfo_offset << std::dec << " (type " << ((unsigned int) dw_mac_info_type) << ")" << std::endl;
 			delete dw_macinfo_list_entry;
 			return head;
 		}
@@ -2084,7 +2077,7 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEn
 			
 		if((sz = dw_loc_list_entry->Load((const uint8_t *) debug_loc_section->GetData() + debug_loc_offset, debug_loc_section->GetSize() - debug_loc_offset, debug_loc_offset)) < 0)
 		{
-			logger << DebugWarning << "Invalid DWARF v2/v3 debug loc at offset 0x" << std::hex << debug_loc_offset << std::dec << EndDebugWarning;
+			logger << "Invalid DWARF v2/v3 debug loc at offset 0x" << std::hex << debug_loc_offset << std::dec << std::endl;
 			delete dw_loc_list_entry;
 			return head;
 		}

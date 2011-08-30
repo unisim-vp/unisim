@@ -126,7 +126,7 @@ public:
     /* Service interface methods */
     virtual void ExecuteSystemCall(int id);
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
+	virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob();
 
 private:
 	bool LoadARM();
