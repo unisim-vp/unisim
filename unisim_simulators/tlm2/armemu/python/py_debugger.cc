@@ -360,7 +360,7 @@ debugger_set_breakpoint (debugger_DebuggerObject *self, PyObject *args)
 	if ( !parm_ok )
 	{
 		PyErr_SetString(PyExc_TypeError,
-				"An address/symbol/filename:lien is expected");
+				"An address/symbol/filename:line is expected");
 		return NULL;
 	}
 
