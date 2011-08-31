@@ -349,6 +349,15 @@ bool usDebugAPIDeleteWriteWatchpointSymbol(UnisimDebugAPI dapi, const char *str,
 	return dapi->api->DeleteWriteWatchpoint(str, size);
 }
 
+bool usDebugAPIReadMemory(UnisimDebugAPI dapi, uint64_t addr, uint8_t* value)
+{
+	if ( dapi == 0 ) return false;
+	if ( value == 0 ) return false;
+
+	*value = dapi->api->ReadMemory(addr);
+	return true;
+}
+
 /****************************************************************************/
 /*                                                                         **/
 /*                  PRIVATELY EXPORTED FUNCTIONS                           **/
