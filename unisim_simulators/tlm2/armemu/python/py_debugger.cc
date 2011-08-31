@@ -670,7 +670,7 @@ static PyMethodDef debugger_methods[] =
 				(PyCFunction)debugger_delete_read_watchpoint,
 				METH_VARARGS,
 				"Remove a read watchpoint."},
-		{"delete_write_watchpoint.",
+		{"delete_write_watchpoint",
 				(PyCFunction)debugger_delete_write_watchpoint,
 				METH_VARARGS,
 				"Remove a write watchpoint."},
