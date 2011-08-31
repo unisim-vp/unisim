@@ -215,6 +215,13 @@ CallWatchpointHandler(uint64_t addr, bool read)
 		watchpoint_handler_function(handler_context, addr, read);
 }
 
+uint8_t
+DebugAPI::
+ReadMemory(uint64_t addr)
+{
+  return 0;
+}
+
 } // end of namespace api
 } // end of namespace kernel
 } // end of namespace unisim

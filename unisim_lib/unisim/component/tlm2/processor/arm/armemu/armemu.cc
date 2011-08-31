@@ -148,6 +148,8 @@ ARMEMU(const sc_module_name& name, Object *parent)
 			"Maximum time between SystemC waits.")
 	, param_ipc("ipc", this, ipc,
 			"Instructions per cycle performance.")
+  , stat_cpu_time("cpu-time", this, cpu_time,
+                  "The processor time")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose-tlm", this, verbose_tlm, 
 			"Display TLM information")

@@ -170,6 +170,8 @@ private:
 	unisim::kernel::service::Parameter<sc_time> param_bus_cycle_time;
 	unisim::kernel::service::Parameter<sc_time> param_nice_time;
 	unisim::kernel::service::Parameter<double> param_ipc;
+
+  unisim::kernel::service::Statistic<sc_time> stat_cpu_time;
 	
 	/*************************************************************************
 	 * Logger, verbose and trap parameters/methods/ports               START *
