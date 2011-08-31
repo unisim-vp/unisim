@@ -674,6 +674,16 @@ GetFileSystemAddress(const char *str, uint64_t &addr)
 }
 
 template <class ADDRESS>
+uint8_t
+SimDebugger<ADDRESS>::
+ReadMemory(uint64_t addr)
+{
+  uint8_t value;
+  memory_import->ReadMemory(addr, &value, 1);
+  return value;
+}
+
+template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
 DumpBreakpoints()

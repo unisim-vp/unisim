@@ -194,6 +194,8 @@ private:
 	bool GetSymbolAddress(const char *str, uint64_t &addr);
 	bool GetFileSystemAddress(const char *str, uint64_t &addr);
 
+  uint8_t ReadMemory(uint64_t addr);
+
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(uint64_t addr);
