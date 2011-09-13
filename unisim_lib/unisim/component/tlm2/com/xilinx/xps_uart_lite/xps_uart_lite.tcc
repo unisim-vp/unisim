@@ -66,7 +66,6 @@ XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_module_name& name, Object *parent)
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_telnet_refresh_time("telnet-refresh-time", this, telnet_refresh_time, "Telnet refresh time")
-	, stat_interrupt_output("interrupt-output", this, interrupt_output, "Interrupt output level")
 	, schedule()
 {
 	slave_sock(*this); // Bind socket to implementer of interface

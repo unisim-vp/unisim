@@ -251,6 +251,7 @@ private:
 	void DumpDataProfile(bool write);
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name);
+	std::string SearchFile(const char *filename);
 	void LoadSymbolTable(const char *filename);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace(ADDRESS cia);

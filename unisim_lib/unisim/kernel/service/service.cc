@@ -3311,7 +3311,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	os << "This documentation has been automatically generated from the simulator \\texttt{" << string_to_latex(program_name.c_str()) << "} version " << string_to_latex(version.c_str()) << " on " << string_to_latex(__DATE__) << "." << std::endl;
 
-	os << "\\section{Introduction}" << endl;
+	os << "\\subsection{Introduction}" << endl;
 	os << string_to_latex(description.c_str()) << ".\\\\" << endl;
 	os << "Section \\ref{" << program_name << "_licensing} gives licensing informations about the simulator." << endl;
 	os << "Section \\ref{" << program_name << "_simulated_configuration} shows the set of modules and services that compose the simulator." << endl;
@@ -3320,14 +3320,14 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "Section \\ref{" << program_name << "_statistics} gives the simulator statistic counters." << endl;
 	os << "Section \\ref{" << program_name << "_formulas} gives the simulator statistic formulas." << endl;
 
-	os << "\\section{Licensing}" << endl;
+	os << "\\subsection{Licensing}" << endl;
 	os << "\\label{" << program_name << "_licensing}" << endl;
 	os << string_to_latex(program_name.c_str()) << " " << string_to_latex(version.c_str()) << "\\\\" << endl;
 	os << string_to_latex(copyright.c_str()) << "\\\\" << endl;
 	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << endl;
 	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << endl;
 	
-	os << "\\section{Simulated configuration}" << endl;
+	os << "\\subsection{Simulated configuration}" << endl;
 	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
 	
 	if(!schematic.empty())
@@ -3354,7 +3354,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	}
 	os << "\\end{itemize}" << endl;
 
-	os << "\\section{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
+	os << "\\subsection{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
 	os << "\\label{" << program_name << "_using}" << endl;
 	os << "The " << string_to_latex(program_name.c_str()) << " simulator has the following command line options:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3384,19 +3384,19 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	// 	std::stringstream sstr_version;
 // 	Version(sstr_version);
-// 	os << "\\section{Version}" << std::endl;
+// 	os << "\\subsection{Version}" << std::endl;
 // 	os << string_to_latex(sstr_version.str().c_str()) << std::endl;
 // 	
 // 	std::stringstream sstr_help;
 // 	Help(sstr_help);
-// 	os << "\\section{Usage}" << std::endl;
+// 	os << "\\subsection{Usage}" << std::endl;
 // 	os << string_to_latex(sstr_help.str().c_str(), 80, "texttt") << std::endl;
 
 	std::map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
 	bool header_printed = false;
 	
 	//----------------------- Configuration -----------------------
-	os << "\\section{Configuration}" << std::endl;
+	os << "\\subsection{Configuration}" << std::endl;
 	os << "\\label{" << program_name << "_configuration}" << endl;
 	os << "Simulator configuration (see below) can be modified using command line Options \\texttt{--set $<$param=value$>$} or \\texttt{--config $<$config file$>$}.\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3433,7 +3433,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\end{supertabular}" << std::endl;
 
 	//----------------------- Statistics -----------------------
-	os << "\\section{Statistics}" << std::endl;
+	os << "\\subsection{Statistics}" << std::endl;
 	os << "\\label{" << program_name << "_statistics}" << endl;
 	os << "Simulation statistic counters are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3471,7 +3471,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\end{supertabular}" << std::endl;
 
 	//----------------------- Formulas -----------------------
-	os << "\\section{Formulas}" << std::endl;
+	os << "\\subsection{Formulas}" << std::endl;
 	os << "\\label{" << program_name << "_formulas}" << endl;
 	os << "Simulation statistic formulas are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;

@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_TCC_
 
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
@@ -805,8 +806,10 @@ void InlineDebugger<ADDRESS>::Help()
 {
 	cout << "HELP:" << endl;
 	cout << "================================  LOAD =========================================" << endl;
-	cout << "<l | ld | load> [<loader name> <filename>]" << endl;
-	cout << "    load program file <filename> using loader <loader name>" << endl;
+	cout << "<l | ld | load> <loader name>" << endl;
+	cout << "    reload program file of loader <loader name>" << endl;
+	cout << "<sym | symbol> [<filename>]" << endl;
+	cout << "    load symbol table from file <filename>" << endl;
 	cout << "================================ EXECUTE =======================================" << endl;
 	cout << "<c | cont | continue> [<symbol | *address>]" << endl;
 	cout << "    continue to execute instructions until program reaches a breakpoint," << endl;
@@ -1197,25 +1200,29 @@ void InlineDebugger<ADDRESS>::DumpVariables()
 		cout << endl;
 		for (iter = lst.begin(); iter != lst.end(); iter++)
 		{
-			switch ((*iter)->GetType())
+			VariableBase::Type type = (*iter)->GetType();
+			if(type != VariableBase::VAR_VOID)
 			{
-				case VariableBase::VAR_VOID:
-					cout << " V";
-					break;
-				case VariableBase::VAR_PARAMETER:
-					cout << " P";
-					break;
-				case VariableBase::VAR_STATISTIC:
-					cout << " S";
-					break;
-				case VariableBase::VAR_REGISTER:
-					cout << " R";
-					break;
-				default:
-					cout << " ?";
-					break;
+				switch (type)
+				{
+					case VariableBase::VAR_PARAMETER:
+						cout << " P";
+						break;
+					case VariableBase::VAR_STATISTIC:
+						cout << " S";
+						break;
+					case VariableBase::VAR_FORMULA:
+						cout << " F";
+						break;
+					case VariableBase::VAR_REGISTER:
+						cout << " R";
+						break;
+					default:
+						cout << " ?";
+						break;
+				}
+				cout << "\t" << (*iter)->GetName() << endl;
 			}
-			cout << "\t" << (*iter)->GetName() << endl;
 		}
 	}
 }
@@ -1591,15 +1598,51 @@ void InlineDebugger<ADDRESS>::Load(const char *loader_name)
 }
 
 template <class ADDRESS>
+std::string InlineDebugger<ADDRESS>::SearchFile(const char *filename)
+{
+	if(access(filename, F_OK) == 0)
+	{
+		return std::string(filename);
+	}
+
+	std::string s;
+	const char *p;
+
+	p = search_path.c_str();
+	do
+	{
+		if(*p == 0 || *p == ';')
+		{
+			std::stringstream sstr;
+			sstr << s << "/" << filename;
+			std::string path(sstr.str());
+			if(access(path.c_str(), F_OK) == 0)
+			{
+				return path;
+			}
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	
+	return Object::GetSimulator()->SearchSharedDataFile(filename);
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 {
+	std::string path(SearchFile(filename));
+	
 	uint8_t magic[8];
 	
-	std::ifstream f(filename, std::ifstream::in | std::ifstream::binary);
+	std::ifstream f(path.c_str(), std::ifstream::in | std::ifstream::binary);
 	
 	if(f.fail())
 	{
-		cerr << "ERROR! Can't open input \"" << filename << "\"" << endl;
+		cerr << "ERROR! Can't open input \"" << path << "\"" << endl;
 	}
 
 	// Note: code below is nearly equivalent to istream::readsome
@@ -1621,16 +1664,17 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 					{
 						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
 						
-						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
 						
 						if(!elf32_loader->Load())
 						{
-							cerr << "ERROR! Loading input \"" << filename << "\" failed" << endl;
+							cerr << "ERROR! Loading input \"" << path << "\" failed" << endl;
 							delete elf32_loader;
 						}
 						else
 						{
-							cerr << "Symbols from \"" << filename << "\" loaded" << endl;
+							cerr << "Symbols from \"" << path << "\" loaded" << endl;
 							elf32_loaders.push_back(elf32_loader);
 						}
 					}
@@ -1639,22 +1683,23 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 					{
 						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
 						
-						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
 
 						if(!elf64_loader->Load())
 						{
-							cerr << "ERROR! Loading input \"" << filename << "\" failed" << endl;
+							cerr << "ERROR! Loading input \"" << path << "\" failed" << endl;
 							delete elf64_loader;
 						}
 						else
 						{
-							cerr << "Symbols from \"" << filename << "\" loaded" << endl;
+							cerr << "Symbols from \"" << path << "\" loaded" << endl;
 							elf64_loaders.push_back(elf64_loader);
 						}
 					}
 					break;
 				default:
-					cerr << "ERROR! Can't handle symbol table of input \"" << filename << "\"" << endl;
+					cerr << "ERROR! Can't handle symbol table of input \"" << path << "\"" << endl;
 					break;
 			}
 		}
@@ -2057,6 +2102,7 @@ const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *fil
 			stmt = elf64_loaders[i]->FindStatement(filename, lineno, 0);
 		}
 	}
+	return stmt;
 }
 
 template <class ADDRESS>

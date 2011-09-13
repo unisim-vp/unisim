@@ -1,5 +1,5 @@
-This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta7 on Jun 30 2011.
-\section{Introduction}
+This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta7 on Aug 30 2011.
+\subsection{Introduction}
 UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs.\\
 Section \ref{UNISIM Virtex 5 FXT_licensing} gives licensing informations about the simulator.
 Section \ref{UNISIM Virtex 5 FXT_simulated_configuration} shows the set of modules and services that compose the simulator.
@@ -7,13 +7,13 @@ Section \ref{UNISIM Virtex 5 FXT_using} shows how to invoke the simulator at the
 Section \ref{UNISIM Virtex 5 FXT_configuration} gives the simulator parameters.
 Section \ref{UNISIM Virtex 5 FXT_statistics} gives the simulator statistic counters.
 Section \ref{UNISIM Virtex 5 FXT_formulas} gives the simulator statistic formulas.
-\section{Licensing}
+\subsection{Licensing}
 \label{UNISIM Virtex 5 FXT_licensing}
 UNISIM Virtex 5 FXT 1.0beta7\\
 Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)\\
 License: BSD (see file COPYING)\\
 Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
-\section{Simulated configuration}
+\subsection{Simulated configuration}
 \label{UNISIM Virtex 5 FXT_simulated_configuration}
 \begin{figure}[!ht]
 	\begin{center}
@@ -180,6 +180,7 @@ input \#31 capture mode: rising edge\\
 
 \item \textbf{loader}: A multi-format loader that supports ELF32, ELF64, S19, COFF and Raw binary files
 \item \textbf{loader.memory-mapper}: A memory mapper
+\item \textbf{loader.tee-backtrace}: This service/client implements a tee ('T'). It unifies the backtrace capability of several services that individually provides their own backtrace capability
 \item \textbf{loader.tee-blob}: This service/client implements a tee ('T'). It unifies the statement lookup capability of several services that individually provides their own statement lookup capability
 \item \textbf{loader.tee-loader}: This service/client implements a tee ('T'). It unifies the loader capability of several services that individually provides their own loader capability
 \item \textbf{loader.tee-stmt-lookup}: This service/client implements a tee ('T'). It unifies the statement lookup capability of several services that individually provides their own statement lookup capability
@@ -211,7 +212,7 @@ Data bits: 8 bits\\
 Parity: odd\\
 
 \end{itemize}
-\section{Using the UNISIM Virtex 5 FXT simulator}
+\subsection{Using the UNISIM Virtex 5 FXT simulator}
 \label{UNISIM Virtex 5 FXT_using}
 The UNISIM Virtex 5 FXT simulator has the following command line options:\\
 ~\\
@@ -229,7 +230,7 @@ The UNISIM Virtex 5 FXT simulator has the following command line options:\\
 \item \texttt{--share-path $<$path$>$ or -p $<$path$>$}: the path that should be used for the share directory (absolute path)
 \item \texttt{--help or -h}: displays this help
 \end{itemize}
-\section{Configuration}
+\subsection{Configuration}
 \label{UNISIM Virtex 5 FXT_configuration}
 Simulator configuration (see below) can be modified using command line Options \texttt{--set $<$param=value$>$} or \texttt{--config $<$config file$>$}.\\
 ~\\
@@ -3306,7 +3307,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \hline
 \hline
 \end{supertabular}
-\section{Statistics}
+\subsection{Statistics}
 \label{UNISIM Virtex 5 FXT_statistics}
 Simulation statistic counters are listed below:\\
 ~\\
@@ -3509,7 +3510,7 @@ Simulation statistic counters are listed below:\\
 \hline
 \hline
 \end{supertabular}
-\section{Formulas}
+\subsection{Formulas}
 \label{UNISIM Virtex 5 FXT_formulas}
 Simulation statistic formulas are listed below:\\
 ~\\
