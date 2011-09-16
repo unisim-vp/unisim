@@ -190,6 +190,7 @@ private:
 
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
+	ADDRESS cont_until_addr;
 
 	string prompt;
 	char *hex_addr_fmt;
@@ -199,7 +200,7 @@ private:
 
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
-	bool GetLine(char *line, int size);
+	bool GetLine(const char *prompt, char *line, int size);
 	bool IsBlankLine(const char *line);
 	bool IsQuitCommand(const char *cmd);
 	bool IsStepCommand(const char *cmd);
@@ -211,17 +212,20 @@ private:
 	bool IsDeleteCommand(const char *cmd);
 	bool IsDeleteWatchCommand(const char *cmd);
 	bool IsDumpCommand(const char *cmd);
+	bool IsEditCommand(const char *cmd);
 	bool IsHelpCommand(const char *cmd);
 	bool IsResetCommand(const char *cmd);
 	bool IsMonitorCommand(const char *cmd, const char *format = 0);
 	bool IsRegisterCommand(const char *cmd, const char *format = 0);
 	bool IsStatisticCommand(const char *cmd, const char *format = 0);
 	bool IsParameterCommand(const char *cmd, const char *format = 0);
+	bool IsSymbolCommand(const char *cmd);
 	bool IsMonitorSetCommand(const char *cmd);
 	bool IsProfileCommand(const char *cmd);
 	bool IsLoadCommand(const char *cmd);
 	bool IsBackTraceCommand(const char *cmd);
 	bool IsLoadSymbolTableCommand(const char *cmd);
+	bool IsListSymbolsCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -235,10 +239,13 @@ private:
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
+	bool EditMemory(ADDRESS addr);
 	void DumpVariables();
 	void DumpRegisters();
 	void DumpStatistics();
 	void DumpParameters();
+	void DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name = 0);
+	void DumpSymbols(typename unisim::util::debug::Symbol<ADDRESS>::Type type, const char *name = 0);
 	void MonitorGetFormat(const char *cmd, char &format);
 	bool DumpVariable(const char *name);
 	void DumpVariable(const char *cmd, const unisim::kernel::service::VariableBase *variable);

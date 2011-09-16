@@ -83,10 +83,13 @@ public:
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
 	
+	void GetOption(Option opt, MEMORY_ADDR& addr);
+	void GetOption(Option opt, std::string& s);
+	void GetOption(Option opt, bool& flag);
 	
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
-	const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
+	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;

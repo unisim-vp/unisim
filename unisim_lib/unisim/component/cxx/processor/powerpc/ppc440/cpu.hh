@@ -212,6 +212,32 @@ private:
 	Type type;
 };
 
+class TimeBaseRegisterView : public unisim::kernel::service::VariableBase
+{
+public:
+	typedef enum
+	{
+		TB_LOW,
+		TB_HIGH
+	} Type;
+	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint64_t& storage, Type type, const char *description);
+	virtual ~TimeBaseRegisterView();
+	virtual const char *GetDataTypeName() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator std::string () const;
+	virtual unisim::kernel::service::VariableBase& operator = (bool value);
+	virtual unisim::kernel::service::VariableBase& operator = (long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (double value);
+	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+private:
+	uint64_t& storage;
+	Type type;
+};
+
 template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>,
@@ -997,7 +1023,8 @@ private:
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 	uint64_t num_interrupts;
 
-	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
+	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces
+	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;

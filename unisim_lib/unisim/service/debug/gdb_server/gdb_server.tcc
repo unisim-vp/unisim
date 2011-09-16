@@ -1399,49 +1399,62 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		 *
 		 * with: symbType in {"FUNCTION", "VARIABLE"}
 		 */
-		const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+		if(symbol_table_lookup_import)
+		{
+			list<const Symbol<ADDRESS> *> func_symbols;
+			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_FUNC);
 
-		if (symbol_registries != 0) {
+			if (!func_symbols.empty()) {
 
-			typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
-			std::stringstream strstm;
+				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+				std::stringstream strstm;
 
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
-			{
-				strstm << "O";
-				strstm << (*symbol_iter)->GetName();
+				for(symbol_iter = func_symbols.begin(); symbol_iter != func_symbols.end(); symbol_iter++)
+				{
+					strstm << "O";
+					strstm << (*symbol_iter)->GetName();
 
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
+					strstm << ":" << std::hex;
+					strstm.width(8);
+					strstm << (*symbol_iter)->GetAddress();
 
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
 
-				strstm << ":" << "FUNCTION";
+					strstm << ":" << "FUNCTION";
 
-				PutPacket(strstm.str());
+					PutPacket(strstm.str());
 
-				strstm.str(std::string());
+					strstm.str(std::string());
+				}
 			}
+		
+			list<const Symbol<ADDRESS> *> obj_symbols;
+			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_OBJECT);
+		
+			if (!obj_symbols.empty()) {
 
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
-			{
+				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+				std::stringstream strstm;
 
-				strstm << "O";
-				strstm << (*symbol_iter)->GetName();
+				for(symbol_iter = obj_symbols.begin(); symbol_iter != obj_symbols.end(); symbol_iter++)
+				{
 
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
+					strstm << "O";
+					strstm << (*symbol_iter)->GetName();
 
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+					strstm << ":" << std::hex;
+					strstm.width(8);
+					strstm << (*symbol_iter)->GetAddress();
 
-				strstm << ":" << "VARIABLE";
+					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
 
-				PutPacket(strstm.str());
+					strstm << ":" << "VARIABLE";
 
-				strstm.str(std::string());
+					PutPacket(strstm.str());
 
+					strstm.str(std::string());
+
+				}
 			}
 
 			PutPacket("T05");

@@ -198,8 +198,12 @@ const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMOR
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols() const {
-	return elf_loader ? elf_loader->GetSymbols() : 0;
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	if(elf_loader)
+	{
+		elf_loader->GetSymbols(lst, type);
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

@@ -623,7 +623,10 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	{
 		case FMT_DEFAULT:
 		case FMT_HEX:
-			sstr << "0x" << hex << (unsigned long long) *storage;
+			sstr << "0x" << hex;
+			sstr.fill('0');
+			sstr.width(2 * sizeof(TYPE));
+			sstr << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
 			sstr << dec;
