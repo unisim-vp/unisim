@@ -750,6 +750,7 @@ void CPU<CONFIG>::Reset()
 	srr1 = 0;
 	tb = 0;
 
+	usprg0 = 0;
 	for(i = 0; i < CONFIG::NUM_SPRGS; i++)
 	{
 		sprg[i] = 0;
@@ -822,6 +823,7 @@ void CPU<CONFIG>::Reset()
 	rstcfg = CONFIG::RSTCFG_RESET_VALUE;
 	mmucr = CONFIG::MMUCR_RESET_VALUE;
 	pid = 0;
+	pir = 0;
 	dec = 0;
 	decar = 0;
 	tcr = 0;
@@ -1160,14 +1162,27 @@ void CPU<CONFIG>::SetSPR(unsigned int n, uint32_t value)
 		case 0x100:
 			SetUSPRG0(value);
 			return;
-		case 0x0110:
-		case 0x0111:
-		case 0x0112:
-		case 0x0113:
-		case 0x0114:
-		case 0x0115:
-		case 0x0116:
-		case 0x0117:
+		case 0x104:
+		case 0x105:
+		case 0x106:
+		case 0x107:
+		{
+			unsigned int num_sprg = n - 0x104 + 4;
+			if(num_sprg < CONFIG::NUM_SPRGS)
+			{
+				SetSPRG(num_sprg, value);
+				return;
+			}
+			throw IllegalInstructionException<CONFIG>();
+		}
+		case 0x110:
+		case 0x111:
+		case 0x112:
+		case 0x113:
+		case 0x114:
+		case 0x115:
+		case 0x116:
+		case 0x117:
 		{
 			unsigned int num_sprg = n - 0x110;
 			if(num_sprg < CONFIG::NUM_SPRGS)

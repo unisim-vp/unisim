@@ -507,28 +507,28 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if (IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
-					DumpVariables();
+					DumpVariables("m");
 					break;
 				}
 				
 				if (IsRegisterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpRegisters();
+					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0]))
 				{
 					recognized = true;
-					DumpStatistics();
+					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpParameters();
+					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -558,20 +558,9 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsListSymbolsCommand(parm[0]))
 				{
 					recognized = true;
-					std::cout << "FUNCTIONS:" << std::endl;
-					DumpSymbols(unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC);
-					std::cout << std::endl << "OBJECTS:" << std::endl;
-					DumpSymbols(unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT);
+					DumpSymbols();
 					break;
 				}
-				
-				if (recognized == false)
-				{
-					// check for possible variable that could have the given name (parm[0])
-					recognized = DumpVariable(parm[0]);
-					break;
-				}
-
 				break;
 			case 2:
 				if(IsDisasmCommand(parm[0]) && ParseAddr(parm[1], disasm_addr))
@@ -638,28 +627,28 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if (IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
-					DumpVariable(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1]);
 					break;
 				}
 				
 				if (IsRegisterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpRegister(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0]))
 				{
 					recognized = true;
-					DumpStatistic(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpParameter(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -697,10 +686,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if(IsListSymbolsCommand(parm[0]))
 				{
 					recognized = true;
-					std::cout << "FUNCTIONS:" << std::endl;
-					DumpSymbols(unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC, parm[1]);
-					std::cout << std::endl << "OBJECTS:" << std::endl;
-					DumpSymbols(unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT, parm[1]);
+					DumpSymbols(parm[1]);
 					break;
 				}
 				break;
@@ -760,7 +746,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpVariable(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2]);
 					break;
 				}
 				
@@ -770,7 +756,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpRegister(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
@@ -780,7 +766,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpStatistic(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
@@ -790,7 +776,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpParameter(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -1271,101 +1257,47 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariables()
+void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::service::VariableBase::Type type)
 {
+	bool found = false;
 	list<VariableBase *> lst;
 	list<VariableBase *>::iterator iter;
+
+	GetSimulator()->GetVariables(lst, type);
 	
-	cout << "VARIABLES LIST:";
+	if(!lst.size()) return;
 	
-	GetSimulator()->GetVariables(lst);
-	if (lst.size() == 0) cout << " No variables" << endl;
-	else
+	for(iter = lst.begin(); iter != lst.end(); iter++)
 	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
+		VariableBase *var = *iter;
+		std::string var_name(var->GetName());
+		
+		if(!name || ((*name == '~') && var_name.find(name + 1, 0, strlen(name + 1)) != string::npos) || (var_name.compare(name) == 0))
 		{
-			VariableBase::Type type = (*iter)->GetType();
-			if(type != VariableBase::VAR_VOID)
-			{
-				switch (type)
-				{
-					case VariableBase::VAR_ARRAY:
-						cout << " A";
-						break;
-					case VariableBase::VAR_PARAMETER:
-						cout << " P";
-						break;
-					case VariableBase::VAR_STATISTIC:
-						cout << " S";
-						break;
-					case VariableBase::VAR_FORMULA:
-						cout << " F";
-						break;
-					case VariableBase::VAR_REGISTER:
-						cout << " R";
-						break;
-					default:
-						cout << " ?";
-						break;
-				}
-				cout << "\t" << (*iter)->GetName() << endl;
-			}
+			DumpVariable(cmd, var);
+			found = true;
 		}
 	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpRegisters()
-{
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
 	
-	cout << "REGISTERS LIST:";
-	
-	GetSimulator()->GetRegisters(lst);
-	if (lst.size() == 0) cout << " No registers" << endl;
-	else
+	if(!found)
 	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
-			cout << "\t" << (*iter)->GetName() << endl;
-	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpStatistics()
-{
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
-	
-	cout << "STATISTICS LIST:";
-	
-	GetSimulator()->GetStatistics(lst);
-	if (lst.size() == 0) cout << " No statistics" << endl;
-	else
-	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
-			cout << "\t" << (*iter)->GetName() << endl;
-	}
-}
-	
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpParameters()
-{
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
-	
-	cout << "PARAMETERS LIST:";
-	
-	GetSimulator()->GetParameters(lst);
-	if (lst.size() == 0) cout << " No parameters" << endl;
-	else
-	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
-			cout << "\t" << (*iter)->GetName() << endl;
+		std::cout << "unknown ";
+		switch(type)
+		{
+			case unisim::kernel::service::VariableBase::VAR_REGISTER:
+				std::cout << "register";
+				break;
+			case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+				std::cout << "statistic";
+				break;
+			case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+				std::cout << "parameter";
+				break;
+			default:
+				std::cout << "variable";
+				break;
+		}
+		std::cout << " \"" << ((*name == '~') ? name + 1 : name) << "\"" << std::endl;
 	}
 }
 
@@ -1438,29 +1370,31 @@ void InlineDebugger<ADDRESS>::MonitorGetFormat(const char *cmd, char &format)
 }
 
 template <class ADDRESS>
-bool 
-InlineDebugger<ADDRESS>::
-DumpVariable(const char *name)
-{
-	bool found = false;
-	list<VariableBase *> vars;
-	GetSimulator()->GetVariables(vars);
-	list<VariableBase *>::iterator var_it;
-	
-	for (var_it = vars.begin(); var_it != vars.end(); var_it++)
-	{
-		if (string((*var_it)->GetName()).find(name, 0, strlen(name)) != string::npos)
-		{
-			found = true;
-			DumpVariable("m", (*var_it)->GetName());
-		}
-	}
-	return found;
-}
-	
-template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *variable)
 {
+	switch (variable->GetType())
+	{
+		case VariableBase::VAR_ARRAY:
+			cout << " A";
+			break;
+		case VariableBase::VAR_PARAMETER:
+			cout << " P";
+			break;
+		case VariableBase::VAR_STATISTIC:
+			cout << " S";
+			break;
+		case VariableBase::VAR_FORMULA:
+			cout << " F";
+			break;
+		case VariableBase::VAR_REGISTER:
+			cout << " R";
+			break;
+		default:
+			cout << " ?";
+			break;
+	}
+
+	cout << "\t";
 	/* extract the format if any */
 	char format = 0;
 	MonitorGetFormat(cmd, format);
@@ -1502,99 +1436,9 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
-{
-	VariableBase *variable = GetSimulator()->FindVariable(name);
-	
-	if (variable->IsVoid())
-	{
-		cout << "Unknow variable (" << name << ")" << endl;
-		return;
-	}
-
-	switch (variable->GetType())
-	{
-		case VariableBase::VAR_ARRAY:
-			cout << " A";
-			break;
-		case VariableBase::VAR_PARAMETER:
-			cout << " P";
-			break;
-		case VariableBase::VAR_STATISTIC:
-			cout << " S";
-			break;
-		case VariableBase::VAR_FORMULA:
-			cout << " F";
-			break;
-		case VariableBase::VAR_REGISTER:
-			cout << " R";
-			break;
-		default:
-			cout << " ?";
-			break;
-	}
-
-	cout << "\t";
-	DumpVariable(cmd, variable);
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
-{
-	VariableBase *variable = GetSimulator()->FindRegister(name);
-	
-	if (variable->IsVoid())
-	{
-		cout << "Unknow register (" << name << ")" << endl;
-		return;
-	}
-
-	DumpVariable(cmd, variable);
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
-{
-	VariableBase *variable = GetSimulator()->FindStatistic(name);
-	
-	if (variable->IsVoid())
-	{
-		cout << "Unknow statistic (" << name << ")" << endl;
-		return;
-	}
-	
-	DumpVariable(cmd, variable);
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
-{
-	VariableBase *variable = GetSimulator()->FindParameter(name);
-	
-	if (variable->IsVoid())
-	{
-		cout << "Unknow parameter (" << name << ")" << endl;
-		return;
-	}
-	
-	DumpVariable(cmd, variable);
-}
-
-template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name)
 {
-	cout << "  ";
-	cout.fill(' ');
-	cout.width(2 * sizeof(ADDRESS));
-	cout << "Address";
-	cout.fill(' ');
-	cout.width(1 + (2 * sizeof(ADDRESS)));
-	cout << "Size";
-	cout.width(10);
-	cout << "Type";
-	cout.width(0);
-	cout << " Name";
-	cout << std::endl;
+	bool found = false;
 	
 	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>::const_iterator symbol_iter;
 	for(symbol_iter = symbols.begin(); symbol_iter != symbols.end(); symbol_iter++)
@@ -1603,8 +1447,25 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim:
 		
 		std::string symbol_name(symbol->GetName());
 		
-		if(!name || (symbol_name.find(name, 0, strlen(name)) != string::npos))
+		if(!name || ((*name == '~') && symbol_name.find(name + 1, 0, strlen(name + 1)) != string::npos) || (symbol_name.compare(name) == 0))
 		{
+			if(!found)
+			{
+				// print header of table
+				cout << "  ";
+				cout.fill(' ');
+				cout.width(2 * sizeof(ADDRESS));
+				cout << "Address";
+				cout.fill(' ');
+				cout.width(1 + (2 * sizeof(ADDRESS)));
+				cout << "Size";
+				cout.width(10);
+				cout << "Type";
+				cout.width(0);
+				cout << " Name";
+				cout << std::endl;
+			}
+			
 			std::string type_name;
 			
 			switch(symbol->GetType())
@@ -1659,36 +1520,52 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim:
 			cout.width(0);
 			cout << " " << symbol->GetName();
 			cout << std::endl;
+			
+			found = true;
 		}
+	}
+	
+	if(!found)
+	{
+		std::cout << "unknown symbol \"" << ((*name == '~') ? name + 1 : name) << "\"" << std::endl;
 	}
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpSymbols(typename unisim::util::debug::Symbol<ADDRESS>::Type type, const char *name)
+void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 {
-	unsigned int i;
+	unsigned int i, j;
+	typename unisim::util::debug::Symbol<ADDRESS>::Type types[] = {
+		unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT
+	};
 	
 	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *> symbols;
-
-	for(i = 0; i < num_loaders; i++)
+	
+	for(j = 0; j < (sizeof(types) / sizeof(types[0])); j++)
 	{
-		if(*symbol_table_lookup_import[i])
+		typename unisim::util::debug::Symbol<ADDRESS>::Type type = types[j];
+
+		for(i = 0; i < num_loaders; i++)
 		{
-			(*symbol_table_lookup_import[i])->GetSymbols(symbols, type);
+			if(*symbol_table_lookup_import[i])
+			{
+				(*symbol_table_lookup_import[i])->GetSymbols(symbols, type);
+			}
+		}
+
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; i < num_elf32_loaders; i++)
+		{
+			elf32_loaders[i]->GetSymbols(symbols, type);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; i < num_elf64_loaders; i++)
+		{
+			elf64_loaders[i]->GetSymbols(symbols, type);
 		}
 	}
-
-	unsigned int num_elf32_loaders = elf32_loaders.size();
-	for(i = 0; i < num_elf32_loaders; i++)
-	{
-		elf32_loaders[i]->GetSymbols(symbols, type);
-	}
-	unsigned int num_elf64_loaders = elf64_loaders.size();
-	for(i = 0; i < num_elf64_loaders; i++)
-	{
-		elf64_loaders[i]->GetSymbols(symbols, type);
-	}
-
+	
 	if(!symbols.empty())
 	{
 		DumpSymbols(symbols, name);
