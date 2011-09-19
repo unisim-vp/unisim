@@ -129,9 +129,12 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>
-const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::GetSymbols() const
+void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
 {
-	return symbol_table ? symbol_table->GetSymbols() : 0;
+	if(symbol_table)
+	{
+		symbol_table->GetSymbols(lst, type);
+	}
 }
 
 template <class MEMORY_ADDR, class Elf_Sym>

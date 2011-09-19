@@ -143,6 +143,63 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, MEMORY_ADDR& addr)
+{
+	switch(opt)
+	{
+		case OPT_BASE_ADDR:
+			addr = base_addr;
+			break;
+		default:
+			addr = 0;
+			break;
+	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, std::string& s)
+{
+	switch(opt)
+	{
+		case OPT_FILENAME:
+			s = filename;
+			break;
+		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
+			s = dwarf_to_html_output_directory;
+			break;
+		default:
+			s.clear();
+			break;
+	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, bool& flag)
+{
+	switch(opt)
+	{
+		case OPT_FORCE_BASE_ADDR:
+			flag = force_base_addr;
+			break;
+		case OPT_FORCE_USE_VIRTUAL_ADDRESS:
+			flag = force_use_virtual_address;
+			break;
+		case OPT_DUMP_HEADERS:
+			flag = dump_headers;
+			break;
+		case OPT_VERBOSE:
+			flag = verbose;
+			break;
+		case OPT_PARSE_DWARF:
+			flag = parse_dwarf;
+			break;
+		default:
+			flag = false;
+			break;
+	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load()
 {
 	if(dw_handler)
@@ -492,8 +549,12 @@ const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMOR
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols() const {
-	return symtab_handler ? symtab_handler->GetSymbols() : 0;
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	if(symtab_handler)
+	{
+		symtab_handler->GetSymbols(lst, type);
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

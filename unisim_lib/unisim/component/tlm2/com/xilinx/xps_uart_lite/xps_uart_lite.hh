@@ -245,7 +245,6 @@ private:
 	/** The parameter for the cycle time */
 	Parameter<sc_time> param_cycle_time;
 	Parameter<sc_time> param_telnet_refresh_time;
-	Statistic<bool> stat_interrupt_output;
 
 	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 	Schedule<Event> schedule;

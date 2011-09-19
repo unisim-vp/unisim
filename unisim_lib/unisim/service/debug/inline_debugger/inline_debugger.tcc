@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_DEBUG_INLINE_DEBUGGER_INLINE_DEBUGGER_TCC_
 
 #include <iostream>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
@@ -74,7 +75,6 @@ using std::dec;
 using std::streamsize;
 using unisim::kernel::service::Simulator;
 using unisim::kernel::service::VariableBase;
-using unisim::util::debug::Statement;
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
@@ -102,6 +102,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, loader_import(0)
 	, stmt_lookup_import(0)
 	, backtrace_import(0)
+	, logger(*this)
 	, memory_atom_size(1)
 	, num_loaders(0)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -115,6 +116,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, running_mode(INLINE_DEBUGGER_MODE_WAITING_USER)
 	, disasm_addr(0)
 	, dump_addr(0)
+	, cont_until_addr(0)
 	, prompt(string(_name) + "> ")
 	, hex_addr_fmt(0)
 	, int_addr_fmt(0)
@@ -206,12 +208,13 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::~InlineDebugger()
 {
+	unsigned int i;
+	
 	free(hex_addr_fmt);
 	free(int_addr_fmt);
 
 	if(num_loaders)
 	{
-		unsigned int i;
 		
 		for(i = 0; i < num_loaders; i++)
 		{
@@ -224,6 +227,18 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 		delete[] symbol_table_lookup_import;
 		delete[] stmt_lookup_import;
 		delete[] backtrace_import;
+	}
+	
+	for(i = 0; i < elf32_loaders.size(); i++)
+	{
+		unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+		delete elf32_loader;
+	}
+
+	for(i = 0; i < elf64_loaders.size(); i++)
+	{
+		unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+		delete elf64_loader;
 	}
 }
 
@@ -329,7 +344,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	
 	if(running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL)
 	{
-		DeleteBreakpoint(cont_addr);
+		DeleteBreakpoint(cont_until_addr);
 	}
 	
 	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
@@ -349,7 +364,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	{
 		//cout << "> ";
 
-		if(!GetLine(line, sizeof(line)))
+		if(!GetLine(prompt.c_str(), line, sizeof(line)))
 		{
 			Object::Stop(0);
 			return DebugControl<ADDRESS>::DBG_KILL;
@@ -433,7 +448,8 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					else
 					{
 						running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
-						SetBreakpoint(cont_addr);
+						cont_until_addr = cont_addr;
+						SetBreakpoint(cont_until_addr);
 					}
 					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
@@ -491,28 +507,28 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if (IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
-					DumpVariables();
+					DumpVariables("m");
 					break;
 				}
 				
 				if (IsRegisterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpRegisters();
+					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0]))
 				{
 					recognized = true;
-					DumpStatistics();
+					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpParameters();
+					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -539,13 +555,12 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
-				if (recognized == false)
+				if(IsListSymbolsCommand(parm[0]))
 				{
-					// check for possible variable that could have the given name (parm[0])
-					recognized = DumpVariable(parm[0]);
+					recognized = true;
+					DumpSymbols();
 					break;
 				}
-
 				break;
 			case 2:
 				if(IsDisasmCommand(parm[0]) && ParseAddr(parm[1], disasm_addr))
@@ -561,6 +576,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					recognized = true;
 					DumpMemory(dump_addr);
 					dump_addr += 256;
+					break;
+				}
+
+				if(IsEditCommand(parm[0]) && ParseAddr(parm[1], addr))
+				{
+					recognized = true;
+					EditMemory(addr);
 					break;
 				}
 
@@ -596,7 +618,8 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 					strcpy(last_line, line);
-					SetBreakpoint(cont_addr);
+					cont_until_addr = cont_addr;
+					SetBreakpoint(cont_until_addr);
 					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
@@ -604,28 +627,28 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				if (IsMonitorCommand(parm[0]))
 				{
 					recognized = true;
-					DumpVariable(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1]);
 					break;
 				}
 				
 				if (IsRegisterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpRegister(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
 				if (IsStatisticCommand(parm[0]))
 				{
 					recognized = true;
-					DumpStatistic(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
 				if (IsParameterCommand(parm[0]))
 				{
 					recognized = true;
-					DumpParameter(parm[0], parm[1]);
+					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -650,6 +673,20 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					recognized = true;
 					Load(parm[1]);
+					break;
+				}
+
+				if(IsLoadSymbolTableCommand(parm[0]))
+				{
+					recognized = true;
+					LoadSymbolTable(parm[1]);
+					break;
+				}
+
+				if(IsListSymbolsCommand(parm[0]))
+				{
+					recognized = true;
+					DumpSymbols(parm[1]);
 					break;
 				}
 				break;
@@ -709,7 +746,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpVariable(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2]);
 					break;
 				}
 				
@@ -719,7 +756,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpRegister(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
@@ -729,7 +766,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpStatistic(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
@@ -739,7 +776,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					std::stringstream str;
 					str << parm[0];
 					str << parm[1];
-					DumpParameter(str.str().c_str(), parm[2]);
+					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -785,8 +822,10 @@ void InlineDebugger<ADDRESS>::Help()
 {
 	cout << "HELP:" << endl;
 	cout << "================================  LOAD =========================================" << endl;
-	cout << "<l | ld | load> [<loader name> <filename>]" << endl;
-	cout << "    load program file <filename> using loader <loader name>" << endl;
+	cout << "<l | ld | load> <loader name>" << endl;
+	cout << "    reload program file of loader <loader name>" << endl;
+	cout << "<st | symtab> [<filename>]" << endl;
+	cout << "    load symbol table from file <filename>" << endl;
 	cout << "================================ EXECUTE =======================================" << endl;
 	cout << "<c | cont | continue> [<symbol | *address>]" << endl;
 	cout << "    continue to execute instructions until program reaches a breakpoint," << endl;
@@ -808,6 +847,9 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<d | dump> [<symbol | *address>]" << endl;
 	cout << "    dump memory starting from 'symbol', 'address', or after the previous dump" << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "<e | ed | edit> <symbol | *address>" << endl;
+	cout << "    edit data memory starting from 'symbol' or 'address'" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<register name>" << endl;
 	cout << "    display the register value" << endl;
@@ -837,6 +879,9 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "set <variable name> <value>" << endl;
 	cout << "    sets the variable (register/parameter/statistic) to the given value" << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
+	cout << "<sym | symbol> [<symbol name>]" << endl;
+	cout << "    Display information about symbols having 'symbol name' in their name" << endl;
+	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<p | prof | profile>" << endl;
 	cout << "<p | prof | profile> program" << endl;
 	cout << "<p | prof | profile> data" << endl;
@@ -851,7 +896,7 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "<w | watch> [<symbol | *address[:<size>]>] [<read | write>]" << endl;
 	cout << "    set a watchpoint at 'symbol' or 'address'." << endl;
 	cout << "    When using 'continue' and 'next' commands, the debugger will spy CPU loads" << endl;
-	cout << "    and store. The debugger will return to command line prompt once a load," << endl;
+	cout << "    and stores. The debugger will return to command line prompt once a load," << endl;
 	cout << "    or a store will access to 'symbol' or 'address'." << endl;
 	cout << "--------------------------------------------------------------------------------" << endl;
 	cout << "<del | delete> <symbol | *address | filename#lineno>" << endl;
@@ -877,15 +922,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 		ADDRESS next_addr;
 		do
 		{
-			const Statement<ADDRESS> *stmt = 0;
-			unsigned int i;
-			for(i = 0; (!stmt) && (i < num_loaders); i++)
-			{
-				if(*stmt_lookup_import[i])
-				{
-					stmt = (*stmt_lookup_import[i])->FindStatement(addr);
-				}
-			}
+			const Statement<ADDRESS> *stmt = FindStatement(addr);
 			
 			if(stmt)
 			{
@@ -907,15 +944,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 			}
 			
 			cout.fill('0');
-			const Symbol<ADDRESS> *symbol = 0;
-			
-			for(i = 0; (!symbol) && (i < num_loaders); i++)
-			{
-				if(*symbol_table_lookup_import[i])
-				{
-					symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-				}
-			}
+			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 			string s = disasm_import->Disasm(addr, next_addr);
 			
 			if(symbol)
@@ -1046,16 +1075,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 		
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1067,15 +1087,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		}
 		cout << ")";
 		
-		const Statement<ADDRESS> *stmt = 0;
-		//unsigned int i;
-		for(i = 0; (!stmt) && (i < num_loaders); i++)
-		{
-			if(*stmt_lookup_import[i])
-			{
-				stmt = (*stmt_lookup_import[i])->FindStatement(addr);
-			}
-		}
+		const Statement<ADDRESS> *stmt = FindStatement(addr);
 		
 		if(stmt)
 		{
@@ -1140,16 +1152,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		
 		cout << "*0x" << hex << (addr / memory_atom_size) << dec << ":" << (size / memory_atom_size) << " (";
 		
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1203,96 +1206,98 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 	}
 	cout.width(width);
 }
-	
+
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariables()
+bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 {
+	unsigned int written = 0;
+	unsigned int failed = 0;
+	char line[1024];
+
+	std::cout << "Entering data memory edit mode." << std::endl;
+	do
+	{
+		std::stringstream sstr;
+		sstr << "0x" << std::hex;
+		sstr.fill('0');
+		sstr.width(2 * sizeof(addr));
+		sstr << addr;
+		sstr << ": ";
+		
+		if(!GetLine(sstr.str().c_str(), line, sizeof(line)))
+		{
+			return false;
+		}
+	
+		if(strlen(line) == 0) break;
+
+		char *ptr = line;
+		char *endptr = line;
+		
+		do
+		{
+			uint8_t value = strtoul(ptr, &endptr, 0);
+			
+			if(ptr == endptr) break;
+		
+			if(memory_import->WriteMemory(addr, &value, 1))
+				written++;
+			else
+				failed++;
+			
+			addr++;
+			ptr = endptr;
+		}
+		while(1);
+	}
+	while(1);
+	std::cout << "Leaving data memory edit mode." << std::endl;
+	std::cout << written << " of " << (failed + written) << " bytes written" << std::endl;
+	return true;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpVariables(const char *cmd, const char *name, typename unisim::kernel::service::VariableBase::Type type)
+{
+	bool found = false;
 	list<VariableBase *> lst;
 	list<VariableBase *>::iterator iter;
+
+	GetSimulator()->GetVariables(lst, type);
 	
-	cout << "VARIABLES LIST:";
+	if(!lst.size()) return;
 	
-	GetSimulator()->GetVariables(lst);
-	if (lst.size() == 0) cout << " No variables" << endl;
-	else
+	for(iter = lst.begin(); iter != lst.end(); iter++)
 	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
+		VariableBase *var = *iter;
+		std::string var_name(var->GetName());
+		
+		if(!name || ((*name == '~') && var_name.find(name + 1, 0, strlen(name + 1)) != string::npos) || (var_name.compare(name) == 0))
 		{
-			switch ((*iter)->GetType())
-			{
-				case VariableBase::VAR_VOID:
-					cout << " V";
-					break;
-				case VariableBase::VAR_PARAMETER:
-					cout << " P";
-					break;
-				case VariableBase::VAR_STATISTIC:
-					cout << " S";
-					break;
-				case VariableBase::VAR_REGISTER:
-					cout << " R";
-					break;
-				default:
-					cout << " ?";
-					break;
-			}
-			cout << "\t" << (*iter)->GetName() << endl;
+			DumpVariable(cmd, var);
+			found = true;
 		}
 	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpRegisters()
-{
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
 	
-	cout << "REGISTERS LIST:";
-	
-	GetSimulator()->GetRegisters(lst);
-	if (lst.size() == 0) cout << " No registers" << endl;
-	else
+	if(!found)
 	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
-			cout << "\t" << (*iter)->GetName() << endl;
-	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpStatistics()
-{
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
-	
-	cout << "STATISTICS LIST:";
-	
-	GetSimulator()->GetStatistics(lst);
-	if (lst.size() == 0) cout << " No statistics" << endl;
-	else
-	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
-			cout << "\t" << (*iter)->GetName() << endl;
-	}
-}
-	
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpParameters()
-{
-	list<VariableBase *> lst;
-	list<VariableBase *>::iterator iter;
-	
-	cout << "PARAMETERS LIST:";
-	
-	GetSimulator()->GetParameters(lst);
-	if (lst.size() == 0) cout << " No parameters" << endl;
-	else
-	{
-		cout << endl;
-		for (iter = lst.begin(); iter != lst.end(); iter++)
-			cout << "\t" << (*iter)->GetName() << endl;
+		std::cout << "unknown ";
+		switch(type)
+		{
+			case unisim::kernel::service::VariableBase::VAR_REGISTER:
+				std::cout << "register";
+				break;
+			case unisim::kernel::service::VariableBase::VAR_STATISTIC:
+				std::cout << "statistic";
+				break;
+			case unisim::kernel::service::VariableBase::VAR_PARAMETER:
+				std::cout << "parameter";
+				break;
+			default:
+				std::cout << "variable";
+				break;
+		}
+		std::cout << " \"" << ((*name == '~') ? name + 1 : name) << "\"" << std::endl;
 	}
 }
 
@@ -1365,29 +1370,31 @@ void InlineDebugger<ADDRESS>::MonitorGetFormat(const char *cmd, char &format)
 }
 
 template <class ADDRESS>
-bool 
-InlineDebugger<ADDRESS>::
-DumpVariable(const char *name)
-{
-	bool found = false;
-	list<VariableBase *> vars;
-	GetSimulator()->GetVariables(vars);
-	list<VariableBase *>::iterator var_it;
-	
-	for (var_it = vars.begin(); var_it != vars.end(); var_it++)
-	{
-		if (string((*var_it)->GetName()).find(name, 0, strlen(name)) != string::npos)
-		{
-			found = true;
-			DumpVariable("m", (*var_it)->GetName());
-		}
-	}
-	return found;
-}
-	
-template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *variable)
 {
+	switch (variable->GetType())
+	{
+		case VariableBase::VAR_ARRAY:
+			cout << " A";
+			break;
+		case VariableBase::VAR_PARAMETER:
+			cout << " P";
+			break;
+		case VariableBase::VAR_STATISTIC:
+			cout << " S";
+			break;
+		case VariableBase::VAR_FORMULA:
+			cout << " F";
+			break;
+		case VariableBase::VAR_REGISTER:
+			cout << " R";
+			break;
+		default:
+			cout << " ?";
+			break;
+	}
+
+	cout << "\t";
 	/* extract the format if any */
 	char format = 0;
 	MonitorGetFormat(cmd, format);
@@ -1429,81 +1436,143 @@ void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const VariableBase *
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpVariable(const char *cmd, const char *name)
+void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name)
 {
-	VariableBase *variable = GetSimulator()->FindVariable(name);
+	bool found = false;
 	
-	if (variable->IsVoid())
+	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>::const_iterator symbol_iter;
+	for(symbol_iter = symbols.begin(); symbol_iter != symbols.end(); symbol_iter++)
 	{
-		cout << "Unknow variable (" << name << ")" << endl;
-		return;
+		const unisim::util::debug::Symbol<ADDRESS> *symbol = *symbol_iter;
+		
+		std::string symbol_name(symbol->GetName());
+		
+		if(!name || ((*name == '~') && symbol_name.find(name + 1, 0, strlen(name + 1)) != string::npos) || (symbol_name.compare(name) == 0))
+		{
+			if(!found)
+			{
+				// print header of table
+				cout << "  ";
+				cout.fill(' ');
+				cout.width(2 * sizeof(ADDRESS));
+				cout << "Address";
+				cout.fill(' ');
+				cout.width(1 + (2 * sizeof(ADDRESS)));
+				cout << "Size";
+				cout.width(10);
+				cout << "Type";
+				cout.width(0);
+				cout << " Name";
+				cout << std::endl;
+			}
+			
+			std::string type_name;
+			
+			switch(symbol->GetType())
+			{
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_NOTYPE:
+					type_name = "no type";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT:
+					type_name = "object";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC:
+					type_name = "function";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_SECTION:
+					type_name = "section";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_FILE:
+					type_name = "file";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_COMMON:
+					type_name = "common";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_TLS:
+					type_name = "tls";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_NUM:
+					type_name = "num";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_LOOS:
+					type_name = "loos";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_HIOS:
+					type_name = "hios";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_LOPROC:
+					type_name = "loproc";
+					break;
+				case unisim::util::debug::Symbol<ADDRESS>::SYM_HIPROC:
+					type_name = "hiproc";
+					break;
+			}
+			
+			cout << std::hex << "0x";
+			cout.fill('0');
+			cout.width(2 * sizeof(ADDRESS));
+			cout << symbol->GetAddress() << std::dec;
+			cout.fill(' ');
+			cout.width(1 + (2 * sizeof(ADDRESS)));
+			cout << symbol->GetSize();
+			cout.width(10);
+			cout << type_name;
+			cout.width(0);
+			cout << " " << symbol->GetName();
+			cout << std::endl;
+			
+			found = true;
+		}
 	}
-
-	switch (variable->GetType())
+	
+	if(!found)
 	{
-		case VariableBase::VAR_VOID:
-			cout << " V";
-			break;
-		case VariableBase::VAR_PARAMETER:
-			cout << " P";
-			break;
-		case VariableBase::VAR_STATISTIC:
-			cout << " S";
-			break;
-		case VariableBase::VAR_REGISTER:
-			cout << " R";
-			break;
-		default:
-			cout << " ?";
-			break;
+		std::cout << "unknown symbol \"" << ((*name == '~') ? name + 1 : name) << "\"" << std::endl;
 	}
-
-	cout << "\t";
-	DumpVariable(cmd, variable);
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpRegister(const char *cmd, const char *name)
+void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 {
-	VariableBase *variable = GetSimulator()->FindRegister(name);
+	unsigned int i, j;
+	typename unisim::util::debug::Symbol<ADDRESS>::Type types[] = {
+		unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT
+	};
 	
-	if (variable->IsVoid())
+	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *> symbols;
+	
+	for(j = 0; j < (sizeof(types) / sizeof(types[0])); j++)
 	{
-		cout << "Unknow register (" << name << ")" << endl;
-		return;
-	}
+		typename unisim::util::debug::Symbol<ADDRESS>::Type type = types[j];
 
-	DumpVariable(cmd, variable);
-}
+		for(i = 0; i < num_loaders; i++)
+		{
+			if(*symbol_table_lookup_import[i])
+			{
+				(*symbol_table_lookup_import[i])->GetSymbols(symbols, type);
+			}
+		}
 
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpStatistic(const char *cmd, const char *name)
-{
-	VariableBase *variable = GetSimulator()->FindStatistic(name);
-	
-	if (variable->IsVoid())
-	{
-		cout << "Unknow statistic (" << name << ")" << endl;
-		return;
-	}
-	
-	DumpVariable(cmd, variable);
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpParameter(const char *cmd, const char *name)
-{
-	VariableBase *variable = GetSimulator()->FindParameter(name);
-	
-	if (variable->IsVoid())
-	{
-		cout << "Unknow parameter (" << name << ")" << endl;
-		return;
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; i < num_elf32_loaders; i++)
+		{
+			elf32_loaders[i]->GetSymbols(symbols, type);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; i < num_elf64_loaders; i++)
+		{
+			elf64_loaders[i]->GetSymbols(symbols, type);
+		}
 	}
 	
-	DumpVariable(cmd, variable);
+	if(!symbols.empty())
+	{
+		DumpSymbols(symbols, name);
+	}
 }
-	
+
+
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 {
@@ -1529,16 +1598,7 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		ADDRESS next_addr;
 
@@ -1622,6 +1682,116 @@ void InlineDebugger<ADDRESS>::Load(const char *loader_name)
 }
 
 template <class ADDRESS>
+std::string InlineDebugger<ADDRESS>::SearchFile(const char *filename)
+{
+	if(access(filename, F_OK) == 0)
+	{
+		return std::string(filename);
+	}
+
+	std::string s;
+	const char *p;
+
+	p = search_path.c_str();
+	do
+	{
+		if(*p == 0 || *p == ';')
+		{
+			std::stringstream sstr;
+			sstr << s << "/" << filename;
+			std::string path(sstr.str());
+			if(access(path.c_str(), F_OK) == 0)
+			{
+				return path;
+			}
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	
+	return Object::GetSimulator()->SearchSharedDataFile(filename);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
+{
+	std::string path(SearchFile(filename));
+	
+	uint8_t magic[8];
+	
+	std::ifstream f(path.c_str(), std::ifstream::in | std::ifstream::binary);
+	
+	if(f.fail())
+	{
+		cerr << "ERROR! Can't open input \"" << path << "\"" << endl;
+	}
+
+	// Note: code below is nearly equivalent to istream::readsome
+	// I no longer use it because it is bugged with i586-mingw32msvc-g++ (version 4.2.1-sjlj on Ubuntu)
+	unsigned int size;
+	for(size = 0; size < sizeof(magic); size++)
+	{
+		f.read((char *) &magic[size], 1);
+		if(!f.good()) break;
+	}
+	
+	if(size >= 5)
+	{
+		if((magic[0] == 0x7f) && (magic[1] == 'E') && (magic[2] == 'L') && (magic[3] == 'F'))
+		{
+			// ELF file detected
+			switch(magic[4])
+			{
+				case 1:
+					{
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
+						
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
+						
+						if(!elf32_loader->Load())
+						{
+							cerr << "ERROR! Loading input \"" << path << "\" failed" << endl;
+							delete elf32_loader;
+						}
+						else
+						{
+							cerr << "Symbols from \"" << path << "\" loaded" << endl;
+							elf32_loaders.push_back(elf32_loader);
+						}
+					}
+					break;
+				case 2:
+					{
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
+						
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
+
+						if(!elf64_loader->Load())
+						{
+							cerr << "ERROR! Loading input \"" << path << "\" failed" << endl;
+							delete elf64_loader;
+						}
+						else
+						{
+							cerr << "Symbols from \"" << path << "\" loaded" << endl;
+							elf64_loaders.push_back(elf64_loader);
+						}
+					}
+					break;
+				default:
+					cerr << "ERROR! Can't handle symbol table of input \"" << path << "\"" << endl;
+					break;
+			}
+		}
+	}
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
 	cout << "Data " << (write ? "write" : "read") << " profile:" << endl;
@@ -1631,16 +1801,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	for(iter = map.begin(); iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = 0;
-		
-		unsigned int i;
-		for(i = 0; (!symbol) && (i < num_loaders); i++)
-		{
-			if(*symbol_table_lookup_import[i])
-			{
-				symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-			}
-		}
+		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 		
 		cout << "0x" << hex;
 		cout.fill('0');
@@ -1809,15 +1970,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 			
 			ADDRESS return_addr = (*backtrace)[i];
 			
-			const Symbol<ADDRESS> *symbol = 0;
-			
-			for(i = 0; (!symbol) && (i < num_loaders); i++)
-			{
-				if(*symbol_table_lookup_import[i])
-				{
-					symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(return_addr);
-				}
-			}
+			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(return_addr);
 			
 			std::cout << "0x" << std::hex;
 			std::cout << (return_addr / memory_atom_size) << std::dec;
@@ -1864,16 +2017,7 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		return true;
 	}
 
-	const Symbol<ADDRESS> *symbol = 0;
-	
-	unsigned int i;
-	for(i = 0; (!symbol) && (i < num_loaders); i++)
-	{
-		if(*symbol_table_lookup_import[i])
-		{
-			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
-		}
-	}
+	const Symbol<ADDRESS> *symbol = FindSymbolByName(s);
 	
 	if(symbol)
 	{
@@ -1902,17 +2046,8 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		return true;
 	}
 	
-	const Symbol<ADDRESS> *symbol = 0;
+	const Symbol<ADDRESS> *symbol = FindSymbolByName(s);
 	
-	unsigned int i;
-	for(i = 0; (!symbol) && (i < num_loaders); i++)
-	{
-		if(*symbol_table_lookup_import[i])
-		{
-			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
-		}
-	}
-
 	if(symbol)
 	{
 		addr = symbol->GetAddress();
@@ -1929,14 +2064,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	if(*s == '#') s++;
 	if(sscanf(s, "%u", &lineno) != 1) return false;
 	
-	const Statement<ADDRESS> *stmt = 0;
-	for(i = 0; (!stmt) && (i < num_loaders); i++)
-	{
-		if(*stmt_lookup_import[i])
-		{
-			stmt = (*stmt_lookup_import[i])->FindStatement(filename.c_str(), lineno, 0);
-		}
-	}
+	const Statement<ADDRESS> *stmt = FindStatement(filename.c_str(), lineno, 0);
 	
 	if(stmt)
 	{
@@ -1947,15 +2075,129 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	return false;
 }
 
+template <class ADDRESS>
+const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByAddr(ADDRESS addr)
+{
+	unsigned int i;
+	const Symbol<ADDRESS> *symbol = 0;
+	
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
+	{
+		if(*symbol_table_lookup_import[i])
+		{
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
+		}
+	}
+	if(!symbol)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf32_loaders); i++)
+		{
+			symbol = elf32_loaders[i]->FindSymbolByAddr(addr);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf64_loaders); i++)
+		{
+			symbol = elf64_loaders[i]->FindSymbolByAddr(addr);
+		}
+	}
+	
+	return symbol;
+}
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::GetLine(char *line, int size)
+const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByName(const char *s)
+{
+	unsigned int i;
+	const Symbol<ADDRESS> *symbol = 0;
+	
+	for(i = 0; (!symbol) && (i < num_loaders); i++)
+	{
+		if(*symbol_table_lookup_import[i])
+		{
+			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
+		}
+	}
+	if(!symbol)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf32_loaders); i++)
+		{
+			symbol = elf32_loaders[i]->FindSymbolByName(s);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!symbol) && (i < num_elf64_loaders); i++)
+		{
+			symbol = elf64_loaders[i]->FindSymbolByName(s);
+		}
+	}
+	return symbol;
+}
+
+template <class ADDRESS>
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr)
+{
+	const Statement<ADDRESS> *stmt = 0;
+	unsigned int i;
+	for(i = 0; (!stmt) && (i < num_loaders); i++)
+	{
+		if(*stmt_lookup_import[i])
+		{
+			stmt = (*stmt_lookup_import[i])->FindStatement(addr);
+		}
+	}
+	if(!stmt)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf32_loaders); i++)
+		{
+			stmt = elf32_loaders[i]->FindStatement(addr);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf64_loaders); i++)
+		{
+			stmt = elf64_loaders[i]->FindStatement(addr);
+		}
+	}
+	return stmt;
+}
+
+template <class ADDRESS>
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
+{
+	unsigned int i;
+	const Statement<ADDRESS> *stmt = 0;
+	for(i = 0; (!stmt) && (i < num_loaders); i++)
+	{
+		if(*stmt_lookup_import[i])
+		{
+			stmt = (*stmt_lookup_import[i])->FindStatement(filename, lineno, 0);
+		}
+	}
+	if(!stmt)
+	{
+		unsigned int num_elf32_loaders = elf32_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf32_loaders); i++)
+		{
+			stmt = elf32_loaders[i]->FindStatement(filename, lineno, 0);
+		}
+		unsigned int num_elf64_loaders = elf64_loaders.size();
+		for(i = 0; (!stmt) && (i < num_elf64_loaders); i++)
+		{
+			stmt = elf64_loaders[i]->FindStatement(filename, lineno, 0);
+		}
+	}
+	return stmt;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, char *line, int size)
 {
 #if defined(HAVE_LIBEDIT)
 	char *line_read;
 	do
 	{
-		line_read = readline(prompt.c_str());
+		line_read = readline(prompt);
 		if(!line_read)
 		{
 			rl_redisplay(); // work around when terminal size changes
@@ -2053,6 +2295,12 @@ bool InlineDebugger<ADDRESS>::IsDumpCommand(const char *cmd)
 }
 
 template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsEditCommand(const char *cmd)
+{
+	return strcmp(cmd, "e") == 0 || strcmp(cmd, "ed") == 0 || strcmp(cmd, "edit") == 0;
+}
+
+template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsHelpCommand(const char *cmd)
 {
 	return strcmp(cmd, "h") == 0 || strcmp(cmd, "?") == 0 || strcmp(cmd, "help") == 0;
@@ -2134,6 +2382,18 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsBackTraceCommand(const char *cmd)
 {
 	return strcmp(cmd, "bt") == 0 || strcmp(cmd, "backtrace") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsLoadSymbolTableCommand(const char *cmd)
+{
+	return strcmp(cmd, "st") == 0 || strcmp(cmd, "symtab") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsListSymbolsCommand(const char *cmd)
+{
+	return strcmp(cmd, "sym") == 0 || strcmp(cmd, "symbol") == 0;
 }
 
 } // end of namespace inline_debugger
