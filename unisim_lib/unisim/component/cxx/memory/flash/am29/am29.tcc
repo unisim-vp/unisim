@@ -652,7 +652,7 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::LoadWordCount(unsigned int chip_num, type
 		logger << EndDebugInfo;
 	}
 
-	uint32_t n = (size > CHIP_IO_WIDTH) ? CHIP_IO_WIDTH : n;
+	uint32_t n = (size > CHIP_IO_WIDTH) ? CHIP_IO_WIDTH : size;
 
 	switch(n)
 	{
