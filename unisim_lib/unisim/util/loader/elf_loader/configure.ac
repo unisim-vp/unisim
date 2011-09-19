@@ -33,16 +33,18 @@
 #          Gilles Mouchard (gilles.mouchard@cea.fr)
 #
 
-AC_INIT([UNISIM Flash Memory family am29lv TLM Component Library], [1.0])
+AC_INIT([UNISIM ELF Loader service], [1.0],
+	[Gilles Mouchard <gilles.mouchard@cea.fr>],
+	[elf_loader])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_HEADERS([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-
 AM_INIT_AUTOMAKE
 
 AC_PATH_PROGS(SH, sh)
+# AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
 AC_LIBTOOL_WIN32_DLL # must be *before* AC_PROG_LIBTOOL
@@ -53,7 +55,22 @@ AC_PROG_LN_S
 
 AC_LANG([C++])
 
-UNISIM_CHECK_SYSTEMC
+###### CHECK FOR STANDARD C HEADERS ###########################################
+AC_CHECK_HEADERS([inttypes.h],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR STANDARD C++ HEADERS #########################################
+AC_CHECK_HEADERS([iostream fstream],,\
+                  AC_MSG_ERROR([Some standard headers are missing.]))
+
+###### CHECK FOR TARGET SPECIFIC HEADERS ######################
+
+case $host in
+	*linux*)   # linux host
+		;;
+	*mingw32*)  # win32 host
+		;;
+esac
 
 UNISIM_LIBTOOL
 
@@ -64,4 +81,3 @@ AC_CONFIG_FILES([Makefile])
 # launch the generation of makefiles
 #   this must be the last command of configure.ac
 AC_OUTPUT
-

@@ -196,7 +196,7 @@ EndSetup()
 
 	cpu_time = SC_ZERO_TIME;
 	bus_time = SC_ZERO_TIME;
-	// cpu_cycle_time = sc_time((double)inherited::cpu_cycle_time, SC_PS);
+
 	if ( verbose_tlm ) 
 	{
 		inherited::logger << DebugInfo

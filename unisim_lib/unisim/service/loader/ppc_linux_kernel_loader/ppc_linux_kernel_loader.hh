@@ -66,7 +66,7 @@ public:
 	PPCLinuxKernelLoader(const char *name, Object *parent = 0);
 	virtual ~PPCLinuxKernelLoader();
 	
-	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<StatementLookup<MEMORY_ADDR> > stmt_lookup_export;

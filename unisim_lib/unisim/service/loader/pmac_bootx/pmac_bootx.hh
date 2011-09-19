@@ -254,18 +254,18 @@ private:
 };
 
 class PMACBootX :
-	public Service<Loader<uint32_t> >,
+	public Service<Loader>,
 	public Service<Blob<uint32_t> >,
-	public Client<Loader<uint32_t> >,
+	public Client<Loader>,
 	public Client<Blob<uint32_t> >,
 	public Client<Memory<uint32_t> >,
 	public Client<Registers>
 {
 public:
-	ServiceExport<Loader<uint32_t> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<uint32_t> > blob_export;
 
-	ServiceImport<Loader<uint32_t> > loader_import;
+	ServiceImport<Loader> loader_import;
 	ServiceImport<Blob<uint32_t> > blob_import;
 	ServiceImport<Memory<uint32_t> > memory_import;
 	ServiceImport<Registers> registers_import;

@@ -66,7 +66,7 @@ MachineCheckException<CONFIG>::MachineCheckException(Type _type)
 			sstr << "TLB asynchronous";
 			break;
 	}
-	sstr << "machine check exception ";
+	sstr << " machine check exception ";
 	what_str = sstr.str();
 }
 

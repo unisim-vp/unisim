@@ -400,6 +400,25 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 		);
 		
 		blob->AddSection(blob_section);
+		
+		if((section_type == Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA) ||
+		   (section_type == Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT))
+		{
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+				
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
+
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR> *blob_segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+				blob_segment_type,
+				blob_segment_attr,
+				0,
+				section_addr * memory_atom_size,
+				section_size * memory_atom_size,
+				section_content
+			);
+			
+			blob->AddSegment(blob_segment);
+		}
 	}
 	
 	long symtab_file_ptr = file->GetSymbolTableFilePtr();

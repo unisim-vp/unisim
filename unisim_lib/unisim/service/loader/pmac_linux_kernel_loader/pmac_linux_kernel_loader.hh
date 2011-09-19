@@ -69,7 +69,7 @@ using unisim::service::interfaces::Blob;
 class PMACLinuxKernelLoader : public Object
 {
 public:
-	ServiceExport<Loader<uint32_t> > loader_export;
+	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<uint32_t> > blob_export;
 	ServiceExport<SymbolTableLookup<uint32_t> > symbol_table_lookup_export;
 	ServiceExport<StatementLookup<uint32_t> > stmt_lookup_export;

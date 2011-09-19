@@ -56,8 +56,8 @@ function BuildRPM
 	START_PARAMS="$1"
 	shift
 
-	DISTRIB_ID=$(cat /etc/lsb-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
-	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_ID=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
 	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	TOP_DIR="${HOME}/tmp/rpm"
@@ -217,8 +217,8 @@ function BuildDEB
 	START_PARAMS="$1"
 	shift
 
-	DISTRIB_ID=$(cat /etc/lsb-release | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
-	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_ID=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_ID=\(.*\)/\1/p' | head -n 1)
+	DISTRIB_RELEASE=$(cat /etc/lsb-release | sed -e 's/\"//g' | sed -n 's/DISTRIB_RELEASE=\(.*\)/\1/p' | head -n 1)
 	RELEASE="${DISTRIB_ID}${DISTRIB_RELEASE}"
 
 	PREFIX=/usr
@@ -581,6 +581,7 @@ for PKG in "$@"; do
 				"bin/unisim-ppcemu-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		ppcemu-system)
@@ -650,6 +651,7 @@ for PKG in "$@"; do
 				"bin/unisim-embedded-ppc-g4-board-${PKG_VERSION}${EXE_SUFFIX}" \
 				"-s enable-press-enter-at-exit=true" \
 				"--with-systemc=${SYSTEMC}" \
+				"--with-tlm20=${TLM20}" \
 				"CXXFLAGS=-O3 -g"
 			;;
 		tms320c3x)

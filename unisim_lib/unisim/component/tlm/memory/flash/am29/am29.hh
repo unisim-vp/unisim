@@ -32,28 +32,28 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_HH__
-#define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_HH__
+#ifndef __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__
+#define __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__
 
 #include <systemc.h>
 #include "unisim/component/tlm/message/memory.hh"
 #include "unisim/kernel/tlm/tlm.hh"
-#include "unisim/component/cxx/memory/flash/am29lv/am29lv.hh"
+#include "unisim/component/cxx/memory/flash/am29/am29.hh"
 
 namespace unisim {
 namespace component {
 namespace tlm {
 namespace memory {
 namespace flash {
-namespace am29lv {
+namespace am29 {
 
 using unisim::kernel::tlm::TlmMessage;
 using unisim::kernel::tlm::TlmSendIf;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::util::garbage_collector::Pointer;
-using unisim::component::cxx::memory::flash::am29lv::CMD_READ;
-using unisim::component::cxx::memory::flash::am29lv::CMD_WRITE;
+using unisim::component::cxx::memory::flash::am29::CMD_READ;
+using unisim::component::cxx::memory::flash::am29::CMD_WRITE;
 
 using unisim::component::tlm::message::MemoryRequest;
 using unisim::component::tlm::message::MemoryResponse;
@@ -66,19 +66,19 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG, uint32_t BYTESIZE, uint32_t IO_WIDTH, uint32_t MAX_TRANSACTION_DATA_SIZE>
-class AM29LV :
+class AM29 :
 	public sc_module,
-	public unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH>,
+	public unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH>,
 	public TlmSendIf<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> >
 {
 public:
-	typedef unisim::component::cxx::memory::flash::am29lv::AM29LV<CONFIG, BYTESIZE, IO_WIDTH> inherited;
+	typedef unisim::component::cxx::memory::flash::am29::AM29<CONFIG, BYTESIZE, IO_WIDTH> inherited;
 
 	sc_export<TlmSendIf<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, 
 						MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > > slave_port;
 
-	AM29LV(const sc_module_name& name, Object *parent = 0);
-	virtual ~AM29LV();
+	AM29(const sc_module_name& name, Object *parent = 0);
+	virtual ~AM29();
 	virtual bool BeginSetup();
 	virtual bool Send(const Pointer<TlmMessage<MemoryRequest<typename CONFIG::ADDRESS, MAX_TRANSACTION_DATA_SIZE>, MemoryResponse<MAX_TRANSACTION_DATA_SIZE> > >& message);
 	void Process();
@@ -88,11 +88,11 @@ private:
 	Parameter<sc_time> param_cycle_time;
 };
 
-} // end of namespace am29lv
+} // end of namespace am29
 } // end of namespace flash
 } // end of namespace memory
 } // end of namespace tlm
 } // end of namespace component
 } // end of namespace unisim
 
-#endif // __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29LV_AM29LV_HH__
+#endif // __UNISIM_COMPONENT_TLM_MEMORY_FLASH_AM29_AM29_HH__

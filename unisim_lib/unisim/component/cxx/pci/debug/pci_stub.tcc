@@ -110,6 +110,13 @@ PCIStub<ADDRESS>::PCIStub(const char *name, Object *parent) :
 	param_pci_bus_frequency("pci-bus-frequency", this, pci_bus_frequency),
 	param_bus_frequency("bus-frequency", this, bus_frequency)
 {
+	unsigned int num_region;
+
+	for(num_region = 0; num_region < NUM_REGIONS; num_region++)
+	{
+		region_size[num_region] = 0;
+		storage[num_region] = 0;
+	}
 }
 
 template <class ADDRESS>

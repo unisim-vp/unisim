@@ -47,7 +47,7 @@ template class XPS_Timer<unisim::component::cxx::timer::xilinx::xps_timer::Confi
 
 } // end of namespace xps_timer
 } // end of namespace xilinx
-} // end of namespace interrupt
+} // end of namespace timer
 } // end of namespace tlm2
 } // end of namespace component
 } // end of namespace unisim

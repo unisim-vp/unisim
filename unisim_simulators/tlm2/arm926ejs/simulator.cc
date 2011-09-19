@@ -556,11 +556,11 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
 	sim->SetVariable("kernel_logger.std_err_color", true);
 
 	sim->SetVariable("cpu.bigendinit",           "little-endian");
-	sim->SetVariable("cpu.cpu-cycle-time",       31250UL); // 32Mhz
-	sim->SetVariable("cpu.bus-cycle-time",       31250UL); // 32Mhz
+	sim->SetVariable("cpu.cpu-cycle-time",       "31250 ps"); // 32Mhz
+	sim->SetVariable("cpu.bus-cycle-time",       "31250 ps"); // 32Mhz
 	sim->SetVariable("cpu.icache.size",          0x020000); // 128 KB
 	sim->SetVariable("cpu.dcache.size",          0x020000); // 128 KB
-	sim->SetVariable("cpu.nice-time",            1000000000); // 1ms
+	sim->SetVariable("cpu.nice-time",            "1 ms"); // 1ms
 	sim->SetVariable("cpu.ipc",                  1.0);
 	sim->SetVariable("memory.bytesize",          0xffffffffUL); 
 	sim->SetVariable("memory.cycle-time",        "31250 ps");
@@ -688,16 +688,6 @@ SetTrapHandler (void (*function)(void *, unsigned int), void *context)
 	trap_handler->SetExternalTrapHandler(this);
 
 	return true;
-}
-
-unisim::util::debug::debugger_handler::DebuggerHandler *
-Simulator::
-GetDebugger(const char *name)
-{
-	if ( enable_sim_debugger )
-		return sim_debugger;
-	else
-		return 0;
 }
 
 void

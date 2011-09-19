@@ -968,7 +968,7 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 	mmu_access.as = GetDataAddressSpace(); // that's normal that MSR[DS] is used instead of MSR[IS]
 	mmu_access.privilege_level = GetPrivilegeLevel();
 	mmu_access.memory_access_type = CONFIG::MAT_READ;
-	mmu_access.memory_type = CONFIG::MT_INSN;
+	mmu_access.memory_type = CONFIG::MT_DATA; // instruction is considered as a "load" with respect to data storage exceptions
 
 	EmuTranslateAddress<false>(mmu_access);
 

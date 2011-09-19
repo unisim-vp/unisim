@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A crossbar")
 	, unisim::component::cxx::interconnect::xilinx::crossbar::Crossbar<CONFIG>(name, parent)
 	, sc_module(name)
 	, icurd_plb_slave_sock("icurd-plb-slave-sock")
@@ -200,7 +200,14 @@ Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
 
 	SC_HAS_PROCESS(Crossbar);
 	
-	SC_THREAD(Process);
+	if(threaded_model)
+	{
+		SC_THREAD(Process);
+	}
+	else
+	{
+		SC_METHOD(Process);
+	}
 }
 
 template <class CONFIG>
@@ -294,6 +301,7 @@ void Crossbar<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& 
 				event->Initialize(&payload, (typename inherited::Interface) intf, notify_time_stamp, &ev_completed);
 				schedule.Notify(event);
 				wait(ev_completed);
+				t = SC_ZERO_TIME;
 			}
 			break;
 		default:
@@ -354,60 +362,71 @@ void Crossbar<CONFIG>::invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint6
 }
 
 template <class CONFIG>
+void Crossbar<CONFIG>::ProcessEvents()
+{
+	const sc_time& time_stamp = sc_time_stamp();
+	if(inherited::IsVerbose())
+	{
+		inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+	}
+	
+	Event *event = schedule.GetNextEvent();
+	
+	if(event)
+	{
+		do
+		{
+			if(event->GetTimeStamp() != time_stamp)
+			{
+				inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
+				Object::Stop(-1);
+			}
+			if((time_stamp.value() % cycle_time.value()) != 0)
+			{
+				inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
+				Object::Stop(-1);
+			}
+
+			switch(event->GetInterface())
+			{
+				case inherited::IF_ICURD_PLB:
+				case inherited::IF_DCUWR_PLB:
+				case inherited::IF_DCURD_PLB:
+				case inherited::IF_SPLB0:
+				case inherited::IF_SPLB1:
+					ProcessForwardEvent(event);
+					break;
+				case inherited::IF_MPLB:
+				case inherited::IF_MCI:
+					ProcessBackwardEvent(event);
+					break;
+				case inherited::IF_CROSSBAR_DCR:
+				case inherited::IF_PLBS0_DCR:
+				case inherited::IF_PLBS1_DCR:
+				case inherited::IF_PLBM_DCR:
+					ProcessDCREvent(event);
+					break;
+			}
+		}
+		while((event = schedule.GetNextEvent()) != 0);
+	}
+}
+
+template <class CONFIG>
 void Crossbar<CONFIG>::Process()
 {
-	while(1)
+	if(threaded_model)
 	{
-		wait(schedule.GetKernelEvent());
-		const sc_time& time_stamp = sc_time_stamp();
-		if(inherited::IsVerbose())
+		while(1)
 		{
-			inherited::logger << DebugInfo << time_stamp << ": Waking up" << EndDebugInfo;
+			wait(schedule.GetKernelEvent());
+			ProcessEvents();
 		}
-		
-		Event *event = schedule.GetNextEvent();
-		
-		if(event)
-		{
-			do
-			{
-				if(event->GetTimeStamp() != time_stamp)
-				{
-					inherited::logger << DebugError << "Internal error: unexpected event time stamp (" << event->GetTimeStamp() << " instead of " << time_stamp << ")" << EndDebugError;
-					Object::Stop(-1);
-				}
-				if((time_stamp.value() % cycle_time.value()) != 0)
-				{
-					inherited::logger << DebugError << "Internal error: time stamp is not aligned on clock (time stamp is " << time_stamp << " while cycle time is " << cycle_time << ")" << EndDebugError;
-					Object::Stop(-1);
-				}
-	
-				switch(event->GetInterface())
-				{
-					case inherited::IF_ICURD_PLB:
-					case inherited::IF_DCUWR_PLB:
-					case inherited::IF_DCURD_PLB:
-					case inherited::IF_SPLB0:
-					case inherited::IF_SPLB1:
-						ProcessForwardEvent(event);
-						schedule.FreeEvent(event);
-						break;
-					case inherited::IF_MPLB:
-					case inherited::IF_MCI:
-						ProcessBackwardEvent(event);
-						schedule.FreeEvent(event);
-						break;
-					case inherited::IF_CROSSBAR_DCR:
-					case inherited::IF_PLBS0_DCR:
-					case inherited::IF_PLBS1_DCR:
-					case inherited::IF_PLBM_DCR:
-						ProcessDCREvent(event);
-						schedule.FreeEvent(event);
-						break;
-				}
-			}
-			while((event = schedule.GetNextEvent()) != 0);
-		}
+	}
+	else
+	{
+		ProcessEvents();
+		next_trigger(schedule.GetKernelEvent());
 	}
 }
 
@@ -428,49 +447,32 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 			<< inherited::GetInterfaceName(dst_if) << ", @0x" << std::hex << payload->get_address() << std::dec << ")" << EndDebugInfo;
 	}
 	
-	if(ev_completed)
+	tlm::tlm_phase phase = tlm::BEGIN_REQ;
+	tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
+	
+	switch(dst_if)
 	{
-		switch(dst_if)
-		{
-			case inherited::IF_MPLB:
-				mplb_master_sock->b_transport(*payload, t);
-				CheckResponseStatus(src_if, dst_if, payload);
-				break;
-			case inherited::IF_MCI:
-				mci_master_sock->b_transport(*payload, t);
-				CheckResponseStatus(src_if, dst_if, payload);
-				break;
-			default:
-				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for b_transport" << EndDebugError;
-				Object::Stop(-1);
-		}
-		
-		ev_completed->notify(t);
+		case inherited::IF_MPLB:
+			sync = mplb_master_sock->nb_transport_fw(*payload, phase, t);
+			break;
+		case inherited::IF_MCI:
+			sync = mci_master_sock->nb_transport_fw(*payload, phase, t);
+			break;
+		default:
+			inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for nb_transport_fw" << EndDebugError;
+			Object::Stop(-1);
 	}
-	else
+	
+	if(sync == tlm::TLM_COMPLETED)
 	{
-		return_if.insert(std::pair<tlm::tlm_generic_payload *, typename inherited::Interface>(payload, src_if));
-		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		
-		tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
-		
-		switch(dst_if)
+		CheckResponseStatus(src_if, dst_if, payload);
+
+		if(ev_completed)
 		{
-			case inherited::IF_MPLB:
-				sync = mplb_master_sock->nb_transport_fw(*payload, phase, t);
-				break;
-			case inherited::IF_MCI:
-				sync = mci_master_sock->nb_transport_fw(*payload, phase, t);
-				break;
-			default:
-				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for nb_transport_fw" << EndDebugError;
-				Object::Stop(-1);
+			ev_completed->notify(t);
 		}
-		
-		if(sync == tlm::TLM_COMPLETED)
+		else
 		{
-			CheckResponseStatus(src_if, dst_if, payload);
-			
 			phase = tlm::BEGIN_RESP;
 			
 			switch(src_if)
@@ -496,6 +498,12 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 					Object::Stop(-1);
 			}
 		}
+		
+		schedule.FreeEvent(event);
+	}
+	else
+	{
+		pending_requests.insert(std::pair<tlm::tlm_generic_payload *, Event *>(payload, event));
 	}
 }
 
@@ -503,44 +511,58 @@ template <class CONFIG>
 void Crossbar<CONFIG>::ProcessBackwardEvent(Event *event)
 {
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	typename std::map<tlm::tlm_generic_payload *, typename inherited::Interface>::iterator it = return_if.find(payload);
 	
-	if(it == return_if.end())
+	typename std::map<tlm::tlm_generic_payload *, Event *>::iterator it = pending_requests.find(payload);
+	
+	if(it == pending_requests.end())
 	{
-		inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": can't find return interface" << EndDebugError;
+		inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": can't find original event" << EndDebugError;
 		Object::Stop(-1);
 		return;
 	}
 	
-	typename inherited::Interface dst_if = (*it).second;
-	return_if.erase(it);
+	typename inherited::Interface dst_if = event->GetInterface();
 	
-	CheckResponseStatus(dst_if, event->GetInterface(), payload);
+	schedule.FreeEvent(event);
+	event = (*it).second;
+	pending_requests.erase(it);
 
-	sc_time t(cycle_time);
-	tlm::tlm_phase phase = tlm::BEGIN_RESP;
+	CheckResponseStatus(event->GetInterface(), dst_if, payload);
 	
-	switch(dst_if)
+	sc_time t(cycle_time);
+	
+	sc_event *ev_completed = event->GetCompletionEvent();
+	if(ev_completed)
 	{
-		case inherited::IF_ICURD_PLB:
-			icurd_plb_slave_sock->nb_transport_bw(*payload, phase, t);
-			break;
-		case inherited::IF_DCUWR_PLB:
-			dcuwr_plb_slave_sock->nb_transport_bw(*payload, phase, t);
-			break;
-		case inherited::IF_DCURD_PLB:
-			dcurd_plb_slave_sock->nb_transport_bw(*payload, phase, t);
-			break;
-		case inherited::IF_SPLB0:
-			splb0_slave_sock->nb_transport_bw(*payload, phase, t);
-			break;
-		case inherited::IF_SPLB1:
-			splb1_slave_sock->nb_transport_bw(*payload, phase, t);
-			break;
-		default:
-				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for nb_transport_bw" << EndDebugError;
-			Object::Stop(-1);
+		ev_completed->notify(t);
 	}
+	else
+	{
+		tlm::tlm_phase phase = tlm::BEGIN_RESP;
+		
+		switch(event->GetInterface())
+		{
+			case inherited::IF_ICURD_PLB:
+				icurd_plb_slave_sock->nb_transport_bw(*payload, phase, t);
+				break;
+			case inherited::IF_DCUWR_PLB:
+				dcuwr_plb_slave_sock->nb_transport_bw(*payload, phase, t);
+				break;
+			case inherited::IF_DCURD_PLB:
+				dcurd_plb_slave_sock->nb_transport_bw(*payload, phase, t);
+				break;
+			case inherited::IF_SPLB0:
+				splb0_slave_sock->nb_transport_bw(*payload, phase, t);
+				break;
+			case inherited::IF_SPLB1:
+				splb1_slave_sock->nb_transport_bw(*payload, phase, t);
+				break;
+			default:
+					inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": invalid destination interface for nb_transport_bw" << EndDebugError;
+				Object::Stop(-1);
+		}
+	}
+	schedule.FreeEvent(event);
 }
 
 template <class CONFIG>
@@ -643,22 +665,10 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 	}
 	else
 	{
-		typename std::map<tlm::tlm_generic_payload *, typename inherited::Interface>::iterator it = return_if.find(payload);
-		
-		if(it == return_if.end())
-		{
-				inherited::logger << DebugError << "Internal error in " << __FUNCTION__ << ": can't find return interface" << EndDebugError;
-			Object::Stop(-1);
-			return;
-		}
-		
-		typename inherited::Interface dst_if = (*it).second;
-		return_if.erase(it);
-		
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
 		
-		switch(dst_if)
+		switch(event->GetInterface())
 		{
 			case inherited::IF_CROSSBAR_DCR:
 				crossbar_dcr_slave_sock->nb_transport_bw(*payload, phase, t);
@@ -677,6 +687,8 @@ void Crossbar<CONFIG>::ProcessDCREvent(Event *event)
 				Object::Stop(-1);
 		}
 	}
+	
+	schedule.FreeEvent(event);
 }
 
 template <class CONFIG>

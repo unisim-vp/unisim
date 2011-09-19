@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,24 +32,42 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/tlm/memory/flash/am29lv/am29lv.hh"
-#include "unisim/component/tlm/memory/flash/am29lv/am29lv.tcc"
+#ifndef __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
+#define __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
+
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/debug/symbol_table.hh>
 
 namespace unisim {
-namespace component {
-namespace tlm {
-namespace memory {
-namespace flash {
-namespace am29lv {
+namespace util {
+namespace debug {
+namespace elf_symtab {
 
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig, 
-	4 * unisim::component::cxx::memory::flash::am29lv::M, 8, 32>; // 4 MB/64 bits
-template class AM29LV<unisim::component::cxx::memory::flash::am29lv::AM29LV800BConfig, 
-	8 * unisim::component::cxx::memory::flash::am29lv::M, 8, 32>; // 8 MB/64 bits
+template <class MEMORY_ADDR, class Elf_Sym>
+class ELF_SymtabHandler
+{
+public:
+	ELF_SymtabHandler(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+	~ELF_SymtabHandler();
+	
+	void Parse();
+	
+	const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+private:
+	unisim::kernel::logger::Logger& logger;
+	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
+};
 
-} // end of namespace am29lv
-} // end of namespace flash
-} // end of namespace memory
-} // end of namespace tlm
-} // end of namespace component
+} // end of namespace elf_symtab
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
+
+#endif

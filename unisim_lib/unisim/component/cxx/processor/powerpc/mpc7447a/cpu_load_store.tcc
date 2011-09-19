@@ -390,6 +390,11 @@ void CPU<CONFIG>::Fp32Load(unsigned int fd, typename CONFIG::address_t ea)
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_LOAD, fd, MungEffectiveAddress(ea, 4), 4);
 #else
+	// check alignment
+	if(unlikely(ea & 3))
+	{
+		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+	}
 	uint32_t value;
 	EmuLoad<uint32_t>(value, ea);
 	Flags flags;
@@ -406,6 +411,11 @@ void CPU<CONFIG>::Fp64Load(unsigned int fd, typename CONFIG::address_t ea)
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_LOAD, fd, MungEffectiveAddress(ea, 8), 8);
 #else
+	// check alignment
+	if(unlikely(ea & 3))
+	{
+		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+	}
 	uint64_t value;
 	EmuLoad<uint64_t>(value, ea);
 	fpr[fd] = SoftDouble(BigEndian2Host(value));
@@ -537,6 +547,11 @@ void CPU<CONFIG>::Fp32Store(unsigned int fs, typename CONFIG::address_t ea)
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP32_STORE, fs, MungEffectiveAddress(ea, 4), 4);
 #else
+	// check alignment
+	if(unlikely(ea & 3))
+	{
+		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+	}
 	Flags flags;
 	flags.setRoundingMode(RN_ZERO);
 	uint32_t value = Host2BigEndian(SoftFloat(fpr[fs], flags).queryValue());
@@ -552,6 +567,11 @@ void CPU<CONFIG>::Fp64Store(unsigned int fs, typename CONFIG::address_t ea)
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP64_STORE, fs, MungEffectiveAddress(ea, 8), 8);
 #else
+	// check alignment
+	if(unlikely(ea & 3))
+	{
+		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+	}
 	uint64_t value = Host2BigEndian(fpr[fs].queryValue());
 	EmuStore<uint64_t>(value, ea);
 	MonitorStore(ea, sizeof(value));
@@ -565,6 +585,11 @@ void CPU<CONFIG>::FpStoreLSW(unsigned int fs, typename CONFIG::address_t ea)
 #ifdef SOCLIB
 	GenLoadStore(LoadStoreAccess<CONFIG>::FP_STORE_LSW, fs, MungEffectiveAddress(ea, 4), 4);
 #else
+	// check alignment
+	if(unlikely(ea & 3))
+	{
+		if(!linux_os_import) throw AlignmentException<CONFIG>(ea);
+	}
 	uint32_t value = Host2BigEndian((uint32_t) fpr[fs].queryValue());
 	EmuStore<uint32_t>(value, ea);
 	MonitorStore(ea, sizeof(value));

@@ -128,10 +128,15 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/elf_symtab/elf_symtab32.cc \
+unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
+unisim/util/loader/elf_loader/elf32_loader.cc \
+unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -155,6 +160,8 @@ unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/backtrace/tee_32.cc \
+unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
@@ -165,16 +172,12 @@ unisim/component/cxx/processor/powerpc/ppc440/config.cc \
 unisim/component/cxx/processor/powerpc/ppc440/tb_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
-unisim/component/cxx/interrupt/xilinx/xps_intc/xps_intc.cc \
-unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.cc \
 unisim/component/cxx/timer/xilinx/xps_timer/config.cc \
 unisim/component/cxx/memory/flash/am29/am29.cc \
 unisim/component/cxx/memory/flash/am29/s29gl256p.cc \
 unisim/component/cxx/memory/flash/am29/s29gl256p_config.cc \
-unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.cc \
-unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.cc \
-unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.cc \
-unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.cc \
+unisim/component/cxx/interconnect/xilinx/mci/mci.cc \
+unisim/component/cxx/com/xilinx/xps_gpio/config.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
@@ -184,8 +187,7 @@ unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/flash/am29/s29gl256p.cc \
-unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.cc \
-unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.cc \
+unisim/component/tlm2/interconnect/xilinx/mci/mci.cc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_ISA_FILES="\
@@ -259,6 +261,8 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
+unisim/util/debug/blob/segment.hh \
+unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -270,6 +274,12 @@ unisim/util/simfloat/host_floating.hh \
 unisim/util/device/register.hh \
 unisim/util/random/random.hh \
 unisim/util/allocator/allocator.hh \
+unisim/util/loader/elf_loader/elf_common.h \
+unisim/util/loader/elf_loader/elf_loader.hh \
+unisim/util/loader/elf_loader/elf32.h \
+unisim/util/loader/elf_loader/elf64.h \
+unisim/util/loader/elf_loader/elf32_loader.hh \
+unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
@@ -286,6 +296,10 @@ unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/synchronizable.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/char_io.hh \
+unisim/service/interfaces/keyboard.hh \
+unisim/service/interfaces/led_board.hh \
+unisim/service/interfaces/backtrace.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/loader/elf_loader/elf_common.h \
@@ -311,6 +325,8 @@ unisim/service/tee/loader/tee.hh \
 unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
+unisim/service/tee/backtrace/tee.hh \
+unisim/service/telnet/telnet.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
@@ -331,6 +347,12 @@ unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/config.hh \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.hh \
 unisim/component/cxx/interconnect/xilinx/crossbar/config.hh \
+unisim/component/cxx/interconnect/xilinx/mci/mci.hh \
+unisim/component/cxx/interconnect/xilinx/mci/config.hh \
+unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
+unisim/component/cxx/com/xilinx/xps_uart_lite/config.hh \
+unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.hh \
+unisim/component/cxx/com/xilinx/xps_gpio/config.hh \
 unisim/component/tlm2/interrupt/types.hh \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
@@ -343,6 +365,11 @@ unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/tlm2/memory/flash/am29/am29.hh \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.hh \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.hh \
+unisim/component/tlm2/interconnect/xilinx/mci/mci.hh \
+unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.hh \
+unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.hh \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.hh \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.hh \
 "
 
 UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES="\
@@ -370,10 +397,13 @@ unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
+unisim/util/debug/blob/segment.tcc \
+unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
 unisim/util/simfloat/host_floating.tcc \
+unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
@@ -387,6 +417,7 @@ unisim/service/tee/loader/tee.tcc \
 unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \
@@ -405,6 +436,9 @@ unisim/component/cxx/timer/xilinx/xps_timer/xps_timer.tcc \
 unisim/component/cxx/memory/flash/am29/am29.tcc \
 unisim/component/cxx/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/cxx/interconnect/xilinx/crossbar/crossbar.tcc \
+unisim/component/cxx/interconnect/xilinx/mci/mci.tcc \
+unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
+unisim/component/cxx/com/xilinx/xps_gpio/xps_gpio.tcc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc \
@@ -414,6 +448,11 @@ unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/tlm2/memory/flash/am29/am29.tcc \
 unisim/component/tlm2/interconnect/xilinx/dcr_controller/dcr_controller.tcc \
 unisim/component/tlm2/interconnect/xilinx/crossbar/crossbar.tcc \
+unisim/component/tlm2/interconnect/xilinx/mci/mci.tcc \
+unisim/component/tlm2/com/xilinx/xps_uart_lite/xps_uart_lite.tcc \
+unisim/component/tlm2/com/xilinx/xps_gpio/xps_gpio.tcc \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_leds.tcc \
+unisim/component/tlm2/com/xilinx/xps_gpio/gpio_switches.tcc \
 "
 
 UNISIM_LIB_VIRTEX5FXT_M4_FILES="\
@@ -445,7 +484,6 @@ errno.h \
 fcntl.h \
 fenv.h \
 float.h \
-fstream \
 getopt.h \
 inttypes.h \
 limits.h \
@@ -455,14 +493,18 @@ stdarg.h \
 stdio.h \
 stdlib.h \
 string.h \
+ctype.h \
 sys/types.h \
 unistd.h \
+fstream \
 cassert \
+cmath \
 cerrno \
 cstddef \
 cstdio \
 cstdlib \
 cstring \
+iomanip \
 stdexcept \
 deque \
 list \
@@ -474,15 +516,36 @@ map \
 ostream \
 queue \
 vector \
-string"
+string \
+set"
 
 UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES="\
-main.cc \
+config.cc \
+mplb.cc \
+mplb_debug.cc \
+intc.cc \
+timer.cc \
+dcr_controller.cc \
+crossbar.cc \
+uart_lite.cc \
+gpio_dip_switches_8bit.cc \
+gpio_leds_8bit.cc \
+gpio_5_leds_positions.cc \
+gpio_push_buttons_5bit.cc \
+dip_switches_8bit.cc \
+leds_8bit.cc \
+5_leds_positions.cc \
+push_buttons_5bit.cc \
 "
 UNISIM_SIMULATORS_VIRTEX5FXT_HEADER_FILES="\
+simulator.hh \
+config.hh \
 "
 
-UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES=
+UNISIM_SIMULATORS_VIRTEX5FXT_TEMPLATE_FILES="\
+simulator.tcc \
+"
+
 UNISIM_SIMULATORS_VIRTEX5FXT_DATA_FILES="\
 COPYING \
 INSTALL \
@@ -493,9 +556,15 @@ ChangeLog \
 template_default_config.xml \
 unisim.ico"
 
-UNISIM_SIMULATORS_VIRTEX5FXT_TESTBENCH_FILES=""
+UNISIM_SIMULATORS_VIRTEX5FXT_TESTBENCH_FILES="\
+main.cc \
+main_wfpu.cc \
+main_debug.cc \
+main_wfpu_debug.cc \
+"
 
 has_to_build_configure=no
+has_to_build_configure_cross=no
 has_to_build_genisslib_configure=no
 has_to_build_virtex5fxt_configure=no
 
@@ -611,39 +680,50 @@ done
 
 # Top level
 
-echo "This package contains:" > "${DEST_DIR}/README"
-echo "  - UNISIM GenISSLib: an instruction set simulator generator" >> "${DEST_DIR}/README"
-echo "  - UNISIM virtex5fxt: a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IPs." >> "${DEST_DIR}/README"
-echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+cat << EOF > "${DEST_DIR}/AUTHORS"
+Gilles Mouchard <gilles.mouchard@cea.fr>
+Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+Réda Nouacer <reda.nouacer@cea.fr>
+EOF
 
-echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
-echo "------------" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Requirements:" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bash" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU make" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU autoconf" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU automake" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU flex" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bison" >> "${DEST_DIR}/INSTALL"
-echo "  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
-echo "  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
-echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
-echo "  $ make" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Installing (optional):" >> "${DEST_DIR}/INSTALL"
-echo "  $ make install" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
+cat << EOF > "${DEST_DIR}/README"
+This package contains:
+  - UNISIM GenISSLib: an instruction set simulator generator
+  - UNISIM Virtex 5 FXT Simulator: a full system Virtex-5-FXT-like simulator including a PPC440x5 and some Xilinx Virtex 5 FXT IPs.
+See INSTALL for installation instructions.
+EOF
+
+cat << EOF > "${DEST_DIR}/INSTALL"
+INSTALLATION
+------------
+
+Requirements:
+  - GNU C++ compiler
+  - GNU C++ standard library
+  - GNU bash
+  - GNU make
+  - GNU autoconf
+  - GNU automake
+  - GNU flex
+  - GNU bison
+  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
+  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
+  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
+  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
+  - Core SystemC Language >= 2.1 (http://www.systemc.org)
+  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+
+Building instructions:
+  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ make
+
+Installing (optional):
+  $ make install
+EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
-
+CONFIGURE_CROSS="${DEST_DIR}/configure.cross"
 
 if [ ! -e "${CONFIGURE_AC}" ]; then
 	has_to_build_configure=yes
@@ -658,6 +738,14 @@ if [ ! -e "${MAKEFILE_AM}" ]; then
 else
 	if [ "$0" -nt "${MAKEFILE_AM}" ]; then
 		has_to_build_configure=yes
+	fi
+fi
+
+if [ ! -e "${CONFIGURE_CROSS}" ]; then
+	has_to_build_configure_cross=yes
+else
+	if [ "$0" -nt "${CONFIGURE_CROSS}" ]; then
+		has_to_build_configure_cross=yes
 	fi
 fi
 
@@ -679,10 +767,127 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 
 	echo "Generating Makefile.am"
 	echo "SUBDIRS=genisslib virtex5fxt" > "${MAKEFILE_AM}"
+	echo "EXTRA_DIST = configure.cross" >> "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
 fi
+
+if [ "${has_to_build_configure_cross}" = "yes" ]; then
+	echo "Building configure.cross"
+	cat << EOF_CONFIGURE_CROSS > "${CONFIGURE_CROSS}"
+#!/bin/bash
+HERE=\$(pwd)
+MY_DIR=\$(dirname \$0)
+if test \${MY_DIR} = "."; then
+	MY_DIR=\${HERE}
+elif test \${MY_DIR} = ".."; then
+	MY_DIR=\${HERE}/..
+fi
+
+# remove --host, --with-systemc, --with-tlm20, --with-zlib, --with-libxml2, --with-boost, --with-ncurses, --with-libedit from command line arguments
+host=""
+help=""
+old_args=$@
+i=0
+j=0
+for arg in "\$@"
+do
+	case "\${arg}" in
+		--host=*)
+			host=\$(printf "%s" "\${arg}" | cut -f 2- -d '=')
+			;;
+		--with-systemc=* | --with-tlm20=* | --with-zlib=* | --with-libxml2=* | --with-boost=* | --with-ncurses=* | --with-libedit=*)
+			;;
+		--help=* | --help)
+			help="yes"
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+		*)
+			args[\${j}]=\${arg}
+			j=\$((\${j}+1))
+			;;
+	esac
+	i=\$((\${i}+1))
+done
+
+if test "\${help}" != "yes"; then
+	if test -z "\${host}"; then
+		echo "ERROR: No canonical name for the host system type was specified. Use --host=<canonical name> to specify a host system type (e.g. --host=i586-pc-mingw32)"
+		exit -1
+	fi
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for genisslib"
+else
+	echo "=== configuring in genisslib (\${HERE}/genisslib)"
+	echo "\$(basename \$0): running \${MY_DIR}/genisslib/configure \${args[@]}"
+fi
+if test ! -d \${HERE}/genisslib; then
+	mkdir "\${HERE}/genisslib"
+fi
+cd "\${HERE}/genisslib"
+\${MY_DIR}/genisslib/configure "\${args[@]}"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	echo "=== configure help for virtex5fxt"
+else
+	echo "=== configuring in virtex5fxt (\${HERE}/virtex5fxt) for \${host} host system type"
+	echo "\$(basename \$0): running \${MY_DIR}/virtex5fxt/configure \$@"
+fi
+
+if test ! -d \${HERE}/virtex5fxt; then
+	mkdir \${HERE}/virtex5fxt
+fi
+cd \${HERE}/virtex5fxt
+\${MY_DIR}/virtex5fxt/configure "\$@"
+STATUS="\$?"
+cd "\${HERE}"
+if test \${STATUS} -ne 0; then
+	exit \${STATUS}
+fi
+
+if test "\${help}" = "yes"; then
+	exit 0
+fi
+
+echo "\$(basename \$0): creating Makefile.cross"
+cat << EOF_MAKEFILE_CROSS > Makefile.cross
+#!/usr/bin/make -f
+all: virtex5fxt-all
+clean: genisslib-clean virtex5fxt-clean
+distclean: genisslib-distclean virtex5fxt-distclean
+	rm -f \${HERE}/Makefile.cross
+install: virtex5fxt-install
+
+genisslib-all:
+	@\\\$(MAKE) -C \${HERE}/genisslib all
+virtex5fxt-all: genisslib-all
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt all
+genisslib-clean:
+	@\\\$(MAKE) -C \${HERE}/genisslib clean
+virtex5fxt-clean:
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt clean
+genisslib-distclean:
+	@\\\$(MAKE) -C \${HERE}/genisslib distclean
+virtex5fxt-distclean:
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt distclean
+virtex5fxt-install:
+	@\\\$(MAKE) -C \${HERE}/virtex5fxt install
+EOF_MAKEFILE_CROSS
+
+chmod +x Makefile.cross
+
+echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
+EOF_CONFIGURE_CROSS
+fi  # has_to_build_configure_cross = "yes"
 
 # GENISSLIB
 
@@ -814,13 +1019,10 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "noinst_LIBRARIES = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "libvirtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_CPPFLAGS = -DWITH_FPU" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_CPPFLAGS = -DDEBUG_VIRTEX5FXT" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_CPPFLAGS = -DWITH_FPU -DDEBUG_VIRTEX5FXT" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_SOURCES = main.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "unisim_virtex5fxt_wfpu_debug_${AM_VIRTEX5FXT_VERSION}_SOURCES = main_wfpu_debug.cc ${UNISIM_SIMULATORS_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_wfpu_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "unisim_virtex5fxt_debug_${AM_VIRTEX5FXT_VERSION}_LDADD = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"

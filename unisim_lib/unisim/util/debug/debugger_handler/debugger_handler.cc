@@ -39,15 +39,21 @@ namespace debug {
 namespace debugger_handler {
 
 DebuggerHandler::
-DebuggerHandler()
-	: handler_context(0)
+DebuggerHandler(unisim::kernel::service::Object *obj)
+	: debuggerhandler_parent_object(obj)
+	, handler_context(0)
 	, breakpoint_handler_function(0)
 	, watchpoint_handler_function(0)
 {}
 
 DebuggerHandler::
 ~DebuggerHandler()
-{}
+{
+	debuggerhandler_parent_object = 0;
+	handler_context = 0;
+	breakpoint_handler_function = 0;
+	watchpoint_handler_function = 0;
+}
 
 bool
 DebuggerHandler::
@@ -206,6 +212,13 @@ CallWatchpointHandler(uint64_t addr, bool read)
 {
 	if ( watchpoint_handler_function )
 		watchpoint_handler_function(handler_context, addr, read);
+}
+
+unisim::kernel::service::Object *
+DebuggerHandler::
+GetParentObject()
+{
+	return debuggerhandler_parent_object;
 }
 
 } // end of namespace debugger_handler

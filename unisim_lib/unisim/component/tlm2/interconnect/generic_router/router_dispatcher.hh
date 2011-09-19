@@ -52,6 +52,8 @@ template<typename OWNER, class CONFIG>
 class RouterDispatcher :
 	public sc_module {
 private:
+	static const bool threaded_model = false;
+	
 	typedef unisim::kernel::service::Object Object;
 	static const unsigned int MAX_NUM_MAPPINGS = CONFIG::MAX_NUM_MAPPINGS; 
 	static const unsigned int BUSWIDTH = CONFIG::BUSWIDTH;
@@ -70,7 +72,7 @@ public:
 
 	void SetCycleTime(const sc_core::sc_time &cycle_time);
 	void Push(transaction_type &trans, const sc_core::sc_time &time);
-	void Completed(const sc_core::sc_time &time);
+	void Completed(const transaction_type *trans, const sc_core::sc_time &time);
 	inline unsigned int ReadTransportDbg(unsigned int input_port, transaction_type &trans) const;
 	inline unsigned int WriteTransportDbg(unsigned int input_port, transaction_type &trans);
 
@@ -82,9 +84,13 @@ private:
 //	tlm_utils::peq_with_cb_and_phase<RouterDispatcher<OWNER, CONFIG>, TYPES> m_queue;
 	std::multimap<sc_core::sc_time, transaction_type *> m_queue;
 	sc_core::sc_event m_event, m_complete_event;
-
+	
+	int state;
+	
 	void Run();
 	void QueueCB(transaction_type &trans, const phase_type &phase);
+	bool ProcessTransaction();
+	bool ProcessTransactionCompletion();
 };
 
 } // end of namespace generic_router

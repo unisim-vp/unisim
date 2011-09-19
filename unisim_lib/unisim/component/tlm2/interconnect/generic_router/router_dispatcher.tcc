@@ -51,10 +51,20 @@ m_owner(owner),
 m_cb(cb),
 m_id(id),
 m_cycle_time(SC_ZERO_TIME),
-m_queue()
+m_queue(),
+state(0)
 // m_queue(this, &RouterDispatcher<OWNER, CONFIG>::QueueCB)
 {
-	SC_THREAD(Run);
+	SC_HAS_PROCESS(RouterDispatcher);
+	
+	if(threaded_model)
+	{
+		SC_THREAD(Run);
+	}
+	else
+	{
+		SC_METHOD(Run);
+	}
 }
 
 template<typename OWNER, class CONFIG>
@@ -86,9 +96,14 @@ Push(transaction_type &trans, const sc_core::sc_time &time)
 template<typename OWNER, class CONFIG>
 void
 RouterDispatcher<OWNER, CONFIG>::
-Completed(const sc_core::sc_time &time) 
+Completed(const transaction_type *trans, const sc_core::sc_time &time) 
 {
-	m_complete_event.notify(time);
+	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
+
+	it = m_queue.begin();
+	if (it == m_queue.end()) return;
+
+	if ( trans == it->second ) m_complete_event.notify(time);
 }
 
 template<typename OWNER, class CONFIG>
@@ -99,6 +114,7 @@ QueueCB(transaction_type &trans, const phase_type &phase)
 	(m_owner->*m_cb)(m_id, trans);
 }
 
+#if 0
 template<typename OWNER, class CONFIG>
 void
 RouterDispatcher<OWNER, CONFIG>::
@@ -118,9 +134,10 @@ Run()
 			continue;
 		}
 		trans = it->second;
-		m_queue.erase(it);
+//		m_queue.erase(it);
 		(m_owner->*m_cb)(m_id, *trans);
 		wait(m_complete_event);
+		m_queue.erase(it);
 		trans->release();
 // ** Reda & Gilles 
 //       if (trans->is_write()) trans->release();
@@ -140,7 +157,112 @@ Run()
 		m_event.notify(fut - now);
 	}
 }
+#endif
 
+template<typename OWNER, class CONFIG>
+bool
+RouterDispatcher<OWNER, CONFIG>::
+ProcessTransaction() 
+{
+	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
+
+	sc_core::sc_time now = sc_core::sc_time_stamp();
+	transaction_type *trans;
+
+	it = m_queue.begin();
+	if (it == m_queue.end()) return false;
+	if (it->first > now) {
+		m_event.notify(it->first - now);
+		return false;
+	}
+	trans = it->second;
+//	m_queue.erase(it);
+	(m_owner->*m_cb)(m_id, *trans);
+	return true;
+}
+
+template<typename OWNER, class CONFIG>
+bool
+RouterDispatcher<OWNER, CONFIG>::
+ProcessTransactionCompletion() 
+{
+	typename std::multimap<const sc_core::sc_time, transaction_type *>::iterator it;
+
+	sc_core::sc_time now = sc_core::sc_time_stamp();
+	transaction_type *trans;
+
+	it = m_queue.begin();
+	assert(it != m_queue.end());
+	trans = it->second;
+	m_queue.erase(it);
+	trans->release();
+	it = m_queue.begin();
+	if (it == m_queue.end()) return true;
+	if (it->first > now) {
+		m_event.notify(it->first - now);
+		return true;
+	}
+	// we need to synchronize
+	uint64_t val = now.value() / m_cycle_time.value();
+	val = val + 1;
+	sc_core::sc_time fut = m_cycle_time * val;
+	fut += m_cycle_time;
+	m_event.notify(fut - now);
+	return true;
+}
+
+template<typename OWNER, class CONFIG>
+void
+RouterDispatcher<OWNER, CONFIG>::
+Run() 
+{
+	if(threaded_model)
+	{
+		while(1)
+		{
+			switch(state)
+			{
+				case 0:
+					wait(m_event);
+					if(ProcessTransaction()) state = 1;
+					break;
+				case 1:
+					wait(m_complete_event);
+					if(ProcessTransactionCompletion()) state = 0;
+					break;
+			}
+		}
+	}
+	else
+	{
+		switch(state)
+		{
+			case 0:
+				if(ProcessTransaction())
+				{
+					state = 1;
+					next_trigger(m_complete_event);
+				}
+				else
+				{
+					next_trigger(m_event);
+				}
+				break;
+			case 1:
+				if(ProcessTransactionCompletion())
+				{
+					state = 0;
+					next_trigger(m_event);
+				}
+				else
+				{
+					next_trigger(m_complete_event);
+				}
+				break;
+		}
+	}
+}
+	
 template<typename OWNER, class CONFIG>
 unsigned int
 RouterDispatcher<OWNER, CONFIG>::

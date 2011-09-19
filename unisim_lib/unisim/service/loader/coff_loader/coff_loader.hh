@@ -50,9 +50,9 @@
 #include <map>
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
-#define PACKED __attribute__ ((packed))
+#define __UNISIM_PACKED__ __attribute__ ((packed))
 #else
-#define PACKED
+#define __UNISIM_PACKED__
 #endif
 
 namespace unisim {
@@ -280,12 +280,12 @@ private:
 	static const unsigned int E_DIMNUM = 4;
 
 	// Symbol table entry
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
-		union PACKED
+		union __UNISIM_PACKED__
 		{
 			char e_name[E_SYMNMLEN];  // name of the symbol padded with null characters
-			struct PACKED
+			struct __UNISIM_PACKED__
 			{
 				uint32_t e_zeroes; // equals to 0 if in string table
 				uint32_t e_offset; // offset in string table
@@ -298,7 +298,7 @@ private:
 		uint8_t e_numaux;  // number of auxiliary entries
 	} syment;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
 		int32_t x_tagndx;
 		int32_t x_fsize;
@@ -306,14 +306,14 @@ private:
 		int32_t x_endndx;
 	} fcn_auxent;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
 		int32_t x_scnlen;
 		uint16_t x_nreloc;
 		uint16_t x_nlnno;
 	} scn_auxent;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
 		int32_t x_tagndx;
 		uint16_t x_lnno;
@@ -321,12 +321,12 @@ private:
 		uint16_t x_dim[E_DIMNUM];
 	} ary_auxent;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
-		union PACKED
+		union __UNISIM_PACKED__
 		{
 			char x_fname[E_FILNMLEN];  // file name padded with null characters
-			struct PACKED
+			struct __UNISIM_PACKED__
 			{
 				uint32_t x_zeroes; // equals to 0 if in string table
 				uint32_t x_offset; // offset in string table

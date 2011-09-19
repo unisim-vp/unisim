@@ -112,17 +112,19 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::LoadStatementOption *Mult
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A multi-format loader that supports ELF32, ELF64, S19, COFF and Raw binary files")
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, stmt_lookup_export("stmt-lookup-export", this)
+	, backtrace_export("backtrace-export", this)
 	, logger(*this)
 	, verbose(false)
 	, verbose_parser(false)
 	, tee_loader(0)
 	, tee_blob(0)
 	, tee_symbol_table_lookup(0)
+	, tee_backtrace(0)
 	, memory_mapper(0)
 	, filename()
 	, positional_option_types()
@@ -131,7 +133,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, elf64_loaders()
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_verbose_parser("verbose-parser", this, verbose_parser, "Enable/Disable verbosity of parser")
-	, param_filename("filename", this, filename, "List of files to load. Syntax: [[(filename=]<filename1>[:[format=]<format1>]][,[(filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
+	, param_filename("filename", this, filename, "List of files to load. Syntax: [[filename=]<filename1>[:[format=]<format1>]][,[filename=]<filename2>[:[format=]<format2>]]... (e.g. boot.bin:raw,app.elf)")
 {
 	positional_option_types.push_back(OPT_FILENAME);
 	positional_option_types.push_back(OPT_FORMAT);
@@ -150,6 +152,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	tee_blob = new unisim::service::tee::blob::Tee<MEMORY_ADDR>("tee-blob", this);
 	tee_symbol_table_lookup = new unisim::service::tee::symbol_table_lookup::Tee<MEMORY_ADDR>("tee-symbol-table-lookup", this);
 	tee_stmt_lookup = new unisim::service::tee::stmt_lookup::Tee<MEMORY_ADDR>("tee-stmt-lookup", this);
+	tee_backtrace = new unisim::service::tee::backtrace::Tee<MEMORY_ADDR>("tee-backtrace", this);
 	
 	memory_mapper = new MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>("memory-mapper", this);
 	
@@ -186,7 +189,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 
 			if(tok != TOK_COMMA)
 			{
-				logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" <<EndDebugWarning;
+				logger << DebugWarning << "In Parameter " << param_filename.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" << EndDebugWarning;
 				PrettyPrintSyntaxErrorLocation(filename.c_str(), pos);
 				break;
 			}
@@ -248,7 +251,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 			}
 			
 			std::stringstream sstr_loader_name;
-			sstr_loader_name << GetFileFormatName(file_fmt) << "-loader[" << stmt_idx << "]";
+			sstr_loader_name << "file" << stmt_idx;
 			std::string loader_name(sstr_loader_name.str());
 			std::transform(loader_name.begin(), loader_name.end(), loader_name.begin(), ::tolower); // make sure service name is lower case
 			
@@ -279,6 +282,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 						*tee_blob->blob_import[stmt_idx] >> elf32_loader->blob_export;
 						*tee_symbol_table_lookup->symbol_table_lookup_import[stmt_idx] >> elf32_loader->symbol_table_lookup_export;
 						*tee_stmt_lookup->stmt_lookup_import[stmt_idx] >> elf32_loader->stmt_lookup_export;
+						*tee_backtrace->backtrace_import[stmt_idx] >> elf32_loader->backtrace_export;
 						elf32_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;
@@ -330,6 +334,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	blob_export >> tee_blob->blob_export;
 	symbol_table_lookup_export >> tee_symbol_table_lookup->symbol_table_lookup_export;
 	stmt_lookup_export >> tee_stmt_lookup->stmt_lookup_export;
+	backtrace_export >> tee_backtrace->backtrace_export;
 	
 	for(i = 0; i < MAX_MEMORIES; i++)
 	{
@@ -376,6 +381,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::~MultiFormatLoader()
 	if(tee_blob) delete tee_blob;
 	if(tee_symbol_table_lookup) delete tee_symbol_table_lookup;
 	if(tee_stmt_lookup) delete tee_stmt_lookup;
+	if(tee_backtrace) delete tee_backtrace;
 	if(memory_mapper) delete memory_mapper;
 }
 
@@ -630,13 +636,26 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoa
 		logger << DebugError << "Can't open input \"" << location << "\"" << EndDebugError;
 		return FFMT_RAW;
 	}
-	
-	std::streampos size = f.readsome((char *) magic, sizeof(magic));
-	
-	if(f.fail())
+
+	// Note: code below is nearly equivalent to istream::readsome
+	// I no longer use it because it is bugged with i586-mingw32msvc-g++ (version 4.2.1-sjlj on Ubuntu)
+	unsigned int size;
+	for(size = 0; size < sizeof(magic); size++)
 	{
-		logger << DebugError << "Input/Ouput error while reading file \"" << location << "\"" << EndDebugError;
-		return FFMT_RAW;
+		f.read((char *) &magic[size], 1);
+		if(!f.good()) break;
+	}
+	
+	if(verbose)
+	{
+		logger << DebugInfo << "Magic: ";
+		std::streamoff i;
+		for(i = 0; i < size; i++)
+		{
+			logger << "0x" << std::hex << (unsigned int) magic[i] << std::dec;
+			if(i != (size - 1)) logger << " ";
+		}
+		logger << EndDebugInfo;
 	}
 	
 	if(size >= 5)
@@ -788,7 +807,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MemoryMapper(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A memory mapper")
 	, Service<Memory<MEMORY_ADDR> >(name, parent)
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
 	, memory_export("memory-export", this)
@@ -879,7 +898,7 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::BeginSetup()
 
 			if(tok != TOK_COMMA)
 			{
-				logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" <<EndDebugWarning;
+				logger << DebugWarning << "In Parameter " << param_mapping.GetName() << ", unexpected " << GetTokenName(tok, tok_value) << " at character #" << (pos + 1) << " (expecting a ',')" << EndDebugWarning;
 				PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
 				break;
 			}
@@ -1400,12 +1419,14 @@ void MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::Reset()
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size)
 {
+	if(!size) return true;
+	
 	MEMORY_ADDR low = addr;
 	MEMORY_ADDR high = addr + size - 1;
 	
 	if(low > high) // out of address space ?
 	{
-		logger << DebugWarning << "Access out of address space" << EndDebugWarning;
+		logger << DebugWarning << "Access out of address space (@0x" << std::hex << low << std::dec << "-0x" << std::hex << high << std::dec << ")" << EndDebugWarning;
 		memset((uint8_t *) buffer, 0, size);
 		high = std::numeric_limits<MEMORY_ADDR>::max();
 	}
@@ -1447,12 +1468,15 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ReadMemory(MEMORY_ADDR addr, void 
 template <class MEMORY_ADDR, unsigned int MAX_MEMORIES>
 bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size)
 {
+	if(!size) return true;
+
 	MEMORY_ADDR low = addr;
 	MEMORY_ADDR high = addr + size - 1;
 	
 	if(low > high) // out of address space ?
 	{
-		logger << DebugWarning << "Access out of address space" << EndDebugWarning;
+		std::cerr << "size=" << size << std::endl;
+		logger << DebugWarning << "Access out of address space (@0x" << std::hex << low << std::dec << "-0x" << std::hex << high << std::dec << ")" << EndDebugWarning;
 		high = std::numeric_limits<MEMORY_ADDR>::max();
 	}
 	

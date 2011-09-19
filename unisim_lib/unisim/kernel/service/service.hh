@@ -352,8 +352,14 @@ private:
 	bool XmlfyVariables(const char *filename);
 	bool LoadXmlVariables(const char *filename);
 
-	void GetRootObjects(list<Object *>& lst);
-	
+protected:
+	// TOCHECK: this method was previously declared as private,
+	//   and should probably become again private unless we consider
+	//   it part of the simulator API in which case it should
+	//   become public
+	void GetRootObjects(list<Object *>& lst) const;
+
+private:
 	class CommandLineOption
 	{
 	public:
@@ -492,10 +498,6 @@ public:
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
 	Formula(const char *name, Object *owner, Operator op, VariableBase *child, const char *description = 0);
 	
-#if 0
-	Formula(const char *name, Object *owner, const char *math_formula, const char *description = 0);
-#endif
-
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
@@ -515,30 +517,6 @@ private:
 
 	Operator op;
 	VariableBase *childs[3];
-
-#if 0
-	static const unsigned int TOK_EOF   = 256;
-	static const unsigned int TOK_ERROR = 257;
-	static const unsigned int TOK_LTE   = 258;
-	static const unsigned int TOK_GTE   = 259;
-	static const unsigned int TOK_ABS   = 260;
-	static const unsigned int TOK_MIN   = 261;
-	static const unsigned int TOK_MAX   = 262;
-	static const unsigned int TOK_IDENT = 263;
-	static const unsigned int TOK_EXPR  = 264;
-
-	static const unsigned int PEEK_TOK  = 0;
-	static const unsigned int GET_TOK   = 1;
-	
-	unsigned int look_ahead_token;
-	VariableBase *look_ahead_lval;
-
-	const char *GetTokenName(unsigned int token) const;
-	unsigned int ReadToken(const char *math_formula, unsigned int& pos, unsigned int mode, VariableBase **lval = 0);
-	unsigned int Parse(const char *math_formula, unsigned int& pos, VariableBase **lval);
-	void Initialize(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-	Formula(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-#endif
 };
 
 //=============================================================================
@@ -949,6 +927,9 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceImport()" << endl;
+#endif
 	//ServiceImport<SERVICE_IF>::DisconnectService();
 	ServiceImport<SERVICE_IF>::Disconnect();
 }
@@ -1089,7 +1070,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 	{
 		if(service)
 		{
-			service->OnDisconnect();
+			//service->OnDisconnect(); // Gilles: That's dangerous
 #ifdef DEBUG_SERVICE
 			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
 #endif
@@ -1125,9 +1106,10 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 			if(*import_iter == this)
 			{
 				alias_import->actual_imports.erase(import_iter);
-				this->alias_import = 0;
+				break;
 			}
 		}
+		alias_import = 0;
 	}
 
 	if(!actual_imports.empty())
@@ -1279,6 +1261,9 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceExport()" << endl;
+#endif
 	//ServiceExport<SERVICE_IF>::DisconnectClient();
 	ServiceExport<SERVICE_IF>::Disconnect();
 }
@@ -1399,9 +1384,10 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 			if(*export_iter == this)
 			{
 				actual_export->alias_exports.erase(export_iter);
-				this->actual_export = 0;
+				break;
 			}
 		}
+		actual_export = 0;
 	}
 
 	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
@@ -1474,7 +1460,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 
 	if(client)
 	{
-		client->OnDisconnect();
+		//client->OnDisconnect(); // Gilles: that's dangerous
 #ifdef DEBUG_SERVICE
 		cerr << GetName() << ": Unresolving client " << client->GetName() << endl;
 #endif

@@ -30,10 +30,18 @@ if ( UNIX AND NOT APPLE )
 	message ( "**** Release = ${DISTRIB_ID}${DISTRIB_RELEASE}" )
 endif ( UNIX AND NOT APPLE )
 
-option ( BUILD_SIM_PIM_SUPPORT "Set this option if you want to compile the simulator for use with unisim-workbench." )
-
-option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
-option ( BUILD_ARMEMU_POWER_SUPPORT "Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required.")
+option ( 
+	BUILD_SIM_PIM_SUPPORT 
+	"Set this option if you want to compile the simulator for use with unisim-workbench."
+	)
+option ( 
+	BUILD_ARMEMU_PYTHON_MODULE 
+	"Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1."
+	)
+option ( 
+	BUILD_ARMEMU_POWER_SUPPORT 
+	"Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required."
+	)
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -51,25 +59,46 @@ set ( ARMEMU_EXEC_TARGET ${ARMEMU_EXEC_NAME}-exe )
 set ( ARMEMU_LIB_TARGET ${ARMEMU_LIB_NAME}-lib )
 set ( RELATIVE_SHARE_DIRECTORY "share/${ARMEMU_EXEC_NAME}" )
 set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
-set_property ( GLOBAL 
+set_property ( 
+	GLOBAL 
 	PROPERTY
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
-set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
+set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS 
+	*.cc *.tcc *.hh 
+	CACHE 
+	STRING "Extensions of the source files"
+	)
 
-set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
-set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/bin
+	)
+set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}
+	)
+set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/lib
+	)
 	
-set ( CXX_INCLUDES iostream list string )
+set ( CXX_INCLUDES 
+	iostream 
+	list
+	string 
+	)
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
 	if ( NOT HAVE_${CXX_INCLUDE} )
-		message ( SEND_ERROR "Could not find C++ header \"${CXX_INCLUDE}\"." )
+		message ( SEND_ERROR
+			"Could not find C++ header \"${CXX_INCLUDE}\"."
+			)
 	endif ( NOT HAVE_${CXX_INCLUDE} )
 endforeach ( CXX_INCLUDE )
 
-set ( C_INCLUDES getopt stdlib signal )
+set ( C_INCLUDES 
+	getopt 
+	stdlib
+	signal
+	)
 foreach ( C_INCLUDE ${C_INCLUDES} )
 	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
 	if ( NOT HAVE_${C_INCLUDE}_H )

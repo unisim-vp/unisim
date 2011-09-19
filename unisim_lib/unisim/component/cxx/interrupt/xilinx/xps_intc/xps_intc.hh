@@ -59,6 +59,9 @@ class XPS_IntC
 	: public Service<Memory<typename CONFIG::MEMORY_ADDR> >
 {
 public:
+	// Mask
+	static const uint32_t MASK = (1ULL << CONFIG::C_NUM_INTR_INPUTS) - 1; // ISR, IPR, IER, IAR, SIE, CIE bit masks
+
 	ServiceExport<Memory<typename CONFIG::MEMORY_ADDR> > memory_export;
 	
 	XPS_IntC(const char *name, Object *parent = 0);

@@ -49,7 +49,7 @@ using std::string;
 
 template <unsigned int MAX_IMPORTS>
 Tee<MAX_IMPORTS>::Tee(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "This service/client implements a tee ('T'). It unifies the loader capability of several services that individually provides their own loader capability" )
 	, Client<Loader>(name, parent)
 	, Service<Loader>(name, parent)
 	, loader_export("loader-export", this)

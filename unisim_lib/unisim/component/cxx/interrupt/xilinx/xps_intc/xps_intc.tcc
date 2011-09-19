@@ -317,7 +317,7 @@ void XPS_IntC<CONFIG>::Write(typename CONFIG::MEMORY_ADDR addr, uint32_t value)
 template <class CONFIG>
 uint32_t XPS_IntC<CONFIG>::GetISR() const
 {
-	return isr & CONFIG::MASK;
+	return isr & MASK;
 }
 
 template <class CONFIG>
@@ -329,7 +329,7 @@ uint32_t XPS_IntC<CONFIG>::GetIPR() const
 template <class CONFIG>
 uint32_t XPS_IntC<CONFIG>::GetIER() const
 {
-	return ier & CONFIG::MASK;
+	return ier & MASK;
 }
 
 template <class CONFIG>
@@ -359,19 +359,19 @@ uint32_t XPS_IntC<CONFIG>::GetMER_HIE() const
 template <class CONFIG>
 void XPS_IntC<CONFIG>::SetISR(uint32_t value)
 {
-	isr = value & CONFIG::MASK;
+	isr = value & MASK;
 }
 
 template <class CONFIG>
 void XPS_IntC<CONFIG>::SetIER(uint32_t value)
 {
-	ier = value & CONFIG::MASK;
+	ier = value & MASK;
 }
 
 template <class CONFIG>
 void XPS_IntC<CONFIG>::SetIAR(uint32_t value)
 {
-	isr = (isr & ~value) & CONFIG::MASK;
+	isr = (isr & ~value) & MASK;
 }
 
 template <class CONFIG>

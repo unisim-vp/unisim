@@ -51,7 +51,7 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
 Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
-	: Object(name, parent)
+	: Object(name, parent, "A crossbar")
 	, Service<Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, Client<Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, memory_export("memory-export", this)

@@ -9,17 +9,20 @@ class SimulatorHandler(simulator.Simulator):
 		parms = self.get_parameters()
 		stats = self.get_statistics()
 		instruction_counter = stats['cpu.instruction-counter'].value
-		current_time = parms['cpu.cpu-time'].value
+		current_time = stats['cpu.cpu-time'].value
 		(current_time, time_unit) = re.split(' ', current_time)
 		current_time = int(current_time)
-		if re.match('ns', time_unit):
+		if re.match('ps', time_unit):
+			current_time = current_time
+		elif re.match('ns', time_unit):
 			current_time = current_time * 1000
+		elif re.match('us', time_unit):
+			current_time = current_time * 1000 * 1000
 		else:
-			if not re.match('ps', time_unit):
-				print("++++++++++++++++ Unknown time unit: '" + time_unit + "'")
-				print("Stopping the simulation")
-				self.log.close()
-				self.stop()
+			print("++++++++++++++++ Unknown time unit: '" + time_unit + "'")
+			print("Stopping the simulation")
+			self.log.close()
+			self.stop()
 		cpu_dcache_read_accesses = stats['cpu.dcache.read-accesses'].value
 		cpu_dcache_write_accesses = stats['cpu.dcache.write-accesses'].value
 		cpu_dcache_prefetch_accesses = stats['cpu.dcache.prefetch-accesses'].value
@@ -57,14 +60,15 @@ class SimulatorHandler(simulator.Simulator):
 			self.log.close()
 			self.stop()
 		else:
-			parms['cpu.trap-on-instruction-counter'].value = (instruction_counter - (instruction_counter % self.insn_threshold)) + self.insn_threshold
+			new_instruction_counter = (instruction_counter - (instruction_counter % self.insn_threshold)) + self.insn_threshold
+			parms['cpu.trap-on-instruction-counter'].value = new_instruction_counter
 
 	def __init__(self):
 		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
 		parms = self.get_parameters()
 		self.insn_threshold = 100000
-		self.max_insns = self.insn_threshold * 10 # 100000
-		# self.max_insns =    10000000000
+		# self.max_insns = self.insn_threshold * 3000
+		self.max_insns = self.insn_threshold * 100 
 		self.traps_to_logger = False
 		self.current_time = 0
 		self.cpu_dcache_read_accesses = 0
@@ -108,6 +112,15 @@ print("Creating simulator")
 sim = SimulatorHandler()
 print("Launching simulator setup")
 sim.setup()
+print("Checking existence of debugger")
+has_debugger = sim.has_debugger()
+if has_debugger:
+	print("A debugger was found")
+	debuggers = sim.get_debuggers()
+	print("List of debuggers obtained.")
+	print("List of debuggers: ", debuggers)
+else:
+	print("No debugger was found")
 print("Launching simulation")
 sim.run()
 print("Simulation finished")

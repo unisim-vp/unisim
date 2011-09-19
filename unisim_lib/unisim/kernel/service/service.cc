@@ -548,7 +548,7 @@ VariableBase& VariableBase::operator = (const VariableBase& variable)
 
 std::string VariableBase::GetSymbolicValue() const
 {
-	return name;
+	return IsVisible() ? name : (string) *this;
 }
 
 void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
@@ -669,15 +669,8 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 }
 
 //=============================================================================
-//=                           VariableArray<TYPE>                            =
-//=============================================================================
-
-//=============================================================================
 //=                             Formula<TYPE>                                 =
 //=============================================================================
-
-// static unsigned int auto_formula_id = 0;
-static string auto_formula_id_string;
 
 template <class TYPE>
 Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
@@ -2283,6 +2276,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetVisible(false);
 	param_cmd_args->SetMutable(false);
 	param_cmd_args->SetSerializable(false);
+	
+	// Setup logger
+	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 }
 
 Simulator::~Simulator()
@@ -2838,9 +2834,6 @@ Simulator::SetupStatus Simulator::Setup()
 
 	SetupStatus status = ST_OK_TO_START;
 	
-	// Setup logger
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
-	
 	// Call all methods "BeginSetup()"
 	map<const char *, Object *, ltstr>::iterator object_iter;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
@@ -3021,9 +3014,9 @@ void Simulator::GetFormulas(list<VariableBase *>& lst)
 	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
-void Simulator::GetRootObjects(list<Object *>& lst)
+void Simulator::GetRootObjects(list<Object *>& lst) const
 {
-	map<const char *, Object *, ltstr>::iterator object_iter;
+	map<const char *, Object *, ltstr>::const_iterator object_iter;
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{

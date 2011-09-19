@@ -89,6 +89,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, Client<Loader>(_name, _parent)
 	, Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, Client<BackTrace<ADDRESS> >(_name, _parent)
 	, InlineDebuggerBase()
 	, debug_control_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
@@ -100,6 +101,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, symbol_table_lookup_import(0)
 	, loader_import(0)
 	, stmt_lookup_import(0)
+	, backtrace_import(0)
 	, memory_atom_size(1)
 	, num_loaders(0)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -188,6 +190,16 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 			sstr_name << "stmt-lookup-import[" << i << "]";
 			stmt_lookup_import[i] = new ServiceImport<StatementLookup<ADDRESS> >(sstr_name.str().c_str(), this);
 		}
+
+		typedef ServiceImport<BackTrace<ADDRESS> > *PBackTraceImport;
+		backtrace_import = new PBackTraceImport[num_loaders];
+		
+		for(i = 0; i < num_loaders; i++)
+		{
+			std::stringstream sstr_name;
+			sstr_name << "backtrace-import[" << i << "]";
+			backtrace_import[i] = new ServiceImport<BackTrace<ADDRESS> >(sstr_name.str().c_str(), this);
+		}
 	}
 }
 
@@ -206,10 +218,12 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 			delete loader_import[i];
 			delete symbol_table_lookup_import[i];
 			delete stmt_lookup_import[i];
+			delete backtrace_import[i];
 		}
 		delete[] loader_import;
 		delete[] symbol_table_lookup_import;
 		delete[] stmt_lookup_import;
+		delete[] backtrace_import;
 	}
 }
 
@@ -515,6 +529,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					recognized = true;
 					DumpAvailableLoaders();
+					break;
+				}
+				
+				if(IsBackTraceCommand(parm[0]))
+				{
+					recognized = true;
+					DumpBackTrace(cia);
 					break;
 				}
 				
@@ -1767,6 +1788,56 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
+{
+	std::vector<ADDRESS> *backtrace = 0;
+	unsigned int i;
+	for(i = 0; (!backtrace) && (i < num_loaders); i++)
+	{
+		if(*backtrace_import[i])
+		{
+			backtrace = (*backtrace_import[i])->GetBackTrace(cia);
+		}
+	}
+	
+	if(backtrace)
+	{
+		unsigned int n = backtrace->size();
+		for(i = 0; i < n; i++)
+		{
+			std::cout << "#" << i << " from ";
+			
+			ADDRESS return_addr = (*backtrace)[i];
+			
+			const Symbol<ADDRESS> *symbol = 0;
+			
+			for(i = 0; (!symbol) && (i < num_loaders); i++)
+			{
+				if(*symbol_table_lookup_import[i])
+				{
+					symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(return_addr);
+				}
+			}
+			
+			std::cout << "0x" << std::hex;
+			std::cout << (return_addr / memory_atom_size) << std::dec;
+			if(symbol)
+			{
+				std::cout << " <";
+				std::cout << symbol->GetFriendlyName(return_addr);
+				std::cout << ">";
+			}
+			std::cout << std::endl;
+		}
+		delete backtrace;
+	}
+	else
+	{
+		std::cout << "No bactrace" << std::endl;
+	}
+}
+
+template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
 	char fmt1[16];
@@ -2057,6 +2128,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsLoadCommand(const char *cmd)
 {
 	return strcmp(cmd, "l") == 0 || strcmp(cmd, "ld") == 0 || strcmp(cmd, "load") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsBackTraceCommand(const char *cmd)
+{
+	return strcmp(cmd, "bt") == 0 || strcmp(cmd, "backtrace") == 0;
 }
 
 } // end of namespace inline_debugger
