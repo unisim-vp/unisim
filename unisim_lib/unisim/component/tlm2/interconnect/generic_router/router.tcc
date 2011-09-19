@@ -1234,10 +1234,11 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 				if (cur_addr >= mapping[index].range_start && cur_addr <= mapping[index].range_end) {
 					found = true;
 					port_mappings.push_back(index);
-					if (cur_size - 1 <= mapping[index].range_end - cur_addr) {
+// Gilles: I think this code is useless. It makes infinitely loop when range_end is the maximum range
+/*					if (cur_size - 1 <= mapping[index].range_end - cur_addr) {
 						cur_addr = mapping[index].range_end + 1;
 						cur_size = 1 + size - (mapping[index].range_end - addr);
-					} else 
+					} else */
 						cur_addr = addr + size;
 				}
 			}

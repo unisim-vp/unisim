@@ -304,6 +304,7 @@ Simulator::Simulator(int argc, char **argv)
 		*inline_debugger->loader_import[0] >> linux_os->loader_export;
 		*inline_debugger->stmt_lookup_import[0] >> elf32_loader->stmt_lookup_export;
 		*inline_debugger->symbol_table_lookup_import[0] >> elf32_loader->symbol_table_lookup_export;
+		*inline_debugger->backtrace_import[0] >> elf32_loader->backtrace_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -377,7 +378,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 {
 	// meta information
 	simulator->SetVariable("program-name", "UNISIM ppc440emu");
-	simulator->SetVariable("copyright", "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)");
+	simulator->SetVariable("copyright", "Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
