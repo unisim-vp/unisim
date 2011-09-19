@@ -1071,69 +1071,67 @@ template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 {
 
-	const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+	list<const Symbol<ADDRESS> *> symbol_registries;
 
-	if (symbol_registries != 0) {
+	if (symbol_table_lookup_import) {
+		symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+	}
+	typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
 
-		typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
+	string packet = "";
+	string value;
+	int count = 0;
 
-		string packet = "";
-		string value;
-		int count = 0;
+	for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+	{
 
-		for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
-		{
+		if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
 
-			if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
+			value = "";
 
-				value = "";
-
-				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+			if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+			{
+				if(verbose)
 				{
-					if(verbose)
-					{
-						logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
-					}
-				}
-
-				string hexName;
-
-				TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
-
-				packet.append("qSymbol:");
-				packet.append(value);
-				packet.append(":");
-				packet.append(hexName);
-
-				count = (count + 1) % 10;
-
-				if (name.compare("*") != 0) {
-					break;
-				} else {
-					if (count == 0) {
-						PutPacket(packet);
-						packet = "";
-					}
-
+					logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
 				}
 			}
 
+			string hexName;
+
+			TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
+
+			packet.append("qSymbol:");
+			packet.append(value);
+			packet.append(":");
+			packet.append(hexName);
+
+			count = (count + 1) % 10;
+
+			if (name.compare("*") != 0) {
+				break;
+			} else {
+				if (count == 0) {
+					PutPacket(packet);
+					packet = "";
+				}
+
+			}
 		}
-
-		if (count > 0) {
-			PutPacket(packet);
-		}
-
-		if (name.compare("*") == 0) {
-			PutPacket("qSymbol:");
-		}
-
-
-		return true;
 
 	}
 
-	return false;
+	if (count > 0) {
+		PutPacket(packet);
+	}
+
+	if (name.compare("*") == 0) {
+		PutPacket("qSymbol:");
+	}
+
+
+	return true;
+
 }
 
 template <class ADDRESS>
@@ -1428,56 +1426,58 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		 *
 		 * with: symbType in {"FUNCTION", "VARIABLE"}
 		 */
-		const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
 
-		if (symbol_registries != 0) {
+		list<const Symbol<ADDRESS> *> symbol_registries;
 
-			typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
-			std::stringstream strstm;
-
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
-			{
-				strstm << (*symbol_iter)->GetName();
-
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
-
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-				strstm << ":" << "FUNCTION";
-
-				string str = strstm.str();
-				OutputText(str.c_str(), str.size());
-
-				strstm.str(std::string());
-			}
-
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
-			{
-
-				strstm << (*symbol_iter)->GetName();
-
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
-
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-				strstm << ":" << "VARIABLE";
-
-				string str = strstm.str();
-				OutputText(str.c_str(), str.size());
-
-				strstm.str(std::string());
-
-			}
-
-			PutPacket("T05");
-
-		} else {
-			PutPacket("E00");
+		if (symbol_table_lookup_import) {
+			symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_FUNC);
 		}
+
+		typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+		std::stringstream strstm;
+
+		for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+		{
+			strstm << (*symbol_iter)->GetName();
+
+			strstm << ":" << std::hex;
+			strstm.width(8);
+			strstm << (*symbol_iter)->GetAddress();
+
+			strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+
+			strstm << ":" << "FUNCTION";
+
+			string str = strstm.str();
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+		}
+
+		symbol_registries.clear();
+		symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+
+		for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+		{
+
+			strstm << (*symbol_iter)->GetName();
+
+			strstm << ":" << std::hex;
+			strstm.width(8);
+			strstm << (*symbol_iter)->GetAddress();
+
+			strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+
+			strstm << ":" << "VARIABLE";
+
+			string str = strstm.str();
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+
+		}
+
+		PutPacket("T05");
 
 	}
 	else if (cmdPrefix.compare("disasm") == 0) {
