@@ -41,6 +41,7 @@ namespace debug {
 namespace elf_symtab {
 
 template class ELF_SymtabHandler<uint32_t, Elf32_Sym>;
+template class ELF_SymtabHandler<uint64_t, Elf32_Sym>;
 
 } // end of namespace elf_symtab
 } // end of namespace debug

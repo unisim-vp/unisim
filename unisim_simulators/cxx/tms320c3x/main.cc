@@ -174,7 +174,11 @@ Simulator::Simulator(int argc, char **argv)
 	ti_c_io = new TI_C_IO("ti-c-io");
 
 	VariableBase *program = FindVariable("cmd-args[0]");
-	(*loader)["filename"] = *program;
+	std::string program_name = std::string(*program);
+	if(!program_name.empty())
+	{
+		(*loader)["filename"] = program_name.c_str();
+	}
 
 	//=========================================================================
 	//===                       Components/Services connection              ===

@@ -126,12 +126,28 @@ unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
+unisim/util/debug/dwarf/abbrev.cc \
+unisim/util/debug/dwarf/attr.cc \
+unisim/util/debug/dwarf/class.cc \
+unisim/util/debug/dwarf/dwarf32.cc \
+unisim/util/debug/dwarf/dwarf64.cc \
+unisim/util/debug/dwarf/encoding.cc \
+unisim/util/debug/dwarf/filename.cc \
+unisim/util/debug/dwarf/leb128.cc \
+unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
 unisim/util/debug/blob/section64.cc \
+unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/blob/segment64.cc \
+unisim/util/debug/elf_symtab/elf_symtab32.cc \
+unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/endian/endian.cc \
-unisim/service/loader/coff_loader/coff_loader.cc \
+unisim/util/loader/elf_loader/elf32_loader.cc \
+unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/coff_loader/coff_loader64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -175,11 +191,43 @@ unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/profile.hh \
+unisim/util/debug/dwarf/abbrev.hh \
+unisim/util/debug/dwarf/attr.hh \
+unisim/util/debug/dwarf/call_frame_vm.hh \
+unisim/util/debug/dwarf/class.hh \
+unisim/util/debug/dwarf/die.hh \
+unisim/util/debug/dwarf/encoding.hh \
+unisim/util/debug/dwarf/fde.hh \
+unisim/util/debug/dwarf/fmt.hh \
+unisim/util/debug/dwarf/leb128.hh \
+unisim/util/debug/dwarf/macinfo.hh \
+unisim/util/debug/dwarf/pub.hh \
+unisim/util/debug/dwarf/stmt_prog.hh \
+unisim/util/debug/dwarf/addr_range.hh \
+unisim/util/debug/dwarf/call_frame_prog.hh \
+unisim/util/debug/dwarf/cie.hh \
+unisim/util/debug/dwarf/cu.hh \
+unisim/util/debug/dwarf/dwarf.hh \
+unisim/util/debug/dwarf/expr_vm.hh \
+unisim/util/debug/dwarf/filename.hh \
+unisim/util/debug/dwarf/fwd.hh \
+unisim/util/debug/dwarf/loc.hh \
+unisim/util/debug/dwarf/ml.hh \
+unisim/util/debug/dwarf/range.hh \
+unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
+unisim/util/debug/blob/segment.hh \
+unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/loader/elf_loader/elf_common.h \
+unisim/util/loader/elf_loader/elf_loader.hh \
+unisim/util/loader/elf_loader/elf32.h \
+unisim/util/loader/elf_loader/elf64.h \
+unisim/util/loader/elf_loader/elf32_loader.hh \
+unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
@@ -193,6 +241,7 @@ unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/backtrace.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
 unisim/service/loader/coff_loader/ti/ti.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
@@ -213,8 +262,27 @@ unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/stmt.tcc \
+unisim/util/debug/dwarf/addr_range.tcc \
+unisim/util/debug/dwarf/call_frame_prog.tcc \
+unisim/util/debug/dwarf/cie.tcc \
+unisim/util/debug/dwarf/die.tcc \
+unisim/util/debug/dwarf/expr_vm.tcc \
+unisim/util/debug/dwarf/loc.tcc \
+unisim/util/debug/dwarf/pub.tcc \
+unisim/util/debug/dwarf/stmt_prog.tcc \
+unisim/util/debug/dwarf/attr.tcc \
+unisim/util/debug/dwarf/call_frame_vm.tcc \
+unisim/util/debug/dwarf/cu.tcc \
+unisim/util/debug/dwarf/dwarf.tcc \
+unisim/util/debug/dwarf/fde.tcc \
+unisim/util/debug/dwarf/macinfo.tcc \
+unisim/util/debug/dwarf/range.tcc \
+unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
+unisim/util/debug/blob/segment.tcc \
+unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
 unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
@@ -293,12 +361,6 @@ fibo.out \
 "
 
 UNISIM_DOCS_FILES="\
-README \
-INSTALL \
-NEWS \
-COPYING \
-AUTHORS \
-ChangeLog \
 genisslib_manual.pdf \
 tms320c3x_manual.pdf \
 genisslib_manual.tex \
@@ -588,6 +650,63 @@ if [ "${has_to_build_docs_configure}" = "yes" ]; then
 	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
 	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
 	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
+
+	cat << EOF > "${DEST_DIR}/docs/README"
+This is the documentation of UNISIM GenISSLib, an instruction set simulator generator, and the UNISIM TMS320C3X instruction set simulator.
+See INSTALL for installation instructions.
+See COPYING for licensing.
+See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools.
+EOF
+
+	echo "" > "${DEST_DIR}/docs/NEWS"
+	echo "" > "${DEST_DIR}/docs/ChangeLog"
+	
+	cat << EOF > "${DEST_DIR}/docs/AUTHORS"
+Gilles Mouchard <gilles.mouchard@cea.fr>
+Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+EOF
+
+	cat << EOF > "${DEST_DIR}/docs/INSTALL"
+Requirements:
+ - Latex
+ - rubber
+
+Build the documentation:
+ $ rubber -d genisslib_manual
+ $ rubber -d tms320c3x_manual
+EOF
+
+cat << EOF > "${DEST_DIR}/docs/COPYING"
+Copyright (c) 2009,
+Commissariat a l'Energie Atomique (CEA)
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+ - Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+ - Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+ - Neither the name of CEA nor the names of its contributors may be used to
+   endorse or promote products derived from this software without specific prior
+   written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+EOF
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR}/docs && aclocal && autoconf --force && automake -ac"

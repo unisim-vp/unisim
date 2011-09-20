@@ -1400,7 +1400,9 @@ template <> VariableBase& Variable<string>::operator = (double value)
 template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
+	{
 		*storage = value;
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -2413,7 +2415,11 @@ void Simulator::Initialize(VariableBase *variable)
 	
 	if(set_var_iter != set_vars.end())
 	{
-		*variable = (*set_var_iter).second.c_str();
+		const char *value = (*set_var_iter).second.c_str();
+#ifdef DEBUG_VARIABLES
+		std::cerr << variable->GetName() << " <- \"" << value << "\"" << std::endl;
+#endif
+		*variable = value;
 		set_vars.erase(set_var_iter);
 	}
 }
