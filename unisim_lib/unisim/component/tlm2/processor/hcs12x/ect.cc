@@ -1287,14 +1287,6 @@ inline void ECT::latchToHoldingRegisters() {
 	}
 }
 
-bool ECT::isInputCapture(uint8_t channel_index) {
-	if ((tios_register & (1 << channel_index)) == 0) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
 //=====================================================
 //=             ECT Channel methods                   =
 //=====================================================
@@ -1984,6 +1976,10 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
 	service_address_t offset = addr-baseAddress;
+
+	if (size == 0) {
+		return true;
+	}
 
 	if (offset <= TC3H_LOW) {
 		return write(offset, (uint8_t *) buffer, size);

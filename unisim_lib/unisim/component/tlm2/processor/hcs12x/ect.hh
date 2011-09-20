@@ -607,6 +607,15 @@ private:
 
 }; /* end class ECT */
 
+bool ECT::isInputCapture(uint8_t channel_index) {
+	if ((tios_register & (1 << channel_index)) == 0) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
 } // end of namespace hcs12x
 } // end of namespace processor
 } // end of namespace tlm2

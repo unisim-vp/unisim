@@ -958,6 +958,10 @@ bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 
 	service_address_t offset = addr-baseAddress;
 
+	if (size == 0) {
+		return true;
+	}
+
 	if (offset <= ARMCOP) {
 		return write(offset, *(uint8_t *) buffer);
 	}

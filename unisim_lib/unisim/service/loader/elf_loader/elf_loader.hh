@@ -128,6 +128,7 @@ private:
 	MEMORY_ADDR base_addr;
 	bool force_base_addr;
 	bool force_use_virtual_address;
+	bool initialize_extra_segment_bytes;
 	bool dump_headers;
 	string dwarf_to_html_output_directory;
 	unisim::kernel::logger::Logger logger;
@@ -139,6 +140,7 @@ private:
 	Parameter<MEMORY_ADDR> param_base_addr;
 	Parameter<bool> param_force_base_addr;
 	Parameter<bool> param_force_use_virtual_address;
+	Parameter<bool> param_initialize_extra_segment_bytes;
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;

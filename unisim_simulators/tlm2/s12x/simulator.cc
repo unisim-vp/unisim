@@ -407,6 +407,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("S19_Loader.filename", filename);
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
 	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
+	simulator->SetVariable("elf32-loader.initialize-extra-segment-bytes", false);
 
 	simulator->SetVariable("atd-pwm-stub.anx-stimulus-period", 80000000); // 80 us
 	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
@@ -455,6 +456,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
+	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
+
 	simulator->SetVariable("CRG.oscillator-clock", 250000);
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
@@ -463,7 +466,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CRG.debug-enabled", false);
 	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
 	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
-
 
 	simulator->SetVariable("ECT.bus-cycle-time", 250000);
 	simulator->SetVariable("ECT.base-address", 0x40);

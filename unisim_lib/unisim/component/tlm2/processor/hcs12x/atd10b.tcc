@@ -1072,6 +1072,10 @@ bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, u
 
 	service_address_t offset = addr-baseAddress;
 
+	if (size == 0) {
+		return true;
+	}
+
 	if (offset <= (ATDDR0H + 2*ATD_SIZE - 1)) {
 		return write(offset, buffer);
 	}

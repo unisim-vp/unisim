@@ -125,7 +125,11 @@ CPU::CPU(const char *name, Object *parent):
 	stat_cycles_counter("cycles-counter", this, cycles_counter),
 	stat_load_counter("data-load-counter", this, data_load_counter),
 	stat_store_counter("data-store-counter", this, data_store_counter),
-	param_max_inst("max-inst",this,max_inst)
+	param_max_inst("max-inst",this,max_inst),
+
+	trap_on_instruction_counter(-1),
+	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter)
+
 
 {
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -363,6 +367,9 @@ uint8_t CPU::Step()
 
 		RegistersInfo();
 
+		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
+			trap_reporting_import->ReportTrap();
+		}
 
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import)
@@ -1046,6 +1053,10 @@ bool CPU::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 
 bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
+	if (size == 0) {
+		return true;
+	}
+
 	if (memory_import) {
 		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
 	}

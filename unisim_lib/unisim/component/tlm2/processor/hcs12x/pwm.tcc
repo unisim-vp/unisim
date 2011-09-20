@@ -1116,6 +1116,10 @@ bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint
 
 	service_address_t offset = addr-baseAddress;
 
+	if (size == 0) {
+		return true;
+	}
+
 	if (offset <= PWMSDN) {
 		return write(offset, *((uint8_t *)buffer));
 	}
