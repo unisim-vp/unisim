@@ -19,11 +19,9 @@
 #include "config.h"
 #endif
 
-
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
-#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <unisim/service/interfaces/loader.hh>
 
@@ -56,6 +54,7 @@
 #include <unisim/service/pim/pim.hh>
 #include <unisim/service/pim/pim_server.hh>
 
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <xml_atd_pwm_stub.hh>
 
@@ -66,10 +65,9 @@
 #ifdef WIN32
 
 #include <windows.h>
-#include <winsock2.h>
+//#include <winsock2.h>
 
 #endif
-
 
 using namespace std;
 
