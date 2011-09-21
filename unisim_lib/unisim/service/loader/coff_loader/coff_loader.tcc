@@ -419,6 +419,7 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 				0,
 				section_addr * memory_atom_size,
 				section_size * memory_atom_size,
+				section_size * memory_atom_size,
 				segment_content
 			);
 			
