@@ -44,12 +44,13 @@ namespace debug {
 namespace blob {
 
 template <class MEMORY_ADDR>
-Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment, MEMORY_ADDR _addr, MEMORY_ADDR _size, void *_data)
+Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment, MEMORY_ADDR _addr, MEMORY_ADDR _size, MEMORY_ADDR _data_size, void *_data)
 	: type(_type)
 	, attr(_attr)
 	, alignment(_alignment)
 	, addr(_addr)
 	, size(_size)
+	, data_size(_data_size)
 	, data(_data)
 	, refcount(0)
 {
@@ -64,6 +65,7 @@ Segment<MEMORY_ADDR>::Segment(const Segment<MEMORY_ADDR>& segment)
 	, alignment(segment.alignment)
 	, addr(segment.addr)
 	, size(segment.size)
+	, data_size(segment.data_size)
 	, data(0)
 	, refcount(0)
 {
@@ -115,6 +117,12 @@ template <class MEMORY_ADDR>
 MEMORY_ADDR Segment<MEMORY_ADDR>::GetSize() const
 {
 	return size;
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR Segment<MEMORY_ADDR>::GetDataSize() const
+{
+	return data_size;
 }
 
 template <class MEMORY_ADDR>

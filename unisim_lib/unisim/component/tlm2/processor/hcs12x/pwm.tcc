@@ -99,7 +99,10 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	master_sock(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &PWM::read_write);
-	bus_clock_socket.register_b_transport(this, &PWM::UpdateBusClock);
+	bus_clock_socket.register_b_transport(this, &PWM::updateBusClock);
+
+	Reset();
+
 }
 
 template <uint8_t PWM_SIZE>
@@ -663,7 +666,7 @@ void PWM<PWM_SIZE>::ComputeInternalTime() {
 }
 
 template <uint8_t PWM_SIZE>
-void PWM<PWM_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+void PWM<PWM_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -742,8 +745,6 @@ bool PWM<PWM_SIZE>::BeginSetup() {
 
 	sprintf(buf, "%s.PWMSDN",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsdn_register);
-
-	Reset();
 
 	ComputeInternalTime();
 
@@ -1114,6 +1115,10 @@ template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
 	service_address_t offset = addr-baseAddress;
+
+	if (size == 0) {
+		return true;
+	}
 
 	if (offset <= PWMSDN) {
 		return write(offset, *((uint8_t *)buffer));

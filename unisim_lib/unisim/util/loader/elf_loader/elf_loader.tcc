@@ -452,7 +452,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			MEMORY_ADDR ph_type = GetSegmentType(phdr);
 			MEMORY_ADDR segment_addr = force_base_addr ? base_addr : GetSegmentAddr(phdr);
 			MEMORY_ADDR segment_mem_size = GetSegmentMemSize(phdr);
-			//MEMORY_ADDR segment_file_size = GetSegmentFileSize(phdr);
+			MEMORY_ADDR segment_file_size = GetSegmentFileSize(phdr);
 			MEMORY_ADDR ph_flags = GetSegmentFlags(phdr);
 			MEMORY_ADDR segment_alignment = GetSegmentAlignment(phdr);
 			
@@ -477,7 +477,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			
 			if(unlikely(verbose))
 			{
-				logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << segment_mem_size << " bytes) " << EndDebugInfo;
+				logger << DebugInfo << "Loading segment at 0x" << hex << segment_addr << dec << " (" << segment_file_size << " bytes) " << EndDebugInfo;
 			}
 			
 			void *segment_data = calloc(segment_mem_size + 1, 1); // Allocate one additional byte for zero-terminated strings
@@ -494,6 +494,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 				segment_alignment,
 				segment_addr,
 				segment_mem_size,
+				segment_file_size,
 				segment_data
 			);
 			

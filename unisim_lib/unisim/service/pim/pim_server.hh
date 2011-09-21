@@ -45,6 +45,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/time.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
 #include <unisim/service/pim/network/SocketThread.hpp>
@@ -81,6 +82,7 @@ using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
+using unisim::service::interfaces::StatementLookup;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
@@ -119,7 +121,6 @@ public:
 	inline int GetHexLength() const { return 2 * size; }
 	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
 	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
-	inline GDBEndian GetEndian() const { return endian; }
 	unsigned int GetRegNum() const { return reg_num; }
 private:
 	string name;
@@ -138,6 +139,7 @@ class PIMServer :
 	public Client<Memory<ADDRESS> >,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
+	public Client<StatementLookup<ADDRESS> >,
 	public Client<Registers>,
 	public SocketThread
 {
@@ -151,6 +153,7 @@ public:
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
 
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
@@ -178,6 +181,9 @@ public:
 	string GetHost() { return fHost; }
 
 	double GetSimTime();
+	double GetHostTime();
+
+	inline GDBEndian GetEndian() const { return endian; }
 
 protected:
 	vector<SocketThread*> protocolHandlers;
@@ -228,6 +234,8 @@ private:
 //	int sock;
 	vector<GDBRegister> gdb_registers;
 	GDBRegister *gdb_pc;
+	GDBEndian endian;
+
 	bool killed;
 	bool trap;
 	bool synched;
@@ -257,6 +265,9 @@ private:
 	Parameter<string> param_architecture_description_filename;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
+
+//	ofstream pim_trace_file;
+//	double last_time_ratio;
 
 };
 

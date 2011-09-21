@@ -311,6 +311,7 @@ Simulator::Simulator(int argc, char **argv)
 		else if (pim_server)
 		{
 			pim_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
+			pim_server->stmt_lookup_import >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
 		}
 	}
 
@@ -406,6 +407,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("S19_Loader.filename", filename);
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
 	simulator->SetVariable("elf32-loader.force-use-virtual-address", force_use_virtual_address);
+	simulator->SetVariable("elf32-loader.initialize-extra-segment-bytes", false);
 
 	simulator->SetVariable("atd-pwm-stub.anx-stimulus-period", 80000000); // 80 us
 	simulator->SetVariable("atd-pwm-stub.pwm-fetch-period", 1e9); // 1 ms
@@ -450,22 +452,35 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("CPU.nice-time", "1 ms");
-	simulator->SetVariable("CPU.cpu-cycle-time", 250000);
-	simulator->SetVariable("CPU.bus-cycle-time", 250000);
+	simulator->SetVariable("CPU.core-clock", 250000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
-	simulator->SetVariable("CRG.oscillator-clock", 125000);
+	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
+
+	simulator->SetVariable("CRG.oscillator-clock", 250000);
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
 	simulator->SetVariable("CRG.interrupt-offset-self-clock-mode", 0xc4);
 	simulator->SetVariable("CRG.debug-enabled", false);
+	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
+	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
+
 	simulator->SetVariable("ECT.bus-cycle-time", 250000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
-	simulator->SetVariable("ECT.interrupt-offset-overflow", 0xde);
+	simulator->SetVariable("ECT.interrupt-offset-timer-overflow", 0xde);
+	simulator->SetVariable("ECT.pulse-accumulatorA-overflow-interrupt", 0xDC);
+	simulator->SetVariable("ECT.pulse-accumulatorB-overflow-interrupt", 0xC8);
+	simulator->SetVariable("ECT.pulse-accumulatorA-input-edge-interrupt", 0xDA);
+	simulator->SetVariable("ECT.modulus-counter-interrupt", 0xCA);
 	simulator->SetVariable("ECT.debug-enabled", false);
+
+	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
+	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
+
+
 	simulator->SetVariable("external-memory.org", 0x0);
 	simulator->SetVariable("external-memory.bytesize", 0x800000);
 	simulator->SetVariable("external-memory.cycle-time", 250000);
@@ -601,7 +616,7 @@ void Simulator::Run() {
 		cerr << endl;
 
 		cerr << "simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["bus-cycle-time"] * 1000000)  << " MHz" << endl;
+		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << " MHz" << endl;
 		cerr << "Target speed           : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << " MIPS" << endl;
 		cerr << "Target speed           : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << " MHz" << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;

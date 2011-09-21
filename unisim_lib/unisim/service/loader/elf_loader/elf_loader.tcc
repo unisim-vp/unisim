@@ -72,6 +72,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, base_addr(0)
 	, force_base_addr(false)
 	, force_use_virtual_address(true)
+	, initialize_extra_segment_bytes(true)
 	, dump_headers(false)
 	, logger(*this)
 	, verbose(false)
@@ -88,6 +89,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_force_use_virtual_address("force-use-virtual-address", this, 
 			force_use_virtual_address, 
 			"force use of virtual addresses instead of physical addresses")
+	, param_initialize_extra_segment_bytes("initialize-extra-segment-bytes", this, initialize_extra_segment_bytes, "whether to initialize extra bytes in segments (p_filesz < p_memsz) to zero (true for standard ELF files)")
 	, param_dump_headers("dump-headers", this, dump_headers, 
 			"dump headers while loading ELF file")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
@@ -131,14 +133,18 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		
 		if(segment->GetType() == unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
 		{
-			if(unlikely(verbose))
-			{
-				logger << DebugInfo << "Writing segment (" << segment->GetSize() << " bytes) at @0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  segment->GetSize() - 1) << std::dec << EndDebugInfo;
-			}
-			if(!memory_import->WriteMemory(segment->GetAddr(), segment->GetData(), segment->GetSize()))
-			{
-				logger << DebugError << "Can't write into memory (@0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  segment->GetSize() - 1) << std::dec << ")" << EndDebugError;
-				success = false;
+			MEMORY_ADDR write_size = initialize_extra_segment_bytes ? segment->GetSize() : segment->GetDataSize();
+			if (write_size) {
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Writing segment (" << write_size << " bytes) at @0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  write_size - 1) << std::dec << EndDebugInfo;
+				}
+
+				if(!memory_import->WriteMemory(segment->GetAddr(), segment->GetData(), write_size))
+				{
+					logger << DebugError << "Can't write into memory (@0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  write_size - 1) << std::dec << ")" << EndDebugError;
+					success = false;
+				}
 			}
 		}
 	}
