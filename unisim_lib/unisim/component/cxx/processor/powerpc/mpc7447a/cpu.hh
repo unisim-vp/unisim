@@ -564,6 +564,26 @@ private:
 	Queue<FreeListConfig> free_list;
 };
 
+class VectorRegisterView : public unisim::kernel::service::VariableBase
+{
+public:
+	VectorRegisterView(const char *name, unisim::kernel::service::Object *owner, vr_t& storage, const char *description);
+	virtual ~VectorRegisterView();
+	virtual const char *GetDataTypeName() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator std::string () const;
+	virtual unisim::kernel::service::VariableBase& operator = (bool value);
+	virtual unisim::kernel::service::VariableBase& operator = (long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (double value);
+	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+private:
+	vr_t& storage;
+};
+
 template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>,
@@ -1319,6 +1339,7 @@ private:
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
+	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;

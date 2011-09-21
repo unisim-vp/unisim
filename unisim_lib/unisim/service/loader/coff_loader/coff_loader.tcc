@@ -404,6 +404,11 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 		if((section_type == Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA) ||
 		   (section_type == Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT))
 		{
+			// TODO: ST_SPECIFIC_CONTENT desserve more attention because it is not raw data
+			// For that specific content, a fake memory should be used to catch memory write access of loader, and build one or more loadable segments
+			void *segment_content = calloc(section_size, memory_atom_size);
+			memcpy(segment_content, section_content, section_size * memory_atom_size);
+			
 			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
 				
 			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
@@ -414,7 +419,8 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 				0,
 				section_addr * memory_atom_size,
 				section_size * memory_atom_size,
-				section_content
+				section_size * memory_atom_size,
+				segment_content
 			);
 			
 			blob->AddSegment(blob_segment);
