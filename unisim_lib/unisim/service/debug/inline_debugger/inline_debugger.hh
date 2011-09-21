@@ -179,10 +179,12 @@ private:
 	unsigned int num_loaders;
 	std::string search_path;
 	std::string init_macro;
+	std::string output;
 	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<unsigned int> param_num_loaders;
 	Parameter<std::string> param_search_path;
 	Parameter<std::string> param_init_macro;
+	Parameter<std::string> param_output;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
@@ -203,6 +205,9 @@ private:
 	char *int_addr_fmt;
 	std::string last_line;
 	std::string line;
+	std::ostream *output_stream;
+	std::ostream *std_output_stream;
+	std::ostream *std_error_stream;
 
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
