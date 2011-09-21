@@ -577,7 +577,7 @@ protected:
 
 private:
 	uint8_t		regA, regB;
-    uint16_t    regX, regY, regSP, regPC;
+    uint16_t    regX, regY, regSP, regPC, ccrReg;
     uint16_t	regTMP[3];
 
     address_t lastPC;

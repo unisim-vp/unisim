@@ -1860,14 +1860,13 @@ void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 	do
 	{
 		getline(f, line);
-		if(f.eof()) break;
-		if(f.fail())
+		if(f.bad())
 		{
 			(*std_error_stream) << "WARNING! I/O error while reading file \"" << path << "\"" << std::endl;
 			return;
 		}
 		macro.push(line);
-	} while(1);
+	} while(!f.eof());
 	
 	while(!macro.empty())
 	{

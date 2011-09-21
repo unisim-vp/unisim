@@ -140,7 +140,7 @@ CPU::CPU(const char *name, Object *parent):
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
-    ccr = new CCR_t();
+    ccr = new CCR_t(&ccrReg);
 
     eblb = new EBLB(this);
 
@@ -178,17 +178,17 @@ CPU::CPU(const char *name, Object *parent):
 
 	sprintf(buf, "%s", ccr->GetName());
 	registers_registry[buf] = ccr;
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, ccr->ccrVal, "CCR"));
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, ccrReg, "CCR"));
 
 	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
 	sprintf(buf, "%s", ccrl->GetName());
 	registers_registry[buf] = ccrl;
-	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccr->ccrVal, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
 
 	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
 	sprintf(buf, "%s", ccrh->GetName());
 	registers_registry[buf] = ccrh;
-	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccr->ccrVal, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
 }
 

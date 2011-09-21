@@ -49,12 +49,12 @@ const char *CCR_t::GetName() const
 
 void CCR_t::GetValue(void *buffer) const
 {
-	*(uint16_t *) buffer = ccrVal;
+	*(uint16_t *) buffer = *ccrReg;
 }
 
 void CCR_t::SetValue(const void *buffer)
 {
-	ccrVal = *(uint16_t *) buffer;
+	*ccrReg = *(uint16_t *) buffer;
 }
 
 int CCR_t::GetSize() const
@@ -66,9 +66,9 @@ unisim::util::debug::Register *CCR_t::GetLowRegister()
 {
 	return new unisim::util::debug::SimpleRegister<uint8_t>("CCRL",
 #if BYTE_ORDER == BIG_ENDIAN
-            ((uint8_t *) &ccrVal) + 1
+            ((uint8_t *) ccrReg) + 1
 #else
-            ((uint8_t *) &ccrVal)
+            ((uint8_t *) ccrReg)
 #endif
         );
 }
@@ -77,9 +77,9 @@ unisim::util::debug::Register *CCR_t::GetHighRegister()
 {
 	return new unisim::util::debug::SimpleRegister<uint8_t>("CCRH",
 #if BYTE_ORDER == BIG_ENDIAN
-            ((uint8_t *) &ccrVal)
+            ((uint8_t *) ccrReg)
 #else
-            ((uint8_t *) &ccrVal) + 1
+            ((uint8_t *) ccrReg) + 1
 #endif
         );
 }
