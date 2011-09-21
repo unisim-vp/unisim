@@ -58,6 +58,9 @@
 #include <inttypes.h>
 #include <string>
 #include <vector>
+#include <queue>
+#include <list>
+#include <stack>
 
 #ifdef WIN32
 #include <windows.h>
@@ -192,16 +195,18 @@ private:
 	ADDRESS dump_addr;
 	ADDRESS cont_until_addr;
 
+	std::list<std::string> exec_queue;
 	string prompt;
 	char *hex_addr_fmt;
 	char *int_addr_fmt;
-	char last_line[256];
-	char line[256];
+	std::string last_line;
+	std::string line;
 
+	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
-	bool GetLine(const char *prompt, char *line, int size);
-	bool IsBlankLine(const char *line);
+	bool GetLine(const char *prompt, std::string& line, bool& interactive);
+	bool IsBlankLine(const std::string& line);
 	bool IsQuitCommand(const char *cmd);
 	bool IsStepCommand(const char *cmd);
 	bool IsNextCommand(const char *cmd);
@@ -226,6 +231,7 @@ private:
 	bool IsBackTraceCommand(const char *cmd);
 	bool IsLoadSymbolTableCommand(const char *cmd);
 	bool IsListSymbolsCommand(const char *cmd);
+	bool IsMacroCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -252,6 +258,7 @@ private:
 	void Load(const char *loader_name);
 	std::string SearchFile(const char *filename);
 	void LoadSymbolTable(const char *filename);
+	void LoadMacro(const char *filename);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace(ADDRESS cia);
 	const Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr);

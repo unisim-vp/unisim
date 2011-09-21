@@ -125,8 +125,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	trap = false;
-	strcpy(last_line, "");
-	strcpy(line, "");
 
 	switch(sizeof(ADDRESS))
 	{
@@ -326,7 +324,16 @@ ReportTrap(const unisim::kernel::service::Object &obj,
 	trap = true;
 	cout << "-> Received trap from \"" << obj.GetName() << "\": " << c_str << endl;
 }
-	
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::Tokenize(const std::string& str, std::vector<std::string>& tokens)
+{
+	std::string token;
+	std::stringstream sstr(str);
+
+	while(sstr >> token) tokens.push_back(token);
+}
+
 template <class ADDRESS>
 typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebugCommand(ADDRESS cia)
 {
@@ -334,7 +341,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	ADDRESS addr;
 	ADDRESS cont_addr;
 	unsigned int size;
-	char parm[32][1024];
+	std::vector<std::string> parm;
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{
@@ -362,27 +369,23 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 	while(1)
 	{
+		bool interactive = false;
 		//cout << "> ";
-
-		if(!GetLine(prompt.c_str(), line, sizeof(line)))
+		if(!GetLine(prompt.c_str(), line, interactive))
 		{
 			Object::Stop(0);
 			return DebugControl<ADDRESS>::DBG_KILL;
 		}
 
-		if(IsBlankLine(line))
+		if(interactive && IsBlankLine(line))
 		{
-	 		strcpy(line, last_line);
+	 		line = last_line;
 //			cout << "\033[1A\033[2C" << line << endl;
 		}
 		
-		nparms = sscanf(line, " %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s %s",
-	                parm[0], parm[1], parm[2], parm[3], parm[4], parm[5], parm[6], parm[7],
-	                parm[8], parm[9], parm[10], parm[11], parm[12], parm[13], parm[14], parm[7],
-	                parm[16], parm[17], parm[18], parm[19], parm[20], parm[21], parm[22], parm[23],
-	                parm[24], parm[25], parm[26], parm[27], parm[28], parm[29], parm[30], parm[31]
-					);
-
+		parm.clear();
+		Tokenize(line, parm);
+		nparms = parm.size();
 	
 		recognized = false;
 
@@ -390,7 +393,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		{
 			case 1:
 				{
-					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0]);
+					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
 
 					if(reg)
 					{
@@ -414,32 +417,32 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					}
 				}
 
-				if(IsHelpCommand(parm[0]))
+				if(IsHelpCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					Help();
 					break;
 				}
 
-				if(IsQuitCommand(parm[0]))
+				if(IsQuitCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
 				}
 
-				if(IsStepCommand(parm[0]))
+				if(IsStepCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
-					strcpy(last_line, line);
+					if(interactive) last_line = line;
 					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
-				if(IsNextCommand(parm[0]))
+				if(IsNextCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
-					strcpy(last_line, line);
+					if(interactive) last_line = line;
 					disasm_import->Disasm(cia, cont_addr);
 					if(HasBreakpoint(cont_addr))
 					{
@@ -455,15 +458,15 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
-				if(IsContinueCommand(parm[0]))
+				if(IsContinueCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-					strcpy(last_line, line);
+					if(interactive) last_line = line;
 					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
-				if(IsDisasmCommand(parm[0]))
+				if(IsDisasmCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					Disasm(disasm_addr, 10);
@@ -471,7 +474,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsDumpCommand(parm[0]))
+				if(IsDumpCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpMemory(dump_addr);
@@ -479,60 +482,60 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsBreakCommand(parm[0]))
+				if(IsBreakCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpBreakpoints();
 					break;
 				}
 
-				if(IsWatchCommand(parm[0]))
+				if(IsWatchCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpWatchpoints();
 					break;
 				}
 				
-				if(IsResetCommand(parm[0]))
+				if(IsResetCommand(parm[0].c_str()))
 				{
 					trap = false;
-					strcpy(last_line, "");
-					strcpy(line, "");
+					last_line.clear();
+					line.clear();
 					running_mode = INLINE_DEBUGGER_MODE_RESET;
 					disasm_addr = 0;
 					dump_addr = 0;
 					return DebugControl<ADDRESS>::DBG_RESET;
 				}
 
-				if (IsMonitorCommand(parm[0]))
+				if (IsMonitorCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpVariables("m");
 					break;
 				}
 				
-				if (IsRegisterCommand(parm[0]))
+				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
-				if (IsStatisticCommand(parm[0]))
+				if (IsStatisticCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
-				if (IsParameterCommand(parm[0]))
+				if (IsParameterCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpVariables("m", 0, unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
-				if(IsProfileCommand(parm[0]))
+				if(IsProfileCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpProgramProfile();
@@ -541,21 +544,21 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
-				if(IsLoadCommand(parm[0]))
+				if(IsLoadCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpAvailableLoaders();
 					break;
 				}
 				
-				if(IsBackTraceCommand(parm[0]))
+				if(IsBackTraceCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpBackTrace(cia);
 					break;
 				}
 				
-				if(IsListSymbolsCommand(parm[0]))
+				if(IsListSymbolsCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpSymbols();
@@ -563,7 +566,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				}
 				break;
 			case 2:
-				if(IsDisasmCommand(parm[0]) && ParseAddr(parm[1], disasm_addr))
+				if(IsDisasmCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), disasm_addr))
 				{
 					recognized = true;
 					Disasm(disasm_addr, 10);
@@ -571,7 +574,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsDumpCommand(parm[0]) && ParseAddr(parm[1], dump_addr))
+				if(IsDumpCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), dump_addr))
 				{
 					recognized = true;
 					DumpMemory(dump_addr);
@@ -579,88 +582,88 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-				if(IsEditCommand(parm[0]) && ParseAddr(parm[1], addr))
+				if(IsEditCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), addr))
 				{
 					recognized = true;
 					EditMemory(addr);
 					break;
 				}
 
-				if(IsBreakCommand(parm[0]) && ParseAddr(parm[1], addr))
+				if(IsBreakCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), addr))
 				{
 					recognized = true;
 					SetBreakpoint(addr);
 					break;
 				}
 
-				if(IsWatchCommand(parm[0]) && ParseAddrRange(parm[1], addr, size))
+				if(IsWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
 				{
 					recognized = true;
 					SetWriteWatchpoint(addr, size);
 					break;
 				}
 
-				if(IsDeleteCommand(parm[0]) && ParseAddr(parm[1], addr))
+				if(IsDeleteCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), addr))
 				{
 					recognized = true;
 					DeleteBreakpoint(addr);
 					break;
 				}
 				
-				if(IsDeleteWatchCommand(parm[0]) && ParseAddrRange(parm[1], addr, size))
+				if(IsDeleteWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
 				{
 					recognized = true;
 					DeleteWriteWatchpoint(addr, size);
 					break;
 				}
 
-				if(IsContinueCommand(parm[0]) && ParseAddr(parm[1], cont_addr))
+				if(IsContinueCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), cont_addr))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
-					strcpy(last_line, line);
+					if(interactive) last_line = line;
 					cont_until_addr = cont_addr;
 					SetBreakpoint(cont_until_addr);
 					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				
-				if (IsMonitorCommand(parm[0]))
+				if (IsMonitorCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0], parm[1]);
+					DumpVariables(parm[0].c_str(), parm[1].c_str());
 					break;
 				}
 				
-				if (IsRegisterCommand(parm[0]))
+				if (IsRegisterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_REGISTER);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
-				if (IsStatisticCommand(parm[0]))
+				if (IsStatisticCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
-				if (IsParameterCommand(parm[0]))
+				if (IsParameterCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpVariables(parm[0], parm[1], unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					DumpVariables(parm[0].c_str(), parm[1].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
-				if(IsProfileCommand(parm[0]))
+				if(IsProfileCommand(parm[0].c_str()))
 				{
-					if(strcmp(parm[1], "program") == 0)
+					if(strcmp(parm[1].c_str(), "program") == 0)
 					{
 						recognized = true;
 						DumpProgramProfile();
 						break;
 					}
-					else if(strcmp(parm[1], "data") == 0)
+					else if(strcmp(parm[1].c_str(), "data") == 0)
 					{
 						recognized = true;
 						DumpDataProfile(false /* read */);
@@ -669,36 +672,43 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					}
 				}
 				
-				if(IsLoadCommand(parm[0]))
+				if(IsLoadCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					Load(parm[1]);
+					Load(parm[1].c_str());
 					break;
 				}
 
-				if(IsLoadSymbolTableCommand(parm[0]))
+				if(IsLoadSymbolTableCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					LoadSymbolTable(parm[1]);
+					LoadSymbolTable(parm[1].c_str());
 					break;
 				}
 
-				if(IsListSymbolsCommand(parm[0]))
+				if(IsListSymbolsCommand(parm[0].c_str()))
 				{
 					recognized = true;
-					DumpSymbols(parm[1]);
+					DumpSymbols(parm[1].c_str());
+					break;
+				}
+
+				if(IsMacroCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					LoadMacro(parm[1].c_str());
 					break;
 				}
 				break;
 			case 3:
-				if(IsWatchCommand(parm[0]) && ParseAddrRange(parm[1], addr, size))
+				if(IsWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
 				{
-					if(strcmp(parm[2], "read") == 0)
+					if(strcmp(parm[2].c_str(), "read") == 0)
 					{
 						recognized = true;
 						SetReadWatchpoint(addr, size);
 					}
-					if(strcmp(parm[2], "write") == 0)
+					if(strcmp(parm[2].c_str(), "write") == 0)
 					{
 						recognized = true;
 						SetWriteWatchpoint(addr, size);
@@ -706,14 +716,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
-				if(IsDeleteWatchCommand(parm[0]) && ParseAddrRange(parm[1], addr, size))
+				if(IsDeleteWatchCommand(parm[0].c_str()) && ParseAddrRange(parm[1].c_str(), addr, size))
 				{
-					if(strcmp(parm[2], "read") == 0)
+					if(strcmp(parm[2].c_str(), "read") == 0)
 					{
 						recognized = true;
 						DeleteReadWatchpoint(addr, size);
 					}
-					if(strcmp(parm[2], "write") == 0)
+					if(strcmp(parm[2].c_str(), "write") == 0)
 					{
 						recognized = true;
 						DeleteWriteWatchpoint(addr, size);
@@ -721,17 +731,17 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
-				if(IsProfileCommand(parm[0]))
+				if(IsProfileCommand(parm[0].c_str()))
 				{
-					if(strcmp(parm[1], "data") == 0)
+					if(strcmp(parm[1].c_str(), "data") == 0)
 					{
-						if(strcmp(parm[2], "read") == 0)
+						if(strcmp(parm[2].c_str(), "read") == 0)
 						{
 							recognized = true;
 							DumpDataProfile(false /* read */);
 							break;
 						}
-						else if(strcmp(parm[2], "write") == 0)
+						else if(strcmp(parm[2].c_str(), "write") == 0)
 						{
 							recognized = true;
 							DumpDataProfile(true /* write */);
@@ -740,43 +750,43 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					}
 				}
 				
-				if (IsMonitorCommand(parm[0], parm[1]))
+				if (IsMonitorCommand(parm[0].c_str(), parm[1].c_str()))
 				{
 					recognized = true;
 					std::stringstream str;
-					str << parm[0];
-					str << parm[1];
-					DumpVariables(str.str().c_str(), parm[2]);
+					str << parm[0].c_str();
+					str << parm[1].c_str();
+					DumpVariables(str.str().c_str(), parm[2].c_str());
 					break;
 				}
 				
-				if (IsRegisterCommand(parm[0], parm[1]))
+				if (IsRegisterCommand(parm[0].c_str(), parm[1].c_str()))
 				{
 					recognized = true;
 					std::stringstream str;
-					str << parm[0];
-					str << parm[1];
-					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_REGISTER);
+					str << parm[0].c_str();
+					str << parm[1].c_str();
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_REGISTER);
 					break;
 				}
 				
-				if (IsStatisticCommand(parm[0], parm[1]))
+				if (IsStatisticCommand(parm[0].c_str(), parm[1].c_str()))
 				{
 					recognized = true;
 					std::stringstream str;
-					str << parm[0];
-					str << parm[1];
-					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_STATISTIC);
+					str << parm[0].c_str();
+					str << parm[1].c_str();
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_STATISTIC);
 					break;
 				}
 				
-				if (IsParameterCommand(parm[0], parm[1]))
+				if (IsParameterCommand(parm[0].c_str(), parm[1].c_str()))
 				{
 					recognized = true;
 					std::stringstream str;
-					str << parm[0];
-					str << parm[1];
-					DumpVariables(str.str().c_str(), parm[2], unisim::kernel::service::VariableBase::VAR_PARAMETER);
+					str << parm[0].c_str();
+					str << parm[1].c_str();
+					DumpVariables(str.str().c_str(), parm[2].c_str(), unisim::kernel::service::VariableBase::VAR_PARAMETER);
 					break;
 				}
 
@@ -790,7 +800,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		if (nparms >= 3 && nparms <= 33)
 		{
-			if (IsMonitorSetCommand(parm[0]))
+			if (IsMonitorSetCommand(parm[0].c_str()))
 			{
 				recognized = true;
 				std::stringstream str;
@@ -799,7 +809,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					if (i > 2) str << " ";
 						str << parm[i];
 				}
-				SetVariable(parm[1], str.str().c_str());
+				SetVariable(parm[1].c_str(), str.str().c_str());
 			}
 		}
 
@@ -811,7 +821,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 			cout << endl;
 		}
 		
-		strcpy(last_line, line);
+		if(interactive) last_line = line;
 	}
 	Object::Stop(0);
 	return DebugControl<ADDRESS>::DBG_KILL;
@@ -826,6 +836,9 @@ void InlineDebugger<ADDRESS>::Help()
 	cout << "    reload program file of loader <loader name>" << endl;
 	cout << "<st | symtab> [<filename>]" << endl;
 	cout << "    load symbol table from file <filename>" << endl;
+	cout << "=============================== SCRIPTING ======================================" << endl;
+	cout << "<mac | macro> <filename>" << endl;
+	cout << "    run debugger commands from file named 'filename'" << endl;
 	cout << "================================ EXECUTE =======================================" << endl;
 	cout << "<c | cont | continue> [<symbol | *address>]" << endl;
 	cout << "    continue to execute instructions until program reaches a breakpoint," << endl;
@@ -1212,7 +1225,7 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 {
 	unsigned int written = 0;
 	unsigned int failed = 0;
-	char line[1024];
+	std::string line;
 
 	std::cout << "Entering data memory edit mode." << std::endl;
 	do
@@ -1224,15 +1237,16 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 		sstr << addr;
 		sstr << ": ";
 		
-		if(!GetLine(sstr.str().c_str(), line, sizeof(line)))
+		bool interactive = false;
+		if(!GetLine(sstr.str().c_str(), line, interactive))
 		{
 			return false;
 		}
 	
-		if(strlen(line) == 0) break;
+		if(IsBlankLine(line)) break;
 
-		char *ptr = line;
-		char *endptr = line;
+		const char *ptr = line.c_str();
+		char *endptr = 0;
 		
 		do
 		{
@@ -1792,6 +1806,42 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
+{
+	std::string path(SearchFile(filename));
+	
+	std::ifstream f(path.c_str(), std::ifstream::in);
+	
+	if(f.fail())
+	{
+		std::cerr << "WARNING! Can't open macro file \"" << path << "\"" << std::endl;
+		return;
+	}
+	
+	std::stack<std::string> macro;
+	std::string line;
+		
+	do
+	{
+		getline(f, line);
+		if(f.eof()) break;
+		if(f.fail())
+		{
+			std::cerr << "WARNING! I/O error while reading file \"" << path << "\"" << std::endl;
+			return;
+		}
+		macro.push(line);
+	} while(1);
+	
+	while(!macro.empty())
+	{
+		const std::string& s = macro.top();
+		exec_queue.push_front(s);
+		macro.pop();
+	}
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
 	cout << "Data " << (write ? "write" : "read") << " profile:" << endl;
@@ -2191,44 +2241,63 @@ const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *fil
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, char *line, int size)
+bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, bool& interactive)
 {
-#if defined(HAVE_LIBEDIT)
-	char *line_read;
-	do
+	if(trap || exec_queue.empty())
 	{
-		line_read = readline(prompt);
-		if(!line_read)
+		if(trap)
 		{
-			rl_redisplay(); // work around when terminal size changes
+			trap = false;
+			exec_queue.clear();
 		}
-			
-	} while(!line_read);
+#if defined(HAVE_LIBEDIT)
+		char *line_read;
+		do
+		{
+			line_read = readline(prompt);
+			if(!line_read)
+			{
+				rl_redisplay(); // work around when terminal size changes
+			}
+				
+		} while(!line_read);
 
-  /* If the line has any text in it,
-     save it on the history. */
-	if(*line_read) add_history(line_read);
+	/* If the line has any text in it,
+		save it on the history. */
+		if(*line_read) add_history(line_read);
 
-	strcpy(line, line_read);
+		line = line_read;
 
-	free(line_read);
-	return true;
+		free(line_read);
+		
+		interactive = true;
+		return true;
 #else
-	cout << prompt;
-	cin.getline(line, size);
-	if(cin.fail()) return false;
-	return true;
+		cout << prompt;
+		getline(line, cin);
+		if(cin.fail()) return false;
+		interactive = true;
+		return true;
 #endif
+	}
+	else
+	{
+		line = exec_queue.front();
+		std::cerr << prompt << line << std::endl;
+		exec_queue.pop_front();
+		interactive = false;
+		return true;
+	}
 }
 
-
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsBlankLine(const char *line)
+bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line)
 {
-	while(*line)
+	unsigned int n = line.length();
+	unsigned int i;
+	for(i = 0; i < n; i++)
 	{
-		if(*line != ' ') return false;
-		line++;
+		if(line[i] != ' ') return false;
 	}
 	return true;
 }
@@ -2394,6 +2463,12 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsListSymbolsCommand(const char *cmd)
 {
 	return strcmp(cmd, "sym") == 0 || strcmp(cmd, "symbol") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsMacroCommand(const char *cmd)
+{
+	return strcmp(cmd, "mac") == 0 || strcmp(cmd, "macro") == 0;
 }
 
 } // end of namespace inline_debugger
