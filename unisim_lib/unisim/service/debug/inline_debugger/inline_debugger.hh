@@ -178,9 +178,11 @@ private:
 	unsigned int memory_atom_size;
 	unsigned int num_loaders;
 	std::string search_path;
+	std::string init_macro;
 	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<unsigned int> param_num_loaders;
 	Parameter<std::string> param_search_path;
+	Parameter<std::string> param_init_macro;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;

@@ -108,6 +108,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
 	, param_num_loaders("num-loaders", this, num_loaders, "number of loaders")
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
+	, param_init_macro("init-macro", this, init_macro, "path to initial macro to run when debugger starts")
 	, breakpoint_registry()
 	, watchpoint_registry()
 	, program_profile()
@@ -257,6 +258,11 @@ bool InlineDebugger<ADDRESS>::EndSetup()
 	{
 		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
 		return false;
+	}
+	
+	if(!init_macro.empty())
+	{
+		LoadMacro(init_macro.c_str());
 	}
 	return true;
 }
