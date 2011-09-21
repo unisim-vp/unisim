@@ -600,6 +600,8 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
 	/** the instruction counter */
 	uint64_t instruction_counter;
 	uint64_t cycles_counter;

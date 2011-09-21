@@ -146,6 +146,50 @@ CPU::CPU(const char *name, Object *parent):
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
+	char buf[80];
+
+	sprintf(buf, "A");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regA, "Accumulator register A"));
+
+	sprintf(buf, "B");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regB, "Accumulator register B"));
+
+	sprintf(buf, "D");
+	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
+	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>(buf, this,  &regA, &regB, "Accumulator register D"));
+
+	sprintf(buf, "X");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regX, "Index register X"));
+
+	sprintf(buf, "Y");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regY, "Index register Y"));
+
+	sprintf(buf, "SP");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regSP, "Stack Pointer SP"));
+
+	sprintf(buf, "PC");
+	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regPC, "Program counter PC"));
+
+	sprintf(buf, "%s", ccr->GetName());
+	registers_registry[buf] = ccr;
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, ccr->ccrVal, "CCR"));
+
+	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	sprintf(buf, "%s", ccrl->GetName());
+	registers_registry[buf] = ccrl;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccr->ccrVal, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
+
+	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	sprintf(buf, "%s", ccrh->GetName());
+	registers_registry[buf] = ccrh;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccr->ccrVal, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
+
 }
 
 CPU::~CPU()
@@ -163,7 +207,11 @@ CPU::~CPU()
 			delete reg_iter->second;
 	}
 
-	registers_registry.clear();
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
 
 	if (logger) { delete logger; logger = NULL;}
 }
@@ -907,41 +955,6 @@ bool CPU::BeginSetup() {
 		*logger << DebugInfo
 			<< "Initializing debugging registers"
 			<< std::endl << EndDebugInfo;
-
-	char buf[80];
-
-	sprintf(buf, "A");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
-
-	sprintf(buf, "B");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
-
-	sprintf(buf, "D");
-	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
-
-	sprintf(buf, "X");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
-
-	sprintf(buf, "Y");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
-
-	sprintf(buf, "SP");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
-
-	sprintf(buf, "PC");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
-
-	sprintf(buf, "%s", ccr->GetName());
-	registers_registry[buf] = ccr;
-
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	sprintf(buf, "%s", ccrl->GetName());
-	registers_registry[buf] = ccrl;
-
-
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	sprintf(buf, "%s", ccrh->GetName());
-	registers_registry[buf] = ccrh;
 
 	return true;
 }

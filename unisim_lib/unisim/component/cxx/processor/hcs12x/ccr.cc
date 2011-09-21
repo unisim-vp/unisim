@@ -84,6 +84,122 @@ unisim::util::debug::Register *CCR_t::GetHighRegister()
         );
 }
 
+// ****************************************
+
+TimeBaseRegisterView::TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint16_t& _storage, TimeBaseRegisterView::Type _type, const char *description)
+	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+	, storage(_storage)
+	, type(_type)
+{
+}
+
+TimeBaseRegisterView::~TimeBaseRegisterView()
+{
+}
+
+const char *TimeBaseRegisterView::GetDataTypeName() const
+{
+	return "unsigned 16-bit integer";
+}
+
+TimeBaseRegisterView::operator bool () const
+{
+	return (bool) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+}
+
+TimeBaseRegisterView::operator long long () const
+{
+	return (long long) (type == TB_LOW) ? (uint8_t) storage : (uint32_t)(storage >> 8);
+}
+
+TimeBaseRegisterView::operator unsigned long long () const
+{
+	return (unsigned long long) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+}
+
+TimeBaseRegisterView::operator double () const
+{
+	return (double) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+}
+
+TimeBaseRegisterView::operator std::string () const
+{
+	uint8_t value = (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+	std::stringstream sstr;
+	switch(GetFormat())
+	{
+		case FMT_DEFAULT:
+		case FMT_HEX:
+			sstr << "0x";
+			sstr.fill('0');
+			sstr.width(2);
+			sstr << std::hex << (unsigned int) value;
+
+			break;
+		case FMT_DEC:
+			sstr << std::dec << (unsigned int) value;
+			break;
+	}
+	return sstr.str();
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xff00ULL) | (uint16_t) value
+								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xff00ULL) | (uint16_t) value
+								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xff00ULL) | (uint16_t) value
+								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xff00ULL) | (uint16_t) value
+								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (const char * value)
+{
+	if(IsMutable())
+	{
+		uint8_t v = (uint8_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		storage = (type == TB_LOW) ? (storage & 0xff00ULL) | (uint16_t) v
+								: (storage & 0x00ffULL) | ((uint16_t) v << 8);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+
 } // end of namespace hcs12x
 } // end of namespace processor
 } // end of namespace cxx
