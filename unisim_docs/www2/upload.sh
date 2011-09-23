@@ -2,16 +2,31 @@
 HERE=$(pwd)
 MY_DIR=$(cd $(dirname $0); pwd)
 
-if [ "$1" = "--force" ]; then
-	FORCE=y
-else
-	FORCE=n
-fi
+FORCE=n
+PUBLIC=n
+while (( "$#" )); do
+	case "$1" in
+		--force)
+			FORCE=y
+			;;
+		public)
+			PUBLIC=y
+			;;
+		private)
+			PUBLIC=n
+			;;
+	esac
+	shift
+done
 
 mkdir -p ${HERE}/site
 mkdir -p ${HERE}/old
 echo "Starting building web site..."
-"${MY_DIR}/build.sh" all || exit -1
+if [ "${PUBLIC}" = "y" ]; then
+	"${MY_DIR}/build.sh" all public || exit -1
+else
+	"${MY_DIR}/build.sh" all private || exit -1
+fi
 
 if [ ${FORCE} = "y" ]; then
 	echo "Starting full upload..."
@@ -41,7 +56,14 @@ until [ ${PASS} -eq 3 ]; do
 		fi
 
 		echo "Mounting sshfs..."
-		sshfs unisimvp@unisim-vp.org:www/private "${HERE}/remote"
+		if [ ${PUBLIC} = "y" ]; then
+			SSH_URL=unisimvp@unisim-vp.org:www/site
+			echo "Upload to public site is forbidden for now"
+			exit -1
+		else
+			SSH_URL=unisimvp@unisim-vp.org:www/private
+		fi
+		sshfs ${SSH_URL} "${HERE}/remote"
 	fi
 
 	for FILE in ${OLD_FILE_LIST}; do
@@ -125,7 +147,12 @@ done
 
 if [ "${CHANGED}" = "y" ]; then
 	echo "umounting sshfs..."
-	fusermount -u "${HERE}/remote"
+	STATUS=1
+	until [ ${STATUS} -eq 0 ]; do
+		sleep 1
+		fusermount -u "${HERE}/remote"
+		STATUS=$?
+	done
 fi
 
 echo "Cleaning"

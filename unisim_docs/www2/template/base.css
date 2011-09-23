@@ -66,13 +66,7 @@ li
 {
 }
 
-/* an area that make visitors know more about */
-
-.beyond-sensitive-area
-{
-}
-
-.logo-sensitive-area a, .beyond-sensitive-area a
+.logo-sensitive-area a
 {
 	display:block;
 	width:100%;
@@ -378,59 +372,6 @@ li
 }
 
 /* download */
-
-.download-file, .download-pdf, .download-video, .online-document, .download-win, .download-linux, .download-macosx
-{
-}
-
-.download-file
-{
-	background: url(file_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-pdf
-{
-	background: url(pdf_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-video
-{
-	background: url(video_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.online-document
-{
-	background: url(online_document_icon.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-win
-{
-	background: url(win.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-linux
-{
-	background: url(tux.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
-
-.download-macosx
-{
-	background: url(macosx.png) no-repeat center left;
-	padding-left: 18px;
-	height:16px;
-}
 
 .download-table
 {

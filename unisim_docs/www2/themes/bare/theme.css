@@ -17,16 +17,58 @@
 	height:132px;
 }
 
-/* an area that make visitors to know more about */
-
-.beyond-sensitive-area
-{
-	display:none;
-}
-
 /* separator */
 
 .separator
 {
-	visibility:hidden;
+	visibility:visible;
+}
+
+.download-file
+{
+	background: url(file_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-pdf
+{
+	background: url(pdf_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-video
+{
+	background: url(video_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.online-document
+{
+	background: url(online_document_icon.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-win
+{
+	background: url(win.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-linux
+{
+	background: url(tux.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
+}
+
+.download-macosx
+{
+	background: url(macosx.png) no-repeat center left;
+	padding-left: 18px;
+	height:16px;
 }
