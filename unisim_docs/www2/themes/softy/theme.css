@@ -1,5 +1,10 @@
 /* page header */
 
+body
+{
+	width:1024px;
+}
+
 .header
 {
 	background: url(unisim.png) no-repeat top left;
@@ -18,6 +23,18 @@
 }
 
 /* left side (content) and right side (aside) of the page */
+
+.aside
+{
+	float:right;
+	width:384px;
+}
+
+.content
+{
+	float:left;
+	width:640px;
+}
 
 .aside-item
 {
@@ -98,8 +115,14 @@
 	color:#b12c30;
 }
 
-/* separator */
+/* item separator */
 
+.item-separator
+{
+	visibility:hidden;
+}
+
+/* content/aside separator */
 .separator
 {
 	visibility:hidden;
@@ -184,4 +207,55 @@
 	background: url(macosx.png) no-repeat center left;
 	padding-left: 18px;
 	height:16px;
+}
+
+/* hint-list */
+
+.hint-list
+{
+	width:100%;
+	display:table;
+}
+
+.hint-question
+{
+	float:left;
+	width:25%;
+	font-style:normal;
+	font-size:16px;
+	font-weight:normal;
+	color:#aa0000;
+	text-align:center;
+	display:table-cell;
+	vertical-align:middle;
+}
+
+
+.hint-question a
+{
+	text-decoration:none;
+}
+
+.hint-question a.hover
+{
+	color:#aa0000;
+}
+
+.hint-answer
+{
+	float:right;
+	width:75%;
+	text-align:justify;
+}
+
+.hint-separator
+{
+	width:100%;
+	height:1em;
+	clear: both;
+}
+
+.image-view
+{
+	width:100%
 }

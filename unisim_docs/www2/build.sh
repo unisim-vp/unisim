@@ -92,9 +92,9 @@ case "${CMD}" in
 <div class="content-item">
 	<div class="content-item-title"><h2>News</h2></div>
 	<div class="content-item-body">
-		<table class="news-table">
+		<div class="news-list">
 #include "news.html"
-		</table>
+		</div>
 	</div>
 </div>
 EOF
@@ -104,24 +104,23 @@ EOF
 			echo "Building ${ALL_NEWS} and ${WHATS_NEW}..."
 
 			printf "" > "${ALL_NEWS}"
-			printf "" > "${WHATS_NEW}"
 
 			NUM_NEWS=0
 			for NEWS in ${NEWS_LIST}; do
 				printf '\t<tr>\n' >> ${ALL_NEWS}
-				printf '\t\t<td class="news-date">\n' >> ${ALL_NEWS}
+				printf '\t\t<div class="news-date">\n' >> ${ALL_NEWS}
 				YEAR=`printf ${NEWS} | cut -f 1 -d -`
 				MONTH_NUMBER=`printf ${NEWS} | cut -f 2 -d - | sed 's/0*//'`
 				MONTH_NUMBER=$((${MONTH_NUMBER} - 1))
 				MONTH_NAME=${MONTH[${MONTH_NUMBER}]}
 				DAY_NUMBER=`printf ${NEWS} | cut -f 3 -d - | cut -f 1 -d .`
 				printf "\t\t\t${MONTH_NAME} ${DAY_NUMBER}, ${YEAR}\n" >> ${ALL_NEWS}
-				printf "\t\t</td>\n" >> ${ALL_NEWS}
-				printf "\t\t<td class=\"news-description\">\n" >> ${ALL_NEWS}
+				printf "\t\t</div>\n" >> ${ALL_NEWS}
+				printf "\t\t<div class=\"news-description\">\n" >> ${ALL_NEWS}
 				printf "\t\t\t" >> ${ALL_NEWS}
 				cat ${MY_DIR}/news/${NEWS} >> ${ALL_NEWS}
-				printf "\n\t\t</td>\n" >> ${ALL_NEWS}
-				printf "\t</tr>\n" >> ${ALL_NEWS}
+				printf "\n\t\t</div>\n" >> ${ALL_NEWS}
+				printf "\t<div class=\"news-separator\"></div>\n" >> ${ALL_NEWS}
 				if ! [ -f ${WHATS_NEW} ]; then
 					cp ${MY_DIR}/news/${NEWS} ${WHATS_NEW}
 				fi
@@ -281,7 +280,11 @@ EOF
 					printf "\t\t<td>\n" >> ${IMAGE_GALLERY} 
 					printf "\t\t\t<a href=\"image-gallery-${IMAGE_GALLERY_PAGE_NUM}-view-image-${IMAGE_NAME}.html\"><img src=\`\`IMAGE_THUMBS/${IMAGE}\`\` alt=\"${IMAGE} thumbnail\"></a>\n" >> ${IMAGE_GALLERY}
 					printf "\t\t\t<p>\n" >> ${IMAGE_GALLERY}
-					cat "${MY_DIR}/images/${IMAGE_NAME}.txt" >> ${IMAGE_GALLERY}
+					if [ -f "${MY_DIR}/images/${IMAGE_NAME}.txt" ]; then
+						cat "${MY_DIR}/images/${IMAGE_NAME}.txt" >> ${IMAGE_GALLERY}
+					else
+						printf "${IMAGE_NAME}" >> ${IMAGE_GALLERY}
+					fi
 					printf "\t\t\t</p>\n" >> ${IMAGE_GALLERY}
 					printf "\t\t</td>\n" >> ${IMAGE_GALLERY} 
 					IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE=$((${IMAGE_GALLERY_NUM_IMAGE_WITHIN_PAGE} + 1))
@@ -303,6 +306,11 @@ EOF
 						continue
 					fi
 				fi
+			done
+
+			while [ ${IMAGE_GALLERY_COL} -le ${IMAGE_GALLERY_NUM_IMAGES_PER_ROW} ]; do
+				printf "<td></td>" >> ${IMAGE_GALLERY}
+				IMAGE_GALLERY_COL=$((${IMAGE_GALLERY_COL} + 1))
 			done
 
 			if ! [ ${IMAGE_GALLERY_COL} -eq 1 ]; then
@@ -406,7 +414,11 @@ EOF
 					printf "\t\t<td>\n" >> ${VIDEO_GALLERY} 
 					printf "\t\t\t<a href=\"video-gallery-${VIDEO_GALLERY_PAGE_NUM}-view-video-${VIDEO_NAME}.html\"><img src=\`\`VIDEO_THUMBS/${VIDEO_NAME}.png\`\` alt=\"${VIDEO} thumbnail\"></a>\n" >> ${VIDEO_GALLERY}
 					printf "\t\t\t<p>\n" >> ${VIDEO_GALLERY}
-					cat "${MY_DIR}/videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
+					if [ -f "${MY_DIR}/videos/${VIDEO_NAME}.txt" ]; then
+						cat "${MY_DIR}/videos/${VIDEO_NAME}.txt" >> ${VIDEO_GALLERY}
+					else
+						printf "${VIDEO_NAME}" >> ${VIDEO_GALLERY}
+					fi
 					printf "\t\t\t</p>\n" >> ${VIDEO_GALLERY}
 					printf "\t\t</td>\n" >> ${VIDEO_GALLERY} 
 					VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE=$((${VIDEO_GALLERY_NUM_VIDEO_WITHIN_PAGE} + 1))
@@ -561,10 +573,16 @@ EOF
 					printf "\t<a href=\"${CONTENT_DIR}.html\"><img src=\`\`IMAGES/${IMAGE}\`\` alt=\"${IMAGE}\"></a>\n" >> "${VIEW_DIR}/content.html"
 					printf "\t</div>\n" >> "${VIEW_DIR}/content.html"
 
-					printf ".aside\n" > "${VIEW_DIR}/style.css"
-					printf "{\n" >> "${VIEW_DIR}/style.css"
-					printf "\tdisplay:none;\n" >> "${VIEW_DIR}/style.css"
-					printf "}\n" >> "${VIEW_DIR}/style.css"
+					cat << EOF > "${VIEW_DIR}/style.css"
+.content
+{
+	width:100%;
+}
+.aside
+{
+	display:none;
+}
+EOF
 				fi
 			done
 		done
@@ -573,7 +591,7 @@ EOF
 		#                                 VIDEO VIEW                                  #
 		###############################################################################
 
-		CONTENTS="`cd ${MY_DIR}/content; ls`"
+		CONTENTS=$(cd ${MY_DIR}/content; ls)
 		for CONTENT_DIR in ${CONTENTS}; do
 			CONTENT_TITLE="`cat ${MY_DIR}/content/${CONTENT_DIR}/title.txt`"
 			VIDEO_NAMES=`cat ${MY_DIR}/content/${CONTENT_DIR}/*.html | sed -n "s/.*href=\"${CONTENT_DIR}-view-video-\(.*\)\.html.*/\1/Ip" | sort -u`
