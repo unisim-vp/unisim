@@ -217,17 +217,23 @@ body
 	display:table;
 }
 
+.hint
+{
+	display:table-row;
+	width:100%;
+}
+
 .hint-question
 {
-	float:left;
+	float:none;
 	width:25%;
 	font-style:normal;
 	font-size:16px;
-	font-weight:normal;
-	color:#aa0000;
+	font-weight:bold;
 	text-align:center;
 	display:table-cell;
 	vertical-align:middle;
+	padding:0.5em 0 0.5em 0;
 }
 
 
@@ -243,19 +249,41 @@ body
 
 .hint-answer
 {
-	float:right;
+	float:none;
+	display:table-cell;
 	width:75%;
 	text-align:justify;
-}
-
-.hint-separator
-{
-	width:100%;
-	height:1em;
-	clear: both;
+	padding:0.5em 0 0.5em 0;
 }
 
 .image-view
 {
 	width:100%
+}
+
+.download-button
+{
+	background: url(download_button.png) no-repeat center;
+}
+
+.directory-entry-link .download-button:link
+{
+	color:white;
+}
+
+.directory-entry-link .download-button:visited
+{
+	color:white;
+}
+
+.directory-entry-link .download-button:hover
+{
+	background: url(download_button_hover.png) no-repeat center;
+	color:white;
+}
+
+.directory-entry-link .download-button:active
+{
+	background: url(download_button_active.png) no-repeat center;
+	color:white;
 }

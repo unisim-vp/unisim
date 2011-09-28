@@ -101,18 +101,26 @@ body
 .hint-list
 {
 	width:100%;
+	display:table;
+}
+
+.hint
+{
+	display:table-row;
+	width:100%;
 }
 
 .hint-question
 {
-	float:left;
+	float:none;
 	width:25%;
 	font-style:normal;
 	font-size:16px;
+	font-weight:bold;
 	text-align:center;
-	font-weight:normal;
-	color:#aa0000;
-	text-align:center;
+	display:table-cell;
+	vertical-align:middle;
+	padding:0.5em 0 0.5em 0;
 }
 
 .hint-question a
@@ -127,16 +135,11 @@ body
 
 .hint-answer
 {
-	float:right;
+	float:none;
+	display:table-cell;
 	width:75%;
 	text-align:justify;
-}
-
-.hint-separator
-{
-	width:100%;
-	height:1em;
-	clear: both;
+	padding:0.5em 0 0.5em 0;
 }
 
 .image-view

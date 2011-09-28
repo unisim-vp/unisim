@@ -64,6 +64,13 @@ until [ ${PASS} -eq 3 ]; do
 			SSH_URL=unisimvp@unisim-vp.org:www/private
 		fi
 		sshfs ${SSH_URL} "${HERE}/remote"
+		STATUS=$?
+		if [ ${STATUS} -eq 0 ]; then
+			echo "Remote directory successfully mounted\n"
+		else
+			echo "Mounting remote directory failed\n"
+			exit -1
+		fi
 	fi
 
 	for FILE in ${OLD_FILE_LIST}; do
@@ -146,13 +153,15 @@ until [ ${PASS} -eq 3 ]; do
 done
 
 if [ "${CHANGED}" = "y" ]; then
-	echo "umounting sshfs..."
+	printf "umounting sshfs..."
 	STATUS=1
 	until [ ${STATUS} -eq 0 ]; do
 		sleep 1
-		fusermount -u "${HERE}/remote"
+		fusermount -u "${HERE}/remote" &> /dev/null
 		STATUS=$?
+		printf "."
 	done
+	printf "done\n"
 fi
 
 echo "Cleaning"

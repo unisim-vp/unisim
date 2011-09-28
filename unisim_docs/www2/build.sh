@@ -39,7 +39,7 @@ ALL_NEWS="${MY_DIR}/content/news/news.html"
 WHATS_NEW="${MY_DIR}/template/whats_new.html"
 
 if [ -z "${DEFAULT_THEME}" ]; then
-	DEFAULT_THEME=softy
+	DEFAULT_THEME=standard
 fi
 
 case "${CMD}" in
