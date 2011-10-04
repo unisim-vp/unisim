@@ -212,7 +212,7 @@
 		<variable name="trace-enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>false</value>
+			<value>true</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>

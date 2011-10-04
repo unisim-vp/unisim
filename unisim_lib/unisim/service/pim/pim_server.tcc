@@ -1062,9 +1062,60 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 }
 
 template <class ADDRESS>
-bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hex) {
+bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) {
 
-	return false;
+	list<const Symbol<ADDRESS> *> symbol_registries;
+
+	if (symbol_table_lookup_import) {
+		symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+	}
+	typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+
+	string packet = "";
+
+	for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+	{
+
+		if (name.compare((*symbol_iter)->GetName()) == 0) {
+
+			uint32_t size = (*symbol_iter)->GetSize();
+			uint8_t *value = (uint8_t*) malloc(size);
+			memset(value, 0, size);
+
+			uint32_t value_index;
+			uint8_t val;
+			uint32_t hex_index;
+			if ((hexValue.length() % 2) == 0) {
+				hex_index = 0;
+				value_index = size - (hexValue.length() / 2);
+			} else {
+				hex_index = 1;
+				value_index = size - (hexValue.length() / 2) - 1;
+				value[value_index++] = HexChar2Nibble(hexValue[0]);
+			}
+			for (; (hex_index < hexValue.length()); hex_index = hex_index+2) {
+				val = (HexChar2Nibble(hexValue[hex_index]) << 4) | HexChar2Nibble(hexValue[hex_index+1]);
+				value[value_index++] = val;
+			}
+
+			if (!memory_import->WriteMemory((*symbol_iter)->GetAddress(), value, size)) {
+				if(verbose)
+				{
+					logger << DebugWarning << memory_import.GetName() << "->WriteSymbol has reported an error" << EndDebugWarning;
+				}
+
+				PutPacket("NOK");
+			} else {
+				PutPacket("OK");
+			}
+
+			break;
+		}
+
+	}
+
+	return true;
+
 }
 
 template <class ADDRESS>
