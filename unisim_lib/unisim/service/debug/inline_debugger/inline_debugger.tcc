@@ -1561,10 +1561,10 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim:
 			(*std_output_stream) << std::hex << "0x";
 			(*std_output_stream).fill('0');
 			(*std_output_stream).width(2 * sizeof(ADDRESS));
-			(*std_output_stream) << symbol->GetAddress() << std::dec;
+			(*std_output_stream) << (symbol->GetAddress() / memory_atom_size) << std::dec;
 			(*std_output_stream).fill(' ');
 			(*std_output_stream).width(1 + (2 * sizeof(ADDRESS)));
-			(*std_output_stream) << symbol->GetSize();
+			(*std_output_stream) << (symbol->GetSize() / memory_atom_size);
 			(*std_output_stream).width(10);
 			(*std_output_stream) << type_name;
 			(*std_output_stream).width(0);
