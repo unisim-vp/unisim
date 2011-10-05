@@ -35,6 +35,10 @@
 #include <unisim/component/cxx/processor/powerpc/cpu.hh>
 #include <unisim/component/cxx/processor/powerpc/cpu.tcc>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

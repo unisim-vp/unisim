@@ -64,6 +64,10 @@
 #include <map>
 #include <iosfwd>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

@@ -39,7 +39,7 @@ ALL_NEWS="${MY_DIR}/content/news/news.html"
 WHATS_NEW="${MY_DIR}/template/whats_new.html"
 
 if [ -z "${DEFAULT_THEME}" ]; then
-	DEFAULT_THEME=standard
+	DEFAULT_THEME=default
 fi
 
 case "${CMD}" in
@@ -848,4 +848,3 @@ EOF
 		exit -1
 		;;
 esac
-

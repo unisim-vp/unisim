@@ -42,6 +42,10 @@
 #include <unisim/kernel/tlm/tlm.hh>
 #include <unisim/component/tlm/message/interrupt.hh>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm {

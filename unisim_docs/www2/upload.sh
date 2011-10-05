@@ -21,6 +21,10 @@ done
 
 mkdir -p ${HERE}/site
 mkdir -p ${HERE}/old
+
+echo "Cleaning"
+"${MY_DIR}/build.sh" clean || exit -1
+
 echo "Starting building web site..."
 if [ "${PUBLIC}" = "y" ]; then
 	"${MY_DIR}/build.sh" all public || exit -1

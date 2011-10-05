@@ -38,6 +38,10 @@
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <inttypes.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

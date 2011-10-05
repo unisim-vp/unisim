@@ -49,6 +49,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

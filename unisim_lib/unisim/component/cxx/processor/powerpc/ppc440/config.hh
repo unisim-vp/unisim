@@ -65,6 +65,10 @@ class TLBEntry;
 } // end of namespace component
 } // end of namespace unisim
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
