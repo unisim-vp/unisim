@@ -86,12 +86,13 @@ bool GDBRegister::SetValue(const string& hex)
 #endif
 		{
 			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
-	
+
 			value[i] = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
 		}
 	}
 
 	if(reg)	reg->SetValue(&value);
+
 	return true;
 }
 

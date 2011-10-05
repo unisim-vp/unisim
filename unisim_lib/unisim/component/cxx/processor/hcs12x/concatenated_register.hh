@@ -102,9 +102,10 @@ template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 void ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::SetValue(const void *buffer)
 {
 	REGISTER_TYPE value = Host2LittleEndian(*(REGISTER_TYPE *) buffer);
-	
-	*(SUB_REGISTER_TYPE *) regHigh = (SUB_REGISTER_TYPE) (value) >> sizeof(SUB_REGISTER_TYPE);
-	*(SUB_REGISTER_TYPE *) regLow = (SUB_REGISTER_TYPE) (value);	
+
+	*(SUB_REGISTER_TYPE *) regHigh = (SUB_REGISTER_TYPE) ((REGISTER_TYPE) value >> sizeof(SUB_REGISTER_TYPE) * 8);
+	*(SUB_REGISTER_TYPE *) regLow = (SUB_REGISTER_TYPE) (value);
+
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>

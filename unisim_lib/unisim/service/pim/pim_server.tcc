@@ -623,18 +623,22 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case 'G':
 				if(WriteRegisters(packet.substr(1)))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 'P':
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
 				if(WriteRegister(reg_num, packet.substr(pos)))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 'm':
@@ -655,9 +659,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
 				if(WriteMemory(addr, packet.substr(pos), size))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 's':
@@ -723,7 +729,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case '!':
 				extended_mode = true;
-				PutPacket("OK");
+//				PutPacket("OK");
+				OutputText("OK", 2);
 				break;
 
 			case 'Z':
@@ -733,9 +740,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(SetBreakpointWatchpoint(type, addr, size))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 'z':
@@ -745,9 +754,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(RemoveBreakpointWatchpoint(type, addr, size))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			default:
@@ -801,7 +812,6 @@ bool PIMServer<ADDRESS>::FlushOutput()
 {
 	if(output_buffer_size > 0)
 	{
-//		cerr << "begin: output_buffer_size = " << output_buffer_size << endl;
 		unsigned int index = 0;
 		do
 		{
@@ -819,11 +829,10 @@ bool PIMServer<ADDRESS>::FlushOutput()
 
 			index += r;
 			output_buffer_size -= r;
-//			cerr << "output_buffer_size = " << output_buffer_size << endl;
 		}
 		while(output_buffer_size > 0);
 	}
-//	cerr << "end: output_buffer_size = " << output_buffer_size << endl;
+
 	return true;
 }
 
@@ -1003,6 +1012,7 @@ bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 {
 	if(regnum >= gdb_registers.size()) return false;
 	GDBRegister& gdb_reg = gdb_registers[regnum];
+
 	return gdb_reg.SetValue(hex);
 }
 
@@ -1104,9 +1114,11 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 					logger << DebugWarning << memory_import.GetName() << "->WriteSymbol has reported an error" << EndDebugWarning;
 				}
 
-				PutPacket("NOK");
+//				PutPacket("NOK");
+				OutputText("NOK", 3);
 			} else {
-				PutPacket("OK");
+//				PutPacket("OK");
+				OutputText("OK", 2);
 			}
 
 			break;
