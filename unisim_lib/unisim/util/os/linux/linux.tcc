@@ -559,7 +559,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(uint8_t* stack_data,
   aux_table_symbol = AT_PHENT;
   /* TODO
    * WARNING
-   * The elf library should provide information on the size of the program header.
+   * The elf library should provide information on the size of the program 
+   * header.
    */
   aux_table_value = Elf32_Phdr; // 32 = size of the program header
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
@@ -739,14 +740,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     // Set the tls interface, this requires a write into the memory
     //   system
     // The following instructions need to be added to memory:
-    // 0xffff0fe0:	e59f0008	ldr r0, [pc, #(16 - 8)] 	@ TLS stored
-    // 														@ at 0xffff0ff0
-    // 0xffff0fe4:	e1a0f00e	mov pc, lr
-    // 0xffff0fe8: 	0
-    // 0xffff0fec: 	0
-    // 0xffff0ff0: 	0
-    // 0xffff0ff4: 	0
-    // 0xffff0ff8: 	0
+    // 0xffff0fe0:  e59f0008   ldr r0, [pc, #(16 - 8)] @ TLS stored
+    //                                                 @ at 0xffff0ff0
+    // 0xffff0fe4:  e1a0f00e   mov pc, lr
+    // 0xffff0fe8:  0
+    // 0xffff0fec:  0
+    // 0xffff0ff0:  0
+    // 0xffff0ff4:  0
+    // 0xffff0ff8:  0
     ADDRESS_TYPE tls_base_addr = 0xffff0fe0UL;
     static const uint32_t tls_buf_length = 7;
     static const uint32_t tls_buf[tls_buf_length] =
@@ -772,11 +773,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
 
     // Set the cmpxchg (atomic compare and exchange) interface, the
     //   following instructions need to be added to memory:
-    // 0xffff0fc0:	e5923000	ldr	r3, [r2]
-    // 0xffff0fc4:	e0533000	subs	r3, r3, r0
-    // 0xffff0fc8:	05821000 	streq	r1, [r2]
-    // 0xffff0fcc:	e2730000 	rsbs	r0, r3, #0	; 0x0
-    // 0xffff0fd0:	e1a0f00e 	mov	pc, lr
+    // 0xffff0fc0:  e5923000   ldr r3, [r2]
+    // 0xffff0fc4:  e0533000   subs r3, r3, r0
+    // 0xffff0fc8:  05821000   streq r1, [r2]
+    // 0xffff0fcc:  e2730000   rsbs r0, r3, #0	; 0x0
+    // 0xffff0fd0:  e1a0f00e   mov pc, lr
     ADDRESS_TYPE cmpxchg_base_addr = 0xffff0fc0UL;
     static const uint32_t cmpxchg_buf_length = 5;
     static const uint32_t cmpxchg_buf[cmpxchg_buf_length] = {
