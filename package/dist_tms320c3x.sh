@@ -538,32 +538,34 @@ done
 
 # Top level
 
-echo "This package contains GenISSLib, an instruction set simulator generator, and a TMS320C3X instruction set simulator." > "${DEST_DIR}/README"
-echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
-echo "See COPYING for licensing." >> "${DEST_DIR}/README"
-echo "See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools." >> "${DEST_DIR}/README"
+cat << EOF > "${DEST_DIR}/README"
+This package contains GenISSLib, an instruction set simulator generator, and a TMS320C3X instruction set simulator.
+See INSTALL for installation instructions.
+See COPYING for licensing.
+EOF
 
-echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
-echo "------------" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Requirements:" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bash (bash-3.0-19.3 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU make (make-3.80-6.EL4 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU autoconf (autoconf-2.59-5 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU automake (automake-1.9.2-3 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU flex (flex-2.5.4a-33 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bison (bison-1.875c-2 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - boost development package (boost-devel-1.32.0-1.rhel4 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - libxml2 development package (libxml2-devel-2.6.16-6 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "  - zlib development package (zlib-devel-1.2.1.2-1.2 on RHEL4)" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
-echo "  $ ./configure" >> "${DEST_DIR}/INSTALL"
-echo "  $ make" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Installing (optional):" >> "${DEST_DIR}/INSTALL"
-echo "  $ make install" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
+cat << EOF > "${DEST_DIR}/INSTALL"
+INSTALLATION
+------------
+
+Requirements:
+  - GNU bash (bash-3.0-19.3 on RHEL4)
+  - GNU make (make-3.80-6.EL4 on RHEL4)
+  - GNU autoconf (autoconf-2.59-5 on RHEL4)
+  - GNU automake (automake-1.9.2-3 on RHEL4)
+  - GNU flex (flex-2.5.4a-33 on RHEL4)
+  - GNU bison (bison-1.875c-2 on RHEL4)
+  - boost development package (boost-devel-1.32.0-1.rhel4 on RHEL4)
+  - libxml2 development package (libxml2-devel-2.6.16-6 on RHEL4)
+  - zlib development package (zlib-devel-1.2.1.2-1.2 on RHEL4)
+
+Building instructions:
+  $ ./configure
+  $ make
+
+Installing (optional):
+  $ make install
+EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
