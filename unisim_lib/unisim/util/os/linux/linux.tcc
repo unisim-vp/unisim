@@ -70,9 +70,10 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger)
     , memory_page_size_(0)
     , mmap_base_(0)
     , brk_point_(0)
+    , registers_(NULL)
     , ppc_cr_(NULL)
     , ppc_cia_(NULL)
-    , logger_(logger){
+    , logger_(logger) {
   for (int i = 0; i < kArmNumRegs; ++i)
     arm_regs_[i] = NULL;
   for (int i = 0; i < kPpcNumRegs; ++i)
