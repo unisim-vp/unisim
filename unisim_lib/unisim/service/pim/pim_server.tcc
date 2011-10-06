@@ -1116,6 +1116,7 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 
 //				PutPacket("NOK");
 				OutputText("NOK", 3);
+				return false;
 			} else {
 //				PutPacket("OK");
 				OutputText("OK", 2);
