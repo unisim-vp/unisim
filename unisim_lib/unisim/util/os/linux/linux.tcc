@@ -212,23 +212,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
 
   // finish the state of the memory image depending on the system we are running
   // on
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0)) {
-    if (!SetArmBlob(blob)) {
-      // TODO
-      // Remove non finished state (i.e., unfinished blob, reset values, ...)
-      blob->Release();
-      return false;
-    }
+  if (!SetSystemBlob(blob)) {
+    // TODO
+    // Remove non finished state (i.e., unfinished blob, reset values, ...)
+    blob->Release();
   }
-  if (system_type_.compare("ppc") == 0) {
-    if (!SetPPCBlob(blob)) {
-      // TODO
-      // Remove non finished state (i.e., unfinished blob, reset values, ...)
-      blob->Release();
-      return false;
-    }
-  }
+
   blob_ = blob;
 
   return true;
@@ -648,6 +637,16 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
   addr = stack_data + sp;
   memcpy(addr, &entry, sizeof(sp));
   return sp;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
+    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0))
+    return SetArmBlob(blob)
+  if (system_type_.compare("ppc") == 0)
+    return SetPPCBlob(blob)
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
