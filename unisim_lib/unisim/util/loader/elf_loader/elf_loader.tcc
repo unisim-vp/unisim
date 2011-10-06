@@ -43,13 +43,25 @@
 #include <string>
 #include <list>
 
+#include "unisim/util/debug/blob/blob.hh"
+#include "unisim/util/debug/dwarf/dwarf.hh"
+#include "unisim/util/debug/stmt.hh"
+#include "unisim/util/debug/symbol.hh"
+#include "unisim/util/debug/symbol_table.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/likely/likely.hh"
+#include "unisim/util/loader/elf_loader/elf32.h"
+#include "unisim/util/loader/elf_loader/elf64.h"
 
 namespace unisim {
 namespace util {
 namespace loader {
 namespace elf_loader {
+
+using namespace unisim::util::endian;
+using unisim::util::debug::Symbol;
+using unisim::util::debug::SymbolTable;
+
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(std::ostream& _logger)

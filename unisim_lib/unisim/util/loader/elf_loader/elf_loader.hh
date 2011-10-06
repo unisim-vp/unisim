@@ -42,23 +42,28 @@
 #include <vector>
 #include <list>
 
-#include <unisim/util/loader/elf_loader/elf32.h>
-#include <unisim/util/loader/elf_loader/elf64.h>
-#include <unisim/util/debug/dwarf/dwarf.hh>
-#include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
-#include <unisim/util/debug/symbol_table.hh>
+
+namespace unisim {
+namespace util {
+namespace debug {
+template<class MEMORY_ADDR> class Statement;
+template<class MEMORY_ADDR> class Symbol;
+template<class MEMORY_ADDR> class SymbolTable;
+namespace blob {
+template<class MEMORY_ADDR> class Blob;
+} // end of namespace blob
+namespace dwarf {
+template<class MEMORY_ADDR> class DWARF_Handler;
+} // end of namespace dwarf
+} // end of namespace debug
+} // end of namespace util
+} // end of namespace unisim
 
 namespace unisim {
 namespace util {
 namespace loader {
 namespace elf_loader {
-
-using namespace unisim::util::endian;
-using unisim::util::debug::Statement;
-using unisim::util::debug::Symbol;
-using unisim::util::debug::SymbolTable;
-using unisim::util::debug::blob::Blob;
 
 typedef enum
 {
@@ -108,11 +113,11 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	SymbolTable<MEMORY_ADDR> *symbol_table;
+  unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
   std::string dwarf_to_html_output_directory;
 	bool verbose;
-	endian_type endianness;
+  unisim::util::endian::endian_type endianness;
 	bool parse_dwarf;
 	
 	void SwapElfHeader(Elf_Ehdr *hdr);
