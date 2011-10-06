@@ -49,10 +49,12 @@
 #include "unisim/component/tlm2/memory/ram/memory.hh"
 // #include "unisim/component/tlm2/interrupt/master_stub.hh"
 
+#include "unisim/util/likely/likely.hh"
+
 #include "unisim/service/time/sc_time/time.hh"
 #include "unisim/service/time/host_time/time.hh"
+#include "unisim/util/loader/elf_loader/elf32.h"
 #include "unisim/service/loader/elf_loader/elf_loader.hh"
-#include "unisim/service/loader/elf_loader/elf_loader.tcc"
 #include "unisim/service/loader/linux_loader/linux_loader.hh"
 #include "unisim/service/os/linux_os/linux_os_32/linux_os_32.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
