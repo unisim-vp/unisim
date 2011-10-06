@@ -372,6 +372,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStackBlob(
   // make sure argv has been defined, at least for the application to execute
   if ((argc_ == 0) || (argv_.size() == 0)) return false;
   // Create the stack
+  // TODO: maybe we should check for a bigger stack
+  if (stack_size_ == 0) return false;
   uint8_t *stack_data = (uint8_t *)calloc(stack_size_, 1);
   ADDRESS_TYPE sp = stack_size_;
   // Fill the stack
