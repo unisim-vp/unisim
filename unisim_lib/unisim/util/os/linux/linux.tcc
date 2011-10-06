@@ -53,7 +53,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const Linux::supported_system_types_ = {"arm", "arm-eabi", "powerpc"};
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger)
     : system_type_("arm-eabi")
     , endianess_(unisim::util::endian::E_LITTLE_ENDIAN)
     , load_files_()
