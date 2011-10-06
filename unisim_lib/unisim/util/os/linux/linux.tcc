@@ -142,6 +142,18 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianess(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackSize(
+    unsigned int stack_size) {
+  stack_size_ = stack_size;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryPageSize(
+    ADDRESS_TYPE memory_page_size) {
+  memory_page_size_ = memory_page_size;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
     char const * const utsname_sysname,
     char const * const utsname_nodename,
