@@ -79,7 +79,7 @@ private:
 	AddressMapEntryNode *proc_list;
 	AddressMapEntryNode *pci_list;
 
-	bool DeleteEntryList(AddressMapEntryNode **list);	
+	void DeleteEntryList(AddressMapEntryNode **list);	
 	void AddEntryNode(AddressMapEntryNode **list, AddressMapEntryNode *entry);
 	void CreateAddressMapEntry(AddressMapEntryNode **list,
 		const char *name,
@@ -103,7 +103,7 @@ protected:
 	bool verbose;
 	Parameter<bool> param_verbose;
 public:
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual void OnDisconnect();
 	
 	AddressMap(ConfigurationRegisters &_config_regs,

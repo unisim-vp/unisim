@@ -48,17 +48,17 @@ template <class MEMORY_ADDR>
 S19_Loader<MEMORY_ADDR>::S19_Loader(char const *name, Object *parent) :
 	Object(name,parent),
 	Client<Memory<MEMORY_ADDR> >(name, parent),
-	Service<Loader<MEMORY_ADDR> >(name, parent),
+	Service<Loader>(name, parent),
 	memory_import("memory-import", this),
 	loader_export("loader-export", this),
-	entry_point(0),
-	isFirstDataRec(true),
 	filename(),
-	param_filename("filename", this, filename)
-	
+	entry_point(0),
+	param_filename("filename", this, filename),
+	isFirstDataRec(true)
 {
-	Object::SetupDependsOn(memory_import);
-//	Object::SetupDependsOn(symbol_table_build_import); 
+
+	loader_export.SetupDependsOn(memory_import);
+
 }
 
 template <class MEMORY_ADDR>
@@ -96,10 +96,19 @@ MEMORY_ADDR S19_Loader<MEMORY_ADDR>::GetStackBase() const
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::Setup() {
-	return Load();
+bool S19_Loader<MEMORY_ADDR>::BeginSetup() {
+	return true;
 }
 
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+template <class MEMORY_ADDR>
+bool S19_Loader<MEMORY_ADDR>::EndSetup() {
+	return Load();
+}
 
 template <class MEMORY_ADDR>
 bool S19_Loader<MEMORY_ADDR>::Load(const char *_filename) {
@@ -113,8 +122,8 @@ bool S19_Loader<MEMORY_ADDR>::Load() {
 	 
 	int             linenum;            /* tracks line number in bootstrap file */
 	char            srec[S_RECORD_SIZE];          /* holds S-record from bootstrap file */
-	unsigned int    status;             /* general status variable */
-	int             n, j;               /* temp registers */
+	//unsigned int    status;             /* general status variable */
+	//int             n, j;               /* temp registers */
 	FILE            *bootptr;           /* pointer to bootstrap file */
 	bool			success = true;
 
@@ -167,11 +176,12 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 	int     chksum;
 	int     tchksum;
 	unsigned char     sdata[254];
-	physical_address_t     flash_address;
+	//physical_address_t     flash_address;
 	s19_address_t s19_addr;
-	address_t cpu_address;
-	page_t page;
-	int     n, sdataIndex, nDataByte;
+	//address_t cpu_address;
+	//page_t page;
+	// int     n;
+	int     sdataIndex, nDataByte;
 	int		addrSize;
 
 	if (srec[0] == '\0')  return true;           /* just in case */
@@ -320,7 +330,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
+bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32_t size) {
 
 	bool success = false;
 	
@@ -334,7 +344,7 @@ bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buff
 			}
 			else 
 			{
-				cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
+//				cerr << Object::GetName() << ": write into memory (@0x" << hex << addr << " - @0x" << (addr +  size - 1) << dec << ")" << endl;
 				success = true;
 			}
 		}

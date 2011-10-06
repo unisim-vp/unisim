@@ -57,52 +57,59 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
 
-	input_anx_payload_queue("input_anx_payload_queue"),
-
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
-	trap_reporting_import("trap_reproting_import", this),
+	trap_reporting_import("trap_reporting_import", this),
+
+	input_anx_payload_queue("input_anx_payload_queue"),
+
+	bus_cycle_time_int(0),
+	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
+
+	conversionStop(false),
+	abortSequence(false),
+	resultIndex(0),
+
+	isTriggerModeRunning(false),
+	isATDON(false),
 
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
 	param_baseAddress("base-address", this, baseAddress),
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
-	bus_cycle_time_int(0),
-	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
 
 	vrl(0),
 	vrh(5.12),
 	param_vrl("vrl", this, vrl),
 	param_vrh("vrh", this, vrh),
-	vil(1.75),
-	vih(3.25),
-	param_vih("vih", this, vih),
-	param_vil("vil", this, vil),
-	hasExternalTrigger(false),
-	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger),
-	conversionStop(false),
-	abortSequence(false),
-	isTriggerModeRunning(false),
-	isATDON(false),
+	
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
+
+	use_atd_stub(false),
+	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
 
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
-	resultIndex(0)
-
+	vih(3.25),
+	vil(1.75),
+	param_vih("vih", this, vih),
+	param_vil("vil", this, vil),
+	
+	hasExternalTrigger(false),
+	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 {
 	
 	for (uint8_t i=0; i<ATD_SIZE; i++) {
-
+		analog_signal[i] = vrl;
 		analog_signal_reg[i].SetMutable(true);
 	}
-	
+
 	anx_socket(*this);
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &ATD10B::read_write);
-	bus_clock_socket.register_b_transport(this, &ATD10B::UpdateBusClock);
+	bus_clock_socket.register_b_transport(this, &ATD10B::updateBusClock);
 
 	SC_HAS_PROCESS(ATD10B);
 
@@ -111,6 +118,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	// TODO: Scan External Trigger Channels. I think to use ANx Channels !!!
 	SC_THREAD(RunTriggerMode);
 	sensitive << trigger_event;
+
+	Reset();
 
 }
 
@@ -147,6 +156,7 @@ unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_time& t) {
+	payload.acquire();
 	input_anx_payload_queue.notify(payload, t);
 }
 
@@ -169,28 +179,25 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 		case BEGIN_REQ:
 			// accepts analog signals modeled by payload
 			phase = END_REQ; // update the phase
+			payload.acquire();
 			input_anx_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 
@@ -202,14 +209,24 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	while(1)
 	{
-		quantumkeeper.sync();
-		wait(input_anx_payload_queue.get_event());
+		if (atd_clock.to_seconds() == 0) {
+			wait(scan_event);
+		}
 
-		InputANx(analog_signal);
+		if ((atdctl2_register & 0x80) == 0) // is ATD power ON (enabled)
+		{
+			cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		}
 
-		// TODO: see in details how to use quantumkeeper in the case of ATD
+		if (use_atd_stub) {
+			wait(input_anx_payload_queue.get_event());
 
-		quantumkeeper.inc(bus_cycle_time); // Processing the input takes one cycle
+			InputANx(analog_signal);
+		}
+
+		RunScanMode();
+
+		quantumkeeper.inc(atd_clock + bus_cycle_time); // Processing the input takes one cycle
 		if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
 
 	}
@@ -227,8 +244,12 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 	ATD_Payload<ATD_SIZE> *last_payload = NULL;
 	ATD_Payload<ATD_SIZE> *payload = NULL;
 
+
 	do
 	{
+		if (last_payload) {
+			last_payload->release();
+		}
 		last_payload = payload;
 		payload = input_anx_payload_queue.get_next_transaction();
 
@@ -240,20 +261,15 @@ void ATD10B<ATD_SIZE>::InputANx(double anValue[ATD_SIZE])
 
 	payload = last_payload;
 
-	if (debug_enabled) {
+	if (debug_enabled && payload) {
 		cout << name() << ":: Last Receive " << *payload << " - " << sc_time_stamp() << endl;
 	}
 
-	if ((atdctl2_register & 0x80) != 0) // is ATD power ON (enabled)
-	{
+	if (payload) {
 		for (int i=0; i<ATD_SIZE; i++) {
 			anValue[i] = payload->anPort[i];
 		}
-
-		RunScanMode();
-
-	} else {
-		cerr << "Warning: " << name() << " => The ATD is OFF. You have to set ATDCTL2::ADPU bit before.\n";
+		payload->release();
 	}
 
 }
@@ -357,7 +373,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 			 * - check sign and justification,
 			 * - and store in atddrhl_register[i] register
 			 */
-			double anSignal;
+			double anSignal = vrl;
 			const uint8_t scMask = 0x01;
 			// is Special Channel Select enabled ?
 			if ((atdtest1_register & scMask) != 0) {
@@ -369,6 +385,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 						if (debug_enabled) {
 							cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
 						}
+						anSignal = vrl;
 				}
 			} else {
 				anSignal = analog_signal[currentChannel];
@@ -456,6 +473,8 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 	sc_time local_time = quantumkeeper.get_local_time();
 
 	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	payload->release();
 
 	switch(ret)
 	{
@@ -550,6 +569,7 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	atd_clock = bus_cycle_time / (prsValue + 1) * 0.5;
 	first_phase_clock = atd_clock * 2;
 	second_phase_clock = atd_clock * 2 * (1 << smpValue);
+
 }
 
 /*	===========================
@@ -747,6 +767,7 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			abortConversion();
 
 			setATDClock();
+			scan_event.notify();
 
 		} break;
 		case ATDCTL5: {
@@ -833,7 +854,7 @@ void ATD10B<ATD_SIZE>::ComputeInternalTime() {
 }
 
 template <uint8_t ATD_SIZE>
-void ATD10B<ATD_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+void ATD10B<ATD_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -847,8 +868,9 @@ void ATD10B<ATD_SIZE>::UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& 
 //=====================================================================
 //=                  Client/Service setup methods                     =
 //=====================================================================
+
 template <uint8_t ATD_SIZE>
-bool ATD10B<ATD_SIZE>::Setup() {
+bool ATD10B<ATD_SIZE>::BeginSetup() {
 
 	char buf[20];
 
@@ -913,8 +935,6 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		return false;
 	}
 
-	Reset();
-
 	ComputeInternalTime();
 
 	// the index 'i' model BusClock in MHz
@@ -923,6 +943,16 @@ bool ATD10B<ATD_SIZE>::Setup() {
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
 	}
 
+	return true;
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+template <uint8_t ATD_SIZE>
+bool ATD10B<ATD_SIZE>::EndSetup() {
 	return true;
 }
 
@@ -1041,6 +1071,10 @@ template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
 	service_address_t offset = addr-baseAddress;
+
+	if (size == 0) {
+		return true;
+	}
 
 	if (offset <= (ATDDR0H + 2*ATD_SIZE - 1)) {
 		return write(offset, buffer);

@@ -59,10 +59,11 @@ using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::ParameterArray;
-using unisim::util::endian::Host2LittleEndian;
+using unisim::util::endian::LittleEndian2Host;
 using unisim::kernel::logger::DebugInfo;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::DebugError;
@@ -115,10 +116,10 @@ private:
 
 	class DeviceRequest {
 	public:
-		DeviceRequest() : device(0), message(0) {}
+		DeviceRequest() : message(0), device(0) {}
 	
 		PMsgType message;
-		int device;
+		unsigned int device;
 	};
 	
 	list<DeviceRequest *> device_request_list;
@@ -131,7 +132,7 @@ private:
 	int devNumberToPortMap[32];
 
 	int decode (ADDRESS_TYPE addr);
-	int findDeviceByAddRange (ADDRESS_TYPE addr, unisim::component::cxx::pci::PCISpace addr_type);
+	unsigned int findDeviceByAddRange (ADDRESS_TYPE addr, unisim::component::cxx::pci::PCISpace addr_type);
 	void updateDevMap (PReqType &req, PRspType &rsp);
 
 	// debug stuff
@@ -172,34 +173,34 @@ public:
 	SC_HAS_PROCESS(Bus);
 
 	Bus(const sc_module_name &name, Object *parent = 0):
-		sc_module(name),
 		Object(name, parent, "PCI bus"),
+		sc_module(name),
 		Service<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
 		Client<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent),
+		num_mappings(0),
 		logger(*this),
 		verbose(false),
 		param_verbose("verbose", this, verbose, "enable/disable verbosity"),
+		param_num_mappings("num-mappings", this, num_mappings, "total number of address mappings"),
 		param_base_address("base-address", this, base_address, NUM_MAPPINGS, "mapping: base address of mapped device"),
 		param_size("size", this, size, NUM_MAPPINGS, "mapping: size in bytes of mapped device"),
 		param_device_number("device-number", this, device_number, NUM_MAPPINGS, "mapping: device number"),
 		param_target_port("target-port", this, target_port, NUM_MAPPINGS, "mapping: target port number"),
 		param_register_number("register-number", this, register_number, NUM_MAPPINGS, "mapping: BAR offset in PCI device configuration space"),
 		param_addr_type("addr-type", this, addr_type, NUM_MAPPINGS, "mapping: address space type"),
-		param_num_mappings("num-mappings", this, num_mappings, "total number of address mappings"),
 		frequency(0),
-		param_frequency("frequency", this, frequency, "frequency in Mhz"),
-		num_mappings(0)
+		param_frequency("frequency", this, frequency, "frequency in Mhz")
 {
 		param_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 		param_target_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 		param_num_mappings.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 		param_frequency.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	for(unsigned int i = 0; i < NUM_MASTERS; i++){
+		for(unsigned int i = 0; i < NUM_MASTERS; i++){
 			stringstream s, r;
-	  		s << "input_port[" << i << "]";
-	  		input_port[i] =
-	  			new sc_export<TlmSendIfType>(s.str().c_str());
+			s << "input_port[" << i << "]";
+			input_port[i] =
+				new sc_export<TlmSendIfType>(s.str().c_str());
 			(*input_port[i]) (*this);
 			r << "memory_export[" << i << "]";
 			memory_export[i] =
@@ -214,9 +215,14 @@ public:
 			r << "memory_import[" << i << "]";
 			memory_import[i] =
 				new ServiceImport<unisim::service::interfaces::Memory<ADDRESS_TYPE> >(r.str().c_str(), this);
-			SetupDependsOn(*memory_import[i]);
 		}
-		
+
+		for(unsigned int i = 0; i < NUM_MASTERS; i++){
+			for (unsigned int j = 0; j < NUM_TARGETS; j++) {
+				memory_export[i]->SetupDependsOn(*memory_import[j]);
+			}
+		}
+
 		for (unsigned int i = 0; i < NUM_TARGETS; i++) {
 			for (unsigned int j = 0; j < NUM_BARS; j++) {
 				devmap[i][j] = NULL;
@@ -259,23 +265,9 @@ public:
       		}
 		}
 	}
-
-	virtual bool Setup() {
-			
-		if(!frequency) {
-			if(unlikely(verbose))
-				logger << DebugError << "SERVICE_SETUP_ERROR("
-					<< __FUNCTION__ << ":"
-					<< __FILE__ << ":"
-					<< __LINE__ << "): frequency parameter has not been set" 
-					<< std::endl << EndDebugError;
-			return false;
-		}
-		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
-		
-    	for(unsigned int i = 0; i < NUM_TARGETS; i++)
-			if(!memory_import[i])
-				return false;
+	
+	virtual bool BeginSetup()
+	{
 		Reset ();
 
 //		for (unsigned int i = 0; i < NUM_MAPPINGS; i++) {
@@ -331,13 +323,50 @@ public:
 			portToDevNumberMap[device_number[i]] = target_port[i];
 			 
 		}
+		
+		return true;
+	}
 
+	virtual bool SetupMemory()
+	{
+    	for(unsigned int i = 0; i < NUM_TARGETS; i++)
+			if(!memory_import[i])
+				return false;
+			
+		return true;
+	}
+
+	virtual bool Setup(ServiceExportBase *srv_export)
+	{
+		for(unsigned int i = 0; i < NUM_MASTERS; i++)
+		{
+			if(srv_export == memory_export[i]) return SetupMemory();
+		}
+		
+		logger << DebugError << "Internal error" << EndDebugError;
+		
+		return false;
+	}
+
+	virtual bool EndSetup() {
+			
+		if(!frequency) {
+			if(unlikely(verbose))
+				logger << DebugError << "SERVICE_SETUP_ERROR("
+					<< __FUNCTION__ << ":"
+					<< __FILE__ << ":"
+					<< __LINE__ << "): frequency parameter has not been set" 
+					<< std::endl << EndDebugError;
+			return false;
+		}
+		cycle_time = sc_time(1.0 / (double) frequency, SC_US);
+		
 		return true;
     }
 
 	virtual bool Send (const PMsgType &message) {
 		const PReqType& req = message->req;
-		int device;
+		unsigned int device;
 		bool ret = true;
 
 		if(req->space == unisim::component::cxx::pci::SP_CONFIG) {
@@ -354,8 +383,7 @@ public:
 							<< "Received a read request without response event ("
 							<< __FUNCTION__ << ":"<< __FILE__ << ":" << __LINE__ << ")" << std::endl
 							<< EndDebugError;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 				}
 
 	    		PRspType res = new(res) RspType();
@@ -408,7 +436,7 @@ public:
 							<< "Invalid access size(?) for PCI configspace! ("
 							<< __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ")" << std::endl
 							<< EndDebugError;
-					sc_stop(); wait();
+					Object::Stop(-1);
 					return true;
 					}
 	      		}
@@ -457,7 +485,7 @@ public:
   			
   			PMsgType& message = device_request->message;
 			sc_event bus_event;
-			int device = device_request->device;
+			unsigned int device = device_request->device;
 			if(unlikely(DEBUG && verbose))
 				logger << DebugInfo
 					<< "sending message to device: " << device << std::endl
@@ -502,8 +530,7 @@ public:
 	 					logger << DebugError
 	 						<< "received a response for a pci message without response field" << std::endl
 	 						<< EndDebugError;
-					sc_stop();
-					wait();
+					Object::Stop(-1);
 		 		}
 		 		PReqType& req = message->req;
 	 			PRspType& rsp = message->rsp;
@@ -535,8 +562,8 @@ public:
   	}
 
 	virtual void Reset() {
-		for (int i = 0; i < NUM_TARGETS; i++) 
-			for (int j = 0; j < NUM_BARS; j++) 
+		for (unsigned int i = 0; i < NUM_TARGETS; i++) 
+			for (unsigned int j = 0; j < NUM_BARS; j++) 
 				devmap[i][j] = NULL;
 
 		for(unsigned int i = 0; i < NUM_TARGETS; i++)
@@ -545,7 +572,7 @@ public:
 
 	virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size)
 	{
-		int device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
+		unsigned int device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
 		if(device >= NUM_TARGETS) return false;
 		if(!(*memory_import[device])) return false;
 
@@ -554,7 +581,7 @@ public:
 
 	virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer, uint32_t size)
 	{
-		int device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
+		unsigned int device = findDeviceByAddRange(addr, unisim::component::cxx::pci::SP_MEM);
 		if(device >= NUM_TARGETS) return false;
 		if(!(*memory_import[device])) return false;
 
@@ -574,11 +601,11 @@ int Bus<ADDRESS_TYPE, MAX_DATA_SIZE, NUM_MASTERS, NUM_TARGETS, NUM_MAPPINGS, DEB
 
 template<class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE,
 	unsigned int NUM_MASTERS, unsigned int NUM_TARGETS, unsigned int NUM_MAPPINGS, bool DEBUG> 
-int Bus<ADDRESS_TYPE, MAX_DATA_SIZE, NUM_MASTERS, NUM_TARGETS, NUM_MAPPINGS, DEBUG>
+unsigned int Bus<ADDRESS_TYPE, MAX_DATA_SIZE, NUM_MASTERS, NUM_TARGETS, NUM_MAPPINGS, DEBUG>
 ::findDeviceByAddRange (ADDRESS_TYPE paddr, unisim::component::cxx::pci::PCISpace addr_type) {
-	uint8_t device = 0xff;
-	for (int i = 0; i < NUM_TARGETS; i++) {
-		for (int j = 0; j < NUM_BARS; j++) {
+	unsigned int device = 0xff;
+	for (unsigned int i = 0; i < NUM_TARGETS; i++) {
+		for (unsigned int j = 0; j < NUM_BARS; j++) {
 			if (devmap[i][j] != NULL) {
 				if(paddr >= devmap[i][j]->orig) {
 					if(paddr <= devmap[i][j]->end) {
@@ -619,7 +646,10 @@ updateDevMap (PReqType &req, PRspType &res) {
 		if(req->type == unisim::component::cxx::pci::TT_WRITE && 
 			req->space == unisim::component::cxx::pci::SP_CONFIG) {
 
-			if ((*(uint32_t *) req->write_data) == 0xffffffff) {
+			uint32_t write_data;
+			memcpy(&write_data, req->write_data, sizeof(uint32_t));
+			write_data = LittleEndian2Host(write_data);
+			if (write_data == 0xffffffff) {
 				//requesting bar size
 				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo
@@ -627,11 +657,9 @@ updateDevMap (PReqType &req, PRspType &res) {
 						<< " reg " << barNum << std::endl
 						<< EndDebugInfo; 
 				reg->state = SIZE_REQUESTED;
-			} else if ((*(uint32_t *) req->write_data) != 0x00000000) {
+			} else if (write_data != 0x00000000) {
 				//writing bar address
-				ADDRESS_TYPE space_base;
 				uint32_t bar_mask;
-				uint8_t addSize;
 				//We check the bit that indicates if it's for io or mem
 				if (reg->original_value & 0x1)
 					bar_mask = BAR_IO_MASK;
@@ -639,16 +667,15 @@ updateDevMap (PReqType &req, PRspType &res) {
 					bar_mask = BAR_MEM_MASK;
 
 				ADDRESS_TYPE newValue =
-					Host2LittleEndian(
-						(Host2LittleEndian(*(uint32_t *) req->write_data) & ~bar_mask) |
-						(Host2LittleEndian(reg->original_value) & bar_mask));
+						(write_data & ~bar_mask) |
+						(reg->original_value & bar_mask);
 
-				if (Host2LittleEndian (newValue) & ~bar_mask) {
+				if (newValue & ~bar_mask) {
 					if(unlikely(DEBUG && verbose))
 						logger << DebugInfo
 							<< "writing bar address dev " << device
 							<< " reg " << barNum << " data: "
-							<< std::hex << *(uint32_t *)req->write_data << std::dec << std::endl
+							<< std::hex << write_data << std::dec << std::endl
 							<< EndDebugInfo;
 
 					if (reg && reg->size > 1) {
@@ -664,7 +691,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 				//reading size
 				uint32_t bar_mask;
 				//We check the bit that indicates if it's for io or mem
-				if (Host2LittleEndian(reg->original_value) & 0x1) 
+				if (reg->original_value & 0x1) 
 					bar_mask = BAR_IO_MASK;
 				else
 					bar_mask = BAR_MEM_MASK;
@@ -674,7 +701,10 @@ updateDevMap (PReqType &req, PRspType &res) {
 						<< "reading size dev " << device << " reg "
 						<< barNum << std::endl
 						<< EndDebugInfo;
-				reg->size = (~*(uint32_t *) res->read_data) + 1;
+				uint32_t read_data;
+				memcpy(&read_data, res->read_data, sizeof(uint32_t));
+				read_data = LittleEndian2Host(read_data);
+				reg->size = (~read_data) + 1;
 				reg->state = SIZE_READ;
 			} else {
 				if(reg == NULL) {
@@ -689,7 +719,11 @@ updateDevMap (PReqType &req, PRspType &res) {
 							<< "reading original value dev " << device
 							<< " reg " << barNum << std::endl
 							<< EndDebugInfo;
-					reg->original_value = *(uint32_t *) res->read_data;
+					//reg->original_value = *(uint32_t *) res->read_data;
+					uint32_t original_value;
+					memcpy(&original_value, res->read_data, sizeof(uint32_t));
+					reg->original_value = LittleEndian2Host(original_value);
+					
 					reg->state = VALUE_READ;
 				}
 			}

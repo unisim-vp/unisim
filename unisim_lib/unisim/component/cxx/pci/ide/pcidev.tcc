@@ -44,6 +44,7 @@ retaining the original license:
 #define __UNISIM_COMPONENT_CXX_PCI_IDE_PCIDEV_TCC__
 
 #include <iostream>
+#include <string.h>
  
 namespace unisim {
 namespace component {
@@ -212,7 +213,8 @@ bool PciDev<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *da
 			break; */
 		}
       case sizeof(uint16_t): {
-        *(uint16_t*)data = *(uint16_t*)&config.data[offset];
+        //*(uint16_t*)data = *(uint16_t*)&config.data[offset];
+		  memcpy(data, &config.data[offset], sizeof(uint16_t));
 		   /* fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,
@@ -220,7 +222,8 @@ bool PciDev<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *da
 		}
         break;
       case sizeof(uint32_t): {
-        *(uint32_t*)data = *(uint32_t*)&config.data[offset];
+        //*(uint32_t*)data = *(uint32_t*)&config.data[offset];
+		memcpy(data, &config.data[offset], sizeof(uint32_t));
 		   /*  fprintf(stderr, 
             "read device: %#x function: %#x register: %#x %d bytes: data: %#x\n",
             _params->deviceNum, _params->functionNum, offset, size,

@@ -45,11 +45,19 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	slave_sock("slave_sock"),
 	input_payload_queue("input_payload_queue"),
 
+	anx_stimulus_period(80000000), // 80 us
+	pwm_fetch_period(1e9), // 1 ms
+
 	trace_enable(false),
 	param_trace_enable("trace-enable", this, trace_enable),
 
-	anx_stimulus_period(80000000), // 80 us
-	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period)
+	enabled(false),
+	param_enabled("stub-enabled", this, enabled),
+
+	anx_stimulus_period_sc(0),
+	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period),
+	pwm_fetch_period_sc(0),
+	param_pwm_fetch_period("pwm-fetch-period", this, pwm_fetch_period)
 
 
 {
@@ -65,13 +73,27 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 
 }
 
-bool ATD_PWM_STUB::Setup() {
+bool ATD_PWM_STUB::BeginSetup() {
+
 	if (trace_enable) {
 		atd0_output_file.open ("atd0_output.txt");
 		atd1_output_file.open ("atd1_output.txt");
 		pwm_output_file.open ("pwm_output.txt");
 	}
 
+	tlm_quantumkeeper::set_global_quantum(sc_time(0.0, SC_MS));
+
+	anx_stimulus_period_sc = new sc_time(anx_stimulus_period, SC_PS);
+	pwm_fetch_period_sc = new sc_time(pwm_fetch_period, SC_PS);
+
+	return true;
+}
+
+bool ATD_PWM_STUB::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool ATD_PWM_STUB::EndSetup() {
 	return true;
 }
 
@@ -83,6 +105,8 @@ ATD_PWM_STUB::~ATD_PWM_STUB() {
 		pwm_output_file.close();
 	}
 
+	if (anx_stimulus_period_sc) { delete anx_stimulus_period_sc; anx_stimulus_period_sc = NULL; }
+	if (pwm_fetch_period_sc) { delete pwm_fetch_period_sc; pwm_fetch_period_sc = NULL; }
 }
 
 // Slave methods
@@ -103,6 +127,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm
 	if(phase == BEGIN_REQ)
 	{
 		phase = END_REQ; // update the phase
+		payload.acquire();
 		input_payload_queue.notify(payload, t); // queue the payload and the associative time
 		return TLM_UPDATED;
 	}
@@ -113,6 +138,7 @@ tlm_sync_enum ATD_PWM_STUB::nb_transport_fw( PWM_Payload<PWM_SIZE>& payload, tlm
 
 void ATD_PWM_STUB::b_transport( PWM_Payload<PWM_SIZE>& payload, sc_core::sc_time& t)
 {
+	payload.acquire();
 	input_payload_queue.notify(payload, t);
 }
 
@@ -147,26 +173,32 @@ void ATD_PWM_STUB::Input(bool pwmValue[PWM_SIZE])
 	PWM_Payload<PWM_SIZE> *last_payload = NULL;
 	PWM_Payload<PWM_SIZE> *payload = NULL;
 
+	wait(input_payload_queue.get_event());
+
 	do
 	{
+		if (last_payload) {
+			last_payload->release();
+		}
 		last_payload = payload;
 		payload = input_payload_queue.get_next_transaction();
 
-//		if (trace_enable) {
-//				pwm_output_file <<  "[" << name() << "::PWM::Receive] " << *payload << " " << sc_time_stamp() << endl;
-//		}
-	} while(payload);
+	} while (payload);
 
 	payload = last_payload;
 
 	if (trace_enable) {
-//		pwm_output_file <<  "[" << name() << "::PWM::Receive] " << *payload << " " << sc_time_stamp() << endl;
-		pwm_output_file << (sc_time_stamp().to_seconds() * 1000) << " " << *payload <<  endl;
+		pwm_output_file << (pwm_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload <<  endl;
 	}
 
 	for (int i=0; i<PWM_SIZE; i++) {
 		pwmValue[i] = payload->pwmChannel[i];
 	}
+
+	payload->release();
+
+	pwm_quantumkeeper.inc(*pwm_fetch_period_sc);
+	if (pwm_quantumkeeper.need_sync()) pwm_quantumkeeper.sync();
 
 }
 
@@ -180,12 +212,12 @@ void ATD_PWM_STUB::Output_ATD1(double anValue[ATD1_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-	if (trace_enable) {
-//		atd1_output_file << "[" << name() << "::ATD1::send]" << *payload << " " << sc_time_stamp() << endl;
-		atd1_output_file << (sc_time_stamp().to_seconds() * 1000) << " " << *payload << endl;
-	}
 
-	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = atd1_quantumkeeper.get_local_time();
+
+	if (trace_enable) {
+		atd1_output_file << (atd1_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload << endl;
+	}
 
 	tlm_sync_enum ret = atd1_master_sock->nb_transport_fw(*payload, phase, local_time);
 
@@ -195,20 +227,24 @@ void ATD_PWM_STUB::Output_ATD1(double anValue[ATD1_SIZE])
 	{
 		case TLM_ACCEPTED:
 			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
+			atd1_quantumkeeper.sync(); // synchronize to leave control to the callee
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			atd1_quantumkeeper.set(local_time); // increase the time
+			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
 
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			atd1_quantumkeeper.set(local_time); // increase the time
+			if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
+
+	atd1_quantumkeeper.inc(*anx_stimulus_period_sc);
+	if(atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
+
 }
 
 void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
@@ -220,12 +256,12 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 		payload->anPort[i] = anValue[i];
 	}
 
-	if (trace_enable) {
-//		atd0_output_file << "[" << name() << "::ATD0::send]" << *payload << " " << sc_time_stamp() << endl;
-		atd0_output_file << (sc_time_stamp().to_seconds() * 1000) << " " << *payload << endl;
-	}
 
-	sc_time local_time = quantumkeeper.get_local_time();
+	sc_time local_time = atd0_quantumkeeper.get_local_time();
+
+	if (trace_enable) {
+		atd0_output_file << (atd0_quantumkeeper.get_current_time().to_seconds() * 1000) << " ms \t\t" << *payload << endl;
+	}
 
 	tlm_sync_enum ret = atd0_master_sock->nb_transport_fw(*payload, phase, local_time);
 
@@ -235,20 +271,24 @@ void ATD_PWM_STUB::Output_ATD0(double anValue[ATD0_SIZE])
 	{
 		case TLM_ACCEPTED:
 			// neither payload, nor phase and local_time have been modified by the callee
-			quantumkeeper.sync(); // synchronize to leave control to the callee
+			atd0_quantumkeeper.sync(); // synchronize to leave control to the callee
 			break;
 		case TLM_UPDATED:
 			// the callee may have modified 'payload', 'phase' and 'local_time'
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			atd0_quantumkeeper.set(local_time); // increase the time
+			if(atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync(); // synchronize if needed
 
 			break;
 		case TLM_COMPLETED:
 			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
-			quantumkeeper.set(local_time); // increase the time
-			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			atd0_quantumkeeper.set(local_time); // increase the time
+			if(atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync(); // synchronize if needed
 			break;
 	}
+
+	atd0_quantumkeeper.inc(*anx_stimulus_period_sc);
+	if(atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
+
 }
 
 //void ATD_PWM_STUB::ProcessATD() {

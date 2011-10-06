@@ -42,6 +42,7 @@ namespace pmac_linux_kernel_loader {
 PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
 	Object(name, parent, "PowerMac Linux kernel loader"),
 	loader_export("loader-export", this),
+	blob_export("blob-export", this),
 	symbol_table_lookup_export("symbol-table-lookup-export", this),
 	stmt_lookup_export("stmt-lookup-export", this),
 	memory_import("memory-import", this),
@@ -50,13 +51,14 @@ PMACLinuxKernelLoader::PMACLinuxKernelLoader(const char *name, Object *parent) :
 	elf32_loader("elf32-loader", this)
 {
 	pmac_bootx.loader_import >> elf32_loader.loader_export;
+	pmac_bootx.blob_import >> elf32_loader.blob_export;
 	pmac_bootx.memory_import >> memory_import;
 	pmac_bootx.registers_import >> registers_import;
-	elf32_loader.registers_import >> registers_import;
 	elf32_loader.memory_import >> memory_import;
 	loader_export >> pmac_bootx.loader_export;
 	symbol_table_lookup_export >> elf32_loader.symbol_table_lookup_export;
 	stmt_lookup_export >> elf32_loader.stmt_lookup_export;
+	blob_export >> pmac_bootx.blob_export;
 }
 
 PMACLinuxKernelLoader::~PMACLinuxKernelLoader()

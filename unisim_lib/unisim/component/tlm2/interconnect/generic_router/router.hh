@@ -124,23 +124,6 @@ private:
 
 	typedef tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> InitSocket;
 	typedef tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> TargSocket;
-// 	class InitSocket : 
-// 		public tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> {
-// 	public:
-// 		InitSocket() :
-// 			tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES>("init_socket")
-// 		{
-// 		}
-// 	};
-// 
-// 	class TargSocket :
-// 		public tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> {
-// 	public:
-// 		TargSocket() :
-// 			tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES>("targ_socket")
-// 		{
-// 		}
-// 	};
 
 public:
 	SC_HAS_PROCESS(Router);
@@ -149,12 +132,8 @@ public:
 
 	/** Router initiator port sockets */
 	InitSocket *init_socket[OUTPUT_SOCKETS];
-	// tlm_utils::simple_initiator_socket_tagged<Router, BUSWIDTH, TYPES> init_socket[OUTPUT_SOCKETS];
-	// TODO: remove ==> tlm_utils::multi_passthrough_initiator_socket<Router, BUSWIDTH, TYPES> init_socket;
 	/** Router target port sockets */
 	TargSocket *targ_socket[INPUT_SOCKETS];
-	// tlm_utils::passthrough_target_socket_tagged<Router, BUSWIDTH, TYPES> targ_socket[INPUT_SOCKETS];
-	// TODO: remove ==> tlm_utils::multi_passthrough_target_socket<Router, BUSWIDTH, TYPES> targ_socket;
 
 	/** Incomming memory interface for incomming debugging/loading requests 
 	 * One single memory interface for incomming requests is enough, as there is no concurrency */
@@ -167,7 +146,7 @@ public:
 	 *
 	 * @return true if setup is performed with success, false otherwise
 	 */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 
 private:
 	typedef typename TYPES::tlm_payload_type transaction_type;
@@ -367,8 +346,7 @@ private:
 	 *************************************************************************/
 
 	sc_core::sc_time cycle_time;
-	double cycle_time_double;
-	unisim::kernel::service::Parameter<double> param_cycle_time_double;
+	unisim::kernel::service::Parameter<sc_time> param_cycle_time;
 //	unsigned int num_input_sockets;
 //	unisim::kernel::service::Parameter<unsigned int> param_num_input_sockets;
 //	unsigned int num_output_sockets;

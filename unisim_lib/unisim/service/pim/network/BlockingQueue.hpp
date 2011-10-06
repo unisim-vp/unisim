@@ -28,6 +28,9 @@ public:
 	virtual void next(T&);
 	virtual bool isEmpty();
 	virtual size_t size();
+	void lock() { pthread_mutex_lock( &queue_mutex ); };
+	void unlock() { pthread_mutex_unlock( &queue_mutex ); };
+	std::queue<T> getQueue() { return buffer_queue; }
 
 protected:
 

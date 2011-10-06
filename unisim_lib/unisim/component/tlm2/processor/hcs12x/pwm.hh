@@ -76,6 +76,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::RegisterArray;
@@ -136,12 +137,12 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     void refresh_channel(uint8_t channel_number);
 
     void	start();
-    bool	pwm7in_ChangeStatus(bool pwm7in_status);
+    void	pwm7in_ChangeStatus(bool pwm7in_status);
     bool	isEmergencyShutdownEnable();
     void	setPWMInterruptFlag();
 
@@ -164,7 +165,10 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void OnDisconnect();
 	virtual void Reset();
 

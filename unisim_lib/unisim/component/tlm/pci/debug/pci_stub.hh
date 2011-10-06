@@ -99,7 +99,7 @@ public:
 	PCIStub(const sc_module_name& name, Object *parent = 0);
 	virtual ~PCIStub();
 	virtual bool Send(const Pointer<TlmMessage<PCIReq, PCIRsp> > &message);
-	virtual bool Setup();
+	virtual bool EndSetup();
 	virtual void ServeStart();
 	virtual void ServeStop();
 	virtual void ServeIntr(uint32_t intr_id, bool level);

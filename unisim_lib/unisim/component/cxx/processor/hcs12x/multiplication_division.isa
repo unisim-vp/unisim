@@ -208,7 +208,7 @@ edivs.execute = {
 		}  
 			
 		if (quotion == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-		if (((uint16_t) quotion) & 0x8000 == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if ((((uint16_t) quotion) & 0x8000) == 0x8000 ) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
 	}
 }
@@ -362,7 +362,7 @@ emacs.execute = {
 	cpu->memWrite16(opr16a+2, (uint16_t) result);
 	
 	// N: Set if MSB of result is set; cleared otherwise
-	if (result & 0x80000000 == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+	if ((result & 0x80000000) == 0x80000000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 	
 	// Z: Set if result is 0x00000000; cleared otherwise
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -372,18 +372,18 @@ emacs.execute = {
 	  * M: 32 bit accumulator in memory (second operand in the addition)
 	  * */
 	  
-	/* V: M31 • I31 • !R31 + !M31 • !I31 • R31
+	/* V: (M31 • I31 • !R31) + (!M31 • !I31 • R31)
 	 * Set if result > 0x7FFFFFFF (+ overflow) or < 0x80000000 (– underflow)
 	 * Indicates two’s complement overflow
 	 */
 	// if (result > 0x7FFFFFFF) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
-	if (((accOpr & 0x80000000) & (inter & 0x80000000) & ~(result & 0x80000000) | ~(accOpr & 0x80000000) & ~(inter & 0x80000000) & (result & 0x80000000)) >> 31) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if ((((accOpr & 0x80000000) & (inter & 0x80000000) & ~(result & 0x80000000)) | (~(accOpr & 0x80000000) & ~(inter & 0x80000000) & (result & 0x80000000))) >> 31) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
-	/* C: M15 • I15 + I15 • !R15 + !R15 • M15
+	/* C: (M15 • I15) + (I15 • !R15) + (!R15 • M15)
 	 * Set if there was a carry from bit 15 of the result; cleared otherwise
 	 * Indicates a carry from low word to high word of the result occurred
 	 */
-	if (((accOpr & 0x00008000) & (inter & 0x00008000) | (inter & 0x00008000) & ~(result & 0x00008000) | ~(result & 0x00008000) & (accOpr & 0x00008000)) >> 15) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+	if ((((accOpr & 0x00008000) & (inter & 0x00008000)) | ((inter & 0x00008000) & ~(result & 0x00008000)) | (~(result & 0x00008000) & (accOpr & 0x00008000))) >> 15) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 	 
 }
 

@@ -86,11 +86,10 @@ public:
 			 unsigned int _access_size,
 			 uint32_t _value,
 			 uint32_t _mask = 0xffffffffUL);
-			 	
-	bool AllowedSize(uint32_t size);
-		
+	
+	bool AllowedSize(uint32_t address, unsigned int req_size);
 	/* IMPORTANT: val must be in host endian and size 1,2 or 4 */
-	bool Write(uint32_t address, uint32_t val, uint32_t size);
+	bool Write(uint32_t address, uint32_t val);
 };
 
 class ConfigurationRegisters {

@@ -29,11 +29,11 @@ endforeach ( CXX_INCLUDE )
 set ( linux_os_subdirs
 	unisim/kernel
 	unisim/service/interfaces/linux_os
-	unisim/service/interfaces/cpu_linux_os
 	unisim/service/interfaces/loader
 	unisim/service/interfaces/memory
 	unisim/service/interfaces/memory_injection
 	unisim/service/interfaces/registers
+	unisim/service/interfaces/blob
 	unisim/util/endian
 	unisim/util/debug
 	)
@@ -58,11 +58,11 @@ target_link_libraries ( unisim__service__os__linux_os
 
 add_dependencies ( unisim__service__os__linux_os
 	unisim__service__interfaces__linux_os
-	unisim__service__interfaces__cpu_linux_os
 	unisim__service__interfaces__loader
 	unisim__service__interfaces__memory
 	unisim__service__interfaces__memory_injection
 	unisim__service__interfaces__registers
+	unisim__service__interfaces__blob
 	)
 	
 message ( STATUS "Checking unisim::service::os::linux_os - done" )

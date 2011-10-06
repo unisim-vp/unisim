@@ -54,6 +54,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <limits.h>
+#include <limits>
 #if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
@@ -116,6 +117,159 @@ using std::stringstream;
 using std::ofstream;
 using namespace boost;
 
+typedef struct
+{
+	const char *searchFor;
+	const char *replaceBy;
+} Translation;
+
+static Translation conversion_table[] = {
+	{"\n", "\\\\\n"},
+	{"é", "\\'e"},
+	{"è", "\\`e"},
+	{"ê", "\\^e"},
+	{"à", "\\`a"},
+	{"#", "\\#"},
+	{"_", "\\_"},
+	{"\t", "~~"},
+	{"{", "$\\{$"},
+	{"}", "$\\}$"},
+	{"&", "\\&"},
+	{"--", "{-}{-}"},
+	{"<<", "<}\\texttt{<"},
+	{">>", ">}\\texttt{>"},
+	{"<", "$<$"},
+	{">", "$>$"},
+	{"%", "\\%"},
+	{"$", "\\$"},
+	{"//(1)", "\\ding{202}"},
+	{"//(2)", "\\ding{203}"},
+	{"//(3)", "\\ding{204}"},
+	{"//(4)", "\\ding{205}"},
+	{"//(5)", "\\ding{206}"},
+	{"//(6)", "\\ding{207}"},
+	{"//(7)", "\\ding{208}"},
+	{"//(8)", "\\ding{209}"},
+	{"//(9)", "\\ding{210}"},
+	{"/*(1)*/", "\\ding{202}"},
+	{"/*(2)*/", "\\ding{203}"},
+	{"/*(3)*/", "\\ding{204}"},
+	{"/*(4)*/", "\\ding{205}"},
+	{"/*(5)*/", "\\ding{206}"},
+	{"/*(6)*/", "\\ding{207}"},
+	{"/*(7)*/", "\\ding{208}"},
+	{"/*(8)*/", "\\ding{209}"},
+	{"/*(9)*/", "\\ding{210}"}
+};
+
+static std::string string_to_latex(const char *s, unsigned int cut = 0, const char *style = 0)
+{
+	std::string out;
+	unsigned int col = 1;
+	
+	if(style)
+	{
+		out += "\\";
+		out += style;
+		out += "{";
+	}
+	
+	while(*s)
+	{
+		unsigned int i;
+		bool found = false;
+		
+		bool can_cut = (*s == ' ') || (strncmp(s, "::", 2) == 0) || (*s == '/') || (*s == '_') || (*s == '-') || (*s == '.') || (*s == '[');
+		
+		for(i = 0; i < sizeof(conversion_table)/sizeof(conversion_table[0]); i++)
+		{
+			int length = strlen(conversion_table[i].searchFor);
+			if(strncmp(s, conversion_table[i].searchFor, length) == 0)
+			{
+				out += conversion_table[i].replaceBy;
+				s += length;
+				col += length;
+
+				if(cut)
+				{
+					if(col > cut && can_cut)
+					{
+						if(style) out += "}";
+						out += " \\newline$\\hookrightarrow$";
+						if(style)
+						{
+							out += "\\";
+							out += style;
+							out += "{";
+						}
+						col = 1;
+					}
+				}
+				found = true;
+			}
+		}
+		
+		if(!found)
+		{
+			out += *s;
+			s++;
+			col++;
+			if(cut)
+			{
+				if(col > cut && can_cut)
+				{
+					if(style) out += "}";
+					out += " \\newline$\\hookrightarrow$";
+					if(style)
+					{
+						out += "\\";
+						out += style;
+						out += "{";
+					}
+					col = 1;
+				}
+			}
+		}
+	}
+	
+	if(style)
+	{
+		out += "}";
+	}
+	return out;
+}
+
+bool ResolvePath(const std::string& prefix_dir,
+		const std::string& suffix_dir,
+		std::string& out_dir) 
+{
+	std::string unresolved_dir = prefix_dir;
+	unresolved_dir += '/';
+	unresolved_dir += suffix_dir;
+	char resolved_dir_buf[PATH_MAX + 1];
+
+#if defined(linux) || defined(__APPLE_CC__)
+	if ( realpath(unresolved_dir.c_str(), 
+				resolved_dir_buf) )
+	{
+		out_dir = resolved_dir_buf;
+		return true;
+	}
+#elif defined(WIN32)
+	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
+			PATH_MAX + 1, 
+			resolved_dir_buf, 
+			0);
+	if(length > 0)
+	{
+		resolved_dir_buf[length] = 0;
+		out_dir = resolved_dir_buf;
+		return true;
+	}
+#endif
+	return false;
+}
+
 //=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
@@ -133,7 +287,7 @@ VariableBase(const char *_name, Object *_owner, Type _type, const char *_descrip
 	, is_mutable(true)
 	, is_visible(true)
 	, is_serializable(true)
-	, notifiable_list()
+	, listener_list()
 {
 	if(_owner)
 	{
@@ -155,7 +309,7 @@ VariableBase(const char *_name, VariableBase *_container, Type _type, const char
 	, is_mutable(true)
 	, is_visible(true)
 	, is_serializable(true)
-	, notifiable_list()
+	, listener_list()
 {
 	Simulator::simulator->Register(this);
 }
@@ -168,7 +322,7 @@ VariableBase()
 	, description()
 	, type(VAR_VOID)
 	, fmt(FMT_DEFAULT)
-	, notifiable_list()
+	, listener_list()
 {
 }
 
@@ -206,6 +360,20 @@ const char *VariableBase::GetDescription() const
 VariableBase::Type VariableBase::GetType() const
 {
 	return type;
+}
+
+const char *VariableBase::GetTypeName() const
+{
+	switch(type)
+	{
+		case VAR_VOID: return "void";
+		case VAR_ARRAY: return "array";
+		case VAR_PARAMETER: return "parameter";
+		case VAR_STATISTIC: return "statistic";
+		case VAR_REGISTER: return "register";
+		case VAR_FORMULA: return "formula";
+	}
+	return "invalid";
 }
 
 VariableBase::Format VariableBase::GetFormat() const
@@ -297,25 +465,25 @@ void VariableBase::SetSerializable(bool _is_serializable)
 	is_serializable = _is_serializable;
 }
 
-void VariableBase::SetNotify(VariableBase::Notifiable *notifiable)
+void VariableBase::AddListener(VariableBaseListener *listener)
 {
-	notifiable_list.push_back(notifiable);
-	notifiable_list.unique(); // remove doubles
+	listener_list.push_back(listener);
+	listener_list.unique(); // remove doubles
 }
 
-void VariableBase::RemoveNotify(VariableBase::Notifiable *notifiable)
+void VariableBase::RemoveListener(VariableBaseListener *listener)
 {
-	notifiable_list.remove(notifiable);
+	listener_list.remove(listener);
 }
 
-void VariableBase::Notify()
+void VariableBase::NotifyListeners()
 {
-	list<VariableBase::Notifiable *>::iterator iter;
+	list<VariableBaseListener *>::iterator iter;
 	if ( IsMutable() )
-		for ( iter = notifiable_list.begin();
-				iter != notifiable_list.end();
+		for ( iter = listener_list.begin();
+				iter != listener_list.end();
 				iter++)
-			(*iter)->VariableNotify(name.c_str());
+			(*iter)->VariableBaseNotify(this);
 }
 
 VariableBase::operator bool () const { return false; }
@@ -333,20 +501,20 @@ VariableBase::operator float () const { return (double) *this; }
 VariableBase::operator double () const { return 0.0; }
 VariableBase::operator string () const { return string(); }
 
-VariableBase& VariableBase::operator = (bool value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (bool value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (char value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (short value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (int value) { *this = (long long) value; return *this; }
 VariableBase& VariableBase::operator = (long value) { *this = (long long) value; return *this; }
-VariableBase& VariableBase::operator = (long long value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (long long value) { NotifyListeners(); return *this; }
 VariableBase& VariableBase::operator = (unsigned char value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned short value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned int value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned long value) { *this = (unsigned long long) value; return *this; }
 VariableBase& VariableBase::operator = (unsigned long long value) { return *this; }
 VariableBase& VariableBase::operator = (float value) { *this = (double) value; return *this; }
-VariableBase& VariableBase::operator = (double value) { Notify(); return *this; }
-VariableBase& VariableBase::operator = (const char *value) { Notify(); return *this; }
+VariableBase& VariableBase::operator = (double value) { NotifyListeners(); return *this; }
+VariableBase& VariableBase::operator = (const char *value) { NotifyListeners(); return *this; }
 
 VariableBase& VariableBase::operator [] (unsigned int index)
 {
@@ -379,6 +547,61 @@ VariableBase& VariableBase::operator = (const VariableBase& variable)
 	return *this = variable_value.c_str();
 }
 
+std::string VariableBase::GetSymbolicValue() const
+{
+	return IsVisible() ? name : (string) *this;
+}
+
+void VariableBase::GenerateLatexDocumentation(std::ostream& os) const
+{
+	os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Name:} " << string_to_latex(name.c_str(), 26, "texttt") << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Type:} " << string_to_latex(GetTypeName(), 36, "texttt") << "}\\\\" << std::endl;
+	
+	if(type == VAR_FORMULA)
+	{
+		// symbolically print formula 
+		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Formula:} ";
+		os << string_to_latex(GetSymbolicValue().c_str(), 24, "texttt");
+	}
+	else if(type == VAR_STATISTIC)
+	{
+		os << "\\multicolumn{1}{|p{7.5cm}}{";
+	}
+	else
+	{
+		// print variable current value
+		os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Default:} ";
+		os << string_to_latex(((string) *this).c_str(), 24, "texttt");
+	}
+	os << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Data type:} " << string_to_latex(GetDataTypeName(), 36, "texttt") << "}\\\\" << std::endl;
+	
+	if(HasEnumeratedValues())
+	{
+		os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Valid:} ";
+		
+		std::vector<string>::const_iterator enumerated_values_iter;
+		for(enumerated_values_iter = enumerated_values.begin(); enumerated_values_iter != enumerated_values.end(); enumerated_values_iter++)
+		{
+			if(enumerated_values_iter != enumerated_values.begin())
+			{
+				os << ",~";
+			}
+			os << string_to_latex((*enumerated_values_iter).c_str(), 0, "texttt");
+		}
+		os << "}\\\\" << std::endl;
+	}
+	else
+	{
+		os << "\\multicolumn{2}{|l|}{}\\\\" << std::endl;
+	}
+	
+	if(!description.empty())
+	{
+		os << "\\multicolumn{2}{|l|}{}\\\\" << std::endl;
+		os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Description:} \\newline " << string_to_latex(description.c_str()) << ".}\\\\" << std::endl;
+	}
+	os << "\\hline" << std::endl;
+}
+
 //=============================================================================
 //=                            Variable<TYPE>                                =
 //=============================================================================
@@ -401,10 +624,17 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	{
 		case FMT_DEFAULT:
 		case FMT_HEX:
-			sstr << "0x" << hex << (unsigned long long) *storage;
+			sstr << "0x" << hex;
+			sstr.fill('0');
+			sstr.width(2 * sizeof(TYPE));
+			sstr << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
-			sstr << dec << (unsigned long long) *storage;
+			sstr << dec;
+			if(std::numeric_limits<TYPE>::is_signed)
+				sstr << (long long) *storage;
+			else
+				sstr << (unsigned long long) *storage;
 			break;
 	}
 	return sstr.str();
@@ -414,7 +644,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
 	if ( IsMutable() )
 		*storage = value ? 1 : 0;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -422,7 +652,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
 	if ( IsMutable() )
 		*storage = value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -430,7 +660,7 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long lo
 {
 	if ( IsMutable() )
 		*storage = value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
@@ -438,29 +668,87 @@ template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
 	if ( IsMutable() )
 		*storage = (TYPE) value;
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 
 //=============================================================================
-//=                           VariableArray<TYPE>                            =
-//=============================================================================
-
-//=============================================================================
 //=                             Formula<TYPE>                                 =
 //=============================================================================
-
-// static unsigned int auto_formula_id = 0;
-static string auto_formula_id_string;
 
 template <class TYPE>
 Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *_description)
 	: VariableBase(_name, _owner, VAR_FORMULA, _description)
 	, op(_op)
 {
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	childs[0] = child1;
 	childs[1] = child2;
 	childs[2] = child3;
+	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	{
+		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
+	}
+}
+
+template <class TYPE>
+Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child1, VariableBase *child2, const char *_description)
+	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+	, op(_op)
+{
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	childs[0] = child1;
+	childs[1] = child2;
+	childs[2] = 0;
+	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	{
+		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
+	}
+}
+
+template <class TYPE>
+Formula<TYPE>::Formula(const char *_name, Object *_owner, Operator _op, VariableBase *child, const char *_description)
+	: VariableBase(_name, _owner, VAR_FORMULA, _description)
+	, op(_op)
+{
+	VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	childs[0] = child;
+	childs[1] = 0;
+	childs[2] = 0;
+	if(!IsValid() && Simulator::simulator->IsWarningEnabled())
+	{
+		std::cerr << "WARNING! " << VariableBase::GetName() << " is an invalid formula" << std::endl;
+	}
+}
+
+template <class TYPE>
+bool Formula<TYPE>::IsValid() const
+{
+	switch(op)
+	{
+		case OP_NEG:
+		case OP_ABS:
+		case OP_NOT:
+			return childs[0] != 0;
+		case OP_ADD:
+		case OP_SUB:
+		case OP_MUL:
+		case OP_DIV:
+		case OP_LT:
+		case OP_LTE:
+		case OP_GT:
+		case OP_GTE:
+		case OP_EQ:
+		case OP_MIN:
+		case OP_MAX:
+		case OP_AND:
+		case OP_OR:
+		case OP_NEQ:
+			return (childs[0] != 0) && (childs[1] != 0);
+		case OP_SEL:
+			return (childs[0] != 0) && (childs[1] != 0) && (childs[2] != 0);
+	}
+	return false;
 }
 
 template <class TYPE> Formula<TYPE>::operator bool () const { return Compute() ? true : false; }
@@ -495,27 +783,232 @@ TYPE Formula<TYPE>::Compute() const
 {
 	switch(op)
 	{
-		case OP_ADD: return (TYPE)(*childs[0]) + (TYPE)(*childs[1]);
-		case OP_SUB: return (TYPE)(*childs[0]) - (TYPE)(*childs[1]);
-		case OP_MUL: return (TYPE)(*childs[0]) * (TYPE)(*childs[1]);
-		case OP_DIV: return (TYPE)(*childs[0]) / (TYPE)(*childs[1]);
-		case OP_LT: return (TYPE)(*childs[0]) < (TYPE)(*childs[1]);
-		case OP_LTE: return (TYPE)(*childs[0]) <= (TYPE)(*childs[1]);
-		case OP_GT: return (TYPE)(*childs[0]) > (TYPE)(*childs[1]);
-		case OP_GTE: return (TYPE)(*childs[0]) >= (TYPE)(*childs[1]);
-		case OP_EQ: return (TYPE)(*childs[0]) == (TYPE)(*childs[1]);
-		case OP_SEL: return (TYPE)(*childs[0]) ? (TYPE)(*childs[1]) : (TYPE)(*childs[1]);
-		case OP_NEG: return -(TYPE)(*childs[0]);
-		case OP_ABS: return (TYPE)(*childs[0]) >= 0 ? (TYPE)(*childs[0]) : -(TYPE)(*childs[0]);
-		case OP_MIN: return (TYPE)(*childs[0]) < (TYPE)(*childs[1]) ? (TYPE)(*childs[0]) : (TYPE)(*childs[1]);
-		case OP_MAX: return (TYPE)(*childs[0]) > (TYPE)(*childs[1]) ? (TYPE)(*childs[0]) : (TYPE)(*childs[1]);
-		case OP_AND: return (TYPE)(*childs[0]) && (TYPE)(*childs[1]);
-		case OP_OR: return (TYPE)(*childs[0]) || (TYPE)(*childs[1]);
-		case OP_NOT: return !(TYPE)(*childs[0]);
-		case OP_EVAL: return (TYPE)(*childs[0]);
-		default: return 0;
+		case OP_ADD: return (TYPE)(childs[0] ? *childs[0] : TYPE()) + (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_SUB: return (TYPE)(childs[0] ? *childs[0] : TYPE()) - (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_MUL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) * (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_DIV: return (TYPE)(childs[0] ? *childs[0] : TYPE()) / (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_LT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_LTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) <= (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_GT: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_GTE: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_EQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) == (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_SEL: return (TYPE)(childs[0] ? *childs[0] : TYPE()) ? (TYPE)(childs[1] ? *childs[1] : TYPE()) : (TYPE)(childs[2] ? *childs[2] : TYPE());
+		case OP_NEG: return -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case OP_ABS: return (TYPE)(childs[0] ? *childs[0] : TYPE()) >= 0 ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : -(TYPE)(childs[0] ? *childs[0] : TYPE());
+		case OP_MIN: return (TYPE)(childs[0] ? *childs[0] : TYPE()) < (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_MAX: return (TYPE)(childs[0] ? *childs[0] : TYPE()) > (TYPE)(childs[1] ? *childs[1] : TYPE()) ? (TYPE)(childs[0] ? *childs[0] : TYPE()) : (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_AND: return (TYPE)(childs[0] ? *childs[0] : TYPE()) && (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_OR: return (TYPE)(childs[0] ? *childs[0] : TYPE()) || (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_NEQ: return (TYPE)(childs[0] ? *childs[0] : TYPE()) != (TYPE)(childs[1] ? *childs[1] : TYPE());
+		case OP_NOT: return !(TYPE)(childs[0] ? *childs[0] : TYPE());
 	}
 	return 0;
+}
+
+template <class TYPE>
+std::string Formula<TYPE>::GetSymbolicValue() const
+{
+	std::stringstream sstr;
+	switch(op)
+	{
+		case Formula<TYPE>::OP_NEG:
+			sstr << "-";
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_ABS:
+			sstr << "ABS(";
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << ")";
+			break;
+		case Formula<TYPE>::OP_NOT:
+			sstr << "!";
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_ADD:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " + ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_SUB:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " - ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_MUL:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " * ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_DIV:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " / ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_LT:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " < ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_LTE:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " <= ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_GT:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " > ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_GTE:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " >= ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_EQ:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " == ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_MIN:
+			sstr << "MIN(";
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << ", ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << ")";
+			break;
+		case Formula<TYPE>::OP_MAX:
+			sstr << "MAX(";
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << ", ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << ")";
+			break;
+		case Formula<TYPE>::OP_AND:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " & ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_OR:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " | ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_NEQ:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " != ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+		case Formula<TYPE>::OP_SEL:
+			if(childs[0])
+				sstr << childs[0]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " ? ";
+			if(childs[1])
+				sstr << childs[1]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			sstr << " : ";
+			if(childs[2])
+				sstr << childs[2]->GetSymbolicValue();
+			else
+				sstr << TYPE();
+			break;
+	}
+	return sstr.str();
 }
 
 //=============================================================================
@@ -771,91 +1264,91 @@ template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
 	if ( IsMutable() )
 		*storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<char>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoll(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoll(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoll(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoll(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoll(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoull(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoull(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoull(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoull(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtoull(value, 0, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtod(value, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<double>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = strtod(value, 0);
-	Notify();
+		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	NotifyListeners();
 	return *this;
 }
 
@@ -869,7 +1362,7 @@ template <> VariableBase& Variable<string>::operator = (bool value)
 {
 	if ( IsMutable() )
 		*storage = value ? "true" : "false";
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (long long value)
@@ -880,7 +1373,7 @@ template <> VariableBase& Variable<string>::operator = (long long value)
 		sstr << "0x" << hex << value;
 		*storage = sstr.str();
 	}
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (unsigned long long value)
@@ -891,7 +1384,7 @@ template <> VariableBase& Variable<string>::operator = (unsigned long long value
 		sstr << "0x" << hex << value;
 		*storage = sstr.str();
 	}
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (double value)
@@ -902,14 +1395,16 @@ template <> VariableBase& Variable<string>::operator = (double value)
 		sstr << value;
 		*storage = sstr.str();
 	}
-	Notify();
+	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
+	{
 		*storage = value;
-	Notify();
+	}
+	NotifyListeners();
 	return *this;
 }
 
@@ -1062,7 +1557,6 @@ Object::Object(const char *_name, Object *_parent, const char *_description)
 	, srv_imports()
 	, srv_exports()
 	, leaf_objects()
-	, setup_dependencies()
 {
 	if(_parent) _parent->Add(*this);
 	Simulator::simulator->Register(this);
@@ -1213,7 +1707,17 @@ void Object::Disconnect()
 	}
 }
 
-bool Object::Setup()
+bool Object::BeginSetup()
+{
+	return true;
+}
+
+bool Object::Setup(ServiceExportBase *srv_export)
+{
+	return true;
+}
+
+bool Object::EndSetup()
 {
 	return true;
 }
@@ -1230,16 +1734,6 @@ VariableBase& Object::operator [] (const char *name)
 	return *variable;
 }
 
-void Object::SetupDependsOn(ServiceImportBase& srv_import)
-{
-	return setup_dependencies.push_back(&srv_import);
-}
-
-list<ServiceImportBase *>& Object::GetSetupDependencies()
-{
-	return setup_dependencies;
-}
-
 Simulator *Object::GetSimulator() const
 {
 	return Simulator::simulator;
@@ -1250,179 +1744,46 @@ const char *Object::GetDescription() const
 	return description.c_str();
 }
 
-typedef struct
+void Object::GenerateLatexDocumentation(ostream& os, VariableBase::Type variable_type) const
 {
-	const char *searchFor;
-	const char *replaceBy;
-} Translation;
-
-Translation conversion_table[] = {
-		{"\n"}, {"\\\\\n"},
-		{"é"}, {"\\'e"},
-		{"è"}, {"\\`e"},
-		{"ê"}, {"\\^e"},
-		{"à"}, {"\\`a"},
-		{"#"}, {"\\#"},
-//	" ", "~",
-		{"_"}, {"\\_"},
-		{"\t"}, {"~~"},
-		{"{"}, {"$\\{$"},
-		{"}"}, {"$\\}$"},
-		{"&"}, {"\\&"},
-		{"--"}, {"{-}{-}"},
-		{"<<"}, {"<}\\texttt{<"},
-		{">>"}, {">}\\texttt{>"},
-		{"<"}, {"$<$"},
-		{">"}, {"$>$"},
-		{"%"}, {"\\%"},
-		{"//(1)"}, {"\\ding{202}"},
-		{"//(2)"}, {"\\ding{203}"},
-		{"//(3)"}, {"\\ding{204}"},
-		{"//(4)"}, {"\\ding{205}"},
-		{"//(5)"}, {"\\ding{206}"},
-		{"//(6)"}, {"\\ding{207}"},
-		{"//(7)"}, {"\\ding{208}"},
-		{"//(8)"}, {"\\ding{209}"},
-		{"//(9)"}, {"\\ding{210}"},
-		{"/*(1)*/"}, {"\\ding{202}"},
-		{"/*(2)*/"}, {"\\ding{203}"},
-		{"/*(3)*/"}, {"\\ding{204}"},
-		{"/*(4)*/"}, {"\\ding{205}"},
-		{"/*(5)*/"}, {"\\ding{206}"},
-		{"/*(6)*/"}, {"\\ding{207}"},
-		{"/*(7)*/"}, {"\\ding{208}"},
-		{"/*(8)*/"}, {"\\ding{209}"},
-		{"/*(9)*/"}, {"\\ding{210}"}
-};
-
-std::string string_to_latex(const char *s, unsigned int cut = 0, const char *style = 0)
-{
-	std::string out;
-	unsigned int col = 1;
-	
-	if(style)
-	{
-		out += "\\";
-		out += style;
-		out += "{";
-	}
-	
-	while(*s)
-	{
-		unsigned int i;
-		bool found = false;
-		
-		bool can_cut = (*s == ' ') || (strncmp(s, "::", 2) == 0) || (*s == '/') || (*s == '_') || (*s == '-') || (*s == '.') || (*s == '[');
-		
-		for(i = 0; i < sizeof(conversion_table)/sizeof(conversion_table[0]); i++)
-		{
-			int length = strlen(conversion_table[i].searchFor);
-			if(strncmp(s, conversion_table[i].searchFor, length) == 0)
-			{
-				out += conversion_table[i].replaceBy;
-				s += length;
-				col += length;
-
-				if(cut)
-				{
-					if(col > cut && can_cut)
-					{
-						if(style) out += "}";
-						out += " \\newline$\\hookrightarrow$";
-						if(style)
-						{
-							out += "\\";
-							out += style;
-							out += "{";
-						}
-						col = 1;
-					}
-				}
-				found = true;
-			}
-		}
-		
-		if(!found)
-		{
-			out += *s;
-			s++;
-			col++;
-			if(cut)
-			{
-				if(col > cut && can_cut)
-				{
-					if(style) out += "}";
-					out += " \\newline$\\hookrightarrow$";
-					if(style)
-					{
-						out += "\\";
-						out += style;
-						out += "{";
-					}
-					col = 1;
-				}
-			}
-		}
-	}
-	
-	if(style)
-	{
-		out += "}";
-	}
-	return out;
-}
-
-void Object::GenerateLatexDocumentation(ostream& os) const
-{
-	os << "\\multicolumn{2}{|l|}{\\textbf{\\Large " << string_to_latex(GetName()) << "}}\\\\" << std::endl;
-	os << "\\hline" << std::endl;
-	if(!description.empty())
-	{
-		os << "\\multicolumn{2}{|l|}{\\textbf{Description:} " << string_to_latex(GetDescription()) << "}\\\\" << std::endl;
-		os << "\\hline" << std::endl;
-	}
+	bool header_printed = false;
 	
 	list<VariableBase *>::const_iterator variable_iter;
 	
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
-		if((*variable_iter)->IsVisible())
+		VariableBase *variable = *variable_iter;
+		
+		if((variable->GetType() == variable_type) && variable->IsVisible())
 		{
-			os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Name:} " << string_to_latex((*variable_iter)->GetName(), 26, "texttt") << "} & \\multicolumn{1}{p{7.5cm}|}{\\textbf{Type:} " << string_to_latex((*variable_iter)->GetDataTypeName(), 36, "texttt") << "}\\\\" << std::endl;
-			os << "\\multicolumn{1}{|p{7.5cm}}{\\textbf{Default:} " << string_to_latex(((string) *(*variable_iter)).c_str(), 24, "texttt") << "} &";
-			
-			if((*variable_iter)->HasEnumeratedValues())
+			if(!header_printed)
 			{
-				os << " \\multicolumn{1}{p{7.5cm}|}{\\textbf{Valid:} ";
-				
-				std::vector<string> enumerated_values;
-				(*variable_iter)->GetEnumeratedValues(enumerated_values);
-				std::vector<string>::const_iterator enumerated_values_iter;
-				for(enumerated_values_iter = enumerated_values.begin(); enumerated_values_iter != enumerated_values.end(); enumerated_values_iter++)
-				{
-					if(enumerated_values_iter != enumerated_values.begin())
-					{
-						os << ",~";
-					}
-					os << string_to_latex((*enumerated_values_iter).c_str(), 0, "texttt");
-				}
-				os << "}\\\\" << std::endl;
+				os << "\\multicolumn{2}{|l|}{\\textbf{\\Large " << string_to_latex(GetName()) << "}}\\\\" << std::endl;
+				os << "\\hline" << std::endl;
+				header_printed = true;
 			}
-			else
-			{
-				os << " \\multicolumn{1}{p{7.5cm}|}{}\\\\" << std::endl;
-			}
-			
-			os << "\\multicolumn{2}{|l|}{}\\\\" << std::endl;
-			os << "\\multicolumn{2}{|p{15cm}|}{\\textbf{Description:} \\newline " << string_to_latex((*variable_iter)->GetDescription()) << ".}\\\\" << std::endl;
-			os << "\\hline" << std::endl;
+			variable->GenerateLatexDocumentation(os);
 		}
 	}
+	if(header_printed) os << "\\hline" << std::endl;
 }
 
 void Object::Stop(int exit_status)
 {
 	Simulator::simulator->Stop(this, exit_status);
+}
+
+void Object::SetDescription(const char *_description)
+{
+	description = _description;
+}
+
+//=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+ServiceInterface::~ServiceInterface()
+{
 }
 
 //=============================================================================
@@ -1454,7 +1815,8 @@ const char *ServiceImportBase::GetName() const
 
 ServiceExportBase::ServiceExportBase(const char *_name, Object *_owner) :
 	name(string(_owner->GetName()) + string(".") + string(_name)),
-	owner(_owner)
+	owner(_owner),
+	setup_dependencies()
 {
 	_owner->Add(*this);
 	Simulator::simulator->Register(this);
@@ -1469,6 +1831,16 @@ ServiceExportBase::~ServiceExportBase()
 const char *ServiceExportBase::GetName() const
 {
 	return name.c_str();
+}
+
+void ServiceExportBase::SetupDependsOn(ServiceImportBase& srv_import)
+{
+	return setup_dependencies.push_back(&srv_import);
+}
+
+list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()
+{
+	return setup_dependencies;
 }
 
 //=============================================================================
@@ -1549,12 +1921,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, description()
 	, version()
     , license()
+    , schematic()
 	, var_program_name(0)
 	, var_authors(0)
 	, var_copyright(0)
 	, var_description(0)
 	, var_version(0)
 	, var_license(0)
+	, var_schematic(0)
 	, param_enable_press_enter_at_exit(0)
 	, command_line_options()
 	, objects()
@@ -1574,7 +1948,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	command_line_options.push_back(CommandLineOption('w', "warn", "enable printing of kernel warnings"));
 	command_line_options.push_back(CommandLineOption('d', "doc", "enable printing a latex documentation", "Latex file"));
 	command_line_options.push_back(CommandLineOption('v', "version", "displays the program version information"));
-	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory", "path"));
+	command_line_options.push_back(CommandLineOption('p', "share-path", "the path that should be used for the share directory (absolute path)", "path"));
 	command_line_options.push_back(CommandLineOption('h', "help", "displays this help"));
 	
 	if(LoadBuiltInConfig)
@@ -1614,6 +1988,11 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	var_license->SetMutable(false);
 	var_license->SetVisible(false);
 	var_license->SetSerializable(false);
+
+	var_schematic = new Parameter<string>("schematic", 0, schematic, "path to simulator schematic");
+	var_schematic->SetMutable(false);
+	var_schematic->SetVisible(false);
+	var_schematic->SetSerializable(false);
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
@@ -1717,28 +2096,33 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		}
 	}
 
-	if(GetBinPath(argv[0], bin_dir, program_binary))
+	if ( !has_share_data_dir_hint )
 	{
-		//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-		//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
-
-		if(has_share_data_dir_hint ?
-				GetSharePath(bin_dir, shared_data_dir, shared_data_dir_hint) :
-				GetSharePath(bin_dir, shared_data_dir))
+		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+			//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+
+			if ( GetSharePath(bin_dir, shared_data_dir) )
+			{
+				//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+			}
+			else
+			{
+				warn_get_share_path = true;
+			}
 		}
 		else
 		{
+			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
 	}
 	else
 	{
-		warn_get_bin_path = true;
-		warn_get_share_path = true;
+		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
+			warn_get_share_path = true;
 	}
-
 	// parse command line arguments
 	// int state = 0;
 	// char **arg;
@@ -1884,7 +2268,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	if(cmd_args_dim > 0)
 	{
 		cmd_args = new string[cmd_args_dim];
-		param_cmd_args = new ParameterArray<string>("cmd-args", 0, cmd_args, cmd_args_dim);
+		param_cmd_args = new ParameterArray<string>("cmd-args", 0, cmd_args, cmd_args_dim, "command line arguments");
 		int i;
 		for(i = 0; *arg != 0; arg++, i++)
 		{
@@ -1893,8 +2277,14 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	}
 	else
 	{
-		param_cmd_args = new ParameterArray<string>("cmd-args", 0, 0, 0);
+		param_cmd_args = new ParameterArray<string>("cmd-args", 0, 0, 0, "command line arguments");
 	}
+	param_cmd_args->SetVisible(false);
+	param_cmd_args->SetMutable(false);
+	param_cmd_args->SetSerializable(false);
+	
+	// Setup logger
+	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 }
 
 Simulator::~Simulator()
@@ -1940,6 +2330,11 @@ Simulator::~Simulator()
 		delete var_license;
 	}
 	
+	if(var_schematic)
+	{
+		delete var_schematic;
+	}
+
 	if(var_description)
 	{
 		delete var_description;
@@ -2021,7 +2416,11 @@ void Simulator::Initialize(VariableBase *variable)
 	
 	if(set_var_iter != set_vars.end())
 	{
-		*variable = (*set_var_iter).second.c_str();
+		const char *value = (*set_var_iter).second.c_str();
+#ifdef DEBUG_VARIABLES
+		std::cerr << variable->GetName() << " <- \"" << value << "\"" << std::endl;
+#endif
+		*variable = value;
 		set_vars.erase(set_var_iter);
 	}
 }
@@ -2157,6 +2556,8 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			break;
 	}*/
 	
+	unsigned int max_name_column_width = 64;
+	unsigned int max_value_column_width = 32;
 	unsigned int max_variable_name_length = 0;
 	unsigned int max_variable_value_length = 0;
 	
@@ -2178,6 +2579,9 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 			if(variable_value_length > max_variable_value_length) max_variable_value_length = variable_value_length;
 		}
 	}
+	
+	if(max_variable_name_length < max_name_column_width) max_name_column_width = max_variable_name_length;
+	if(max_variable_value_length < max_value_column_width) max_value_column_width = max_variable_value_length;
 
 	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
 	{
@@ -2192,10 +2596,16 @@ void Simulator::DumpVariables(ostream &os, VariableBase::Type filter_type) {
 //			const char *dt = var->GetDataTypeName();
 			const char *desc = (*variable_iter).second->GetDescription();
 			
-			sstr_name.width(max_variable_name_length);
+			if(strlen(name) <= max_name_column_width)
+			{
+				sstr_name.width(max_name_column_width);
+			}
 			sstr_name.setf(std::ios::left);
 			sstr_name << name;
-			sstr_value.width(max_variable_value_length);
+			if(value.length() <= max_value_column_width)
+			{
+				sstr_value.width(max_value_column_width);
+			}
 			sstr_value.setf(std::ios::left);
 			sstr_value << value;
 			os << sstr_name.str() << " " << sstr_value.str();
@@ -2305,7 +2715,7 @@ bool Simulator::LoadXmlFormulas(const char *filename)
 
 struct MyVertexProperty
 {
-	Object *obj;
+	ServiceExportBase *srv_export;
 };
 
 typedef adjacency_list<vecS, vecS, directedS, MyVertexProperty> DependencyGraph;
@@ -2369,38 +2779,50 @@ Simulator::SetupStatus Simulator::Setup()
 		return ST_OK_DONT_START;
 	}
 
-	// Build a dependency graph of methods "Setup"
-	map<const char *, Object *, ltstr>::iterator object_iter;
-	map<Object *, unsigned int> id_lookup;
-	DependencyGraph dependency_graph(objects.size());
+	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
+	if(enable_warning)
+	{
+		for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++)
+		{
+			ServiceExportBase *srv_export = (*export_iter).second;
+			if(!srv_export->GetClient())
+			{
+				cerr << "WARNING! " << srv_export->GetName() << " is unused" << endl;
+			}
+		}
+	}
+
+	// Build a dependency graph of exports
+	map<ServiceExportBase *, unsigned int> id_lookup;
+	DependencyGraph dependency_graph(exports.size());
 	
 	unsigned int id = 0;
 
-	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++, id++)
+	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++, id++)
 	{
-//		cerr << "Object: " << (*object_iter).second->GetName() << endl;
-		dependency_graph[id].obj = (*object_iter).second;
-		id_lookup[(*object_iter).second] = id;
+//		cerr << "Export: " << (*export_iter).second->GetName() << endl;
+		dependency_graph[id].srv_export = (*export_iter).second;
+		id_lookup[(*export_iter).second] = id;
 	}
 
-	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	for(export_iter = exports.begin(); export_iter != exports.end(); export_iter++, id++)
 	{
-		list<ServiceImportBase *>& setup_dependencies = (*object_iter).second->GetSetupDependencies();
+		ServiceExportBase *srv_export = (*export_iter).second;
+		list<ServiceImportBase *>& setup_dependencies = srv_export->GetSetupDependencies();
 		list<ServiceImportBase *>::iterator import_iter;
 
 		for(import_iter = setup_dependencies.begin(); import_iter != setup_dependencies.end(); import_iter++)
 		{
-			Object *peer_object = (*import_iter)->GetService();
-			if(peer_object)
+			ServiceExportBase *peer_export = (*import_iter)->GetServiceExport();
+			if(peer_export)
 			{
-				add_edge(id_lookup[peer_object], id_lookup[(*object_iter).second], dependency_graph);
-//				cerr << peer_object->GetID() << ":" << peer_object->GetName() << "->" 
-//					<< (*object_iter).second->GetID() << ":" << (*object_iter).second->GetName() << endl;
+				add_edge(id_lookup[peer_export], id_lookup[(*export_iter).second], dependency_graph);
+//				cerr << peer_export->GetID() << ":" << peer_export->GetName() << "->" 
+//					<< (*export_iter).second->GetID() << ":" << (*export_iter).second->GetName() << endl;
 			}
 		}
-
 	}
-
+	
 // 	ofstream of("deps.dot");
 // 	boost::write_graphviz(of, dependency_graph);
 
@@ -2420,19 +2842,55 @@ Simulator::SetupStatus Simulator::Setup()
 	SetupOrder setup_order;
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
-	// Call methods "Setup" in a topological order
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
-	
 	SetupStatus status = ST_OK_TO_START;
-	list<Vertex>::iterator vertex_iter;
-	for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
+	
+	// Call all methods "BeginSetup()"
+	map<const char *, Object *, ltstr>::iterator object_iter;
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
-//		cerr << "Simulator:" <<  dependency_graph[*vertex_iter].obj->GetName() << "::Setup()" << endl;
-		if(!dependency_graph[*vertex_iter].obj->Setup())
+		Object *object = (*object_iter).second;
+		if(!object->BeginSetup())
 		{
-			cerr << "Simulator: " << dependency_graph[*vertex_iter].obj->GetName() << " setup failed" << endl;
+			cerr << "Simulator: " << object->GetName() << " beginning of setup failed" << endl;
 			status = ST_ERROR;
 			break;
+		}
+	}
+	
+	if(status != ST_ERROR)
+	{
+		// Call methods "Setup(export)" in a topological order
+		list<Vertex>::iterator vertex_iter;
+		for(vertex_iter = setup_order.begin(); vertex_iter != setup_order.end(); vertex_iter++)
+		{
+			ServiceExportBase *srv_export = dependency_graph[*vertex_iter].srv_export;
+			Object *object = srv_export->GetService();
+
+			if(object)
+			{
+//				cerr << "Simulator:" << object->GetName() << "::Setup(" << srv_export->GetName() << ")" << endl;
+				if(!object->Setup(srv_export))
+				{
+					cerr << "Simulator: " << srv_export->GetName() << " setup failed" << endl;
+					status = ST_ERROR;
+					break;
+				}
+			}
+		}
+	}
+
+	if(status != ST_ERROR)
+	{
+		// Call all methods "EndSetup()"
+		for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+		{
+			Object *object = (*object_iter).second;
+			if(!object->EndSetup())
+			{
+				cerr << "Simulator: " << object->GetName() << " end of setup failed" << endl;
+				status = ST_ERROR;
+				break;
+			}
 		}
 	}
 
@@ -2566,9 +3024,9 @@ void Simulator::GetFormulas(list<VariableBase *>& lst)
 	GetVariables(lst, VariableBase::VAR_FORMULA);
 }
 
-void Simulator::GetRootObjects(list<Object *>& lst)
+void Simulator::GetRootObjects(list<Object *>& lst) const
 {
-	map<const char *, Object *, ltstr>::iterator object_iter;
+	map<const char *, Object *, ltstr>::const_iterator object_iter;
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
@@ -2593,12 +3051,11 @@ void FindMyself()
 
 bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable_path) const
 {
-#if defined(linux)
+#if defined(linux) || defined(__APPLE_CC__)
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
 		char bin_path_buf[PATH_MAX + 1];
-		ssize_t bin_path_length;
 		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
 		if(bin_path_pointer == bin_path_buf)
 		{
@@ -2616,27 +3073,6 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 		out_executable_path = std::string(bin_path_buf);
 		return true;
 	}
-#elif defined(__APPLE_CC__)
-	Dl_info info;
-	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
-	{
-		char bin_path_buf[PATH_MAX + 1];
-//		ssize_t bin_path_length;
-		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
-		if(bin_path_pointer == bin_path_buf)
-		{
-			out_executable_path = std::string(bin_path_buf);
-			return true;
-		}
-	}
-//	uint32_t bin_path_buf_size = 0;
-//	_NSGetExecutablePath(0, &bin_path_buf_size);
-//	char bin_path_buf[bin_path_buf_size];
-//	if(_NSGetExecutablePath(bin_path_buf, &bin_path_buf_size) == 0)
-//	{
-//		out_executable_path = std::string(bin_path_buf);
-//		return true;
-//	}
 #endif
 	char *path_buf = getenv("PATH");
 	if(path_buf)
@@ -2714,36 +3150,40 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	return false;
 }
 
-bool Simulator::GetSharePath(const std::string& bin_dir,
-		std::string& out_share_dir,
-		const std::string& share_dir_relative_path) const
+/* bool Simulator::ResolvePath(const std::string& prefix_dir,
+		const std::string& suffix_dir,
+		std::string& out_dir) const
 {
-	std::string unresolved_shared_data_dir = bin_dir;
-	unresolved_shared_data_dir += '/';
-	unresolved_shared_data_dir += share_dir_relative_path;
-	char resolved_shared_data_dir_buf[PATH_MAX + 1];
+	std::string unresolved_dir = prefix_dir;
+	unresolved_dir += '/';
+	unresolved_dir += suffix_dir;
+	char resolved_dir_buf[PATH_MAX + 1];
 
 #if defined(linux) || defined(__APPLE_CC__)
-	if(realpath(unresolved_shared_data_dir.c_str(), resolved_shared_data_dir_buf))
+	if ( realpath(unresolved_dir.c_str(), 
+				resolved_dir_buf) )
 	{
-		out_share_dir = resolved_shared_data_dir_buf;
+		out_dir = resolved_dir_buf;
 		return true;
 	}
 #elif defined(WIN32)
-	DWORD length = GetFullPathName(unresolved_shared_data_dir.c_str(), PATH_MAX + 1, resolved_shared_data_dir_buf, 0);
+	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
+			PATH_MAX + 1, 
+			resolved_dir_buf, 
+			0);
 	if(length > 0)
 	{
-		resolved_shared_data_dir_buf[length] = 0;
-		out_share_dir = resolved_shared_data_dir_buf;
+		resolved_dir_buf[length] = 0;
+		out_dir = resolved_dir_buf;
 		return true;
 	}
 #endif
 	return false;
-}
+} */
 
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
-	return GetSharePath(bin_dir, out_share_dir, string(BIN_TO_SHARED_DATA_PATH));
+	return ResolvePath(bin_dir, string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
 }
 
 string Simulator::SearchSharedDataFile(const char *filename) const
@@ -2878,24 +3318,44 @@ void Simulator::SetVariable(const char *variable_name, double variable_value)
 void Simulator::GenerateLatexDocumentation(ostream& os) const
 {
 	map<const char *, Object *, ltstr>::const_iterator object_iter;
+	
+	os << "This documentation has been automatically generated from the simulator \\texttt{" << string_to_latex(program_name.c_str()) << "} version " << string_to_latex(version.c_str()) << " on " << string_to_latex(__DATE__) << "." << std::endl;
 
-	os << "\\section{Introduction}" << endl;
-	os << string_to_latex(description.c_str()) << endl;
+	os << "\\subsection{Introduction}" << endl;
+	os << string_to_latex(description.c_str()) << ".\\\\" << endl;
+	os << "Section \\ref{" << program_name << "_licensing} gives licensing informations about the simulator." << endl;
+	os << "Section \\ref{" << program_name << "_simulated_configuration} shows the set of modules and services that compose the simulator." << endl;
+	os << "Section \\ref{" << program_name << "_using} shows how to invoke the simulator at the command line prompt." << endl;
+	os << "Section \\ref{" << program_name << "_configuration} gives the simulator parameters." << endl;
+	os << "Section \\ref{" << program_name << "_statistics} gives the simulator statistic counters." << endl;
+	os << "Section \\ref{" << program_name << "_formulas} gives the simulator statistic formulas." << endl;
 
-	os << "\\section{Licensing}" << endl;
-	os << string_to_latex(program_name.c_str()) << " " << version << "\\\\" << endl;
+	os << "\\subsection{Licensing}" << endl;
+	os << "\\label{" << program_name << "_licensing}" << endl;
+	os << string_to_latex(program_name.c_str()) << " " << string_to_latex(version.c_str()) << "\\\\" << endl;
 	os << string_to_latex(copyright.c_str()) << "\\\\" << endl;
 	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << endl;
 	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << endl;
 	
-	os << "\\section{Simulated configuration}" << endl;
+	os << "\\subsection{Simulated configuration}" << endl;
+	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
 	
-	os << "\\noindent The simulator is composed of the following modules and services:" << endl;
+	if(!schematic.empty())
+	{
+		os << "\\begin{figure}[!ht]" << endl;
+		os << "\t\\begin{center}" << endl;
+		os << "\t\t\\includegraphics[width=\\textwidth]{" << schematic << "}" << endl;
+		os << "\t\\end{center}" << endl;
+		os << "\t\\caption{" << program_name << " simulator schematic.}" << endl;
+		os << "\\end{figure}" << endl;
+	}
+	
+	os << "\\noindent The " << string_to_latex(program_name.c_str()) << " simulator is composed of the following modules and services:" << endl;
 	os << "\\begin{itemize}\\addtolength{\\itemsep}{-0.40\\baselineskip}" << endl;
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
 		const char *obj_description = (*object_iter).second->GetDescription();
-		os << "\\item " << string_to_latex((*object_iter).second->GetName());
+		os << "\\item \\textbf{" << string_to_latex((*object_iter).second->GetName()) << "}";
 		if(*obj_description != 0) // not empty description
 		{
 			os << ": " << string_to_latex(obj_description);
@@ -2904,7 +3364,10 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	}
 	os << "\\end{itemize}" << endl;
 
-	os << "\\section{Using " << program_name << "}" << endl;
+	os << "\\subsection{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
+	os << "\\label{" << program_name << "_using}" << endl;
+	os << "The " << string_to_latex(program_name.c_str()) << " simulator has the following command line options:\\\\" << std::endl;
+	os << "~\\\\" << std::endl;
 	os << "\\noindent Usage: \\texttt{" << program_binary << " [<options>] [...]}" << endl << endl;
 	os << "\\noindent Options:" << endl;
 	os << "\\begin{itemize}" << endl;
@@ -2931,28 +3394,134 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	// 	std::stringstream sstr_version;
 // 	Version(sstr_version);
-// 	os << "\\section{Version}" << std::endl;
+// 	os << "\\subsection{Version}" << std::endl;
 // 	os << string_to_latex(sstr_version.str().c_str()) << std::endl;
 // 	
 // 	std::stringstream sstr_help;
 // 	Help(sstr_help);
-// 	os << "\\section{Usage}" << std::endl;
+// 	os << "\\subsection{Usage}" << std::endl;
 // 	os << string_to_latex(sstr_help.str().c_str(), 80, "texttt") << std::endl;
 
-	os << "\\section{Configuration}" << std::endl;
+	std::map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
+	bool header_printed = false;
+	
+	//----------------------- Configuration -----------------------
+	os << "\\subsection{Configuration}" << std::endl;
+	os << "\\label{" << program_name << "_configuration}" << endl;
+	os << "Simulator configuration (see below) can be modified using command line Options \\texttt{--set $<$param=value$>$} or \\texttt{--config $<$config file$>$}.\\\\" << std::endl;
+	os << "~\\\\" << std::endl;
+	
 	os << "\\tablehead{\\hline}" << std::endl;
 	os << "\\tabletail{\\hline}" << std::endl;
 	os << "\\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}" << std::endl;
-	os << "\\hline" << std::endl;
+	//os << "\\hline" << std::endl;
+
+	header_printed = false;
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *variable = (*variable_iter).second;
+		if((variable->GetType() == VariableBase::VAR_PARAMETER) && !variable->GetOwner() && variable->IsVisible())
+		{
+			if(!header_printed)
+			{
+				os << "\\multicolumn{2}{|l|}{\\textbf{\\Large Global}}\\\\" << std::endl;
+				os << "\\hline" << std::endl;
+				header_printed = true;
+			}
+			variable->GenerateLatexDocumentation(os);
+		}
+	}
+
+	if(header_printed) os << "\\hline" << std::endl;
 
 	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
 	{
-		(*object_iter).second->GenerateLatexDocumentation(os);
-		os << "\\hline" << std::endl;
+		(*object_iter).second->GenerateLatexDocumentation(os, VariableBase::VAR_PARAMETER);
 	}
 
-	os << "\\hline" << std::endl;
+	//os << "\\hline" << std::endl;
 	os << "\\end{supertabular}" << std::endl;
+
+	//----------------------- Statistics -----------------------
+	os << "\\subsection{Statistics}" << std::endl;
+	os << "\\label{" << program_name << "_statistics}" << endl;
+	os << "Simulation statistic counters are listed below:\\\\" << std::endl;
+	os << "~\\\\" << std::endl;
+	os << "\\tablehead{\\hline}" << std::endl;
+	os << "\\tabletail{\\hline}" << std::endl;
+	os << "\\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}" << std::endl;
+	//os << "\\hline" << std::endl;
+
+	header_printed = false;
+	// Global statistics
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *variable = (*variable_iter).second;
+		if((variable->GetType() == VariableBase::VAR_STATISTIC) && !variable->GetOwner() && variable->IsVisible())
+		{
+			if(!header_printed)
+			{
+				os << "\\multicolumn{2}{|l|}{\\textbf{\\Large Global}}\\\\" << std::endl;
+				os << "\\hline" << std::endl;
+				header_printed = true;
+			}
+			variable->GenerateLatexDocumentation(os);
+		}
+	}
+
+	if(header_printed) os << "\\hline" << std::endl;
+
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		(*object_iter).second->GenerateLatexDocumentation(os, VariableBase::VAR_STATISTIC);
+	}
+
+	//os << "\\hline" << std::endl;
+	os << "\\end{supertabular}" << std::endl;
+
+	//----------------------- Formulas -----------------------
+	os << "\\subsection{Formulas}" << std::endl;
+	os << "\\label{" << program_name << "_formulas}" << endl;
+	os << "Simulation statistic formulas are listed below:\\\\" << std::endl;
+	os << "~\\\\" << std::endl;
+	os << "\\tablehead{\\hline}" << std::endl;
+	os << "\\tabletail{\\hline}" << std::endl;
+	os << "\\begin{supertabular}{|p{7.5cm}|p{7.5cm}|}" << std::endl;
+	//os << "\\hline" << std::endl;
+
+	// Global formulas
+	header_printed = false;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		VariableBase *variable = (*variable_iter).second;
+		if((variable->GetType() == VariableBase::VAR_FORMULA) && !variable->GetOwner() && variable->IsVisible())
+		{
+			if(!header_printed)
+			{
+				os << "\\multicolumn{2}{|l|}{\\textbf{\\Large Global}}\\\\" << std::endl;
+				os << "\\hline" << std::endl;
+				header_printed = true;
+			}
+			variable->GenerateLatexDocumentation(os);
+		}
+	}
+
+	if(header_printed) os << "\\hline" << std::endl;
+
+	for(object_iter = objects.begin(); object_iter != objects.end(); object_iter++)
+	{
+		(*object_iter).second->GenerateLatexDocumentation(os, VariableBase::VAR_FORMULA);
+	}
+
+	//os << "\\hline" << std::endl;
+	os << "\\end{supertabular}" << std::endl;
+}
+
+bool Simulator::IsWarningEnabled() const
+{
+	return enable_warning;
 }
 
 } // end of namespace service

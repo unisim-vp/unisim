@@ -44,11 +44,13 @@ namespace dma {
 
 template <class PHYSICAL_ADDR>
 Buffer<PHYSICAL_ADDR> ::
-Buffer() : init_source_addr(0),
-					 init_destination_addr(0),
-					 transfer_size(0),
-					 transferred_size(0),
-					 buffer_size(0) {
+Buffer()
+	: buffer_size(0)
+	, init_source_addr(0)
+	, init_destination_addr(0)
+	, transfer_size(0)
+	, transferred_size(0)
+{
 }
 
 template <class PHYSICAL_ADDR>

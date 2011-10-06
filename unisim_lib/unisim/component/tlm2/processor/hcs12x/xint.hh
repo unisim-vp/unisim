@@ -81,6 +81,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
+using unisim::kernel::service::ServiceExportBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -166,7 +167,11 @@ public:
 	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 	virtual void Reset();
-	virtual bool Setup();
+
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
@@ -270,7 +275,7 @@ public:
 	address_t get_ECT_Ch7_Vector() { return ((address_t) getIVBR() << 8) + 0xE0 ; } // Enhanced Capture Timer Channel 7
 	address_t get_ECT_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xDE ; } // Enhanced capture Timer Overflow
 	address_t get_PAcc_A_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xDC ; } // Pulse Accumulator A Overflow
-	address_t get_PAcc_Input_edge_Vector() { return ((address_t) getIVBR() << 8) + 0xDA ; } // Pulse Accumulator Input Edge
+	address_t get_PAcc_Input_edge_Vector() { return ((address_t) getIVBR() << 8) + 0xDA ; } // Pulse Accumulator A Input Edge
 	address_t get_SPI0_Vector() { return ((address_t) getIVBR() << 8) + 0xD8 ; }
 	address_t get_SCI0_Vector() { return ((address_t) getIVBR() << 8) + 0xD6 ; }
 	address_t get_SCI1_Vector() { return ((address_t) getIVBR() << 8) + 0xD4 ; }

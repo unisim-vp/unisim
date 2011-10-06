@@ -71,36 +71,12 @@ const bool MEMORY_DEBUG = false;
 const uint32_t FSB_MAX_DATA_SIZE = 32;        // in bytes
 const uint32_t FSB_NUM_PROCS = 1;
 typedef unisim::component::cxx::processor::tms320::TMS320VC33_Config CPU_CONFIG;
-int return_status = 0;
-bool simulating;
 
-class TMS320C3X : public unisim::component::cxx::processor::tms320::CPU<CPU_CONFIG, CPU_DEBUG>
-{
-public:
-	TMS320C3X(const char *name, Object *parent = 0);
-	virtual ~TMS320C3X();
-	virtual void Stop(int ret);
-};
-
-TMS320C3X::TMS320C3X(const char *name, Object *parent)
-	: unisim::kernel::service::Object(name, parent)
-	, unisim::component::cxx::processor::tms320::CPU<CPU_CONFIG, CPU_DEBUG>(name, parent)
-{
-}
-
-TMS320C3X::~TMS320C3X()
-{
-}
-
-void TMS320C3X::Stop(int ret)
-{
-	return_status = ret;
-	simulating = false;
-}
 
 using namespace std;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Object;
 
 
 class Simulator : public unisim::kernel::service::Simulator
@@ -109,6 +85,8 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
+	virtual void Stop(Object *object, int _exit_status);
+	int GetExitStatus() const;
 protected:
 private:
 
@@ -116,7 +94,7 @@ private:
 	//===                       Constants definitions                       ===
 	//=========================================================================
 
-	typedef TMS320C3X CPU;
+	typedef unisim::component::cxx::processor::tms320::CPU<CPU_CONFIG, CPU_DEBUG> CPU;
 	typedef unisim::service::loader::coff_loader::CoffLoader<uint64_t> LOADER;
 	typedef unisim::component::cxx::memory::ram::Memory<uint64_t> MEMORY;
 	typedef unisim::service::debug::gdb_server::GDBServer<uint64_t> GDB_SERVER;
@@ -141,31 +119,38 @@ private:
 	INLINE_DEBUGGER *inline_debugger;
 
 	
-	bool use_gdb_server;
-	bool use_inline_debugger;
-	Parameter<bool> param_use_gdb_server;
-	Parameter<bool> param_use_inline_debugger;
+	bool enable_gdb_server;
+	bool enable_inline_debugger;
+	Parameter<bool> param_enable_gdb_server;
+	Parameter<bool> param_enable_inline_debugger;
 
+	int exit_status;
+	bool simulating;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 };
 
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	simulating = false;
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
 }
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, memory(0)
+	, host_time(0)
+	, loader(0)
+	, rom_loader(0)
+	, ti_c_io(0)
 	, gdb_server(0)
 	, inline_debugger(0)
-	, host_time(0)
-	, use_gdb_server(false)
-	, use_inline_debugger(false)
-	, param_use_gdb_server("use-gdb-server", 0, use_gdb_server, "Enable/Disable GDB server instantiation")
-	, param_use_inline_debugger("use-inline-debugger", 0, use_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, enable_gdb_server(false)
+	, enable_inline_debugger(false)
+	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
+	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
+	, exit_status(0)
+	, simulating(false)
 {
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -179,9 +164,9 @@ Simulator::Simulator(int argc, char **argv)
 	//  - Host Time
 	host_time = new HOST_TIME("host-time");
 	//  - GDB server
-	gdb_server = use_gdb_server ? new GDB_SERVER("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDB_SERVER("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = use_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
+	inline_debugger = enable_inline_debugger ? new INLINE_DEBUGGER("inline-debugger") : 0;
 	//  - COFF loaders
 	loader = new LOADER("loader");
 	rom_loader = new LOADER("rom-loader");
@@ -189,7 +174,11 @@ Simulator::Simulator(int argc, char **argv)
 	ti_c_io = new TI_C_IO("ti-c-io");
 
 	VariableBase *program = FindVariable("cmd-args[0]");
-	(*loader)["filename"] = *program;
+	std::string program_name = std::string(*program);
+	if(!program_name.empty())
+	{
+		(*loader)["filename"] = program_name.c_str();
+	}
 
 	//=========================================================================
 	//===                       Components/Services connection              ===
@@ -198,13 +187,13 @@ Simulator::Simulator(int argc, char **argv)
 	// Connect the CPU to the memory
 	cpu->memory_import >> memory->memory_export;
 	cpu->ti_c_io_import >> ti_c_io->ti_c_io_export;
-	cpu->loader_import >> loader->loader_export;
 	ti_c_io->memory_import >> cpu->memory_export;
 	ti_c_io->memory_injection_import >> cpu->memory_injection_export;
 	ti_c_io->registers_import >> cpu->registers_export;
 	ti_c_io->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
+	ti_c_io->blob_import >> loader->blob_export;
 
-	if(use_inline_debugger)
+	if(enable_inline_debugger)
 	{
 		cpu->debug_control_import >> inline_debugger->debug_control_export;
 		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
@@ -213,7 +202,7 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->memory_import >> cpu->memory_export;
 		inline_debugger->registers_import >> cpu->registers_export;
 	}
-	else if(use_gdb_server)
+	else if(enable_gdb_server)
 	{
 		// Connect gdb-server to CPU
 		cpu->debug_control_import >> gdb_server->debug_control_export;
@@ -230,9 +219,9 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
-	if(use_inline_debugger)
+	if(enable_inline_debugger)
 	{
-		inline_debugger->symbol_table_lookup_import >> 
+		*inline_debugger->symbol_table_lookup_import[0] >> 
 			loader->symbol_table_lookup_export;
 	}
 }
@@ -263,15 +252,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("rom-loader.filename", "c31boot.out");
 	simulator->SetVariable("cpu.mimic-dev-board", "true");
 	simulator->SetVariable("ti-c-io.enable", "true");
+	
+	// inline-debugger
+	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
 void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	void (*prev_sig_int_handler)(int);
+	void (*prev_sig_int_handler)(int) = 0;
 
-	if(!use_inline_debugger)
+	if(!enable_inline_debugger)
 		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
 
 	try
@@ -288,7 +280,7 @@ void Simulator::Run()
 		cerr << e.what() << endl;
 	}
 
-	if(!use_inline_debugger)
+	if(!enable_inline_debugger)
 		signal(SIGINT, prev_sig_int_handler);
 
 	cerr << "Simulation finished" << endl;
@@ -317,6 +309,22 @@ void Simulator::Run()
 	cerr << "Insn cache miss rate: " << ((double) *stat_insn_cache_misses / (double) ((uint64_t) *stat_insn_cache_hits + (uint64_t) *stat_insn_cache_misses)) << endl;
 }
 
+void Simulator::Stop(Object *object, int _exit_status)
+{
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	simulating = false;
+}
+
+int Simulator::GetExitStatus() const
+{
+	return exit_status;
+}
+
 int main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -331,16 +339,22 @@ int main(int argc, char *argv[])
 #endif
 	Simulator *simulator = new Simulator(argc, argv);
 
-	if(simulator->Setup())
+	switch(simulator->Setup())
 	{
-		cerr << "Starting simulation at system privilege level" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_DONT_START:
+			break;
+		case unisim::kernel::service::Simulator::ST_WARNING:
+			cerr << "Some warnings occurred during setup" << endl;
+		case unisim::kernel::service::Simulator::ST_OK_TO_START:
+			cerr << "Starting simulation" << endl;
+			simulator->Run();
+			break;
+		case unisim::kernel::service::Simulator::ST_ERROR:
+			cerr << "Can't start simulation because of previous errors" << endl;
+			break;
+	}
 
-		simulator->Run();
-	}
-	else
-	{
-		cerr << "Can't start simulation because of previous errors" << endl;
-	}
+	int exit_status = simulator->GetExitStatus();
 
 	if(simulator) delete simulator;
 #ifdef WIN32
@@ -348,5 +362,5 @@ int main(int argc, char *argv[])
 	WSACleanup();
 #endif
 
-	return 0;
+	return exit_status;
 }

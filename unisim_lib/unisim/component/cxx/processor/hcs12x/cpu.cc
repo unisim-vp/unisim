@@ -65,30 +65,48 @@ CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
 	Client<DebugControl<service_address_t> >(name, parent),
 	Client<MemoryAccessReporting<service_address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
 	Service<MemoryAccessReportingControl>(name, parent),
 	Service<Disassembly<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Client<SymbolTableLookup<service_address_t> >(name, parent),
-
-//	logger(*this),
-
+	Client<TrapReporting>(name, parent),
+	queueCurrentAddress(0xFFFE),
+	queueFirst(-1),
+	queueNElement(0),
 	disasm_export("disasm_export", this),
 	registers_export("registers_export", this),
-	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	memory_export("memory_export", this),
+	memory_access_reporting_control_export("memory_access_reporting_control_export", this),
 	debug_control_import("debug_control_import", this),
 	memory_access_reporting_import("memory_access_reporting_import", this),
 	memory_import("memory_import", this),
-	trap_reporting_import("trap_reproting_import", this),
 	symbol_table_lookup_import("symbol-table-lookup-import",  this),
-
-	instruction_counter(0),
-	queueFirst(-1), queueNElement(0), queueCurrentAddress(0xFFFE),
-	bus_cycle(0),
+	logger(0),
+	trap_reporting_import("trap_reporting_import", this),
 	cpu_cycle(0),
+	bus_cycle(0),
+	verbose_all(false),
+	param_verbose_all("verbose-all", this, verbose_all),
+	verbose_setup(false),
+	param_verbose_setup("verbose-setup", this, verbose_setup),
+	verbose_step(false),
+	param_verbose_step("verbose-step", this, verbose_step),
+	verbose_dump_regs_start(false),
+	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
+	verbose_dump_regs_end(false),
+	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
+	verbose_exception(false),
+	param_verbose_exception("verbose-exception", this, verbose_exception),
+	trace_enable(false),
+	param_trace_enable("trace-enable", this, trace_enable),
+	requires_memory_access_reporting(true),
+	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
+	requires_finished_instruction_reporting(true),
+	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
+	debug_enabled(false),
+	param_debug_enabled("debug-enabled", this, debug_enabled),
 	asynchronous_interrupt(false),
 	maskableIbit_interrupt(false),
 	nonMaskableXIRQ_interrupt(false),
@@ -98,33 +116,30 @@ CPU::CPU(const char *name, Object *parent):
 	reset(false),
 	syscall_interrupt(false),
 	spurious_interrupt(false),
-
-	requires_memory_access_reporting(true),
-	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
-	requires_finished_instruction_reporting(true),
-	param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting),
-
-	verbose_all(false),
-	param_verbose_all("verbose-all", this, verbose_all),
-	verbose_exception(false),
-	param_verbose_exception("verbose-exception", this, verbose_exception),
-	verbose_setup(false),
-	param_verbose_setup("verbose-setup", this, verbose_setup),
-	verbose_step(false),
-	param_verbose_step("verbose-step", this, verbose_step),
-	verbose_dump_regs_start(false),
-	param_verbose_dump_regs_start("verbose-dump-regs-start", this, verbose_dump_regs_start),
-	verbose_dump_regs_end(false),
-	param_verbose_dump_regs_end("verbose-dump-regs-end", this, verbose_dump_regs_end),
-	trace_enable(false),
-	param_trace_enable("trace-enable", this, trace_enable),
-
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
+	instruction_counter(0),
+	cycles_counter(0),
+	data_load_counter(0),
+	data_store_counter(0),
 	max_inst((uint64_t) -1),
-	param_max_inst("max-inst",this,max_inst)
+	stat_instruction_counter("instruction-counter", this, instruction_counter),
+	stat_cycles_counter("cycles-counter", this, cycles_counter),
+	stat_load_counter("data-load-counter", this, data_load_counter),
+	stat_store_counter("data-store-counter", this, data_store_counter),
+	param_max_inst("max-inst",this,max_inst),
+
+	trap_on_instruction_counter(-1),
+	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter)
+
 
 {
+	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_cycles_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
     ccr = new CCR_t();
 
     eblb = new EBLB(this);
@@ -173,7 +188,7 @@ void CPU::Reset()
 	lastPC = 0;
 
 	ccr->reset();
-	for (char i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
+	for (unsigned int i=0; i < QUEUE_SIZE; i++) queueBuffer[i] = 0;
 }
 
 //=====================================================================
@@ -312,6 +327,12 @@ uint8_t CPU::Step()
 
 			op->disasm(disasm_str);
 
+			std::cerr <<  DebugInfo << GetSimulatedTime() << " ms: "
+					<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
+					<< GetFunctionFriendlyName(current_pc) << " : "
+					<< disasm_str.str()
+					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
+
 			ctstr << op->GetEncoding();
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
 				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
@@ -338,12 +359,17 @@ uint8_t CPU::Step()
 
 		opCycles = op->getCycles();
 
+		cycles_counter += opCycles;
+
 		VerboseDumpRegsEnd();
 
 		instruction_counter++;
 
 		RegistersInfo();
 
+		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
+			trap_reporting_import->ReportTrap();
+		}
 
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import)
@@ -830,6 +856,7 @@ T EBLB::getter(uint8_t rr) // getter function
 		} break;
 		default:;
 	}
+	throw std::runtime_error("Internal error");
 }
 
 template <class T>
@@ -843,8 +870,8 @@ void EBLB::exchange(uint8_t rrSrc, uint8_t rrDst) {
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool CPU::Setup()
-{
+bool CPU::BeginSetup() {
+
 	/* check verbose settings */
 	if(debug_enabled && verbose_all) {
 		verbose_setup = true;
@@ -883,41 +910,6 @@ bool CPU::Setup()
 
 	char buf[80];
 
-/*
-	sprintf(buf, "%s.A", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
-
-	sprintf(buf, "%s.B", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
-
-	sprintf(buf, "%s.D", GetName());
-	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
-
-	sprintf(buf, "%s.X", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
-
-	sprintf(buf, "%s.Y", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
-
-	sprintf(buf, "%s.SP", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
-
-	sprintf(buf, "%s.PC", GetName());
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
-
-	sprintf(buf, "%s.%s", GetName(), ccr->GetName());
-	registers_registry[buf] = ccr;
-
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	sprintf(buf, "%s.%s", GetName(), ccrl->GetName());
-	registers_registry[buf] = ccrl;
-
-
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	sprintf(buf, "%s.%s", GetName(), ccrh->GetName());
-	registers_registry[buf] = ccrh;
-*/
-
 	sprintf(buf, "A");
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
 
@@ -951,13 +943,20 @@ bool CPU::Setup()
 	sprintf(buf, "%s", ccrh->GetName());
 	registers_registry[buf] = ccrh;
 
+	return true;
+}
+
+bool CPU::Setup(ServiceExportBase *srv_export) {
 
 	if(!memory_access_reporting_import) {
 		requires_memory_access_reporting = false;
 		requires_finished_instruction_reporting = false;
 	}
 
+	return true;
+}
 
+bool CPU::EndSetup() {
 	return true;
 }
 
@@ -1054,6 +1053,10 @@ bool CPU::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 
 bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
+	if (size == 0) {
+		return true;
+	}
+
 	if (memory_import) {
 		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
 	}

@@ -35,6 +35,7 @@
 
 \usepackage[normalem]{ulem} % normalem garantit que \em reste l'italique
 \usepackage{rotating}
+\usepackage{verbatim} 
 
 %------------------------------
 %---- la taille de la page ----
@@ -199,3 +200,5 @@
 %        } 
 %%       \vspace{6mm} 
 %} 
+
+\newenvironment{script}{\endgraf\footnotesize\verbatim}{\endverbatim}

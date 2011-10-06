@@ -726,7 +726,6 @@ rtc.execute = {
 	 * (SP)+2 => SP
 	 */
 
-	 uint8_t hByte, lByte;
 	 physical_address_t addr;
 	 
 	 addr = cpu->getRegSP();
@@ -782,7 +781,6 @@ Bit 5 selects branch on zero (DBEQ – 0) or not zero (DBNE – 1) versions,
 and bit 4 is the sign bit of the 9-bit relative offset. 
 Bits 7 and 6 would be 0:0 for DBNE.
 */
-	uint8_t abdxys = (b765 << 5) | (b4 << 4) | (b3 << 3) | b210;
 	
 	switch (b765) {
 		case 0x00: mnem = "DBEQ"; break;

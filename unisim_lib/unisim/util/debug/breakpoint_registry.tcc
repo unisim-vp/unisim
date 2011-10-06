@@ -90,6 +90,12 @@ BreakpointRegistry<ADDRESS>::BreakpointRegistry() :
 template <class ADDRESS>
 BreakpointRegistry<ADDRESS>::~BreakpointRegistry()
 {
+	Reset();
+}
+
+template <class ADDRESS>
+void BreakpointRegistry<ADDRESS>::Reset()
+{
 	uint32_t index;
 	for(index = 0; index < NUM_HASH_TABLE_ENTRIES; index++)
 	{

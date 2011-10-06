@@ -1,12 +1,12 @@
 cmake_minimum_required ( VERSION 2.8 )
 
 set ( SIM_VERSION_MAJOR 0 )
-set ( SIM_VERSION_MINOR 4 )
-set ( SIM_VERSION_PATCH 2 )
+set ( SIM_VERSION_MINOR 6 )
+set ( SIM_VERSION_PATCH 1 )
 set ( SIM_VERSION 
 	"${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}" )
 set ( SIM_SOVERSION ${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR} ) 
-set ( SIM_VERSION_CODENAME "Barcino" )
+set ( SIM_VERSION_CODENAME "Triumphalis Tarraco" )
 set ( SIM_AUTHOR "Daniel Gracia Perez (daniel.gracia-perez@cea.fr)" )
 set ( SIM_PROGRAM_NAME "UNISIM ARMEmu" )
 set ( SIM_COPYRIGHT "Copyright (C) 2007-2010, Commissariat a l'Energie Atomique" )
@@ -30,8 +30,18 @@ if ( UNIX AND NOT APPLE )
 	message ( "**** Release = ${DISTRIB_ID}${DISTRIB_RELEASE}" )
 endif ( UNIX AND NOT APPLE )
 
-option ( BUILD_ARMEMU_PYTHON_MODULE "Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1." )
-option ( BUILD_ARMEMU_POWER_SUPPORT "Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required.")
+option ( 
+	BUILD_SIM_PIM_SUPPORT 
+	"Set this option if you want to compile the simulator for use with unisim-workbench."
+	)
+option ( 
+	BUILD_ARMEMU_PYTHON_MODULE 
+	"Set this option if you want to compile a module of the unisim armemu simulator. Note that it has been developed under python3.1."
+	)
+option ( 
+	BUILD_ARMEMU_POWER_SUPPORT 
+	"Set this option if you want to compile the unisim armemu simulator with power measurements support. Note that the CACTI_4_2_INCLUDE_DIR and CACTI_4_2_LIBRARY cmake variables might be required."
+	)
 project ( unisim_armemu )
 include ( CheckIncludeFileCXX )
 include ( CheckIncludeFile )
@@ -49,25 +59,46 @@ set ( ARMEMU_EXEC_TARGET ${ARMEMU_EXEC_NAME}-exe )
 set ( ARMEMU_LIB_TARGET ${ARMEMU_LIB_NAME}-lib )
 set ( RELATIVE_SHARE_DIRECTORY "share/${ARMEMU_EXEC_NAME}" )
 set ( SHARE_DIRECTORY "${CMAKE_BINARY_DIR}/${RELATIVE_SHARE_DIRECTORY}" )
-set_property ( GLOBAL 
+set_property ( 
+	GLOBAL 
 	PROPERTY
 		UNISIM_KERNEL_BIN_TO_SHARED_DATA_PATH "../share/${ARMEMU_EXEC_NAME}" )
 
-set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS *.cc *.tcc *.hh CACHE STRING "Extensions of the source files" )
-# set ( CMAKE_CXX_FLAGS "-fPIC" )
-set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin )
-set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH} )
-set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib )
+set ( CMAKE_CXX_SOURCE_FILE_EXTENSIONS 
+	*.cc *.tcc *.hh 
+	CACHE 
+	STRING "Extensions of the source files"
+	)
+
+set ( CMAKE_RUNTIME_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/bin
+	)
+set ( CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/lib/${ARMEMU_LIB_NAME}-${SIM_VERSION_MAJOR}.${SIM_VERSION_MINOR}.${SIM_VERSION_PATCH}
+	)
+set ( CMAKE_LIBRARY_OUTPUT_DIRECTORY
+	${CMAKE_BINARY_DIR}/lib
+	)
 	
-set ( CXX_INCLUDES iostream list string )
+set ( CXX_INCLUDES 
+	iostream 
+	list
+	string 
+	)
 foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
 	check_include_file_cxx ( ${CXX_INCLUDE} HAVE_${CXX_INCLUDE} )
 	if ( NOT HAVE_${CXX_INCLUDE} )
-		message ( SEND_ERROR "Could not find C++ header \"${CXX_INCLUDE}\"." )
+		message ( SEND_ERROR
+			"Could not find C++ header \"${CXX_INCLUDE}\"."
+			)
 	endif ( NOT HAVE_${CXX_INCLUDE} )
 endforeach ( CXX_INCLUDE )
 
-set ( C_INCLUDES getopt stdlib signal )
+set ( C_INCLUDES 
+	getopt 
+	stdlib
+	signal
+	)
 foreach ( C_INCLUDE ${C_INCLUDES} )
 	check_include_file ( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
 	if ( NOT HAVE_${C_INCLUDE}_H )
@@ -77,8 +108,7 @@ endforeach ( C_INCLUDE )
 
 set ( armemu_subdirs
 	unisim/kernel
-	unisim/component/tlm2/processor/arm/arm926ejs
-	unisim/component/tlm2/interrupt
+	unisim/component/tlm2/processor/arm/armemu
 	unisim/component/tlm2/memory/ram
 	unisim/service/time/sc_time
 	unisim/service/time/host_time
@@ -91,12 +121,23 @@ set ( armemu_subdirs
 	unisim/service/os/linux_os/linux_os_32
 	unisim/service/trap_handler
 	unisim/service/power
+	unisim/service/pim
+	unisim/service/pim/network
 	)
 foreach ( dir ${armemu_subdirs} )
 	unisim_include ( ${dir} )
 endforeach ( dir )
 
-include_directories ( ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${OSCI_SYSTEMC_INCLUDE_DIR} ${OSCI_TLM2_INCLUDE_DIR})
+include_directories ( ${CMAKE_SOURCE_DIR} 
+	${CMAKE_BINARY_DIR} 
+	${OSCI_SYSTEMC_INCLUDE_DIR} 
+	${OSCI_TLM2_INCLUDE_DIR})
+
+if ( BUILD_SIM_PIM_SUPPORT )
+	set ( SIM_PIM_SUPPORT TRUE )
+else ( BUILD_SIM_PIM_SUPPORT )	
+	set ( SIM_PIM_SUPPORT FALSE )
+endif ( BUILD_SIM_PIM_SUPPORT )
 
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	set ( SIM_POWER_ESTIMATOR_SUPPORT TRUE )
@@ -212,13 +253,17 @@ add_custom_target ( armemu__share_python
 	ALL
 	COMMAND
 		${CMAKE_COMMAND} -E make_directory ${SHARE_DIRECTORY}/python
-	COMMAND
-		${CMAKE_COMMAND} -E copy_if_different
-			${CMAKE_SOURCE_DIR}/share/python/demo.py
-			${SHARE_DIRECTORY}/python/demo.py
+		# COMMAND
+		# ${CMAKE_COMMAND} -E copy_if_different
+		# 	${CMAKE_SOURCE_DIR}/share/python/demo.py
+		# 	${SHARE_DIRECTORY}/python/demo.py
 	COMMENT
 		"Setting python demos."
 	)
+
+configure_file (
+	${CMAKE_SOURCE_DIR}/share/python/demo.py.in
+	${SHARE_DIRECTORY}/python/demo.py )
 
 if ( APPLE )
 	configure_file ( 
@@ -268,8 +313,8 @@ set ( armemu__libraries
 	${OSCI_SYSTEMC_LIBRARIES}
 	unisim__kernel
 	# unisim__component__cxx__processor__arm
-	unisim__component__tlm2__processor__arm__arm926ejs
-	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__processor__arm__armemu
+	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__host_time
 	unisim__service__time__sc_time
@@ -282,10 +327,19 @@ set ( armemu__libraries
 	unisim__util__debug__debugger_handler
 	unisim__service__trap_handler
 	)
+if ( BUILD_SIM_PIM_SUPPORT )
+	list ( APPEND armemu__libraries
+		unisim__service__pim unisim__service__pim__network )
+endif ( BUILD_SIM_PIM_SUPPORT )
+
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__libraries
 		unisim__service__power )
 endif ( BUILD_ARMEMU_POWER_SUPPORT )
+if ( WIN32 )
+	list ( APPEND armemu__libraries
+		wsock32 )
+endif ( WIN32 )
 
 set ( UNISIM_KERNEL_PYTHON_TO_SHARED_DATA_PATH "../../share/${ARMEMU_EXEC_NAME}" )
 set ( PYTHON__ARMEMU__INCLUDE_DIRS
@@ -304,10 +358,9 @@ foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
 	"'simulatorlib',
-	 'unisim__component__tlm2__interrupt',
 	 'unisim__component__tlm2__memory__ram',
-	 'unisim__component__tlm2__processor__arm__arm926ejs',
-	 'unisim__component__cxx__processor__arm',
+	 'unisim__component__tlm2__processor__arm__armemu',
+	 'unisim__component__cxx__processor__arm__armemu',
 	 'unisim__component__cxx__memory__ram',
 	 'unisim__service__time__host_time',
 	 'unisim__service__time__sc_time',
@@ -323,6 +376,7 @@ set ( PYTHON__ARMEMU__LIBS
 	 'unisim__util__debug',
 	 'unisim__util__debug__dwarf',
 	 'unisim__util__debug__debugger_handler',
+	 'unisim__util__debug__blob',
 	 'unisim__util__xml',
 	 'unisim__kernel',
 	 'xml2',
@@ -409,8 +463,8 @@ set_target_properties ( ${ARMEMU_EXEC_TARGET}
 	
 set ( armemu__deps
 	unisim__kernel
-	unisim__component__tlm2__processor__arm__arm926ejs
-	unisim__component__tlm2__interrupt
+	unisim__component__tlm2__processor__arm__armemu
+	# unisim__component__tlm2__interrupt
 	unisim__component__tlm2__memory__ram
 	unisim__service__time__sc_time
 	unisim__service__time__host_time
@@ -423,6 +477,13 @@ set ( armemu__deps
 	unisim__service__os__linux_os__linux_os_32
 	unisim__service__trap_handler
 	)
+
+if ( BUILD_SIM_PIM_SUPPORT )
+	list ( APPEND armemu__deps
+		unisim__service__pim unisim__service__pim__network
+		)
+endif ( BUILD_SIM_PIM_SUPPORT )
+
 if ( BUILD_ARMEMU_POWER_SUPPORT )
 	list ( APPEND armemu__deps
 		unisim__service__power

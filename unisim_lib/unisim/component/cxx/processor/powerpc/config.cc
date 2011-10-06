@@ -34,6 +34,10 @@
 
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -43,6 +47,7 @@ namespace powerpc {
 const uint32_t CRLayout::CR0_LT_MASK;
 const uint32_t CRLayout::CR0_GT_MASK;
 const uint32_t CRLayout::CR0_EQ_MASK;
+const uint32_t CRLayout::CR0_SO_MASK;
 
 } // end of namespace powerpc
 } // end of namespace processor

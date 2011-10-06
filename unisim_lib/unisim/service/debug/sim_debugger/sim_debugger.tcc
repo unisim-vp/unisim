@@ -43,6 +43,10 @@
 #include <fstream>
 #include <iostream>
 
+#ifdef WIN32
+#include <unistd.h>
+#endif
+
 #include <unisim/util/endian/endian.hh>
 
 namespace unisim {
@@ -78,6 +82,7 @@ SimDebugger(const char *_name, Object *_parent)
 	, Client<Loader<ADDRESS> >(_name, _parent)
 	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, SimDebuggerBase()
+	, unisim::util::debug::debugger_handler::DebuggerHandler(this)
 	, debug_control_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
@@ -149,7 +154,7 @@ SimDebugger(const char *_name, Object *_parent)
 		}
 	}
 
-	Object::SetupDependsOn(memory_access_reporting_control_import);
+	debug_control_export.SetupDependsOn(memory_access_reporting_control_import);
 }
 
 template <class ADDRESS>
@@ -173,7 +178,7 @@ SimDebugger<ADDRESS>::
 template<class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
-Setup() {
+EndSetup() {
 	if ( memory_access_reporting_control_import ) {
 		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 				false);
@@ -497,6 +502,26 @@ DeleteBreakpoint(const char *str)
 template <class ADDRESS>
 bool
 SimDebugger<ADDRESS>::
+SetWatchpoint(uint64_t addr, uint32_t size)
+{
+	bool set = false;
+
+	set = SetReadWatchpoint(addr, size);
+	if ( set )
+	{
+		set = SetWriteWatchpoint(addr, size);
+		if ( !set )
+		{
+			DeleteReadWatchpoint(addr, size);
+		}
+	}
+
+	return set;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
 SetReadWatchpoint(uint64_t addr, uint32_t size)
 {
 	bool set = false;
@@ -532,6 +557,20 @@ SetWriteWatchpoint(uint64_t addr, uint32_t size)
 				watchpoint_registry.HasWatchpoints());
 
 	return set;
+}
+
+template <class ADDRESS>
+bool
+SimDebugger<ADDRESS>::
+DeleteWatchpoint(uint64_t addr, uint32_t size)
+{
+	bool r_deleted = false;
+	bool w_deleted = false;
+
+	r_deleted = DeleteReadWatchpoint(addr, size);
+	w_deleted = DeleteWriteWatchpoint(addr, size);
+
+	return (r_deleted && w_deleted);
 }
 
 template <class ADDRESS>
@@ -895,7 +934,7 @@ DumpAvailableLoaders()
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-Load(const char *loader_name, const char *filename)
+Load(const char *loader_name)
 {
 	if ( num_loaders && loader_import )
 	{
@@ -911,9 +950,12 @@ Load(const char *loader_name, const char *filename)
 					if ( strcmp(service->GetName(), loader_name) == 0 )
 					{
 						// Found loader
-						if ( !(*import)->Load(filename) )
+						if ( !(*import)->Load() )
 						{
-							cerr << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load file \"" << filename << "\"" << endl;
+							cerr << Object::GetName() << ": ERROR! Loader \"" 
+								<< loader_name 
+								<< "\" was not able to load data/program" 
+								<< endl;
 						}
 
 						return;

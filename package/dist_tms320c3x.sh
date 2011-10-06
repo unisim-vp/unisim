@@ -2,25 +2,32 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim repository>"
+	echo "  $0 <destination directory>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
+MY_DIR=`dirname $0`
+if test ${MY_DIR} = "."; then
+	MY_DIR=${HERE}
+elif test ${MY_DIR} = ".."; then
+	MY_DIR=${HERE}/..
+fi
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2/unisim_tools
-UNISIM_LIB_DIR=$2/unisim_lib
-UNISIM_SIMULATORS_DIR=$2/unisim_simulators/cxx/tms320c3x
-UNISIM_DOCS_DIR=$2/unisim_docs
+UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/ppcemu
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/cxx/tms320c3x
+# UNISIM_DOCS_DIR=${MY_DIR}/../unisim_docs
 
 TMS320C3X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-tms320c3x-${TMS320C3X_VERSION}
 
-DOCS_VERSION=lastest-tms320c3x-${TMS320C3X_VERSION}
+# DOCS_VERSION=lastest-tms320c3x-${TMS320C3X_VERSION}
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -117,8 +124,30 @@ unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
+unisim/util/debug/stmt_32.cc \
+unisim/util/debug/stmt_64.cc \
+unisim/util/debug/dwarf/abbrev.cc \
+unisim/util/debug/dwarf/attr.cc \
+unisim/util/debug/dwarf/class.cc \
+unisim/util/debug/dwarf/dwarf32.cc \
+unisim/util/debug/dwarf/dwarf64.cc \
+unisim/util/debug/dwarf/encoding.cc \
+unisim/util/debug/dwarf/filename.cc \
+unisim/util/debug/dwarf/leb128.cc \
+unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
+unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/section64.cc \
+unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/blob/segment64.cc \
+unisim/util/debug/elf_symtab/elf_symtab32.cc \
+unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/endian/endian.cc \
-unisim/service/loader/coff_loader/coff_loader.cc \
+unisim/util/loader/elf_loader/elf32_loader.cc \
+unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/coff_loader/coff_loader32.cc \
+unisim/service/loader/coff_loader/coff_loader64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -155,15 +184,50 @@ unisim/util/xml/xml.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
+unisim/util/debug/stmt.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/profile.hh \
+unisim/util/debug/dwarf/abbrev.hh \
+unisim/util/debug/dwarf/attr.hh \
+unisim/util/debug/dwarf/call_frame_vm.hh \
+unisim/util/debug/dwarf/class.hh \
+unisim/util/debug/dwarf/die.hh \
+unisim/util/debug/dwarf/encoding.hh \
+unisim/util/debug/dwarf/fde.hh \
+unisim/util/debug/dwarf/fmt.hh \
+unisim/util/debug/dwarf/leb128.hh \
+unisim/util/debug/dwarf/macinfo.hh \
+unisim/util/debug/dwarf/pub.hh \
+unisim/util/debug/dwarf/stmt_prog.hh \
+unisim/util/debug/dwarf/addr_range.hh \
+unisim/util/debug/dwarf/call_frame_prog.hh \
+unisim/util/debug/dwarf/cie.hh \
+unisim/util/debug/dwarf/cu.hh \
+unisim/util/debug/dwarf/dwarf.hh \
+unisim/util/debug/dwarf/expr_vm.hh \
+unisim/util/debug/dwarf/filename.hh \
+unisim/util/debug/dwarf/fwd.hh \
+unisim/util/debug/dwarf/loc.hh \
+unisim/util/debug/dwarf/ml.hh \
+unisim/util/debug/dwarf/range.hh \
+unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/blob/blob.hh \
+unisim/util/debug/blob/section.hh \
+unisim/util/debug/blob/segment.hh \
+unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/loader/elf_loader/elf_common.h \
+unisim/util/loader/elf_loader/elf_loader.hh \
+unisim/util/loader/elf_loader/elf32.h \
+unisim/util/loader/elf_loader/elf64.h \
+unisim/util/loader/elf_loader/elf32_loader.hh \
+unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
@@ -171,10 +235,13 @@ unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
+unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
+unisim/service/interfaces/blob.hh \
+unisim/service/interfaces/backtrace.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
 unisim/service/loader/coff_loader/ti/ti.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
@@ -194,6 +261,28 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/profile.tcc \
+unisim/util/debug/stmt.tcc \
+unisim/util/debug/dwarf/addr_range.tcc \
+unisim/util/debug/dwarf/call_frame_prog.tcc \
+unisim/util/debug/dwarf/cie.tcc \
+unisim/util/debug/dwarf/die.tcc \
+unisim/util/debug/dwarf/expr_vm.tcc \
+unisim/util/debug/dwarf/loc.tcc \
+unisim/util/debug/dwarf/pub.tcc \
+unisim/util/debug/dwarf/stmt_prog.tcc \
+unisim/util/debug/dwarf/attr.tcc \
+unisim/util/debug/dwarf/call_frame_vm.tcc \
+unisim/util/debug/dwarf/cu.tcc \
+unisim/util/debug/dwarf/dwarf.tcc \
+unisim/util/debug/dwarf/fde.tcc \
+unisim/util/debug/dwarf/macinfo.tcc \
+unisim/util/debug/dwarf/range.tcc \
+unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/blob/blob.tcc \
+unisim/util/debug/blob/section.tcc \
+unisim/util/debug/blob/segment.tcc \
+unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
 unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
@@ -271,54 +360,48 @@ c31boot.out \
 fibo.out \
 "
 
-UNISIM_DOCS_FILES="\
-README \
-INSTALL \
-NEWS \
-COPYING \
-AUTHORS \
-ChangeLog \
-genisslib_manual.pdf \
-tms320c3x_manual.pdf \
-genisslib_manual.tex \
-genisslib/genisslib.tex \
-tms320c3x_manual.tex \
-tms320c3x/tms320c3x.tex \
-tms320c3x/service_instanciation.tex \
-tms320c3x/service_connection.tex \
-tms320c3x/simple_service.tex \
-tms320c3x/simple_client.tex \
-tms320c3x/run_time_parameter.tex \
-tms320c3x/debug_control_interface.tex \
-tms320c3x/disassembly_interface.tex \
-tms320c3x/loader_interface.tex \
-tms320c3x/memory_access_reporting_control_interface.tex \
-tms320c3x/memory_access_reporting_interface.tex \
-tms320c3x/memory_injection_interface.tex \
-tms320c3x/memory_interface.tex \
-tms320c3x/registers_interface.tex \
-tms320c3x/symbol_table_lookup_interface.tex \
-tms320c3x/ti_c_io_interface.tex \
-tms320c3x/time_interface.tex \
-tms320c3x/trap_reporting_interface.tex \
-tms320c3x/including_logger.tex \
-tms320c3x/deriving_from_object.tex \
-tms320c3x/binding_logger.tex \
-tms320c3x/using_logger.tex \
-tms320c3x/register_interface.tex \
-tms320c3x/assembly_pattern.tex \
-tms320c3x/fig_tms320c3x.pdf \
-tms320c3x/fig_object_hierarchy.pdf \
-tms320c3x/fig_code_composer.jpg \
-tms320c3x/fig_tms320c3x_board.jpg \
-tms320c3x/fig_tms320c3x_dev_kit.jpg \
-tms320c3x/fig_unit_test_generator.pdf \
-tms320c3x/fig_unit_test.pdf \
-tms320c3x/fig_driver_error.jpg \
-tms320c3x/fig_fft512_output0.pdf \
-tms320c3x/fig_iir_output.pdf \
-tms320c3x/fig_bp_output.pdf \
-tms320c3x/fig_lp_output.pdf"
+# UNISIM_DOCS_FILES="\
+# genisslib_manual.pdf \
+# tms320c3x_manual.pdf \
+# genisslib_manual.tex \
+# genisslib/genisslib.tex \
+# tms320c3x_manual.tex \
+# tms320c3x/tms320c3x.tex \
+# tms320c3x/service_instanciation.tex \
+# tms320c3x/service_connection.tex \
+# tms320c3x/simple_service.tex \
+# tms320c3x/simple_client.tex \
+# tms320c3x/run_time_parameter.tex \
+# tms320c3x/debug_control_interface.tex \
+# tms320c3x/disassembly_interface.tex \
+# tms320c3x/loader_interface.tex \
+# tms320c3x/memory_access_reporting_control_interface.tex \
+# tms320c3x/memory_access_reporting_interface.tex \
+# tms320c3x/memory_injection_interface.tex \
+# tms320c3x/memory_interface.tex \
+# tms320c3x/registers_interface.tex \
+# tms320c3x/symbol_table_lookup_interface.tex \
+# tms320c3x/ti_c_io_interface.tex \
+# tms320c3x/time_interface.tex \
+# tms320c3x/trap_reporting_interface.tex \
+# tms320c3x/including_logger.tex \
+# tms320c3x/deriving_from_object.tex \
+# tms320c3x/binding_logger.tex \
+# tms320c3x/using_logger.tex \
+# tms320c3x/register_interface.tex \
+# tms320c3x/assembly_pattern.tex \
+# tms320c3x/fig_tms320c3x.pdf \
+# tms320c3x/fig_object_hierarchy.pdf \
+# tms320c3x/fig_code_composer.jpg \
+# tms320c3x/fig_tms320c3x_board.jpg \
+# tms320c3x/fig_tms320c3x_dev_kit.jpg \
+# tms320c3x/fig_unit_test_generator.pdf \
+# tms320c3x/fig_unit_test.pdf \
+# tms320c3x/fig_driver_error.jpg \
+# tms320c3x/fig_fft512_output0.pdf \
+# tms320c3x/fig_iir_output.pdf \
+# tms320c3x/fig_bp_output.pdf \
+# tms320c3x/fig_lp_output.pdf"
 
 has_to_build_configure=no
 has_to_build_genisslib_configure=no
@@ -326,7 +409,7 @@ has_to_build_tms320c3x_configure=no
 
 mkdir -p ${DEST_DIR}/genisslib
 mkdir -p ${DEST_DIR}/tms320c3x
-mkdir -p ${DEST_DIR}/docs
+# mkdir -p ${DEST_DIR}/docs
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
@@ -396,21 +479,21 @@ for file in ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}; do
 	fi
 done
 
-for file in ${UNISIM_DOCS_FILES}; do
-	mkdir -p "${DEST_DIR}/docs/`dirname ${file}`"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/docs/${file}" ]; then
-		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/docs/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/docs/${file}"
-		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/docs/${file}" || exit
-	fi
-done
+# for file in ${UNISIM_DOCS_FILES}; do
+# 	mkdir -p "${DEST_DIR}/docs/`dirname ${file}`"
+# 	has_to_copy=no
+# 	if [ -e "${DEST_DIR}/docs/${file}" ]; then
+# 		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/docs/${file}" ]; then
+# 			has_to_copy=yes
+# 		fi
+# 	else
+# 		has_to_copy=yes
+# 	fi
+# 	if [ "${has_to_copy}" = "yes" ]; then
+# 		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/docs/${file}"
+# 		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/docs/${file}" || exit
+# 	fi
+# done
 
 
 mkdir -p ${DEST_DIR}/config
@@ -418,8 +501,8 @@ mkdir -p ${DEST_DIR}/tms320c3x/config
 mkdir -p ${DEST_DIR}/tms320c3x/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
-mkdir -p ${DEST_DIR}/docs/config
-mkdir -p ${DEST_DIR}/docs/m4
+# mkdir -p ${DEST_DIR}/docs/config
+# mkdir -p ${DEST_DIR}/docs/m4
 
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	has_to_copy=no
@@ -515,12 +598,13 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_SUBDIRS([tms320c3x])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([docs])"  >> "${CONFIGURE_AC}" 
+# 	echo "AC_CONFIG_SUBDIRS([docs])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib tms320c3x docs" > "${MAKEFILE_AM}"
+# 	echo "SUBDIRS=genisslib tms320c3x docs" > "${MAKEFILE_AM}"
+	echo "SUBDIRS=genisslib tms320c3x" > "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
@@ -528,49 +612,106 @@ fi
 
 # Documentation
 
-DOCS_CONFIGURE_AC="${DEST_DIR}/docs/configure.ac"
-DOCS_MAKEFILE_AM="${DEST_DIR}/docs/Makefile.am"
-
-
-if [ ! -e "${DOCS_CONFIGURE_AC}" ]; then
-	has_to_build_docs_configure=yes
-else
-	if [ "$0" -nt "${DOCS_CONFIGURE_AC}" ]; then
-		has_to_build_docs_configure=yes
-	fi
-fi
-
-if [ ! -e "${DOCS_MAKEFILE_AM}" ]; then
-	has_to_build_docs_configure=yes
-else
-	if [ "$0" -nt "${DOCS_MAKEFILE_AM}" ]; then
-		has_to_build_docs_configure=yes
-	fi
-fi
-
-if [ "${has_to_build_docs_configure}" = "yes" ]; then
-	echo "Generating docs configure.ac"
-	echo "AC_INIT([UNISIM Documentation], [${DOCS_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-docs])" > "${DOCS_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${DOCS_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
-
-	echo "Generating docs Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
-	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
-
-	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR}/docs && aclocal && autoconf --force && automake -ac"
-fi
+# DOCS_CONFIGURE_AC="${DEST_DIR}/docs/configure.ac"
+# DOCS_MAKEFILE_AM="${DEST_DIR}/docs/Makefile.am"
+# 
+# 
+# if [ ! -e "${DOCS_CONFIGURE_AC}" ]; then
+# 	has_to_build_docs_configure=yes
+# else
+# 	if [ "$0" -nt "${DOCS_CONFIGURE_AC}" ]; then
+# 		has_to_build_docs_configure=yes
+# 	fi
+# fi
+# 
+# if [ ! -e "${DOCS_MAKEFILE_AM}" ]; then
+# 	has_to_build_docs_configure=yes
+# else
+# 	if [ "$0" -nt "${DOCS_MAKEFILE_AM}" ]; then
+# 		has_to_build_docs_configure=yes
+# 	fi
+# fi
+# 
+# if [ "${has_to_build_docs_configure}" = "yes" ]; then
+# 	echo "Generating docs configure.ac"
+# 	echo "AC_INIT([UNISIM Documentation], [${DOCS_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-docs])" > "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CONFIG_AUX_DIR(config)" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CANONICAL_BUILD" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CANONICAL_HOST" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CANONICAL_TARGET" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_PATH_PROGS(SH, sh)" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_PROG_INSTALL" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_PROG_LN_S" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CONFIG_FILES([Makefile])" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
+# 
+# 	echo "Generating docs Makefile.am"
+# 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
+# 	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
+# 	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
+# 	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
+# 
+# 	cat << EOF > "${DEST_DIR}/docs/README"
+# This is the documentation of UNISIM GenISSLib, an instruction set simulator generator, and the UNISIM TMS320C3X instruction set simulator.
+# See INSTALL for installation instructions.
+# See COPYING for licensing.
+# See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools.
+# EOF
+# 
+# 	echo "" > "${DEST_DIR}/docs/NEWS"
+# 	echo "" > "${DEST_DIR}/docs/ChangeLog"
+# 	
+# 	cat << EOF > "${DEST_DIR}/docs/AUTHORS"
+# Gilles Mouchard <gilles.mouchard@cea.fr>
+# Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+# EOF
+# 
+# 	cat << EOF > "${DEST_DIR}/docs/INSTALL"
+# Requirements:
+#  - Latex
+#  - rubber
+# 
+# Build the documentation:
+#  $ rubber -d genisslib_manual
+#  $ rubber -d tms320c3x_manual
+# EOF
+# 
+# cat << EOF > "${DEST_DIR}/docs/COPYING"
+# Copyright (c) 2009,
+# Commissariat a l'Energie Atomique (CEA)
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+# 
+#  - Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 
+#  - Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+# 
+#  - Neither the name of CEA nor the names of its contributors may be used to
+#    endorse or promote products derived from this software without specific prior
+#    written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# EOF
+# 
+# 	echo "Building configure"
+# 	${SHELL} -c "cd ${DEST_DIR}/docs && aclocal && autoconf --force && automake -ac"
+# fi
 
 # GENISSLIB
 
@@ -615,22 +756,23 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
+	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
-
 
 # TMS320C3X
 

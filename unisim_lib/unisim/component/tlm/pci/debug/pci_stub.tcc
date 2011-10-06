@@ -50,9 +50,9 @@ using unisim::kernel::logger::EndDebugError;
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::PCIStub(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
-	unisim::component::cxx::pci::debug::PCIStub<ADDRESS_TYPE>(name, parent),
+	Object(name, parent, "A module that implements a PCI target and acts as a co-simulation stub controlled over a TCP/IP or pipe connection."),
 	sc_module(name),
+	unisim::component::cxx::pci::debug::PCIStub<ADDRESS_TYPE>(name, parent),
 	bus_port("bus-port"),
 	cpu_irq_port("cpu-irq-port"),
 	pci_bus_cycle_time(),
@@ -102,9 +102,9 @@ bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Send(const Pointer<TlmMessage<PCIReq,
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
-bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::Setup()
+bool PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::EndSetup()
 {
-	if(!inherited::Setup()) return false;
+	if(!inherited::EndSetup()) return false;
 	pci_bus_cycle_time = sc_time(1.0 / (double) (*this)["pci-bus-frequency"], SC_US);
 	bus_cycle_time = sc_time(1.0 / (double) (*this)["bus-frequency"], SC_US);
 	return true;
@@ -118,8 +118,7 @@ void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeStart()
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void PCIStub<ADDRESS_TYPE, MAX_DATA_SIZE>::ServeStop()
 {
-	sc_stop();
-	wait();
+	Object::Stop(-1);
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>

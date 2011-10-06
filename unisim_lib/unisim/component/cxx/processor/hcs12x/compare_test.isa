@@ -248,7 +248,7 @@ cp_dyxs_imm.disasm = {
 
 cp_dyxs_imm.execute = {
 	uint8_t carry_out, overflow, carry_in, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	
 	carry_in = 0;
 	switch (dyxs) {
@@ -288,7 +288,7 @@ cp_dyxs_dir.disasm = {
 
 cp_dyxs_dir.execute = {
 	uint8_t carry_out, overflow, carry_in, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	uint16_t opr8aVal;
 	
 	opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
@@ -331,7 +331,7 @@ cp_dyxs_ext.disasm = {
 
 cp_dyxs_ext.execute = {
 	uint8_t carry_out, overflow, carry_in, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	
 	carry_in = 0;
@@ -386,7 +386,7 @@ cp_dyxs_idx.disasm = {
 
 cp_dyxs_idx.execute = {
 	uint8_t carry_out, overflow, carry_in, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint16_t xbVal = cpu->memRead16(addr);
 	
@@ -428,7 +428,7 @@ cpe_dyxs_imm.disasm = {
 
 cpe_dyxs_imm.execute = {
 	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	
 	zeroBit = cpu->ccr->getZ(); 
 	carry_in = cpu->ccr->getC();
@@ -468,7 +468,7 @@ cpe_dyxs_dir.disasm = {
 
 cpe_dyxs_dir.execute = {
 	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	uint16_t opr8aVal;
 
 	opr8aVal = cpu->memRead16(opr8a, ADDRESS::DIRECT, false);
@@ -511,7 +511,7 @@ cpe_dyxs_ext.disasm = {
 
 cpe_dyxs_ext.execute = {
 	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	uint16_t opr16aVal = cpu->memRead16(opr16a);
 	
 	zeroBit =  cpu->ccr->getZ();
@@ -565,7 +565,7 @@ cpe_dyxs_idx.disasm = {
 
 cpe_dyxs_idx.execute = {
 	uint8_t carry_out, overflow, carry_in, zeroBit, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	physical_address_t addr = xb->getEAddr(cpu);
 	uint16_t xbVal = cpu->memRead16(addr);
 	
@@ -784,7 +784,7 @@ tst_xy.disasm = {
 
 tst_xy.execute = {
 	uint8_t carry_out, overflow, carry_in, sign;
-	uint16_t result, regVal;
+	uint16_t result, regVal = 0;
 	
 	carry_in = 0;
 	switch (b) {
@@ -825,7 +825,7 @@ emind.execute = {
 	uint16_t mVal = cpu->memRead16(addr);
 	
 	uint16_t min;
-	if (dVal > mVal) { min == mVal; } else { min = dVal; }
+	if (dVal > mVal) { min = mVal; } else { min = dVal; }
 	 
 	uint16_t result = dVal - mVal;
 
@@ -837,11 +837,11 @@ emind.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: D15 • !M15 • !R15 + !D15 • M15 • R15
+	 * V: (D15 • !M15 • !R15) + (!D15 • M15 • R15)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000)) | (~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
 	 * Set if the value of the content of memory is larger than the value of the
@@ -872,7 +872,7 @@ eminm.execute = {
 	uint16_t mVal = cpu->memRead16(addr);
 	
 	uint16_t min;
-	if (dVal > mVal) { min == mVal; } else { min = dVal; }
+	if (dVal > mVal) { min = mVal; } else { min = dVal; }
 	 
 	uint16_t result = dVal - mVal;
 
@@ -884,11 +884,11 @@ eminm.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: D15 • !M15 • !R15 + !D15 • M15 • R15
+	 * V: (D15 • !M15 • !R15) + (!D15 • M15 • R15)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000)) | (~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
 	 * Set if the value of the content of memory is larger than the value of the
@@ -921,7 +921,7 @@ mina.execute = {
 	uint8_t mVal = cpu->memRead8(addr);
 	
 	uint8_t min;
-	if (aVal > mVal) { min == mVal; } else { min = aVal; }
+	if (aVal > mVal) { min = mVal; } else { min = aVal; }
 	 
 	uint8_t result = aVal - mVal;
 
@@ -933,11 +933,11 @@ mina.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: A7 • !M7 • !R7 + !A7 • M7 • R7
+	 * V: (A7 • !M7 • !R7) + (!A7 • M7 • R7)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80)) | (~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
 	 * Set if the value of the content of memory is larger than the value of the
@@ -969,7 +969,7 @@ minm.execute = {
 	uint8_t mVal = cpu->memRead8(addr);
 	
 	uint8_t min;
-	if (aVal > mVal) { min == mVal; } else { min = aVal; }
+	if (aVal > mVal) { min = mVal; } else { min = aVal; }
 	 
 	uint8_t result = aVal - mVal;
 
@@ -981,11 +981,11 @@ minm.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: A7 • !M7 • !R7 + !A7 • M7 • R7
+	 * V: (A7 • !M7 • !R7) + (!A7 • M7 • R7)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80)) | (~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
 	 * Set if the value of the content of memory is larger than the value of the
@@ -1020,7 +1020,7 @@ emaxd.execute = {
 	uint16_t mVal = cpu->memRead16(addr);
 	
 	uint16_t max;
-	if (mVal > dVal) { max == mVal; } else { max = dVal; }
+	if (mVal > dVal) { max = mVal; } else { max = dVal; }
 	 
 	uint16_t result = dVal - mVal;
 
@@ -1032,11 +1032,11 @@ emaxd.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: D15 • !M15 • !R15 + !D15 • M15 • R15
+	 * V: (D15 • !M15 • !R15) + (!D15 • M15 • R15)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000)) | (~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
 	 * Set if the value of the content of memory is larger than the value of the
@@ -1068,7 +1068,7 @@ emaxm.execute = {
 	uint16_t mVal = cpu->memRead16(addr);
 	
 	uint16_t max;
-	if (mVal > dVal) { max == mVal; } else { max = dVal; }
+	if (mVal > dVal) { max = mVal; } else { max = dVal; }
 	 
 	uint16_t result = dVal - mVal;
 
@@ -1080,11 +1080,11 @@ emaxm.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: D15 • !M15 • !R15 + !D15 • M15 • R15
+	 * V: (D15 • !M15 • !R15) + (!D15 • M15 • R15)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000) | ~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((dVal & 0x8000) & ~(mVal & 0x8000) & ~(result & 0x8000)) | (~(dVal & 0x8000) & (mVal & 0x8000) & (result & 0x8000))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !D15 • M15 + M15 • R15 + R15 • !D15
 	 * Set if the value of the content of memory is larger than the value of the
@@ -1116,7 +1116,7 @@ maxa.execute = {
 	uint8_t mVal = cpu->memRead8(addr);
 	
 	uint8_t max;
-	if (mVal > aVal) { max == mVal; } else { max = aVal; }
+	if (mVal > aVal) { max = mVal; } else { max = aVal; }
 	 
 	uint8_t result = aVal - mVal;
 
@@ -1128,11 +1128,11 @@ maxa.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: A7 • !M7 • !R7 + !A7 • M7 • R7
+	 * V: (A7 • !M7 • !R7) + (!A7 • M7 • R7)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80)) | (~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
 	 * Set if the value of the content of memory is larger than the value of the
@@ -1163,7 +1163,7 @@ maxm.execute = {
 	uint8_t mVal = cpu->memRead8(addr);
 	
 	uint8_t max;
-	if (mVal > aVal) { max == mVal; } else { max = aVal; }
+	if (mVal > aVal) { max = mVal; } else { max = aVal; }
 	 
 	uint8_t result = aVal - mVal;
 
@@ -1175,11 +1175,11 @@ maxm.execute = {
 	if (result == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 	 
 	/* 
-	 * V: A7 • !M7 • !R7 + !A7 • M7 • R7
+	 * V: (A7 • !M7 • !R7) + (!A7 • M7 • R7)
 	 * Set if a two’s complement overflow resulted from the operation; cleared
 	 * otherwise
 	 */
-	if ((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80) | ~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80)) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+	if (((aVal & 0x80) & ~(mVal & 0x80) & ~(result & 0x80)) | (~(aVal & 0x80) & (mVal & 0x80) & (result & 0x80))) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 	/*
 	 * C: !A7 • M7 + M7 • R7 + R7 • !A7
 	 * Set if the value of the content of memory is larger than the value of the

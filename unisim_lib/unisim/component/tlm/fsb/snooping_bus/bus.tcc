@@ -67,8 +67,8 @@ BusMasterPortController(const char *_name,
 	Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> *_bus,
 	unsigned int _id) :
 	name(_name),
-	bus(_bus),
-	id(_id) {}
+	id(_id),
+	bus(_bus) {}
 
 /** TlmSendIf interface implementation.
  * Puts the incomming request in the fifo. The request will be handled
@@ -96,25 +96,25 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
 Bus(const sc_module_name& module_name, Object *parent) :
 	Object(module_name, parent, "Front side bus"),
-	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
-	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
 	sc_module(module_name),
 	ResponseListener<ReqType, RspType>(),		
+	Service<Memory<ADDRESS_TYPE> >(module_name, parent),
+	Client<Memory<ADDRESS_TYPE> >(module_name, parent),
 	memory_export("memory-export", this),
 	memory_import("memory-import", this),
-	cycle_time(),
-	cycle_time_parameter("cycle-time", this, cycle_time, "cycle time"),
 	logger(*this),
 	verbose(false),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity"),
-	bus_synchro_event(),
-	next_serviced(0),
 	chipset_req_fifo("chipset_req_fifo"),
 	chipset_rsp_fifo("chipset_rsp_fifo"),
+	bus_synchro_event(),
+	next_serviced(0),
 	chipset_snoop(false),
 	cpu_snoop(false),
 	snoop_event(),
-	snoop_counter(0)
+	snoop_counter(0),
+	cycle_time(),
+	cycle_time_parameter("cycle-time", this, cycle_time, "cycle time")
 {
 	cycle_time_parameter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
@@ -193,7 +193,7 @@ template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
 		unsigned int NUM_PROCS>
 bool
 Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
-Setup() {
+SetupMemory() {
 	if(!memory_import) {
 		logger << DebugError << LOCATION << ", "
 			<< "No memory connected" << endl
@@ -212,6 +212,18 @@ Setup() {
 		return false;
 	}
 	return true;
+}
+
+template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
+		unsigned int NUM_PROCS>
+bool
+Bus<ADDRESS_TYPE, DATA_SIZE, NUM_PROCS> :: 
+Setup(ServiceExportBase *srv_export) {
+	if(srv_export == &memory_export) return SetupMemory();
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	
+	return false;
 }
 
 template <class ADDRESS_TYPE, unsigned int DATA_SIZE,
@@ -324,8 +336,7 @@ BusSynchronize() {
 			<< "cur_cycle_init_int = " << cur_cycle_init_int << ", "
 			<< "cur_time_int = " << cur_time_int << ")" << endl
 			<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	// check if a message can be send right now
 	if(cur_cycle_init_int == cur_time_int) {
@@ -519,8 +530,7 @@ DispatchChipsetMessage() {
 			<< "The bus received a request from the chipset that is not "
 			<< "a READX, neither a WRITE. Stopping simulation" << endl
 			<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	/* if the message is just a write, then just forward the message to the cpus */
 	if(msg->req->type == ReqType::WRITE) {
@@ -617,8 +627,7 @@ DispatchCPUMessage() {
 			logger << DebugError << LOCATION << ", "
 				<< "Unknown command received" << endl
 				<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	} 
 	/* the message is a read with intent to modify (READX) or a read (READ),
 	 *   this is a little bit harder to handle.
@@ -677,8 +686,7 @@ ProcessSnoopingResponse(const PTransactionMsgType &msg) {
 		logger << DebugError << LOCATION << ", "
 			<< "Received a snoop response when nothing was expected" << endl
 			<< EndDebugError;
-		sc_stop();
-		wait();
+		Object::Stop(-1);
 	}
 	snoop_counter++;
 	if(chipset_snoop && snoop_counter == NUM_PROCS)

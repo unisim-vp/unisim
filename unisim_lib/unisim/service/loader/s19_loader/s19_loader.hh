@@ -49,16 +49,12 @@
 #include  <stdlib.h>
 #include  <string.h>
 
-typedef uint32_t physical_address_t;
-typedef uint64_t service_address_t;
-typedef uint16_t address_t;
-typedef uint32_t s19_address_t;
-typedef uint8_t page_t;
-
 namespace unisim {
 namespace service {
 namespace loader {
 namespace s19_loader {
+
+typedef uint32_t s19_address_t;
 
 using namespace std;
 using unisim::service::interfaces::Memory;
@@ -66,6 +62,7 @@ using namespace unisim::util::endian;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Object;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
@@ -78,7 +75,7 @@ using unisim::service::interfaces::Loader;
 template <class MEMORY_ADDR>
 class S19_Loader :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Service<Loader<MEMORY_ADDR> >
+	public Service<Loader>
 {
 public:
 
@@ -99,10 +96,12 @@ public:
 	enum {S0='0', S1='1', S2='2', S3='3', S5='5', S7='7', S8='8', S9='9'};
 
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Loader> loader_export;
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
 	virtual void Reset();
 	virtual MEMORY_ADDR GetEntryPoint() const;
 	virtual MEMORY_ADDR GetTopAddr() const;
@@ -114,7 +113,7 @@ public:
 
 private:
 	string				filename;
-	physical_address_t	entry_point;
+	uint32_t	entry_point;
 
 	Parameter<string>	param_filename;
 
@@ -122,7 +121,7 @@ private:
 
 	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
 	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
-	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
+	bool	memWrite(uint32_t addr, const void *buffer, uint32_t size);
 	bool	Load();
 
 };

@@ -632,7 +632,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								uint64_t debug_str_offset64;
 							
 								if(max_size < sizeof(debug_str_offset64)) return -1;
-								memcpy(&debug_str_offset, rawdata, sizeof(debug_str_offset64));
+								memcpy(&debug_str_offset64, rawdata, sizeof(debug_str_offset64));
 								debug_str_offset64 = Target2Host(endianness, debug_str_offset64);
 								rawdata += sizeof(debug_str_offset64);
 								max_size -= sizeof(debug_str_offset64);
@@ -698,7 +698,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								uint64_t debug_info_offset64;
 							
 								if(max_size < sizeof(debug_info_offset64)) return -1;
-								memcpy(&debug_info_offset, rawdata, sizeof(debug_info_offset64));
+								memcpy(&debug_info_offset64, rawdata, sizeof(debug_info_offset64));
 								debug_info_offset64 = Target2Host(endianness, debug_info_offset64);
 								rawdata += sizeof(debug_info_offset64);
 								max_size -= sizeof(debug_info_offset64);
@@ -941,6 +941,48 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 		}
 	}
 	return os;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix)
+{
+	unsigned int i;
+	unsigned int num_attributes = attributes.size();
+	for(i = 0; i < num_attributes; i++)
+	{
+		DWARF_Attribute<MEMORY_ADDR> *dw_attr = attributes[i];
+		
+		const DWARF_AbbrevAttribute *dw_abbrev_attr = dw_attr->GetAbbrevAttribute();
+		
+		uint16_t dw_tag = (uint16_t) dw_abbrev_attr->GetTag();
+		if(dw_tag == DW_AT_stmt_list)
+		{
+			const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+			
+			unsigned int dw_class = dw_attr_value->GetClass();
+			
+			if(dw_class == DW_CLASS_LINEPTR)
+			{
+				DWARF_LinePtr<MEMORY_ADDR> *dw_line_ptr = (DWARF_LinePtr<MEMORY_ADDR> *) dw_attr_value;
+				
+				const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_line_ptr->GetValue();
+				
+				DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
+				if(!dw_stmt_vm.Run(dw_stmt_prog, 0, &stmt_matrix))
+				{
+					std::cerr << "Invalid DWARF2 statement program. Statement matrix may be incomplete." << std::endl;
+				}
+			}
+		}
+	}
+
+	unsigned int num_children = children.size();
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+		
+		dw_child->BuildStatementMatrix(stmt_matrix);
+	}
 }
 
 } // end of namespace dwarf

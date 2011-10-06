@@ -52,6 +52,7 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/registers.hh"
+#include "unisim/service/interfaces/blob.hh"
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define PACKED __attribute__ ((packed))
@@ -81,6 +82,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::MemoryInjection;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::Blob;
 
 template <class MEMORY_ADDR>
 class TI_C_IO :
@@ -88,7 +90,8 @@ class TI_C_IO :
 	public Client<Memory<MEMORY_ADDR> >,
 	public Client<MemoryInjection<MEMORY_ADDR> >,
 	public Client<SymbolTableLookup<MEMORY_ADDR> >,
-	public Client<Registers>
+	public Client<Registers>,
+	public Client<Blob<MEMORY_ADDR> >
 {
 public:
 	ServiceExport<unisim::service::interfaces::TI_C_IO> ti_c_io_export;
@@ -97,15 +100,19 @@ public:
 	ServiceImport<MemoryInjection<MEMORY_ADDR> > memory_injection_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_import; 
+	ServiceImport<Blob<MEMORY_ADDR> > blob_import;
 
     TI_C_IO(const char *name, Object *parent = 0);
     virtual ~TI_C_IO();
 
     virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool EndSetup();
 
+	virtual void Reset();
     virtual unisim::service::interfaces::TI_C_IO::Status HandleEmulatorInterrupt();
 private:
+	bool LoadMemoryAndRegisters();
+
 	// TI's C I/O commands
 	static const uint8_t C_IO_CMD_OPEN = 0xf0;
 	static const uint8_t C_IO_CMD_CLOSE = 0xf1;
@@ -159,9 +166,11 @@ private:
 	Parameter<bool> param_enable; 
 
 	unisim::util::debug::Register *reg_pc;
+	unisim::util::debug::Register *reg_sp;
 
 	bool warning_as_error;
 	string pc_register_name;
+	string sp_register_name;
 	string c_io_buffer_symbol_name;
 	string c_io_breakpoint_symbol_name;
 	string c_exit_breakpoint_symbol_name;

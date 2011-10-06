@@ -114,7 +114,7 @@ public:
 		AddressMap<SYSTEM_BUS_PHYSICAL_ADDR, PCI_BUS_PHYSICAL_ADDR, DEBUG> &_addr_map, 
 		const char *name, 
 		Object *parent = NULL);
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual void OnDisconnect();
 	
 	void TranslateAddressSystemToPCIMem(SYSTEM_BUS_PHYSICAL_ADDR addr,
@@ -179,25 +179,25 @@ public:
 	bool IsLocalAccess();
 
 private:
-	bool WriteLocalConfigReg(int reg, uint32_t data, uint32_t req_size);
-	bool WriteEUMBBAR(int reg, uint32_t data, uint32_t req_size);
-	bool WritePCICommandRegister(int reg, uint32_t data, uint32_t req_size);
-	bool WritePICR1(int reg, uint32_t data, uint32_t req_size);
-	bool WritePICR2(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMCCR1(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMCCR2(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMCCR3(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMCCR4(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMemStartAddrReg1(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMemStartAddrReg2(int reg, uint32_t data, uint32_t req_size);
-	bool WriteExtMemStartAddrReg1(int reg, uint32_t data, uint32_t req_size);
-	bool WriteExtMemStartAddrReg2(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMemEndAddrReg1(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMemEndAddrReg2(int reg, uint32_t data, uint32_t req_size);
-	bool WriteExtMemEndAddrReg1(int reg, uint32_t data, uint32_t req_size);
-	bool WriteExtMemEndAddrReg2(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMemBankEnableReg(int reg, uint32_t data, uint32_t req_size);
-	bool WriteMemPageModeReg(int reg, uint32_t data, uint32_t req_size);
+	bool WriteLocalConfigReg(int reg, uint32_t data);
+	bool WriteEUMBBAR(int reg, uint32_t data);
+	bool WritePCICommandRegister(int reg, uint32_t data);
+	bool WritePICR1(int reg, uint32_t data);
+	bool WritePICR2(int reg, uint32_t data);
+	bool WriteMCCR1(int reg, uint32_t data);
+	bool WriteMCCR2(int reg, uint32_t data);
+	bool WriteMCCR3(int reg, uint32_t data);
+	bool WriteMCCR4(int reg, uint32_t data);
+	bool WriteMemStartAddrReg1(int reg, uint32_t data);
+	bool WriteMemStartAddrReg2(int reg, uint32_t data);
+	bool WriteExtMemStartAddrReg1(int reg, uint32_t data);
+	bool WriteExtMemStartAddrReg2(int reg, uint32_t data);
+	bool WriteMemEndAddrReg1(int reg, uint32_t data);
+	bool WriteMemEndAddrReg2(int reg, uint32_t data);
+	bool WriteExtMemEndAddrReg1(int reg, uint32_t data);
+	bool WriteExtMemEndAddrReg2(int reg, uint32_t data);
+	bool WriteMemBankEnableReg(int reg, uint32_t data);
+	bool WriteMemPageModeReg(int reg, uint32_t data);
 };
 
 } // end of namespace mpc107

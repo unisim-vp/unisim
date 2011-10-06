@@ -137,7 +137,7 @@ class CPU :
 	public Service<Memory<uint64_t> >,
 	public Client<Memory<uint64_t> >,
 	public Client<TI_C_IO>,
-	public Client<Loader<uint64_t> >
+	public Client<Loader>
 {
 protected:
 	typedef typename CONFIG::address_t address_t;
@@ -173,7 +173,6 @@ public:
 	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
 	ServiceImport<Memory<uint64_t> > memory_import; // TODO: check for removal
 	ServiceImport<TI_C_IO> ti_c_io_import;
-	ServiceImport<Loader<uint64_t> > loader_import;
 	
 	//===============================================================
 	//= Public service imports/exports                         STOP =
@@ -183,7 +182,7 @@ public:
 	//= Client/Service setup methods                          START =
 	//===============================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
 	virtual void OnDisconnect();
 	
     //===============================================================
@@ -450,7 +449,6 @@ public:
 	/** Execute one complete instruction
 	 */
 	void StepInstruction();
-	virtual void Stop(int ret);
 	
     //===============================================================
 	//= Execution methods                                      STOP =

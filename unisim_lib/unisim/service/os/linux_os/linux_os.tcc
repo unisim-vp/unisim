@@ -60,7 +60,6 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
-#include "unisim/service/interfaces/cpu_linux_os.hh"
 #include "unisim/service/interfaces/loader.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
@@ -115,19 +114,22 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LinuxOS(const char *name, Object *parent)
 	: Object(name, parent)
 	, Service<unisim::service::interfaces::LinuxOS>(name, parent)
-	, Service<Loader<ADDRESS_TYPE> >(name, parent)
-	, Client<CPULinuxOS>(name, parent)
+	, Service<Loader>(name, parent)
+	, Service<Blob<ADDRESS_TYPE> >(name, parent)
 	, Client<Memory<ADDRESS_TYPE> >(name, parent)
 	, Client<MemoryInjection<ADDRESS_TYPE> >(name, parent)
 	, Client<Registers>(name, parent)
-	, Client<Loader<ADDRESS_TYPE> >(name, parent)
+	, Client<Loader>(name, parent)
+	, Client<Blob<ADDRESS_TYPE> >(name, parent)
 	, linux_os_export("linux-os-export", this)
 	, loader_export("loader-export", this)
-	, cpu_linux_os_import("cpu-linux-os-import", this)
+	, blob_export("blob-export", this)
 	, memory_import("memory-import", this)
 	, memory_injection_import("memory-injection-import", this)
 	, registers_import("registers-import", this)
 	, loader_import("loader-import", this)
+	, blob_import("blob-import", this)
+	, blob(0)
 	, syscall_name_map()
 	, syscall_name_assoc_map()
 	, syscall_impl_assoc_map()
@@ -135,7 +137,7 @@ LinuxOS(const char *name, Object *parent)
 	, current_syscall_name()
 	, system("")
 	, param_system("system", this, system, "Emulated system architecture "
-			"available values are \"arm\" and \"powerpc\"")
+			"available values are \"arm\", \"arm-eabi\" and \"powerpc\"")
 	, endianess(E_LITTLE_ENDIAN)
 	, endianess_string("little-endian")
 	, param_endian("endianness", this, endianess_string,
@@ -182,15 +184,25 @@ LinuxOS(const char *name, Object *parent)
 {
 	SetSyscallNameMap();
 
-	Object::SetupDependsOn(registers_import);
-	Object::SetupDependsOn(loader_import);
- }
+	blob_export.SetupDependsOn(blob_import);
+	
+	loader_export.SetupDependsOn(loader_import);
+	loader_export.SetupDependsOn(blob_import);
+	loader_export.SetupDependsOn(registers_import);
+	loader_export.SetupDependsOn(memory_import);
+	
+	linux_os_export.SetupDependsOn(blob_import);
+}
 
 /** Destructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ~LinuxOS() 
 {
+	if(blob)
+	{
+		blob->Release();
+	}
 }
 
 /** Method to execute when the LinuxOS is disconnected from its client. */
@@ -202,89 +214,16 @@ OnDisconnect()
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Reset()
-{
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetEntryPoint()
-const
-{
-	return loader_import->GetEntryPoint();
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetTopAddr()
-const
-{
-	return loader_import->GetTopAddr();
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetStackBase()
-const
-{
-	return loader_import->GetStackBase();
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Load(const char *filename)
+BeginSetup()
 {
-	if(!loader_import->Load(filename)) return false;
-	return Load();
-}
+	if(blob)
+	{
+		blob->Release();
+		blob = 0;
+	}
 
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Load() 
-{
-	syscall_impl_assoc_map.clear();
-	 
-	if (!cpu_linux_os_import) 
-	{
-		logger << DebugError
-			<< cpu_linux_os_import.GetName() << " is not connected" << endl
-			<< LOCATION
-			<< EndDebugError;
-		return false;
-	}
-	if (!memory_import) 
-	{
-		logger << DebugError
-			<< memory_import.GetName() << " is not connected" << endl
-			<< LOCATION
-			<< EndDebugError;
-		return false;
-	}
-	if (!memory_injection_import) 
-	{
-		logger << DebugError
-			<< memory_injection_import.GetName() << " is not connected" << endl
-			<< LOCATION
-			<< EndDebugError;
-		return false;
-	}
-	
-	if (!registers_import) 
-	{
-		logger << DebugError
-			<< registers_import.GetName() << " is not connected" << endl
-			<< LOCATION
-			<< EndDebugError;
-		return false;
-	}
-	
 	// check the endianess parameter
 	if ( (endianess_string.compare("little-endian") != 0) &&
 			(endianess_string.compare("big-endian") != 0) )
@@ -302,8 +241,9 @@ Load()
 		else
 			endianess = E_BIG_ENDIAN;
 	}
+	
 	// check that the given system is supported
-	if (system != "arm" && system != "powerpc") 
+	if (system != "arm" && system != "arm-eabi" && system != "powerpc") 
 	{
 		logger << DebugError
 			<< "Unsupported system (" << system << "), this service only supports"
@@ -312,96 +252,406 @@ Load()
 			<< EndDebugError;
 		return false;
 	}
-	// Call the system dependent setup
-	if (system == "arm") 
-	{
-		if (!ARMSetup()) return false;
-	}
-	if (system == "powerpc")
-	{
-		if (!PPCSetup()) return false;
-	}
-	if(unlikely(verbose))
-		logger << DebugInfo 
-			<< "Setup finished with success" << endl
-			<< LOCATION
-			<< EndDebugInfo;
+
 	return true;
 }
 
-/** Method to setup the service */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-Setup() 
+SetupLoad()
 {
-	return Load();
+	if (!memory_import) 
+	{
+		logger << DebugError
+			<< memory_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
+		return false;
+	}
+	
+	if (!registers_import) 
+	{
+		logger << DebugError
+			<< registers_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
+		return false;
+	}
+	
+	// Call the system dependent setup
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		if ( !SetupLoadARM() ) 
+		{
+			logger << DebugError
+				<< "Setup of the ARM configuration failed"
+				<< EndDebugError;
+			return false;
+		}
+	}
+	if ( system == "powerpc" )
+	{
+		if ( !SetupLoadPPC() )
+		{
+			logger << DebugError
+				<< "Setup of the PowerPC configuration failed"
+				<< EndDebugError;
+			return false;
+		}
+	}
+	return true;
 }
 
-/**
- * Linux ARM dependent setup
- * 
- * @return true if setup succeeds
- */
+
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-ARMSetup() 
+SetupLinuxOS()
 {
-	// Set the system calls mappings
-	SetSyscallId(string("exit"), 1);
-	SetSyscallId(string("read"), 3);
-	SetSyscallId(string("write"), 4);
-	SetSyscallId(string("open"), 5);
-	SetSyscallId(string("close"), 6);
-	SetSyscallId(string("unlink"), 10);
-	SetSyscallId(string("time"), 13);
-	SetSyscallId(string("lseek"), 19);
-	SetSyscallId(string("getpid"), 20);
-	SetSyscallId(string("getuid"), 24);
-	SetSyscallId(string("access"), 33);
-	SetSyscallId(string("kill"), 37);
-	SetSyscallId(string("rename"), 38);
-	SetSyscallId(string("times"), 43);
-	SetSyscallId(string("brk"), 45);
-	SetSyscallId(string("getgid"), 47);
-	SetSyscallId(string("geteuid"), 49);
-	SetSyscallId(string("getegid"), 50);
-	SetSyscallId(string("ioctl"), 54);
-	SetSyscallId(string("setrlimit"), 75);
-	SetSyscallId(string("getrusage"), 77);
-	SetSyscallId(string("munmap"), 91);
-    SetSyscallId(string("ftruncate"), 93);
-	SetSyscallId(string("socketcall"), 102);
-	SetSyscallId(string("stat"), 106);
-	SetSyscallId(string("fstat"), 108);
-	SetSyscallId(string("uname"), 122);
-	SetSyscallId(string("llseek"), 140);
-	SetSyscallId(string("writev"), 146);
-	SetSyscallId(string("rt_sigaction"), 174);
-	SetSyscallId(string("rt_sigprocmask"), 175);
-	SetSyscallId(string("ugetrlimit"), 191);
-	SetSyscallId(string("mmap2"), 192);
-	SetSyscallId(string("stat64"), 195);
-	SetSyscallId(string("fstat64"), 197);
-	SetSyscallId(string("getuid32"), 199);
-	SetSyscallId(string("getgid32"), 200);
-	SetSyscallId(string("geteuid32"), 201);
-	SetSyscallId(string("getegid32"), 202);
-	SetSyscallId(string("flistxattr"), 234);
-	SetSyscallId(string("exit_group"), 248);
-	// the following are private to the arm
-	SetSyscallId(string("breakpoint"), 983041);
-	SetSyscallId(string("cacheflush"), 983042);
-	SetSyscallId(string("usr26"), 983043);
-	SetSyscallId(string("usr32"), 983044);
-	SetSyscallId(string("set_tls"), 983045);
+	if ( !SetupBlob() ) 
+	{
+		logger << DebugError
+			<< "Failed to setup the blob while setting up linux os."
+			<< EndDebugError;
+		return false;
+	}
+	if ( !blob ) 
+	{
+		logger << DebugError
+			<< "blob not found while setting up linux os."
+			<< EndDebugError;
+		return false;
+	}
+
+	if (!memory_injection_import) 
+	{
+		logger << DebugError
+			<< memory_injection_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
+		return false;
+	}
+
+	if (!registers_import) 
+	{
+		logger << DebugError
+			<< registers_import.GetName() << " is not connected" << endl
+			<< LOCATION
+			<< EndDebugError;
+		return false;
+	}
+
+	syscall_impl_assoc_map.clear();
+
+	// Call the system dependent setup
+	if ( (system == "arm") || (system == "arm-eabi") ) 
+	{
+		if ( !SetupLinuxOSARM() ) 
+		{
+			logger << DebugError
+				<< "Error while trying to setup the linux os arm"
+				<< EndDebugError;
+			return false;
+		}
+	}
+	if ( system == "powerpc" )
+	{
+		if ( !SetupLinuxOSPPC() ) 
+		{
+			logger << DebugError
+				<< "Error while trying to setup the linux os powerpc"
+				<< EndDebugError;
+			return false;
+		}
+	}
 
 	// Set mmap_brk_point and brk_point
 	mmap_brk_point = mmap_base;
-	brk_point = loader_import->GetTopAddr() +
-    	(memory_page_size - (loader_import->GetTopAddr() % memory_page_size));
 
+	ADDRESS_TYPE top_addr = blob->GetStackBase() + 1;
+	
+	brk_point = top_addr +
+    	(memory_page_size - (top_addr % memory_page_size));
+		
+	if ( verbose )
+	{
+		logger << DebugInfo 
+			<< "Using brk start at @0x" << std::hex << brk_point << std::dec
+			<< EndDebugInfo;
+	}
+
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+DumpBlob()
+{
+	logger << DebugWarning
+		<< "Dumping blobs:" << std::endl;
+	DumpBlob(blob, 0);
+//	const std::vector<const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *> &blobs =
+//		blob->GetBlobs();
+//	typename std::vector<
+//		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+//		>::const_iterator b;
+//	b = blobs.begin();
+//	for ( b = blobs.begin();
+//			b != blobs.end();
+//			b++ )
+//	{
+//		DumpBlob(*b, 0);
+//		(*iter)->GetAddrRange(start, end);
+//		logger << std::endl
+//			<< " + 0x" << std::hex << start << " - "
+//			<< "0x" << end << std::dec;
+//		const std::vector<const unisim::util::debug::blob::Section<ADDRESS_TYPE> *> &secs =
+//			(*iter)->GetSections();
+//		typename std::vector<
+//			const unisim::util::debug::blob::Section<ADDRESS_TYPE> *
+//			>::const_iterator sec;
+//		for ( sec = secs.begin();
+//				sec != secs.end();
+//				sec++ )
+//		{
+//			logger << std::endl
+//				<< "   - Section \"" << (*sec)->GetName() << "\"" << std::endl
+//				<< "     Addr = 0x" << std::hex << (*sec)->GetAddr() << std::dec << std::endl
+//				<< "     Top  = 0x" << std::hex << ((*sec)->GetAddr() + (*sec)->GetSize()) << std::dec << std::endl
+//				<< "     Size = " << (*sec)->GetSize();
+//		}
+//	}
+	logger << EndDebugWarning;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+DumpBlob(const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *b, int level)
+{
+	ADDRESS_TYPE start_addr, end_addr;
+	b->GetAddrRange(start_addr, end_addr);
+	const std::vector<const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *> &blobs =
+		b->GetBlobs();
+	const std::vector<const unisim::util::debug::blob::Section<ADDRESS_TYPE> *> &secs =
+		b->GetSections();
+	logger << std::endl
+		<< "(" << level << ") 0x"
+		<< std::hex << start_addr
+		<< " - 0x" << end_addr << std::dec
+		<< " Cap = " << b->GetCapability();
+	typename std::vector<
+		const unisim::util::debug::blob::Section<ADDRESS_TYPE> *
+		>::const_iterator sec;
+	for ( sec = secs.begin();
+			sec != secs.end();
+			sec++ )
+	{
+		logger << std::endl
+			<< " - Section \"" << (*sec)->GetName() << "\"" << std::endl
+			<< "   Addr = 0x" << std::hex << (*sec)->GetAddr() << std::dec << std::endl
+			<< "   Top  = 0x" << std::hex << ((*sec)->GetAddr() + (*sec)->GetSize()) << std::dec << std::endl
+			<< "   Size = " << (*sec)->GetSize();
+	}
+	typename std::vector<
+		const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+		>::const_iterator bl;
+	for ( bl = blobs.begin();
+			bl != blobs.end();
+			bl++ )
+		DumpBlob(*bl, level + 1);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+SetupBlob()
+{
+	if ( blob ) return true;
+	if ( !blob_import )
+	{
+		logger << DebugError
+			<< "blob_import not connected."
+			<< EndDebugError;
+		return false;
+	}
+	const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *loader_blob = 
+		blob_import->GetBlob();
+	if ( !loader_blob )
+	{
+		logger << DebugError
+			<< "Failed to setup the blob loader."
+			<< EndDebugError;
+		return false;
+	}
+
+	blob = new typename unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+	blob->Catch();
+	blob->AddBlob(loader_blob);
+
+	// Call the system dependent setup
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		if (!SetupBlobARM()) return false;
+	}
+	if (system == "powerpc")
+	{
+		if (!SetupBlobPPC()) return false;
+	}
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+SetupBlobARM()
+{
+	if(!blob) return false;
+	if ( utsname_machine.compare("armv5") == 0 )
+	{
+		// TODO: Check that the program/stack is not in conflict with the
+		//   tls and cmpxchg interfaces
+		// Set the tls interface, this requires a write into the memory
+		//   system
+		// The following instructions need to be added to memory:
+		// 0xffff0fe0:	e59f0008	ldr r0, [pc, #(16 - 8)] 	@ TLS stored
+		// 														@ at 0xffff0ff0
+		// 0xffff0fe4:	e1a0f00e	mov pc, lr
+		// 0xffff0fe8: 	0
+		// 0xffff0fec: 	0
+		// 0xffff0ff0: 	0
+		// 0xffff0ff4: 	0
+		// 0xffff0ff8: 	0
+		uint32_t tls_base_addr = 0xffff0fe0UL;
+		static const uint32_t tls_buf_length = 7;
+		static const uint32_t tls_buf[tls_buf_length] = 
+			{0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
+		uint32_t *blob_tls_buf = 0;
+		blob_tls_buf = (uint32_t *)malloc(sizeof(uint32_t) * tls_buf_length);
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+				<< "Setting TLS handling:";
+			for ( unsigned int i = 0; i < tls_buf_length; i++ )
+			{
+				logger << endl;
+				logger << " - 0x" << hex << (tls_base_addr + (i * 4)) << " = "
+						<< "0x" << (unsigned int)tls_buf[i] << dec;
+			}
+			logger << EndDebugInfo;
+		}
+		
+		for ( unsigned int i = 0; i < tls_buf_length; i++ )
+		{
+			if ( endianess == E_BIG_ENDIAN )
+				blob_tls_buf[i] = Host2BigEndian(tls_buf[i]);
+			else
+				blob_tls_buf[i] = Host2LittleEndian(tls_buf[i]);
+		}
+
+		unisim::util::debug::blob::Section<ADDRESS_TYPE> *tls_if_section = 
+			new unisim::util::debug::blob::Section<ADDRESS_TYPE>(
+					unisim::util::debug::blob::Section<ADDRESS_TYPE>::TY_UNKNOWN,
+					unisim::util::debug::blob::Section<ADDRESS_TYPE>::SA_A,
+					"tls_if",
+					4,
+					0,
+					tls_base_addr,
+					sizeof(tls_buf),
+					blob_tls_buf
+					);
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+					<< "TLS handler configured." << EndDebugInfo;
+		}
+
+		// Set the cmpxchg (atomic compare and exchange) interface, the
+		//   following instructions need to be added to memory:
+		// 0xffff0fc0:	e5923000	ldr	r3, [r2]
+		// 0xffff0fc4:	e0533000	subs	r3, r3, r0
+		// 0xffff0fc8:	05821000 	streq	r1, [r2]
+		// 0xffff0fcc:	e2730000 	rsbs	r0, r3, #0	; 0x0
+		// 0xffff0fd0:	e1a0f00e 	mov	pc, lr
+		uint32_t cmpxchg_base_addr = 0xffff0fc0UL;
+		static const uint32_t cmpxchg_buf_length = 5;
+		static const uint32_t cmpxchg_buf[cmpxchg_buf_length] = {
+				0xe5923000UL,
+				0xe0533000UL,
+				0x05821000UL,
+				0xe2730000UL,
+				0xe1a0f00eUL
+		};
+		uint32_t *blob_cmpxchg_buf = 0;
+		blob_cmpxchg_buf = (uint32_t *)malloc(sizeof(uint32_t) * 
+				cmpxchg_buf_length);
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+					<< "Setting cmpxchg handling:";
+			for ( unsigned int i = 0; i < cmpxchg_buf_length; i++ )
+			{
+				logger << endl;
+				logger << " - 0x" << hex << (cmpxchg_base_addr + (i * 4))
+						<< " = " << "0x" << (unsigned int)cmpxchg_buf[i] << dec;
+			}
+			logger << EndDebugInfo;
+		}
+		
+		for ( unsigned int i = 0; i < cmpxchg_buf_length; i++ )
+		{
+			if ( endianess == E_BIG_ENDIAN )
+				blob_cmpxchg_buf[i] = Host2BigEndian(cmpxchg_buf[i]);
+			else
+				blob_cmpxchg_buf[i] = Host2LittleEndian(cmpxchg_buf[i]);
+		}
+
+		typename unisim::util::debug::blob::Section<ADDRESS_TYPE> *cmpxchg_if_section = 
+			new unisim::util::debug::blob::Section<ADDRESS_TYPE>(
+					unisim::util::debug::blob::Section<ADDRESS_TYPE>::TY_UNKNOWN,
+					unisim::util::debug::blob::Section<ADDRESS_TYPE>::SA_A,
+					"cmpxchg_if",
+					4,
+					0,
+					cmpxchg_base_addr,
+					sizeof(cmpxchg_buf),
+					blob_cmpxchg_buf
+					);
+		if ( unlikely(verbose) )
+		{
+			logger << DebugInfo
+					<< "cmpxchg handler configured." << EndDebugInfo;
+		}
+		typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *armv5_blob = 
+			new typename unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
+		armv5_blob->SetArchitecture("arm");
+		armv5_blob->SetEndian(endianess);
+		armv5_blob->AddSection(tls_if_section);
+		armv5_blob->AddSection(cmpxchg_if_section);
+		blob->AddBlob(armv5_blob);
+	}
+
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+SetupBlobPPC()
+{
+	if(!blob) return false;
+	// nothing to add to blob
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+SetupLoadARM()
+{
+	if(!SetupBlobARM()) return false;
 	for (unsigned int i = 0; i < 13; i++) 
 	{
 		stringstream buf;
@@ -454,115 +704,116 @@ ARMSetup()
 			return false;
 		}
 	}
-
-	// Set initial CPU registers
-	PARAMETER_TYPE pc = loader_import->GetEntryPoint();
-	if(unlikely(verbose))
-		logger << DebugInfo
-			<< "Setting register \"" << arm_regs[15]->GetName() << "\""
-			<< " to value 0x" << hex << pc << dec << endl
-			<< LOCATION
-			<< EndDebugInfo;
-	arm_regs[15]->SetValue(&pc);
-	PARAMETER_TYPE st = loader_import->GetStackBase();
-	if(unlikely(verbose))
-		logger << DebugInfo
-			<< "Setting register \"" << arm_regs[13]->GetName() << "\""
-			<< " to value 0x" << hex << st << dec << endl
-			<< LOCATION
-			<< EndDebugInfo;
-	arm_regs[13]->SetValue(&st);
 	
-	if ( utsname_machine.compare("armv5") == 0 )
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+SetupLoadPPC()
+{
+	if(!SetupBlobPPC()) return false;
+
+    ppc_cr = registers_import->GetRegister("cr");
+    if (!ppc_cr) 
 	{
-		// TODO: Check that the program/stack is not in conflict with the
-		//   tls and cmpxchg interfaces
-		// Set the tls interface, this requires a write into the memory
-		//   system
-		// The following instructions need to be added to memory:
-		// 0xffff0fe0:	e59f0008	ldr r0, [pc, #(16 - 8)] 	@ TLS stored
-		// 														@ at 0xffff0ff0
-		// 0xffff0fe4:	e1a0f00e	mov pc, lr
-		// 0xffff0fe8: 	0
-		// 0xffff0fec: 	0
-		// 0xffff0ff0: 	0
-		// 0xffff0ff4: 	0
-		// 0xffff0ff8: 	0
-		uint32_t tls_base_addr = 0xffff0fe0UL;
-		uint32_t tls_buf[7] = {0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
-		if ( unlikely(verbose) )
-		{
-			logger << DebugInfo
-				<< "Setting TLS handling:" << endl;
-			for ( unsigned int i = 0; i < 7; i++ )
-			{
-				logger << endl;
-				logger << " - 0x" << hex << (tls_base_addr + (i * 4)) << " = "
-						<< "0x" << (unsigned int)tls_buf[i] << dec;
-			}
-			logger << EndDebugInfo;
-		}
-		for ( unsigned int i = 0; i < 7; i++ )
-		{
-			memory_import->WriteMemory(tls_base_addr + (i*4),
-					(void *)&(tls_buf[i]), 4);
-		}
-		if ( unlikely(verbose) )
-		{
-			logger << DebugInfo
-					<< "TLS handler configured." << EndDebugInfo;
-		}
-		// Set the cmpxchg (atomic compare and exchange) interface, the
-		//   following instructions need to be added to memory:
-		// 0xffff0fc0:	e5923000	ldr	r3, [r2]
-		// 0xffff0fc4:	e0533000	subs	r3, r3, r0
-		// 0xffff0fc8:	05821000 	streq	r1, [r2]
-		// 0xffff0fcc:	e2730000 	rsbs	r0, r3, #0	; 0x0
-		// 0xffff0fd0:	e1a0f00e 	mov	pc, lr
-		uint32_t cmpxchg_base_addr = 0xffff0fc0UL;
-		uint32_t cmpxchg_buf[5] = {
-				0xe5923000UL,
-				0xe0533000UL,
-				0x05821000UL,
-				0xe2730000UL,
-				0xe1a0f00eUL
-		};
-		if ( unlikely(verbose) )
-		{
-			logger << DebugInfo
-					<< "Setting cmpxchg handling:" << endl;
-			for ( unsigned int i = 0; i < 5; i++ )
-			{
-				logger << endl;
-				logger << " - 0x" << hex << (cmpxchg_base_addr + (i * 4))
-						<< " = " << "0x" << (unsigned int)cmpxchg_buf[i] << dec;
-			}
-			logger << EndDebugInfo;
-		}
-		for ( unsigned int i = 0; i < 5; i++ )
-		{
-			memory_import->WriteMemory(cmpxchg_base_addr + (i * 4),
-					(void *)&(cmpxchg_buf[i]), 4);
-		}
-		if ( unlikely(verbose) )
-		{
-			logger << DebugInfo
-					<< "cmpxchg handler configured." << EndDebugInfo;
-		}
+		logger << DebugError
+			<< "CPU has no register named \"cr\"" << endl
+			<< LOCATION
+			<< EndDebugError;
+		return false;
 	}
+
+    for (unsigned int i = 0; i < 32; i++) 
+	{
+		stringstream buf;
+		buf << "r" << i;
+		ppc_regs[i] = registers_import->GetRegister(buf.str().c_str());
+		if (!ppc_regs[i]) 
+		{
+			logger << DebugError
+				<< "CPU has no register named \"" << buf.str() << "\"" << endl
+				<< LOCATION
+				<< EndDebugError;
+			return false;
+		}
+    }
+
+    ppc_cia = registers_import->GetRegister("cia");
+    if (!ppc_cia) 
+	{
+		logger << DebugError
+			<< "CPU has no register named \"cia\"" << endl
+			<< LOCATION
+			<< EndDebugError;
+		return false;
+	}
+	
+	return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+SetupLinuxOSARM()
+{
+	// Set the system calls mappings
+	SetSyscallId(string("exit"), 1);
+	SetSyscallId(string("read"), 3);
+	SetSyscallId(string("write"), 4);
+	SetSyscallId(string("open"), 5);
+	SetSyscallId(string("close"), 6);
+	SetSyscallId(string("unlink"), 10);
+	SetSyscallId(string("time"), 13);
+	SetSyscallId(string("lseek"), 19);
+	SetSyscallId(string("getpid"), 20);
+	SetSyscallId(string("getuid"), 24);
+	SetSyscallId(string("access"), 33);
+	SetSyscallId(string("kill"), 37);
+	SetSyscallId(string("rename"), 38);
+	SetSyscallId(string("times"), 43);
+	SetSyscallId(string("brk"), 45);
+	SetSyscallId(string("getgid"), 47);
+	SetSyscallId(string("geteuid"), 49);
+	SetSyscallId(string("getegid"), 50);
+	SetSyscallId(string("ioctl"), 54);
+	SetSyscallId(string("setrlimit"), 75);
+	SetSyscallId(string("getrusage"), 77);
+	SetSyscallId(string("munmap"), 91);
+    SetSyscallId(string("ftruncate"), 93);
+	SetSyscallId(string("socketcall"), 102);
+	SetSyscallId(string("stat"), 106);
+	SetSyscallId(string("fstat"), 108);
+	SetSyscallId(string("uname"), 122);
+	SetSyscallId(string("llseek"), 140);
+	SetSyscallId(string("writev"), 146);
+	SetSyscallId(string("rt_sigaction"), 174);
+	SetSyscallId(string("rt_sigprocmask"), 175);
+	SetSyscallId(string("ugetrlimit"), 191);
+	SetSyscallId(string("mmap2"), 192);
+	SetSyscallId(string("stat64"), 195);
+	SetSyscallId(string("fstat64"), 197);
+	SetSyscallId(string("getuid32"), 199);
+	SetSyscallId(string("getgid32"), 200);
+	SetSyscallId(string("geteuid32"), 201);
+	SetSyscallId(string("getegid32"), 202);
+	SetSyscallId(string("flistxattr"), 234);
+	SetSyscallId(string("exit_group"), 248);
+	// the following are private to the arm
+	SetSyscallId(string("breakpoint"), 983041);
+	SetSyscallId(string("cacheflush"), 983042);
+	SetSyscallId(string("usr26"), 983043);
+	SetSyscallId(string("usr32"), 983044);
+	SetSyscallId(string("set_tls"), 983045);
 
 	return true;
 }
 
-/**
- * Linux PPC dependent setup
- * 
- * @return true if setup succeeds
- */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-PPCSetup() 
+SetupLinuxOSPPC()
 {
     // Set the system calls mappings
     SetSyscallId(string("exit"), 1);
@@ -605,55 +856,223 @@ PPCSetup()
     SetSyscallId(string("fcntl64"), 204);
     SetSyscallId(string("flistxattr"), 217);
     SetSyscallId(string("exit_group"), 234);
+	
+	return true;
+}
 
-    // Set mmap_brk_point and brk_point
-    mmap_brk_point = mmap_base;
-    brk_point = loader_import->GetTopAddr() +
-	            (memory_page_size - (loader_import->GetTopAddr() % memory_page_size));
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+Setup(ServiceExportBase *srv_export)
+{
+	if ( srv_export == &loader_export )
+	{
+		if ( !SetupLoad() )
+		{
+			logger << DebugError
+				<< "Failed the setup of the load_export."
+				<< EndDebugError;
+			return false;
+		}
+		return true;
+	}
 
-    ppc_cr = registers_import->GetRegister("cr");
-    if (!ppc_cr) 
+	if ( srv_export == &blob_export )
+	{
+		if ( !SetupBlob() )
+		{
+			logger << DebugError
+				<< "Failed the setup of the blob_export."
+				<< EndDebugError;
+			return false;
+		}
+		return true;
+	}
+
+	if ( srv_export == &linux_os_export )
+	{
+		if ( !SetupLinuxOS() )
+		{
+			logger << DebugError
+				<< "Failed to setup of the linux_os_export."
+				<< EndDebugError;
+			return false;
+		}
+		return true;
+	}
+	
+	logger << DebugError << "Internal error" << EndDebugError;
+	
+	return false;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+EndSetup()
+{
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		if ( !LoadARM() )
+		{
+			logger << DebugError
+				<< "Failed the ARM setup."
+				<< EndDebugError;
+			return false;
+		}
+		return true;
+	}
+
+	if ( system == "powerpc" )
+	{
+		if ( !LoadPPC() )
+		{
+			logger << DebugError
+				<< "Failed the PowerPC setup."
+				<< EndDebugError;
+			return false;
+		}
+		return true;
+	}
+	
+	logger << DebugError
+		<< "Unknown system to load (supported arm and powerpc)."
+		<< EndDebugError;
+	return false;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LoadARM()
+{
+	if ( !blob ) 
 	{
 		logger << DebugError
-			<< "CPU has no register named \"cr\"" << endl
-			<< LOCATION
+			<< "blob not found while loading ARM setup."
 			<< EndDebugError;
 		return false;
 	}
 
-    for (unsigned int i = 0; i < 31; i++) 
+	bool status = true;
+	const typename unisim::util::debug::blob::Section<ADDRESS_TYPE> 
+		*tls_if_section = blob->FindSection("tls_if");
+	if ( tls_if_section )
 	{
-		stringstream buf;
-		buf << "r" << i;
-		ppc_regs[i] = registers_import->GetRegister(buf.str().c_str());
-		if (!ppc_regs[i]) 
+		if ( !memory_import )
 		{
 			logger << DebugError
-				<< "CPU has no register named \"" << buf.str() << "\"" << endl
-				<< LOCATION
+				<< "memory_import not found when loading ARM setup (tls)."
 				<< EndDebugError;
-			return false;
+			status = false;
 		}
+		else if ( !memory_import->WriteMemory(tls_if_section->GetAddr(), 
+						tls_if_section->GetData(), 
+						tls_if_section->GetSize()) )
+		{
+			logger << DebugError
+				<< "Could not write into memory tls data while loading"
+				<< " ARM setup."
+				<< EndDebugError;
+			status = false;
+		}
+	}
+	const typename unisim::util::debug::blob::Section<ADDRESS_TYPE> 
+		*cmpxchg_if_section = blob->FindSection("cmpxchg_if");
+	if ( cmpxchg_if_section )
+	{
+		if ( !memory_import )
+		{
+			logger << DebugError
+				<< "memory_import not found when loading ARM setup (cmpxchg)."
+				<< EndDebugError;
+			status = false;
+		}
+		else if ( !memory_import->WriteMemory(cmpxchg_if_section->GetAddr(), 
+					cmpxchg_if_section->GetData(), 
+					cmpxchg_if_section->GetSize()) ) 
+		{
+			logger << DebugError
+				<< "Could not write into memory cmpxchg data while loading"
+				<< " ARM setup."
+				<< EndDebugError;
+			status = false;
+		}
+	}
+	
+	// Set initial CPU registers
+	PARAMETER_TYPE pc = blob->GetEntryPoint();
+	if ( unlikely(verbose) )
+		logger << DebugInfo
+			<< "Setting register \"" << arm_regs[15]->GetName() << "\""
+			<< " to value 0x" << hex << pc << dec << endl
+			<< LOCATION
+			<< EndDebugInfo;
+	arm_regs[15]->SetValue(&pc);
+	PARAMETER_TYPE st = blob->GetStackBase();
+	if ( unlikely(verbose) )
+		logger << DebugInfo
+			<< "Setting register \"" << arm_regs[13]->GetName() << "\""
+			<< " to value 0x" << hex << st << dec << endl
+			<< LOCATION
+			<< EndDebugInfo;
+	arm_regs[13]->SetValue(&st);
+	
+	return status;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LoadPPC()
+{
+	if ( !blob ) 
+	{
+		logger << DebugError
+			<< "blob not found while loading PPC setup."
+			<< EndDebugError;
+		return false;
+	}
+
+    for (unsigned int i = 0; i < 32; i++) 
+	{
+		if (!ppc_regs[i]) return false;
 		PARAMETER_TYPE zero = 0;
 		ppc_regs[i]->SetValue(&zero);
     }
 
     // Set initial CPU registers
-    PARAMETER_TYPE pc = loader_import->GetEntryPoint();
-    Register *ppc_cia = registers_import->GetRegister("cia");
-    if (!ppc_cia) 
-	{
-		logger << DebugError
-			<< "CPU has no register named \"cia\"" << endl
-			<< LOCATION
-			<< EndDebugError;
-		return false;
-	}
+    PARAMETER_TYPE pc = blob->GetEntryPoint();
+    if (!ppc_cia) return false;
     ppc_cia->SetValue(&pc);
-    PARAMETER_TYPE st = loader_import->GetStackBase();
+    PARAMETER_TYPE st = blob->GetStackBase();
+	if(!ppc_regs[1]) return false;
     ppc_regs[1]->SetValue(&st);
+	
+	return true;
+}
 
-    return true;
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+Load() 
+{
+	if(!loader_import) return false;
+	if(!loader_import->Load()) return false;
+	// Call the system dependent Load
+	if (system == "arm") return LoadARM();
+	if (system == "arm-eabi") return LoadARM();
+	if (system == "powerpc") return LoadPPC();
+	
+	return false;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+const typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetBlob() const
+{
+	return blob;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -889,7 +1308,7 @@ LSC_exit()
 			<< "LSC_exit with ret = 0X" << hex << ret << dec
 			<< LOCATION
 			<< EndDebugInfo;
-	cpu_linux_os_import->PerformExit(ret);
+	Object::Stop(ret);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1163,7 +1582,7 @@ LSC_times()
 	ADDRESS_TYPE buf_addr;
 	buf_addr = GetSystemCallParam(0);
 
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		struct arm_tms_t target_tms;
 		ret = Times(&target_tms);
@@ -1202,7 +1621,7 @@ LSC_brk()
 	ADDRESS_TYPE new_brk_point;
     
 	new_brk_point = GetSystemCallParam(0);
-    
+   
 	if (new_brk_point > GetBrkPoint())
 		SetBrkPoint(new_brk_point);      
 		
@@ -1336,7 +1755,6 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Stat(int fd, struct powerpc_stat_t *target_stat)
 {
-	std::cerr << "sizeof=" << sizeof(powerpc_stat_t) << std::endl;
 	int ret;
 	struct stat host_stat;
 	ret = fstat(fd, &host_stat);
@@ -1703,7 +2121,7 @@ LSC_fstat()
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		ret = -1;
 	}
@@ -1898,7 +2316,7 @@ LSC_stat64()
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		struct arm_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
@@ -1930,7 +2348,7 @@ LSC_fstat64()
 
 	fd = GetSystemCallParam(0);
 	buf_address = GetSystemCallParam(1);
-	if (system == "arm")
+	if ( (system == "arm") || (system == "arm-eabi") )
 	{
 		struct arm_stat64_t target_stat;
 		ret = Stat64(fd, &target_stat);
@@ -2390,8 +2808,10 @@ int
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 GetSyscallNumber(int id) 
 {
-	if (system == "arm")
+	if ( system == "arm" )
 		return ARMGetSyscallNumber(id);
+	else if ( system == "arm-eabi" )
+		return ARMEABIGetSyscallNumber(id);
 	else
 		return PPCGetSyscallNumber(id);
 }
@@ -2403,6 +2823,18 @@ ARMGetSyscallNumber(int id)
 {
 	int translated_id = id - 0x0900000;
 	return translated_id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ARMEABIGetSyscallNumber(int id) 
+{
+	// the arm eabi ignores the given id and uses register 7
+	//   as the id and translated id
+	uint32_t translated_id = 0;
+	arm_regs[7]->GetValue(&translated_id);
+	return (int)translated_id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2797,8 +3229,10 @@ PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 GetSystemCallParam(int id) 
 {
-	if (system == "arm")
+	if ( system == "arm" )
 		return ARMGetSystemCallParam(id);
+	else if ( system == "arm-eabi" )
+		return ARMEABIGetSystemCallParam(id);
 	else
 		return PPCGetSystemCallParam(id);
 }
@@ -2807,6 +3241,16 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ARMGetSystemCallParam(int id) 
+{
+	PARAMETER_TYPE val;
+	arm_regs[id]->GetValue(&val);
+	return val;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+PARAMETER_TYPE
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ARMEABIGetSystemCallParam(int id) 
 {
 	PARAMETER_TYPE val;
 	arm_regs[id]->GetValue(&val);
@@ -2828,8 +3272,10 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 SetSystemCallStatus(int ret, bool error) 
 {
-	if (system == "arm")
+	if ( system == "arm" )
 		ARMSetSystemCallStatus(ret, error);
+	else if ( system == "arm-eabi" )
+		ARMEABISetSystemCallStatus(ret, error);
 	else
 		PPCSetSystemCallStatus(ret, error);
 }
@@ -2838,6 +3284,15 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void 
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 ARMSetSystemCallStatus(int ret, bool error) 
+{
+	PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
+	arm_regs[0]->SetValue(&val);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void 
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+ARMEABISetSystemCallStatus(int ret, bool error) 
 {
 	PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
 	arm_regs[0]->SetValue(&val);

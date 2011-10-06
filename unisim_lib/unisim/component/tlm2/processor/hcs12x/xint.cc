@@ -50,26 +50,34 @@ address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
 uint8_t XINT::XINT_REGS_RESET_VALUES[XINT::XINT_MEMMAP_SIZE];
 
 XINT::XINT(const sc_module_name& name, Object *parent) :
-	sc_module(name),
 	Object(name, parent),
+	sc_module(name),
 	Service<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
+
+	interrupt_request("interrupt_request"),
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
 
-	interrupt_request("interrupt_request"),
 	input_payload_queue("input_payload_queue"),
+
+	isHardwareInterrupt(false),
 	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-	isHardwareInterrupt(false)
+	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
 	interrupt_request(*this);
 	fromCPU_Target.register_b_transport(this, &XINT::getVectorAddress);
 	slave_socket.register_b_transport(this, &XINT::read_write);
+
+	SC_HAS_PROCESS(XINT);
+
+	SC_THREAD(Run);
+
+	zeroTime = sc_time((double)0, SC_PS);
 
 	XINT_REGS_ADDRESSES[IVBR]		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
 	XINT_REGS_RESET_VALUES[IVBR]	= 0xFF;		// IVBR is only one.
@@ -104,14 +112,7 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	XINT_REGS_ADDRESSES[INT_CFDATA7] = 0x012F;
 	XINT_REGS_RESET_VALUES[INT_CFDATA7]	= 0x01;
 
-
-	zeroTime = sc_time((double)0, SC_PS);
-
 	Reset();
-
-	SC_HAS_PROCESS(XINT);
-
-	SC_THREAD(Run);
 
 }
 
@@ -143,6 +144,7 @@ unsigned int XINT::transport_dbg(XINT_Payload& payload)
 }
 
 void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
+	payload.acquire();
 	input_payload_queue.notify(payload, t);
 }
 
@@ -158,32 +160,29 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			// accepts an interrupt request modeled by payload
 			phase = END_REQ; // update the phase
 
+			payload.acquire();
 			input_payload_queue.notify(payload, t); // queue the payload and the associative time
 
 			return TLM_UPDATED;
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 		default:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
 
-			sc_stop();
-			wait(); // leave control to the SystemC kernel
+			Object::Stop(-1);
 			break;
 	}
 
@@ -246,7 +245,9 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 		}
 
 
-		vectorAddress = (getIVBR() << 8) + selectedInterrupt * 2;
+//		vectorAddress = (getIVBR() << 8) + selectedInterrupt * 2;
+		vectorAddress = getIVBR();
+		vectorAddress = (vectorAddress << 8) + selectedInterrupt * 2;
 		interrupt_flags[selectedInterrupt] = false;
 	}
 
@@ -311,6 +312,7 @@ void XINT::Run()
 					hasVisibleInterrupt = true;
 				}
 
+				payload->release();
 			}
 
 		} while(payload);
@@ -360,8 +362,8 @@ void XINT::Reset() {
 
 }
 
-bool XINT::Setup()
-{
+bool XINT::BeginSetup() {
+
 	char buf[80];
 
 	sprintf(buf, "%s.IVBR",name());
@@ -378,6 +380,14 @@ bool XINT::Setup()
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
 	}
 
+	return true;
+}
+
+bool XINT::Setup(ServiceExportBase *srv_export) {
+	return true;
+}
+
+bool XINT::EndSetup() {
 	return true;
 }
 
@@ -559,6 +569,10 @@ bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 }
 
 bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+
+	if (size == 0) {
+		return true;
+	}
 
 	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
 		if (XINT_REGS_ADDRESSES[i] == addr) {

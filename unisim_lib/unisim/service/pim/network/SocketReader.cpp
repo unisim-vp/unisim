@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#include <sstream>
 #include <fstream>
 
 #ifdef WIN32
@@ -29,19 +30,32 @@
 #endif
 
 #include "SocketReader.hpp"
+#include "../convert.hh"
 
 namespace unisim {
 namespace service {
 namespace pim {
 namespace network {
 
-SocketReader::SocketReader(const int sock) {
+SocketReader::SocketReader(const int sock, bool _blocking) :
+		GenericThread(),
+		blocking(_blocking),
+		input_buffer_size(0),
+		input_buffer_index(0),
+		input_buffer(NULL)
+{
 	assert(sock >= 0);
 	sockfd = sock;
 	buffer_queue = new BlockingQueue<char *>();
+	input_buffer = (char*) malloc(MAXDATASIZE+1);
+
 };
 
-SocketReader::~SocketReader() { };
+SocketReader::~SocketReader() {
+
+	if (buffer_queue) { delete buffer_queue; buffer_queue = NULL; }
+	if (input_buffer) { free (input_buffer); input_buffer = NULL; }
+};
 
 /*
  * FD_ZERO(sockfd, &write_flags)	sets all associated flags in the socket to 0
@@ -54,13 +68,14 @@ void SocketReader::Run() {
 
 	fd_set read_flags, write_flags;
 	struct timeval waitd;
+	stringstream receive_buffer;
 
 	int err;
 	int n;
 
-	terminated = false;
+	super::setTerminated(false);
 
-	while (!terminated) {
+	while (!super::isTerminated()) {
 		waitd.tv_sec = 0;
 		waitd.tv_usec = 1000;
 
@@ -85,20 +100,127 @@ void SocketReader::Run() {
 		if (FD_ISSET(sockfd, &read_flags)) {
 			FD_CLR(sockfd, &read_flags);
 
-			char *input_buffer = new char[MAXDATASIZE+1];
 			memset(input_buffer, 0, MAXDATASIZE+1);
 
-		    n = read(sockfd, input_buffer, MAXDATASIZE);
-
-		    if (n < 0) {
+#ifdef WIN32
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
+			if (n == 0 || n == SOCKET_ERROR)
+#else
+			n = read(sockfd, input_buffer, MAXDATASIZE);
+			if (n <= 0)
+#endif
+			{
 		    	int array[] = {sockfd};
 		    	error(array, "ERROR reading from socket");
 		    } else if (n > 0) {
-		    	buffer_queue->add(input_buffer);
+		    	receive_buffer << input_buffer;
 		    }
 
+		} else {
+			receive_buffer.flush();
+			string bstr = receive_buffer.str();
+			receive_buffer.str("");
+			while (bstr.size() > 0) {
+				int pos = 0;
+				switch (bstr[pos++]) {
+					case '+': break;
+					case '-': break;
+					case '$': {
+						int diese_index = bstr.find_first_of('#');
+						char* buffer = (char *) malloc(diese_index);
+						memset(buffer, 0, diese_index);
+						memcpy(buffer, bstr.c_str()+1, diese_index-1);
+						buffer_queue->add(buffer);
+
+						pos = diese_index+3;
+
+					} break;
+					default : ;
+				}
+
+				if (pos < bstr.size()) {
+					bstr = bstr.substr(pos);
+				} else {
+					bstr = "";
+				}
+			}
+
+			bstr.clear();
 		}
 
+	}
+
+}
+
+void SocketReader::getChar(char& c) {
+
+	fd_set read_flags, write_flags;
+	struct timeval waitd;
+
+	int err;
+
+	int n;
+
+	while (input_buffer_size == 0) {
+		waitd.tv_sec = 0;
+		waitd.tv_usec = 1000;
+
+		FD_ZERO(&read_flags); // Zero the flags ready for using
+		FD_ZERO(&write_flags);
+
+		// Set the sockets read flag, so when select is called it examines
+		// the read status of available data.
+		FD_SET(sockfd, &read_flags);
+
+		// Now call select
+		err = select(sockfd+1, &read_flags, &write_flags, (fd_set*)0,&waitd);
+		if (err < 0) { // If select breaks then pause for 1 seconds
+			sleep(1); // then continue
+			continue;
+		}
+
+		// Now select will have modified the flag sets to tell us
+		// what actions can be performed
+
+		// Check if data is available to read
+		if (FD_ISSET(sockfd, &read_flags)) {
+			FD_CLR(sockfd, &read_flags);
+
+			memset(input_buffer, 0, sizeof(input_buffer));
+
+#ifdef WIN32
+			n = recv(sockfd, input_buffer, MAXDATASIZE, 0);
+			if (n == 0 || n == SOCKET_ERROR)
+#else
+			n = read(sockfd, input_buffer, MAXDATASIZE);
+			if (n <= 0)
+#endif
+		    {
+		    	int array[] = {sockfd};
+		    	error(array, "ERROR reading from socket");
+		    } else {
+		    	input_buffer_size = n;
+		    	input_buffer_index = 0;
+		    }
+
+		} else {
+			if (blocking) {
+				sleep(1); // then continue
+				continue;
+			} else {
+				break;
+			}
+		}
+
+	}
+
+
+	if (input_buffer_size > 0) {
+		c = input_buffer[input_buffer_index];
+		input_buffer_size--;
+		input_buffer_index++;
+	} else {
+		c = 0;
 	}
 
 }
@@ -106,33 +228,97 @@ void SocketReader::Run() {
 char* SocketReader::receive() {
 
 	char* str = NULL;
-	char* buffer = NULL;
+	string s = "";
+	uint8_t checkSum = 0;
+	int packet_size = 0;
+	uint8_t pchk;
+	char c;
 
-	buffer_queue->next(str);
+	if (blocking) {
 
-	if (str != NULL) {
+    	while (true) {
+    		getChar(c);
+    		if (c == 0) {
+    			cerr << "receive EOF " << endl;
+    			break;
+    		}
+        	switch(c)
+        	{
+        		case '+':
+        			break;
+        		case '-':
+       				// error response => e.g. retransmission of the last packet
+        			break;
+        		case 3: // '\003'
+        			break;
+        		case '$':
 
-		int str_size = strlen(str);
+        			getChar(c);
+        			while (true) {
+            			s = s + c;
+            			packet_size++;
+        				checkSum = checkSum + c;
+        				getChar(c);
 
-		buffer = (char *) malloc(str_size+1);
-		memset(buffer, 0, str_size+1);
-		memcpy(buffer, str, str_size);
+        				if (c == '#') break;
+        			}
 
-		free(str);
-		str = NULL;
+        			getChar(c);
+        			pchk = HexChar2Nibble(c) << 4;
+        			getChar(c);
+        			pchk = pchk + HexChar2Nibble(c);
+
+        			if (checkSum != pchk) {
+        				cerr << "wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+        				return NULL;
+        			} else
+        			{
+
+						str = (char *) malloc(packet_size+1);
+						memset(str, 0, packet_size+1);
+						memcpy(str, s.c_str(), packet_size);
+
+						s.clear();
+
+        				return str;
+        			}
+
+        			break;
+        		default:
+        			cerr << "packetParser: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+        	}
+
+    	}
+
+    	return str;
+
+	} else {
+		buffer_queue->next(str);
 	}
 
-	return buffer;
+	return str;
 }
 
 
 void SocketReader::stop() {
-	super::stop();
 
 	if (buffer_queue) {
+		buffer_queue->lock();
+		std::queue<char*> myqueue = buffer_queue->getQueue();
+		while (!myqueue.empty())
+		{
+			char* data = myqueue.front();
+			free(data);
+			myqueue.pop();
+		}
+
+		buffer_queue->unlock();
+
 		delete buffer_queue;
 		buffer_queue = NULL;
 	}
+
+	super::stop();
 
 }
 

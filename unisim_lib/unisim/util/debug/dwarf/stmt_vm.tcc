@@ -63,12 +63,17 @@ DWARF_StatementVM<MEMORY_ADDR>::~DWARF_StatementVM()
 template <class MEMORY_ADDR>
 bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 {
-	// filename starts '/' or 'drive letter':\ or 'driver letter':/
+#ifdef WIN32
+	// filename starts with '/' or 'drive letter':\ or 'driver letter':/
 	return (((filename[0] >= 'a' && filename[0] <= 'z') || (filename[0] >= 'A' && filename[0] <= 'Z')) && (filename[1] == ':') && ((filename[2] == '\\') || (filename[2] == '/'))) || (*filename == '/');
+#else
+	// filename starts with '/'
+	return (*filename == '/');
+#endif
 }
 
 template <class MEMORY_ADDR>
-void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& matrix)
+void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
 	const DWARF_Filename *dw_filename = (file >= 1 && file <= filenames.size()) ? &filenames[file - 1] : 0;
 	const char *filename = dw_filename ? dw_filename->GetFilename() : 0;
@@ -79,17 +84,31 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		{
 			const DWARF_LEB128& leb128_dir = dw_filename->GetDirectoryIndex();
 			unsigned int dir = (unsigned int) leb128_dir;
-			dirname = (dir >= 1 && dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
+			if(dir != 0) // current directory of the compilation ?
+			{
+				dirname = (dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
+				if(!dirname)
+				{
+					std::cerr << "WARNING! Invalid directory index in statement program" << std::endl;
+					return;
+				}
+			}
 		}
 	}
-	if(matrix.find(address) != matrix.end())
+	// At this point, if dirname is null we know that source filename is an absolute path or it is relative to the current directory of the compilation
+	
+	// Check that there's no duplicated entry in the statement matrix
+	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
+	
+	// If there's already a row, I suppose that overwritting it is the correct behavior
+	if(stmt_matrix_iter != stmt_matrix.end())
 	{
-		//std::cerr << "Row for address 0x" << std::hex << address << std::dec << " already exists" << std::endl;
-		return;
+		delete (*stmt_matrix_iter).second;
+		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
-	matrix.insert(std::pair<MEMORY_ADDR, Statement<MEMORY_ADDR> *>(address, stmt));
+	stmt_matrix.insert(std::pair<MEMORY_ADDR, Statement<MEMORY_ADDR> *>(address, stmt));
 }
 
 template <class MEMORY_ADDR>
@@ -128,7 +147,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					unsigned int num_args = dw_stmt_prog->standard_opcode_lengths[opcode - 1];
 					unsigned int i;
 					DWARF_LEB128 args[num_args];
-					uint16_t uhalf_arg;
+					uint16_t uhalf_arg = 0;
 					
 					if(opcode != DW_LNS_fixed_advance_pc)
 					{
@@ -293,15 +312,18 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						end_sequence = true;
 						// Add a row to matrix
 						if(matrix) AddRow(dw_stmt_prog, *matrix);
-						// Reset machine state
+						// Reset machine state but end_sequence !
 						address = 0;
 						file = 1;
 						line = 1;
 						column = 0;
 						is_stmt = dw_stmt_prog->default_is_stmt;
-						basic_block = false;
 						end_sequence = false;
-						if(os) (*os) << "End of Sequence";
+						basic_block = false;
+						prologue_end = false;
+						prologue_begin = false;
+						isa = 0;
+						if(os) (*os) << "End of Sequence" << std::endl;
 						break;
 					case DW_LNE_set_address:
 						{
@@ -358,7 +380,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				if(os) (*os) << std::endl;
 			}
 		}
-		while(count && !end_sequence);
+		while(count);
 	}
 	return true;
 }

@@ -38,16 +38,24 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler, uint64_t _length, const uint8_t *_program)
-	: dw_handler(_dw_handler)
+DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler, uint64_t _length, const uint8_t *_program, unsigned int _type)
+	: type(_type)
+	, dw_handler(_dw_handler)
 	, length(_length)
 	, program(_program)
+	, dw_cie(0)
 {
 }
 
 template <class MEMORY_ADDR>
 DWARF_CallFrameProgram<MEMORY_ADDR>::~DWARF_CallFrameProgram()
 {
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_CallFrameProgram<MEMORY_ADDR>::GetType() const
+{
+	return type;
 }
 
 template <class MEMORY_ADDR>
@@ -73,6 +81,18 @@ template <class MEMORY_ADDR>
 const uint8_t *DWARF_CallFrameProgram<MEMORY_ADDR>::GetProgram() const
 {
 	return program;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_CallFrameProgram<MEMORY_ADDR>::SetCIE(const DWARF_CIE<MEMORY_ADDR> *_dw_cie)
+{
+	dw_cie = _dw_cie;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_CIE<MEMORY_ADDR> *DWARF_CallFrameProgram<MEMORY_ADDR>::GetCIE() const
+{
+	return dw_cie;
 }
 
 template <class MEMORY_ADDR>

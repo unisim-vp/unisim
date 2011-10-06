@@ -580,6 +580,16 @@ DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(const DWARF_CallFrameProgram<MEM
 }
 
 template <class MEMORY_ADDR>
+DWARF_Expression<MEMORY_ADDR>::DWARF_Expression(const DWARF_Expression<MEMORY_ADDR>& dw_exp)
+	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_EXPRESSION)
+	, dw_cu(dw_exp.dw_cu)
+	, dw_cfp(dw_exp.dw_cfp)
+	, length(dw_exp.length)
+	, value(dw_exp.value)
+{
+}
+
+template <class MEMORY_ADDR>
 DWARF_Expression<MEMORY_ADDR>::~DWARF_Expression()
 {
 }

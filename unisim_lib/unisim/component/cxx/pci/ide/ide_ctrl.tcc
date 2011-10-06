@@ -41,6 +41,7 @@ retaining the original license:
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <string.h>
 
 #include "unisim/component/cxx/pci/ide/ide_ctrl.hh"
 #include "unisim/component/cxx/pci/ide/ide_disk.hh"
@@ -56,22 +57,6 @@ namespace cxx {
 namespace pci {
 namespace ide {
 
-#define panic(str) \
-	{ cerr << " ERROR(" << __FUNCTION__ \
-		<< ":" << __FILE__ \
-		<< ":" << __LINE__ << "): " \
-		<< str \
-		<< endl; \
-	return false; }
-
-#define panic2(str, str2) \
-	{ cerr << " ERROR(" << __FUNCTION__ \
-		<< ":" << __FILE__ \
-		<< ":" << __LINE__ << "): " \
-		<< str  << str2 \
-		<< endl; \
-	return false; }
-		
 ////
 // Initialization and destruction
 ////
@@ -180,7 +165,7 @@ IdeController<ADDRESS_TYPE>::parseAddr(const ADDRESS_TYPE &addr, uint32_t &offse
         reg_type = BMI_BLOCK;
         channel = (offset < BMIC1) ? PRIMARY : SECONDARY;
     } else {
-        soft_panic2("IDE controller access to invalid address: %#x\n", offset);
+        soft_panic2("IDE controller access to invalid address: ", offset);
     }   
 }
 
@@ -269,13 +254,15 @@ IdeController<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *
 			}
             break;
           case sizeof(uint16_t): {
-            *(uint16_t*)data = *(uint16_t*)&config_regs.data[config_offset];
+            //*(uint16_t*)data = *(uint16_t*)&config_regs.data[config_offset];
+			memcpy(data, &config_regs.data[config_offset], sizeof(uint16_t));
 	        //DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
             //    offset, size, *(uint16_t*)data);
 			}
             break;
           case sizeof(uint32_t): {
-            *(uint32_t*)data = *(uint32_t*)&config_regs.data[config_offset]; 
+            //*(uint32_t*)data = *(uint32_t*)&config_regs.data[config_offset]; 
+			memcpy(data, &config_regs.data[config_offset], sizeof(uint32_t));
         	//DPRINTF(IdeCtrl, "PCI read offset: %#x size: %#x data: %#x\n",
             //    offset, size, *(uint32_t*)data);
 			}
@@ -285,7 +272,8 @@ IdeController<ADDRESS_TYPE>::readConfig(ADDRESS_TYPE offset, int size, uint8_t *
         }
 
     } else {
-        panic2("Read of unimplemented PCI inherited::config. register: %x\n", offset);
+		memset(data, 0xff, size);
+        soft_panic2("Read of unimplemented PCI config. register: ", offset);
     }
     return true;
 }
@@ -308,16 +296,18 @@ IdeController<ADDRESS_TYPE>::writeConfig(ADDRESS_TYPE offset, int size, const ui
             config_regs.data[config_offset] = *data;
             break;
           case sizeof(uint16_t):
-            *(uint16_t*)&config_regs.data[config_offset] = *(uint16_t*)data;
+            //*(uint16_t*)&config_regs.data[config_offset] = *(uint16_t*)data;
+			memcpy(&config_regs.data[config_offset], data, sizeof(uint16_t));
             break;
           case sizeof(uint32_t):
-            *(uint32_t*)&config_regs.data[config_offset] = *(uint32_t*)data;
+            //*(uint32_t*)&config_regs.data[config_offset] = *(uint32_t*)data;
+			memcpy(&config_regs.data[config_offset], data, sizeof(uint32_t));
             break;
           default:
             panic("Invalid PCI configuration write size!\n");
         }
     } else {
-        panic2("Write of unimplemented PCI inherited::config. register: %x\n", offset);
+        soft_panic2("Write of unimplemented PCI config. register: ", offset);
     }
 /*	if (size == 1) {
     	DPRINTF(IdeCtrl, "PCI write offset: %#x size: %#x data: %#x\n",
@@ -479,10 +469,12 @@ IdeController<ADDRESS_TYPE>::readMem(ADDRESS_TYPE addr, int size, uint8_t *data)
             *(uint8_t*)data = *(uint8_t*)&bmi_regs.data[offset];
             break;
           case sizeof(uint16_t):
-            *(uint16_t*)data = *(uint16_t*)&bmi_regs.data[offset];
+            //*(uint16_t*)data = *(uint16_t*)&bmi_regs.data[offset];
+			memcpy(data, &bmi_regs.data[offset], sizeof(uint16_t));
             break;
           case sizeof(uint32_t):
-            *(uint32_t*)data = *(uint32_t*)&bmi_regs.data[offset];        
+            //*(uint32_t*)data = *(uint32_t*)&bmi_regs.data[offset];        
+			memcpy(data, &bmi_regs.data[offset], sizeof(uint32_t));
             break;
           default:
             panic2("IDE read of BMI reg invalid size: %#x\n", size);

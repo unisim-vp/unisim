@@ -142,14 +142,14 @@ ldm_1_db.disasm = {
 }
 
 ldm_1_ia.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -182,14 +182,14 @@ ldm_1_ia.execute = {
 }
 
 ldm_1_ib.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -222,14 +222,14 @@ ldm_1_ib.execute = {
 }
 
 ldm_1_da.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -262,14 +262,14 @@ ldm_1_da.execute = {
 }
 
 ldm_1_db.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -409,14 +409,14 @@ ldm_2_db.disasm = {
 }
 
 ldm_2_ia.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -430,7 +430,7 @@ ldm_2_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPR(cur_address, i);
+			cpu.Read32toUserGPR(cur_address, i);
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -441,14 +441,14 @@ ldm_2_ia.execute = {
 }
 
 ldm_2_ib.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -462,7 +462,7 @@ ldm_2_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.Read32toUserGPRAligned(cur_address, i);
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -473,14 +473,14 @@ ldm_2_ib.execute = {
 }
 
 ldm_2_da.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -494,7 +494,7 @@ ldm_2_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.Read32toUserGPRAligned(cur_address, i);
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -505,14 +505,14 @@ ldm_2_da.execute = {
 }
 
 ldm_2_db.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -526,7 +526,7 @@ ldm_2_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.Read32toUserGPRAligned(cur_address, i);
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -644,14 +644,14 @@ ldm_3_db.disasm = {
 }
 
 ldm_3_ia.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -684,14 +684,14 @@ ldm_3_ia.execute = {
 }
 
 ldm_3_ib.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -724,14 +724,14 @@ ldm_3_ib.execute = {
 }
 
 ldm_3_da.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -764,14 +764,14 @@ ldm_3_da.execute = {
 }
 
 ldm_3_db.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
@@ -915,16 +915,16 @@ stm_1_db.disasm = {
 }
 
 stm_1_ia.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -957,16 +957,16 @@ stm_1_ia.execute = {
 }
 
 stm_1_ib.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -999,16 +999,16 @@ stm_1_ib.execute = {
 }
 
 stm_1_da.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -1041,16 +1041,16 @@ stm_1_da.execute = {
 }
 
 stm_1_db.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
 	
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1186,16 +1186,16 @@ stm_2_db.disasm = {
 }
 
 stm_2_ia.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
@@ -1208,14 +1208,14 @@ stm_2_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			value = cpu.GetGPR_usr(i);
+			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
 			cpu.Write32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		cpu.Write32(cur_address, value);
 	}
 
@@ -1224,16 +1224,16 @@ stm_2_ia.execute = {
 }
 
 stm_2_ib.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1246,14 +1246,14 @@ stm_2_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			value = cpu.GetGPR_usr(i);
+			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
 			cpu.Write32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		cpu.Write32(cur_address, value);
 	}
 
@@ -1262,16 +1262,16 @@ stm_2_ib.execute = {
 }
 
 stm_2_da.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1284,14 +1284,14 @@ stm_2_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			value = cpu.GetGPR_usr(i);
+			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
 			cpu.Write32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		cpu.Write32(cur_address, value);
 	}
 
@@ -1300,16 +1300,16 @@ stm_2_da.execute = {
 }
 
 stm_2_db.execute = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 	
-	typename CONFIG::address_t cur_address;
-	typename CONFIG::address_t start_address;
-	typename CONFIG::address_t end_address;
+	uint32_t cur_address;
+	uint32_t start_address;
+	uint32_t end_address;
 	uint32_t num_regs = 0;
-	typename CONFIG::reg_t rn_new_val = 0;
-	typename CONFIG::reg_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_new_val = 0;
+	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
 	unsigned int mask = 1;
-	typename CONFIG::reg_t value = 0;
+	uint32_t value = 0;
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -1322,14 +1322,14 @@ stm_2_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			value = cpu.GetGPR_usr(i);
+			value = cpu.GetGPR_usr(i, cpu.GetCPSR_Mode());
 			cpu.Write32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	if((reg_list & mask) == mask) {
-		value = cpu.GetGPR_usr(cpu.PC_reg) + 8;
+		value = cpu.GetGPR(cpu.PC_reg) + 8;
 		cpu.Write32(cur_address, value);
 	}
 
@@ -1347,8 +1347,8 @@ group load_store_multiple_rn_init(ldm_1_ia, ldm_1_ib, ldm_1_da, ldm_1_db, \
                                   stm_1_ia, stm_1_ib, stm_1_da, stm_1_db, \
                                   stm_2_ia, stm_2_ib, stm_2_da, stm_2_db)
 load_store_multiple_rn_init.initialize_rn_init = {
-	typedef Operation<CONFIG> inherited;
+	typedef Operation<STATE> inherited;
 
-	if(rn == CPU<CONFIG>::PC_reg) inherited::rn_init = 8;
+	if(rn == STATE::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }

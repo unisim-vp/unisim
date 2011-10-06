@@ -157,6 +157,12 @@ WatchpointRegistry<ADDRESS>::WatchpointRegistry() :
 template <class ADDRESS>
 WatchpointRegistry<ADDRESS>::~WatchpointRegistry()
 {
+	Reset();
+}
+
+template <class ADDRESS>
+void WatchpointRegistry<ADDRESS>::Reset()
+{
 	uint32_t mt;
 	uint32_t index;
 	for(mt = 0; mt < 2; mt++)

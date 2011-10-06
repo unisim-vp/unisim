@@ -1604,9 +1604,6 @@ LDF_STF.execute = {
 		cpu.SetAR23_0(s2_ar, s2_output_ar);
 	}
 
-	// Read the 'src3' register
-	Register &src3_reg = cpu.GetExtReg(src3);
-
 	// Read the 'src2' operand from memory
 	uint32_t src2_value = cpu.IntLoad(s2_ea);
 
@@ -1829,7 +1826,7 @@ LSH3_STI.disasm = {
 			!cpu.DisasmIndir(disasm_src2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, s2_mod, s2_ar))
 		return false;
 	
-	os << "LSH3 " << count << ", " << disasm_src2_indir << ", " << dst1_name
+	os << "LSH3 " << count_name << ", " << disasm_src2_indir << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
 }
@@ -1844,7 +1841,7 @@ LSH3_STI_ext.disasm = {
 	if (!cpu.DisasmIndir(disasm_dst2_indir, Operation<CONFIG, DEBUG>::GetAddr() / 4, d2_mod, d2_ar))
 		return false;
 	
-	os << "LSH3 " << count << ", " << src2_name << ", " << dst1_name
+	os << "LSH3 " << count_name << ", " << src2_name << ", " << dst1_name
 		<< " || " << "STI " << src3_name << ", " << disasm_dst2_indir;
 	return true;
 }
@@ -3942,7 +3939,7 @@ LDF_LDF_ext.disasm = {
 		return false;
 	
 	os << "LDF " << ", " << src2_name << ", " << dst2_name
-		<< " || " << "LDF " << disasm_src1_indir << ", " << dst2_name;
+		<< " || " << "LDF " << disasm_src1_indir << ", " << dst1_name;
 	return true;
 }
 
@@ -4125,7 +4122,7 @@ LDI_LDI_ext.disasm = {
 		return false;
 	
 	os << "LDI " << ", " << src2_name << ", " << dst2_name
-		<< " || " << "LDI " << disasm_src1_indir << ", " << dst2_name;
+		<< " || " << "LDI " << disasm_src1_indir << ", " << dst1_name;
 	return true;
 }
 
@@ -4741,7 +4738,7 @@ MPYI3_ADDI3.execute = {
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s3_ea;        // The effective address
-	unsigned int s3_reg;                     // The register number if src3 is a register operand
+	unsigned int s3_reg = 0;                 // The register number if src3 is a register operand
 
 	if(s3_mod1 != 0x7)
 	{
@@ -4766,7 +4763,7 @@ MPYI3_ADDI3.execute = {
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s4_ea;        // The effective address
-	unsigned int s4_reg;                     // The register number if src4 is a register operand
+	unsigned int s4_reg = 0;                 // The register number if src4 is a register operand
 
 	if(s4_mod1 != 0x7)
 	{
@@ -4818,10 +4815,10 @@ MPYI3_ADDI3.execute = {
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
-	uint32_t srcA_value;
-	uint32_t srcB_value;
-	uint32_t srcC_value;
-	uint32_t srcD_value;
+	uint32_t srcA_value = 0;
+	uint32_t srcB_value = 0;
+	uint32_t srcC_value = 0;
+	uint32_t srcD_value = 0;
 
 	switch(p)
 	{
@@ -4988,7 +4985,7 @@ MPYI3_SUBI3.execute = {
 	bool s3_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s3_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s3_ea;        // The effective address
-	unsigned int s3_reg;                     // The register number if src3 is a register operand
+	unsigned int s3_reg = 0;                 // The register number if src3 is a register operand
 
 	if(s3_mod1 != 0x7)
 	{
@@ -5013,7 +5010,7 @@ MPYI3_SUBI3.execute = {
 	bool s4_update_ar;                       // Whether to update ARn
 	typename CONFIG::address_t s4_output_ar; // New value of ARn if it is updated
 	typename CONFIG::address_t s4_ea;        // The effective address
-	unsigned int s4_reg;                     // The register number if src4 is a register operand
+	unsigned int s4_reg = 0;                 // The register number if src4 is a register operand
 
 	if(s4_mod1 != 0x7)
 	{
@@ -5065,10 +5062,10 @@ MPYI3_SUBI3.execute = {
 
 	// Map 'src1', 'src2', 'src3', and 'src4' to 'srcA', 'srcB', 'srcC', and 'srcD'
 	// depending on the parallel addressing mode used
-	uint32_t srcA_value;
-	uint32_t srcB_value;
-	uint32_t srcC_value;
-	uint32_t srcD_value;
+	uint32_t srcA_value = 0;
+	uint32_t srcB_value = 0;
+	uint32_t srcC_value = 0;
+	uint32_t srcD_value = 0;
 
 	switch(p)
 	{

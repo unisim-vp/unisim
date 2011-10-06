@@ -28,6 +28,9 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		*linux*)
 			SYSTEMC_TARGET_ARCH="linux"
 			;;
+		*powerpc*linux)
+			SYSTEMC_TARGET_ARCH="linux-powerpc"
+			;;
 		*cygwin*)
 			SYSTEMC_TARGET_ARCH="cygwin"
 			;;
@@ -63,8 +66,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	unisim_check_systemc_save_LIBS="${LIBS}"
 	LIBS="-lsystemc ${LIBS}"
 	AC_MSG_CHECKING([for sc_start in -lsystemc])
-	AC_LINK_IFELSE(
-		[[
+	AC_LINK_IFELSE([AC_LANG_SOURCE([[
 #include <systemc.h>
 int sc_main(int argc, char **argv)
 {
@@ -75,7 +77,7 @@ extern "C"
 int main(int argc, char *argv[])
 {
 	return sc_core::sc_elab_and_sim(argc, argv);
-}]],
+}]])],
 		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([yes]); [broken_systemc=no],
 		LIBS="${unisim_check_systemc_save_LIBS}"; AC_MSG_RESULT([no]); [broken_systemc=yes])
 

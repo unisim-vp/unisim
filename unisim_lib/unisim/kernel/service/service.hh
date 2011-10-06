@@ -118,6 +118,17 @@ template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceExport<SERVICE_IF>& rhs);
 
 //=============================================================================
+//=                          VariableBaseListener                             =
+//=============================================================================
+
+class VariableBaseListener
+{
+public:
+	virtual void VariableBaseNotify(const VariableBase *var) = 0;
+	virtual ~VariableBaseListener() {};
+};
+
+//=============================================================================
 //=                             VariableBase                                 =
 //=============================================================================
 
@@ -138,6 +149,7 @@ public:
 	const char *GetVarName() const;
 	const char *GetDescription() const;
 	Type GetType() const;
+	const char *GetTypeName() const;
 	Format GetFormat() const;
 	virtual const char *GetDataTypeName() const;
 	bool HasEnumeratedValues() const;
@@ -182,23 +194,19 @@ public:
 	virtual unsigned int GetLength() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
+	virtual std::string GetSymbolicValue() const;
+	void GenerateLatexDocumentation(std::ostream& os) const;
 	
 	bool IsMutable() const;
 	bool IsVisible() const;
 	bool IsSerializable() const;
-	void SetMutable(bool is_mutable);
-	void SetVisible(bool is_visible);
-	void SetSerializable(bool is_serializable);
+	virtual void SetMutable(bool is_mutable);
+	virtual void SetVisible(bool is_visible);
+	virtual void SetSerializable(bool is_serializable);
 
-	class Notifiable
-	{
-	public:
-		virtual void VariableNotify(const char *name) = 0;
-		virtual ~Notifiable() {};
-	};
-	void SetNotify(Notifiable *notifiable);
-	void RemoveNotify(Notifiable *notifiable);
- 	void Notify();
+	void AddListener(VariableBaseListener *listener);
+	void RemoveListener(VariableBaseListener *listener);
+ 	void NotifyListeners();
 
 private:
 	string name;
@@ -212,7 +220,7 @@ private:
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
-	list<Notifiable *> notifiable_list;
+	list<VariableBaseListener *> listener_list;
 };
 
 //=============================================================================
@@ -268,11 +276,15 @@ public:
 	bool GetExecutablePath(const char *argv0, std::string& out_execute_path) const;
 	bool GetBinPath(const char *argv0, std::string& out_bin_dir, std::string& out_bin_program) const;
 	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const;
-	bool GetSharePath(const std::string& bin_dir, std::string& out_share_dir, const std::string& share_dir_relative_path) const;
 	string SearchSharedDataFile(const char *filename) const;
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
+	virtual double GetSimTime()	{ return 0;	}
+	virtual double GetHostTime()	{ return 0;	}
+
+	bool IsWarningEnabled() const;
+
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -302,12 +314,14 @@ private:
 	string description;
 	string version;
 	string license;
+	string schematic;
 	Parameter<string> *var_program_name;
 	Parameter<string> *var_authors;
 	Parameter<string> *var_copyright;
 	Parameter<string> *var_description;
 	Parameter<string> *var_version;
 	Parameter<string> *var_license;
+	Parameter<string> *var_schematic;
 	Parameter<bool> *param_enable_press_enter_at_exit;
 	
 	void Version(ostream& os) const;
@@ -338,8 +352,14 @@ private:
 	bool XmlfyVariables(const char *filename);
 	bool LoadXmlVariables(const char *filename);
 
-	void GetRootObjects(list<Object *>& lst);
-	
+protected:
+	// TOCHECK: this method was previously declared as private,
+	//   and should probably become again private unless we consider
+	//   it part of the simulator API in which case it should
+	//   become public
+	void GetRootObjects(list<Object *>& lst) const;
+
+private:
 	class CommandLineOption
 	{
 	public:
@@ -431,7 +451,7 @@ template <class TYPE>
 class Statistic : public Variable<TYPE>
 {
 public:
-	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) {}
+	Statistic(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_STATISTIC, description) { VariableBase::SetFormat(unisim::kernel::service::VariableBase::FMT_DEC); }
 };
 
 template <class TYPE>
@@ -442,13 +462,18 @@ public:
 };
 
 template <class TYPE>
+class Formula;
+
+template <class TYPE>
+std::ostream& operator << (std::ostream& os, const Formula<TYPE>& formula);
+
+template <class TYPE>
 class Formula : public VariableBase
 {
 public:
 	typedef VariableBase::Type Type;
 	typedef enum
 	{
-		OP_NOP,
 		OP_ADD,
 		OP_SUB,
 		OP_MUL,
@@ -465,17 +490,14 @@ public:
 		OP_MAX,
 		OP_AND,
 		OP_OR,
-		OP_XOR,
-		OP_NOT,
-		OP_EVAL
+		OP_NEQ,
+		OP_NOT
 	} Operator;
 	
-	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0, const char *description = 0);
+	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, VariableBase *child3, const char *description = 0);
+	Formula(const char *name, Object *owner, Operator op, VariableBase *child1, VariableBase *child2, const char *description = 0);
+	Formula(const char *name, Object *owner, Operator op, VariableBase *child, const char *description = 0);
 	
-#if 0
-	Formula(const char *name, Object *owner, const char *math_formula, const char *description = 0);
-#endif
-
 	virtual const char *GetDataTypeName() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
@@ -487,35 +509,14 @@ public:
 	virtual VariableBase& operator = (unsigned long long value);
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
+	virtual std::string GetSymbolicValue() const;
+
 private:
+	bool IsValid() const;
 	TYPE Compute() const;
 
 	Operator op;
 	VariableBase *childs[3];
-
-#if 0
-	static const unsigned int TOK_EOF   = 256;
-	static const unsigned int TOK_ERROR = 257;
-	static const unsigned int TOK_LTE   = 258;
-	static const unsigned int TOK_GTE   = 259;
-	static const unsigned int TOK_ABS   = 260;
-	static const unsigned int TOK_MIN   = 261;
-	static const unsigned int TOK_MAX   = 262;
-	static const unsigned int TOK_IDENT = 263;
-	static const unsigned int TOK_EXPR  = 264;
-
-	static const unsigned int PEEK_TOK  = 0;
-	static const unsigned int GET_TOK   = 1;
-	
-	unsigned int look_ahead_token;
-	VariableBase *look_ahead_lval;
-
-	const char *GetTokenName(unsigned int token) const;
-	unsigned int ReadToken(const char *math_formula, unsigned int& pos, unsigned int mode, VariableBase **lval = 0);
-	unsigned int Parse(const char *math_formula, unsigned int& pos, VariableBase **lval);
-	void Initialize(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-	Formula(Operator op, VariableBase *child1, VariableBase *child2 = 0, VariableBase *child3 = 0);
-#endif
 };
 
 //=============================================================================
@@ -536,6 +537,9 @@ public:
 	virtual unsigned int GetLength() const;
 	virtual VariableBase& operator = (const VariableBase& variable);
 	virtual const char *GetDataTypeName() const;
+	virtual void SetMutable(bool is_mutable);
+	virtual void SetVisible(bool is_visible);
+	virtual void SetSerializable(bool is_serializable);
 
 private:
 	vector<VariableBase *> variables;
@@ -626,6 +630,42 @@ const char *VariableArray<TYPE>::GetDataTypeName() const
 }
 
 template <class TYPE>
+void VariableArray<TYPE>::SetMutable(bool _is_mutable)
+{
+	VariableBase::SetMutable(_is_mutable);
+	typename vector<VariableBase *>::iterator variable_iter;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetMutable(_is_mutable);
+	}
+}
+
+template <class TYPE>
+void VariableArray<TYPE>::SetVisible(bool _is_visible)
+{
+	VariableBase::SetVisible(_is_visible);
+	typename vector<VariableBase *>::iterator variable_iter;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetVisible(_is_visible);
+	}
+}
+
+template <class TYPE>
+void VariableArray<TYPE>::SetSerializable(bool _is_serializable)
+{
+	VariableBase::SetSerializable(_is_serializable);
+	typename vector<VariableBase *>::iterator variable_iter;
+	
+	for(variable_iter = variables.begin(); variable_iter != variables.end(); variable_iter++)
+	{
+		(*variable_iter)->SetSerializable(_is_serializable);
+	}
+}
+
+template <class TYPE>
 class ParameterArray : public VariableArray<TYPE>
 {
 public:
@@ -657,7 +697,11 @@ public:
 	virtual ~Object();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup(); // must not call any import. By contract it is called first.
+	virtual bool Setup(ServiceExportBase *service_export); // must setup an export, can call any import it depends, see ServiceExportBase::SetupDependsOn.
+	                                                       // By contract, BeginSetup has been called before.
+	virtual bool EndSetup(); // can call any import
+	                         // By contract, it is called after Setup(ServiceExportBase&)
 
 	const char *GetName() const;
 
@@ -676,12 +720,11 @@ public:
 	Object *GetParent() const;
 	void Disconnect();
 	VariableBase& operator [] (const char *name);
-	list<ServiceImportBase *>& GetSetupDependencies();
-	void SetupDependsOn(ServiceImportBase& srv_import);
 	Simulator *GetSimulator() const;
-	void GenerateLatexDocumentation(ostream& os) const;
+	void GenerateLatexDocumentation(ostream& os, VariableBase::Type variable_type) const;
 	const char *GetDescription() const;
 	virtual void Stop(int exit_status);
+	void SetDescription(const char *description);
 private:
 	string object_name;
 	string description;
@@ -690,8 +733,16 @@ private:
 	list<ServiceImportBase *> srv_imports;
 	list<ServiceExportBase *> srv_exports;
 	list<Object *> leaf_objects;
-	list<ServiceImportBase *> setup_dependencies;
-	
+};
+
+//=============================================================================
+//=                              ServiceInterface                             =
+//=============================================================================
+
+class ServiceInterface
+{
+public:
+	virtual ~ServiceInterface();
 };
 
 //=============================================================================
@@ -768,12 +819,16 @@ public:
 	virtual void DisconnectClient() = 0;
 	virtual void Dump(ostream& os) const = 0;
 	virtual Object *GetClient() const = 0;
+	virtual Object *GetService() const = 0;
+	void SetupDependsOn(ServiceImportBase& srv_import);
+	list<ServiceImportBase *>& GetSetupDependencies();
 
 	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
 	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
 private:
 	string name;
 	Object *owner;
+	list<ServiceImportBase *> setup_dependencies;
 };
 
 //=============================================================================
@@ -850,6 +905,9 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Client<SERVICE_IF> *
 	actual_imports(),
 	client(_client)
 {
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".ServiceImport(" << _name << ", client " << _client->GetName() << ")" << endl;
+#endif
 }
 
 template <class SERVICE_IF>
@@ -861,12 +919,19 @@ ServiceImport<SERVICE_IF>::ServiceImport(const char *_name, Object *_owner) :
 	actual_imports(),
 	client(0)
 {
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".ServiceImport(" << _name << ", object " << (_owner ? _owner->GetName() : "?") << ")" << endl;
+#endif
 }
 
 template <class SERVICE_IF>
 ServiceImport<SERVICE_IF>::~ServiceImport()
 {
-	ServiceImport<SERVICE_IF>::DisconnectService();
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceImport()" << endl;
+#endif
+	//ServiceImport<SERVICE_IF>::DisconnectService();
+	ServiceImport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -896,7 +961,9 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceExport<SERVICE_IF>& srv_export)
 		return;
 	}
 
-	//cerr << GetName() << " -> " << srv_export.GetName() << endl;
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << " -> " << srv_export.GetName() << endl;
+#endif
 	this->srv_export = &srv_export;
 }
 
@@ -915,7 +982,9 @@ void ServiceImport<SERVICE_IF>::Bind(ServiceImport<SERVICE_IF>& alias_import)
 		return;
 	}
 
-	//cerr << GetName() << " -> " << alias_import.GetName() << endl;
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << " -> " << alias_import.GetName() << endl;
+#endif
 	this->alias_import = &alias_import;
 	alias_import.actual_imports.push_back(this);
 }
@@ -946,6 +1015,9 @@ Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveService(Client<SERVICE_IF
 	else
 		if(srv_export) return srv_export->ResolveService(_client);
 
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << endl;
+#endif
 	return 0;
 }
 
@@ -998,7 +1070,7 @@ void ServiceImport<SERVICE_IF>::UnresolveService()
 	{
 		if(service)
 		{
-			service->OnDisconnect();
+			//service->OnDisconnect(); // Gilles: That's dangerous
 #ifdef DEBUG_SERVICE
 			cerr << GetName() << ": Unresolving service " << service->GetName() << endl;
 #endif
@@ -1034,9 +1106,24 @@ void ServiceImport<SERVICE_IF>::Disconnect()
 			if(*import_iter == this)
 			{
 				alias_import->actual_imports.erase(import_iter);
-				this->alias_import = 0;
+				break;
 			}
 		}
+		alias_import = 0;
+	}
+
+	if(!actual_imports.empty())
+	{
+		typename list<ServiceImport<SERVICE_IF> *>::iterator import_iter;
+	
+		for(import_iter = actual_imports.begin(); import_iter != actual_imports.end(); import_iter++)
+		{
+			if((*import_iter)->alias_import == this)
+			{
+				(*import_iter)->alias_import = 0;
+			}
+		}
+		actual_imports.clear();
 	}
 
 	if(srv_export)
@@ -1134,6 +1221,7 @@ __attribute__((always_inline))
 	virtual void Dump(ostream& os) const;
 
 	virtual Object *GetClient() const;
+	virtual Object *GetService() const;
 
 private:
 	list<ServiceExport<SERVICE_IF> *> alias_exports;
@@ -1173,7 +1261,11 @@ ServiceExport<SERVICE_IF>::ServiceExport(const char *_name, Object *_owner) :
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF>::~ServiceExport()
 {
-	ServiceExport<SERVICE_IF>::DisconnectClient();
+#ifdef DEBUG_SERVICE
+	cerr << GetName() << ".~ServiceExport()" << endl;
+#endif
+	//ServiceExport<SERVICE_IF>::DisconnectClient();
+	ServiceExport<SERVICE_IF>::Disconnect();
 }
 
 template <class SERVICE_IF>
@@ -1282,6 +1374,21 @@ void ServiceExport<SERVICE_IF>::Disconnect()
 #endif
 
 	DisconnectClient();
+	
+	if(actual_export)
+	{
+		typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
+	
+		for(export_iter = actual_export->alias_exports.begin(); export_iter != actual_export->alias_exports.end(); export_iter++)
+		{
+			if(*export_iter == this)
+			{
+				actual_export->alias_exports.erase(export_iter);
+				break;
+			}
+		}
+		actual_export = 0;
+	}
 
 	typename list<ServiceExport<SERVICE_IF> *>::iterator export_iter;
 
@@ -1353,7 +1460,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 
 	if(client)
 	{
-		client->OnDisconnect();
+		//client->OnDisconnect(); // Gilles: that's dangerous
 #ifdef DEBUG_SERVICE
 		cerr << GetName() << ": Unresolving client " << client->GetName() << endl;
 #endif
@@ -1381,6 +1488,12 @@ template <class SERVICE_IF>
 Object *ServiceExport<SERVICE_IF>::GetClient() const
 {
 	return client;
+}
+
+template <class SERVICE_IF>
+Object *ServiceExport<SERVICE_IF>::GetService() const
+{
+	return service;
 }
 
 //=============================================================================

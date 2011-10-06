@@ -73,7 +73,7 @@ public:
 	virtual ~EPIC();
 
 	/* Initialization methods of the service */
-	virtual bool Setup();
+	virtual bool BeginSetup();
 		
 	/* Methods to implement for Service<MemoryInterface<PHYSICAL_ADDR> > */
 	virtual void Reset();

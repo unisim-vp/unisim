@@ -49,8 +49,7 @@ namespace unisim {
 namespace kernel {
 namespace logger {
 
-class LoggerServer : 
-	public unisim::kernel::service::Object {
+class LoggerServer {
 private:
 	typedef unisim::kernel::service::Parameter<bool> bool_parameter_t;
 	typedef unisim::kernel::service::Parameter<std::string> string_parameter_t;
@@ -59,7 +58,7 @@ public:
 	/** Constructor */
 	LoggerServer();
 	/** Destructor */
-	~LoggerServer();
+	virtual ~LoggerServer();
 
 	/** Object Setup method
 	 * Implementation of the Setup method required by Object. Returns true if the initialization

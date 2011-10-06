@@ -13,14 +13,12 @@
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::loader</dep>
+			<dep>unisim::service::interfaces::blob</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>stl_string</dep>
 			<dep>stl_iostream</dep>
 			<dep>clib_stdlib_h</dep>
 		</depends>
-		<autotools>
-			<automake>unisim/service/loader/linux_loader/meta/linux_loader.am</automake>
-		</autotools>
 	</unit>
 </package>
 

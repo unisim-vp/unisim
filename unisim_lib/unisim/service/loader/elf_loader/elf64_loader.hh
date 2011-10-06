@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_LOADER_HH__
-#define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_LOADER_HH__
+#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF64_LOADER_HH__
+#define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF64_LOADER_HH__
 
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 
@@ -42,7 +42,21 @@ namespace service {
 namespace loader {
 namespace elf_loader {
 
-typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
+//typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
+
+template <class MEMORY_ADDR = uint64_t>
+class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
+{
+public:
+	Elf64Loader(const char *name, Object *parent = 0);
+};
+
+template <class MEMORY_ADDR>
+Elf64Loader<MEMORY_ADDR>::Elf64Loader(const char *name, Object *parent)
+	: Object(name, parent, "this service implements an ELF64 Loader")
+	, ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(name, parent)
+{
+}
 
 } // end of namespace elf_loader
 } // end of namespace loader

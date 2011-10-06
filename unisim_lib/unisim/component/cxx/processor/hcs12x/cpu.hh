@@ -83,8 +83,10 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
+using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::DebugControl;
@@ -414,28 +416,28 @@ public:
 	 * ******************************************************************/
 	static string xb_getAddrRegLabel(uint8_t rr) {
 		switch (rr) {
-    	case 0:
-       		return "X";
-    	case 1:
-   	    	return "Y";
+		case 0:
+			return "X";
+		case 1:
+			return "Y";
 		case 2:
-       		return "SP";
-    	case 3:
-   	    	return "PC";
+			return "SP";
+		case 3:
+			return "PC";
 		}
+		return "unknown";
 	}
 
 	static string xb_getAccRegLabel(uint8_t rr) {
 		switch (rr) {
-    	case 0:
-       		return "A";
-    	case 1:
-   	    	return "B";
+		case 0:
+			return "A";
+		case 1:
+			return "B";
 		case 2:
-       		return "D";
-       	default:
-       		return "unknown"; // rr=11 see accumulator D offset indexed-indirect
+			return "D";
 		}
+		return "unknown"; // rr=11 see accumulator D offset indexed-indirect
 	}
 
 	inline uint16_t xb_getAddrRegValue(uint8_t rr);
@@ -448,7 +450,10 @@ public:
 	//=                  Client/Service setup methods                     =
 	//=====================================================================
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 	virtual void OnDisconnect();
 	virtual void Reset();
 
@@ -546,6 +551,9 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
+	uint64_t trap_on_instruction_counter;
+	Parameter<uint64_t> param_trap_on_instruction_counter;
+
 		// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
 	inline bool VerboseStep() GCC_INLINE;
@@ -594,7 +602,16 @@ private:
 
 	/** the instruction counter */
 	uint64_t instruction_counter;
+	uint64_t cycles_counter;
+	uint64_t data_load_counter;
+	uint64_t data_store_counter;
 	uint64_t	max_inst;
+
+	Statistic<uint64_t> stat_instruction_counter;
+	Statistic<uint64_t> stat_cycles_counter;
+	Statistic<uint64_t> stat_load_counter;
+	Statistic<uint64_t> stat_store_counter;
+
 	Parameter<uint64_t>	   param_max_inst;
 
 };
@@ -605,6 +622,8 @@ private:
 
 inline void CPU::MonitorLoad(address_t ea, uint32_t size)
 {
+	data_load_counter++;
+
 	// Memory access reporting
 	if(requires_memory_access_reporting && memory_access_reporting_import)
 	{
@@ -614,6 +633,8 @@ inline void CPU::MonitorLoad(address_t ea, uint32_t size)
 
 inline void CPU::MonitorStore(address_t ea, uint32_t size)
 {
+	data_store_counter++;
+
 	// Memory access reporting
 	if(requires_memory_access_reporting && memory_access_reporting_import)
 	{
@@ -712,6 +733,7 @@ case 2:
 case 3:
 	return getRegPC(); break;
 }
+throw std::runtime_error("Internal error");
 }
 
 void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
@@ -725,6 +747,7 @@ case 2:
 case 3:
 	return setRegPC(val); break;
 }
+throw std::runtime_error("Internal error");
 }
 
 
@@ -736,9 +759,8 @@ case 1:
 	return getRegB(); break;
 case 2:
 	return getRegD(); break;
-default:
-	return 0; // ! or throw an exception
 }
+throw std::runtime_error("Internal error");
 }
 
 

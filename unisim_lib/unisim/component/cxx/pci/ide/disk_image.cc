@@ -187,8 +187,8 @@ RawDiskImage::write(const uint8_t *data, off_t offset)
 //
 // Copy on Write Disk image
 //
-const int CowDiskImage::VersionMajor = 1;
-const int CowDiskImage::VersionMinor = 0;
+const unsigned int CowDiskImage::VersionMajor = 1;
+const unsigned int CowDiskImage::VersionMinor = 0;
 
 CowDiskImage::CowDiskImage(const string &name, DiskImage *kid, int hash_size)
     : DiskImage(name), child(kid), table(NULL)
@@ -441,7 +441,7 @@ CowDiskImage::write(const uint8_t *data, off_t offset)
 	memcpy((*i).second->data, data, SectorSize);
     }
 
-    printf( "write: offset=%d\n", (uint64_t)offset);
+    //printf( "write: offset=%d\n", (uint64_t)offset);
     //DDUMP(DiskImageWrite, data, SectorSize);
 
     return SectorSize;

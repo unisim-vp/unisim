@@ -65,6 +65,7 @@ using namespace tlm_utils;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ServiceExportBase;
 
 using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
@@ -94,7 +95,11 @@ public:
 	tlm_initiator_socket<RTB2UNISIM_BUS_WIDTH, UNISIM_ATD_ProtocolTypes<ATD0_SIZE> > atd0_master_sock;
 
 	tlm_target_socket<UNISIM2RTB_BUS_WIDTH, UNISIM_PWM_ProtocolTypes<PWM_SIZE> > slave_sock;
-	tlm_quantumkeeper quantumkeeper;
+
+	tlm_quantumkeeper atd0_quantumkeeper;
+	tlm_quantumkeeper atd1_quantumkeeper;
+	tlm_quantumkeeper pwm_quantumkeeper;
+
 	peq_with_get<PWM_Payload<PWM_SIZE> > input_payload_queue;
 	PayloadFabric<ATD_Payload<ATD1_SIZE> > atd1_payload_fabric;
 	PayloadFabric<ATD_Payload<ATD0_SIZE> > atd0_payload_fabric;
@@ -105,7 +110,10 @@ public:
 	ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~ATD_PWM_STUB();
 
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool Setup(ServiceExportBase *srv_export);
+	virtual bool EndSetup();
+
 
 	// Slave methods
 	virtual bool get_direct_mem_ptr( PWM_Payload<PWM_SIZE>& payload, tlm_dmi&  dmi_data);
@@ -128,12 +136,20 @@ public:
 
 protected:
 	double	anx_stimulus_period;
+	sc_time *anx_stimulus_period_sc;
+
+	double	pwm_fetch_period;
+	sc_time *pwm_fetch_period_sc;
 
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
+	bool	enabled;
+	Parameter<bool>		param_enabled;
+
 private:
 	Parameter<double>	param_anx_stimulus_period;
+	Parameter<double>	param_pwm_fetch_period;
 
 	ofstream atd0_output_file;
 	ofstream atd1_output_file;

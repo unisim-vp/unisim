@@ -38,6 +38,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/loader.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
+#include <unisim/service/interfaces/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/symbol_table.hh>
 #include <unisim/kernel/service/service.hh>
@@ -49,9 +50,9 @@
 #include <map>
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
-#define PACKED __attribute__ ((packed))
+#define __UNISIM_PACKED__ __attribute__ ((packed))
 #else
-#define PACKED
+#define __UNISIM_PACKED__
 #endif
 
 namespace unisim {
@@ -72,6 +73,7 @@ using unisim::util::debug::Symbol;
 using unisim::util::debug::SymbolTable;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::Loader;
+using unisim::service::interfaces::Blob;
 
 template <class MEMORY_ADDR> class FileHandler;
 template <class MEMORY_ADDR> class File;
@@ -171,7 +173,7 @@ public:
 	SectionTable(unsigned int num_sections);
 	virtual ~SectionTable();
 	void Insert(unsigned int section_num, Section<MEMORY_ADDR> *section);
-	const Section<MEMORY_ADDR> *operator [] (unsigned int section_num) const;
+	Section<MEMORY_ADDR> *operator [] (unsigned int section_num) const;
 	unsigned int GetSize() const;
 private:
 	std::vector<Section<MEMORY_ADDR> *> sections;
@@ -194,27 +196,28 @@ private:
 template <class MEMORY_ADDR>
 class CoffLoader :
 	public Client<Memory<MEMORY_ADDR> >,
-	public Service<Loader<MEMORY_ADDR> >,
+	public Service<Loader>,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
+	public Service<Blob<MEMORY_ADDR> >,
 	public OutputInterface<MEMORY_ADDR>
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
-	ServiceExport<Loader<MEMORY_ADDR> > loader_export;
+	ServiceExport<Loader> loader_export;
+	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 
 	CoffLoader(const char *name, Object *parent = 0);
 	virtual ~CoffLoader();
 
 	virtual void OnDisconnect();
-	virtual bool Setup();
+	virtual bool BeginSetup();
+	virtual bool EndSetup();
 
-	virtual void Reset();
-	virtual MEMORY_ADDR GetEntryPoint() const;
-	virtual MEMORY_ADDR GetTopAddr() const;
-	virtual MEMORY_ADDR GetStackBase() const;
+	virtual bool Load();
+	virtual const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
-	virtual const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
+	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
@@ -277,12 +280,12 @@ private:
 	static const unsigned int E_DIMNUM = 4;
 
 	// Symbol table entry
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
-		union PACKED
+		union __UNISIM_PACKED__
 		{
 			char e_name[E_SYMNMLEN];  // name of the symbol padded with null characters
-			struct PACKED
+			struct __UNISIM_PACKED__
 			{
 				uint32_t e_zeroes; // equals to 0 if in string table
 				uint32_t e_offset; // offset in string table
@@ -295,7 +298,7 @@ private:
 		uint8_t e_numaux;  // number of auxiliary entries
 	} syment;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
 		int32_t x_tagndx;
 		int32_t x_fsize;
@@ -303,14 +306,14 @@ private:
 		int32_t x_endndx;
 	} fcn_auxent;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
 		int32_t x_scnlen;
 		uint16_t x_nreloc;
 		uint16_t x_nlnno;
 	} scn_auxent;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
 		int32_t x_tagndx;
 		uint16_t x_lnno;
@@ -318,12 +321,12 @@ private:
 		uint16_t x_dim[E_DIMNUM];
 	} ary_auxent;
 
-	typedef struct PACKED
+	typedef struct __UNISIM_PACKED__
 	{
-		union PACKED
+		union __UNISIM_PACKED__
 		{
 			char x_fname[E_FILNMLEN];  // file name padded with null characters
-			struct PACKED
+			struct __UNISIM_PACKED__
 			{
 				uint32_t x_zeroes; // equals to 0 if in string table
 				uint32_t x_offset; // offset in string table
@@ -349,6 +352,12 @@ private:
 
 	// File handler registry
 	FileHandlerRegistry<MEMORY_ADDR> file_handler_registry;
+
+	// File
+	File<MEMORY_ADDR> *file;
+
+	// Blob
+	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 
 	// Symbol table
 	SymbolTable<MEMORY_ADDR> symbol_table;
