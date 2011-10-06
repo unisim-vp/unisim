@@ -74,10 +74,10 @@ class Linux {
   void SetEndianess(unisim::util::endian::endian_type endianess);
 
   // Sets the stack size that will be reserved for the application stack
-  bool SetStackSize(unsigned int stack_size);
+  void SetStackSize(unsigned int stack_size);
 
   // Sets the memory page size that will be used by the linux os emulator
-  bool SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
+  void SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
 
   // Sets the values that will be used by the uname system call.
   void SetUname(char const * const utsname_sysname,
