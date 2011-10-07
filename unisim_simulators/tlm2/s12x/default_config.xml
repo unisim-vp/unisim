@@ -212,7 +212,7 @@
 		<variable name="trace-enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
-			<value>true</value>
+			<value>false</value>
 			<description></description>
 			<enumeration>
 				<item>true</item>
@@ -689,7 +689,7 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="external-memory">
+	<object name="global-memory">
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
@@ -731,69 +731,7 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="external_router">
-		<variable name="cycle_time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>250000 s</value>
-			<description>Time to process a request/response by the router</description>
-		</variable>
-		<variable name="port_buffer_size">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00000000</value>
-			<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
-		</variable>
-		<variable name="mapping_0">
-			<type>parameter</type>
-			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x800&quot; range_end=&quot;0x7fffff&quot; output_port=&quot;0&quot; translation=&quot;0x800&quot;</value>
-			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
-		</variable>
-	</object>
-	<object name="internal-memory">
-		<variable name="org">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x0000000000000000</value>
-			<description>memory origin/base address</description>
-		</variable>
-		<variable name="bytesize">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>65536</value>
-			<description>memory size in bytes</description>
-		</variable>
-		<variable name="cycle-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>250000 s</value>
-			<description>memory cycle time</description>
-		</variable>
-		<variable name="read-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory read latency</description>
-		</variable>
-		<variable name="write-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory write latency</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="internal_router">
+	<object name="global-router">
 		<variable name="cycle_time">
 			<type>parameter</type>
 			<data_type>sc_time</data_type>
@@ -845,7 +783,7 @@
 		<variable name="mapping_6">
 			<type>parameter</type>
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
-			<value>range_start=&quot;0x800&quot; range_end=&quot;0xffff&quot; output_port=&quot;6&quot; translation=&quot;0x800&quot;</value>
+			<value>range_start=&quot;0x800&quot; range_end=&quot;0x7fffff&quot; output_port=&quot;6&quot; translation=&quot;0x800&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
 		</variable>
 	</object>

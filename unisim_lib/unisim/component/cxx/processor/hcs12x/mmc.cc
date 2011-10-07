@@ -49,14 +49,20 @@ using unisim::util::debug::SimpleRegister;
 
 address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_MEMMAP_SIZE];
 
+uint8_t MMC::gpage;
+uint8_t MMC::direct;
+uint8_t MMC::mmcctl1;
+uint8_t MMC::rpage;
+uint8_t MMC::epage;
+uint8_t MMC::ppage;
+
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
 	Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 	Service<Registers>(name, parent),
 	memory_export("memory_export", this),
-	internal_memory_import("internal_memory_import", this),
-	external_memory_import("external_memory_import", this),
+	memory_import("memory_import", this),
 	registers_export("registers_export", this),
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled),
@@ -233,14 +239,8 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	}
 
 
-	if (isPaged(cpu_address, page, false, true)) {
-		if (external_memory_import) {
-			return external_memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
-		}
-	} else {
-		if (internal_memory_import) {
-			return internal_memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
-		}
+	if (memory_import) {
+		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
 	}
 
 	return false;
@@ -269,16 +269,9 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 		}
 	}
 
-//	if (addr <= REG_HIGH_OFFSET) return true;
 
-	if (isPaged(cpu_address, page, false, true)) {
-		if (external_memory_import) {
-			return external_memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
-		}
-	} else {
-		if (internal_memory_import) {
-			return internal_memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
-		}
+	if (memory_import) {
+		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
 	}
 
 	return false;

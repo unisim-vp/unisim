@@ -35,10 +35,8 @@ Simulator::Simulator(int argc, char **argv)
 	, atd1(0)
 	, atd0(0)
 	, pwm(0)
-	, external_router(0)
-	, internal_router(0)
-	, internal_memory(0)
-	, external_memory(0)
+	, global_router(0)
+	, global_memory(0)
 	, s12xint(0)
 	, registersTee(0)
 	, memoryImportExportTee(0)
@@ -101,12 +99,10 @@ Simulator::Simulator(int argc, char **argv)
 	pwm = new PWM("PWM");
 
 	//  - tlm2 router
-	external_router = new EXTERNAL_ROUTER("external_router");
-	internal_router = new INTERNAL_ROUTER("internal_router");
+	global_router = new GLOBAL_ROUTER("global-router");
 
 	//  - Memories
-	internal_memory = new MEMORY("internal-memory");
-	external_memory = new MEMORY("external-memory");
+	global_memory = new MEMORY("global-memory");
 
 	// - Interrupt controller
 	s12xint = new XINT("XINT");
@@ -184,19 +180,17 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
 #endif
 
-	mmc->local_socket(*internal_router->targ_socket[0]);
-	mmc->external_socket(*external_router->targ_socket[0]);
+	mmc->memory_socket(*global_router->targ_socket[0]);
 
 	// This order is mandatory (see the memoryMapping)
-	(*internal_router->init_socket[0])(crg->slave_socket);
-	(*internal_router->init_socket[1])(ect->slave_socket);
-	(*internal_router->init_socket[2])(atd1->slave_socket);
-	(*internal_router->init_socket[3])(s12xint->slave_socket);
-	(*internal_router->init_socket[4])(atd0->slave_socket);
-	(*internal_router->init_socket[5])(pwm->slave_socket);
-	(*internal_router->init_socket[6])(internal_memory->slave_sock); // to connect to the MMC
+	(*global_router->init_socket[0])(crg->slave_socket);
+	(*global_router->init_socket[1])(ect->slave_socket);
+	(*global_router->init_socket[2])(atd1->slave_socket);
+	(*global_router->init_socket[3])(s12xint->slave_socket);
+	(*global_router->init_socket[4])(atd0->slave_socket);
+	(*global_router->init_socket[5])(pwm->slave_socket);
 
-	(*external_router->init_socket[0])(external_memory->slave_sock);
+	(*global_router->init_socket[6])(global_memory->slave_sock); // to connect to the MMC
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
@@ -216,11 +210,11 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[3]) >> atd0->memory_export;
 	*(memoryImportExportTee->memory_import[4]) >> pwm->memory_export;
 	*(memoryImportExportTee->memory_import[5]) >> ect->memory_export;
-	*(memoryImportExportTee->memory_import[6]) >> internal_memory->memory_export;
 
-	mmc->internal_memory_import >> memoryImportExportTee->memory_export;
+	*(memoryImportExportTee->memory_import[6]) >> global_memory->memory_export;
 
-	mmc->external_memory_import >> external_memory->memory_export;
+	mmc->memory_import >> memoryImportExportTee->memory_export;
+
 
 	*(registersTee->registers_import[0]) >> cpu->registers_export;
 	*(registersTee->registers_import[1]) >> mmc->registers_export;
@@ -340,10 +334,8 @@ Simulator::~Simulator()
 	if (xml_atd_pwm_stub) { delete xml_atd_pwm_stub; xml_atd_pwm_stub = NULL; }
 #endif
 
-	if(external_memory) { delete external_memory; external_memory = NULL; }
-	if(internal_memory) { delete internal_memory; internal_memory = NULL; }
-	if(external_router) { delete external_router; external_router = NULL; }
-	if(internal_router) { delete internal_router; internal_router = NULL; }
+	if(global_memory) { delete global_memory; global_memory = NULL; }
+	if(global_router) { delete global_router; global_router = NULL; }
 
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
@@ -481,26 +473,22 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
 
 
-	simulator->SetVariable("external-memory.org", 0x0);
-	simulator->SetVariable("external-memory.bytesize", 0x800000);
-	simulator->SetVariable("external-memory.cycle-time", 250000);
-	simulator->SetVariable("external-memory.verbose", false);
-	simulator->SetVariable("external_router.cycle_time", 250000);
-	simulator->SetVariable("external_router.port_buffer_size", 0x0);
-	simulator->SetVariable("external_router.mapping_0", "range_start=\"0x800\" range_end=\"0x7fffff\" output_port=\"0\" translation=\"800\"");
-	simulator->SetVariable("internal-memory.org", 0x0);
-	simulator->SetVariable("internal-memory.bytesize", 0x10000);
-	simulator->SetVariable("internal-memory.cycle-time", 250000);
-	simulator->SetVariable("internal-memory.verbose", false);
-	simulator->SetVariable("internal_router.cycle_time", 250000);
-	simulator->SetVariable("internal_router.port_buffer_size", 0x0);
-	simulator->SetVariable("internal_router.mapping_0", "range_start=\"0x34\" range_end=\"0x40\" output_port=\"0\" translation=\"34\"");
-	simulator->SetVariable("internal_router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
-	simulator->SetVariable("internal_router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
-	simulator->SetVariable("internal_router.mapping_3", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"3\" translation=\"120\"");
-	simulator->SetVariable("internal_router.mapping_4", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"4\" translation=\"2c0\"");
-	simulator->SetVariable("internal_router.mapping_5", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"5\" translation=\"300\"");
-	simulator->SetVariable("internal_router.mapping_6", "range_start=\"0x800\" range_end=\"0xffff\" output_port=\"6\" translation=\"800\"");
+	simulator->SetVariable("global-memory.org", 0x0);
+	simulator->SetVariable("global-memory.bytesize", 0x800000);
+	simulator->SetVariable("global-memory.cycle-time", 250000);
+	simulator->SetVariable("global-memory.verbose", false);
+
+	simulator->SetVariable("global-router.cycle_time", 250000);
+	simulator->SetVariable("global-router.port_buffer_size", 0x0);
+	simulator->SetVariable("global-router.mapping_0", "range_start=\"0x34\" range_end=\"0x40\" output_port=\"0\" translation=\"34\"");
+	simulator->SetVariable("global-router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
+	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
+	simulator->SetVariable("global-router.mapping_3", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"3\" translation=\"120\"");
+	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"4\" translation=\"2c0\"");
+	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"5\" translation=\"300\"");
+	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x800\" range_end=\"0x7fffff\" output_port=\"6\" translation=\"800\"");
+
+
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);
 	simulator->SetVariable("kernel_logger.std_err_color", false);

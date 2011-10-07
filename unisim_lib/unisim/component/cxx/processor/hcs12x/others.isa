@@ -222,7 +222,7 @@ rti.execute = {
 	 * (M(SP) : M(SP+1)) => YH : YL; (SP) + 0x0004 => SP
 	 * */
 	 
-	address_t addr = cpu->getRegSP();
+	uint16_t addr = cpu->getRegSP();
 	
 	/* Leave bit X unchanged.
 	 * X bit can be set only by a reset or by recognition of an (!XIRQ) interrupt
@@ -309,7 +309,7 @@ trap.execute = {
 		
 //  All this code is implemented in the CPU exception handling mecanism
 //		 
-//		address_t addr = cpu->getRegSP();
+//		uint16_t addr = cpu->getRegSP();
 //
 //		addr = addr - 2;
 //		cpu->memWrite16(addr, cpu->getRegPC());

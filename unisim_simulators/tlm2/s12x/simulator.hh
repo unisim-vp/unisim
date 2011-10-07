@@ -133,7 +133,7 @@ private:
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 
-	class InternalRouterConfig {
+	class GlobalRouterConfig {
 	public:
 		static const unsigned int INPUT_SOCKETS = 1;
 		static const unsigned int OUTPUT_SOCKETS = 7;
@@ -142,18 +142,7 @@ private:
 		typedef tlm::tlm_base_protocol_types TYPES;
 		static const bool VERBOSE = false;
 	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<InternalRouterConfig> INTERNAL_ROUTER;
-
-	class ExternalRouterConfig {
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1; //256;
-		static const unsigned int BUSWIDTH = 32;
-		typedef tlm::tlm_base_protocol_types TYPES;
-		static const bool VERBOSE = false;
-	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<ExternalRouterConfig> EXTERNAL_ROUTER;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<GlobalRouterConfig> GLOBAL_ROUTER;
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
@@ -185,12 +174,10 @@ private:
 	PWM *pwm;
 
 	//  - tlm2 router
-	EXTERNAL_ROUTER	*external_router;
-	INTERNAL_ROUTER	*internal_router;
+	GLOBAL_ROUTER	*global_router;
 
 	//  - Memories
-	MEMORY *internal_memory;
-	MEMORY *external_memory;
+	MEMORY *global_memory;
 
 	// - Interrupt controller
 	XINT *s12xint;

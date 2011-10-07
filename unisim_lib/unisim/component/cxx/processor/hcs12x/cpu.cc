@@ -161,24 +161,24 @@ CPU::CPU(const char *name, Object *parent):
 	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>(buf, this,  &regA, &regB, "Accumulator register D"));
 
 	sprintf(buf, "X");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regX, "Index register X"));
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regX);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regX, "Index register X"));
 
 	sprintf(buf, "Y");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regY, "Index register Y"));
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regY);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regY, "Index register Y"));
 
 	sprintf(buf, "SP");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regSP, "Stack Pointer SP"));
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regSP);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regSP, "Stack Pointer SP"));
 
 	sprintf(buf, "PC");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, regPC, "Program counter PC"));
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regPC);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regPC, "Program counter PC"));
 
 	sprintf(buf, "%s", ccr->GetName());
 	registers_registry[buf] = ccr;
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<address_t>(buf, this, ccrReg, "CCR"));
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, ccrReg, "CCR"));
 
 	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
 	sprintf(buf, "%s", ccrl->GetName());
@@ -327,7 +327,7 @@ uint8_t CPU::Step()
 			if(memory_access_reporting_import) {
 				if(debug_enabled && verbose_step)
 					*logger << DebugInfo
-						<< "Reporting memory acces for fetch at address 0x"
+						<< "Reporting memory access for fetch at address 0x"
 						<< std::hex << current_pc << std::dec
 						<< std::endl << EndDebugInfo;
 

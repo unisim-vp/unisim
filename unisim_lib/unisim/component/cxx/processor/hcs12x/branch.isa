@@ -446,7 +446,7 @@ call_16offset_idx_ind.execute = {
 
 	physical_address_t idxAddr = cpu->xb_getAddrRegValue(rr) + n16;
 
-	address_t subAddr = cpu->memRead16(idxAddr);
+	uint16_t subAddr = cpu->memRead16(idxAddr);
 	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
 		 
 	addr = cpu->getRegSP() - 2;
@@ -491,7 +491,7 @@ call_accD_offset_idx_ind.execute = {
 
 	physical_address_t idxAddr = cpu->getRegD() + cpu->xb_getAddrRegValue(rr);
 
-	address_t subAddr = cpu->memRead16(idxAddr);
+	uint16_t subAddr = cpu->memRead16(idxAddr);
 	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
 		 
 	addr = cpu->getRegSP() - 2;
@@ -630,7 +630,7 @@ jsr_dir.execute = {
 	 * RTNh:RTNl => M[SP]:M[SP+1]
 	 * subroutine address => PC
 	 */
-	address_t addr;
+	uint16_t addr;
 	page_t direct_reg;
 		 
 	addr = cpu->getRegSP() - 2;	
@@ -656,7 +656,7 @@ jsr_ext.disasm = {
 }
 
 jsr_ext.execute = {
-	physical_address_t addr;
+	uint16_t addr;
 
 	addr = cpu->getRegSP() - 2;	
 	cpu->setRegSP(addr);
@@ -693,8 +693,8 @@ jsr_idx.disasm = {
 }
 
 jsr_idx.execute = {
-	physical_address_t addr;
-	physical_address_t jsrAddr = xb->getEAddr(cpu); 	
+	uint16_t addr;
+	uint16_t jsrAddr = xb->getEAddr(cpu);
 	
 	addr = cpu->getRegSP() - 2;
 	cpu->setRegSP(addr);
@@ -726,7 +726,7 @@ rtc.execute = {
 	 * (SP)+2 => SP
 	 */
 
-	 physical_address_t addr;
+	 uint16_t addr;
 	 
 	 addr = cpu->getRegSP();
 	 cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], cpu->memRead8(addr));
@@ -754,7 +754,7 @@ rts.disasm = {
 
 rts.execute = {
 
-	addr = cpu->getRegSP(); 
+	uint16_t addr = cpu->getRegSP();
 
 	cpu->setRegPC(cpu->memRead16(addr));
 
@@ -809,7 +809,7 @@ Bits 7 and 6 would be 0:0 for DBNE.
 }
 
 loop.execute = {
-	address_t branchAddr;
+	uint16_t branchAddr;
 	
 	isBranch = false;
 /*

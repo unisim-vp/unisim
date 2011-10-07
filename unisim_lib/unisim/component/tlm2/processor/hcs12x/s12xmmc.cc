@@ -167,16 +167,8 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
 
-			if (isPaged(logicalAddress, 0x00, buffer->isGlobal, false)) {
-				mmc_trans->set_address( addr & 0x7FFFFF);
-				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-			} else {
-				mmc_trans->set_address( addr & 0xFFFF);
-				local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-				unsigned int i;
-				for(i = 0; i < buffer->data_size; i++)
-					if(((uint8_t *) buffer->buffer)[i]) std::cerr << "";
-			}
+			mmc_trans->set_address( addr & 0x7FFFFF);
+			memory_socket->b_transport( *mmc_trans, tlm2_btrans_time );
 
 			if (mmc_trans->is_response_error() ) {
 				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
