@@ -1,0 +1,457 @@
+/*
+ * s12xeetx.tcc
+ *
+ *  Created on: 10 oct. 2011
+ *      Author: rnouacer
+ */
+
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_S12XEETX_TCC_
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_S12XEETX_TCC_
+
+
+#include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
+
+#define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
+
+namespace unisim {
+namespace component {
+namespace tlm2 {
+namespace processor {
+namespace hcs12x {
+
+using unisim::kernel::logger::Logger;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
+/**
+ * Constructor.
+ *
+ * @param name the name of the module
+ * @param parent the parent service
+ */
+/* Constructor */
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+S12XEETX(const sc_module_name& name, Object *parent) :
+	Object(name, parent, "this module implements a memory")
+	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
+
+	, slave_socket("slave_socket")
+
+	, bus_cycle_time_int(0)
+	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
+
+	, baseAddress(0x0110)
+	, param_baseAddress("base-address", this, baseAddress)
+	, cmd_interruptOffset(0xBA)
+	, param_cmd_interruptOffset("command-interrupt", this, cmd_interruptOffset)
+
+	, global_start_address(0x13EFFF)
+	, param_global_start_address("global-start-address", this, global_start_address)
+	, global_end_address(0x140000)
+	, param_global_end_address("global-end-address", this, global_end_address)
+
+	, protected_area_start_address(0x13FDFF)
+	, param_protected_area_start_address("protected-area-start-address", this, protected_area_start_address)
+
+	, eclkdiv_reg(0)
+	, reserved1_reg(0)
+	, reserved2_reg(0)
+	, ecnfg_reg(0)
+	, eprot_reg(0xFF)
+	, estat_reg(0)
+	, ecmd_reg(0)
+	, reserved3_reg(0)
+	, eaddr_reg(0)
+	, edata_reg(0)
+
+
+{
+
+	interrupt_request(*this);
+	slave_socket.register_b_transport(this, &S12XEETX::read_write);
+	bus_clock_socket.register_b_transport(this, &S12XEETX::updateBusClock);
+
+//	SC_HAS_PROCESS(S12XEETX);
+//
+//	SC_THREAD(Process);
+
+}
+
+
+/**
+ * Destructor
+ */
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+~S12XEETX() {
+
+}
+
+//template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+//void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
+//{
+//
+//}
+
+
+/* Service methods */
+/** BeginSetup
+ * Initializes the service interface. */
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
+{
+	Reset();
+
+	return inherited::BeginSetup();
+}
+
+/**
+ * TLM2 Slave methods
+ */
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+{
+	// Leave this empty as it is designed for memory mapped buses
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+{
+	return inherited::get_direct_mem_ptr(payload, dmi_data);
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+unsigned int S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_payload& payload)
+{
+
+	tlm::tlm_command cmd = payload.get_command();
+	sc_dt::uint64 address = payload.get_address();
+	unsigned int data_length = payload.get_data_length();
+
+	if (address >= protected_area_start_address) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			if (inherited::IsVerbose()) {
+				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
+					<< std::endl << EndDebugInfo;
+				std::cerr << "Info::" << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address << std::endl;
+			}
+			return inherited::transport_dbg(payload);
+		} else {
+			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
+				<< std::endl << EndDebugWarning;
+			std::cerr << "Warning::" << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address << std::endl;
+
+			payload.set_response_status(tlm::TLM_OK_RESPONSE);
+
+			return 0;
+		}
+	}
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+tlm::tlm_sync_enum S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+{
+	tlm::tlm_command cmd = payload.get_command();
+	sc_dt::uint64 address = payload.get_address();
+	unsigned int data_length = payload.get_data_length();
+
+	if (address >= protected_area_start_address) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			if (inherited::IsVerbose()) {
+				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
+					<< std::endl << EndDebugInfo;
+				std::cerr << "Info::" << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address << std::endl;
+			}
+			return inherited::nb_transport_fw(payload, phase, t);
+		} else {
+			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
+				<< std::endl << EndDebugWarning;
+			std::cerr << "Warning::" << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address << std::endl;
+
+			if (phase == BEGIN_REQ) {
+				phase = END_REQ; // update the phase
+				payload.acquire();
+
+				return TLM_UPDATED;
+			} else {
+				inherited::logger << DebugError << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << std::endl << EndDebugError;
+				cerr << "Error: " << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << endl;
+				Object::Stop(-1);
+			}
+
+		}
+	}
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+{
+
+	tlm::tlm_command cmd = payload.get_command();
+	sc_dt::uint64 address = payload.get_address();
+	unsigned int data_length = payload.get_data_length();
+
+	if (address >= protected_area_start_address) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			if (inherited::IsVerbose()) {
+				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
+					<< std::endl << EndDebugInfo;
+				std::cerr << "Info::" << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address << std::endl;
+			}
+			inherited::b_transport(payload, t);
+		} else {
+			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
+				<< std::endl << EndDebugWarning;
+			std::cerr << "Warning::" << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address << std::endl;
+
+			payload.set_response_status( tlm::TLM_OK_RESPONSE );
+		}
+	}
+
+}
+
+// Master methods
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+tlm_sync_enum S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+{
+	if(phase == BEGIN_RESP)
+	{
+		payload.release();
+		return TLM_COMPLETED;
+	}
+	return TLM_ACCEPTED;
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::assertInterrupt() {
+
+	// assert EEPROM_Command_Interrupt
+
+	tlm_phase phase = BEGIN_REQ;
+	XINT_Payload *payload = xint_payload_fabric.allocate();
+
+	payload->interrupt_offset = cmd_interruptOffset;
+
+	sc_time local_time = quantumkeeper.get_local_time();
+
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
+
+	payload->release();
+
+	switch(ret)
+	{
+		case TLM_ACCEPTED:
+			// neither payload, nor phase and local_time have been modified by the callee
+			quantumkeeper.sync(); // synchronize to leave control to the callee
+			break;
+		case TLM_UPDATED:
+			// the callee may have modified 'payload', 'phase' and 'local_time'
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+
+			break;
+		case TLM_COMPLETED:
+			// the callee may have modified 'payload', and 'local_time' ('phase' can be ignored)
+			quantumkeeper.set(local_time); // increase the time
+			if(quantumkeeper.need_sync()) quantumkeeper.sync(); // synchronize if needed
+			break;
+	}
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
+
+	eclkdiv_reg = 0x00;
+	reserved1_reg = 0x00;
+	reserved2_reg = 0x00;
+	ecnfg_reg = 0x00;
+	eprot_reg = 0xFF;
+	estat_reg = 0x00;
+	ecmd_reg = 0x00;
+	reserved3_reg = 0x00;
+	eaddr_reg = 0x00;
+	edata_reg = 0x00;
+
+	setEEPROMClock();
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setEEPROMClock() {
+	// TODO:
+}
+
+
+//=====================================================================
+//=             memory interface methods                              =
+//=====================================================================
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
+{
+	return inherited::ReadMemory(addr, buffer, size);
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+{
+	return inherited::WriteMemory(addr, buffer, size);
+}
+
+//=====================================================================
+//=             EEPROM Registers Interface interface methods               =
+//=====================================================================
+
+/**
+ * Gets a register interface to the register specified by name.
+ *
+ * @param name The name of the requested register.
+ * @return A pointer to the RegisterInterface corresponding to name.
+ */
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+Register * S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
+
+	return NULL;
+}
+
+//=====================================================================
+//=             registers setters and getters                         =
+//=====================================================================
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read(uint8_t offset, void *buffer, unsigned int data_length)
+{
+	switch (offset) {
+		case ECLKDIV: *((uint8_t *) buffer) = eclkdiv_reg; break;
+		case RESERVED1: *((uint8_t *) buffer) = reserved1_reg; break;
+		case RESERVED2: *((uint8_t *) buffer) = reserved2_reg; break;
+		case ECNFG: *((uint8_t *) buffer) = ecnfg_reg; break;
+		case EPROT: *((uint8_t *) buffer) = eprot_reg; break;
+		case ESTAT: *((uint8_t *) buffer) = estat_reg; break;
+		case ECMD: *((uint8_t *) buffer) = ecmd_reg; break;
+		case RESERVED3:	*((uint8_t *) buffer) = reserved3_reg; break;
+		case EADDRHI: {
+			if (data_length == 2) {
+				*((uint16_t *) buffer) = eaddr_reg;
+			} else {
+				*((uint8_t *) buffer) = (uint8_t) ((eaddr_reg & 0xFF00) >> 8);
+			}
+		}
+		break;
+		case EADDRLO: *((uint8_t *) buffer) = (uint8_t) (eaddr_reg & 0x00FF); break;
+		case EDATAHI: {
+			if (data_length == 2) {
+				*((uint16_t *) buffer) = edata_reg;
+			} else {
+				*((uint8_t *) buffer) = (uint8_t) ((edata_reg & 0xFF00) >> 8);
+			}
+		}
+		break;
+		case EDATALO: *((uint8_t *) buffer) = (uint8_t) (edata_reg & 0x00FF); break;
+
+		default: return false;
+	}
+
+	return true;
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t offset, const void *buffer, unsigned int data_length)
+{
+	switch (offset) {
+		case ECLKDIV:  eclkdiv_reg = *((uint8_t *) buffer); break;
+		case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
+		case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
+		case ECNFG: ecnfg_reg = *((uint8_t *) buffer); break;
+		case EPROT: {
+			eprot_reg = *((uint8_t *) buffer);
+			uint16_t protected_size = ((eprot_reg & 0x03) + 1) * 64;
+
+			protected_area_start_address = global_end_address - protected_size + 1;
+
+		}
+		break;
+		case ESTAT: estat_reg = *((uint8_t *) buffer); break;
+		case ECMD: ecmd_reg = *((uint8_t *) buffer); break;
+		case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
+		case EADDRHI: {
+			if (data_length == 2) {
+				eaddr_reg = *((uint16_t *) buffer);
+			} else {
+				eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+			}
+
+		}
+		break;
+		case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
+		case EDATAHI: {
+			if (data_length == 2) {
+				edata_reg = *((uint16_t *) buffer);
+			} else {
+				edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+			}
+		}
+		break;
+		case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
+
+		default: return false;
+	}
+
+	return true;
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
+{
+	tlm::tlm_command cmd = trans.get_command();
+	sc_dt::uint64 address = trans.get_address();
+	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+	unsigned int data_length = trans.get_data_length();
+
+	assert(address >= baseAddress);
+
+	if (cmd == tlm::TLM_READ_COMMAND) {
+		memset(data_ptr, 0, data_length);
+		read(address - baseAddress, data_ptr, data_length);
+	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+		write(address - baseAddress, data_ptr, data_length);
+	}
+
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+}
+
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ComputeInternalTime() {
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+
+}
+
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+
+	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
+    trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	bus_cycle_time_int = *external_bus_clock;
+
+	ComputeInternalTime();
+}
+
+
+
+} // end of hcs12x
+} // end of processor
+} // end of tlm2
+} // end of component
+} // end of unisim
+
+#endif /* __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_S12XEETX_TCC_ */

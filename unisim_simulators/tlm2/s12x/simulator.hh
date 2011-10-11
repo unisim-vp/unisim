@@ -44,6 +44,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/pwm.hh>
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
@@ -79,6 +80,7 @@ using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
+using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
@@ -129,15 +131,17 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+//	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 
 	class GlobalRouterConfig {
 	public:
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 7;
-		static const unsigned int MAX_NUM_MAPPINGS = 7; //256;
+		static const unsigned int OUTPUT_SOCKETS = 10;
+		static const unsigned int MAX_NUM_MAPPINGS = 10; //256;
 		static const unsigned int BUSWIDTH = 32;
 		typedef tlm::tlm_base_protocol_types TYPES;
 		static const bool VERBOSE = false;
@@ -149,6 +153,8 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
+
+	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
 
 // ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
@@ -177,7 +183,11 @@ private:
 	GLOBAL_ROUTER	*global_router;
 
 	//  - Memories
-	MEMORY *global_memory;
+//	MEMORY *global_memory;
+	RAM *global_ram;
+	FLASH *global_flash;
+
+	EEPROM *global_eeprom;
 
 	// - Interrupt controller
 	XINT *s12xint;

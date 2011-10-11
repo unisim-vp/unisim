@@ -107,7 +107,7 @@ private:
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
 	// TODO: complete by integrating the routing functionality to the MMC
-	static const uint8_t DEVICE_MAP_SIZE = 6;
+	static const uint8_t DEVICE_MAP_SIZE = 7;
 	struct {
 		address_t	start_address;
 		address_t	end_address;
