@@ -467,6 +467,136 @@
 			<description>Built-in Signal generator period in pico-seconds. Default 25000ps.</description>
 		</variable>
 	</object>
+	<object name="EEPROM">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000000013f000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>4096</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0110</value>
+			<description></description>
+		</variable>
+		<variable name="global-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0013efff</value>
+			<description></description>
+		</variable>
+		<variable name="global-end-address">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00140000</value>
+			<description></description>
+		</variable>
+		<variable name="protected-area-start-address">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000000013fdff</value>
+			<description></description>
+		</variable>
+		<variable name="protection-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="command-interrupt">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xba</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="FLASH">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x0000000000780000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>524288</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="MMC">
 		<variable name="debug-enabled">
 			<type>parameter</type>
@@ -525,6 +655,48 @@
 			<data_type>unsigned 8-bit integer</data_type>
 			<value>0x8c</value>
 			<description></description>
+		</variable>
+	</object>
+	<object name="RAM">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x00000000000f8000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>32768</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="XINT">
@@ -683,178 +855,6 @@
 			<data_type>boolean</data_type>
 			<value>true</value>
 			<description>Enable/Disable parsing of DWARF debugging informations</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="global-eeprom">
-		<variable name="org">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x000000000013f000</value>
-			<description>memory origin/base address</description>
-		</variable>
-		<variable name="bytesize">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>4096</value>
-			<description>memory size in bytes</description>
-		</variable>
-		<variable name="cycle-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>250000 s</value>
-			<description>memory cycle time</description>
-		</variable>
-		<variable name="read-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory read latency</description>
-		</variable>
-		<variable name="write-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory write latency</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="bus-cycle-time">
-			<type>parameter</type>
-			<data_type>double precision floating-point</data_type>
-			<value>250000</value>
-			<description></description>
-		</variable>
-		<variable name="base-address">
-			<type>parameter</type>
-			<data_type>unsigned 16-bit integer</data_type>
-			<value>0x0110</value>
-			<description></description>
-		</variable>
-		<variable name="global-start-address">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0013efff</value>
-			<description></description>
-		</variable>
-		<variable name="global-end-address">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00140000</value>
-			<description></description>
-		</variable>
-		<variable name="protected-area-start-address">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x000000000013fdff</value>
-			<description></description>
-		</variable>
-		<variable name="protection-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="command-interrupt">
-			<type>parameter</type>
-			<data_type>unsigned 8-bit integer</data_type>
-			<value>0xba</value>
-			<description></description>
-		</variable>
-	</object>
-	<object name="global-flash">
-		<variable name="org">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x0000000000780000</value>
-			<description>memory origin/base address</description>
-		</variable>
-		<variable name="bytesize">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>524288</value>
-			<description>memory size in bytes</description>
-		</variable>
-		<variable name="cycle-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>250000 s</value>
-			<description>memory cycle time</description>
-		</variable>
-		<variable name="read-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory read latency</description>
-		</variable>
-		<variable name="write-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory write latency</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="global-ram">
-		<variable name="org">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x00000000000f8000</value>
-			<description>memory origin/base address</description>
-		</variable>
-		<variable name="bytesize">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>32768</value>
-			<description>memory size in bytes</description>
-		</variable>
-		<variable name="cycle-time">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>250000 s</value>
-			<description>memory cycle time</description>
-		</variable>
-		<variable name="read-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory read latency</description>
-		</variable>
-		<variable name="write-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory write latency</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>

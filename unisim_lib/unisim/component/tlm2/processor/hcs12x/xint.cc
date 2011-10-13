@@ -129,6 +129,12 @@ XINT::~XINT() {
 
 	registers_registry.clear();
 
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
 }
 
 // Master methods
@@ -368,16 +374,22 @@ bool XINT::BeginSetup() {
 
 	sprintf(buf, "%s.IVBR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ivbr);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector Base Register (IVBR)"));
 
 	sprintf(buf, "%s.INT_XGPRIO",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGATE Interrupt Priority Configuration Register (INT_XGPRIO)"));
 
 	sprintf(buf, "%s.INT_CFADDR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)"));
 
+	char shortName[20];
 	for (uint8_t i=0; i<8; i++) {
-		sprintf(buf, "%s.INT_CFDATA%d", name(), i);
+		sprintf(shortName, "INT_CFDATA%d", i);
+		sprintf(buf, "%s.%s", name(), shortName);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(shortName, this, int_cfdata[i], "Interrupt Request Configuration Data Register"));
 	}
 
 	return true;

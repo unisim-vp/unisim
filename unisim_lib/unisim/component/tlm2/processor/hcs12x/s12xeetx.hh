@@ -22,6 +22,7 @@
 #include "unisim/service/interfaces/registers.hh"
 
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/debug/simple_register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -50,6 +51,7 @@ using unisim::kernel::logger::Logger;
 using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::Register;
+using unisim::util::debug::SimpleRegister;
 
 using unisim::component::tlm2::memory::ram::DEFAULT_BURST_LENGTH;
 using unisim::component::tlm2::memory::ram::DEFAULT_BUSWIDTH;
@@ -176,6 +178,11 @@ private:
 
 	uint8_t cmd_interruptOffset;
 	Parameter<uint8_t> param_cmd_interruptOffset;
+
+	// Registers map
+	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	uint8_t eclkdiv_reg, reserved1_reg, reserved2_reg, ecnfg_reg, eprot_reg, estat_reg, ecmd_reg, reserved3_reg;
 	uint16_t eaddr_reg, edata_reg;

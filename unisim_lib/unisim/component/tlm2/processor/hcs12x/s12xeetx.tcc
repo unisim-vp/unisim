@@ -93,6 +93,23 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 ~S12XEETX() {
 
+	// Release registers_registry
+	map<string, unisim::util::debug::Register *>::iterator reg_iter;
+
+	for(reg_iter = registers_registry.begin(); reg_iter != registers_registry.end(); reg_iter++)
+	{
+		if(reg_iter->second)
+			delete reg_iter->second;
+	}
+
+	registers_registry.clear();
+
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
 }
 
 //template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -108,6 +125,48 @@ S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 {
+	char buf[80];
+
+	sprintf(buf, "%s.ECLKDIV",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eclkdiv_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ECLKDIV", this, eclkdiv_reg, "EEPROM Clock Divider Register (ECLKDIV)"));
+
+	sprintf(buf, "%s.RESERVED1",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved1_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RESERVED1", this, reserved1_reg, "RESERVED1"));
+
+	sprintf(buf, "%s.RESERVED2",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved2_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RESERVED2", this, reserved2_reg, "RESERVED2"));
+
+	sprintf(buf, "%s.ECNFG",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecnfg_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ECNFG", this, ecnfg_reg, "EEPROM Configuration Register (ECNFG)"));
+
+	sprintf(buf, "%s.EPROT",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eprot_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("EPROT", this, eprot_reg, "EEPROM Protection Register (EPROT)"));
+
+	sprintf(buf, "%s.ESTAT",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &estat_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ESTAT", this, estat_reg, "EEPROM Status Register (ESTAT)"));
+
+	sprintf(buf, "%s.ECMD",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecmd_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ECMD", this, ecmd_reg, "EEPROM Command Register (ECMD)"));
+
+	sprintf(buf, "%s.RESERVED3",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved3_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RESERVED3", this, reserved3_reg, "RESERVED3"));
+
+	sprintf(buf, "%s.EADDR",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &eaddr_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("EADDR", this, eaddr_reg, "EEPROM Address Register"));
+
+	sprintf(buf, "%s.EDATA",inherited::name());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &edata_reg);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register"));
+
 	Reset();
 
 	return inherited::BeginSetup();

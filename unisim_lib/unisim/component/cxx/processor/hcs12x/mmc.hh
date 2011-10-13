@@ -301,6 +301,8 @@ private:
 	// Registers map
 	std::map<string, Register *> registers_registry;
 
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
 };
 
 inline bool MMC::isPaged(address_t addr, page_t page, bool isGlobal, bool debugload) {

@@ -254,6 +254,8 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
 	void InputANx(double anValue[ATD_SIZE]);
 	void abortConversion();
 	void abortAndStartNewConversion();

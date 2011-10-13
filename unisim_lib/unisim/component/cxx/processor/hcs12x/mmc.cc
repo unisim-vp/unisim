@@ -105,6 +105,12 @@ MMC::~MMC() {
 
 	registers_registry.clear();
 
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
 }
 
 void MMC::Reset() {
@@ -135,39 +141,51 @@ bool MMC::BeginSetup() {
 
 	sprintf(buf, "%s.MMCCTL0", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mmcctl0);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MMCCTL0", this, mmcctl0, "MMC Control Register (MMCCTL0)"));
 
 	sprintf(buf, "%s.MODE", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mode);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MODE", this, mode, "Mode Register (MODE)"));
 
 	sprintf(buf, "%s.GPAGE", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &gpage);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("GPAGE", this, gpage, "Global Page Index Register (GPAGE)"));
 
 	sprintf(buf, "%s.DIRECT", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &direct);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("DIRECT", this, direct, "Direct Page Register (DIRECT)"));
 
 	sprintf(buf, "%s.MMCCTL1", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mmcctl1);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MMCCTL1", this, mmcctl1, "MMC Control Register (MMCCTL1)"));
 
 	sprintf(buf, "%s.RPAGE", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &rpage);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RPAGE", this, rpage, "RAM Page Index Register (RPAGE)"));
 
 	sprintf(buf, "%s.EPAGE", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &epage);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("EPAGE", this, epage, "EEPROM Page Index Register (EPAGE)"));
 
 	sprintf(buf, "%s.PPAGE", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ppage);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PPAGE", this, ppage, "Program Page Index Register (PPAGE)"));
 
 	sprintf(buf, "%s.RAMWPC", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramwpc);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RAMWPC", this, ramwpc, "RAM Write Protection Control Register (RAMWPC)"));
 
 	sprintf(buf, "%s.RAMXGU", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramxgu);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RAMXGU", this, ramxgu, "RAM XGATE Upper Boundary Register (RAMXGU)"));
 
 	sprintf(buf, "%s.RAMSHL", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshl);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RAMSHL", this, ramshl, "RAM Shared Region Lower Boundary Register (RAMSHL)"));
 
 	sprintf(buf, "%s.RAMSHU", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)"));
 
 	return true;
 }

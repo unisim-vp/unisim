@@ -137,6 +137,12 @@ ATD10B<ATD_SIZE>::~ATD10B() {
 
 	registers_registry.clear();
 
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
 }
 
 
@@ -876,54 +882,73 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 
 	sprintf(buf, "%s.ATDCTL0",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl0_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDCTL0", this, atdctl0_register, "ATD Control Register 0 (ATDCTL0)"));
 
 	sprintf(buf, "%s.ATDCTL1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDCTL1", this, atdctl1_register, "ATD Control Register 1 (ATDCTL1)"));
 
 	sprintf(buf, "%s.ATDCTL2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl2_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDCTL2", this, atdctl2_register, "ATD Control Register 2 (ATDCTL2)"));
 
 	sprintf(buf, "%s.ATDCTL3",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl3_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDCTL3", this, atdctl3_register, "ATD Control Register 3 (ATDCTL3)"));
 
 	sprintf(buf, "%s.ATDCTL4",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl4_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDCTL4", this, atdctl4_register, "ATD Control Register 4 (ATDCTL4)"));
 
 	sprintf(buf, "%s.ATDCTL5",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdctl5_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDCTL5", this, atdctl5_register, "ATD Control Register 5 (ATDCTL5)"));
 
 	sprintf(buf, "%s.ATDSTAT0",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat0_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDSTAT0", this, atdstat0_register, "ATD Status Register 0 (ATDSTAT0)"));
 
 	sprintf(buf, "%s.ATDTEST0",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest0_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDTEST0", this, atdtest0_register, "ATD Test Register 0 (ATDTEST0)"));
 
 	sprintf(buf, "%s.ATDTEST1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdtest1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDTEST1", this, atdctl0_register, "ATD Test Register 1 (ATDTEST1)"));
 
 	sprintf(buf, "%s.ATDSTAT2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat2_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDSTAT2", this, atdstat2_register, "ATD Status Register 2 (ATDSTAT2)"));
 
 	sprintf(buf, "%s.ATDSTAT1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atdstat1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDSTAT1", this, atdstat1_register, "ATD Status Register 1 (ATDSTAT1)"));
 
 	sprintf(buf, "%s.ATDDIEN0",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atddien0_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDDIEN0", this, atddien0_register, "ATD Input Enable Register 0 (ATDDIEN0)"));
 
 	sprintf(buf, "%s.ATDDIEN1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &atddien1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ATDDIEN1", this, atddien1_register, "ATD Input Enable Register 1 (ATDDIEN1)"));
 
 	sprintf(buf, "%s.PORTAD0",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &portad0_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PORTAD0", this, portad0_register, "Port Data Register 0 (PORTAD0)"));
 
 	sprintf(buf, "%s.PORTAD1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &portad1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PORTAD1", this, portad1_register, "Port Data Register 1 (PORTAD1)"));
 
+	char shortName[20];
 	for (uint8_t i=0; i < ATD_SIZE; i++) {
 
-		sprintf(buf, "%s.ATDDR%d", name(), i);
+		sprintf(shortName, "ATDDR%d", i);
+
+		sprintf(buf, "%s.%s", name(), shortName);
 
 		registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &atddrhl_register[i]);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(shortName, this, atddrhl_register[i], "ATD Result Register "));
 
 	}
 

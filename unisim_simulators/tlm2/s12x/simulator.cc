@@ -106,10 +106,10 @@ Simulator::Simulator(int argc, char **argv)
 
 	//  - Memories
 //	global_memory = new MEMORY("global-memory");
-	global_ram = new RAM("global-ram");
-	global_flash = new FLASH("global-flash");
+	global_ram = new RAM("RAM");
+	global_flash = new FLASH("FLASH");
 
-	global_eeprom = new EEPROM("global-eeprom");
+	global_eeprom = new EEPROM("EEPROM");
 
 	// - Interrupt controller
 	s12xint = new XINT("XINT");
@@ -497,27 +497,27 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 //	simulator->SetVariable("global-memory.cycle-time", 250000);
 //	simulator->SetVariable("global-memory.verbose", false);
 
-	simulator->SetVariable("global-ram.org", 0x0F8000);
-	simulator->SetVariable("global-ram.bytesize", 0x8000); // 32Ko
-	simulator->SetVariable("global-ram.cycle-time", 250000);
-	simulator->SetVariable("global-ram.verbose", false);
+	simulator->SetVariable("RAM.org", 0x0F8000);
+	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
+	simulator->SetVariable("RAM.cycle-time", 250000);
+	simulator->SetVariable("RAM.verbose", false);
 
-	simulator->SetVariable("global-eeprom.org", 0x13F000);
-	simulator->SetVariable("global-eeprom.bytesize", 0x1000); // 4Ko
-	simulator->SetVariable("global-eeprom.cycle-time", 250000);
-	simulator->SetVariable("global-eeprom.bus-cycle-time", 250000);
-	simulator->SetVariable("global-eeprom.base-address", 0x0110);
-	simulator->SetVariable("global-eeprom.command-interrupt", 0xBA);
-	simulator->SetVariable("global-eeprom.global-start-address", 0x13EFFF);
-	simulator->SetVariable("global-eeprom.global-end-address", 0x140000);
-	simulator->SetVariable("global-eeprom.protected-area-start-address", 0x13FDFF);
-	simulator->SetVariable("global-eeprom.protection-enabled", true);
-	simulator->SetVariable("global-eeprom.verbose", false);
+	simulator->SetVariable("EEPROM.org", 0x13F000);
+	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
+	simulator->SetVariable("EEPROM.cycle-time", 250000);
+	simulator->SetVariable("EEPROM.bus-cycle-time", 250000);
+	simulator->SetVariable("EEPROM.base-address", 0x0110);
+	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
+	simulator->SetVariable("EEPROM.global-start-address", 0x13EFFF);
+	simulator->SetVariable("EEPROM.global-end-address", 0x140000);
+	simulator->SetVariable("EEPROM.protected-area-start-address", 0x13FDFF);
+	simulator->SetVariable("EEPROM.protection-enabled", true);
+	simulator->SetVariable("EEPROM.verbose", false);
 
-	simulator->SetVariable("global-flash.org", 0x780000);
-	simulator->SetVariable("global-flash.bytesize", 0x80000); // 512Ko
-	simulator->SetVariable("global-flash.cycle-time", 250000);
-	simulator->SetVariable("global-flash.verbose", false);
+	simulator->SetVariable("FLASH.org", 0x780000);
+	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
+	simulator->SetVariable("FLASH.cycle-time", 250000);
+	simulator->SetVariable("FLASH.verbose", false);
 
 
 	simulator->SetVariable("global-router.cycle_time", 250000);
