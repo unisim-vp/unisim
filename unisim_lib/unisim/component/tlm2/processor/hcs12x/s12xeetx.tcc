@@ -58,6 +58,9 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, protected_area_start_address(0x13FDFF)
 	, param_protected_area_start_address("protected-area-start-address", this, protected_area_start_address)
 
+	, protection_enabled(true)
+	, param_protection_enabled("protection-enabled", this, protection_enabled)
+
 	, eclkdiv_reg(0)
 	, reserved1_reg(0)
 	, reserved2_reg(0)
@@ -133,7 +136,10 @@ unsigned int S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transp
 	sc_dt::uint64 address = payload.get_address();
 	unsigned int data_length = payload.get_data_length();
 
-	if (address >= protected_area_start_address) {
+	if ((address < protected_area_start_address) || (!protection_enabled)) {
+		return inherited::transport_dbg(payload);
+	}
+	else {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			if (inherited::IsVerbose()) {
 				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
@@ -161,7 +167,10 @@ tlm::tlm_sync_enum S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 	sc_dt::uint64 address = payload.get_address();
 	unsigned int data_length = payload.get_data_length();
 
-	if (address >= protected_area_start_address) {
+	if ((address < protected_area_start_address) || (!protection_enabled)) {
+		return inherited::nb_transport_fw(payload, phase, t);
+	}
+	else {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			if (inherited::IsVerbose()) {
 				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
@@ -198,7 +207,10 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tl
 	sc_dt::uint64 address = payload.get_address();
 	unsigned int data_length = payload.get_data_length();
 
-	if (address >= protected_area_start_address) {
+	if ((address < protected_area_start_address) || (!protection_enabled)) {
+		inherited::b_transport(payload, t);
+	}
+	else {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			if (inherited::IsVerbose()) {
 				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
@@ -375,6 +387,11 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t 
 			uint16_t protected_size = ((eprot_reg & 0x03) + 1) * 64;
 
 			protected_area_start_address = global_end_address - protected_size + 1;
+			/**
+			 * EPROT::EPDIS = 0 protection enabled
+			 * EPROT::EPDIS = 1 protection disabled
+			 */
+			protection_enabled = ((eprot_reg & 0x04) == 0);
 
 		}
 		break;

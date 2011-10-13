@@ -286,9 +286,6 @@ uint8_t CPU::Step()
 						<< std::endl << EndDebugInfo;
 
 //				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-				if (current_pc == 0x8029) {
-					std::cerr << "cjhkcfjsdf" << std::endl;
-				}
 				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(current_pc));
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {

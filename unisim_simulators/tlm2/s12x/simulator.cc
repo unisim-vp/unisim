@@ -511,6 +511,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("global-eeprom.global-start-address", 0x13EFFF);
 	simulator->SetVariable("global-eeprom.global-end-address", 0x140000);
 	simulator->SetVariable("global-eeprom.protected-area-start-address", 0x13FDFF);
+	simulator->SetVariable("global-eeprom.protection-enabled", true);
 	simulator->SetVariable("global-eeprom.verbose", false);
 
 	simulator->SetVariable("global-flash.org", 0x780000);

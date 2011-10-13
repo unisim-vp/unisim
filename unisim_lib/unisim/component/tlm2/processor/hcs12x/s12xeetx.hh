@@ -171,6 +171,9 @@ private:
 	uint64_t protected_area_start_address;
 	Parameter<uint64_t> param_protected_area_start_address;
 
+	bool protection_enabled;
+	Parameter<bool> param_protection_enabled;
+
 	uint8_t cmd_interruptOffset;
 	Parameter<uint8_t> param_cmd_interruptOffset;
 
