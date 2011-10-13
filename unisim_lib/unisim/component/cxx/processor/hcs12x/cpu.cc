@@ -285,7 +285,11 @@ uint8_t CPU::Step()
 					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+//				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+				if (current_pc == 0x8029) {
+					std::cerr << "cjhkcfjsdf" << std::endl;
+				}
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(current_pc));
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
@@ -417,8 +421,11 @@ uint8_t CPU::Step()
 		}
 
 		if(requires_finished_instruction_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+			if(memory_access_reporting_import) {
+//				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(getRegPC()));
+
+			}
 
 		if(HasAsynchronousInterrupt())
 		{
