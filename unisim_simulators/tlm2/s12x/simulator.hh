@@ -230,6 +230,12 @@ private:
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
+
+	string endian;
+	Parameter<string> *param_endian;
+	string program_counter_name;
+	Parameter<string> *param_pc_reg_name;
+
 	int exit_status;
 	bool isS19;
 

@@ -540,6 +540,8 @@ unsigned int VariableBase::GetLength() const
 	return 0;
 }
 
+unsigned int VariableBase::GetBitSize() const { return 0; }
+
 VariableBase& VariableBase::operator = (const VariableBase& variable)
 {
 	string variable_value = (string) variable;
@@ -611,6 +613,9 @@ Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type
 {
 	Simulator::simulator->Initialize(this);
 }
+
+template <class TYPE>
+unsigned int Variable<TYPE>::GetBitSize() const { return sizeof(TYPE) * 8; }
 
 template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage) ? true : false; }
 template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }

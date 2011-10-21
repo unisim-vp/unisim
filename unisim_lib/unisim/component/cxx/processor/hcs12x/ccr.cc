@@ -102,6 +102,8 @@ const char *TimeBaseRegisterView::GetDataTypeName() const
 	return "unsigned 16-bit integer";
 }
 
+unsigned int TimeBaseRegisterView::GetBitSize() const { return 8; }
+
 TimeBaseRegisterView::operator bool () const
 {
 	return (bool) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);

@@ -63,6 +63,11 @@ Simulator::Simulator(int argc, char **argv)
 	, dump_formulas(false)
 	, dump_statistics(true)
 
+	, endian("")
+//	, param_endian("endian", this, endian)
+	, program_counter_name("")
+//	, param_pc_reg_name("program-counter-name", this, program_counter_name)
+
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
@@ -71,6 +76,15 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
 {
+
+	param_endian = new Parameter<string>("endian", 0, endian, "Target endianness");
+	param_endian->SetMutable(false);
+	param_endian->SetVisible(true);
+
+	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
+	param_pc_reg_name->SetMutable(false);
+	param_pc_reg_name->SetVisible(true);
+
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
 	//=========================================================================
@@ -383,6 +397,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dump-parameters", false);
 	simulator->SetVariable("dump-formulas", false);
 	simulator->SetVariable("dump-statistics", true);
+
+	simulator->SetVariable("endian", "big");
+	simulator->SetVariable("program-counter-name", "CPU.PC");
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";

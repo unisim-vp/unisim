@@ -124,6 +124,7 @@ public:
 	ConcatenatedRegisterView(const char *name, unisim::kernel::service::Object *owner, SUB_REGISTER_TYPE *_regHigh, SUB_REGISTER_TYPE *_regLow, const char *description);
 	virtual ~ConcatenatedRegisterView();
 	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
@@ -165,6 +166,10 @@ const char *ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetDataT
 	}
 	return "?";
 }
+
+template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
+unsigned int ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetBitSize() const { return sizeof(REGISTER_TYPE) * 8; }
+
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>:: operator bool () const {

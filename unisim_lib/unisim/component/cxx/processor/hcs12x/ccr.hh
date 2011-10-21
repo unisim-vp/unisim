@@ -231,6 +231,7 @@ public:
 	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint16_t& storage, Type type, const char *description);
 	virtual ~TimeBaseRegisterView();
 	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;

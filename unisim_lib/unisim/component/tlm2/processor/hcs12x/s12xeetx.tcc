@@ -368,12 +368,83 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setEEPROMClock
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 {
+	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
+		service_address_t offset = addr-baseAddress;
+		switch (offset) {
+			case ECLKDIV: *((uint8_t *) buffer) = eclkdiv_reg; break;
+			case RESERVED1: *((uint8_t *) buffer) = reserved1_reg; break;
+			case RESERVED2: *((uint8_t *) buffer) = reserved2_reg; break;
+			case ECNFG: *((uint8_t *) buffer) = ecnfg_reg; break;
+			case EPROT: *((uint8_t *) buffer) = eprot_reg; break;
+			case ESTAT: *((uint8_t *) buffer) = estat_reg; break;
+			case ECMD: *((uint8_t *) buffer) = ecmd_reg; break;
+			case RESERVED3:	*((uint8_t *) buffer) = reserved3_reg; break;
+			case EADDRHI: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = eaddr_reg;
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) ((eaddr_reg & 0xFF00) >> 8);
+				}
+			}
+			break;
+			case EADDRLO: *((uint8_t *) buffer) = (uint8_t) (eaddr_reg & 0x00FF); break;
+			case EDATAHI: {
+				if (size == 2) {
+					*((uint16_t *) buffer) = edata_reg;
+				} else {
+					*((uint8_t *) buffer) = (uint8_t) ((edata_reg & 0xFF00) >> 8);
+				}
+			}
+			break;
+			case EDATALO: *((uint8_t *) buffer) = (uint8_t) (edata_reg & 0x00FF); break;
+		}
+
+		return true;
+	}
+
 	return inherited::ReadMemory(addr, buffer, size);
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
+
+	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
+
+		service_address_t offset = addr-baseAddress;
+		switch (offset) {
+			case ECLKDIV:  eclkdiv_reg = *((uint8_t *) buffer); break;
+			case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
+			case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
+			case ECNFG: ecnfg_reg = *((uint8_t *) buffer); break;
+			case EPROT: eprot_reg = *((uint8_t *) buffer); break;
+			case ESTAT: estat_reg = *((uint8_t *) buffer); break;
+			case ECMD: ecmd_reg = *((uint8_t *) buffer); break;
+			case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
+			case EADDRHI: {
+				if (size == 2) {
+					eaddr_reg = *((uint16_t *) buffer);
+				} else {
+					eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+				}
+
+			}
+			break;
+			case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
+			case EDATAHI: {
+				if (size == 2) {
+					edata_reg = *((uint16_t *) buffer);
+				} else {
+					edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+				}
+			}
+			break;
+			case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
+		}
+
+		return true;
+	}
+
 	return inherited::WriteMemory(addr, buffer, size);
 }
 
@@ -390,7 +461,11 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(se
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 Register * S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
 
-	return NULL;
+	if(registers_registry.find(string(name)) != registers_registry.end())
+		return registers_registry[string(name)];
+	else
+		return NULL;
+
 }
 
 //=====================================================================

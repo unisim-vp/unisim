@@ -55,6 +55,14 @@ inline T convertTo(std::string const& s, bool failIfLeftoverChars = true) {
 	return x;
 }
 
+inline bool IsHexChar(char ch)
+{
+	if(ch >= 'a' && ch <= 'f') return true;
+	if(ch >= '0' && ch <= '9') return true;
+	if(ch >= 'A' && ch <= 'F') return true;
+	return false;
+}
+
 inline char Nibble2HexChar(uint8_t v)
 {
 	v = v & 0xf; // keep only 4-bits
@@ -69,12 +77,80 @@ inline uint8_t HexChar2Nibble(char ch)
 	return 0;
 }
 
-inline bool IsHexChar(char ch)
-{
-	if(ch >= 'a' && ch <= 'f') return true;
-	if(ch >= '0' && ch <= '9') return true;
-	if(ch >= 'A' && ch <= 'F') return true;
-	return false;
+inline void Number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
+
+	int i;
+	char c[2];
+	c[1] = 0;
+
+	hex.erase();
+
+	if(endian == "big")
+	{
+#if BYTE_ORDER == BIG_ENDIAN
+		for(i = 0; i < size; i++)
+#else
+		for(i = size - 1; i >= 0; i--)
+#endif
+		{
+			c[0] = Nibble2HexChar(value[i] >> 4);
+			hex += c;
+			c[0] = Nibble2HexChar(value[i] & 0xf);
+			hex += c;
+		}
+	}
+	else
+	{
+#if BYTE_ORDER == LITTLE_ENDIAN
+		for(i = 0; i < size; i++)
+#else
+		for(i = size - 1; i >= 0; i--)
+#endif
+		{
+			c[0] = Nibble2HexChar(value[i] >> 4);
+			hex += c;
+			c[0] = Nibble2HexChar(value[i] & 0xf);
+			hex += c;
+		}
+	}
+
+}
+
+inline bool HexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
+
+	int i;
+	unsigned int len = hex.length();
+	unsigned int pos = 0;
+
+	if(endian == "big")
+	{
+#if BYTE_ORDER == BIG_ENDIAN
+		for(i = 0; i < size && pos < len; i++, pos += 2)
+#else
+		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+#endif
+		{
+			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
+
+			((uint8_t*) value)[i] = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
+		}
+	}
+	else
+	{
+#if BYTE_ORDER == LITTLE_ENDIAN
+		for(i = 0; i < size && pos < len; i++, pos += 2)
+#else
+		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
+#endif
+		{
+			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
+
+			((uint8_t*) value)[i] = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
+		}
+	}
+
+	return true;
+
 }
 
 inline void TextToHex(const char *s, int count, std::string& packet)
@@ -82,7 +158,7 @@ inline void TextToHex(const char *s, int count, std::string& packet)
 	int i;
 	std::stringstream strm;
 
-	for(i = 0; i < count; i++)
+	for(i = 0; (i<count); i++)
 	{
 		strm << Nibble2HexChar((uint8_t) s[i] >> 4);
 		strm << Nibble2HexChar((uint8_t) s[i] & 0xf);

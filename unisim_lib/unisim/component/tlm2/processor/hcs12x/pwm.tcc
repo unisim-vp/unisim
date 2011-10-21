@@ -1098,9 +1098,10 @@ void PWM<PWM_SIZE>::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_bu
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
 
-	if (offset <= PWMSDN) {
+		service_address_t offset = addr-baseAddress;
+
 		switch (offset) {
 			case PWME: *((uint8_t *)buffer) = pwme_register; break;
 			case PWMPOL: *((uint8_t *)buffer) = pwmpol_register; break;
@@ -1118,13 +1119,13 @@ bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t si
 			default: {
 				// PWMCNTx
 				if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
-					*((uint8_t *)buffer) = channel[offset-PWMCNT0]->getPwmcnt_register();
+					*((uint8_t *)buffer) = pwmcnt16_register[offset - PWMCNT0];
 				} else	// PWMPERx
 				if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
-					*((uint8_t *)buffer) = channel[offset-PWMPER0]->getPWMPERValue();
+					*((uint8_t *)buffer) = pwmper16_register[offset - PWMPER0];
 				} else	// PWMDTYx
 				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
-					*((uint8_t *)buffer) = channel[offset-PWMDTY0]->getPWMDTYValue();
+					*((uint8_t *)buffer) = pwmdty16_register_value[offset - PWMDTY0];
 				} else {
 					return false;
 				}
@@ -1140,14 +1141,41 @@ bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t si
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
 
-	if (size == 0) {
+		service_address_t offset = addr-baseAddress;
+
+		switch (offset) {
+			case PWME: pwme_register = *((uint8_t *)buffer); break;
+			case PWMPOL: pwmpol_register = *((uint8_t *)buffer); break;
+			case PWMCLK: pwmclk_register = *((uint8_t *)buffer); break;
+			case PWMPRCLK: pwmprclk_register = *((uint8_t *)buffer); break;
+			case PWMCAE: pwmcae_register = *((uint8_t *)buffer); break;
+			case PWMCTL: pwmctl_register = *((uint8_t *)buffer); break;
+			case PWMTST: pwmtst_register = *((uint8_t *)buffer); break;
+			case PWMPRSC: pwmprsc_register = *((uint8_t *)buffer); break;
+			case PWMSCLA: pwmscla_register = *((uint8_t *)buffer); break;
+			case PWMSCLB: pwmsclb_register = *((uint8_t *)buffer); break;
+			case PWMSCNTA: pwmscnta_register = *((uint8_t *)buffer); break;
+			case PWMSCNTB: pwmscntb_register = *((uint8_t *)buffer); break;
+			case PWMSDN: pwmsdn_register = *((uint8_t *)buffer); break;
+			default: {
+				// PWMCNTx
+				if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
+					pwmcnt16_register[offset - PWMCNT0] = *((uint8_t *)buffer);
+				} else	// PWMPERx
+				if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
+					pwmper16_register[offset - PWMPER0] = *((uint8_t *)buffer);
+				} else	// PWMDTYx
+				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
+					pwmdty16_register_value[offset - PWMDTY0] = offset >= PWMDTY0;
+				} else {
+					return false;
+				}
+			}
+		}
+
 		return true;
-	}
-
-	if (offset <= PWMSDN) {
-		return write(offset, *((uint8_t *)buffer));
 	}
 
 	return false;

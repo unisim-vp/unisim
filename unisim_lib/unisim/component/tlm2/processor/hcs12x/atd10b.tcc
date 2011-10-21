@@ -1028,9 +1028,9 @@ void ATD10B<ATD_SIZE>::Reset() {
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+(ATDDR0H + 2*ATD_SIZE - 1)))) {
 
-	if (offset <= (ATDDR0H + 2*ATD_SIZE - 1)) {
+		service_address_t offset = addr-baseAddress;
 
 		switch (offset) {
 			case ATDCTL0: *((uint8_t *) buffer) = atdctl0_register; break;
@@ -1095,14 +1095,48 @@ bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+(ATDDR0H + 2*ATD_SIZE - 1)))) {
 
-	if (size == 0) {
+		service_address_t offset = addr-baseAddress;
+
+		switch (offset) {
+			case ATDCTL0: atdctl0_register = *((uint8_t *) buffer); break;
+			case ATDCTL1: atdctl1_register = *((uint8_t *) buffer); break;
+			case ATDCTL2: atdctl2_register = *((uint8_t *) buffer); break;
+			case ATDCTL3: atdctl3_register = *((uint8_t *) buffer); break;
+			case ATDCTL4: atdctl4_register = *((uint8_t *) buffer); break;
+			case ATDCTL5: atdctl5_register = *((uint8_t *) buffer); break;
+			case ATDSTAT0: atdstat0_register = *((uint8_t *) buffer); break;
+			case UNIMPL0007: break;
+			case ATDTEST0: atdtest0_register = *((uint8_t *) buffer); break;
+			case ATDTEST1: atdtest1_register = *((uint8_t *) buffer); break;
+			case ATDSTAT2: atdstat2_register = *((uint8_t *) buffer); break;
+			case ATDSTAT1: atdstat1_register = *((uint8_t *) buffer); break;
+			case ATDDIEN0: atddien0_register = *((uint8_t *) buffer); break;
+			case ATDDIEN1: atddien1_register = *((uint8_t *) buffer); break;
+			case PORTAD0: portad0_register = *((uint8_t *) buffer); break;
+			case PORTAD1: portad1_register = *((uint8_t *) buffer); break;
+
+			default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
+
+				if (size == sizeof(uint8_t)) {
+
+					if (((offset-ATDDR0H) % 2) == 0) {
+						atddrhl_register[(offset-ATDDR0H)/2] = (atddrhl_register[(offset-ATDDR0H)/2] & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+					} else {
+						atddrhl_register[(offset-ATDDR0H)/2] = (atddrhl_register[(offset-ATDDR0H)/2] & 0xFF00) | *((uint8_t *) buffer);
+					}
+
+				} else {
+					atddrhl_register[(offset-ATDDR0H)/2] = *((uint16_t *) buffer);
+				}
+
+			} else {
+				return false;
+			}
+		}
+
 		return true;
-	}
-
-	if (offset <= (ATDDR0H + 2*ATD_SIZE - 1)) {
-		return write(offset, buffer);
 	}
 
 	return false;

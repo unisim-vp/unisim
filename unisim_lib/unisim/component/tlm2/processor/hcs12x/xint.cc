@@ -46,9 +46,6 @@ namespace hcs12x {
 
 using unisim::util::debug::SimpleRegister;
 
-address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
-uint8_t XINT::XINT_REGS_RESET_VALUES[XINT::XINT_MEMMAP_SIZE];
-
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
@@ -66,7 +63,10 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	isHardwareInterrupt(false),
 	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled)
+	param_debug_enabled("debug-enabled", this, debug_enabled),
+	baseAddress(0x0120),
+	param_baseAddress("base-address", this, baseAddress)
+
 {
 
 	interrupt_request(*this);
@@ -78,41 +78,6 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	SC_THREAD(Run);
 
 	zeroTime = sc_time((double)0, SC_PS);
-
-	XINT_REGS_ADDRESSES[IVBR]		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
-	XINT_REGS_RESET_VALUES[IVBR]	= 0xFF;		// IVBR is only one.
-
-	XINT_REGS_ADDRESSES[INT_XGPRIO] = 0x0126;
-	XINT_REGS_RESET_VALUES[INT_XGPRIO]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFADDR] = 0x0127;
-	XINT_REGS_RESET_VALUES[INT_CFADDR] = 0x10;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA0] = 0x0128;
-	XINT_REGS_RESET_VALUES[INT_CFDATA0]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA1] = 0x0129;
-	XINT_REGS_RESET_VALUES[INT_CFDATA1]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA2] = 0x012A;
-	XINT_REGS_RESET_VALUES[INT_CFDATA2]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA3] = 0x012B;
-	XINT_REGS_RESET_VALUES[INT_CFDATA3]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA4] = 0x012C;
-	XINT_REGS_RESET_VALUES[INT_CFDATA4]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA5] = 0x012D;
-	XINT_REGS_RESET_VALUES[INT_CFDATA5]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA6] = 0x012E;
-	XINT_REGS_RESET_VALUES[INT_CFDATA6]	= 0x01;
-
-	XINT_REGS_ADDRESSES[INT_CFDATA7] = 0x012F;
-	XINT_REGS_RESET_VALUES[INT_CFDATA7]	= 0x01;
-
-	Reset();
 
 }
 
@@ -350,17 +315,17 @@ void XINT::Run()
 
 void XINT::Reset() {
 
-	ivbr = XINT_REGS_RESET_VALUES[IVBR];
-	int_xgprio = XINT_REGS_RESET_VALUES[INT_XGPRIO];
-	int_cfaddr = XINT_REGS_RESET_VALUES[INT_CFADDR];
-	int_cfdata[0] = XINT_REGS_RESET_VALUES[INT_CFDATA0];
-	int_cfdata[1] = XINT_REGS_RESET_VALUES[INT_CFDATA1];
-	int_cfdata[2] = XINT_REGS_RESET_VALUES[INT_CFDATA2];
-	int_cfdata[3] =  XINT_REGS_RESET_VALUES[INT_CFDATA3];
-	int_cfdata[4] =  XINT_REGS_RESET_VALUES[INT_CFDATA4];
-	int_cfdata[5] =  XINT_REGS_RESET_VALUES[INT_CFDATA5];
-	int_cfdata[6] =  XINT_REGS_RESET_VALUES[INT_CFDATA6];
-	int_cfdata[7] =  XINT_REGS_RESET_VALUES[INT_CFDATA7];
+	ivbr = 0xFF;
+	int_xgprio = 0x01;
+	int_cfaddr = 0x10;
+	int_cfdata[0] = 0x01;
+	int_cfdata[1] = 0x01;
+	int_cfdata[2] = 0x01;
+	int_cfdata[3] = 0x01;
+	int_cfdata[4] = 0x01;
+	int_cfdata[5] = 0x01;
+	int_cfdata[6] = 0x01;
+	int_cfdata[7] = 0x01;
 
 	for (int i=0; i<XINT_SIZE; i++) {
 		interrupt_flags[i] = false;
@@ -391,6 +356,8 @@ bool XINT::BeginSetup() {
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
 		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(shortName, this, int_cfdata[i], "Interrupt Request Configuration Data Register"));
 	}
+
+	Reset();
 
 	return true;
 }
@@ -437,36 +404,44 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 bool XINT::write(address_t address, uint8_t value)
 {
-	if (address == XINT_REGS_ADDRESSES[IVBR]) setIVBR(value);
-	else if (address == XINT_REGS_ADDRESSES[INT_XGPRIO]) setINT_XGPRIO(value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFADDR]) setINT_CFADDR(value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA0]) write_INT_CFDATA(0, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA1]) write_INT_CFDATA(1, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA2]) write_INT_CFDATA(2, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA3]) write_INT_CFDATA(3, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA4]) write_INT_CFDATA(4, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA5]) write_INT_CFDATA(5, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA6]) write_INT_CFDATA(6, value);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA7]) write_INT_CFDATA(7, value);
-	else return false;
+	service_address_t offset = address - baseAddress;
+
+	switch (offset) {
+	case IVBR: setIVBR(value); break;
+	case INT_XGPRIO: setINT_XGPRIO(value); break;
+	case INT_CFADDR: setINT_CFADDR(value); break;
+	case INT_CFDATA0: write_INT_CFDATA(0, value); break;
+	case INT_CFDATA1: write_INT_CFDATA(1, value); break;
+	case INT_CFDATA2: write_INT_CFDATA(2, value); break;
+	case INT_CFDATA3: write_INT_CFDATA(3, value); break;
+	case INT_CFDATA4: write_INT_CFDATA(4, value); break;
+	case INT_CFDATA5: write_INT_CFDATA(5, value); break;
+	case INT_CFDATA6: write_INT_CFDATA(6, value); break;
+	case INT_CFDATA7: write_INT_CFDATA(7, value); break;
+	default: return false;
+	}
 
 	return true;
 }
 
 bool XINT::read(address_t address, uint8_t &value)
 {
-	if (address == XINT_REGS_ADDRESSES[IVBR]) value = getIVBR();
-	else if (address == XINT_REGS_ADDRESSES[INT_XGPRIO]) value = getINT_XGPRIO();
-	else if (address == XINT_REGS_ADDRESSES[INT_CFADDR]) value = getINT_CFADDR();
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA0]) value = read_INT_CFDATA(0);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA1]) value = read_INT_CFDATA(1);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA2]) value = read_INT_CFDATA(2);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA3]) value = read_INT_CFDATA(3);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA4]) value = read_INT_CFDATA(4);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA5]) value = read_INT_CFDATA(5);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA6]) value = read_INT_CFDATA(6);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA7]) value = read_INT_CFDATA(7);
-	else return false;
+	service_address_t offset = address - baseAddress;
+
+	switch (offset) {
+		case IVBR: value = getIVBR(); break;
+		case INT_XGPRIO: value = getINT_XGPRIO(); break;
+		case INT_CFADDR: value = getINT_CFADDR(); break;
+		case INT_CFDATA0: value = read_INT_CFDATA(0); break;
+		case INT_CFDATA1: value = read_INT_CFDATA(1); break;
+		case INT_CFDATA2: value = read_INT_CFDATA(2); break;
+		case INT_CFDATA3: value = read_INT_CFDATA(3); break;
+		case INT_CFDATA4: value = read_INT_CFDATA(4); break;
+		case INT_CFDATA5: value = read_INT_CFDATA(5); break;
+		case INT_CFDATA6: value = read_INT_CFDATA(6); break;
+		case INT_CFDATA7: value = read_INT_CFDATA(7); break;
+		default: return false;
+	};
 
 	return true;
 }
@@ -565,32 +540,51 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfdata[0]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfdata[1]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfdata[2]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfdata[3]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfdata[4]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfdata[5]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfdata[6]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfdata[7]; return true; }
+	if ((addr >= baseAddress) && (addr <= (baseAddress+INT_CFDATA7))) {
+
+		service_address_t offset = addr-baseAddress;
+		switch (offset) {
+			case IVBR: *(uint8_t *) buffer = ivbr; break;
+			case INT_XGPRIO: *(uint8_t *) buffer = int_xgprio; break;
+			case INT_CFADDR: *(uint8_t *) buffer = int_cfaddr; break;
+			case INT_CFDATA0: *(uint8_t *) buffer = int_cfdata[0]; break;
+			case INT_CFDATA1: *(uint8_t *) buffer = int_cfdata[1]; break;
+			case INT_CFDATA2: *(uint8_t *) buffer = int_cfdata[2]; break;
+			case INT_CFDATA3: *(uint8_t *) buffer = int_cfdata[3]; break;
+			case INT_CFDATA4: *(uint8_t *) buffer = int_cfdata[4]; break;
+			case INT_CFDATA5: *(uint8_t *) buffer = int_cfdata[5]; break;
+			case INT_CFDATA6: *(uint8_t *) buffer = int_cfdata[6]; break;
+			case INT_CFDATA7: *(uint8_t *) buffer = int_cfdata[7]; break;
+
+		}
+
+		return true;
+	}
 
 	return false;
 }
 
 bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	if (size == 0) {
-		return true;
-	}
+	if ((addr >= baseAddress) && (addr <= (baseAddress+INT_CFDATA7))) {
 
-	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
-		if (XINT_REGS_ADDRESSES[i] == addr) {
-			write(addr, *(uint8_t *) buffer);
-			return true;
+		service_address_t offset = addr-baseAddress;
+		switch (offset) {
+			case IVBR: ivbr = *(uint8_t *) buffer; break;
+			case INT_XGPRIO: int_xgprio = *(uint8_t *) buffer; break;
+			case INT_CFADDR: int_cfaddr = *(uint8_t *) buffer; break;
+			case INT_CFDATA0: int_cfdata[0] = *(uint8_t *) buffer; break;
+			case INT_CFDATA1: int_cfdata[1] = *(uint8_t *) buffer; break;
+			case INT_CFDATA2: int_cfdata[2] = *(uint8_t *) buffer; break;
+			case INT_CFDATA3: int_cfdata[3] = *(uint8_t *) buffer; break;
+			case INT_CFDATA4: int_cfdata[4] = *(uint8_t *) buffer; break;
+			case INT_CFDATA5: int_cfdata[5] = *(uint8_t *) buffer; break;
+			case INT_CFDATA6: int_cfdata[6] = *(uint8_t *) buffer; break;
+			case INT_CFDATA7: int_cfdata[7] = *(uint8_t *) buffer; break;
+
 		}
+
+		return true;
 	}
 
 	return false;

@@ -1,1 +1,6 @@
-See the top level file README
+UNISIM Library main purpose is to allow academic and industrial researchers to share various software elements (simulator components, component interfaces, services and kernels).
+UNISIM Library is available for download at http://unisim.org/site/download/start
+
+See file README in each subdirectory for information on a particular component
+See file COPYING for license information.
+For installation instructions, please read file INSTALL
