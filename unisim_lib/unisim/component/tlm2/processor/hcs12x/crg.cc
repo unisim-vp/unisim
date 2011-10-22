@@ -974,6 +974,10 @@ bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
 
+		if (size == 0) {
+			return true;
+		}
+
 		service_address_t offset = addr-baseAddress;
 
 		switch (offset) {

@@ -568,6 +568,10 @@ bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+INT_CFDATA7))) {
 
+		if (size == 0) {
+			return true;
+		}
+
 		service_address_t offset = addr-baseAddress;
 		switch (offset) {
 			case IVBR: ivbr = *(uint8_t *) buffer; break;

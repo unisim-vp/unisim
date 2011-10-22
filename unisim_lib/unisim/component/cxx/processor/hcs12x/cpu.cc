@@ -260,14 +260,11 @@ void CPU::OnBusCycle()
 
 uint8_t CPU::Step()
 {
-	address_t 	current_pc;
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
 	uint8_t	opCycles = 0;
-
-	current_pc = getRegPC();
 
 	try
 	{
@@ -275,24 +272,24 @@ uint8_t CPU::Step()
 		VerboseDumpRegsStart();
 
 		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << current_pc << std::dec << std::endl << EndDebugInfo;
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
 			DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
 			do {
 				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
+					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
 //				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(current_pc));
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(getRegPC()));
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					break;
 				}
@@ -300,7 +297,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Sync();
 					continue;
@@ -310,7 +307,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Stop(0);
 				}
@@ -318,7 +315,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 				}
 			} while(1);
@@ -329,10 +326,10 @@ uint8_t CPU::Step()
 				if(debug_enabled && verbose_step)
 					*logger << DebugInfo
 						<< "Reporting memory access for fetch at address 0x"
-						<< std::hex << current_pc << std::dec
+						<< std::hex << getRegPC() << std::dec
 						<< std::endl << EndDebugInfo;
 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
 			}
 		}
 
@@ -341,11 +338,11 @@ uint8_t CPU::Step()
 		{
 			*logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << current_pc << std::dec
+				<< std::hex << getRegPC() << std::dec
 				<< std::endl << EndDebugInfo;
 		}
 
-		queueFetch(current_pc, buffer, MAX_INS_SIZE);
+		queueFetch(getRegPC(), buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
 		/* Decode current PC */
@@ -355,16 +352,16 @@ uint8_t CPU::Step()
 			ctstr << insn;
 			*logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< std::hex << current_pc << std::dec
+				<< std::hex << getRegPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
 				<< std::endl << EndDebugInfo;
 		}
 
-		op = this->Decode(current_pc, insn);
-		lastPC = current_pc;
+		op = this->Decode(getRegPC(), insn);
+		lastPC = getRegPC();
                 unsigned int insn_length = op->GetLength();
                 if (insn_length % 8) throw "InternalError";
-		setRegPC(current_pc + (insn_length/8));
+		setRegPC(getRegPC() + (insn_length/8));
 
 		queueFlush(insn_length/8);
 
@@ -379,8 +376,8 @@ uint8_t CPU::Step()
 			ctstr << op->GetEncoding();
 
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
-				<< GetFunctionFriendlyName(current_pc) << " : "
+				<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
+				<< GetFunctionFriendlyName(getRegPC()) << " : "
 				<< disasm_str.str()
 				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
@@ -396,7 +393,7 @@ uint8_t CPU::Step()
 			*logger << DebugInfo << GetSimulatedTime() << "ms: "
 				<< "Executing instruction "
 				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << current_pc << std::dec
+				<< " at PC = 0x" << std::hex << getRegPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
 				<< "  " << EndDebugInfo	<< std::endl;
 		}

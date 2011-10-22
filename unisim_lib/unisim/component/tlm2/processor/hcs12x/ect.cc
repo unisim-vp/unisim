@@ -1979,6 +1979,10 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
 
+		if (size == 0) {
+			return true;
+		}
+
 		service_address_t offset = addr-baseAddress;
 
 		switch (offset) {

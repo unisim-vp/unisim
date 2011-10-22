@@ -411,6 +411,10 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(se
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
 
+		if (size == 0) {
+			return true;
+		}
+
 		service_address_t offset = addr-baseAddress;
 		switch (offset) {
 			case ECLKDIV:  eclkdiv_reg = *((uint8_t *) buffer); break;
