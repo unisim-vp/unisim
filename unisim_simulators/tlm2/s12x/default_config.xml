@@ -710,6 +710,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0120</value>
+			<description></description>
+		</variable>
 	</object>
 	<object name="atd-pwm-stub">
 		<variable name="trace-enable">
@@ -1023,6 +1029,12 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
+	<variable name="endian">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>big</value>
+		<description>Target endianness</description>
+	</variable>
 	<variable name="kernel_logger.file">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -1110,6 +1122,12 @@
 		<data_type>string</data_type>
 		<value>BSD (see file COPYING)</value>
 		<description>License</description>
+	</variable>
+	<variable name="program-counter-name">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>CPU.PC</value>
+		<description>Target CPU program counter name</description>
 	</variable>
 	<variable name="program-name">
 		<type>parameter</type>
