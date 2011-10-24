@@ -980,27 +980,44 @@ bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 
 		service_address_t offset = addr-baseAddress;
 
-		switch (offset) {
-			case SYNR: synr_register = *((uint8_t *) buffer); break;
-			case REFDV: refdv_register = *((uint8_t *) buffer); break;
-			case CTFLG: ctflg_register = *((uint8_t *) buffer); break;
-			case CRGFLG: crgflg_register = *((uint8_t *) buffer); break;
-			case CRGINT: crgint_register = *((uint8_t *) buffer); break;
-			case CLKSEL: clksel_register = *((uint8_t *) buffer); break;
-			case PLLCTL: pllctl_register = *((uint8_t *) buffer); break;
-			case RTICTL: rtictl_register = *((uint8_t *) buffer); break;
-			case COPCTL: copctl_register = *((uint8_t *) buffer); break;
-			case FORBYP: forbyp_register = *((uint8_t *) buffer); break;
-			case CTCTL: ctctl_register = *((uint8_t *) buffer); break;
-			case ARMCOP: armcop_register = *((uint8_t *) buffer); break;
-		}
-
-		return true;
+		return write(offset, *(uint8_t *) buffer);
 	}
 
 	return false;
 
 }
+
+//bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+//
+//	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+//
+//		if (size == 0) {
+//			return true;
+//		}
+//
+//		service_address_t offset = addr-baseAddress;
+//
+//		switch (offset) {
+//			case SYNR: synr_register = *((uint8_t *) buffer); break;
+//			case REFDV: refdv_register = *((uint8_t *) buffer); break;
+//			case CTFLG: ctflg_register = *((uint8_t *) buffer); break;
+//			case CRGFLG: crgflg_register = *((uint8_t *) buffer); break;
+//			case CRGINT: crgint_register = *((uint8_t *) buffer); break;
+//			case CLKSEL: clksel_register = *((uint8_t *) buffer); break;
+//			case PLLCTL: pllctl_register = *((uint8_t *) buffer); break;
+//			case RTICTL: rtictl_register = *((uint8_t *) buffer); break;
+//			case COPCTL: copctl_register = *((uint8_t *) buffer); break;
+//			case FORBYP: forbyp_register = *((uint8_t *) buffer); break;
+//			case CTCTL: ctctl_register = *((uint8_t *) buffer); break;
+//			case ARMCOP: armcop_register = *((uint8_t *) buffer); break;
+//		}
+//
+//		return true;
+//	}
+//
+//	return false;
+//
+//}
 
 
 } // end of namespace hcs12x

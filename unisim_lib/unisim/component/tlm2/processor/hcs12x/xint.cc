@@ -573,26 +573,42 @@ bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size
 		}
 
 		service_address_t offset = addr-baseAddress;
-		switch (offset) {
-			case IVBR: ivbr = *(uint8_t *) buffer; break;
-			case INT_XGPRIO: int_xgprio = *(uint8_t *) buffer; break;
-			case INT_CFADDR: int_cfaddr = *(uint8_t *) buffer; break;
-			case INT_CFDATA0: int_cfdata[0] = *(uint8_t *) buffer; break;
-			case INT_CFDATA1: int_cfdata[1] = *(uint8_t *) buffer; break;
-			case INT_CFDATA2: int_cfdata[2] = *(uint8_t *) buffer; break;
-			case INT_CFDATA3: int_cfdata[3] = *(uint8_t *) buffer; break;
-			case INT_CFDATA4: int_cfdata[4] = *(uint8_t *) buffer; break;
-			case INT_CFDATA5: int_cfdata[5] = *(uint8_t *) buffer; break;
-			case INT_CFDATA6: int_cfdata[6] = *(uint8_t *) buffer; break;
-			case INT_CFDATA7: int_cfdata[7] = *(uint8_t *) buffer; break;
 
-		}
-
-		return true;
+		return write(offset, *(uint8_t *) buffer);
 	}
 
 	return false;
 }
+
+//bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+//
+//	if ((addr >= baseAddress) && (addr <= (baseAddress+INT_CFDATA7))) {
+//
+//		if (size == 0) {
+//			return true;
+//		}
+//
+//		service_address_t offset = addr-baseAddress;
+//		switch (offset) {
+//			case IVBR: ivbr = *(uint8_t *) buffer; break;
+//			case INT_XGPRIO: int_xgprio = *(uint8_t *) buffer; break;
+//			case INT_CFADDR: int_cfaddr = *(uint8_t *) buffer; break;
+//			case INT_CFDATA0: int_cfdata[0] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA1: int_cfdata[1] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA2: int_cfdata[2] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA3: int_cfdata[3] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA4: int_cfdata[4] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA5: int_cfdata[5] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA6: int_cfdata[6] = *(uint8_t *) buffer; break;
+//			case INT_CFDATA7: int_cfdata[7] = *(uint8_t *) buffer; break;
+//
+//		}
+//
+//		return true;
+//	}
+//
+//	return false;
+//}
 
 
 } // end of namespace hcs12x

@@ -416,41 +416,59 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(se
 		}
 
 		service_address_t offset = addr-baseAddress;
-		switch (offset) {
-			case ECLKDIV:  eclkdiv_reg = *((uint8_t *) buffer); break;
-			case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
-			case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
-			case ECNFG: ecnfg_reg = *((uint8_t *) buffer); break;
-			case EPROT: eprot_reg = *((uint8_t *) buffer); break;
-			case ESTAT: estat_reg = *((uint8_t *) buffer); break;
-			case ECMD: ecmd_reg = *((uint8_t *) buffer); break;
-			case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
-			case EADDRHI: {
-				if (size == 2) {
-					eaddr_reg = *((uint16_t *) buffer);
-				} else {
-					eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
-				}
 
-			}
-			break;
-			case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
-			case EDATAHI: {
-				if (size == 2) {
-					edata_reg = *((uint16_t *) buffer);
-				} else {
-					edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
-				}
-			}
-			break;
-			case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
-		}
-
-		return true;
+		return write(offset, buffer, size);
 	}
 
 	return inherited::WriteMemory(addr, buffer, size);
 }
+
+//template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+//bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+//{
+//
+//	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
+//
+//		if (size == 0) {
+//			return true;
+//		}
+//
+//		service_address_t offset = addr-baseAddress;
+//		switch (offset) {
+//			case ECLKDIV:  eclkdiv_reg = *((uint8_t *) buffer); break;
+//			case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
+//			case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
+//			case ECNFG: ecnfg_reg = *((uint8_t *) buffer); break;
+//			case EPROT: eprot_reg = *((uint8_t *) buffer); break;
+//			case ESTAT: estat_reg = *((uint8_t *) buffer); break;
+//			case ECMD: ecmd_reg = *((uint8_t *) buffer); break;
+//			case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
+//			case EADDRHI: {
+//				if (size == 2) {
+//					eaddr_reg = *((uint16_t *) buffer);
+//				} else {
+//					eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+//				}
+//
+//			}
+//			break;
+//			case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
+//			case EDATAHI: {
+//				if (size == 2) {
+//					edata_reg = *((uint16_t *) buffer);
+//				} else {
+//					edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+//				}
+//			}
+//			break;
+//			case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
+//		}
+//
+//		return true;
+//	}
+//
+//	return inherited::WriteMemory(addr, buffer, size);
+//}
 
 //=====================================================================
 //=             EEPROM Registers Interface interface methods               =
