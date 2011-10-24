@@ -1975,23 +1975,7 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
 }
 
-bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
-
-	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
-
-		if (size == 0) {
-			return true;
-		}
-
-		service_address_t offset = addr-baseAddress;
-
-		return write(offset, (uint8_t *) buffer, size);
-	}
-
-	return false;
-}
-
-//bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) {
+//bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 //
 //	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
 //
@@ -2001,180 +1985,196 @@ bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 //
 //		service_address_t offset = addr-baseAddress;
 //
-//		switch (offset) {
-//			case TIOS: tios_register = *((uint8_t *)value); break;
-//			case CFORC: cforc_register = *((uint8_t *)value); break;
-//			case OC7M: oc7m_register = *((uint8_t *)value); break;
-//			case OC7D: oc7d_register = *((uint8_t *)value); break;
-//			case TCNT_HIGH: {
-//
-//				if (size == 2) {
-//					tcnt_register = *((uint16_t *)value);
-//				} else {
-//					tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-//				}
-//
-//			} break;
-//			case TCNT_LOW: tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value); break;
-//			case TSCR1:	tscr1_register = *((uint8_t *)value); break;
-//			case TTOF: ttov_register = *((uint8_t *)value); break;
-//			case TCTL1: {
-//				if (size == 2) {
-//					tctl12_register = *((uint16_t *)value);
-//				} else {
-//					tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-//				}
-//
-//			} break;
-//			case TCTL2: {
-//				tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)value);
-//
-//			} break;
-//			case TCTL3: {
-//				if (size == 2) {
-//					tctl34_register = *((uint16_t *)value);
-//				} else {
-//					tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-//				}
-//			} break;
-//			case TCTL4: {
-//				tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)value);
-//			} break;
-//			case TIE: {
-//				tie_register = *((uint8_t *)value);
-//			} break;
-//			case TSCR2: {
-//				tscr2_register = *((uint8_t *)value);
-//
-//			} break;
-//			case TFLG1: {
-//				tflg1_register = *((uint8_t *)value);
-//			} break;
-//			case TFLG2: {
-//				tflg2_register = *((uint8_t *)value);
-//			} break;
-//			case PACTL: {
-//				pactl_register = *((uint8_t *)value);
-//			} break;
-//			case PAFLG: {
-//				paflg_register = *((uint8_t *)value);
-//			} break;
-//			case PACN3: {
-//				if (size == 2) {
-//					pacn_register[3] = *((uint16_t *)value) >> 8;
-//					pacn_register[2] = *((uint16_t *)value) & 0x00FF;
-//				} else {
-//					pacn_register[3] = *((uint8_t *)value);
-//				}
-//
-//			} break;
-//			case PACN2: {
-//				pacn_register[2] = *((uint8_t *)value);
-//			} break;
-//			case PACN1: {
-//				if (size == 2) {
-//					pacn_register[1] = *((uint16_t *)value) >> 8;
-//					pacn_register[0] = *((uint16_t *)value) & 0x00FF;
-//				} else {
-//					pacn_register[1] = *((uint8_t *)value);
-//				}
-//
-//			} break;
-//			case PACN0: {
-//				pacn_register[0] = *((uint8_t *)value);
-//			} break;
-//			case MCCTL: {
-//				mcctl_register = *((uint8_t *)value);
-//			} break;
-//			case MCFLG: {
-//				mcflg_register = *((uint8_t *)value);
-//			} break;
-//			case ICPAR: {
-//				icpar_register = *((uint8_t *)value);
-//			} break;
-//			case DLYCT: {
-//				dlyct_register = *((uint8_t *)value);
-//			} break;
-//			case ICOVW: {
-//				icovw_register = *((uint8_t *)value);
-//			} break;
-//			case ICSYS: {
-//				icsys_register = *((uint8_t *)value);
-//			} break;
-//			case RESERVED: reserved_address = *((uint8_t *)value); break;
-//			case TIMTST: timtst_register = *((uint8_t *)value); break;
-//			case PTPSR: {
-//				ptpsr_register = *((uint8_t *)value);
-//			} break;
-//			case PTMCPSR: {
-//				ptmcpsr_register = *((uint8_t *)value);
-//			} break;
-//			case PBCTL: {
-//				pbctl_register = *((uint8_t *)value);
-//			} break;
-//			case PBFLG: {
-//				pbflg_register = *((uint8_t *)value);
-//			} break;
-//
-//			default: {
-//				if ((offset == MCCNT_HIGH) || (offset == MCCNT_LOW)) {
-//					if (offset == MCCNT_HIGH) {
-//						if (size == 2) {
-//							mccnt_register = *((uint16_t *)value);
-//						} else {
-//							mccnt_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)value) << 8));
-//						}
-//					} else {
-//						mccnt_register = (mccnt_register & 0xFF00) | *((uint8_t *)value);
-//					}
-//
-//				} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
-//					uint8_t tc_offset = offset - TC0_HIGH;
-//					if ((tc_offset % 2) == 0) // TCx_High ?
-//					{
-//						if (size == 2) {
-//							tc_registers[tc_offset] = *((uint16_t *)value);
-//						} else {
-//							tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-//						}
-//
-//					} else {
-//						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)value);
-//					}
-//
-//				}
-//				else if ((offset >= PA3H) && (offset <= PA0H)) {
-//					uint8_t paxh_offset = offset - PA3H;
-//					paxh_registers[paxh_offset] = *((uint8_t *)value);
-//				}
-//				else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
-//
-//					uint8_t tcxh_offset = offset - TC0H_HIGH;
-//
-//					if ((tcxh_offset % 2) == 0) // TCxH_High ?
-//					{
-//						if (size == 2) {
-//							tcxh_registers[tcxh_offset/2] = *((uint16_t *)value);
-//						} else {
-//							tcxh_registers[tcxh_offset/2] = (tcxh_registers[tcxh_offset/2] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
-//						}
-//
-//					} else {
-//						tcxh_registers[tcxh_offset/2] = (tcxh_registers[tcxh_offset/2] & 0xFF00) | *((uint8_t *)value);
-//					}
-//
-//				} else {
-//					return false;
-//				}
-//			}
-//
-//		}
-//
-//		return true;
+//		return write(offset, (uint8_t *) buffer, size);
 //	}
 //
 //	return false;
 //}
+
+bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) {
+
+	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
+
+		if (size == 0) {
+			return true;
+		}
+
+		service_address_t offset = addr-baseAddress;
+
+		switch (offset) {
+			case TIOS: tios_register = *((uint8_t *)value); break;
+			case CFORC: cforc_register = *((uint8_t *)value); break;
+			case OC7M: oc7m_register = *((uint8_t *)value); break;
+			case OC7D: oc7d_register = *((uint8_t *)value); break;
+			case TCNT_HIGH: {
+
+				if (size == 2) {
+					tcnt_register = *((uint16_t *)value);
+				} else {
+					tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+				}
+
+			} break;
+			case TCNT_LOW: tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value); break;
+			case TSCR1:	tscr1_register = *((uint8_t *)value); break;
+			case TTOF: ttov_register = *((uint8_t *)value); break;
+			case TCTL1: {
+				if (size == 2) {
+					tctl12_register = *((uint16_t *)value);
+				} else {
+					tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+				}
+
+			} break;
+			case TCTL2: {
+				tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)value);
+
+			} break;
+			case TCTL3: {
+				if (size == 2) {
+					tctl34_register = *((uint16_t *)value);
+				} else {
+					tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+				}
+			} break;
+			case TCTL4: {
+				tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)value);
+			} break;
+			case TIE: {
+				tie_register = *((uint8_t *)value);
+			} break;
+			case TSCR2: {
+				tscr2_register = *((uint8_t *)value);
+
+			} break;
+			case TFLG1: {
+				tflg1_register = *((uint8_t *)value);
+			} break;
+			case TFLG2: {
+				tflg2_register = *((uint8_t *)value);
+			} break;
+			case PACTL: {
+				pactl_register = *((uint8_t *)value);
+			} break;
+			case PAFLG: {
+				paflg_register = *((uint8_t *)value);
+			} break;
+			case PACN3: {
+				if (size == 2) {
+					pacn_register[3] = *((uint16_t *)value) >> 8;
+					pacn_register[2] = *((uint16_t *)value) & 0x00FF;
+				} else {
+					pacn_register[3] = *((uint8_t *)value);
+				}
+
+			} break;
+			case PACN2: {
+				pacn_register[2] = *((uint8_t *)value);
+			} break;
+			case PACN1: {
+				if (size == 2) {
+					pacn_register[1] = *((uint16_t *)value) >> 8;
+					pacn_register[0] = *((uint16_t *)value) & 0x00FF;
+				} else {
+					pacn_register[1] = *((uint8_t *)value);
+				}
+
+			} break;
+			case PACN0: {
+				pacn_register[0] = *((uint8_t *)value);
+			} break;
+			case MCCTL: {
+				mcctl_register = *((uint8_t *)value);
+			} break;
+			case MCFLG: {
+				mcflg_register = *((uint8_t *)value);
+			} break;
+			case ICPAR: {
+				icpar_register = *((uint8_t *)value);
+			} break;
+			case DLYCT: {
+				dlyct_register = *((uint8_t *)value);
+			} break;
+			case ICOVW: {
+				icovw_register = *((uint8_t *)value);
+			} break;
+			case ICSYS: {
+				icsys_register = *((uint8_t *)value);
+			} break;
+			case RESERVED: reserved_address = *((uint8_t *)value); break;
+			case TIMTST: timtst_register = *((uint8_t *)value); break;
+			case PTPSR: {
+				ptpsr_register = *((uint8_t *)value);
+			} break;
+			case PTMCPSR: {
+				ptmcpsr_register = *((uint8_t *)value);
+			} break;
+			case PBCTL: {
+				pbctl_register = *((uint8_t *)value);
+			} break;
+			case PBFLG: {
+				pbflg_register = *((uint8_t *)value);
+			} break;
+
+			default: {
+				if ((offset == MCCNT_HIGH) || (offset == MCCNT_LOW)) {
+					if (offset == MCCNT_HIGH) {
+						if (size == 2) {
+							mccnt_register = *((uint16_t *)value);
+						} else {
+							mccnt_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)value) << 8));
+						}
+					} else {
+						mccnt_register = (mccnt_register & 0xFF00) | *((uint8_t *)value);
+					}
+
+				} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
+					uint8_t tc_offset = offset - TC0_HIGH;
+					if ((tc_offset % 2) == 0) // TCx_High ?
+					{
+						if (size == 2) {
+							tc_registers[tc_offset] = *((uint16_t *)value);
+						} else {
+							tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+						}
+
+					} else {
+						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)value);
+					}
+
+				}
+				else if ((offset >= PA3H) && (offset <= PA0H)) {
+					uint8_t paxh_offset = offset - PA3H;
+					paxh_registers[paxh_offset] = *((uint8_t *)value);
+				}
+				else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
+
+					uint8_t tcxh_offset = offset - TC0H_HIGH;
+
+					if ((tcxh_offset % 2) == 0) // TCxH_High ?
+					{
+						if (size == 2) {
+							tcxh_registers[tcxh_offset/2] = *((uint16_t *)value);
+						} else {
+							tcxh_registers[tcxh_offset/2] = (tcxh_registers[tcxh_offset/2] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+						}
+
+					} else {
+						tcxh_registers[tcxh_offset/2] = (tcxh_registers[tcxh_offset/2] & 0xFF00) | *((uint8_t *)value);
+					}
+
+				} else {
+					return false;
+				}
+			}
+
+		}
+
+		return true;
+	}
+
+	return false;
+}
 
 
 } // end of namespace hcs12x

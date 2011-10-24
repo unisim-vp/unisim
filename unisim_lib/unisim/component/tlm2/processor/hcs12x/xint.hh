@@ -109,6 +109,10 @@ public:
 
 	enum {IVBR,	INT_XGPRIO, INT_CFADDR, INT_CFDATA0, INT_CFDATA1, INT_CFDATA2, INT_CFDATA3, INT_CFDATA4, INT_CFDATA5, INT_CFDATA6, INT_CFDATA7 };
 
+	static const uint8_t XINT_MEMMAP_SIZE = 11;
+	static address_t XINT_REGS_ADDRESSES[XINT_MEMMAP_SIZE];
+	static uint8_t XINT_REGS_RESET_VALUES[XINT_MEMMAP_SIZE];
+
 	//==================================================================
 	//=           XINT  Fixed Interrupt vectors Offsets                =
 	//==================================================================
@@ -238,13 +242,8 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
-	address_t	baseAddress;
-	Parameter<address_t>   param_baseAddress;
-
 	// Registers map
 	map<string, Register *> registers_registry;
-
-	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 public:
 
