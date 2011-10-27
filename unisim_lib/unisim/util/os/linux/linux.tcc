@@ -176,7 +176,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegisters(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryInterface(
+    LinuxMemoryInterface<ADDRESS_TYPE> &memory_interface) {
+  memory_interface_ = &memory_interface;
+}
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   std::vector<std::string> target_envp;

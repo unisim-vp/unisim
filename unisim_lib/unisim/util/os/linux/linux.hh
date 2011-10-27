@@ -58,6 +58,13 @@ namespace util {
 namespace os {
 namespace linux {
 
+template <class ADDRESS_TYPE>
+class LinuxMemoryInterface {
+  virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size) = 0;
+  virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer,
+                           uint32_t size) = 0;
+};
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux {
  public:
@@ -87,7 +94,11 @@ class Linux {
                 char const * const utsname_machine,
                 char const * const utsname_domainname);
 
+  // Sets the registers to be used
   void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
+
+  // Set the memory interface to be used
+  void SetMemoryInterface(LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface);
 
   // Loads all the defined files using the user settings.
   // Basic usage:
@@ -118,7 +129,7 @@ class Linux {
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const;
 
  private:
-  bool is_load_; // true if a program has been successfully loaded, false 
+  bool is_load_; // true if a program has been successfully loaded, false
                  // otherwise
 
   // basic system information
@@ -128,7 +139,7 @@ class Linux {
   unisim::util::endian::endian_type endianess_;
 
   // files to load
-  std::map<std::string, 
+  std::map<std::string,
       unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const>
           load_files_;
 
@@ -177,6 +188,9 @@ class Linux {
   //   to retrieve the registers depending on the architecture
   //   being simulated
   std::vector<unisim::util::debug::Register *> *registers_;
+
+  // pointer to the memory interface to use
+  LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface_;
 
   // registers for the arm system
   const int kARMNumRegs = 16;
