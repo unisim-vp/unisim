@@ -654,7 +654,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
    * (see previous warning).
    * The elf library should provide information on the size of the elf header.
    */
-  aux_table_value = load_addr + sizeof(Elf32_Ehdr); // size of the elf32 header
+  aux_table_value = load_addr_ + sizeof(Elf32_Ehdr); // size of the elf32 header
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHENT;
@@ -686,7 +686,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_ENTRY;
-  aux_table_value = entry_point;
+  aux_table_value = entry_point_;
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_UID;

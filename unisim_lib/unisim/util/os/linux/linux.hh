@@ -145,16 +145,16 @@ class Linux {
 
 
   // program addresses (computed from the given files)
-  ADDRESS_TYPE entry_point;
+  ADDRESS_TYPE entry_point_;
   bool load_addr_set = false;
-  ADDRESS_TYPE load_addr;
-  ADDRESS_TYPE start_code;
-  ADDRESS_TYPE end_code;
-  ADDRESS_TYPE start_data;
-  ADDRESS_TYPE end_data;
-  ADDRESS_TYPE elf_stack;
-  ADDRESS_TYPE elf_brk;
-  ADDRESS_TYPE num_segments;
+  ADDRESS_TYPE load_addr_;
+  ADDRESS_TYPE start_code_;
+  ADDRESS_TYPE end_code_;
+  ADDRESS_TYPE start_data_;
+  ADDRESS_TYPE end_data_;
+  ADDRESS_TYPE elf_stack_;
+  ADDRESS_TYPE elf_brk_;
+  ADDRESS_TYPE num_segments_;
 
   // argc, argv and envp variables
   unsigned int argc_;
