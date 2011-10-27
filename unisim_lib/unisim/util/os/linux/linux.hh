@@ -268,6 +268,68 @@ class Linux {
       ResetLoaderLogger();
     }
   }
+
+  // The list of linux system calls
+  void LSC_unknown();
+  void LSC_exit();
+  void LSC_read();
+  void LSC_write();
+  void LSC_open();
+  void LSC_close();
+  void LSC_lseek();
+  void LSC_getpid();
+  void LSC_getuid();
+  void LSC_access();
+  void LSC_times();
+  void LSC_brk();
+  void LSC_getgid();
+  void LSC_geteuid();
+  void LSC_getegid();
+  void LSC_munmap();
+  void LSC_stat();
+  void LSC_fstat();
+  void LSC_uname();
+  void LSC_llseek();
+  void LSC_writev();
+  void LSC_mmap();
+  void LSC_mmap2();
+  void LSC_stat64();
+  void LSC_fstat64();
+  void LSC_getuid32();
+  void LSC_getgid32();
+  void LSC_geteuid32();
+  void LSC_getegid32();
+  void LSC_flistxattr();
+  void LSC_exit_group();
+  void LSC_fcntl();
+  void LSC_fcntl64();
+  void LSC_dup();
+  void LSC_ioctl();
+  void LSC_ugetrlimit();
+  void LSC_getrlimit();
+  void LSC_setrlimit();
+  void LSC_rt_sigaction();
+  void LSC_getrusage();
+  void LSC_unlink();
+  void LSC_rename();
+  void LSC_time();
+  void LSC_socketcall();
+  void LSC_rt_sigprocmask();
+  void LSC_kill();
+  void LSC_ftruncate();
+  void LSC_arm_breakpoint();
+  void LSC_arm_cacheflush();
+  void LSC_arm_usr26();
+  void LSC_arm_usr32();
+  void LSC_arm_set_tls();
+  void SetSyscallNameMap();
+
+  // system calls helper methods
+  int Stat(int fd, struct powerpc_stat_t *target_stat);
+  int Stat64(int fd, struct powerpc_stat64_t *target_stat);
+  int Stat64(int fd, struct arm_stat64_t *target_stat);
+  int Times(struct powerpc_tms_t *target_tms);
+  int Times(struct arm_tms_t *target_tms);
 };
 
 } // end of linux namespace
