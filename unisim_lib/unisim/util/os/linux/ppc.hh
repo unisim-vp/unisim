@@ -37,7 +37,7 @@
 namespace unisim {
 namespace util {
 namespace os {
-namespace linux {
+namespace linux_os {
 
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure
@@ -155,7 +155,7 @@ struct powerpc_tms {
   int32_t tms_cstime;     /* System CPU time of dead children.  */
 };
 
-} // end of namespace linux
+} // end of namespace linux_os
 } // end of namespace os
 } // end of namespace util
 } // end of namespace unisim

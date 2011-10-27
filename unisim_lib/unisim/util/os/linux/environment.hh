@@ -41,7 +41,7 @@
 namespace unisim {
 namespace util {
 namespace os {
-namespace linux {
+namespace linux_os {
 
 
 // Extracts the environment variable from an environment entry of the form
@@ -61,7 +61,7 @@ std::string GetEnvironmentVariable(std::string env_entry);
 void GetHostEnvironment(std::vector<std::string> input_envp,
                         std::vector<std::string> *envp);
 
-} // end of namespace linux
+} // end of namespace linux_os
 } // end of namespace os
 } // end of namespace util
 } // end of namespace unisim

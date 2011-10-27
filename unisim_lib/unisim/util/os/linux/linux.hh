@@ -56,7 +56,7 @@ class Blob;
 namespace unisim {
 namespace util {
 namespace os {
-namespace linux {
+namespace linux_os {
 
 template <class ADDRESS_TYPE>
 class LinuxMemoryInterface {

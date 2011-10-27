@@ -47,7 +47,7 @@
 namespace unisim {
 namespace util {
 namespace os {
-namespace linux {
+namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const Linux::supported_system_types_ = {"arm", "arm-eabi", "powerpc"};

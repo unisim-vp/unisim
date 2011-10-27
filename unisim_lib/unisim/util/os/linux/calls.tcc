@@ -31,8 +31,15 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
-#define __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
+#ifndef __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
+#define __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
+
+#include "unisim/util/os/linux/linux.hh"
+
+namespace unisim {
+namespace util {
+namespace os {
+namespace linux_os {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
@@ -1499,5 +1506,10 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
   return id;
 }
+
+} // end of namespace unisim
+} // end of namespace util
+} // end of namespace os
+} // end of namespace linux_os
 
 #endif __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
