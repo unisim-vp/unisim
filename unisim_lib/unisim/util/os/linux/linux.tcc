@@ -232,6 +232,92 @@ unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapRegisters() {
+  typedef std::vector<unisim::util::debug::Register *>::iterator RegIterator;
+
+  int num_registers_expected = 0;
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0))
+    num_registers_expected = kARMNumRegs + kARMNumSysRegs;
+  else
+    num_registers_expected = kPPCNumRegs + kPPCNumSysRegs;
+  if (registers_.size() < num_registers_expected) {
+    logger_ << "Could not initiliaze register mapping. "
+        "Number of registers handled is inferior to the number of registers "
+        "expected." << std::endl
+        << "Number of registers expected = "
+        << num_registers_expected << std::endl
+        << "Number of registers given = " << registers_.size() << std::endl;
+    return false;
+  }
+
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0)) {
+    for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
+      for (int index = 0; index < kARMNumRegs; index++) {
+        std::stringstream reg_name;
+        reg_name << "r" << index;
+        if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
+          arm_regs_[index] = *it;
+      }
+      // try getting alternative naming for pc, sp and lr
+      if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[13] = *it;
+      if (strcmp((*it)->GetName(), "lr") == 0) arm_regs_[14] = *it;
+      if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[15] = *it;
+    }
+    bool regs_ok = true;
+    for (int index = 0; regs_ok && (index < kARMNumRegs); index++)
+      regs_ok = arm_regs_ != NULL;
+    if (!regs_ok) {
+      logger_ << "Could not initialize register mapping. "
+          "Missing the following registers:" << std::endl;
+      for (int index = 0; index < kARMNumRegs; index++) {
+        if (arm_regs_[index] == NULL) {
+          logger_ << " - r" << index;
+          if (index == 13) logger_ << " (or sp)";
+          if (index == 14) logger_ << " (or lr)";
+          if (index == 15) logger_ << " (or pc)";
+          logger_ << std::endl;
+        }
+        arm_regs_[index] = NULL;
+      }
+      return false;
+    }
+  }
+
+  if (system_type_.compare("powerpc")) {
+    for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
+      for (int index = 0; indx < kPPCNumRegs; index++) {
+        std::stringstream reg_name;
+        reg_name << "r" << index;
+        if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
+          ppc_regs_[index] = *it;
+      }
+      if (strcmp((*it)->GetName(), "cr") == 0) ppc_cr_ = (*it);
+      if (strcmp((*it)->GetName(), "cia") == 0) ppc_cia_ = (*it);
+    }
+    bool regs_ok = (ppc_cr_ != NULL) && (ppc_cia_ != NULL);
+    for (int index = 0; regs_ok && (index < kPPCNumRegs); index++)
+      regs_ok = ppc_regs_ != NULL;
+    if (!regs_ok) {
+      logger_ << "Could not initialize register mapping. "
+          "Missing the following registers:" << std::endl;
+      for (int index = 0; index < kPPCNumRegs; index++) {
+        if (ppc_regs_[index] == NULL)
+          logger_ << " - r" << index << std::endl;
+        ppc_regs_[index] = NULL;
+      }
+      if (ppc_cr_ == NULL) logger_ << " - cr" << std::endl;
+      if (ppc_cia_ == NULL) logger_ << " - cia" << std::endl;
+      ppc_cr_ = ppc_cia_ = NULL;
+      return false;
+    }
+  }
+
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
   // Get the main executable blob
@@ -248,6 +334,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
     return false;
 
   return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
+    PARAMETER_TYPE>:: GetMainBlob() const {
+  /* TODO */
+  return NULL;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -356,8 +449,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStackBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
+    unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob) const {
   typedef std::vector<ADDRESS_TYPE>::iterator AddressVectorIterator;
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
@@ -545,8 +638,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStackBlob(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(uint8_t* stack_data,
-                                                      ADDRESS_TYPE &sp) {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
+    uint8_t* stack_data, ADDRESS_TYPE &sp) const {
   ADDRESS_TYPE aux_table_symbol;
   ADDRESS_TYPE aux_table_value;
 
@@ -557,8 +650,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(uint8_t* stack_data,
   aux_table_symbol = AT_PHDR;
   /* TODO
    * WARNING
-   * load_addr does not consider the segments offsets in the elf file (see 
-   * previous warning).
+   * load_addr does not consider the segments offsets in the elf file
+   * (see previous warning).
    * The elf library should provide information on the size of the elf header.
    */
   aux_table_value = load_addr + sizeof(Elf32_Ehdr); // size of the elf32 header
@@ -567,7 +660,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(uint8_t* stack_data,
   aux_table_symbol = AT_PHENT;
   /* TODO
    * WARNING
-   * The elf library should provide information on the size of the program 
+   * The elf library should provide information on the size of the program
    * header.
    */
   aux_table_value = Elf32_Phdr; // 32 = size of the program header
@@ -633,7 +726,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(uint8_t* stack_data,
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
     uint8_t * stack_data, ADDRESS_TYPE sp,
-    ADDRESS_TYPE entry, ADDRESS_TYPE value) {
+    ADDRESS_TYPE entry, ADDRESS_TYPE value) const {
   sp = sp - sizeof(sp);
   uint8_t *addr = stack_data + sp;
   memcpy(addr, &_value, sizeof(sp));
@@ -645,7 +738,7 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
+    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   if ((system_type_.compare("arm") == 0) ||
       (system_type_.compare("arm-eabi") == 0))
     return SetArmBlob(blob)
@@ -654,101 +747,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
-    PARAMETER_TYPE>:: GetMainBlob() const {
-  /* TODO */
-  return NULL;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapRegisters() {
-  typedef std::vector<unisim::util::debug::Register *>::iterator RegIterator;
-
-  int num_registers_expected = 0;
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0))
-    num_registers_expected = kARMNumRegs + kARMNumSysRegs;
-  else
-    num_registers_expected = kPPCNumRegs + kPPCNumSysRegs;
-  if (registers_.size() < num_registers_expected) {
-    logger_ << "Could not initiliaze register mapping. "
-        "Number of registers handled is inferior to the number of registers "
-        "expected." << std::endl
-        << "Number of registers expected = "
-        << num_registers_expected << std::endl
-        << "Number of registers given = " << registers_.size() << std::endl;
-    return false;
-  }
-
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0)) {
-    for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
-      for (int index = 0; index < kARMNumRegs; index++) {
-        std::stringstream reg_name;
-        reg_name << "r" << index;
-        if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
-          arm_regs_[index] = *it;
-      }
-      // try getting alternative naming for pc, sp and lr
-      if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[13] = *it;
-      if (strcmp((*it)->GetName(), "lr") == 0) arm_regs_[14] = *it;
-      if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[15] = *it;
-    }
-    bool regs_ok = true;
-    for (int index = 0; regs_ok && (index < kARMNumRegs); index++)
-      regs_ok = arm_regs_ != NULL;
-    if (!regs_ok) {
-      logger_ << "Could not initialize register mapping. "
-          "Missing the following registers:" << std::endl;
-      for (int index = 0; index < kARMNumRegs; index++) {
-        if (arm_regs_[index] == NULL) {
-          logger_ << " - r" << index;
-          if (index == 13) logger_ << " (or sp)";
-          if (index == 14) logger_ << " (or lr)";
-          if (index == 15) logger_ << " (or pc)";
-          logger_ << std::endl;
-        }
-        arm_regs_[index] = NULL;
-      }
-      return false;
-    }
-  }
-
-  if (system_type_.compare("powerpc")) {
-    for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
-      for (int index = 0; indx < kPPCNumRegs; index++) {
-        std::stringstream reg_name;
-        reg_name << "r" << index;
-        if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
-          ppc_regs_[index] = *it;
-      }
-      if (strcmp((*it)->GetName(), "cr") == 0) ppc_cr_ = (*it);
-      if (strcmp((*it)->GetName(), "cia") == 0) ppc_cia_ = (*it);
-    }
-    bool regs_ok = (ppc_cr_ != NULL) && (ppc_cia_ != NULL);
-    for (int index = 0; regs_ok && (index < kPPCNumRegs); index++)
-      regs_ok = ppc_regs_ != NULL;
-    if (!regs_ok) {
-      logger_ << "Could not initialize register mapping. "
-          "Missing the following registers:" << std::endl;
-      for (int index = 0; index < kPPCNumRegs; index++) {
-        if (ppc_regs_[index] == NULL)
-          logger_ << " - r" << index << std::endl;
-        ppc_regs_[index] = NULL;
-      }
-      if (ppc_cr_ == NULL) logger_ << " - cr" << std::endl;
-      if (ppc_cia_ == NULL) logger_ << " - cia" << std::endl;
-      ppc_cr_ = ppc_cia_ = NULL;
-      return false;
-    }
-  }
-
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
+    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
   if (utsname_machine.compare("armv5") == 0) {
@@ -840,6 +840,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     cmpxchg_if_segment->Release();
   }
 
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
+    unisim::util::debug::blobl::Blob<ADDRESS_TYPE> *blob) const {
+  // TODO
   return true;
 }
 

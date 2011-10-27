@@ -209,13 +209,47 @@ class Linux {
   // logger for the elf loader
   std::ostream &logger_;
 
-  // Gets the main executable blob, that is the blob that represents the
-  // executable file, not the maybe used dynamic libraries
-  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetMainBlob() const;
-
   // Maps the registers depending on the system
   // Returns true on success
   bool MapRegisters();
+
+  // Load the files set by the user into the given blob. Returns true on sucess,
+  // false otherwise.
+  bool LoadFiles(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
+
+  // Gets the main executable blob, that is the blob that represents the
+  // executable file, not the maybe used dynamic libraries
+  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const
+      GetMainBlob() const;
+
+  // From the given blob computes the initial addresses and values that will be
+  // used to initialize internal structures and the target processor
+  bool ComputeStructuralAddresses(
+      unisim::util::debug::blob<ADDRESS_TYPE> const &blob);
+
+  // Merge the contents of the given file blob into the input/output blob
+  bool FillBlobWithFileBlob(
+      unisim::util::debug::blob<ADDRESS_TYPE> const &file_blob,
+      unisim::util::debug::blob<ADDRESS_TYPE> *blob);
+
+  // Create the stack memory image and insert it into the given blob
+  bool CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE> * blob) const;
+
+  // Set the aux table contents that will be added to the stack
+  void SetAuxTable(uint8_t * stack_data, ADDRESS_TYPE & sp) const;
+
+  // Set the contents of an aux table entry
+  ADDRESS_TYPE SetAuxTableEntry(uint8_t * stack_data, ADDRESS_TYPE sp,
+                                ADDRESS_TYPE entry, ADDRESS_TYPE value) const;
+
+  // Fills the given blob with system dependent information
+  bool SetSystemBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
+
+  // Fills the given blob with ARM dependent information
+  bool SetArmBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
+
+  // Fills the given blob with PPC dependent information
+  bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
 
   // Cleans the contents of the loader_logger_ and clean error flags
   void ResetLoaderLogger() {
