@@ -338,12 +338,32 @@ class Linux {
   void LSC_arm_usr32();
   void LSC_arm_set_tls();
 
-  // system calls helper methods
+  // system call 'stat' helper methods
   int Stat(int fd, struct powerpc_stat_t *target_stat);
   int Stat64(int fd, struct powerpc_stat64_t *target_stat);
   int Stat64(int fd, struct arm_stat64_t *target_stat);
+  // system call 'times' helper methods
   int Times(struct powerpc_tms_t *target_tms);
   int Times(struct arm_tms_t *target_tms);
+  // handling the mmap base address
+  ADDRESS_TYPE GetMmapBase() const;
+  void SetMmapBase(ADDRESS_TYPE base);
+  // handling the mmapbrkpoint address
+  ADDRESS_TYPE GetMmapBrkPoint() const;
+  void SetMmapBrkPoint(ADDRESS_TYPE brk_point);
+  // handling the brkpoint address
+  ADDRESS_TYPE GetBrkPoint() const;
+  void SetBrkPoint(ADDRESS_TYPE brk_point);
+  // reading system calls parameters
+  PARAMETER_TYPE GetSystemCallParam(int id);
+  PARAMETER_TYPE ARMGetSystemCallParam(int id);
+  PARAMETER_TYPE ARMEABIGetSystemCallParam(int id);
+  PARAMETER_TYPE PPCGetSystemCallParam(int id);
+  // writing system call status
+  void SetSystemCallStatus(int ret, bool error);
+  void ARMSetSystemCallStatus(int ret, bool error);
+  void ARMEABISetSystemCallStatus(int ret, bool error);
+  void PPCSetSystemCallStatus(int ret, bool error);
 };
 
 } // end of linux namespace
