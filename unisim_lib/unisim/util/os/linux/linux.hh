@@ -364,6 +364,9 @@ class Linux {
   void ARMSetSystemCallStatus(int ret, bool error);
   void ARMEABISetSystemCallStatus(int ret, bool error);
   void PPCSetSystemCallStatus(int ret, bool error);
+  // byte swap helper methods
+  bool Swap();
+  void PerformSwap(void *buf, int count);
 };
 
 } // end of linux namespace

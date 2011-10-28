@@ -1414,39 +1414,39 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBase() const {
+ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBase() const {
   return mmap_base;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBase(ADDRESS_TYPE base) {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBase(ADDRESS_TYPE base) {
   mmap_base = base;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBrkPoint() const {
+ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBrkPoint() const {
   return mmap_brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBrkPoint(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBrkPoint(
     ADDRESS_TYPE brk_point) {
   mmap_brk_point = brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-ADDRESS_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetBrkPoint() const {
+ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBrkPoint() const {
   return brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetBrkPoint(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetBrkPoint(
     ADDRESS_TYPE brk_point) {
   this->brk_point = brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetSystemCallParam(
+PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSystemCallParam(
     int id) {
   if ( system == "arm" )
     return ARMGetSystemCallParam(id);
@@ -1457,7 +1457,7 @@ PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetSystemCallParam(
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSystemCallParam(
+PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSystemCallParam(
     int id) {
   PARAMETER_TYPE val;
   arm_regs[id]->GetValue(&val);
@@ -1465,7 +1465,7 @@ PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSystemCallParam(
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSystemCallParam(
+PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSystemCallParam(
     int id) {
   PARAMETER_TYPE val;
   arm_regs[id]->GetValue(&val);
@@ -1473,7 +1473,7 @@ PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSystemCallParam(
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSystemCallParam(
+PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSystemCallParam(
     int id) {
   PARAMETER_TYPE val;
   ppc_regs[id+3]->GetValue(&val);
@@ -1481,7 +1481,7 @@ PARAMETER_TYPE LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSystemCallParam(
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(
     int ret, bool error) {
   if ( system == "arm" )
     ARMSetSystemCallStatus(ret, error);
@@ -1492,21 +1492,21 @@ void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ARMSetSystemCallStatus(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMSetSystemCallStatus(
     int ret, bool error) {
   PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
   arm_regs[0]->SetValue(&val);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABISetSystemCallStatus(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABISetSystemCallStatus(
     int ret, bool error) {
   PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
   arm_regs[0]->SetValue(&val);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
     int ret, bool error) {
   PARAMETER_TYPE val;
   if (error)
@@ -1523,6 +1523,37 @@ void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
   }
   val = (PARAMETER_TYPE)ret;
   ppc_regs[3]->SetValue(&val);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Swap() {
+#if BYTE_ORDER == BIG_ENDIAN
+  if (GetEndianess() == E_BIG_ENDIAN) return false;
+  else return true;
+#else
+  if (GetEndianess() == E_BIG_ENDIAN) return true;
+  else return false;
+#endif
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PerformSwap(void *buf, int count) {
+  int size = count;
+
+  if (count > 0) {
+    char *dst_base, *dst;
+    char *src;
+
+    dst = (char *)malloc(sizeof(char) * count);
+    dst_base = dst;
+    src = (char *)buf + count - 1;
+
+    do {
+      *dst = *src;
+    } while (src--, dst++, --count);
+    memcpy(buf, dst_base, size);
+    free(dst_base);
+  }
 }
 
 } // end of namespace unisim
