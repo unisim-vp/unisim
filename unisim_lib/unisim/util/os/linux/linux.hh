@@ -204,6 +204,19 @@ class Linux {
   unisim::util::debug::Register *ppc_cia_;
   unisim::util::debug::Register *ppc_regs_[kPPCNumRegs];
 
+  // syscall type shortener
+  typedef LinuxOS<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
+  typedef void (thistype::*syscall_t)();
+
+  // system calls indexes
+  std::map<std::string, syscall_t> syscall_name_map_;
+  std::map<int, std::string> syscall_name_assoc_map_;
+  std::map<int, syscall_t> syscall_impl_assoc_map_;
+
+  // current syscall information
+  int current_syscall_id_;
+  string current_syscall_name_;
+
   // activate the verbose
   bool verbose_;
   // logger for the elf loader
