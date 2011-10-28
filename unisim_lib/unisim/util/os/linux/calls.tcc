@@ -1409,8 +1409,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr32() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
   uint32_t r0 = GetSystemCallParam(0);
-  memory_injection_import->InjectWriteMemory(0xffff0ff0UL,
-                                             (void *)&(r0), 4);
+  WriteMem(0xffff0ff0UL, (void *)&(r0), 4);
   if (unlikely(verbose))
     logger << DebugInfo
         << "ret = 0x" << hex << ((PARAMETER_TYPE)0) << dec
