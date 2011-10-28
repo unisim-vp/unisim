@@ -850,6 +850,65 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
   return true;
 }
 
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
+  syscall_name_map[string("unknown")] = &thistype::LSC_unknown;
+  syscall_name_map[string("exit")] = &thistype::LSC_exit;
+  syscall_name_map[string("read")] = &thistype::LSC_read;
+  syscall_name_map[string("write")] = &thistype::LSC_write;
+  syscall_name_map[string("open")] = &thistype::LSC_open;
+  syscall_name_map[string("close")] = &thistype::LSC_close;
+  syscall_name_map[string("lseek")] = &thistype::LSC_lseek;
+  syscall_name_map[string("getpid")] = &thistype::LSC_getpid;
+  syscall_name_map[string("getuid")] = &thistype::LSC_getuid;
+  syscall_name_map[string("access")] = &thistype::LSC_access;
+  syscall_name_map[string("times")] = &thistype::LSC_times;
+  syscall_name_map[string("brk")] = &thistype::LSC_brk;
+  syscall_name_map[string("getgid")] = &thistype::LSC_getgid;
+  syscall_name_map[string("geteuid")] = &thistype::LSC_geteuid;
+  syscall_name_map[string("getegid")] = &thistype::LSC_getegid;
+  syscall_name_map[string("munmap")] = &thistype::LSC_munmap;
+  syscall_name_map[string("stat")] = &thistype::LSC_stat;
+  syscall_name_map[string("fstat")] = &thistype::LSC_fstat;
+  syscall_name_map[string("uname")] = &thistype::LSC_uname;
+  syscall_name_map[string("llseek")] = &thistype::LSC_llseek;
+  syscall_name_map[string("writev")] = &thistype::LSC_writev;
+  syscall_name_map[string("mmap")] = &thistype::LSC_mmap;
+  syscall_name_map[string("mmap2")] = &thistype::LSC_mmap2;
+  syscall_name_map[string("stat64")] = &thistype::LSC_stat64;
+  syscall_name_map[string("fstat64")] = &thistype::LSC_fstat64;
+  syscall_name_map[string("getuid32")] = &thistype::LSC_getuid32;
+  syscall_name_map[string("getgid32")] = &thistype::LSC_getgid32;
+  syscall_name_map[string("geteuid32")] = &thistype::LSC_geteuid32;
+  syscall_name_map[string("getegid32")] = &thistype::LSC_getegid32;
+  syscall_name_map[string("fcntl64")] = &thistype::LSC_fcntl64;
+  syscall_name_map[string("flistxattr")] = &thistype::LSC_flistxattr;
+  syscall_name_map[string("exit_group")] = &thistype::LSC_exit_group;
+  syscall_name_map[string("fcntl")] = &thistype::LSC_fcntl;
+  syscall_name_map[string("dup")] = &thistype::LSC_dup;
+  syscall_name_map[string("ioctl")] = &thistype::LSC_ioctl;
+  syscall_name_map[string("ugetrlimit")] = &thistype::LSC_ugetrlimit;
+  syscall_name_map[string("getrlimit")] = &thistype::LSC_getrlimit;
+  syscall_name_map[string("setrlimit")] = &thistype::LSC_setrlimit;
+  syscall_name_map[string("rt_sigaction")] = &thistype::LSC_rt_sigaction;
+  syscall_name_map[string("getrusage")] = &thistype::LSC_getrusage;
+  syscall_name_map[string("unlink")] = &thistype::LSC_unlink;
+  syscall_name_map[string("rename")] = &thistype::LSC_rename;
+  syscall_name_map[string("time")] = &thistype::LSC_time;
+  syscall_name_map[string("socketcall")] = &thistype::LSC_socketcall;
+  syscall_name_map[string("rt_sigprocmask")] = &thistype::LSC_rt_sigprocmask;
+  syscall_name_map[string("kill")] = &thistype::LSC_kill;
+  syscall_name_map[string("ftruncate")] = &thistype::LSC_ftruncate;
+  // the following are arm private system calls
+  if (utsname_machine.compare("armv5") == 0) {
+    syscall_name_map[string("breakpoint")] = &thistype::LSC_arm_breakpoint;
+    syscall_name_map[string("cacheflush")] = &thistype::LSC_arm_cacheflush;
+    syscall_name_map[string("usr26")] = &thistype::LSC_arm_usr26;
+    syscall_name_map[string("usr32")] = &thistype::LSC_arm_usr32;
+    syscall_name_map[string("set_tls")] = &thistype::LSC_arm_set_tls;
+  }
+}
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool ReadMem(ADDRESS_TYPE addr, void * buffer, uint32_t size) {
   if (memory_interface_ != NULL) return false;
