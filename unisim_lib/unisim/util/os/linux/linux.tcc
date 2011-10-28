@@ -909,6 +909,36 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
   }
 }
 
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
+  if ( system == "arm" )
+    return ARMGetSyscallNumber(id);
+  else if ( system == "arm-eabi" )
+    return ARMEABIGetSyscallNumber(id);
+  else
+    return PPCGetSyscallNumber(id);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSyscallNumber(int id) {
+  int translated_id = id - 0x0900000;
+  return translated_id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
+  // the arm eabi ignores the given id and uses register 7
+  //   as the id and translated id
+  uint32_t translated_id = 0;
+  arm_regs[7]->GetValue(&translated_id);
+  return (int)translated_id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
+  return id;
+}
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool ReadMem(ADDRESS_TYPE addr, void * buffer, uint32_t size) {
   if (memory_interface_ != NULL) return false;

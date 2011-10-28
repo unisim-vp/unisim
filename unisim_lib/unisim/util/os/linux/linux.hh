@@ -251,6 +251,16 @@ class Linux {
   // Fills the given blob with PPC dependent information
   bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
 
+  // Set the system calls mapping between names and their implementation
+  void SetSyscallNameMap();
+
+  // Extract the system call number from the given identifier depending on the
+  // architecture being emulated
+  int GetSyscallNumber(int id);
+  int ARMGetSyscallNumber(int id);
+  int ARMEABIGetSyscallNumber(int id);
+  int PPCGetSyscallNumber(int id);
+
   // helper methods to read/write from/into the system memory for performing
   // system calls or loading the initial memory image
   bool ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size);
@@ -327,7 +337,6 @@ class Linux {
   void LSC_arm_usr26();
   void LSC_arm_usr32();
   void LSC_arm_set_tls();
-  void SetSyscallNameMap();
 
   // system calls helper methods
   int Stat(int fd, struct powerpc_stat_t *target_stat);
