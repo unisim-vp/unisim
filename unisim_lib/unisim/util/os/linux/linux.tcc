@@ -850,6 +850,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
   return true;
 }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool ReadMem(ADDRESS_TYPE addr, void * buffer, uint32_t size) {
+  if (memory_interface_ != NULL) return false;
+  return memory_interface_->ReadMemory(addr, buffer, size);
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
+  if (memory_interface_ == NULL) return false;
+  return memory_interface_->WriteMemory(addr, buffer, size);
+}
+
 } // end of namespace linux
 } // end of namespace os
 } // end of namespace util

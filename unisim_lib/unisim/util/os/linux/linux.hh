@@ -251,6 +251,11 @@ class Linux {
   // Fills the given blob with PPC dependent information
   bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
 
+  // helper methods to read/write from/into the system memory for performing
+  // system calls or loading the initial memory image
+  bool ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size);
+  bool WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size);
+
   // Cleans the contents of the loader_logger_ and clean error flags
   void ResetLoaderLogger() {
     std::string clean_string();
