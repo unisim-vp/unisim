@@ -367,6 +367,8 @@ class Linux {
   // byte swap helper methods
   bool Swap();
   void PerformSwap(void *buf, int count);
+  // compute the length of a buffer string
+  int StringLength(ADDRESS_TYPE addr);
 };
 
 } // end of linux namespace

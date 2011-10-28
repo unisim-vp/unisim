@@ -1556,6 +1556,20 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PerformSwap(void *buf, int count) {
   }
 }
 
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::StringLength(ADDRESS_TYPE addr) {
+  int len = 0;
+  char buffer;
+
+  while (1)
+  {
+    ReadMem(addr, &buffer, 1);
+    if (buffer == 0) return len;
+    len++;
+    addr += 1;
+  }
+}
+
 } // end of namespace unisim
 } // end of namespace util
 } // end of namespace os
