@@ -851,6 +851,38 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
+    const std::string &syscall_name, int syscall_id) {
+  if(unlikely(verbose))
+    logger << DebugInfo
+        << "Associating syscall_name \"" << syscall_name << "\""
+        << "to syscall_id number " << syscall_id << endl
+        << LOCATION
+        << EndDebugInfo;
+  if (HasSyscall(syscall_name))
+  {
+    if (HasSyscall(syscall_id))
+    {
+      stringstream s;
+      s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
+      s << "syscall_id already associated to syscall \""
+          << syscall_name_assoc_map[syscall_id] << "\"" << endl;
+      s << "  you wanted to associate it to " << syscall_name << endl;
+      throw std::runtime_error(s.str().c_str());
+    }
+    syscall_name_assoc_map[syscall_id] = syscall_name;
+    syscall_impl_assoc_map[syscall_id] = syscall_name_map[syscall_name];
+  }
+  else
+  {
+    stringstream s;
+    s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
+    s << "Unimplemented system call (" << syscall_name << ")";
+    throw std::runtime_error(s.str().c_str());
+  }
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
   syscall_name_map[string("unknown")] = &thistype::LSC_unknown;
   syscall_name_map[string("exit")] = &thistype::LSC_exit;
@@ -907,6 +939,17 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
     syscall_name_map[string("usr32")] = &thistype::LSC_arm_usr32;
     syscall_name_map[string("set_tls")] = &thistype::LSC_arm_set_tls;
   }
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(
+    const std::string &syscall_name) {
+  return syscall_name_map.find(syscall_name) != syscall_name_map.end();
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>:::HasSyscall(int syscall_id) {
+  return syscall_impl_assoc_map.find(syscall_id) != syscall_impl_assoc_map.end();
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

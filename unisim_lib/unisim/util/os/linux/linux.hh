@@ -251,8 +251,15 @@ class Linux {
   // Fills the given blob with PPC dependent information
   bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
 
+  // Associate the syscall identifier to its name
+  void SetSyscallId(const std::string &syscall_name, int syscall_id);
+
   // Set the system calls mapping between names and their implementation
   void SetSyscallNameMap();
+
+  // Determine if a syscall is available
+  bool HasSyscall(const std::string &syscall_name);
+  bool HasSyscall(int syscall_id);
 
   // Extract the system call number from the given identifier depending on the
   // architecture being emulated
