@@ -222,7 +222,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_lseek() {
     SetSystemCallStatus(ret, false);
 }
 
-
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getpid() {
   pid_t ret;
@@ -383,7 +382,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid() {
   SetSystemCallStatus(ret,false);
 }
 
-
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
   size_t u = (size_t)(GetSystemCallParam(1));
@@ -422,7 +420,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
         << LOCATION << EndDebugInfo;
   SetMmapBrkPoint(GetMmapBrkPoint() - u);
 }
-
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat() {
@@ -964,7 +961,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname() {
   SetSystemCallStatus((PARAMETER_TYPE) ret, ret < 0);
 }
 
-
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
   int fd;
@@ -1421,33 +1417,18 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
   if ( system == "arm" )
-    return ARMGetSyscallNumber(id);
   else if ( system == "arm-eabi" )
-    return ARMEABIGetSyscallNumber(id);
   else
-    return PPCGetSyscallNumber(id);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSyscallNumber(int id) {
-  int translated_id = id - 0x0900000;
-  return translated_id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
-  // the arm eabi ignores the given id and uses register 7
-  //   as the id and translated id
-  uint32_t translated_id = 0;
-  arm_regs[7]->GetValue(&translated_id);
-  return (int)translated_id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
-  return id;
 }
 
 } // end of namespace unisim
