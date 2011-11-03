@@ -1,3 +1,5 @@
+// TODO Fix register handling, should be done with methods.
+
 /*
  *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
  *  reserved.

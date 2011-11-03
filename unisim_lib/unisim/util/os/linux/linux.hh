@@ -59,7 +59,10 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE>
-class LinuxMemoryInterface {
+class LinuxInterface {
+  // NOTE: Should we depend on parameter type instead of address type?
+  virtual bool GetRegister(uint32_t id, ADDRESS_TYPE *value) = 0;
+  virtual bool SetRegister(uint32_t id, ADDRESS_TYPE value) = 0;
   virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size) = 0;
   virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer,
                            uint32_t size) = 0;
@@ -94,11 +97,13 @@ class Linux {
                 char const * const utsname_machine,
                 char const * const utsname_domainname);
 
-  // Sets the registers to be used
-  void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
+  // TODO: Remove
+  // // Sets the registers to be used
+  // void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
+  // END TODO
 
   // Set the memory interface to be used
-  void SetMemoryInterface(LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface);
+  void SetInterfaces(LinuxInterface<ADDRESS_TYPE> *interfaces);
 
   // Loads all the defined files using the user settings.
   // Basic usage:
@@ -189,20 +194,20 @@ class Linux {
   //   being simulated
   std::vector<unisim::util::debug::Register *> *registers_;
 
-  // pointer to the memory interface to use
-  LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface_;
+  // pointer to the interface for memory and registers to use
+  LinuxInterface<ADDRESS_TYPE> *interface_;
 
   // registers for the arm system
   const int kARMNumRegs = 16;
   const int kARMNumSysRegs = 0;
-  unisim::util::debug::Register *arm_regs_[kARMNumRegs];
+  // unisim::util::debug::Register *arm_regs_[kARMNumRegs];
 
   // registers for the ppc system
   const int kPPCNumRegs = 31;
   const int kPPCNumSysRegs = 2;
-  unisim::util::debug::Register *ppc_cr_;
-  unisim::util::debug::Register *ppc_cia_;
-  unisim::util::debug::Register *ppc_regs_[kPPCNumRegs];
+  // unisim::util::debug::Register *ppc_cr_;
+  // unisim::util::debug::Register *ppc_cia_;
+  // unisim::util::debug::Register *ppc_regs_[kPPCNumRegs];
 
   // syscall type shortener
   typedef LinuxOS<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
