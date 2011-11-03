@@ -165,6 +165,12 @@ ECT::~ECT() {
 
 	registers_registry.clear();
 
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
 	if (logger) { delete logger; logger = NULL;}
 
 }
@@ -456,7 +462,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		case TSCR1: {
 			*((uint8_t *)value) = tscr1_register & 0xF8;
 		} break;
-		case TTOF: {
+		case TTOV: {
 			*((uint8_t *)value) = ttov_register;
 		} break;
 		case TCTL1: {
@@ -724,7 +730,7 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 			}
 
 		} break;
-		case TTOF: {
+		case TTOV: {
 			ttov_register = *((uint8_t *)value);
 		} break;
 		case TCTL1: {
@@ -1519,140 +1525,174 @@ bool ECT::BeginSetup() {
 
 	sprintf(buf, "%s.TIOS",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tios_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TIOS", this, tios_register, "Timer Input Capture/Output Compare Select"));
 
 	sprintf(buf, "%s.CFORC",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cforc_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("CFORC", this, cforc_register, "Timer Compare Force Register"));
 
 	sprintf(buf, "%s.OC7M",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7m_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("OC7M", this, oc7m_register, "Output Compare 7 Mask Register"));
 
 	sprintf(buf, "%s.OC7D",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7d_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("OC7D", this, oc7d_register, "Output Compare 7 Data Register"));
 
 	sprintf(buf, "%s.TCNT",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcnt_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TCNT", this, tcnt_register, "Timer Count Register"));
 
 	sprintf(buf, "%s.TSCR1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TSCR1", this, tscr1_register, "Timer System Control Register 1"));
 
-	sprintf(buf, "%s.TTOF",name());
+	sprintf(buf, "%s.TTOV",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttov_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TTOV", this, ttov_register, "Timer Toggle Overflow Register"));
 
 	sprintf(buf, "%s.TCTL12",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl12_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TCTL12", this, tctl12_register, "Timer Control Register 1-2"));
 
 	sprintf(buf, "%s.TCTL34",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl34_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TCTL34", this, tctl34_register, "Timer Control Register 3-4"));
 
 	sprintf(buf, "%s.TIE",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tie_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TIE", this, tie_register, "Timer Interrupt Enable Register"));
 
 	sprintf(buf, "%s.TSCR2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr2_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TSCR2", this, tscr2_register, "Timer System Control Register 2"));
 
 	sprintf(buf, "%s.TFLG1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg1_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TFLG1", this, tflg1_register, "Main Timer Interrupt Flag 1"));
 
 	sprintf(buf, "%s.TFLG2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg2_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TFLG2", this, tflg2_register, "Main Timer Interrupt Flag 2"));
 
 	sprintf(buf, "%s.TC0",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[0]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC0", this, tc_registers[0], "Timer Input Capture/Output Compare Register 0"));
 
 	sprintf(buf, "%s.TC1",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[1]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC1", this, tc_registers[1], "Timer Input Capture/Output Compare Register 1"));
 
 	sprintf(buf, "%s.TC2",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[2]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC2", this, tc_registers[2], "Timer Input Capture/Output Compare Register 2"));
 
 	sprintf(buf, "%s.TC3",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[3]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC3", this, tc_registers[3], "Timer Input Capture/Output Compare Register 3"));
 
 	sprintf(buf, "%s.TC4",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[4]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC4", this, tc_registers[4], "Timer Input Capture/Output Compare Register 4"));
 
 	sprintf(buf, "%s.TC5",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[5]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC5", this, tc_registers[5], "Timer Input Capture/Output Compare Register 5"));
 
 	sprintf(buf, "%s.TC6",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[6]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC6", this, tc_registers[6], "Timer Input Capture/Output Compare Register 6"));
 
 	sprintf(buf, "%s.TC7",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[7]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC7", this, tc_registers[7], "Timer Input Capture/Output Compare Register 7"));
 
 	sprintf(buf, "%s.PACTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pactl_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PACTL", this, pactl_register, "16-Bit Pulse Accumulator A Control Register"));
 
 	sprintf(buf, "%s.PAFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paflg_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register"));
 
 	uint8_t pacn_number;
 
 	for (uint8_t i=0; i<4; i++) {
 		sprintf(buf, "%s.PACN%d",name(), i);
-#if BYTE_ORDER == BIG_ENDIAN
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) (&pacn_register[i]+1)));
-#else
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &pacn_register[i]));
-#endif
+		sprintf(buf, "PACN%d", i);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, pacn_register[i], "Pulse Accumulator Count Register"));
 
 		sprintf(buf, "%s.PA%dH",name(), i);
-
-#if BYTE_ORDER == BIG_ENDIAN
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) (&paxh_registers[i+1])));
-#else
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &paxh_registers[i]));
-#endif
+		sprintf(buf, "PA%dH", i);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, paxh_registers[i], "8-Bit Pulse Accumulator Holding Register"));
 
 	}
 
 	sprintf(buf, "%s.MCCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcctl_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MCCTL", this, mcctl_register, "16-Bit Modulus Down Counter Register"));
 
 	sprintf(buf, "%s.MCFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcflg_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MCFLG", this, mcflg_register, "16-Bit Modulus Down Counter Flag Register"));
 
 	sprintf(buf, "%s.ICPAR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icpar_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ICPAR", this, icpar_register, "Input Control Pulse Accumulator Register"));
 
 	sprintf(buf, "%s.DLYCT",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &dlyct_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("DLYCT", this, dlyct_register, "Delay Counter Control Register"));
 
 	sprintf(buf, "%s.ICOVW",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icovw_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ICOVW", this, icovw_register, "Input Control Overwrite Register"));
 
 	sprintf(buf, "%s.ICSYS",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icsys_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ICSYS", this, icsys_register, "Input Control System Control Register"));
 
 	sprintf(buf, "%s.TIMTST",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &timtst_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TIMTST", this, timtst_register, "Timer Test Register"));
 
 	sprintf(buf, "%s.PTPSR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptpsr_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PTPSR", this, ptpsr_register, "Precision Timer Prescaler Select Register"));
 
 	sprintf(buf, "%s.PTMCPSR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptmcpsr_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PTMCPSR", this, ptmcpsr_register, "Precision Timer Modulus Counter Prescaler Select Register"));
 
 	sprintf(buf, "%s.PBCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbctl_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PBCTL", this, pbctl_register, "16-Bit Pulse Accumulator B Control Register"));
 
 	sprintf(buf, "%s.PBFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbflg_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PBFLG", this, pbflg_register, "16-Bit Pulse Accumulator B Flag Register"));
 
 	sprintf(buf, "%s.MCCNT",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &mccnt_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("MCCNT", this, mccnt_register, "Modulus Down-Counter Count Register"));
 
 	sprintf(buf, "%s.TC0H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[0]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC0H", this, tcxh_registers[0], "Timer Input Capture Holding Register 0"));
 
 	sprintf(buf, "%s.TC1H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[1]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC1H", this, tcxh_registers[1], "Timer Input Capture Holding Register 1"));
 
 	sprintf(buf, "%s.TC2H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[2]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC2H", this, tcxh_registers[2], "Timer Input Capture Holding Register 2"));
 
 	sprintf(buf, "%s.TC3H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[3]);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC3H", this, tcxh_registers[3], "Timer Input Capture Holding Register 3"));
 
 
 	ComputeInternalTime();
@@ -1816,7 +1856,7 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 			case TSCR1: {
 				*((uint8_t *)buffer) = tscr1_register;
 			} break;
-			case TTOF: {
+			case TTOV: {
 				*((uint8_t *)buffer) = ttov_register;
 			} break;
 			case TCTL1: {
@@ -2017,7 +2057,7 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 			} break;
 			case TCNT_LOW: tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value); break;
 			case TSCR1:	tscr1_register = *((uint8_t *)value); break;
-			case TTOF: ttov_register = *((uint8_t *)value); break;
+			case TTOV: ttov_register = *((uint8_t *)value); break;
 			case TCTL1: {
 				if (size == 2) {
 					tctl12_register = *((uint16_t *)value);

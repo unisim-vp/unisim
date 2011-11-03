@@ -42,11 +42,12 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 
 	, slave_socket("slave_socket")
 
-	, bus_cycle_time_int(0)
-	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
+	, oscillator_cycle_time_int(250000)
+	, param_oscillator_cycle_time_int("oscillator-cycle-time", this, oscillator_cycle_time_int)
 
 	, baseAddress(0x0110)
 	, param_baseAddress("base-address", this, baseAddress)
+
 	, cmd_interruptOffset(0xBA)
 	, param_cmd_interruptOffset("command-interrupt", this, cmd_interruptOffset)
 
@@ -72,16 +73,20 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, eaddr_reg(0)
 	, edata_reg(0)
 
+	, min_eeclk_time(6667, SC_PS)
+
+	, is_write_aborted(false)
+	, write_aligned_word(false)
+
 
 {
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &S12XEETX::read_write);
-	bus_clock_socket.register_b_transport(this, &S12XEETX::updateBusClock);
 
-//	SC_HAS_PROCESS(S12XEETX);
-//
-//	SC_THREAD(Process);
+	SC_HAS_PROCESS(S12XEETX);
+
+	SC_THREAD(Process);
 
 }
 
@@ -112,11 +117,11 @@ S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 
 }
 
-//template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-//void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
-//{
-//
-//}
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
+{
+
+}
 
 
 /* Service methods */
@@ -166,6 +171,8 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 	sprintf(buf, "%s.EDATA",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &edata_reg);
 	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register"));
+
+	oscillator_cycle_time = sc_time(oscillator_cycle_time_int, SC_PS);
 
 	Reset();
 
@@ -357,7 +364,13 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setEEPROMClock() {
-	// TODO:
+
+	// if ECLKDIV::PRDIV8 set then enable a prescalar by 8
+	eeclk_time = oscillator_cycle_time * ((eclkdiv_reg & 0x3F) + 1) * (((eclkdiv_reg & 0x40) != 0)? 8: 1);
+
+	if (eeclk_time < min_eeclk_time) {
+		inherited::logger << DebugWarning << inherited::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl << EndDebugWarning;
+	}
 }
 
 
@@ -500,10 +513,10 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read(uint8_t o
 		case ECLKDIV: *((uint8_t *) buffer) = eclkdiv_reg; break;
 		case RESERVED1: *((uint8_t *) buffer) = reserved1_reg; break;
 		case RESERVED2: *((uint8_t *) buffer) = reserved2_reg; break;
-		case ECNFG: *((uint8_t *) buffer) = ecnfg_reg; break;
+		case ECNFG: *((uint8_t *) buffer) = ecnfg_reg & 0xC0; break;
 		case EPROT: *((uint8_t *) buffer) = eprot_reg; break;
-		case ESTAT: *((uint8_t *) buffer) = estat_reg; break;
-		case ECMD: *((uint8_t *) buffer) = ecmd_reg; break;
+		case ESTAT: *((uint8_t *) buffer) = estat_reg & 0xF6; break;
+		case ECMD: *((uint8_t *) buffer) = ecmd_reg & 0x7F; break;
 		case RESERVED3:	*((uint8_t *) buffer) = reserved3_reg; break;
 		case EADDRHI: {
 			if (data_length == 2) {
@@ -534,12 +547,52 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t offset, const void *buffer, unsigned int data_length)
 {
 	switch (offset) {
-		case ECLKDIV:  eclkdiv_reg = *((uint8_t *) buffer); break;
+		case ECLKDIV: {
+			uint8_t edivld_mask = 0x80;
+			uint8_t value = *((uint8_t *) buffer);
+			if ((eclkdiv_reg & edivld_mask) == 0) {
+				// if ECLKDIV register hasn't written yet then accept write and set EDIVLD bit
+				eclkdiv_reg = value | edivld_mask;
+
+				// compute EECLK
+				setEEPROMClock();
+			}
+		}
+		break;
 		case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
 		case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
-		case ECNFG: ecnfg_reg = *((uint8_t *) buffer); break;
+		case ECNFG: {
+			uint8_t value = *((uint8_t *) buffer) & 0xC0;
+			ecnfg_reg = value;
+		}
+		break;
 		case EPROT: {
-			eprot_reg = *((uint8_t *) buffer);
+			/*
+			 inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
+				<< std::endl << EndDebugWarning;
+			 */
+			uint8_t value = *((uint8_t *) buffer);
+
+			// RNV[6:4] bits should remain in the erased state "1" for future enhancements.
+			value = value | 0x70;
+
+			if (((eprot_reg & 0x80) == 0) && ((value & 0x80) != 0)) {
+				inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
+				value = value & 0x7F;
+			}
+
+			if (((eprot_reg & 0x08) == 0) && ((value & 0x08) != 0)) {
+				inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
+				value = value & 0xF7;
+			}
+
+			// the EPS[2:0] bits can be written anytime until bit EPDIS is cleared
+			if ((eprot_reg & 0x04) == 0) {
+				inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl << EndDebugWarning;
+				value = (value & 0xF8) | (eprot_reg & 0x07);
+			}
+
+			eprot_reg = value;
 			uint16_t protected_size = ((eprot_reg & 0x03) + 1) * 64;
 
 			protected_area_start_address = global_end_address - protected_size + 1;
@@ -551,8 +604,99 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t 
 
 		}
 		break;
-		case ESTAT: estat_reg = *((uint8_t *) buffer); break;
-		case ECMD: ecmd_reg = *((uint8_t *) buffer); break;
+		case ESTAT: {
+			uint8_t value = *((uint8_t *) buffer);
+
+			if ((value & 0x80) != 0) {
+				// clear CBEIF
+				// CCIF is cleared automatically when CBEIF is cleared
+				value = value & 0x3F;
+				// BLANK is cleared automatically when CBEIF is cleared
+				value = value & 0xFB;
+			} else {
+				/**
+				 * Writing a 0 to CBEIF after writing an aligned word to the EEPROM address space
+				 * but before CBEIF is cleared will abort a command write sequence and cause the ACCERR flag to be set.
+				 */
+				if ((write_aligned_word) && ((estat_reg & 0x80) != 0)) {
+					abort_write();
+					value = value | 0x10;
+				}
+			}
+
+			// clear PVIOL
+			if ((value & 0x20) != 0) {
+				value = value & 0xDF;
+			}
+
+			// clear ACCERR
+			if ((value & 0x10) != 0) {
+				value = value & 0xEF;
+			}
+
+			// clear FAIL
+			if ((value & 0x02) != 0) {
+				value = value & 0xFD;
+			}
+
+
+			estat_reg = value;
+
+		}
+		break;
+		case ECMD: {
+			uint8_t value = *((uint8_t *) buffer);
+			value = (value & 0x7F) | (ecmd_reg & 0x80);
+			ecmd_reg = value;
+			if ((eclkdiv_reg & 0x80) == 0) {
+				/**
+				 *  If the ECLKDIV register has not been written to,
+				 *  the EEPROM command loaded during a command write sequence will not executed
+				 *  and the ACCERR flag is set.
+				 */
+				// set the ACCERR flag in the ESTAT register
+				estat_reg = estat_reg | 0x10;
+				break;
+			}
+			switch (ecmd_reg) {
+				case 0x05: {
+					/* Erase Verify */
+					start_erase_verify();
+				}
+				break;
+				case 0x20: {
+					/* Word Program */
+					word_program();
+				}
+				break;
+				case 0x40: {
+					/* Sector Erase */
+					sector_erase();
+				}
+				break;
+				case 0x41: {
+					/* Mass Erase */
+					mass_erase();
+				}
+				break;
+				case 0x47: {
+					/* Sector Erase Abort */
+					sector_erase_abort();
+				}
+				break;
+				case 0x60: {
+					/* Sector Modify */
+					sector_modify();
+				}
+				break;
+				default: {
+					/* unknown command */
+					// set the ACCERR flag in the ESTAT register
+					estat_reg = estat_reg | 0x10;
+				}
+			}
+		}
+		break;
 		case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
 		case EADDRHI: {
 			if (data_length == 2) {
@@ -599,27 +743,6 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read_write( tl
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
-
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ComputeInternalTime() {
-
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-
-}
-
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
-
-	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
-    trans.set_response_status( tlm::TLM_OK_RESPONSE );
-
-	bus_cycle_time_int = *external_bus_clock;
-
-	ComputeInternalTime();
-}
-
-
 
 } // end of hcs12x
 } // end of processor

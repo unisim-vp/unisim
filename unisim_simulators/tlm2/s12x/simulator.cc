@@ -222,7 +222,6 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
 	crg->bus_clock_socket(atd0->bus_clock_socket);
-	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -509,11 +508,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
 
 
-//	simulator->SetVariable("global-memory.org", 0x0);
-//	simulator->SetVariable("global-memory.bytesize", 0x800000);
-//	simulator->SetVariable("global-memory.cycle-time", 250000);
-//	simulator->SetVariable("global-memory.verbose", false);
-
 	simulator->SetVariable("RAM.org", 0x0F8000);
 	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
 	simulator->SetVariable("RAM.cycle-time", 250000);
@@ -522,7 +516,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("EEPROM.org", 0x13F000);
 	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
 	simulator->SetVariable("EEPROM.cycle-time", 250000);
-	simulator->SetVariable("EEPROM.bus-cycle-time", 250000);
+	simulator->SetVariable("EEPROM.oscillator-cycle-time", 250000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
 	simulator->SetVariable("EEPROM.global-start-address", 0x13EFFF);

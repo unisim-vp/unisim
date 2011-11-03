@@ -83,8 +83,6 @@ public:
 
 	// interface with bus
 	tlm_utils::simple_target_socket<S12XEETX> slave_socket;
-	tlm_utils::simple_target_socket<S12XEETX> bus_clock_socket;
-
 
 	/**
 	 * Constructor.
@@ -98,9 +96,8 @@ public:
 	 */
 	virtual ~S12XEETX();
 
-//	void Process();
+	void Process();
 
-	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 	void setEEPROMClock();
 	void assertInterrupt();
 
@@ -153,14 +150,28 @@ protected:
 
 private:
 
-	void ComputeInternalTime();
+	void abort_write() { is_write_aborted = true;};
+
+	void start_erase_verify() { };
+	void word_program() { };
+	void sector_erase() { };
+	void mass_erase() { };
+	void sector_erase_abort() { };
+	void sector_modify() { };
+
 	tlm_quantumkeeper quantumkeeper;
 
 	PayloadFabric<XINT_Payload> xint_payload_fabric;
 
-	double	bus_cycle_time_int;
-	Parameter<double>	param_bus_cycle_time_int;
-	sc_time		bus_cycle_time;
+	double	oscillator_cycle_time_int;
+	Parameter<double>	param_oscillator_cycle_time_int;
+	sc_time		oscillator_cycle_time;
+
+	sc_time		eeclk_time;
+	sc_time		min_eeclk_time;
+
+	bool is_write_aborted;
+	bool write_aligned_word;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
