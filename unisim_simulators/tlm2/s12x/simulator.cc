@@ -219,6 +219,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
+	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
 	crg->bus_clock_socket(atd0->bus_clock_socket);
@@ -457,6 +458,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
+
 	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD1.base-address", 0x80);
 	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
@@ -467,6 +469,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
+
 	simulator->SetVariable("CPU.trace-enable", false);
 	simulator->SetVariable("CPU.verbose-all", false);
 	simulator->SetVariable("CPU.verbose-setup", false);
@@ -516,13 +519,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("EEPROM.org", 0x13F000);
 	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
 	simulator->SetVariable("EEPROM.cycle-time", 250000);
+	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 250000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
-	simulator->SetVariable("EEPROM.global-start-address", 0x13EFFF);
-	simulator->SetVariable("EEPROM.global-end-address", 0x140000);
-	simulator->SetVariable("EEPROM.protected-area-start-address", 0x13FDFF);
-	simulator->SetVariable("EEPROM.protection-enabled", true);
 	simulator->SetVariable("EEPROM.verbose", false);
 
 	simulator->SetVariable("FLASH.org", 0x780000);

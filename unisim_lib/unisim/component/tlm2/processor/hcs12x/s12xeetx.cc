@@ -14,12 +14,12 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-template class S12XEETX<32, uint32_t, 8, DEFAULT_PAGE_SIZE, false>;
-template class S12XEETX<32, uint64_t, 8, DEFAULT_PAGE_SIZE, false>;
-template class S12XEETX<64, uint32_t, 4, DEFAULT_PAGE_SIZE, false>;
-template class S12XEETX<64, uint64_t, 4, DEFAULT_PAGE_SIZE, false>;
-template class S12XEETX<128, uint32_t, 2, DEFAULT_PAGE_SIZE, false>;
-template class S12XEETX<128, uint64_t, 2, DEFAULT_PAGE_SIZE, false>;
+template class S12XEETX<DEFAULT_CMD_PIPELINE_SIZE, 32, uint32_t, 8, DEFAULT_PAGE_SIZE, false>;
+template class S12XEETX<DEFAULT_CMD_PIPELINE_SIZE, 32, uint64_t, 8, DEFAULT_PAGE_SIZE, false>;
+template class S12XEETX<DEFAULT_CMD_PIPELINE_SIZE, 64, uint32_t, 4, DEFAULT_PAGE_SIZE, false>;
+template class S12XEETX<DEFAULT_CMD_PIPELINE_SIZE, 64, uint64_t, 4, DEFAULT_PAGE_SIZE, false>;
+template class S12XEETX<DEFAULT_CMD_PIPELINE_SIZE, 128, uint32_t, 2, DEFAULT_PAGE_SIZE, false>;
+template class S12XEETX<DEFAULT_CMD_PIPELINE_SIZE, 128, uint64_t, 2, DEFAULT_PAGE_SIZE, false>;
 
 
 } // end of hcs12x

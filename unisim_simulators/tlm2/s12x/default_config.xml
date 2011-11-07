@@ -508,6 +508,12 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
 		<variable name="oscillator-cycle-time">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>
@@ -520,39 +526,17 @@
 			<value>0x0110</value>
 			<description></description>
 		</variable>
-		<variable name="global-start-address">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0013efff</value>
-			<description></description>
-		</variable>
-		<variable name="global-end-address">
-			<type>parameter</type>
-			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00140000</value>
-			<description></description>
-		</variable>
-		<variable name="protected-area-start-address">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x000000000013fdff</value>
-			<description></description>
-		</variable>
-		<variable name="protection-enabled">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description></description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
 		<variable name="command-interrupt">
 			<type>parameter</type>
 			<data_type>unsigned 8-bit integer</data_type>
 			<value>0xba</value>
 			<description></description>
+		</variable>
+		<variable name="erase-fail-ratio">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.01</value>
+			<description>Ration to emulate erase failing. </description>
 		</variable>
 	</object>
 	<object name="FLASH">

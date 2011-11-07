@@ -19,14 +19,6 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-using unisim::kernel::logger::Logger;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::DebugError;
-using unisim::kernel::logger::EndDebugInfo;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::EndDebugError;
-
 /**
  * Constructor.
  *
@@ -34,13 +26,17 @@ using unisim::kernel::logger::EndDebugError;
  * @param parent the parent service
  */
 /* Constructor */
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 S12XEETX(const sc_module_name& name, Object *parent) :
 	Object(name, parent, "this module implements a memory")
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
 
+	, bus_clock_socket("Bus-Clock")
 	, slave_socket("slave_socket")
+
+	, bus_cycle_time_int(250000)
+	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
 	, oscillator_cycle_time_int(250000)
 	, param_oscillator_cycle_time_int("oscillator-cycle-time", this, oscillator_cycle_time_int)
@@ -51,16 +47,9 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, cmd_interruptOffset(0xBA)
 	, param_cmd_interruptOffset("command-interrupt", this, cmd_interruptOffset)
 
-	, global_start_address(0x13EFFF)
-	, param_global_start_address("global-start-address", this, global_start_address)
-	, global_end_address(0x140000)
-	, param_global_end_address("global-end-address", this, global_end_address)
+	, erase_fail_ratio(0.01)
+	, param_erase_fail_ratio("erase-fail-ratio", this, erase_fail_ratio, "Ration to emulate erase failing. ")
 
-	, protected_area_start_address(0x13FDFF)
-	, param_protected_area_start_address("protected-area-start-address", this, protected_area_start_address)
-
-	, protection_enabled(true)
-	, param_protection_enabled("protection-enabled", this, protection_enabled)
 
 	, eclkdiv_reg(0)
 	, reserved1_reg(0)
@@ -78,11 +67,13 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, is_write_aborted(false)
 	, write_aligned_word(false)
 
+	, cmd_queue_back(0)
 
 {
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &S12XEETX::read_write);
+	bus_clock_socket.register_b_transport(this, &S12XEETX::updateBusClock);
 
 	SC_HAS_PROCESS(S12XEETX);
 
@@ -90,12 +81,11 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 
 }
 
-
 /**
  * Destructor
  */
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 ~S12XEETX() {
 
 	// Release registers_registry
@@ -115,11 +105,129 @@ S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 		delete extended_registers_registry[i];
 	}
 
+	empty_cmd_queue();
+
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+
+	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
+    trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	bus_cycle_time_int = *external_bus_clock;
+
+	ComputeInternalTime();
+}
+
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ComputeInternalTime() {
+
+	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
+
+}
+
+
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 {
+
+	sc_time delay;
+
+	while (true) {
+
+		// wait command launch by clearing ESTAT::CBEIF flag
+		while (((estat_reg & 0x80) != 0) && (!cmd_queue.empty())) {
+			wait(command_launch_event);
+		}
+
+		if ((eclkdiv_reg & 0x80) == 0) {
+			/**
+			 *  If the ECLKDIV register has not been written to,
+			 *  the EEPROM command loaded during a command write sequence will not executed
+			 *  and the ACCERR flag is set.
+			 */
+			// set the ACCERR flag in the ESTAT register
+			estat_reg = estat_reg | 0x10;
+
+			wait(command_launch_event);
+			continue;
+		}
+
+		fetchCommand();
+
+		// set CCIF flag when all commands are completed
+		if (cmd_queue.empty()) {
+			estat_reg = estat_reg | 0x40;
+
+			/**
+			 * For all command write sequences except sector erase abort,
+			 * the CBEIF flag will set four bus cycles after the CCIF flag is cleared indicating that the address, data, and command buffers are ready for a new command write sequence to begin.
+			 * For sector erase abort operations, the CBEIF flag will remain clear until the operations completes.
+			 */
+
+			// is sector_erase_abort
+			if ((ecmd_reg & 0x7F) != 0x47) {
+				wait(bus_cycle_time * 4);
+
+				// set CBEIF flag when address, data, command buffers are empty
+				estat_reg = estat_reg | 0x80;
+
+				assertInterrupt(cmd_interruptOffset);
+			}
+		}
+
+		// run the fetched command
+		switch (ecmd_reg & 0x7F) {
+			case 0x05: {
+				/* Erase Verify */
+				start_erase_verify();
+			}
+			break;
+			case 0x20: {
+				/* Word Program */
+				word_program();
+			}
+			break;
+			case 0x40: {
+				/* Sector Erase */
+				sector_erase();
+			}
+			break;
+			case 0x41: {
+				/* Mass Erase */
+				mass_erase();
+			}
+			break;
+			case 0x47: {
+				/* Sector Erase Abort */
+				sector_erase_abort();
+			}
+			break;
+			case 0x60: {
+				/* Sector Modify */
+				sector_modify();
+			}
+			break;
+			default: {
+				/* unknown command */
+				// set the ACCERR flag in the ESTAT register
+				estat_reg = estat_reg | 0x10;
+			}
+		}
+
+		if (cmd_queue.empty()) {
+			// operations completes
+			// is sector_erase_abort
+			if ((ecmd_reg & 0x7F) == 0x47) {
+				// set CBEIF flag when address, data, command buffers are empty
+				estat_reg = estat_reg | 0x80;
+				assertInterrupt(cmd_interruptOffset);
+			}
+		}
+
+	}
+
 
 }
 
@@ -127,8 +235,8 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 /* Service methods */
 /** BeginSetup
  * Initializes the service interface. */
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 {
 	char buf[80];
 
@@ -182,122 +290,136 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 /**
  * TLM2 Slave methods
  */
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	// Leave this empty as it is designed for memory mapped buses
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
 	return inherited::get_direct_mem_ptr(payload, dmi_data);
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-unsigned int S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_payload& payload)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transport_dbg(tlm::tlm_generic_payload& payload)
 {
 
 	tlm::tlm_command cmd = payload.get_command();
 	sc_dt::uint64 address = payload.get_address();
+	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address < protected_area_start_address) || (!protection_enabled)) {
+	if (cmd == tlm::TLM_READ_COMMAND) {
 		return inherited::transport_dbg(payload);
-	}
-	else {
-		if (cmd == tlm::TLM_READ_COMMAND) {
-			if (inherited::IsVerbose()) {
-				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
-					<< std::endl << EndDebugInfo;
-				std::cerr << "Info::" << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address << std::endl;
-			}
-			return inherited::transport_dbg(payload);
-		} else {
+	} else {
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
+
+		if (protection_enabled && ((address + data_length - 1) >= protected_area_start_address)) {
 			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
 				<< std::endl << EndDebugWarning;
-			std::cerr << "Warning::" << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address << std::endl;
 
-			payload.set_response_status(tlm::TLM_OK_RESPONSE);
-
-			return 0;
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
 		}
+
+		// push the addr & data
+		push_command( address, data_ptr, data_length);
+
+		payload.set_response_status(tlm::TLM_OK_RESPONSE);
+
+		return 0;
 	}
+
 
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-tlm::tlm_sync_enum S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t)
 {
 	tlm::tlm_command cmd = payload.get_command();
 	sc_dt::uint64 address = payload.get_address();
+	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address < protected_area_start_address) || (!protection_enabled)) {
+	if (cmd == tlm::TLM_READ_COMMAND) {
 		return inherited::nb_transport_fw(payload, phase, t);
-	}
-	else {
-		if (cmd == tlm::TLM_READ_COMMAND) {
-			if (inherited::IsVerbose()) {
-				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
-					<< std::endl << EndDebugInfo;
-				std::cerr << "Info::" << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address << std::endl;
-			}
-			return inherited::nb_transport_fw(payload, phase, t);
-		} else {
+	} else {
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
+
+		if (protection_enabled && ((address + data_length - 1) >= protected_area_start_address)) {
 			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
 				<< std::endl << EndDebugWarning;
-			std::cerr << "Warning::" << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address << std::endl;
 
-			if (phase == BEGIN_REQ) {
-				phase = END_REQ; // update the phase
-				payload.acquire();
-
-				return TLM_UPDATED;
-			} else {
-				inherited::logger << DebugError << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << std::endl << EndDebugError;
-				cerr << "Error: " << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << endl;
-				Object::Stop(-1);
-			}
-
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
 		}
+
+		// push the addr & data
+		push_command(address, data_ptr, data_length);
+
+		if (phase == BEGIN_REQ) {
+			phase = END_REQ; // update the phase
+			payload.acquire();
+
+			return TLM_UPDATED;
+		} else {
+			inherited::logger << DebugError << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << std::endl << EndDebugError;
+			cerr << "Error: " << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << endl;
+			Object::Stop(-1);
+		}
+
 	}
 
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 {
 
 	tlm::tlm_command cmd = payload.get_command();
 	sc_dt::uint64 address = payload.get_address();
+	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address < protected_area_start_address) || (!protection_enabled)) {
+	if (cmd == tlm::TLM_READ_COMMAND) {
 		inherited::b_transport(payload, t);
-	}
-	else {
-		if (cmd == tlm::TLM_READ_COMMAND) {
-			if (inherited::IsVerbose()) {
-				inherited::logger << DebugInfo << LOCATION << " : " << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address
-					<< std::endl << EndDebugInfo;
-				std::cerr << "Info::" << inherited::name() << ":: Reading " << data_length << " bytes @ " << std::hex << address << std::endl;
-			}
-			inherited::b_transport(payload, t);
-		} else {
+	} else {
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
+
+		if (protection_enabled && ((address + data_length - 1) >= protected_area_start_address)) {
 			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
 				<< std::endl << EndDebugWarning;
-			std::cerr << "Warning::" << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address << std::endl;
 
-			payload.set_response_status( tlm::TLM_OK_RESPONSE );
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
 		}
+
+		// push the addr & data
+		push_command(address, data_ptr, data_length);
+
+		payload.set_response_status( tlm::TLM_OK_RESPONSE );
 	}
+
 
 }
 
 // Master methods
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-tlm_sync_enum S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase == BEGIN_RESP)
 	{
@@ -307,8 +429,11 @@ tlm_sync_enum S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb_tr
 	return TLM_ACCEPTED;
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::assertInterrupt() {
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::assertInterrupt(uint8_t interrupt_offset) {
+
+	// if CBEIE or CCIE flag set then enable interrupt
+	if ((ecnfg_reg & 0xC0) == 0) return;
 
 	// assert EEPROM_Command_Interrupt
 
@@ -344,8 +469,8 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::assertInterrup
 
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 
 	eclkdiv_reg = 0x00;
 	reserved1_reg = 0x00;
@@ -358,12 +483,18 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 	eaddr_reg = 0x00;
 	edata_reg = 0x00;
 
+	protected_area_start_address = inherited::hi_addr - 64 * ((eprot_reg & 0x07) + 1) + 1;
+
+	empty_cmd_queue();
+
+	ComputeInternalTime();
+
 	setEEPROMClock();
 
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setEEPROMClock() {
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setEEPROMClock() {
 
 	// if ECLKDIV::PRDIV8 set then enable a prescalar by 8
 	eeclk_time = oscillator_cycle_time * ((eclkdiv_reg & 0x3F) + 1) * (((eclkdiv_reg & 0x40) != 0)? 8: 1);
@@ -378,8 +509,8 @@ void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setEEPROMClock
 //=             memory interface methods                              =
 //=====================================================================
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 {
 	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
 		service_address_t offset = addr-baseAddress;
@@ -418,8 +549,8 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ser
 	return inherited::ReadMemory(addr, buffer, size);
 }
 
-//template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-//bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+//template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+//bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 //{
 //
 //	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
@@ -436,8 +567,8 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::ReadMemory(ser
 //	return inherited::WriteMemory(addr, buffer, size);
 //}
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
@@ -493,8 +624,8 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::WriteMemory(se
  * @param name The name of the requested register.
  * @return A pointer to the RegisterInterface corresponding to name.
  */
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-Register * S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+Register * S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
 
 	if(registers_registry.find(string(name)) != registers_registry.end())
 		return registers_registry[string(name)];
@@ -506,8 +637,8 @@ Register * S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegis
 //=====================================================================
 //=             registers setters and getters                         =
 //=====================================================================
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read(uint8_t offset, void *buffer, unsigned int data_length)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read(uint8_t offset, void *buffer, unsigned int data_length)
 {
 	switch (offset) {
 		case ECLKDIV: *((uint8_t *) buffer) = eclkdiv_reg; break;
@@ -543,8 +674,8 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read(uint8_t o
 	return true;
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t offset, const void *buffer, unsigned int data_length)
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t offset, const void *buffer, unsigned int data_length)
 {
 	switch (offset) {
 		case ECLKDIV: {
@@ -593,14 +724,7 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t 
 			}
 
 			eprot_reg = value;
-			uint16_t protected_size = ((eprot_reg & 0x03) + 1) * 64;
-
-			protected_area_start_address = global_end_address - protected_size + 1;
-			/**
-			 * EPROT::EPDIS = 0 protection enabled
-			 * EPROT::EPDIS = 1 protection disabled
-			 */
-			protection_enabled = ((eprot_reg & 0x04) == 0);
+			protected_area_start_address = inherited::hi_addr - 64 * ((eprot_reg & 0x07) + 1) + 1;
 
 		}
 		break;
@@ -610,9 +734,17 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t 
 			if ((value & 0x80) != 0) {
 				// clear CBEIF
 				// CCIF is cleared automatically when CBEIF is cleared
-				value = value & 0x3F;
 				// BLANK is cleared automatically when CBEIF is cleared
-				value = value & 0xFB;
+				value = value & 0x3B;
+
+				/**
+				 * The basic command write sequence is as follows:
+				 * 1. Write to one address in the EEPROM
+				 * 2. Write a valid command to the ECMD register
+				 * 3. Clear the CBEIF flag in the ESTAT register by writing a 1 to CBEIF to launch the command.
+				 */
+				command_launch_event.notify();
+
 			} else {
 				/**
 				 * Writing a 0 to CBEIF after writing an aligned word to the EEPROM address space
@@ -647,54 +779,17 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t 
 		case ECMD: {
 			uint8_t value = *((uint8_t *) buffer);
 			value = (value & 0x7F) | (ecmd_reg & 0x80);
-			ecmd_reg = value;
-			if ((eclkdiv_reg & 0x80) == 0) {
-				/**
-				 *  If the ECLKDIV register has not been written to,
-				 *  the EEPROM command loaded during a command write sequence will not executed
-				 *  and the ACCERR flag is set.
-				 */
+
+			uint8_t cmd = (value & 0x7F);
+
+			if ( !((cmd == 0x05) && (cmd == 0x20) && (cmd == 0x40) && (cmd == 0x41) && (cmd == 0x47) && (cmd == 0x60) && (cmd == 0x20)) )
+			{
+				/* unknown command */
 				// set the ACCERR flag in the ESTAT register
 				estat_reg = estat_reg | 0x10;
-				break;
 			}
-			switch (ecmd_reg) {
-				case 0x05: {
-					/* Erase Verify */
-					start_erase_verify();
-				}
-				break;
-				case 0x20: {
-					/* Word Program */
-					word_program();
-				}
-				break;
-				case 0x40: {
-					/* Sector Erase */
-					sector_erase();
-				}
-				break;
-				case 0x41: {
-					/* Mass Erase */
-					mass_erase();
-				}
-				break;
-				case 0x47: {
-					/* Sector Erase Abort */
-					sector_erase_abort();
-				}
-				break;
-				case 0x60: {
-					/* Sector Modify */
-					sector_modify();
-				}
-				break;
-				default: {
-					/* unknown command */
-					// set the ACCERR flag in the ESTAT register
-					estat_reg = estat_reg | 0x10;
-				}
-			}
+
+			ecmd_reg = value;
 		}
 		break;
 		case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
@@ -724,8 +819,8 @@ bool S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t 
 	return true;
 }
 
-template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XEETX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
+template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
