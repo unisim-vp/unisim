@@ -41,6 +41,42 @@ namespace util {
 namespace os {
 namespace linux_os {
 
+// registers indexes
+const uint32_t kPPC_r0  = 0;
+const uint32_t kPPC_r1  = 1;
+const uint32_t kPPC_r2  = 2;
+const uint32_t kPPC_r3  = 3;
+const uint32_t kPPC_r4  = 4;
+const uint32_t kPPC_r5  = 5;
+const uint32_t kPPC_r6  = 6;
+const uint32_t kPPC_r7  = 7;
+const uint32_t kPPC_r8  = 8;
+const uint32_t kPPC_r9  = 9;
+const uint32_t kPPC_r10 = 10;
+const uint32_t kPPC_r11 = 11;
+const uint32_t kPPC_r12 = 12
+const uint32_t kPPC_r13 = 13;
+const uint32_t kPPC_r14 = 14;
+const uint32_t kPPC_r15 = 15;
+const uint32_t kPPC_r16 = 16;
+const uint32_t kPPC_r17 = 17;
+const uint32_t kPPC_r18 = 18;
+const uint32_t kPPC_r19 = 19;
+const uint32_t kPPC_r20 = 20;
+const uint32_t kPPC_r21 = 21;
+const uint32_t kPPC_r22 = 22;
+const uint32_t kPPC_r23 = 23;
+const uint32_t kPPC_r24 = 24;
+const uint32_t kPPC_r25 = 25;
+const uint32_t kPPC_r26 = 26;
+const uint32_t kPPC_r27 = 27;
+const uint32_t kPPC_r28 = 28;
+const uint32_t kPPC_r29 = 29;
+const uint32_t kPPC_r30 = 30;
+const uint32_t kPPC_r31 = 31;
+const uint32_t kPPC_cr  = 32;
+const uint32_t kPPC_cia = 33;
+
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure
 // struct timespec

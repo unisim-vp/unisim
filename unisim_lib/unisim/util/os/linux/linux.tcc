@@ -39,7 +39,6 @@
 #include <string.h>
 
 #include "unisim/util/debug/blob/blob.hh"
-#include "unisim/util/debug/register.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/loader/elf_loader/elf32_loader.hh"
 
@@ -72,14 +71,16 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger)
     , memory_page_size_(0)
     , mmap_base_(0)
     , brk_point_(0)
-    , registers_(NULL)
+    , register_interface_(NULL)
+    , memory_interface_(NULL)
+    // , registers_(NULL) // TODO Remove
     , ppc_cr_(NULL)
     , ppc_cia_(NULL)
     , logger_(logger) {
-  for (int i = 0; i < kArmNumRegs; ++i)
-    arm_regs_[i] = NULL;
-  for (int i = 0; i < kPpcNumRegs; ++i)
-    ppc_regs_[i] = NULL;
+  //for (int i = 0; i < kArmNumRegs; ++i)
+    //arm_regs_[i] = NULL;
+  //for (int i = 0; i < kPpcNumRegs; ++i)
+    //ppc_regs_[i] = NULL;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -171,26 +172,33 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
   utsname_domainname_ = utsname_domainname;
 }
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegisters(
-    std::vector<unisim::util::debug::Register *> &registers) {
-  registers_ = &registers;
-}
+// TODO Remove
+//template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+//void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegisters(
+    //std::vector<unisim::util::debug::Register *> &registers) {
+  //registers_ = &registers;
+//}
+// END TODO
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegisterInterface(
+    LinuxRegisterInterface<PARAMETER_TYPE> &iface) {
+  register_interface_ = &iface;
+}
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryInterface(
-    LinuxMemoryInterface<ADDRESS_TYPE> &memory_interface) {
-  memory_interface_ = &memory_interface;
+    LinuxMemoryInterface<ADDRESS_TYPE> &iface) {
+  memory_interface_ = &iface;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   std::vector<std::string> target_envp;
 
-  // get and check all the cpu registers
-  if (!MapRegisters()) {
-    return false;
-  }
+  //// get and check all the cpu registers
+  //if (!MapRegisters()) {
+    //return false;
+  //}
 
   // set the environment to be used
   if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp);
@@ -233,91 +241,91 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapRegisters() {
-  typedef std::vector<unisim::util::debug::Register *>::iterator RegIterator;
+//template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+//bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapRegisters() {
+  //typedef std::vector<unisim::util::debug::Register *>::iterator RegIterator;
 
-  int num_registers_expected = 0;
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0))
-    num_registers_expected = kARMNumRegs + kARMNumSysRegs;
-  else
-    num_registers_expected = kPPCNumRegs + kPPCNumSysRegs;
-  if (registers_.size() < num_registers_expected) {
-    logger_ << "Could not initiliaze register mapping. "
-        "Number of registers handled is inferior to the number of registers "
-        "expected." << std::endl
-        << "Number of registers expected = "
-        << num_registers_expected << std::endl
-        << "Number of registers given = " << registers_.size() << std::endl;
-    return false;
-  }
+  //int num_registers_expected = 0;
+  //if ((system_type_.compare("arm") == 0) ||
+      //(system_type_.compare("arm-eabi") == 0))
+    //num_registers_expected = kARMNumRegs + kARMNumSysRegs;
+  //else
+    //num_registers_expected = kPPCNumRegs + kPPCNumSysRegs;
+  //if (registers_.size() < num_registers_expected) {
+    //logger_ << "Could not initiliaze register mapping. "
+        //"Number of registers handled is inferior to the number of registers "
+        //"expected." << std::endl
+        //<< "Number of registers expected = "
+        //<< num_registers_expected << std::endl
+        //<< "Number of registers given = " << registers_.size() << std::endl;
+    //return false;
+  //}
 
-  if ((system_type_.compare("arm") == 0) ||
-      (system_type_.compare("arm-eabi") == 0)) {
-    for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
-      for (int index = 0; index < kARMNumRegs; index++) {
-        std::stringstream reg_name;
-        reg_name << "r" << index;
-        if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
-          arm_regs_[index] = *it;
-      }
-      // try getting alternative naming for pc, sp and lr
-      if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[13] = *it;
-      if (strcmp((*it)->GetName(), "lr") == 0) arm_regs_[14] = *it;
-      if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[15] = *it;
-    }
-    bool regs_ok = true;
-    for (int index = 0; regs_ok && (index < kARMNumRegs); index++)
-      regs_ok = arm_regs_ != NULL;
-    if (!regs_ok) {
-      logger_ << "Could not initialize register mapping. "
-          "Missing the following registers:" << std::endl;
-      for (int index = 0; index < kARMNumRegs; index++) {
-        if (arm_regs_[index] == NULL) {
-          logger_ << " - r" << index;
-          if (index == 13) logger_ << " (or sp)";
-          if (index == 14) logger_ << " (or lr)";
-          if (index == 15) logger_ << " (or pc)";
-          logger_ << std::endl;
-        }
-        arm_regs_[index] = NULL;
-      }
-      return false;
-    }
-  }
+  //if ((system_type_.compare("arm") == 0) ||
+      //(system_type_.compare("arm-eabi") == 0)) {
+    //for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
+      //for (int index = 0; index < kARMNumRegs; index++) {
+        //std::stringstream reg_name;
+        //reg_name << "r" << index;
+        //if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
+          //arm_regs_[index] = *it;
+      //}
+      //// try getting alternative naming for pc, sp and lr
+      //if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[13] = *it;
+      //if (strcmp((*it)->GetName(), "lr") == 0) arm_regs_[14] = *it;
+      //if (strcmp((*it)->GetName(), "pc") == 0) arm_regs_[15] = *it;
+    //}
+    //bool regs_ok = true;
+    //for (int index = 0; regs_ok && (index < kARMNumRegs); index++)
+      //regs_ok = arm_regs_ != NULL;
+    //if (!regs_ok) {
+      //logger_ << "Could not initialize register mapping. "
+          //"Missing the following registers:" << std::endl;
+      //for (int index = 0; index < kARMNumRegs; index++) {
+        //if (arm_regs_[index] == NULL) {
+          //logger_ << " - r" << index;
+          //if (index == 13) logger_ << " (or sp)";
+          //if (index == 14) logger_ << " (or lr)";
+          //if (index == 15) logger_ << " (or pc)";
+          //logger_ << std::endl;
+        //}
+        //arm_regs_[index] = NULL;
+      //}
+      //return false;
+    //}
+  //}
 
-  if (system_type_.compare("powerpc")) {
-    for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
-      for (int index = 0; indx < kPPCNumRegs; index++) {
-        std::stringstream reg_name;
-        reg_name << "r" << index;
-        if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
-          ppc_regs_[index] = *it;
-      }
-      if (strcmp((*it)->GetName(), "cr") == 0) ppc_cr_ = (*it);
-      if (strcmp((*it)->GetName(), "cia") == 0) ppc_cia_ = (*it);
-    }
-    bool regs_ok = (ppc_cr_ != NULL) && (ppc_cia_ != NULL);
-    for (int index = 0; regs_ok && (index < kPPCNumRegs); index++)
-      regs_ok = ppc_regs_ != NULL;
-    if (!regs_ok) {
-      logger_ << "Could not initialize register mapping. "
-          "Missing the following registers:" << std::endl;
-      for (int index = 0; index < kPPCNumRegs; index++) {
-        if (ppc_regs_[index] == NULL)
-          logger_ << " - r" << index << std::endl;
-        ppc_regs_[index] = NULL;
-      }
-      if (ppc_cr_ == NULL) logger_ << " - cr" << std::endl;
-      if (ppc_cia_ == NULL) logger_ << " - cia" << std::endl;
-      ppc_cr_ = ppc_cia_ = NULL;
-      return false;
-    }
-  }
+  //if (system_type_.compare("powerpc")) {
+    //for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
+      //for (int index = 0; indx < kPPCNumRegs; index++) {
+        //std::stringstream reg_name;
+        //reg_name << "r" << index;
+        //if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
+          //ppc_regs_[index] = *it;
+      //}
+      //if (strcmp((*it)->GetName(), "cr") == 0) ppc_cr_ = (*it);
+      //if (strcmp((*it)->GetName(), "cia") == 0) ppc_cia_ = (*it);
+    //}
+    //bool regs_ok = (ppc_cr_ != NULL) && (ppc_cia_ != NULL);
+    //for (int index = 0; regs_ok && (index < kPPCNumRegs); index++)
+      //regs_ok = ppc_regs_ != NULL;
+    //if (!regs_ok) {
+      //logger_ << "Could not initialize register mapping. "
+          //"Missing the following registers:" << std::endl;
+      //for (int index = 0; index < kPPCNumRegs; index++) {
+        //if (ppc_regs_[index] == NULL)
+          //logger_ << " - r" << index << std::endl;
+        //ppc_regs_[index] = NULL;
+      //}
+      //if (ppc_cr_ == NULL) logger_ << " - cr" << std::endl;
+      //if (ppc_cia_ == NULL) logger_ << " - cia" << std::endl;
+      //ppc_cr_ = ppc_cia_ = NULL;
+      //return false;
+    //}
+  //}
 
-  return true;
-}
+  //return true;
+//}
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
@@ -975,8 +983,16 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
   // the arm eabi ignores the given id and uses register 7
   //   as the id and translated id
   uint32_t translated_id = 0;
-  arm_regs[7]->GetValue(&translated_id);
-  return (int)translated_id;
+  if (register_interface_ == NULL) 
+    // TODO Add warning
+    return 0;
+
+  if (!register_interface_->GetRegister(kARMEABISyscallNumberReg,
+                                        &translated_id))
+    return (int)translated_id;
+  return 0;
+  //arm_regs[7]->GetValue(&translated_id);
+  //return (int)translated_id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

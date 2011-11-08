@@ -59,13 +59,16 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE>
-class LinuxInterface {
-  // NOTE: Should we depend on parameter type instead of address type?
-  virtual bool GetRegister(uint32_t id, ADDRESS_TYPE *value) = 0;
-  virtual bool SetRegister(uint32_t id, ADDRESS_TYPE value) = 0;
+class LinuxMemoryInterface {
   virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size) = 0;
   virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer,
                            uint32_t size) = 0;
+};
+
+template <class PARAMETER_TYPE>
+class LinuxRegisterInterface {
+  virtual bool GetRegister(uint32_t id, PARAMETER_TYPE const * value) = 0;
+  virtual bool SetRegister(uint32_t id, PARAMETER_TYPE value) = 0;
 };
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -102,8 +105,11 @@ class Linux {
   // void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
   // END TODO
 
+  // Set the register interface to be used
+  void SetRegisterInterface(LinuxRegisterInterface<PARAMETER_TYPE> &iface);
+
   // Set the memory interface to be used
-  void SetInterfaces(LinuxInterface<ADDRESS_TYPE> *interfaces);
+  void SetMemoryInterface(LinuxMemoryInterface<ADDRESS_TYPE> &iface);
 
   // Loads all the defined files using the user settings.
   // Basic usage:
@@ -189,13 +195,18 @@ class Linux {
   PARAMETER_TYPE mmap_brk_point_;
   PARAMETER_TYPE brk_point_;
 
+  // TODO Remove registers
   // this member variable is used during the Load() operation
   //   to retrieve the registers depending on the architecture
   //   being simulated
-  std::vector<unisim::util::debug::Register *> *registers_;
+  // std::vector<unisim::util::debug::Register *> *registers_;
+  // END TODO
 
-  // pointer to the interface for memory and registers to use
-  LinuxInterface<ADDRESS_TYPE> *interface_;
+  // pointer to the interface for the registers to use
+  LinuxRegisterInterface<PARAMETER_TYPE> *register_interface_;
+
+  // pointer to the interface for memory to use
+  LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface_;
 
   // registers for the arm system
   const int kARMNumRegs = 16;

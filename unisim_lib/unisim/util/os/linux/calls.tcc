@@ -1459,25 +1459,43 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSystemCallParam(
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSystemCallParam(
     int id) {
-  PARAMETER_TYPE val;
-  arm_regs[id]->GetValue(&val);
-  return val;
+  PARAMETER_TYPE val = 0;
+  // TODO warning if register_interface_ has not been defined
+  if (register_interface_ == NULL) return 0;
+  if (!register_interface_->GetRegister(id, &val))
+    // TODO warning if GetRegister fails
+    return val;
+  return val
+  //arm_regs[id]->GetValue(&val);
+  //return val;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSystemCallParam(
     int id) {
-  PARAMETER_TYPE val;
-  arm_regs[id]->GetValue(&val);
-  return val;
+  PARAMETER_TYPE val = 0;
+  // TODO warning if register_interface_ has not been defined
+  if (register_interface_ == NULL) return 0;
+  if (!register_interface_->GetRegister(id, &val))
+    // TODO warning if GetRegister fails
+    return val;
+  return val
+  //arm_regs[id]->GetValue(&val);
+  //return val;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSystemCallParam(
     int id) {
-  PARAMETER_TYPE val;
-  ppc_regs[id+3]->GetValue(&val);
-  return val;
+  PARAMETER_TYPE val = 0;
+  // TODO warning if register_interface_ has not been defined
+  if (register_interface_ == NULL) return 0;
+  if (!register_interface_->GetRegister(id+3, &val))
+    // TODO warning if GetRegister fails
+    return val;
+  return val
+  //ppc_regs[id+3]->GetValue(&val);
+  //return val;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1494,35 +1512,64 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMSetSystemCallStatus(
     int ret, bool error) {
-  PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
-  arm_regs[0]->SetValue(&val);
+  if (register_interface_ == NULL)
+    // TODO warning if register_interface_ not present
+    return;
+  if (!register_interface_->SetRegister(kARMSyscallStatusReg,
+                                        (PARAMETER_TYPE)ret))
+    // TODO warning if SetRegister fails
+    return;
+  // PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
+  // arm_regs[0]->SetValue(&val);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABISetSystemCallStatus(
     int ret, bool error) {
-  PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
-  arm_regs[0]->SetValue(&val);
+  if (register_interface_ == NULL)
+    // TODO warning if register_interface is not present
+    return;
+  if (!register_interface_->SetRegister(kARMEABISyscallStatusReg,
+                                        (PARAMETER_TYPE)ret))
+    // TODO warning if SetRegister fails
+    return;
+  //PARAMETER_TYPE val = (PARAMETER_TYPE)ret;
+  //arm_regs[0]->SetValue(&val);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
     int ret, bool error) {
   PARAMETER_TYPE val;
-  if (error)
-  {
-    ppc_cr->GetValue(&val);
+  if (register_interface_ == NULL)
+    // TODO warning if register_interface_ is not present
+  if (error) {
+    if (!register_interface_->GetRegister(kPPC_cr, &val))
+      // TODO warning if GetRegister fails
+      return;
+    // ppc_cr->GetValue(&val);
     val |= (1 << 28); // CR0[SO] <- 1
-    ppc_cr->SetValue(&val);
+    if (!register_interface_->SetRegister(kPPC_cr, val))
+      // TODO warnign if SetRegister fails
+      return;
+    //ppc_cr->SetValue(&val);
   }
   else
   {
-    ppc_cr->GetValue(&val);
+    if (!register_interface_->GetRegister(kPPC_cr, &val))
+      // TODO warning if GetRegister fails
+      return;
+    // ppc_cr->GetValue(&val);
     val &= ~(1 << 28); // CR0[SO] <- 0
-    ppc_cr->SetValue(&val);
+    if (!register_interface_->SetRegister(kPPC_cr, val))
+      // TODO warnign if SetRegister fails
+      return;
+    //ppc_cr->SetValue(&val);
   }
-  val = (PARAMETER_TYPE)ret;
-  ppc_regs[3]->SetValue(&val);
+  if (!register_interface_->SetRegister(kPPC_r3, val))
+    // TOCO warning if SetRegister fails
+  //val = (PARAMETER_TYPE)ret;
+  //ppc_regs[3]->SetValue(&val);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

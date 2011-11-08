@@ -41,6 +41,30 @@ namespace util {
 namespace os {
 namespace linux_os {
 
+// registers indexes
+const uint32_t kARM_r0 = 0;
+const uint32_t kARM_r1 = 1;
+const uint32_t kARM_r2 = 2;
+const uint32_t kARM_r3 = 3;
+const uint32_t kARM_r4 = 4;
+const uint32_t kARM_r5 = 5;
+const uint32_t kARM_r6 = 6;
+const uint32_t kARM_r7 = 7;
+const uint32_t kARM_r8 = 8;
+const uint32_t kARM_r9 = 9;
+const uint32_t kARM_r10 = 10;
+const uint32_t kARM_r11 = 11;
+const uint32_t kARM_r12 = 12;
+const uint32_t kARM_r13 = 13;
+const uint32_t kARM_r14 = 14;
+const uint32_t kARM_r15 = 15;
+const uint32_t kARM_sp  = 13;
+const uint32_t kARM_lr  = 14;
+const uint32_t kARM_pc  = 15;
+const uint32_t kARMSyscallStatusReg = 0;
+const uint32_t kARMEABISyscallStatusReg = 0;
+const uint32_t kARMEABISyscallNumberReg = 7;
+
 // this structure supposes that the timespec was needed (__timespec_defined)
 // original structure
 // struct timespec
