@@ -34,6 +34,8 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_PPC_HH__
 #define __UNISIM_UTIL_OS_LINUX_PPC_HH__
 
+#include <inttypes.h>
+
 namespace unisim {
 namespace util {
 namespace os {
