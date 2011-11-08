@@ -164,7 +164,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open() {
   if (strcmp(pathname, osrelease_filename) == 0) {
     {
       std::ofstream fake_file(fake_osrelease_filename);
-      fake_file << utsname_release << std::endl;
+      fake_file << utsname_release_ << std::endl;
     }
     ret = open(fake_osrelease_filename, host_flags, host_mode);
   } else {
@@ -947,15 +947,15 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname() {
   struct utsname_t value;
   memset(&value, 0, sizeof(value));
   memcpy(&(value.sysname),
-         utsname_sysname.c_str(), utsname_sysname.length() + 1);
+         utsname_sysname_.c_str(), utsname_sysname_.length() + 1);
   memcpy(&(value.nodename),
-         utsname_nodename.c_str(), utsname_nodename.length() + 1);
+         utsname_nodename_.c_str(), utsname_nodename_.length() + 1);
   memcpy(&(value.release),
-         utsname_release.c_str(), utsname_release.length() + 1);
+         utsname_release_.c_str(), utsname_release_.length() + 1);
   memcpy(&(value.version),
-         utsname_version.c_str(), utsname_version.length() + 1);
+         utsname_version_.c_str(), utsname_version_.length() + 1);
   memcpy(&(value.machine),
-         utsname_machine.c_str(), utsname_machine.length() + 1);
+         utsname_machine_.c_str(), utsname_machine_.length() + 1);
   WriteMem(buf_addr, &value, sizeof(value));
   ret = 0;
   SetSystemCallStatus((PARAMETER_TYPE) ret, ret < 0);
@@ -1415,34 +1415,34 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBase() const {
-  return mmap_base;
+  return mmap_base_;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBase(ADDRESS_TYPE base) {
-  mmap_base = base;
+  mmap_base_ = base;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetMmapBrkPoint() const {
-  return mmap_brk_point;
+  return mmap_brk_point_;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMmapBrkPoint(
     ADDRESS_TYPE brk_point) {
-  mmap_brk_point = brk_point;
+  mmap_brk_point_ = brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetBrkPoint() const {
-  return brk_point;
+  return brk_point_;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetBrkPoint(
     ADDRESS_TYPE brk_point) {
-  this->brk_point = brk_point;
+  brk_point_ = brk_point;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
