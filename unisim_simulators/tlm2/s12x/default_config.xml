@@ -532,6 +532,12 @@
 			<value>0xba</value>
 			<description></description>
 		</variable>
+		<variable name="eeprom-protection-byte-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0013fffd</value>
+			<description>EEPROM protection byte used to initialize EPROT register during reset phase.</description>
+		</variable>
 		<variable name="erase-fail-ratio">
 			<type>parameter</type>
 			<data_type>double precision floating-point</data_type>

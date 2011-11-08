@@ -47,6 +47,9 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, cmd_interruptOffset(0xBA)
 	, param_cmd_interruptOffset("command-interrupt", this, cmd_interruptOffset)
 
+	, eeprom_protection_byte_addr(0x13FFFD)
+	, param_eeprom_protection_byte_addr("eeprom-protection-byte-addr", this, eeprom_protection_byte_addr, "EEPROM protection byte used to initialize EPROT register during reset phase.")
+
 	, erase_fail_ratio(0.01)
 	, param_erase_fail_ratio("erase-fail-ratio", this, erase_fail_ratio, "Ration to emulate erase failing. ")
 
@@ -64,8 +67,9 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 
 	, min_eeclk_time(6667, SC_PS)
 
-	, is_write_aborted(false)
-	, write_aligned_word(false)
+	, sector_erase_abort_active(false)
+	, sector_erase_modify_active(false)
+	, sector_erase_abort_command_req(false)
 
 	, cmd_queue_back(0)
 
@@ -132,12 +136,15 @@ template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, 
 void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 {
 
+	// initialize EPROT register from EEPROM Protection byte
+	ReadMemory(eeprom_protection_byte_addr, &eprot_reg, 1);
+
 	sc_time delay;
 
 	while (true) {
 
 		// wait command launch by clearing ESTAT::CBEIF flag
-		while (((estat_reg & 0x80) != 0) && (!cmd_queue.empty())) {
+		while (((estat_reg & 0x80) != 0) && cmd_queue.empty()) {
 			wait(command_launch_event);
 		}
 
@@ -148,7 +155,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			 *  and the ACCERR flag is set.
 			 */
 			// set the ACCERR flag in the ESTAT register
-			estat_reg = estat_reg | 0x10;
+			setACCERR();
 
 			wait(command_launch_event);
 			continue;
@@ -159,6 +166,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		// set CCIF flag when all commands are completed
 		if (cmd_queue.empty()) {
 			estat_reg = estat_reg | 0x40;
+			assertInterrupt(cmd_interruptOffset);
 
 			/**
 			 * For all command write sequences except sector erase abort,
@@ -172,7 +180,6 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 				// set CBEIF flag when address, data, command buffers are empty
 				estat_reg = estat_reg | 0x80;
-
 				assertInterrupt(cmd_interruptOffset);
 			}
 		}
@@ -181,38 +188,38 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		switch (ecmd_reg & 0x7F) {
 			case 0x05: {
 				/* Erase Verify */
-				start_erase_verify();
+				erase_verify_cmd();
 			}
 			break;
 			case 0x20: {
 				/* Word Program */
-				word_program();
+				word_program_cmd();
 			}
 			break;
 			case 0x40: {
 				/* Sector Erase */
-				sector_erase();
+				sector_erase_cmd();
 			}
 			break;
 			case 0x41: {
 				/* Mass Erase */
-				mass_erase();
+				mass_erase_cmd();
 			}
 			break;
 			case 0x47: {
 				/* Sector Erase Abort */
-				sector_erase_abort();
+				sector_erase_abort_cmd();
 			}
 			break;
 			case 0x60: {
 				/* Sector Modify */
-				sector_modify();
+				sector_modify_cmd();
 			}
 			break;
 			default: {
 				/* unknown command */
 				// set the ACCERR flag in the ESTAT register
-				estat_reg = estat_reg | 0x10;
+				setACCERR();
 			}
 		}
 
@@ -314,22 +321,8 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 	if (cmd == tlm::TLM_READ_COMMAND) {
 		return inherited::transport_dbg(payload);
 	} else {
-		/**
-		 * EPROT::EPDIS = 0 protection enabled
-		 * EPROT::EPDIS = 1 protection disabled
-		 */
-		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		if (protection_enabled && ((address + data_length - 1) >= protected_area_start_address)) {
-			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
-				<< std::endl << EndDebugWarning;
-
-			// Set ESTAT::PVIOL flag
-			estat_reg = estat_reg | 0x20;
-		}
-
-		// push the addr & data
-		push_command( address, data_ptr, data_length);
+		write_to_eeprom( address, data_ptr, data_length);
 
 		payload.set_response_status(tlm::TLM_OK_RESPONSE);
 
@@ -350,22 +343,8 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 	if (cmd == tlm::TLM_READ_COMMAND) {
 		return inherited::nb_transport_fw(payload, phase, t);
 	} else {
-		/**
-		 * EPROT::EPDIS = 0 protection enabled
-		 * EPROT::EPDIS = 1 protection disabled
-		 */
-		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		if (protection_enabled && ((address + data_length - 1) >= protected_area_start_address)) {
-			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
-				<< std::endl << EndDebugWarning;
-
-			// Set ESTAT::PVIOL flag
-			estat_reg = estat_reg | 0x20;
-		}
-
-		// push the addr & data
-		push_command(address, data_ptr, data_length);
+		write_to_eeprom(address, data_ptr, data_length);
 
 		if (phase == BEGIN_REQ) {
 			phase = END_REQ; // update the phase
@@ -394,22 +373,8 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	if (cmd == tlm::TLM_READ_COMMAND) {
 		inherited::b_transport(payload, t);
 	} else {
-		/**
-		 * EPROT::EPDIS = 0 protection enabled
-		 * EPROT::EPDIS = 1 protection disabled
-		 */
-		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		if (protection_enabled && ((address + data_length - 1) >= protected_area_start_address)) {
-			inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
-				<< std::endl << EndDebugWarning;
-
-			// Set ESTAT::PVIOL flag
-			estat_reg = estat_reg | 0x20;
-		}
-
-		// push the addr & data
-		push_command(address, data_ptr, data_length);
+		write_to_eeprom(address, data_ptr, data_length);
 
 		payload.set_response_status( tlm::TLM_OK_RESPONSE );
 	}
@@ -477,7 +442,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	reserved2_reg = 0x00;
 	ecnfg_reg = 0x00;
 	eprot_reg = 0xFF;
-	estat_reg = 0x00;
+	estat_reg = 0xC0;
 	ecmd_reg = 0x00;
 	reserved3_reg = 0x00;
 	eaddr_reg = 0x00;
@@ -501,6 +466,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	if (eeclk_time < min_eeclk_time) {
 		inherited::logger << DebugWarning << inherited::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl << EndDebugWarning;
+		std::cerr << "Warning: " << inherited::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl;
 	}
 }
 
@@ -677,143 +643,176 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t offset, const void *buffer, unsigned int data_length)
 {
-	switch (offset) {
-		case ECLKDIV: {
-			uint8_t edivld_mask = 0x80;
-			uint8_t value = *((uint8_t *) buffer);
-			if ((eclkdiv_reg & edivld_mask) == 0) {
-				// if ECLKDIV register hasn't written yet then accept write and set EDIVLD bit
-				eclkdiv_reg = value | edivld_mask;
+	if ((offset != ECMD) && ((cmd_queue_back != NULL) && !cmd_queue_back->isCmdWrite())) {
+		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
+		std::cerr << "Warning: " << inherited::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl;
 
-				// compute EECLK
-				setEEPROMClock();
-			}
-		}
-		break;
-		case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
-		case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
-		case ECNFG: {
-			uint8_t value = *((uint8_t *) buffer) & 0xC0;
-			ecnfg_reg = value;
-		}
-		break;
-		case EPROT: {
-			/*
-			 inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try to write " << data_length << " bytes @ " << std::hex << address
-				<< std::endl << EndDebugWarning;
-			 */
-			uint8_t value = *((uint8_t *) buffer);
+		setACCERR();
+		abort_write_sequence();
 
-			// RNV[6:4] bits should remain in the erased state "1" for future enhancements.
-			value = value | 0x70;
+	}
+	else if ((offset != ESTAT) && ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite())) {
+		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ESTAT (to clear CBEIF) after writing to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
+		std::cerr << "Warning: " << inherited::name() << ":: Writing to any EEPROM register other than ESTAT (to clear CBEIF) after writing to the ECMD register is an illegal operation. " << std::endl;
 
-			if (((eprot_reg & 0x80) == 0) && ((value & 0x80) != 0)) {
-				inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
-				value = value & 0x7F;
-			}
+		setACCERR();
+		abort_write_sequence();
 
-			if (((eprot_reg & 0x08) == 0) && ((value & 0x08) != 0)) {
-				inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
-				value = value & 0xF7;
-			}
+	}
+	else {
 
-			// the EPS[2:0] bits can be written anytime until bit EPDIS is cleared
-			if ((eprot_reg & 0x04) == 0) {
-				inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl << EndDebugWarning;
-				value = (value & 0xF8) | (eprot_reg & 0x07);
-			}
+		switch (offset) {
+			case ECLKDIV: {
+				uint8_t edivld_mask = 0x80;
+				uint8_t value = *((uint8_t *) buffer);
+				if ((eclkdiv_reg & edivld_mask) == 0) {
+					// if ECLKDIV register hasn't written yet then accept write and set EDIVLD bit
+					eclkdiv_reg = value | edivld_mask;
 
-			eprot_reg = value;
-			protected_area_start_address = inherited::hi_addr - 64 * ((eprot_reg & 0x07) + 1) + 1;
-
-		}
-		break;
-		case ESTAT: {
-			uint8_t value = *((uint8_t *) buffer);
-
-			if ((value & 0x80) != 0) {
-				// clear CBEIF
-				// CCIF is cleared automatically when CBEIF is cleared
-				// BLANK is cleared automatically when CBEIF is cleared
-				value = value & 0x3B;
-
-				/**
-				 * The basic command write sequence is as follows:
-				 * 1. Write to one address in the EEPROM
-				 * 2. Write a valid command to the ECMD register
-				 * 3. Clear the CBEIF flag in the ESTAT register by writing a 1 to CBEIF to launch the command.
-				 */
-				command_launch_event.notify();
-
-			} else {
-				/**
-				 * Writing a 0 to CBEIF after writing an aligned word to the EEPROM address space
-				 * but before CBEIF is cleared will abort a command write sequence and cause the ACCERR flag to be set.
-				 */
-				if ((write_aligned_word) && ((estat_reg & 0x80) != 0)) {
-					abort_write();
-					value = value | 0x10;
+					// compute EECLK
+					setEEPROMClock();
 				}
 			}
-
-			// clear PVIOL
-			if ((value & 0x20) != 0) {
-				value = value & 0xDF;
+			break;
+			case RESERVED1: reserved1_reg = *((uint8_t *) buffer); break;
+			case RESERVED2: reserved2_reg = *((uint8_t *) buffer); break;
+			case ECNFG: {
+				uint8_t value = *((uint8_t *) buffer) & 0xC0;
+				ecnfg_reg = value;
 			}
+			break;
+			case EPROT: {
 
-			// clear ACCERR
-			if ((value & 0x10) != 0) {
-				value = value & 0xEF;
+				uint8_t value = *((uint8_t *) buffer);
+
+				// RNV[6:4] bits should remain in the erased state "1" for future enhancements.
+				value = value | 0x70;
+
+				if (((eprot_reg & 0x80) == 0) && ((value & 0x80) != 0)) {
+					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
+					std::cerr << "Warning: " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl;
+					value = value & 0x7F;
+				}
+
+				if (((eprot_reg & 0x08) == 0) && ((value & 0x08) != 0)) {
+					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
+					std::cerr << "Warning: " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl;
+					value = value & 0xF7;
+				}
+
+				// the EPS[2:0] bits can be written anytime until bit EPDIS is cleared
+				if ((eprot_reg & 0x04) == 0) {
+					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl << EndDebugWarning;
+					std::cerr << "Warning: " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl;
+					value = (value & 0xF8) | (eprot_reg & 0x07);
+				}
+
+				eprot_reg = value;
+				protected_area_start_address = inherited::hi_addr - 64 * ((eprot_reg & 0x07) + 1) + 1;
+
 			}
+			break;
+			case ESTAT: {
+				uint8_t value = *((uint8_t *) buffer);
 
-			// clear FAIL
-			if ((value & 0x02) != 0) {
-				value = value & 0xFD;
+				if ((value & 0x80) != 0) {
+					// clear CBEIF
+					// CCIF is cleared automatically when CBEIF is cleared
+					// BLANK is cleared automatically when CBEIF is cleared
+					value = value & 0x3B;
+
+					/**
+					 * The basic command write sequence is as follows:
+					 * 1. Write to one address in the EEPROM
+					 * 2. Write a valid command to the ECMD register
+					 * 3. Clear the CBEIF flag in the ESTAT register by writing a 1 to CBEIF to launch the command.
+					 */
+					command_launch_event.notify();
+
+				} else {
+					/**
+					 * Note: command write sequence aborted by writing 0x00 to ESTAT register.
+					 *
+					 * Writing a 0 to CBEIF after writing an aligned word to the EEPROM address space
+					 * but before CBEIF is cleared will abort a command write sequence and cause the ACCERR flag to be set.
+					 */
+					if ((cmd_queue_back != NULL) && ((estat_reg & 0x80) != 0)) {
+						inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl << EndDebugWarning;
+						std::cerr << "Warning: " << inherited::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl;
+						value = value | 0x10;
+					}
+					abort_write_sequence();
+				}
+
+				// clear PVIOL
+				if ((value & 0x20) != 0) {
+					value = value & 0xDF;
+				}
+
+				// clear ACCERR
+				if ((value & 0x10) != 0) {
+					value = value & 0xEF;
+				}
+
+				// clear FAIL
+				if ((value & 0x02) != 0) {
+					value = value & 0xFD;
+				}
+
+
+				estat_reg = value;
+
 			}
+			break;
+			case ECMD: {
+				uint8_t value = *((uint8_t *) buffer);
+				value = (value & 0x7F) | (ecmd_reg & 0x80);
 
+				uint8_t cmd = (value & 0x7F);
 
-			estat_reg = value;
+				if ( !((cmd == 0x05) && (cmd == 0x20) && (cmd == 0x40) && (cmd == 0x41) && (cmd == 0x47) && (cmd == 0x60) && (cmd == 0x20)) )
+				{
+					/* unknown command */
+					// set the ACCERR flag in the ESTAT register
+					inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing an invalid command to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
+					std::cerr << "Warning: " << inherited::name() << ":: Writing an invalid command to the ECMD register is an illegal operation. " << std::endl;
+					setACCERR();
+					abort_write_sequence();
+				} else {
+					inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl << EndDebugWarning;
+					std::cerr << "Warning: " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl;
+					setACCERR();
+					abort_write_sequence();
 
+					writeCmd(cmd);
+				}
+
+			}
+			break;
+			case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
+			case EADDRHI: {
+				if (data_length == 2) {
+					eaddr_reg = *((uint16_t *) buffer);
+				} else {
+					eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+				}
+
+			}
+			break;
+			case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
+			case EDATAHI: {
+				if (data_length == 2) {
+					edata_reg = *((uint16_t *) buffer);
+				} else {
+					edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+				}
+			}
+			break;
+			case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
+
+			default: return false;
 		}
-		break;
-		case ECMD: {
-			uint8_t value = *((uint8_t *) buffer);
-			value = (value & 0x7F) | (ecmd_reg & 0x80);
 
-			uint8_t cmd = (value & 0x7F);
-
-			if ( !((cmd == 0x05) && (cmd == 0x20) && (cmd == 0x40) && (cmd == 0x41) && (cmd == 0x47) && (cmd == 0x60) && (cmd == 0x20)) )
-			{
-				/* unknown command */
-				// set the ACCERR flag in the ESTAT register
-				estat_reg = estat_reg | 0x10;
-			}
-
-			ecmd_reg = value;
-		}
-		break;
-		case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
-		case EADDRHI: {
-			if (data_length == 2) {
-				eaddr_reg = *((uint16_t *) buffer);
-			} else {
-				eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
-			}
-
-		}
-		break;
-		case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
-		case EDATAHI: {
-			if (data_length == 2) {
-				edata_reg = *((uint16_t *) buffer);
-			} else {
-				edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
-			}
-		}
-		break;
-		case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
-
-		default: return false;
 	}
 
 	return true;

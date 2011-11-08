@@ -74,6 +74,8 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 #define DEFAULT_CMD_PIPELINE_SIZE 2
+#define SECTOR_SIZE 4
+#define WORD_SIZE 2
 
 template <unsigned int CMD_PIPELINE_SIZE = DEFAULT_CMD_PIPELINE_SIZE, unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class S12XEETX :
@@ -119,9 +121,33 @@ public:
 
 	void setEEPROMClock();
 
-	void abort_write() { is_write_aborted = true;};
+	void abort_write_sequence() {
 
-	void start_erase_verify() {
+		// remove the last command from the pipeline to abort command write sequence
+
+		queue<TCommand*> tmpQueue;
+		while (!cmd_queue.empty()) {
+			TCommand * el = cmd_queue.front();
+			cmd_queue.pop();
+			if (el != cmd_queue_back) {
+				tmpQueue.push(el);
+			} else {
+				if (!tmpQueue.empty()) {
+					cmd_queue_back = tmpQueue.back();
+				} else {
+					cmd_queue_back = NULL;
+				}
+			}
+		}
+
+		while (!tmpQueue.empty()) {
+			TCommand * el = tmpQueue.front();
+			tmpQueue.pop();
+			cmd_queue.push(el);
+		}
+	};
+
+	void erase_verify_cmd() {
 		/**
 		 * Verify all memory bytes in the EEPROM block are erased.
 		 * If the EEPROM block is erased,
@@ -135,89 +161,187 @@ public:
 			estat_reg = estat_reg | 0x04;
 		}
 	}
-	void word_program() {
+	void word_program_cmd() {
 		/**
 		 * Program a word (two bytes) in the EEPROM block
 		 */
 
-		// check ESTAT::PVIOL
-		if ((estat_reg & 0x20) != 0) return;
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		// TODO: check the command write sequence abort (write 0x00 to ESTAT register)
+		if (protection_enabled && ((eaddr_reg + WORD_SIZE - 1) >= protected_area_start_address)) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to word program at protected area @ 0x" << std::hex << eaddr_reg
+				<< std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Try to word program at protected area @ 0x" << std::hex << eaddr_reg	<< std::endl;
+
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
+			return;
+		}
+
+
+		/**
+		 * is aligned word ?
+		 * Writing a byte or misaligned word to a valid EEPROM address is illegal and ACCERR flag is set.
+		 */
+
 		WriteMemory(inherited::hi_addr + eaddr_reg, &edata_reg, 2);
 
 		wait(bus_cycle_time * (1 + 14));
 
 	}
-	void sector_erase() {
+	void sector_erase_cmd() {
 		/**
 		 * Erase all four memory bytes in a sector of the EEPROM block
 		 */
 
-		// check ESTAT::PVIOL
-		if ((estat_reg & 0x20) != 0) return;
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		// TODO: check the command write sequence abort (write 0x00 to ESTAT register)
+		if (protection_enabled && ((eaddr_reg + SECTOR_SIZE - 1) >= protected_area_start_address)) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to erase sector at protected area.@ 0x" << std::hex << eaddr_reg
+				<< std::endl << EndDebugWarning;
 
-		// TODO: check sector erase abort request
+			std::cerr << "Warning: " << inherited::name() << ":: Try to erase sector at protected area.@ 0x" << std::hex << eaddr_reg << endl;
+
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
+			return;
+		}
+
+		sector_erase_modify_active = true;
 
 		uint8_t data[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-		WriteMemory(inherited::hi_addr + (eaddr_reg & 0xFC), data, 4);
+		for (uint8_t i=0; i<4; i++) {
 
-		wait(bus_cycle_time * (2 + 14));
+			/**
+			 * If the sector erase abort command is launched resulting in the early termination of an active sector erase or scetor modify operation, the ACCERR flag will set once the operation completes as indicated by the CCIF flag being set.
+			 * Else if the sector erase or modify is completed before then ACCERR isn't set
+			 */
+
+			if (sector_erase_abort_command_req) {
+				// set the ACCERR flag
+				setACCERR();
+				break;
+			}
+
+			WriteMemory(inherited::hi_addr + (eaddr_reg & 0xFC) + i, &data[i], 1);
+
+			wait(bus_cycle_time);
+		}
+
+		if (sector_erase_abort_command_req) {
+			sector_erase_abort_command_req = false;
+		}
+
+		wait(bus_cycle_time * 14);
+
+		sector_erase_modify_active = false;
 
 	}
-	void mass_erase() {
+	void mass_erase_cmd() {
 		/**
 		 * Erase all memory bytes in the EEPROM block.
 		 * A mass erase of the full EEPROM block is only possible when EPOPEN and EPDIS bits in the EPROT register are set prior launching the command.
 		 */
 
-		// check ESTAT::PVIOL
-		if ((estat_reg & 0x20) != 0) return;
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		// TODO: check the command write sequence abort (write 0x00 to ESTAT register)
+		if (protection_enabled) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to mass erase while EEPROM protection enabled." << std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Try to mass erase while EEPROM protection enabled." << std::endl;
+
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
+			return;
+		}
 
 		wait(bus_cycle_time * (inherited::bytesize/2 + 14));
 
 	}
-	void sector_erase_abort() {
+	void sector_erase_abort_cmd() {
 		/**
 		 * Abort the sector erase operation.
 		 * The sector erase operation will terminate according to set procedure.
 		 * The EEPROM sector should not be considered erased if the ACCERR flag is set upon command completion.
 		 */
 
-		/**
-		 * TODO:
-		 * If the sector erase abort command is launched resulting in the early termination of an active sector erase or scetor modify operation, the ACCERR flag will set once the operation completes as indicated by the CCIF flag being set.
-		 * Else if the sector erase or modify is completed before then ACCERR isn't set
-		 */
+		sector_erase_abort_command_req = false;
+
+		sector_erase_abort_active = true;
+
+		wait(bus_cycle_time * (1 + 14));
+
+		sector_erase_abort_active = false;
 	}
-	void sector_modify() {
+	void sector_modify_cmd() {
 		/**
 		 * Erase all four memory bytes in a sector of the EEPROM block and reprogram the addressed word.
 		 */
 
-		// check ESTAT::PVIOL
-		if ((estat_reg & 0x20) != 0) return;
+		/**
+		 * EPROT::EPDIS = 0 protection enabled
+		 * EPROT::EPDIS = 1 protection disabled
+		 */
+		bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
-		// TODO: check the command write sequence abort (write 0x00 to ESTAT register)
+		if (protection_enabled && ((eaddr_reg + SECTOR_SIZE - 1) >= protected_area_start_address)) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to modify sector at protected area @ 0x" << std::hex << eaddr_reg
+				<< std::endl << EndDebugWarning;
 
-		// TODO: check sector erase abort request
+			std::cerr << "Warning: " << inherited::name() << ":: Try to modify sector at protected area @ 0x" << std::hex << eaddr_reg << endl;
+
+			// Set ESTAT::PVIOL flag
+			estat_reg = estat_reg | 0x20;
+			return;
+		}
+
+		sector_erase_modify_active = true;
 
 		// erase both words in a sector
 		uint8_t data[4] = {0xFF, 0xFF, 0xFF, 0xFF};
 
-		WriteMemory(inherited::hi_addr + (eaddr_reg & 0xFC), data, 4);
+		for (uint8_t i=0; i<4; i++) {
 
-		wait(bus_cycle_time * 2);
+			/**
+			 * If the sector erase abort command is launched resulting in the early termination of an active sector erase or scetor modify operation, the ACCERR flag will set once the operation completes as indicated by the CCIF flag being set.
+			 * Else if the sector erase or modify is completed before then ACCERR isn't set
+			 */
 
-		// program word at global_address while byte address bit 0 is ignored
-		WriteMemory(inherited::hi_addr + (eaddr_reg & 0xFE), &edata_reg, 2);
+			if (sector_erase_abort_command_req) {
+				// set the ACCERR flag
+				setACCERR();
+				break;
+			}
 
-		wait(bus_cycle_time * (1 + 14));
+			WriteMemory(inherited::hi_addr + (eaddr_reg & 0xFC) + i, &data[i], 1);
+
+			wait(bus_cycle_time);
+		}
+
+		if (sector_erase_abort_command_req) {
+			sector_erase_abort_command_req = false;
+		} else {
+			// program word at global_address while byte address bit 0 is ignored
+			WriteMemory(inherited::hi_addr + (eaddr_reg & 0xFE), &edata_reg, 2);
+		}
+
+		wait(bus_cycle_time * 14);
+
+		sector_erase_modify_active = false;
 
 	}
 
@@ -295,7 +419,41 @@ private:
 	queue<TCommand*> cmd_queue;
 	TCommand* cmd_queue_back;
 
-	void push_command(physical_address_t address, void* data_ptr, unsigned int data_length) {
+	void write_to_eeprom(physical_address_t address, void* data_ptr, unsigned int data_length) {
+
+		// Illegal operation: Writing to an EEPROM address before initializing the ECLKDIV register
+		if ((eclkdiv_reg & 0x80) == 0) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl;
+
+			setACCERR();
+			abort_write_sequence();
+			return;
+		}
+
+		// Illegal operation: Writing a byte or misaligned word to a valid EEPROM address
+		if ((data_length == 1) || ((address & 0x1) != 0)) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a byte or misaligned word to a valid EEPROM address is an illegal operation " << data_length << " bytes @ 0x" << std::hex << address
+				<< std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Writing a byte or misaligned word to a valid EEPROM address is an illegal operation " << data_length << " bytes @ 0x" << std::hex << address << endl;
+
+			setACCERR();
+			abort_write_sequence();
+			return;
+		}
+
+		// Illegal operation: Starting a command write sequence while a sector erase abort operation is active.
+		if (sector_erase_abort_active) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl;
+
+			setACCERR();
+			abort_write_sequence();
+			return;
+		}
 
 		if ((cmd_queue_back != NULL) && !cmd_queue_back->isCmdWrite()) {
 			cmd_queue_back->setAddr((uint16_t) (inherited::org - address) & 0x07FF);
@@ -305,7 +463,16 @@ private:
 				cmd_queue_back->setData((uint8_t) *((uint8_t*) data_ptr));
 			}
 		} else {
-			if (cmd_queue.size() < CMD_PIPELINE_SIZE) {
+			if ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite() && ((estat_reg & 0x80) != 0)) {
+				inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl << EndDebugWarning;
+
+				std::cerr << "Warning: " << inherited::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl;
+
+				setACCERR();
+				abort_write_sequence();
+				return;
+			}
+			else if (cmd_queue.size() < CMD_PIPELINE_SIZE) {
 				TCommand * command = new TCommand();
 				command->setAddr((uint16_t) (inherited::org - address) & 0x07FF);
 				if (data_length == 2) {
@@ -339,6 +506,7 @@ private:
 			eaddr_reg = cmd_queue_back->getAddr();
 			edata_reg = cmd_queue_back->getData();
 		}
+
 	}
 
 	void fetchCommand() {
@@ -350,19 +518,45 @@ private:
 			eaddr_reg = cmd->getAddr();
 			edata_reg = cmd->getData();
 
+			if (cmd_queue_back == cmd) {
+				cmd_queue_back = NULL;
+			}
 			delete cmd;
 		}
 	}
 
 	TCommand* writeCmd(uint8_t _cmd) {
 		if (cmd_queue.empty()) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl;
+
+			setACCERR();
+			abort_write_sequence();
+
+			return NULL;
+		}
+		else if ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite()) {
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl << EndDebugWarning;
+
+			std::cerr << "Warning: " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl;
+
+			setACCERR();
+			abort_write_sequence();
+
 			return NULL;
 		} else {
-			if (cmd_queue_back->isCmdWrite()) {
-				inherited::logger << DebugWarning << " : " << inherited::name() << ":: Command Write Sequence Corrupted! " << std::endl << EndDebugWarning;
-				std::cerr << "Warning::" << inherited::name() << ":: Command Write Sequence Corrupted! " << std::endl;
-			}
 			cmd_queue_back->setCmd(_cmd);
+
+			// is sector erase abort command ?
+			if ((_cmd == 0x47) && sector_erase_modify_active) {
+				/**
+				 * Set ESTAT::ACCERR because Launching the sector erase abort command while a sector erase or sector modify operation is active
+				 * results in the early termination of the sector erase or sector modify operation.
+				 */
+				setACCERR();
+				sector_erase_abort_command_req = true;
+			}
 		}
 
 		if (cmd_queue.size() == 1) {
@@ -379,6 +573,8 @@ private:
 		}
 		cmd_queue_back = NULL;
 	}
+
+	void setACCERR() { estat_reg = estat_reg | 0x10; }
 
 	void ComputeInternalTime();
 
@@ -399,8 +595,9 @@ private:
 
 	sc_event	command_launch_event;
 
-	bool is_write_aborted;
-	bool write_aligned_word;
+	bool sector_erase_abort_active;
+	bool sector_erase_modify_active;
+	bool sector_erase_abort_command_req;
 
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -409,6 +606,9 @@ private:
 
 	uint8_t cmd_interruptOffset;
 	Parameter<uint8_t> param_cmd_interruptOffset;
+
+	physical_address_t eeprom_protection_byte_addr;
+	Parameter<physical_address_t> param_eeprom_protection_byte_addr;
 
 	double erase_fail_ratio;
 	Parameter<double> param_erase_fail_ratio;
