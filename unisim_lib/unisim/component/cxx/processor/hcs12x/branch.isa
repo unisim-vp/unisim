@@ -447,7 +447,7 @@ call_16offset_idx_ind.execute = {
 	physical_address_t idxAddr = cpu->xb_getAddrRegValue(rr) + n16;
 
 	uint16_t subAddr = cpu->memRead16(idxAddr);
-	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
+//	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
 		 
 	addr = cpu->getRegSP() - 2;
 	cpu->setRegSP(addr);
@@ -459,7 +459,7 @@ call_16offset_idx_ind.execute = {
 	old_ppage = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE]);
 	cpu->memWrite8(addr, old_ppage);
 
-	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
+//	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
 	cpu->setRegPC(subAddr);
 
 }
@@ -492,7 +492,7 @@ call_accD_offset_idx_ind.execute = {
 	physical_address_t idxAddr = cpu->getRegD() + cpu->xb_getAddrRegValue(rr);
 
 	uint16_t subAddr = cpu->memRead16(idxAddr);
-	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
+//	uint8_t   ppageVal = cpu->memRead16(idxAddr+2);
 		 
 	addr = cpu->getRegSP() - 2;
 	cpu->setRegSP(addr);
@@ -505,7 +505,7 @@ call_accD_offset_idx_ind.execute = {
 	old_ppage = cpu->memRead8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE]);
 	cpu->memWrite8(addr, old_ppage);
 
-	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
+//	cpu->memWrite8(MMC::MMC_REGS_ADDRESSES[MMC::PPAGE], ppageVal);
 	cpu->setRegPC(subAddr);
 }
 
