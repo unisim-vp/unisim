@@ -144,7 +144,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	while (true) {
 
 		// wait command launch by clearing ESTAT::CBEIF flag
-		while (((estat_reg & 0x80) != 0) && cmd_queue.empty()) {
+		while (((estat_reg & 0x80) != 0) || cmd_queue.empty()) {
 			wait(command_launch_event);
 		}
 
