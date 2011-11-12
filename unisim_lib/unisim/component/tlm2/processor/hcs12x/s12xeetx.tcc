@@ -144,21 +144,8 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	while (true) {
 
 		// wait command launch by clearing ESTAT::CBEIF flag
-		while (((estat_reg & 0x80) != 0) || cmd_queue.empty()) {
+		while (((estat_reg & 0x80) != 0) /*|| cmd_queue.empty()*/) {
 			wait(command_launch_event);
-		}
-
-		if ((eclkdiv_reg & 0x80) == 0) {
-			/**
-			 *  If the ECLKDIV register has not been written to,
-			 *  the EEPROM command loaded during a command write sequence will not executed
-			 *  and the ACCERR flag is set.
-			 */
-			// set the ACCERR flag in the ESTAT register
-			setACCERR();
-
-			wait(command_launch_event);
-			continue;
 		}
 
 		fetchCommand();
@@ -727,7 +714,19 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 					 * 2. Write a valid command to the ECMD register
 					 * 3. Clear the CBEIF flag in the ESTAT register by writing a 1 to CBEIF to launch the command.
 					 */
-					command_launch_event.notify();
+
+					if ((eclkdiv_reg & 0x80) == 0) {
+						/**
+						 *  If the ECLKDIV register has not been written to,
+						 *  the EEPROM command loaded during a command write sequence will not executed
+						 *  and the ACCERR flag is set.
+						 */
+						// set the ACCERR flag in the ESTAT register
+						setACCERR();
+
+					} else {
+						command_launch_event.notify();
+					}
 
 				} else {
 					/**
@@ -767,6 +766,8 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			case ECMD: {
 				uint8_t value = *((uint8_t *) buffer);
 				value = (value & 0x7F) | (ecmd_reg & 0x80);
+
+				cerr << "write command " << (unsigned int) value << " at " << sc_time_stamp() << endl;
 
 				uint8_t cmd = (value & 0x7F);
 
