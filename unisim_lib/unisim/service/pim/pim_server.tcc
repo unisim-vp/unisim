@@ -1535,7 +1535,8 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			unsigned int i;
 			if(stmt_lookup_import)
 			{
-				stmt = stmt_lookup_import->FindStatement(addr);
+//				stmt = stmt_lookup_import->FindStatement(addr);
+				stmt = stmt_lookup_import->FindStatement(Object::GetSimulator()->GetMCUAddress(addr));
 			}
 
 			if(stmt)
