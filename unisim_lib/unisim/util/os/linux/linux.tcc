@@ -42,6 +42,8 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/loader/elf_loader/elf32_loader.hh"
 
+#include "unisim/util/os/linux/arm.hh"
+#include "unisim/util/os/linux/ppc.hh"
 #include "unisim/util/os/linux/environment.hh"
 #include "unisim/util/os/linux/aux_table.hh"
 
@@ -51,26 +53,40 @@ namespace os {
 namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const Linux::supported_system_types_ = {"arm", "arm-eabi", "powerpc"};
+const int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::kNumSupportedSystemTypes = 3;
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+const string Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
+supported_system_types_ = {"arm", "arm-eabi", "powerpc"};
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger)
-    : system_type_("arm-eabi")
+    : is_load_
+    , system_type_("arm-eabi")
     , endianess_(unisim::util::endian::E_LITTLE_ENDIAN)
     , load_files_()
-    , search_paths_()
-    , argc_(0)
-    , argv_()
-    , envc_(0)
-    , envp_()
-    , apply_host_environnement_(false)
-    , blob_(NULL)
+    , entry_point_(0)
+    , load_addr_set_(false)
+    , load_addr_(0)
+    , start_code_(0)
+    , end_code_(0)
+    , start_data_(0)
+    , end_data_(0)
+    , elf_stack_(0)
+    , elf_brk_(0)
+    , num_segments_(0)
     , stack_base_(0)
     , stack_size_(0)
     , max_environ_(0)
     , memory_page_size_(0)
     , mmap_base_(0)
     , brk_point_(0)
+    , argc_(0)
+    , argv_()
+    , envc_(0)
+    , envp_()
+    , apply_host_environnement_(false)
+    , blob_(NULL)
     , register_interface_(NULL)
     , memory_interface_(NULL)
     // , registers_(NULL) // TODO Remove

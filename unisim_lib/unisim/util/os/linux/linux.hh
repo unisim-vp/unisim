@@ -146,8 +146,8 @@ class Linux {
 
   // basic system information
   std::string system_type_;
-  static const int kNumSupportedSystemTypes = 3;
-  static const std::string supported_system_types_[kNumSupportedSystemTypes];
+  static const int kNumSupportedSystemTypes;
+  static const std::vector<std::string> supported_system_types_; // [kNumSupportedSystemTypes];
   unisim::util::endian::endian_type endianess_;
 
   // files to load
@@ -158,7 +158,7 @@ class Linux {
 
   // program addresses (computed from the given files)
   ADDRESS_TYPE entry_point_;
-  bool load_addr_set = false;
+  bool load_addr_set_;
   ADDRESS_TYPE load_addr_;
   ADDRESS_TYPE start_code_;
   ADDRESS_TYPE end_code_;
@@ -166,7 +166,15 @@ class Linux {
   ADDRESS_TYPE end_data_;
   ADDRESS_TYPE elf_stack_;
   ADDRESS_TYPE elf_brk_;
-  ADDRESS_TYPE num_segments_;
+  int num_segments_;
+  ADDRESS_TYPE stack_base_;
+  uint64_t stack_size_;
+  ADDRESS_TYPE max_environ_;
+  uint64_t memory_page_size_;
+  ADDRESS_TYPE mmap_base_;
+  ADDRESS_TYPE mmap_brk_point_;
+  ADDRESS_TYPE brk_point_;
+
 
   // argc, argv and envp variables
   unsigned int argc_;
@@ -187,15 +195,6 @@ class Linux {
   // the structure to keep all the loaded information
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;
 
-  PARAMETER_TYPE entry_point_;
-  PARAMETER_TYPE stack_base_;
-  PARAMETER_TYPE stack_size_;
-  PARAMETER_TYPE max_environ_;
-  PARAMETER_TYPE memory_page_size_;
-  PARAMETER_TYPE mmap_base_;
-  PARAMETER_TYPE mmap_brk_point_;
-  PARAMETER_TYPE brk_point_;
-
   // TODO Remove registers
   // this member variable is used during the Load() operation
   //   to retrieve the registers depending on the architecture
@@ -209,20 +208,8 @@ class Linux {
   // pointer to the interface for memory to use
   LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface_;
 
-  // registers for the arm system
-  const int kARMNumRegs = 16;
-  const int kARMNumSysRegs = 0;
-  // unisim::util::debug::Register *arm_regs_[kARMNumRegs];
-
-  // registers for the ppc system
-  const int kPPCNumRegs = 31;
-  const int kPPCNumSysRegs = 2;
-  // unisim::util::debug::Register *ppc_cr_;
-  // unisim::util::debug::Register *ppc_cia_;
-  // unisim::util::debug::Register *ppc_regs_[kPPCNumRegs];
-
   // syscall type shortener
-  typedef LinuxOS<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
+  typedef Linux<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
   typedef void (thistype::*syscall_t)();
 
   // system calls indexes
@@ -232,7 +219,7 @@ class Linux {
 
   // current syscall information
   int current_syscall_id_;
-  string current_syscall_name_;
+  std::string current_syscall_name_;
 
   // activate the verbose
   bool verbose_;
@@ -257,12 +244,12 @@ class Linux {
   // From the given blob computes the initial addresses and values that will be
   // used to initialize internal structures and the target processor
   bool ComputeStructuralAddresses(
-      unisim::util::debug::blob<ADDRESS_TYPE> const &blob);
+      unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &blob);
 
   // Merge the contents of the given file blob into the input/output blob
   bool FillBlobWithFileBlob(
-      unisim::util::debug::blob<ADDRESS_TYPE> const &file_blob,
-      unisim::util::debug::blob<ADDRESS_TYPE> *blob);
+      unisim::util::debug::blob::Blob<ADDRESS_TYPE> const &file_blob,
+      unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
 
   // Create the stack memory image and insert it into the given blob
   bool CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE> * blob) const;
