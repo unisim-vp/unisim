@@ -52,7 +52,7 @@
       <dep>stl_iosfwd</dep>
       <dep>unisim::util::hash_table</dep>
       <dep>unisim::service::interfaces::memory_access_reporting</dep>
-      <dep>unisim::util::debug::register</dep>
+      <!-- <dep>unisim::util::debug::register</dep> -->
     </depends>
   </unit>
 </package>
