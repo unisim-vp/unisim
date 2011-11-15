@@ -135,7 +135,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
   if (blob == NULL) {
     std::cerr << "ERROR(unisim::util::os::linux): Could not create blob from"
         << " requested file (" << filename << ")." << std::endl;
-    PrintLoaderLogger(std::cerr);
+    PrintLoaderLogger();
     delete loader;
     return false;
   }
