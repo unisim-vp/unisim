@@ -37,7 +37,8 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <iostream>
+// #include <iostream>
+#include <sstream>
 
 #include "unisim/util/endian/endian.hh"
 
@@ -74,7 +75,7 @@ class LinuxRegisterInterface {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux {
  public:
-  Linux(bool verbose, std::ostream &logger);
+  Linux(bool verbose, std::ostringstream *logger);
   ~Linux();
 
   bool AddLoadFile(char const * const file);
@@ -235,8 +236,10 @@ class Linux {
 
   // activate the verbose
   bool verbose_;
-  // logger for the elf loader
-  std::ostream &logger_;
+  // logger stream
+  std::ostringstream &logger_;
+  // loader logger stream
+  std::ostringstream &loader_logger_;
 
   // Maps the registers depending on the system
   // Returns true on success
@@ -302,20 +305,20 @@ class Linux {
   bool ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size);
   bool WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size);
 
-  // Cleans the contents of the loader_logger_ and clean error flags
+  // Cleans the contents of the loader logger_ and clean error flags
   void ResetLoaderLogger() {
     std::string clean_string();
     loader_logger_.str(clean_string);
     loader_logger_.clear();
   }
 
-  // Prints to the output console the contents of loader_logger_
-  void PrintLoaderLogger(std::ostream &output) {
+  // Prints to the output console the contents of loader logger_
+  void PrintLoaderLogger() {
     if (loader_logger_.str().size() != 0) {
-      output << "Message from the elf loader:" << std::endl;
-      output << "BEGIN ======================================" << std::endl;
-      output << loader_logger_.str();
-      output << "END ========================================" << std::endl;
+      logger_ << "Message from the elf loader:" << std::endl;
+      logger_ << "BEGIN ======================================" << std::endl;
+      logger_ << loader_logger_.str();
+      logger_ << "END ========================================" << std::endl;
       ResetLoaderLogger();
     }
   }
