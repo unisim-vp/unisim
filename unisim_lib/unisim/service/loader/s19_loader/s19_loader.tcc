@@ -330,7 +330,7 @@ bool  S19_Loader<MEMORY_ADDR>::ProcessRecord(int linenum, char srec[S_RECORD_SIZ
 }
 
 template <class MEMORY_ADDR>
-bool S19_Loader<MEMORY_ADDR>::memWrite(physical_address_t addr, const void *buffer, uint32_t size) {
+bool S19_Loader<MEMORY_ADDR>::memWrite(uint32_t addr, const void *buffer, uint32_t size) {
 
 	bool success = false;
 	

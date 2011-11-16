@@ -844,7 +844,7 @@ inline void EvenParity(uint8_t v, uint8_t& parity_out)
 	{
 		par = par ^ v;
 	}
-	while(v >> 1,--n);
+	while(v >>= 1,--n);
 	parity_out = par & 1;
 #endif
 }
@@ -860,7 +860,7 @@ inline void EvenParity(uint16_t v, uint8_t& parity_out)
 	{
 		par = par ^ v;
 	}
-	while(v >> 1,--n);
+	while(v >>= 1,--n);
 	parity_out = par & 1;
 #endif
 }
@@ -876,7 +876,7 @@ inline void EvenParity(uint32_t v, uint8_t& parity_out)
 	{
 		par = par ^ v;
 	}
-	while(v >> 1,--n);
+	while(v >>= 1,--n);
 	parity_out = par & 1;
 #endif
 }
@@ -892,7 +892,7 @@ inline void OddParity(uint8_t v, uint8_t& parity_out)
 	{
 		par = par ^ v;
 	}
-	while(v >> 1,--n);
+	while(v >>= 1,--n);
 	parity_out = par & 1;
 #endif
 }
@@ -908,7 +908,7 @@ inline void OddParity(uint16_t v, uint8_t& parity_out)
 	{
 		par = par ^ v;
 	}
-	while(v >> 1,--n);
+	while(v >>= 1,--n);
 	parity_out = par & 1;
 #endif
 }
@@ -924,7 +924,7 @@ inline void OddParity(uint32_t v, uint8_t& parity_out)
 	{
 		par = par ^ v;
 	}
-	while(v >> 1,--n);
+	while(v >>= 1,--n);
 	parity_out = par & 1;
 #endif
 }

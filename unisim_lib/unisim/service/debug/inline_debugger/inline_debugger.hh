@@ -49,11 +49,18 @@
 #include <unisim/util/debug/breakpoint_registry.hh>
 #include <unisim/util/debug/watchpoint_registry.hh>
 #include <unisim/util/debug/profile.hh>
+#include <unisim/util/loader/elf_loader/elf32_loader.hh>
+#include <unisim/util/loader/elf_loader/elf64_loader.hh>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <inttypes.h>
 #include <string>
+#include <vector>
+#include <queue>
+#include <list>
+#include <stack>
 
 #ifdef WIN32
 #include <windows.h>
@@ -81,6 +88,7 @@ using unisim::util::debug::Breakpoint;
 using unisim::util::debug::WatchpointRegistry;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
+using unisim::util::debug::Statement;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
@@ -166,12 +174,17 @@ public:
 	virtual bool EndSetup();
 	virtual void OnDisconnect();
 private:
+	unisim::kernel::logger::Logger logger;
 	unsigned int memory_atom_size;
 	unsigned int num_loaders;
 	std::string search_path;
+	std::string init_macro;
+	std::string output;
 	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<unsigned int> param_num_loaders;
 	Parameter<std::string> param_search_path;
+	Parameter<std::string> param_init_macro;
+	Parameter<std::string> param_output;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
@@ -179,20 +192,28 @@ private:
 	unisim::util::debug::Profile<ADDRESS> data_read_profile;
 	unisim::util::debug::Profile<ADDRESS> data_write_profile;
 	InlineDebuggerRunningMode running_mode;
+	std::vector<unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *> elf32_loaders;
+	std::vector<unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *> elf64_loaders;
 
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
+	ADDRESS cont_until_addr;
 
+	std::list<std::string> exec_queue;
 	string prompt;
 	char *hex_addr_fmt;
 	char *int_addr_fmt;
-	char last_line[256];
-	char line[256];
+	std::string last_line;
+	std::string line;
+	std::ostream *output_stream;
+	std::ostream *std_output_stream;
+	std::ostream *std_error_stream;
 
+	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
-	bool GetLine(char *line, int size);
-	bool IsBlankLine(const char *line);
+	bool GetLine(const char *prompt, std::string& line, bool& interactive);
+	bool IsBlankLine(const std::string& line);
 	bool IsQuitCommand(const char *cmd);
 	bool IsStepCommand(const char *cmd);
 	bool IsNextCommand(const char *cmd);
@@ -203,16 +224,21 @@ private:
 	bool IsDeleteCommand(const char *cmd);
 	bool IsDeleteWatchCommand(const char *cmd);
 	bool IsDumpCommand(const char *cmd);
+	bool IsEditCommand(const char *cmd);
 	bool IsHelpCommand(const char *cmd);
 	bool IsResetCommand(const char *cmd);
 	bool IsMonitorCommand(const char *cmd, const char *format = 0);
 	bool IsRegisterCommand(const char *cmd, const char *format = 0);
 	bool IsStatisticCommand(const char *cmd, const char *format = 0);
 	bool IsParameterCommand(const char *cmd, const char *format = 0);
+	bool IsSymbolCommand(const char *cmd);
 	bool IsMonitorSetCommand(const char *cmd);
 	bool IsProfileCommand(const char *cmd);
 	bool IsLoadCommand(const char *cmd);
 	bool IsBackTraceCommand(const char *cmd);
+	bool IsLoadSymbolTableCommand(const char *cmd);
+	bool IsListSymbolsCommand(const char *cmd);
+	bool IsMacroCommand(const char *cmd);
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -226,24 +252,26 @@ private:
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
-	void DumpVariables();
-	void DumpRegisters();
-	void DumpStatistics();
-	void DumpParameters();
+	bool EditMemory(ADDRESS addr);
+	void DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name = 0);
+	void DumpSymbols(const char *name = 0);
 	void MonitorGetFormat(const char *cmd, char &format);
-	bool DumpVariable(const char *name);
+	void DumpVariables(const char *cmd, const char *name = 0, typename unisim::kernel::service::VariableBase::Type type = unisim::kernel::service::VariableBase::VAR_VOID);
 	void DumpVariable(const char *cmd, const unisim::kernel::service::VariableBase *variable);
-	void DumpVariable(const char *cmd, const char *name);
-	void DumpRegister(const char *cmd, const char *name);
-	void DumpStatistic(const char *cmd, const char *name);
-	void DumpParameter(const char *cmd, const char *name);
 	void SetVariable(const char *name, const char *value);
 	void DumpProgramProfile();
 	void DumpDataProfile(bool write);
 	void DumpAvailableLoaders();
 	void Load(const char *loader_name);
+	std::string SearchFile(const char *filename);
+	void LoadSymbolTable(const char *filename);
+	void LoadMacro(const char *filename);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace(ADDRESS cia);
+	const Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr);
+	const Symbol<ADDRESS> *FindSymbolByName(const char *s);
+	const Statement<ADDRESS> *FindStatement(ADDRESS addr);
+	const Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno);
 };
 
 } // end of namespace inline_debugger

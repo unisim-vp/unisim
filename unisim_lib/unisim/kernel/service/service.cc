@@ -142,6 +142,7 @@ static Translation conversion_table[] = {
 	{"<", "$<$"},
 	{">", "$>$"},
 	{"%", "\\%"},
+	{"$", "\\$"},
 	{"//(1)", "\\ding{202}"},
 	{"//(2)", "\\ding{203}"},
 	{"//(3)", "\\ding{204}"},
@@ -624,7 +625,10 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	{
 		case FMT_DEFAULT:
 		case FMT_HEX:
-			sstr << "0x" << hex << (unsigned long long) *storage;
+			sstr << "0x" << hex;
+			sstr.fill('0');
+			sstr.width(2 * sizeof(TYPE));
+			sstr << (unsigned long long) *storage;
 			break;
 		case FMT_DEC:
 			sstr << dec;
@@ -1398,7 +1402,9 @@ template <> VariableBase& Variable<string>::operator = (double value)
 template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
+	{
 		*storage = value;
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -2287,6 +2293,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetVisible(false);
 	param_cmd_args->SetMutable(false);
 	param_cmd_args->SetSerializable(false);
+	
+	// Setup logger
+	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 }
 
 Simulator::~Simulator()
@@ -2418,7 +2427,11 @@ void Simulator::Initialize(VariableBase *variable)
 	
 	if(set_var_iter != set_vars.end())
 	{
-		*variable = (*set_var_iter).second.c_str();
+		const char *value = (*set_var_iter).second.c_str();
+#ifdef DEBUG_VARIABLES
+		std::cerr << variable->GetName() << " <- \"" << value << "\"" << std::endl;
+#endif
+		*variable = value;
 		set_vars.erase(set_var_iter);
 	}
 }
@@ -2874,9 +2887,6 @@ Simulator::SetupStatus Simulator::Setup()
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
 	SetupStatus status = ST_OK_TO_START;
-	
-	// Setup logger
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 	
 	// Call all methods "BeginSetup()"
 	map<const char *, Object *, ltstr>::iterator object_iter;
@@ -3355,7 +3365,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	os << "This documentation has been automatically generated from the simulator \\texttt{" << string_to_latex(program_name.c_str()) << "} version " << string_to_latex(version.c_str()) << " on " << string_to_latex(__DATE__) << "." << std::endl;
 
-	os << "\\section{Introduction}" << endl;
+	os << "\\subsection{Introduction}" << endl;
 	os << string_to_latex(description.c_str()) << ".\\\\" << endl;
 	os << "Section \\ref{" << program_name << "_licensing} gives licensing informations about the simulator." << endl;
 	os << "Section \\ref{" << program_name << "_simulated_configuration} shows the set of modules and services that compose the simulator." << endl;
@@ -3364,14 +3374,14 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "Section \\ref{" << program_name << "_statistics} gives the simulator statistic counters." << endl;
 	os << "Section \\ref{" << program_name << "_formulas} gives the simulator statistic formulas." << endl;
 
-	os << "\\section{Licensing}" << endl;
+	os << "\\subsection{Licensing}" << endl;
 	os << "\\label{" << program_name << "_licensing}" << endl;
 	os << string_to_latex(program_name.c_str()) << " " << string_to_latex(version.c_str()) << "\\\\" << endl;
 	os << string_to_latex(copyright.c_str()) << "\\\\" << endl;
 	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << endl;
 	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << endl;
 	
-	os << "\\section{Simulated configuration}" << endl;
+	os << "\\subsection{Simulated configuration}" << endl;
 	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
 	
 	if(!schematic.empty())
@@ -3398,7 +3408,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	}
 	os << "\\end{itemize}" << endl;
 
-	os << "\\section{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
+	os << "\\subsection{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
 	os << "\\label{" << program_name << "_using}" << endl;
 	os << "The " << string_to_latex(program_name.c_str()) << " simulator has the following command line options:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3428,19 +3438,19 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	// 	std::stringstream sstr_version;
 // 	Version(sstr_version);
-// 	os << "\\section{Version}" << std::endl;
+// 	os << "\\subsection{Version}" << std::endl;
 // 	os << string_to_latex(sstr_version.str().c_str()) << std::endl;
 // 	
 // 	std::stringstream sstr_help;
 // 	Help(sstr_help);
-// 	os << "\\section{Usage}" << std::endl;
+// 	os << "\\subsection{Usage}" << std::endl;
 // 	os << string_to_latex(sstr_help.str().c_str(), 80, "texttt") << std::endl;
 
 	std::map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
 	bool header_printed = false;
 	
 	//----------------------- Configuration -----------------------
-	os << "\\section{Configuration}" << std::endl;
+	os << "\\subsection{Configuration}" << std::endl;
 	os << "\\label{" << program_name << "_configuration}" << endl;
 	os << "Simulator configuration (see below) can be modified using command line Options \\texttt{--set $<$param=value$>$} or \\texttt{--config $<$config file$>$}.\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3477,7 +3487,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\end{supertabular}" << std::endl;
 
 	//----------------------- Statistics -----------------------
-	os << "\\section{Statistics}" << std::endl;
+	os << "\\subsection{Statistics}" << std::endl;
 	os << "\\label{" << program_name << "_statistics}" << endl;
 	os << "Simulation statistic counters are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3515,7 +3525,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\end{supertabular}" << std::endl;
 
 	//----------------------- Formulas -----------------------
-	os << "\\section{Formulas}" << std::endl;
+	os << "\\subsection{Formulas}" << std::endl;
 	os << "\\label{" << program_name << "_formulas}" << endl;
 	os << "Simulation statistic formulas are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;

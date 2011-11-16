@@ -38,4 +38,4 @@
 #include "unisim/component/tlm2/interrupt/xilinx/xps_intc/xps_intc.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<INTC_CONFIG>;
+template class unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<SimConfig::INTC_CONFIG>;

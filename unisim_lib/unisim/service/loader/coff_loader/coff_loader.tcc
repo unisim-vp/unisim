@@ -400,6 +400,31 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 		);
 		
 		blob->AddSection(blob_section);
+		
+		if((section_type == Section<MEMORY_ADDR>::ST_LOADABLE_RAWDATA) ||
+		   (section_type == Section<MEMORY_ADDR>::ST_SPECIFIC_CONTENT))
+		{
+			// TODO: ST_SPECIFIC_CONTENT desserve more attention because it is not raw data
+			// For that specific content, a fake memory should be used to catch memory write access of loader, and build one or more loadable segments
+			void *segment_content = calloc(section_size, memory_atom_size);
+			memcpy(segment_content, section_content, section_size * memory_atom_size);
+			
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Type blob_segment_type = unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE;
+				
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR>::Attribute blob_segment_attr = unisim::util::debug::blob::Segment<MEMORY_ADDR>::SA_RWX; // FIXME
+
+			typename unisim::util::debug::blob::Segment<MEMORY_ADDR> *blob_segment = new unisim::util::debug::blob::Segment<MEMORY_ADDR>(
+				blob_segment_type,
+				blob_segment_attr,
+				0,
+				section_addr * memory_atom_size,
+				section_size * memory_atom_size,
+				section_size * memory_atom_size,
+				segment_content
+			);
+			
+			blob->AddSegment(blob_segment);
+		}
 	}
 	
 	long symtab_file_ptr = file->GetSymbolTableFilePtr();
@@ -1169,8 +1194,9 @@ bool CoffLoader<MEMORY_ADDR>::ParseSymbolTable(syment *symtab, unsigned long nsy
 }
 
 template <class MEMORY_ADDR>
-const list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *CoffLoader<MEMORY_ADDR>::GetSymbols() const {
-	return symbol_table.GetSymbols();
+void CoffLoader<MEMORY_ADDR>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const
+{
+	symbol_table.GetSymbols(lst, type);
 }
 
 template <class MEMORY_ADDR>

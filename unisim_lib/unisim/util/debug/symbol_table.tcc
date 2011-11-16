@@ -1,4 +1,4 @@
-/*
+ /*
  *  Copyright (c) 2007,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
@@ -76,9 +76,14 @@ void SymbolTable<T>::Reset()
 }
 
 template <class T>
-const list<unisim::util::debug::Symbol<T> *> *SymbolTable<T>::GetSymbols() const
+void SymbolTable<T>::GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const
 {
-	return symbol_registries;
+	typename list<Symbol<T> *>::const_iterator symbol_iter;
+		
+	for(symbol_iter = symbol_registries[type].begin(); symbol_iter != symbol_registries[type].end(); symbol_iter++)
+	{
+		lst.push_back(*symbol_iter);
+	}
 }
 
 template <class T>
@@ -155,7 +160,6 @@ const typename unisim::util::debug::Symbol<T> *SymbolTable<T>::FindSymbolByAddr(
 template <class T>
 void SymbolTable<T>::AddSymbol(const char *name, T addr, T size, typename unisim::util::debug::Symbol<T>::Type type, T memory_atom_size)
 {
-
 	Symbol<T> *symbol = new Symbol<T>(name, addr, size, type, memory_atom_size);
 	symbol_registries[type].push_back(symbol);
 }

@@ -47,12 +47,12 @@ template <class T>
 class SymbolTableLookup : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual const typename std::list<unisim::util::debug::Symbol<T> *> *GetSymbols() = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) = 0;
-	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) = 0;
+	virtual void GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const = 0;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const = 0;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
+	virtual const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr, typename unisim::util::debug::Symbol<T>::Type type) const = 0;
 };
 
 } // end of namespace interfaces

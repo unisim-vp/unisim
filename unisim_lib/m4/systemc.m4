@@ -28,6 +28,9 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		*linux*)
 			SYSTEMC_TARGET_ARCH="linux"
 			;;
+		*powerpc*linux)
+			SYSTEMC_TARGET_ARCH="linux-powerpc"
+			;;
 		*cygwin*)
 			SYSTEMC_TARGET_ARCH="cygwin"
 			;;

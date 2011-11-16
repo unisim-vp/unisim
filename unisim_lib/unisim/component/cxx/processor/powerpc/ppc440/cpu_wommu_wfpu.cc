@@ -43,6 +43,10 @@
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_mmu.tcc>
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu_dcr.tcc>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

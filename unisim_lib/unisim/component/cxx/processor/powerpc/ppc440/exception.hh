@@ -40,6 +40,10 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

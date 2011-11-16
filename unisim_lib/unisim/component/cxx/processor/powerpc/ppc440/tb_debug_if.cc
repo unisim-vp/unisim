@@ -33,6 +33,11 @@
  */
  
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu.hh>
+#include <stdlib.h>
+
+#ifdef powerpc
+#undef powerpc
+#endif
 
 namespace unisim {
 namespace component {
@@ -72,6 +77,115 @@ void TimeBaseRegisterInterface::SetValue(const void *buffer)
 int TimeBaseRegisterInterface::GetSize() const
 {
 	return 4;
+}
+
+TimeBaseRegisterView::TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint64_t& _storage, TimeBaseRegisterView::Type _type, const char *description)
+	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+	, storage(_storage)
+	, type(_type)
+{
+}
+
+TimeBaseRegisterView::~TimeBaseRegisterView()
+{
+}
+
+const char *TimeBaseRegisterView::GetDataTypeName() const
+{
+	return "unsigned 64-bit integer";
+}
+
+TimeBaseRegisterView::operator bool () const
+{
+	return (bool) (type == TB_LOW) ? (uint32_t) storage : (uint32_t)(storage >> 32);
+}
+
+TimeBaseRegisterView::operator long long () const
+{
+	return (long long) (type == TB_LOW) ? (uint32_t) storage : (uint32_t)(storage >> 32);
+}
+
+TimeBaseRegisterView::operator unsigned long long () const
+{
+	return (unsigned long long) (type == TB_LOW) ? (uint32_t) storage : (uint32_t)(storage >> 32);
+}
+
+TimeBaseRegisterView::operator double () const
+{
+	return (double) (type == TB_LOW) ? (uint32_t) storage : (uint32_t)(storage >> 32);
+}
+
+TimeBaseRegisterView::operator std::string () const
+{
+	uint32_t value = (type == TB_LOW) ? (uint32_t) storage : (uint32_t)(storage >> 32);
+	std::stringstream sstr;
+	switch(GetFormat())
+	{
+		case FMT_DEFAULT:
+		case FMT_HEX:
+			sstr << "0x" << std::hex << value;
+			break;
+		case FMT_DEC:
+			sstr << std::dec << value;
+			break;
+	}
+	return sstr.str();
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xffffffff00000000ULL) | (uint64_t) value
+								: (storage & 0x00000000ffffffffULL) | ((uint64_t) value << 32);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xffffffff00000000ULL) | (uint64_t) value
+								: (storage & 0x00000000ffffffffULL) | ((uint64_t) value << 32);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xffffffff00000000ULL) | (uint64_t) value
+								: (storage & 0x00000000ffffffffULL) | ((uint64_t) value << 32);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double value)
+{
+	if(IsMutable())
+	{
+		storage = (type == TB_LOW) ? (storage & 0xffffffff00000000ULL) | (uint64_t) value
+								: (storage & 0x00000000ffffffffULL) | ((uint64_t) value << 32);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (const char * value)
+{
+	if(IsMutable())
+	{
+		uint32_t v = (uint32_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		storage = (type == TB_LOW) ? (storage & 0xffffffff00000000ULL) | (uint64_t) v
+								: (storage & 0x00000000ffffffffULL) | ((uint64_t) v << 32);
+		NotifyListeners();
+	}
+	return *this;
 }
 
 } // end of namespace ppc440

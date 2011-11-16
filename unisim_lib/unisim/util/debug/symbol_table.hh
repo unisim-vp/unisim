@@ -53,7 +53,7 @@ public:
 	SymbolTable();
 	virtual ~SymbolTable();
 	void Reset();
-	const list<unisim::util::debug::Symbol<T> *> *GetSymbols() const;
+	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<T> *>& lst, typename unisim::util::debug::Symbol<T>::Type type) const;
 	const typename unisim::util::debug::Symbol<T> *FindSymbol(const char *name, T addr, typename unisim::util::debug::Symbol<T>::Type type) const;
 	const typename unisim::util::debug::Symbol<T> *FindSymbolByAddr(T addr) const;
 	const typename unisim::util::debug::Symbol<T> *FindSymbolByName(const char *name) const;
@@ -63,7 +63,6 @@ public:
 	void Dump(ostream& os) const;
 	void Dump(ostream& os, typename unisim::util::debug::Symbol<T>::Type type) const;
 private:
-	
 	list<Symbol<T> *> symbol_registries[unisim::util::debug::Symbol<T>::SYM_HIPROC + 1];
 };
 

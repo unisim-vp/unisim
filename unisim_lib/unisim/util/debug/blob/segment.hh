@@ -64,7 +64,7 @@ public:
 		SA_RWX = 7
 	} Attribute;
 
-	Segment(Type type, Attribute attr, unsigned int alignment, MEMORY_ADDR addr, MEMORY_ADDR size, void *data);
+	Segment(Type type, Attribute attr, unsigned int alignment, MEMORY_ADDR addr, MEMORY_ADDR size, MEMORY_ADDR data_size, void *data);
 	Segment(const Segment<MEMORY_ADDR>& segment);
 	virtual ~Segment();
 	
@@ -73,6 +73,7 @@ public:
 	unsigned int GetAlignment() const;
 	MEMORY_ADDR GetAddr() const;
 	MEMORY_ADDR GetSize() const;
+	MEMORY_ADDR GetDataSize() const;
 	const void *GetData() const;
 	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
 	
@@ -84,6 +85,7 @@ private:
 	unsigned int alignment;  // alignment (0=unavailable)
 	MEMORY_ADDR addr;        // location in memory
 	MEMORY_ADDR size;        // size in bytes of data
+	MEMORY_ADDR data_size;   // true size in bytes of data
 	void *data;
 	unsigned int *refcount;
 };

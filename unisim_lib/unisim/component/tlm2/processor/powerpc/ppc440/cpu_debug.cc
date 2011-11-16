@@ -35,6 +35,10 @@
 #include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.hh>
 #include <unisim/component/tlm2/processor/powerpc/ppc440/cpu.tcc>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm2 {

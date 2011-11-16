@@ -50,12 +50,12 @@ template <class MEMORY_ADDR = uint64_t>
 class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
 {
 public:
-	Elf64Loader(const char *name);
+	Elf64Loader(unisim::kernel::logger::Logger& logger);
 };
 
 template <class MEMORY_ADDR>
-Elf64Loader<MEMORY_ADDR>::Elf64Loader(const char *name)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(name)
+Elf64Loader<MEMORY_ADDR>::Elf64Loader(unisim::kernel::logger::Logger& _logger)
+	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_logger)
 {
 }
 

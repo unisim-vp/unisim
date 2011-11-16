@@ -36,4 +36,4 @@
 #include "unisim/component/tlm2/interconnect/generic_router/router.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::interconnect::generic_router::Router<MPLB_CONFIG>;
+template class unisim::component::tlm2::interconnect::generic_router::Router<MPLBConfig>;

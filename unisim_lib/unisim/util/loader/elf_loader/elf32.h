@@ -31,8 +31,8 @@
  * I have replaced u_int*_t by uint*_t everywhere
 */
 
-#ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_H__
-#define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_H__
+#ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_H__
+#define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_H__
 
 #include "unisim/util/loader/elf_loader/elf_common.h"
 
@@ -157,4 +157,4 @@ typedef struct {
 /* Macro for constructing st_info from field values. */
 #define ELF32_ST_INFO(bind, type)	(((bind) << 4) + ((type) & 0xf))
 
-#endif /* !__UNISIM_SERVICE_LOADER_ELF_LOADER_ELF32_H__ */
+#endif /* !__UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_H__ */

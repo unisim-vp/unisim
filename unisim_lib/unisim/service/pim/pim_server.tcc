@@ -48,6 +48,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <math.h>
 
 #ifdef WIN32
 
@@ -85,11 +86,13 @@ using unisim::kernel::logger::EndDebugError;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Statistic;
 
+using unisim::util::debug::Statement;
+
 using unisim::service::pim::PIMThread;
 
 template <class ADDRESS>
 PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
-	: Object(_name, _parent, "GDB Server")
+	: Object(_name, _parent, "PIM Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
@@ -97,6 +100,7 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, Client<Memory<ADDRESS> >(_name, _parent)
 	, Client<Disassembly<ADDRESS> >(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
 	, SocketThread()
 	, debug_control_export("debug-control-export", this)
@@ -107,11 +111,14 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, registers_import("cpu-registers-import", this)
 	, disasm_import("disasm-import", this)
 	, symbol_table_lookup_import("symbol-table-lookup-import", this)
+	, stmt_lookup_import("stmt-lookup-import", this)
+
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
 	, gdb_registers()
 	, gdb_pc(0)
+	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
 	, trap(false)
 	, synched(false)
@@ -132,6 +139,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_host("host", this, fHost)
+
+//	, last_time_ratio(1e+9)
 
 {
 
@@ -160,11 +169,18 @@ PIMServer<ADDRESS>::~PIMServer()
 	if (target) { delete target; target = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
+//	pim_trace_file.close();
+
 }
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetSimTime() {
 	return Object::GetSimulator()->GetSimTime();
+}
+
+template <class ADDRESS>
+double PIMServer<ADDRESS>::GetHostTime() {
+	return Object::GetSimulator()->GetHostTime();
 }
 
 template <class ADDRESS>
@@ -180,12 +196,6 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 		return false;
 	}
 
-	// Start Simulation <-> Workbench communication
-//	target = new PIMThread("pim-thread");
-//	protocolHandlers.push_back(target);
-//
-//	protocolHandlers.push_back(this);
-
 	// Open Socket Stream
 	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
 	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
@@ -193,21 +203,6 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	socketServer->setProtocolHandler(this);
 
 	socketServer->start();
-
-
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
-
-	if(memory_access_reporting_control_import)
-	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
-	}
 
 	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
 	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
@@ -222,7 +217,6 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 
 			bool has_architecture_name = false;
 			bool has_architecture_endian = false;
-			GDBEndian endian = GDB_BIG_ENDIAN;
 
 			const list<unisim::util::xml::Property *> *root_node_properties = root_node->Properties();
 
@@ -422,7 +416,24 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 }
 
 template <class ADDRESS>
+bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
+
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+
+
+	return true;
+}
+
+template <class ADDRESS>
 bool PIMServer<ADDRESS>::EndSetup() {
+
+//	pim_trace_file.open ("pim_trace.xls");
 
 	return true;
 }
@@ -521,6 +532,24 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	ADDRESS size;
 	ADDRESS reg_num;
 	ADDRESS type;
+
+/*
+	- add a time_ratio = HotsTime/SimulatedTime response
+	- the time_ratio is used by timed/periodic operations
+*/
+
+
+//	double new_time_ratio = last_time_ratio;
+//	double sim_time = GetSimTime();
+//	double host_time = GetHostTime();
+//	if (sim_time > 0) {
+//		new_time_ratio = host_time / sim_time;
+//	}
+//	if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
+//		pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
+//		last_time_ratio = new_time_ratio;
+//	}
+
 
 	if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
 	{
@@ -1042,69 +1071,67 @@ template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 {
 
-	const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+	list<const Symbol<ADDRESS> *> symbol_registries;
 
-	if (symbol_registries != 0) {
+	if (symbol_table_lookup_import) {
+		symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+	}
+	typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
 
-		typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
+	string packet = "";
+	string value;
+	int count = 0;
 
-		string packet = "";
-		string value;
-		int count = 0;
+	for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+	{
 
-		for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
-		{
+		if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
 
-			if ((name.compare((*symbol_iter)->GetName()) == 0) || (name.compare("*") == 0)) {
+			value = "";
 
-				value = "";
-
-				if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+			if(!InternalReadMemory((*symbol_iter)->GetAddress(), (*symbol_iter)->GetSize(), value))
+			{
+				if(verbose)
 				{
-					if(verbose)
-					{
-						logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
-					}
-				}
-
-				string hexName;
-
-				TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
-
-				packet.append("qSymbol:");
-				packet.append(value);
-				packet.append(":");
-				packet.append(hexName);
-
-				count = (count + 1) % 10;
-
-				if (name.compare("*") != 0) {
-					break;
-				} else {
-					if (count == 0) {
-						PutPacket(packet);
-						packet = "";
-					}
-
+					logger << DebugWarning << memory_import.GetName() << "->ReadSymbol has reported an error" << EndDebugWarning;
 				}
 			}
 
+			string hexName;
+
+			TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
+
+			packet.append("qSymbol:");
+			packet.append(value);
+			packet.append(":");
+			packet.append(hexName);
+
+			count = (count + 1) % 10;
+
+			if (name.compare("*") != 0) {
+				break;
+			} else {
+				if (count == 0) {
+					PutPacket(packet);
+					packet = "";
+				}
+
+			}
 		}
-
-		if (count > 0) {
-			PutPacket(packet);
-		}
-
-		if (name.compare("*") == 0) {
-			PutPacket("qSymbol:");
-		}
-
-
-		return true;
 
 	}
 
-	return false;
+	if (count > 0) {
+		PutPacket(packet);
+	}
+
+	if (name.compare("*") == 0) {
+		PutPacket("qSymbol:");
+	}
+
+
+	return true;
+
 }
 
 template <class ADDRESS>
@@ -1399,56 +1426,58 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		 *
 		 * with: symbType in {"FUNCTION", "VARIABLE"}
 		 */
-		const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
 
-		if (symbol_registries != 0) {
+		list<const Symbol<ADDRESS> *> symbol_registries;
 
-			typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
-			std::stringstream strstm;
-
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
-			{
-				strstm << (*symbol_iter)->GetName();
-
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
-
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-				strstm << ":" << "FUNCTION";
-
-				string str = strstm.str();
-				OutputText(str.c_str(), str.size());
-
-				strstm.str(std::string());
-			}
-
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
-			{
-
-				strstm << (*symbol_iter)->GetName();
-
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
-
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
-
-				strstm << ":" << "VARIABLE";
-
-				string str = strstm.str();
-				OutputText(str.c_str(), str.size());
-
-				strstm.str(std::string());
-
-			}
-
-			PutPacket("T05");
-
-		} else {
-			PutPacket("E00");
+		if (symbol_table_lookup_import) {
+			symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_FUNC);
 		}
+
+		typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+		std::stringstream strstm;
+
+		for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+		{
+			strstm << (*symbol_iter)->GetName();
+
+			strstm << ":" << std::hex;
+			strstm.width(8);
+			strstm << (*symbol_iter)->GetAddress();
+
+			strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+
+			strstm << ":" << "FUNCTION";
+
+			string str = strstm.str();
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+		}
+
+		symbol_registries.clear();
+		symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+
+		for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+		{
+
+			strstm << (*symbol_iter)->GetName();
+
+			strstm << ":" << std::hex;
+			strstm.width(8);
+			strstm << (*symbol_iter)->GetAddress();
+
+			strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+
+			strstm << ":" << "VARIABLE";
+
+			string str = strstm.str();
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+
+		}
+
+		PutPacket("T05");
 
 	}
 	else if (cmdPrefix.compare("disasm") == 0) {
@@ -1509,6 +1538,119 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		PutPacket(packet);
 
+	}
+	else if (cmdPrefix.compare("endian") == 0) {
+		string packet("");
+
+		std::stringstream sstr;
+		sstr << GetEndian();
+		packet += sstr.str();
+
+		PutPacket(packet);
+
+	}
+	else if (cmdPrefix.compare("registers") == 0) {
+
+		std::stringstream sstr;
+
+		for (vector<GDBRegister>::iterator it=gdb_registers.begin() ; it < gdb_registers.end(); it++ ) {
+			sstr << (*it).GetName() << ":" << (*it).GetSize() << ";";
+		}
+
+		string str = sstr.str();
+		PutPacket(str);
+
+	}
+	else if (cmdPrefix.compare("stack") == 0) {
+
+		std::stringstream sstr;
+
+		if(gdb_pc)
+		{
+			string hex;
+			unsigned int reg_num = gdb_pc->GetRegNum();
+
+			const Statement<ADDRESS> *stmt = 0;
+			ADDRESS addr = 0;
+			gdb_pc->GetValue(&addr);
+			unsigned int i;
+			if(stmt_lookup_import)
+			{
+				stmt = stmt_lookup_import->FindStatement(addr);
+			}
+
+			if(stmt)
+			{
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
+					{
+						sstr << string(source_dirname);
+
+					}
+					sstr << ";" << string(source_filename);
+
+					unsigned int lineno = stmt->GetLineNo();
+					unsigned int colno = stmt->GetColNo();
+
+					sstr << ";" << lineno << ";" << colno;
+
+				}
+			}
+		}
+
+		sstr << ";";
+
+		string packet(sstr.str());
+
+		OutputText(packet.c_str(), packet.length());
+
+	}
+	else if (cmdPrefix.compare("srcaddr") == 0) {
+// ******************************
+		// qRcmd,saddr:filename;lineno;colno
+		std::stringstream sstr;
+
+		int start_index = separator_index + 1;
+		int end_index = command.find(';');
+		string source_filename = command.substr(start_index, end_index-start_index);
+
+		start_index = end_index+1;
+
+		end_index = command.find(';', start_index);
+		string lineno = command.substr(start_index, end_index-start_index);
+		start_index = end_index+1;
+
+		start_index = end_index+1;
+
+		end_index = command.find(';', start_index);
+		string colno = command.substr(start_index, end_index-start_index);
+		start_index = end_index+1;
+
+		const Statement<ADDRESS> *stmt = 0;
+
+		if(stmt_lookup_import)
+		{
+			stmt = stmt_lookup_import->FindStatement(source_filename.c_str(), convertTo<unsigned int>(lineno), convertTo<unsigned int>(colno));
+		}
+
+		if(stmt)
+		{
+			ADDRESS addr = stmt->GetAddress();
+			sstr << std::hex << addr;
+
+			string packet(sstr.str());
+
+			PutPacket(packet.c_str());
+
+		} else {
+			PutPacket("E00");
+		}
+
+
+// ******************************
 	}
 	else if (cmdPrefix.compare("statistics") == 0) {
 

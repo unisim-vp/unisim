@@ -65,6 +65,13 @@ namespace util {
 namespace loader {
 namespace elf_loader {
 
+//using namespace std;
+//using namespace unisim::util::endian;
+//using unisim::util::debug::Statement;
+//using unisim::util::debug::Symbol;
+//using unisim::util::debug::elf_symtab::ELF_SymtabHandler;
+//using unisim::util::debug::blob::Blob;
+
 typedef enum
 {
 	OPT_FILENAME,
@@ -91,10 +98,13 @@ public:
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
 	
+	void GetOption(Option opt, MEMORY_ADDR& addr);
+	void GetOption(Option opt, std::string& s);
+	void GetOption(Option opt, bool& flag);
 	
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
-	const std::list<unisim::util::debug::Symbol<MEMORY_ADDR> *> *GetSymbols() const;
+	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
@@ -113,7 +123,7 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-  unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
+	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
   std::string dwarf_to_html_output_directory;
 	bool verbose;
@@ -123,15 +133,12 @@ private:
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);
 	void SwapSectionHeader(Elf_Shdr *shdr);
-	void SwapSymbolEntry(Elf_Sym *sym);
 	void AdjustElfHeader(Elf_Ehdr *hdr);
 	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
 	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	void AdjustSymbolEntry(const Elf_Ehdr *hdr, Elf_Sym *sym);
-	void AdjustSymbolTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr, Elf_Sym *sym);
-	Elf_Ehdr *ReadElfHeader(std::istream& is);
-	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
-	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	Elf_Ehdr *ReadElfHeader(istream& is);
+	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is);
+	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is);
 	const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
 	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is);
 	void DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os);

@@ -37,9 +37,6 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
-#include <unisim/service/pim/pim.hh>
-#include <unisim/service/pim/pim_server.hh>
-
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
@@ -55,6 +52,10 @@
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
+
+#include <unisim/service/pim/pim.hh>
+#include <unisim/service/pim/pim_server.hh>
+
 
 #include <xml_atd_pwm_stub.hh>
 
@@ -73,6 +74,9 @@
 using namespace std;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
+using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
+using unisim::component::cxx::processor::hcs12x::address_t;
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
@@ -113,6 +117,7 @@ public:
 	void Run();
 
 	virtual double GetSimTime()	{ if (sim_time) { return sim_time->GetTime(); } else { return 0; }	}
+	virtual double GetHostTime()	{ if (host_time) { return host_time->GetTime(); } else { return 0; }	}
 
 	void GeneratePim() {
 		PIM *pim = new PIM("pim");

@@ -147,7 +147,7 @@ public:
 	virtual double  GetSimulatedTime();
 
 	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();
@@ -167,10 +167,10 @@ private:
 	sc_time tlm2_btrans_time;
 	sc_time opCyclesArray[32]; // replace with the Max Inst Cycles
 
-	uint64_t bus_cycle_time_int;
+	uint64_t core_clock_int;
 
 	Parameter<sc_time> param_nice_time;
-	Parameter<uint64_t> param_bus_cycle_time;
+	Parameter<uint64_t> param_core_clock;
 
 	bool enable_fine_timing;
 	Parameter<bool> param_enable_fine_timing;

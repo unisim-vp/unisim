@@ -5,7 +5,9 @@
 \usepackage{supertabular}
 \usepackage{fancyhdr}
 \usepackage{rotating}
-\usepackage{verbatim} 
+\usepackage{verbatim}
+\usepackage{appendix}
+
 \voffset -1.5cm
 \hoffset 0.0cm
 \textheight 25cm
@@ -38,14 +40,21 @@
 \date{}
 
 \maketitle
+\tableofcontents
+\listoffigures
+\listoftables
+
+\newpage
 \input{virtex5fxt/virtex5fxt}
 
+\newpage
 \appendix
-\section{Simulator technical reference (generated) }
+\appendixpage
+\section{Simulator technical reference (generated)}
 \label{techref}
-
 \input{virtex5fxt/techref}
 
+\newpage
 \bibliographystyle{plain}
 \bibliography{virtex5fxt/virtex5fxt}
 

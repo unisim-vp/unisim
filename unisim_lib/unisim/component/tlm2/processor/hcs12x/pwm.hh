@@ -137,7 +137,7 @@ public:
     PWM(const sc_module_name& name, Object *parent = 0);
     ~PWM();
 
-	void UpdateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
     void refresh_channel(uint8_t channel_number);
 

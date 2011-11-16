@@ -77,61 +77,70 @@ void PIMThread::Run(){
 			super::stop();
 		} else {
 
-// qRcmd,cmd:var_name:value
+// qRcmd,cmd;var_name[:value];{var_name[:value];}
 			int start_index = 0;
 			int end_index = buf_str.find(',');
 			string qRcmd = buf_str.substr(start_index, end_index-start_index);
 
 			start_index = end_index+1;
 
-			end_index = buf_str.find(':', start_index);
+			end_index = buf_str.find(';', start_index);
 			string cmd = buf_str.substr(start_index, end_index-start_index);
 			start_index = end_index+1;
 
 			if (cmd.compare("read") == 0) {
 
-				end_index = buf_str.find(':', start_index);
-				string name = buf_str.substr(start_index, end_index-start_index);
-				start_index = end_index+1;
+				std::ostringstream os;
 
-				for (int i=0; i < simulator_variables.size(); i++) {
-					if (name.compare(simulator_variables[i]->GetName()) == 0) {
+				os << GetSimTime() << ";";
 
-						std::ostringstream os;
-						os << simulator_variables[i]->GetName() << ":";
+				do {
 
-						double val = *(simulator_variables[i]);
-						os << stringify(val);
+					end_index = buf_str.find(';', start_index);
 
-						os << ":" << GetSimTime();
+					if (end_index != string::npos) {
+						string name = buf_str.substr(start_index, end_index-start_index);
+						start_index = end_index+1;
 
-						std::string str = os.str();
+						for (int i=0; i < simulator_variables.size(); i++) {
+							if (name.compare(simulator_variables[i]->GetName()) == 0) {
 
-//						cerr << name << " send: " << str << endl;
+								os << simulator_variables[i]->GetName() << ":";
 
-						while (true) {
-							PutPacket(str, blocking);
-							if (!FlushOutput()) {
-								if (blocking) {
-									cerr << "PIM-Target unable to send !" << endl;
-								} else {
-#ifdef WIN32
-									Sleep(1);
-#else
-									usleep(1000);
-#endif
-									continue;
-								}
+								double val = *(simulator_variables[i]);
+								os << stringify(val);
 
+								os << ";";
+
+								break;
 							}
-							break;
 						}
 
-						os.str(std::string());
-
-						break;
 					}
+				} while (end_index != string::npos);
+
+				std::string str = os.str();
+
+				while (true) {
+					PutPacket(str, blocking);
+					if (!FlushOutput()) {
+						if (blocking) {
+							cerr << "PIM-Target unable to send !" << endl;
+						} else {
+#ifdef WIN32
+							Sleep(1);
+#else
+							usleep(1000);
+#endif
+							continue;
+						}
+
+					}
+					break;
 				}
+
+				os.str(std::string());
+
 
 			} else if (cmd.compare("write") == 0) {
 

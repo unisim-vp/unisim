@@ -45,6 +45,8 @@ namespace am29 {
 //                                           AM29LV800B Configuration
 //-----------------------------------------------------------------------------------------------------------------------------------
 
+const unsigned int AM29LV800BConfig::PAGE_SIZE;
+
 const char *AM29LV800BTConfig::DEVICE_NAME = "AM29LV800BT";
 const char *AM29LV800BBConfig::DEVICE_NAME = "AM29LV800BB";
 
