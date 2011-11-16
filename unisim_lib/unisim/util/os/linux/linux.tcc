@@ -36,6 +36,9 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 
+#include <string>
+#include <sstream>
+#include <iostream>
 #include <string.h>
 
 #include "unisim/util/debug/blob/blob.hh"
@@ -56,12 +59,13 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::kNumSupportedSystemTypes = 3;
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-const string Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
+const std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
 supported_system_types_ = {"arm", "arm-eabi", "powerpc"};
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger)
-    : is_load_
+Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
+Linux(bool verbose, std::ostringstream * const logger)
+    : is_load_(false)
     , system_type_("arm-eabi")
     , endianess_(unisim::util::endian::E_LITTLE_ENDIAN)
     , load_files_()
@@ -90,10 +94,8 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Linux(bool verbose, std::ostream &logger)
     , register_interface_(NULL)
     , memory_interface_(NULL)
     // , registers_(NULL) // TODO Remove
-    , ppc_cr_(NULL)
-    , ppc_cia_(NULL)
-    , logger_((logger != NULL)? logger : std::cout)
-    , loader_logger_() {
+    , logger_(logger)
+    , loader_logger_(std::ostringstream::out) {
   //for (int i = 0; i < kArmNumRegs; ++i)
     //arm_regs_[i] = NULL;
   //for (int i = 0; i < kPpcNumRegs; ++i)

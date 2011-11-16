@@ -224,9 +224,9 @@ class Linux {
   // activate the verbose
   bool verbose_;
   // logger stream
-  std::ostringstream &logger_;
+  std::ostringstream *logger_;
   // loader logger stream
-  std::ostringstream &loader_logger_;
+  std::ostringstream loader_logger_;
 
   // Maps the registers depending on the system
   // Returns true on success
@@ -301,12 +301,14 @@ class Linux {
 
   // Prints to the output console the contents of loader logger_
   void PrintLoaderLogger() {
-    if (loader_logger_.str().size() != 0) {
-      logger_ << "Message from the elf loader:" << std::endl;
-      logger_ << "BEGIN ======================================" << std::endl;
-      logger_ << loader_logger_.str();
-      logger_ << "END ========================================" << std::endl;
-      ResetLoaderLogger();
+    if (logger_ != NULL) {
+      if (loader_logger_.str().size() != 0) {
+        *logger_ << "Message from the elf loader:" << std::endl;
+        *logger_ << "BEGIN ======================================" << std::endl;
+        *logger_ << loader_logger_.str();
+        *logger_ << "END ========================================" << std::endl;
+        ResetLoaderLogger();
+      }
     }
   }
 
