@@ -506,7 +506,7 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool isGl
 
 	if (debugload) {
 		if (debug_page != 0x00) {
-			debug_page;
+			_rpage = debug_page;
 		} else {
 			if ((logicalAddress > 0x1FFF) && (logicalAddress < 0x3000)) {
 				_rpage = URPAGE_1;

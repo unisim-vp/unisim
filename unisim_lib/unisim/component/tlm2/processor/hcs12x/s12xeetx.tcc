@@ -453,7 +453,6 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	if (eeclk_time < min_eeclk_time) {
 		inherited::logger << DebugWarning << inherited::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl << EndDebugWarning;
-		std::cerr << "Warning: " << inherited::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl;
 	}
 }
 
@@ -632,7 +631,6 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 {
 	if ((offset != ECMD) && ((cmd_queue_back != NULL) && !cmd_queue_back->isCmdWrite())) {
 		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
-		std::cerr << "Warning: " << inherited::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl;
 
 		setACCERR();
 		abort_write_sequence();
@@ -640,7 +638,6 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	}
 	else if ((offset != ESTAT) && ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite())) {
 		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ESTAT (to clear CBEIF) after writing to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
-		std::cerr << "Warning: " << inherited::name() << ":: Writing to any EEPROM register other than ESTAT (to clear CBEIF) after writing to the ECMD register is an illegal operation. " << std::endl;
 
 		setACCERR();
 		abort_write_sequence();
@@ -677,20 +674,20 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 				if (((eprot_reg & 0x80) == 0) && ((value & 0x80) != 0)) {
 					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
-					std::cerr << "Warning: " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl;
+
 					value = value & 0x7F;
 				}
 
 				if (((eprot_reg & 0x08) == 0) && ((value & 0x08) != 0)) {
 					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
-					std::cerr << "Warning: " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl;
+
 					value = value & 0xF7;
 				}
 
 				// the EPS[2:0] bits can be written anytime until bit EPDIS is cleared
 				if ((eprot_reg & 0x04) == 0) {
 					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl << EndDebugWarning;
-					std::cerr << "Warning: " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl;
+
 					value = (value & 0xF8) | (eprot_reg & 0x07);
 				}
 
@@ -701,47 +698,6 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			break;
 			case ESTAT: {
 				uint8_t value = *((uint8_t *) buffer);
-
-				if ((value & 0x80) != 0) {
-					// clear CBEIF
-					// CCIF is cleared automatically when CBEIF is cleared
-					// BLANK is cleared automatically when CBEIF is cleared
-					value = value & 0x3B;
-
-					/**
-					 * The basic command write sequence is as follows:
-					 * 1. Write to one address in the EEPROM
-					 * 2. Write a valid command to the ECMD register
-					 * 3. Clear the CBEIF flag in the ESTAT register by writing a 1 to CBEIF to launch the command.
-					 */
-
-					if ((eclkdiv_reg & 0x80) == 0) {
-						/**
-						 *  If the ECLKDIV register has not been written to,
-						 *  the EEPROM command loaded during a command write sequence will not executed
-						 *  and the ACCERR flag is set.
-						 */
-						// set the ACCERR flag in the ESTAT register
-						setACCERR();
-
-					} else {
-						command_launch_event.notify();
-					}
-
-				} else {
-					/**
-					 * Note: command write sequence aborted by writing 0x00 to ESTAT register.
-					 *
-					 * Writing a 0 to CBEIF after writing an aligned word to the EEPROM address space
-					 * but before CBEIF is cleared will abort a command write sequence and cause the ACCERR flag to be set.
-					 */
-					if ((cmd_queue_back != NULL) && ((estat_reg & 0x80) != 0)) {
-						inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl << EndDebugWarning;
-						std::cerr << "Warning: " << inherited::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl;
-						value = value | 0x10;
-					}
-					abort_write_sequence();
-				}
 
 				// clear PVIOL
 				if ((value & 0x20) != 0) {
@@ -758,6 +714,53 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 					value = value & 0xFD;
 				}
 
+				/**
+				 * The basic command write sequence is as follows:
+				 * 1. Write to one address in the EEPROM
+				 * 2. Write a valid command to the ECMD register
+				 * 3. Clear the CBEIF flag in the ESTAT register by writing a 1 to CBEIF to launch the command.
+				 */
+
+				if ((value & 0x80) != 0) {
+					// note: Clearing CBEIF outside of a command write sequence has no effect on the E2P state machine (CBEIF and CCIF)
+					// note: Writing a 0 to CBEIF (clearing CBEIF) outside of a command write sequence will not set the ACCERR flag
+					if (cmd_queue.empty()) {
+						value = (value & 0x3B) | (estat_reg & 0xC4);
+					} else {
+						// clear CBEIF
+						// CCIF is cleared automatically when CBEIF is cleared
+						// BLANK is cleared automatically when CBEIF is cleared
+						value = value & 0x3B;
+
+						if ((eclkdiv_reg & 0x80) == 0) {
+							/**
+							 *  If the ECLKDIV register has not been written to,
+							 *  the EEPROM command loaded during a command write sequence will not executed
+							 *  and the ACCERR flag is set.
+							 */
+							// set the ACCERR flag in the ESTAT register
+							value = value | 0x10;
+
+						} else {
+							command_launch_event.notify();
+						}
+					}
+
+				} else {
+					/**
+					 * Note: command write sequence aborted by writing 0x00 to ESTAT register.
+					 *
+					 * Writing a 0 to CBEIF after writing an aligned word to the EEPROM address space
+					 * but before CBEIF is cleared will abort a command write sequence and cause the ACCERR flag to be set.
+					 */
+					if ((cmd_queue_back != NULL) && ((estat_reg & 0x80) != 0)) {
+						inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl << EndDebugWarning;
+
+						value = value | 0x10;
+
+					}
+					abort_write_sequence();
+				}
 
 				estat_reg = value;
 
@@ -767,23 +770,19 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 				uint8_t value = *((uint8_t *) buffer);
 				value = (value & 0x7F) | (ecmd_reg & 0x80);
 
-				cerr << "write command " << (unsigned int) value << " at " << sc_time_stamp() << endl;
+				cerr << "write command " << std::hex << (unsigned int) value << " at " << sc_time_stamp().to_seconds() << "sec " << endl;
 
 				uint8_t cmd = (value & 0x7F);
 
-				if ( !((cmd == 0x05) && (cmd == 0x20) && (cmd == 0x40) && (cmd == 0x41) && (cmd == 0x47) && (cmd == 0x60) && (cmd == 0x20)) )
+				if ( (cmd != 0x05) && (cmd != 0x20) && (cmd != 0x40) && (cmd != 0x41) && (cmd != 0x47) && (cmd != 0x60) && (cmd != 0x20) )
 				{
 					/* unknown command */
 					// set the ACCERR flag in the ESTAT register
 					inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing an invalid command to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
-					std::cerr << "Warning: " << inherited::name() << ":: Writing an invalid command to the ECMD register is an illegal operation. " << std::endl;
+
 					setACCERR();
 					abort_write_sequence();
 				} else {
-					inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl << EndDebugWarning;
-					std::cerr << "Warning: " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl;
-					setACCERR();
-					abort_write_sequence();
 
 					writeCmd(cmd);
 				}

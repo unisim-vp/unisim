@@ -1531,12 +1531,17 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 			const Statement<ADDRESS> *stmt = 0;
 			ADDRESS addr = *pc_reg;
+			long mcuAddress = Object::GetSimulator()->GetMCUAddress(addr);
+
+			Number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+			sstr << hex << ":";
 
 			unsigned int i;
 			if(stmt_lookup_import)
 			{
 //				stmt = stmt_lookup_import->FindStatement(addr);
-				stmt = stmt_lookup_import->FindStatement(Object::GetSimulator()->GetMCUAddress(addr));
+				stmt = stmt_lookup_import->FindStatement(mcuAddress);
 			}
 
 			if(stmt)

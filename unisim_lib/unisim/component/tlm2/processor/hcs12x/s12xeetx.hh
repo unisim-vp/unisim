@@ -48,6 +48,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::VariableBase;
 using unisim::kernel::logger::Logger;
 
 using unisim::kernel::logger::Logger;
@@ -176,8 +177,6 @@ public:
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to word program at protected area @ 0x" << std::hex << eaddr_reg
 				<< std::endl << EndDebugWarning;
 
-			std::cerr << "Warning: " << inherited::name() << ":: Try to word program at protected area @ 0x" << std::hex << eaddr_reg	<< std::endl;
-
 			// Set ESTAT::PVIOL flag
 			estat_reg = estat_reg | 0x20;
 			return;
@@ -208,8 +207,6 @@ public:
 		if (protection_enabled && ((eaddr_reg + SECTOR_SIZE - 1) >= protected_area_start_address)) {
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to erase sector at protected area.@ 0x" << std::hex << eaddr_reg
 				<< std::endl << EndDebugWarning;
-
-			std::cerr << "Warning: " << inherited::name() << ":: Try to erase sector at protected area.@ 0x" << std::hex << eaddr_reg << endl;
 
 			// Set ESTAT::PVIOL flag
 			estat_reg = estat_reg | 0x20;
@@ -262,8 +259,6 @@ public:
 		if (protection_enabled) {
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to mass erase while EEPROM protection enabled." << std::endl << EndDebugWarning;
 
-			std::cerr << "Warning: " << inherited::name() << ":: Try to mass erase while EEPROM protection enabled." << std::endl;
-
 			// Set ESTAT::PVIOL flag
 			estat_reg = estat_reg | 0x20;
 			return;
@@ -301,8 +296,6 @@ public:
 		if (protection_enabled && ((eaddr_reg + SECTOR_SIZE - 1) >= protected_area_start_address)) {
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to modify sector at protected area @ 0x" << std::hex << eaddr_reg
 				<< std::endl << EndDebugWarning;
-
-			std::cerr << "Warning: " << inherited::name() << ":: Try to modify sector at protected area @ 0x" << std::hex << eaddr_reg << endl;
 
 			// Set ESTAT::PVIOL flag
 			estat_reg = estat_reg | 0x20;
@@ -421,11 +414,10 @@ private:
 
 	void write_to_eeprom(physical_address_t address, void* data_ptr, unsigned int data_length) {
 
+		std::cerr << "E2P:: write to => 0x" << std::hex << address << "  length: " << data_length << endl;
 		// Illegal operation: Writing to an EEPROM address before initializing the ECLKDIV register
 		if ((eclkdiv_reg & 0x80) == 0) {
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl << EndDebugWarning;
-
-			std::cerr << "Warning: " << inherited::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl;
 
 			setACCERR();
 			abort_write_sequence();
@@ -437,8 +429,6 @@ private:
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a byte or misaligned word to a valid EEPROM address is an illegal operation " << data_length << " bytes @ 0x" << std::hex << address
 				<< std::endl << EndDebugWarning;
 
-			std::cerr << "Warning: " << inherited::name() << ":: Writing a byte or misaligned word to a valid EEPROM address is an illegal operation " << data_length << " bytes @ 0x" << std::hex << address << endl;
-
 			setACCERR();
 			abort_write_sequence();
 			return;
@@ -447,8 +437,6 @@ private:
 		// Illegal operation: Starting a command write sequence while a sector erase abort operation is active.
 		if (sector_erase_abort_active) {
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl << EndDebugWarning;
-
-			std::cerr << "Warning: " << inherited::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl;
 
 			setACCERR();
 			abort_write_sequence();
@@ -465,8 +453,6 @@ private:
 		} else {
 			if ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite() && ((estat_reg & 0x80) != 0)) {
 				inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl << EndDebugWarning;
-
-				std::cerr << "Warning: " << inherited::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl;
 
 				setACCERR();
 				abort_write_sequence();
@@ -493,7 +479,7 @@ private:
 				cmd_queue_back->invalidateCmdWrite();
 
 				inherited::logger << DebugWarning << " : " << inherited::name() << ":: Command Write Sequence Lost/overwritten! " << std::endl << EndDebugWarning;
-				std::cerr << "Warning::" << inherited::name() << ":: Command Write Sequence Lost/overwritten! " << std::endl;
+
 			}
 		}
 
@@ -527,9 +513,20 @@ private:
 
 	TCommand* writeCmd(uint8_t _cmd) {
 		if (cmd_queue.empty()) {
-			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
+			address_t pc;
+			std::list<VariableBase *> lst;
 
-			std::cerr << "Warning: " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl;
+			Object::GetSimulator()->GetRegisters(lst);
+
+			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+				string var_name(((VariableBase *) *it)->GetName());
+				if (var_name == "CPU.PC") {
+					std::cerr << "PC =0x" << std::hex << (unsigned int) *((VariableBase *) *it) << endl;
+				}
+			}
+
+			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
 
 			setACCERR();
 			abort_write_sequence();
@@ -538,8 +535,6 @@ private:
 		}
 		else if ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite()) {
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl << EndDebugWarning;
-
-			std::cerr << "Warning: " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl;
 
 			setACCERR();
 			abort_write_sequence();
