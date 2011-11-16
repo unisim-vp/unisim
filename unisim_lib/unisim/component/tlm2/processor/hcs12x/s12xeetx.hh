@@ -420,7 +420,7 @@ private:
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl << EndDebugWarning;
 
 			setACCERR();
-			abort_write_sequence();
+//			abort_write_sequence();
 			return;
 		}
 
@@ -430,7 +430,7 @@ private:
 				<< std::endl << EndDebugWarning;
 
 			setACCERR();
-			abort_write_sequence();
+//			abort_write_sequence();
 			return;
 		}
 
@@ -439,7 +439,7 @@ private:
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl << EndDebugWarning;
 
 			setACCERR();
-			abort_write_sequence();
+//			abort_write_sequence();
 			return;
 		}
 
@@ -455,7 +455,7 @@ private:
 				inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl << EndDebugWarning;
 
 				setACCERR();
-				abort_write_sequence();
+//				abort_write_sequence();
 				return;
 			}
 			else if (cmd_queue.size() < CMD_PIPELINE_SIZE) {
@@ -513,23 +513,23 @@ private:
 
 	TCommand* writeCmd(uint8_t _cmd) {
 		if (cmd_queue.empty()) {
-			address_t pc;
-			std::list<VariableBase *> lst;
-
-			Object::GetSimulator()->GetRegisters(lst);
-
-			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
-
-				string var_name(((VariableBase *) *it)->GetName());
-				if (var_name == "CPU.PC") {
-					std::cerr << "PC =0x" << std::hex << (unsigned int) *((VariableBase *) *it) << endl;
-				}
-			}
+//			address_t pc;
+//			std::list<VariableBase *> lst;
+//
+//			Object::GetSimulator()->GetRegisters(lst);
+//
+//			for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+//
+//				string var_name(((VariableBase *) *it)->GetName());
+//				if (var_name == "CPU.PC") {
+//					std::cerr << "PC =0x" << std::hex << (unsigned int) *((VariableBase *) *it) << endl;
+//				}
+//			}
 
 			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
 
 			setACCERR();
-			abort_write_sequence();
+//			abort_write_sequence();
 
 			return NULL;
 		}
