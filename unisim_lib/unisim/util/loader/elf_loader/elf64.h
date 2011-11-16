@@ -34,7 +34,7 @@
 #ifndef __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF64_H__
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF64_H__
 
-#include <unisim/service/loader/elf_loader/elf_common.h>
+#include "unisim/service/loader/elf_loader/elf_common.h"
 
 /*
  * ELF definitions common to all 64-bit architectures.
