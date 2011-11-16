@@ -152,9 +152,9 @@ struct powerpc_stat64 {
      identifier 'timespec' to appear in the <sys/stat.h> header.
      Therefore we have to handle the use of this header in strictly
      standard-compliant sources special.  */
-  struct powerpc_timespec_t st_atim;		/* Time of last access.  */
-  struct powerpc_timespec_t st_mtim;		/* Time of last modification.  */
-  struct powerpc_timespec_t st_ctim;		/* Time of last status change.  */
+  struct powerpc_timespec st_atim;		/* Time of last access.  */
+  struct powerpc_timespec st_mtim;		/* Time of last modification.  */
+  struct powerpc_timespec st_ctim;		/* Time of last status change.  */
   uint32_t __unused4;
   uint32_t __unused5;
 };
@@ -173,9 +173,9 @@ struct powerpc_stat
   int32_t st_size;
   int32_t st_blksize;
   int32_t st_blocks;
-  struct powerpc_timespec_t st_atim;
-  struct powerpc_timespec_t st_mtim;
-  struct powerpc_timespec_t st_ctim;
+  struct powerpc_timespec st_atim;
+  struct powerpc_timespec st_mtim;
+  struct powerpc_timespec st_ctim;
   uint32_t __unused4;
   uint32_t __unused5;
 };

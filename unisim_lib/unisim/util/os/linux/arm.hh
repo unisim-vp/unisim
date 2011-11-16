@@ -132,9 +132,9 @@ struct arm_stat64 {
   uint64_t st_size;			/* Size of file, in bytes.  */
   uint32_t st_blksize;		/* Optimal block size for I/O.  */
   uint64_t st_blocks;		/* Number 512-byte blocks allocated. */
-  struct arm_timespec_t st_atim;		/* Time of last access.  */
-  struct arm_timespec_t st_mtim;		/* Time of last modification.  */
-  struct arm_timespec_t st_ctim;		/* Time of last status change.  */
+  struct arm_timespec st_atim;		/* Time of last access.  */
+  struct arm_timespec st_mtim;		/* Time of last modification.  */
+  struct arm_timespec st_ctim;		/* Time of last status change.  */
   uint64_t st_ino;			/* File serial number.		*/
 };
 
