@@ -38,7 +38,7 @@
 namespace unisim {
 namespace util {
 namespace os {
-namespace linux {
+namespace linux_os {
 
 static const unsigned int AT_NULL = 0;
 static const unsigned int AT_IGNORE = 1;     /* entry should be ignored */
@@ -58,6 +58,29 @@ static const unsigned int AT_EGID = 14;    /* effective gid */
 static const unsigned int AT_PLATFORM = 15;  /* string identifying CPU for optimizations */
 static const unsigned int AT_HWCAP = 16;    /* arch dependent hints at CPU capabilities */
 static const unsigned int AT_CLKTCK = 17;    /* frequency at which times() increments */
+
+static const unsigned int ARM_HWCAP_ARM_SWP       = 1 << 0;
+static const unsigned int ARM_HWCAP_ARM_HALF      = 1 << 1;
+static const unsigned int ARM_HWCAP_ARM_THUMB     = 1 << 2;
+static const unsigned int ARM_HWCAP_ARM_26BIT     = 1 << 3;
+static const unsigned int ARM_HWCAP_ARM_FAST_MULT = 1 << 4;
+static const unsigned int ARM_HWCAP_ARM_FPA       = 1 << 5;
+static const unsigned int ARM_HWCAP_ARM_VFP       = 1 << 6;
+static const unsigned int ARM_HWCAP_ARM_EDSP      = 1 << 7;
+static const unsigned int ARM_HWCAP_ARM_JAVA      = 1 << 8;
+static const unsigned int ARM_HWCAP_ARM_IWMMXT    = 1 << 9;
+static const unsigned int ARM_HWCAP_ARM_THUMBEE   = 1 << 10;
+static const unsigned int ARM_HWCAP_ARM_NEON      = 1 << 11;
+static const unsigned int ARM_HWCAP_ARM_VFPv3     = 1 << 12;
+static const unsigned int ARM_HWCAP_ARM_VFPv3D16  = 1 << 13;
+static const unsigned int ARM_ELF_HWCAP = ARM_HWCAP_ARM_SWP
+    | ARM_HWCAP_ARM_HALF
+    | ARM_HWCAP_ARM_THUMB
+    | ARM_HWCAP_ARM_FAST_MULT
+    | ARM_HWCAP_ARM_FPA
+    | ARM_HWCAP_ARM_VFP
+    | ARM_HWCAP_ARM_NEON
+    | ARM_HWCAP_ARM_VFPv3;
 
 } // end of namespace
 } // end of namespace

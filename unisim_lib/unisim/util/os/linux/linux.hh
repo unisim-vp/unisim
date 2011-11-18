@@ -61,6 +61,7 @@ namespace linux_os {
 
 template <class ADDRESS_TYPE>
 class LinuxMemoryInterface {
+ public:
   virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size) = 0;
   virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer,
                            uint32_t size) = 0;
@@ -68,14 +69,15 @@ class LinuxMemoryInterface {
 
 template <class PARAMETER_TYPE>
 class LinuxRegisterInterface {
-  virtual bool GetRegister(uint32_t id, PARAMETER_TYPE const * value) = 0;
+ public:
+  virtual bool GetRegister(uint32_t id, PARAMETER_TYPE * const value) = 0;
   virtual bool SetRegister(uint32_t id, PARAMETER_TYPE value) = 0;
 };
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux {
  public:
-  Linux(bool verbose, std::ostringstream *logger);
+  Linux(bool verbose, std::ostringstream * const logger);
   ~Linux();
 
   bool AddLoadFile(char const * const file);
@@ -152,7 +154,7 @@ class Linux {
 
   // files to load
   std::map<std::string,
-      unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const>
+      unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>
           load_files_;
 
 
@@ -192,6 +194,11 @@ class Linux {
   std::string utsname_machine_;
   std::string utsname_domainname_;
 
+  // number of aux table entries on the stack (minus AT_NULL)
+  int num_aux_table_entries_;
+  // size of each of the entries on the aux table
+  int aux_table_entry_size_;
+
   // the structure to keep all the loaded information
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;
 
@@ -224,7 +231,7 @@ class Linux {
   // activate the verbose
   bool verbose_;
   // logger stream
-  std::ostringstream *logger_;
+  std::ostringstream * logger_;
   // loader logger stream
   std::ostringstream loader_logger_;
 
@@ -294,7 +301,7 @@ class Linux {
 
   // Cleans the contents of the loader logger_ and clean error flags
   void ResetLoaderLogger() {
-    std::string clean_string();
+    std::string clean_string("");
     loader_logger_.str(clean_string);
     loader_logger_.clear();
   }

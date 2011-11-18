@@ -39,8 +39,10 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <stdexcept>
 #include <string.h>
 
+#include "unisim/util/likely/likely.hh"
 #include "unisim/util/debug/blob/blob.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/loader/elf_loader/elf32_loader.hh"
@@ -58,9 +60,12 @@ namespace linux_os {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::kNumSupportedSystemTypes = 3;
 
+const char * tmp_supported_system_types[] = {"arm", "arm-eabi", "powerpc"};
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-supported_system_types_ = {"arm", "arm-eabi", "powerpc"};
+supported_system_types_(tmp_supported_system_types, 
+                        tmp_supported_system_types + 
+                        sizeof(tmp_supported_system_types) / sizeof(char *));
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
@@ -90,6 +95,16 @@ Linux(bool verbose, std::ostringstream * const logger)
     , envc_(0)
     , envp_()
     , apply_host_environnement_(false)
+    , target_envp_()
+    , utsname_sysname_()
+    , utsname_nodename_()
+    , utsname_release_()
+    , utsname_version_()
+    , utsname_machine_()
+    , utsname_domainname_()
+    , num_aux_table_entries_(13) // TODO Set the number of aux table entries
+                                 //      depending on the architecture
+    , aux_table_entry_size_(2 * sizeof(ADDRESS_TYPE))
     , blob_(NULL)
     , register_interface_(NULL)
     , memory_interface_(NULL)
@@ -142,7 +157,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
     return false;
   }
 
-  load_files[*(new string(filename))] = blob;
+  std::string filename_str(filename);
+  load_files_[filename_str] = blob;
   delete loader;
   return true;
 }
@@ -228,7 +244,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   // create the root blob that will be used to store the image that will be
   // loaded
   unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
-      new unisim::util::debug::blob::Blob<T>();
+      new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
   blob->Catch();
 
   // load and add files to the blob
@@ -380,7 +396,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
   int loaded_segments = 0;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
   typedef std::vector<const Segment *> SegmentVector;
-  typedef std::vector<const Segment *>::const_iterator SegmentVectorIterator;
+  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
   const SegmentVector &segments = blob.GetSegments();
 
   // Reset application structure addresses
@@ -416,7 +432,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ComputeStructuralAddresses(
       start_code_ = segment_addr;
     if (start_data_ < segment_addr)
       start_data_ = segment_addr;
-    if ((*it)->GetAttr() & unisim::util::debug::blob::Segment<T>::SA_X) {
+    if ((*it)->GetAttr() & Segment::SA_X) {
       if (end_code_ < segment_end_addr)
         end_code_ = segment_end_addr;
     }
@@ -437,10 +453,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) {
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
   typedef std::vector<const Segment*> SegmentVector;
-  typedef std::vector<const Segment*>::const_iterator SegmentVectorIterator;
+  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef std::vector<const Section*> SectionVector;
-  typedef std::vector<const Section*>::const_iterator SectionVectorIterator;
+  typedef typename SectionVector::const_iterator SectionVectorIterator;
   const SegmentVector &file_segments = file_blob.GetSegments();
   const SectionVector &file_sections = file_blob.GetSections();
 
@@ -458,19 +474,19 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
   }
 
   // copy sections that correspond to the copied segments
-  const SegmentVector &blob_segments = blob.GetSegments();
+  const SegmentVector &blob_segments = blob->GetSegments();
   for (SectionVectorIterator it = file_sections.begin();
        it != file_sections.end(); it++) {
     ADDRESS_TYPE section_bottom, section_top;
     (*it)->GetAddrRange(section_bottom, section_top);
     bool found_segment = false;
-    for (SegmentVectorIterator bit = blob_segments.begin;
+    for (SegmentVectorIterator bit = blob_segments.begin();
          (!found_segment) && (bit != blob_segments.end());
          ++bit) {
       ADDRESS_TYPE segment_bottom, segment_top;
       (*bit)->GetAddrRange(segment_bottom, segment_top);
       if ((section_bottom >= segment_bottom) && (section_top <= segment_top)) {
-        blob->AddSection((*bit));
+        blob->AddSection((*it));
         found_segment = true;
       }
     }
@@ -482,7 +498,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob) const {
-  typedef std::vector<ADDRESS_TYPE>::iterator AddressVectorIterator;
+  typedef std::vector<ADDRESS_TYPE> AddressVector;
+  typedef typename AddressVector::iterator AddressVectorIterator;
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
 
@@ -497,10 +514,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   // - copy the filename
   ADDRESS_TYPE argv0_top = sp;
   sp -= sizeof(ADDRESS_TYPE);
-  ADDRESS_TYPE cur_length = argv_[0]->length() + 1;
+  ADDRESS_TYPE cur_length = argv_[0].length() + 1;
   sp = sp - cur_length;
   ADDRESS_TYPE sp_argc = sp;
-  memcpy(stack_data + sp, argv_[0]->c_str(), cur_length);
+  memcpy(stack_data + sp, argv_[0].c_str(), cur_length);
   ADDRESS_TYPE argv0_bottom = sp;
   Section* argv0_section = new Section(Section::TY_PROGBITS, Section::SA_AW,
                                        ".unisim.linux_os.stack.argv0", 1, 0,
@@ -510,10 +527,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   argv0_section->Catch();
   // - copy envp
   // variable to keep the stack environment entries addresses
-  std::vector<address_type> sp_envp;
+  std::vector<ADDRESS_TYPE> sp_envp;
   ADDRESS_TYPE env_top = sp;
-  for (AddressVectorIterator it = target_envp_.begin();
-       it != target_envp_end(); it++) {
+  for (std::vector<std::string>::const_iterator it = target_envp_.begin();
+       it != target_envp_.end(); it++) {
     cur_length = (*it).length() + 1;
     sp = sp - cur_length;
     sp_envp.push_back(sp);
@@ -530,7 +547,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   // variable to keep the stack argument entries addresses
   std::vector<ADDRESS_TYPE> sp_argv;
   ADDRESS_TYPE argv_top = sp;
-  for (AddressVectorIterator it = argv_.begin(); it != argv_.end(); it++) {
+  for (std::vector<std::string>::const_iterator it = argv_.begin();
+       it != argv_.end(); it++) {
     cur_length = (*it).length() + 1;
     sp = sp - cur_length;
     sp_argv.push_back(sp);
@@ -550,9 +568,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   // to the different environment and argument values
   ADDRESS_TYPE sp_content_size = 0;
   // number of aux table entries
-  sp_content_size += num_aux_table_entries_ * sizeof(ADDRESS_TYPE);
+  sp_content_size += num_aux_table_entries_ * 2 * sizeof(ADDRESS_TYPE);
   //   and their values
-  sp_content_size += num_aut_table_entries_ * sizeof(ADDRESS_TYPE);
+  sp_content_size += num_aux_table_entries_ * sizeof(ADDRESS_TYPE);
   // number of environment entries
   sp_content_size += target_envp_.size() * sizeof(ADDRESS_TYPE);
   //   and its termination
@@ -643,7 +661,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   // create a segment for the stack
   Segment* stack_segment =
       new Segment(Segment::TY_LOADABLE, Segment::SA_RW,
-                  4, stack_base_, stack_size_, stack_data);
+                  4, stack_base_, stack_size_, stack_size_, stack_data);
   stack_segment->Catch();
 
   // add the stack segment and the different sections to the blob
@@ -694,7 +712,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
    * The elf library should provide information on the size of the program
    * header.
    */
-  aux_table_value = Elf32_Phdr; // 32 = size of the program header
+  aux_table_value = sizeof(Elf32_Phdr); // 32 = size of the program header
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHNUM;
@@ -760,7 +778,7 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
     ADDRESS_TYPE entry, ADDRESS_TYPE value) const {
   sp = sp - sizeof(sp);
   uint8_t *addr = stack_data + sp;
-  memcpy(addr, &_value, sizeof(sp));
+  memcpy(addr, &value, sizeof(sp));
   sp = sp - sizeof(sp);
   addr = stack_data + sp;
   memcpy(addr, &entry, sizeof(sp));
@@ -772,9 +790,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   if ((system_type_.compare("arm") == 0) ||
       (system_type_.compare("arm-eabi") == 0))
-    return SetArmBlob(blob)
+    return SetArmBlob(blob);
   if (system_type_.compare("ppc") == 0)
-    return SetPPCBlob(blob)
+    return SetPPCBlob(blob);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -782,7 +800,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
-  if (utsname_machine.compare("armv5") == 0) {
+  if (utsname_machine_.compare("armv5") == 0) {
     if (blob == NULL) return false;
     // TODO: Check that the program/stack is not in conflict with the
     //   tls and cmpxchg interfaces
@@ -816,7 +834,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
                     sizeof(tls_buf), blob_tls_buf);
     Segment *tls_if_segment =
         new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
-                    sizeof(tls_buf), blob_tls_buf);
+                    sizeof(tls_buf), sizeof(tls_buf), blob_tls_buf);
     tls_if_section->Catch();
     tls_if_segment->Catch();
 
@@ -841,7 +859,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
                                           cmpxchg_buf_length);
 
     for (unsigned int i = 0; i < cmpxchg_buf_length; ++i) {
-      if ( endianess == unisim::util::endian::E_BIG_ENDIAN )
+      if ( endianess_ == unisim::util::endian::E_BIG_ENDIAN )
         blob_cmpxchg_buf[i] =
             unisim::util::endian::Host2BigEndian(cmpxchg_buf[i]);
       else
@@ -856,14 +874,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     Segment *cmpxchg_if_segment =
         new Segment(Segment::TY_LOADABLE, Segment::SA_X,
                     4, cmpxchg_base_addr,
-                    sizeof(cmpxchg_buf), blob_cmpxchg_buf);
+                    sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), blob_cmpxchg_buf);
     cmpxchg_if_section->Catch();
     cmpxchg_if_segment->Catch();
 
     blob->AddSegment(tls_if_segment);
     blob->AddSegment(cmpxchg_if_segment);
     blob->AddSection(tls_if_section);
-    blob->AddSection(cmpxchg_if_segment);
+    blob->AddSection(cmpxchg_if_section);
 
     tls_if_section->Release();
     tls_if_segment->Release();
@@ -876,38 +894,36 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
-    unisim::util::debug::blobl::Blob<ADDRESS_TYPE> *blob) const {
+    unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   // TODO
   return true;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
     const std::string &syscall_name, int syscall_id) {
-  if(unlikely(verbose))
-    logger << DebugInfo
-        << "Associating syscall_name \"" << syscall_name << "\""
-        << "to syscall_id number " << syscall_id << endl
-        << LOCATION
-        << EndDebugInfo;
+  if(unlikely(verbose_))
+    *logger_ << "Associating syscall_name \"" << syscall_name << "\""
+        << "to syscall_id number " << syscall_id << std::endl
+        << std::endl;
   if (HasSyscall(syscall_name))
   {
     if (HasSyscall(syscall_id))
     {
-      stringstream s;
-      s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
+      std::stringstream s;
+      s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
       s << "syscall_id already associated to syscall \""
-          << syscall_name_assoc_map[syscall_id] << "\"" << endl;
-      s << "  you wanted to associate it to " << syscall_name << endl;
+          << syscall_name_assoc_map_[syscall_id] << "\"" << std::endl;
+      s << "  you wanted to associate it to " << syscall_name << std::endl;
       throw std::runtime_error(s.str().c_str());
     }
-    syscall_name_assoc_map[syscall_id] = syscall_name;
-    syscall_impl_assoc_map[syscall_id] = syscall_name_map[syscall_name];
+    syscall_name_assoc_map_[syscall_id] = syscall_name;
+    syscall_impl_assoc_map_[syscall_id] = syscall_name_map_[syscall_name];
   }
   else
   {
-    stringstream s;
-    s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << endl;
+    std::stringstream s;
+    s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
     s << "Unimplemented system call (" << syscall_name << ")";
     throw std::runtime_error(s.str().c_str());
   }
@@ -915,79 +931,83 @@ void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
-  syscall_name_map[string("unknown")] = &thistype::LSC_unknown;
-  syscall_name_map[string("exit")] = &thistype::LSC_exit;
-  syscall_name_map[string("read")] = &thistype::LSC_read;
-  syscall_name_map[string("write")] = &thistype::LSC_write;
-  syscall_name_map[string("open")] = &thistype::LSC_open;
-  syscall_name_map[string("close")] = &thistype::LSC_close;
-  syscall_name_map[string("lseek")] = &thistype::LSC_lseek;
-  syscall_name_map[string("getpid")] = &thistype::LSC_getpid;
-  syscall_name_map[string("getuid")] = &thistype::LSC_getuid;
-  syscall_name_map[string("access")] = &thistype::LSC_access;
-  syscall_name_map[string("times")] = &thistype::LSC_times;
-  syscall_name_map[string("brk")] = &thistype::LSC_brk;
-  syscall_name_map[string("getgid")] = &thistype::LSC_getgid;
-  syscall_name_map[string("geteuid")] = &thistype::LSC_geteuid;
-  syscall_name_map[string("getegid")] = &thistype::LSC_getegid;
-  syscall_name_map[string("munmap")] = &thistype::LSC_munmap;
-  syscall_name_map[string("stat")] = &thistype::LSC_stat;
-  syscall_name_map[string("fstat")] = &thistype::LSC_fstat;
-  syscall_name_map[string("uname")] = &thistype::LSC_uname;
-  syscall_name_map[string("llseek")] = &thistype::LSC_llseek;
-  syscall_name_map[string("writev")] = &thistype::LSC_writev;
-  syscall_name_map[string("mmap")] = &thistype::LSC_mmap;
-  syscall_name_map[string("mmap2")] = &thistype::LSC_mmap2;
-  syscall_name_map[string("stat64")] = &thistype::LSC_stat64;
-  syscall_name_map[string("fstat64")] = &thistype::LSC_fstat64;
-  syscall_name_map[string("getuid32")] = &thistype::LSC_getuid32;
-  syscall_name_map[string("getgid32")] = &thistype::LSC_getgid32;
-  syscall_name_map[string("geteuid32")] = &thistype::LSC_geteuid32;
-  syscall_name_map[string("getegid32")] = &thistype::LSC_getegid32;
-  syscall_name_map[string("fcntl64")] = &thistype::LSC_fcntl64;
-  syscall_name_map[string("flistxattr")] = &thistype::LSC_flistxattr;
-  syscall_name_map[string("exit_group")] = &thistype::LSC_exit_group;
-  syscall_name_map[string("fcntl")] = &thistype::LSC_fcntl;
-  syscall_name_map[string("dup")] = &thistype::LSC_dup;
-  syscall_name_map[string("ioctl")] = &thistype::LSC_ioctl;
-  syscall_name_map[string("ugetrlimit")] = &thistype::LSC_ugetrlimit;
-  syscall_name_map[string("getrlimit")] = &thistype::LSC_getrlimit;
-  syscall_name_map[string("setrlimit")] = &thistype::LSC_setrlimit;
-  syscall_name_map[string("rt_sigaction")] = &thistype::LSC_rt_sigaction;
-  syscall_name_map[string("getrusage")] = &thistype::LSC_getrusage;
-  syscall_name_map[string("unlink")] = &thistype::LSC_unlink;
-  syscall_name_map[string("rename")] = &thistype::LSC_rename;
-  syscall_name_map[string("time")] = &thistype::LSC_time;
-  syscall_name_map[string("socketcall")] = &thistype::LSC_socketcall;
-  syscall_name_map[string("rt_sigprocmask")] = &thistype::LSC_rt_sigprocmask;
-  syscall_name_map[string("kill")] = &thistype::LSC_kill;
-  syscall_name_map[string("ftruncate")] = &thistype::LSC_ftruncate;
+  syscall_name_map_[std::string("unknown")] = &thistype::LSC_unknown;
+  syscall_name_map_[std::string("exit")] = &thistype::LSC_exit;
+  syscall_name_map_[std::string("read")] = &thistype::LSC_read;
+  syscall_name_map_[std::string("write")] = &thistype::LSC_write;
+  syscall_name_map_[std::string("open")] = &thistype::LSC_open;
+  syscall_name_map_[std::string("close")] = &thistype::LSC_close;
+  syscall_name_map_[std::string("lseek")] = &thistype::LSC_lseek;
+  syscall_name_map_[std::string("getpid")] = &thistype::LSC_getpid;
+  syscall_name_map_[std::string("getuid")] = &thistype::LSC_getuid;
+  syscall_name_map_[std::string("access")] = &thistype::LSC_access;
+  syscall_name_map_[std::string("times")] = &thistype::LSC_times;
+  syscall_name_map_[std::string("brk")] = &thistype::LSC_brk;
+  syscall_name_map_[std::string("getgid")] = &thistype::LSC_getgid;
+  syscall_name_map_[std::string("geteuid")] = &thistype::LSC_geteuid;
+  syscall_name_map_[std::string("getegid")] = &thistype::LSC_getegid;
+  syscall_name_map_[std::string("munmap")] = &thistype::LSC_munmap;
+  syscall_name_map_[std::string("stat")] = &thistype::LSC_stat;
+  syscall_name_map_[std::string("fstat")] = &thistype::LSC_fstat;
+  syscall_name_map_[std::string("uname")] = &thistype::LSC_uname;
+  syscall_name_map_[std::string("llseek")] = &thistype::LSC_llseek;
+  syscall_name_map_[std::string("writev")] = &thistype::LSC_writev;
+  syscall_name_map_[std::string("mmap")] = &thistype::LSC_mmap;
+  syscall_name_map_[std::string("mmap2")] = &thistype::LSC_mmap2;
+  syscall_name_map_[std::string("stat64")] = &thistype::LSC_stat64;
+  syscall_name_map_[std::string("fstat64")] = &thistype::LSC_fstat64;
+  syscall_name_map_[std::string("getuid32")] = &thistype::LSC_getuid32;
+  syscall_name_map_[std::string("getgid32")] = &thistype::LSC_getgid32;
+  syscall_name_map_[std::string("geteuid32")] = &thistype::LSC_geteuid32;
+  syscall_name_map_[std::string("getegid32")] = &thistype::LSC_getegid32;
+  syscall_name_map_[std::string("fcntl64")] = &thistype::LSC_fcntl64;
+  syscall_name_map_[std::string("flistxattr")] = &thistype::LSC_flistxattr;
+  syscall_name_map_[std::string("exit_group")] = &thistype::LSC_exit_group;
+  syscall_name_map_[std::string("fcntl")] = &thistype::LSC_fcntl;
+  syscall_name_map_[std::string("dup")] = &thistype::LSC_dup;
+  syscall_name_map_[std::string("ioctl")] = &thistype::LSC_ioctl;
+  syscall_name_map_[std::string("ugetrlimit")] = &thistype::LSC_ugetrlimit;
+  syscall_name_map_[std::string("getrlimit")] = &thistype::LSC_getrlimit;
+  syscall_name_map_[std::string("setrlimit")] = &thistype::LSC_setrlimit;
+  syscall_name_map_[std::string("rt_sigaction")] = &thistype::LSC_rt_sigaction;
+  syscall_name_map_[std::string("getrusage")] = &thistype::LSC_getrusage;
+  syscall_name_map_[std::string("unlink")] = &thistype::LSC_unlink;
+  syscall_name_map_[std::string("rename")] = &thistype::LSC_rename;
+  syscall_name_map_[std::string("time")] = &thistype::LSC_time;
+  syscall_name_map_[std::string("socketcall")] = &thistype::LSC_socketcall;
+  syscall_name_map_[std::string("rt_sigprocmask")] =
+      &thistype::LSC_rt_sigprocmask;
+  syscall_name_map_[std::string("kill")] = &thistype::LSC_kill;
+  syscall_name_map_[std::string("ftruncate")] = &thistype::LSC_ftruncate;
   // the following are arm private system calls
-  if (utsname_machine.compare("armv5") == 0) {
-    syscall_name_map[string("breakpoint")] = &thistype::LSC_arm_breakpoint;
-    syscall_name_map[string("cacheflush")] = &thistype::LSC_arm_cacheflush;
-    syscall_name_map[string("usr26")] = &thistype::LSC_arm_usr26;
-    syscall_name_map[string("usr32")] = &thistype::LSC_arm_usr32;
-    syscall_name_map[string("set_tls")] = &thistype::LSC_arm_set_tls;
+  if (utsname_machine_.compare("armv5") == 0) {
+    syscall_name_map_[std::string("breakpoint")] =
+        &thistype::LSC_arm_breakpoint;
+    syscall_name_map_[std::string("cacheflush")] =
+        &thistype::LSC_arm_cacheflush;
+    syscall_name_map_[std::string("usr26")] = &thistype::LSC_arm_usr26;
+    syscall_name_map_[std::string("usr32")] = &thistype::LSC_arm_usr32;
+    syscall_name_map_[std::string("set_tls")] = &thistype::LSC_arm_set_tls;
   }
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(
     const std::string &syscall_name) {
-  return syscall_name_map.find(syscall_name) != syscall_name_map.end();
+  return syscall_name_map_.find(syscall_name) != syscall_name_map_.end();
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>:::HasSyscall(int syscall_id) {
-  return syscall_impl_assoc_map.find(syscall_id) != syscall_impl_assoc_map.end();
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(int syscall_id) {
+  return syscall_impl_assoc_map_.find(syscall_id) != 
+      syscall_impl_assoc_map_.end();
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
-  if ( system == "arm" )
+  if ( system_type_ == "arm" )
     return ARMGetSyscallNumber(id);
-  else if ( system == "arm-eabi" )
+  else if ( system_type_ == "arm-eabi" )
     return ARMEABIGetSyscallNumber(id);
   else
     return PPCGetSyscallNumber(id);
@@ -1022,13 +1042,15 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool ReadMem(ADDRESS_TYPE addr, void * buffer, uint32_t size) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
+    ADDRESS_TYPE addr, void * buffer, uint32_t size) {
   if (memory_interface_ != NULL) return false;
   return memory_interface_->ReadMemory(addr, buffer, size);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
+    ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
   if (memory_interface_ == NULL) return false;
   return memory_interface_->WriteMemory(addr, buffer, size);
 }

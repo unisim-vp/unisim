@@ -32,6 +32,28 @@ set ( ENDIAN_SRCS_PATH
   ${UNISIM_LIB_PATH}/unisim/util/endian )
 set ( ENDIAN_SRCS
   ${ENDIAN_SRCS_PATH}/endian.cc )
+
+set ( ELF_SYMTAB_SRCS_PATH
+  ${UNISIM_LIB_PATH}/unisim/util/debug/elf_symtab )
+set ( ELF_SYMTAB_SRCS
+  ${ELF_SYMTAB_SRCS_PATH}/elf_symtab.hh
+  ${ELF_SYMTAB_SRCS_PATH}/elf_symtab.tcc
+  ${ELF_SYMTAB_SRCS_PATH}/elf_symtab32.cc
+  ${ELF_SYMTAB_SRCS_PATH}/elf_symtab64.cc )
+
+set ( ELF_LOADER_SRCS_PATH
+  ${UNISIM_LIB_PATH}/unisim/util/loader/elf_loader )
+set ( ELF_LOADER_SRCS
+  ${ELF_LOADER_SRCS_PATH}/elf32.h
+  ${ELF_LOADER_SRCS_PATH}/elf32_loader.cc
+  ${ELF_LOADER_SRCS_PATH}/elf32_loader.hh
+  ${ELF_LOADER_SRCS_PATH}/elf64.h
+  ${ELF_LOADER_SRCS_PATH}/elf64_loader.cc
+  ${ELF_LOADER_SRCS_PATH}/elf64_loader.hh
+  ${ELF_LOADER_SRCS_PATH}/elf_common.h
+  ${ELF_LOADER_SRCS_PATH}/elf_loader.hh
+  ${ELF_LOADER_SRCS_PATH}/elf_loader.tcc )
+
 set ( BLOB_SRCS_PATH
   ${UNISIM_LIB_PATH}/unisim/util/debug/blob )
 set ( BLOB_SRCS
@@ -41,6 +63,7 @@ set ( BLOB_SRCS
   ${BLOB_SRCS_PATH}/section64.cc
   ${BLOB_SRCS_PATH}/segment32.cc
   ${BLOB_SRCS_PATH}/segment64.cc )
+
 set ( LINUX_SRCS_PATH
   ${UNISIM_LIB_PATH}/unisim/util/os/linux )
 set ( LINUX_SRCS
@@ -48,4 +71,6 @@ set ( LINUX_SRCS
 add_library ( unisim_util_os_linux
   ${LINUX_SRCS}
   ${ENDIAN_SRCS}
+  ${ELF_SYMTAB_SRCS}
+  ${ELF_LOADER_SRCS}
   ${BLOB_SRCS} )

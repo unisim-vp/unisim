@@ -36,4 +36,4 @@
 #include "unisim/util/os/linux/linux.hh"
 #include "unisim/util/os/linux/linux.tcc"
 
-template class unisim::util::os::linux::Linux<uint32_t, uint32_t>;
+template class unisim::util::os::linux_os::Linux<uint32_t, uint32_t>;
