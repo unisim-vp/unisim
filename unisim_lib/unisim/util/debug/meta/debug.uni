@@ -16,6 +16,7 @@
       <file>unisim/util/debug/simple_register.hh</file>
       <file>unisim/util/debug/symbol.hh</file>
       <file>unisim/util/debug/symbol_table.hh</file>
+      <file>unisim/util/debug/memory_access_type.hh</file>
       <file>unisim/util/debug/watchpoint.hh</file>
       <file>unisim/util/debug/watchpoint_registry.hh</file>
       <file>unisim/util/debug/stmt.hh</file>
@@ -39,19 +40,12 @@
       <file>unisim/util/debug/watchpoint_registry_64.cc</file>
       <file>unisim/util/debug/stmt_32.cc</file>
       <file>unisim/util/debug/stmt_64.cc</file>
+      <file>unisim/util/debug/register.hh</file>
       <file>unisim/util/debug/CMakeLists.txt</file>
     </files>
     <depends>
-      <dep>clib_inttypes_h</dep>
-      <dep>clib_string_h</dep>
-      <dep>stl_ostream</dep>
-      <dep>stl_list</dep>
-      <dep>stl_string</dep>
-      <dep>stl_iostream</dep>
-      <dep>stl_sstream</dep>
-      <dep>stl_iosfwd</dep>
       <dep>unisim::util::hash_table</dep>
-      <dep>unisim::service::interfaces::memory_access_reporting</dep>
+      <!-- <dep>unisim::service::interfaces::memory_access_reporting</dep> -->
       <!-- <dep>unisim::util::debug::register</dep> -->
     </depends>
   </unit>
