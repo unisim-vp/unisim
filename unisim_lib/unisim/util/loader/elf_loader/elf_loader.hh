@@ -42,20 +42,29 @@
 #include <vector>
 #include <list>
 
-#include <unisim/util/endian/endian.hh>
+#include "unisim/util/endian/endian.hh"
+// we can not forward the Symbol class because we are using type definitions
+//   (enums) within it
+#include "unisim/util/debug/symbol.hh"
 
 namespace unisim {
 namespace util {
 namespace debug {
 template<class MEMORY_ADDR> class Statement;
-template<class MEMORY_ADDR> class Symbol;
 template<class MEMORY_ADDR> class SymbolTable;
+
 namespace blob {
 template<class MEMORY_ADDR> class Blob;
 } // end of namespace blob
+
 namespace dwarf {
 template<class MEMORY_ADDR> class DWARF_Handler;
 } // end of namespace dwarf
+
+namespace elf_symtab {
+template<class MEMORY_ADDR, class Elf_Sym> class ELF_SymtabHandler;
+} // end of namespace elf_symtab
+
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
@@ -123,7 +132,8 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
+  unisim::util::debug::elf_symtab::ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> 
+      *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
   std::string dwarf_to_html_output_directory;
 	bool verbose;
@@ -136,9 +146,9 @@ private:
 	void AdjustElfHeader(Elf_Ehdr *hdr);
 	void AdjustProgramHeader(const Elf_Ehdr *hdr, Elf_Phdr *phdr);
 	void AdjustSectionHeader(const Elf_Ehdr *hdr, Elf_Shdr *shdr);
-	Elf_Ehdr *ReadElfHeader(istream& is);
-	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, istream& is);
-	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, istream& is);
+	Elf_Ehdr *ReadElfHeader(std::istream& is);
+	Elf_Phdr *ReadProgramHeaders(const Elf_Ehdr *hdr, std::istream& is);
+	Elf_Shdr *ReadSectionHeaders(const Elf_Ehdr *hdr, std::istream& is);
 	const Elf_Shdr *GetNextSectionHeader(const Elf_Ehdr *hdr, const Elf_Shdr *shdr);
 	char *LoadSectionHeaderStringTable(const Elf_Ehdr *hdr, const Elf_Shdr *shdr_table, std::istream& is);
 	void DumpElfHeader(const Elf_Ehdr *hdr, std::ostream& os);

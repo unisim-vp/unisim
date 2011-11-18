@@ -50,11 +50,11 @@ template <class MEMORY_ADDR = uint32_t>
 class Elf32Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>
 {
 public:
-	Elf32Loader(unisim::kernel::logger::Logger& logger);
+	Elf32Loader(std::ostream& logger);
 };
 
 template <class MEMORY_ADDR>
-Elf32Loader<MEMORY_ADDR>::Elf32Loader(unisim::kernel::logger::Logger& _logger)
+Elf32Loader<MEMORY_ADDR>::Elf32Loader(std::ostream& _logger)
 	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>(_logger)
 {
 }
