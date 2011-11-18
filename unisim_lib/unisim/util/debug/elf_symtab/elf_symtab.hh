@@ -31,13 +31,25 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
 #define __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
 
-#include <unisim/kernel/logger/logger.hh>
-#include <unisim/util/debug/blob/blob.hh>
-#include <unisim/util/debug/symbol_table.hh>
+//#include <unisim/kernel/logger/logger.hh>
+#include <iostream>
+#include <list>
+
+namespace unisim {
+namespace util {
+namespace debug {
+template<class MEMORY_ADDR> class Symbol;
+template<class MEMORY_ADDR> class SymbolTable;
+namespace blob {
+template<class MEMORY_ADDR> class Blob;
+} // end of namespace blob
+} // end of namespace debug
+} // end of namespace util
+} // end of namespace unisim
 
 namespace unisim {
 namespace util {
@@ -47,22 +59,24 @@ namespace elf_symtab {
 template <class MEMORY_ADDR, class Elf_Sym>
 class ELF_SymtabHandler
 {
-public:
-	ELF_SymtabHandler(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
-	~ELF_SymtabHandler();
-	
-	void Parse();
-	
-	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
-private:
-	unisim::kernel::logger::Logger& logger;
-	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
+ public:
+  // ELF_SymtabHandler(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+  ELF_SymtabHandler(std::ostream& logger, 
+                    const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
+  ~ELF_SymtabHandler();
+
+  void Parse();
+
+  void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+  const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+  const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;
+  const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name) const;
+  const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+  const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
+ private:
+  std::ostream& logger;
+  const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+  unisim::util::debug::SymbolTable<MEMORY_ADDR> *symbol_table;
 };
 
 } // end of namespace elf_symtab

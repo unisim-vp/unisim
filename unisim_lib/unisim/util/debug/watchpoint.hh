@@ -35,21 +35,21 @@
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
-#include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <inttypes.h>
+
+#include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using unisim::service::interfaces::MemoryAccessReporting;
 
 template <class ADDRESS>
 class Watchpoint
 {
 public:
 
-	Watchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+	Watchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 	{
 		this->mat = mat;
 		this->mt = mt;
@@ -57,8 +57,8 @@ public:
 		this->size = size;
 	}
 
-	inline typename MemoryAccessReporting<ADDRESS>::MemoryAccessType GetMemoryAccessType() const { return mat; }
-	inline typename MemoryAccessReporting<ADDRESS>::MemoryType GetMemoryType() const { return mt; }
+	inline typename unisim::util::debug::MemoryAccessType GetMemoryAccessType() const { return mat; }
+	inline typename unisim::util::debug::MemoryType GetMemoryType() const { return mt; }
 	inline ADDRESS GetAddress() const { return addr; }
 	inline uint32_t GetSize() const { return size; }
 	inline bool HasOverlap(ADDRESS addr, uint32_t size) const
@@ -73,8 +73,8 @@ public:
 		return ovl_lo <= ovl_hi;
 	}
 private:
-	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat;
-	typename MemoryAccessReporting<ADDRESS>::MemoryType mt;
+	typename unisim::util::debug::MemoryAccessType mat;
+	typename unisim::util::debug::MemoryType mt;
 	ADDRESS addr;
 	uint32_t size;
 };

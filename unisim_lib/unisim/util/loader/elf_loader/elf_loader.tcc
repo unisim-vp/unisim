@@ -45,6 +45,7 @@
 
 #include "unisim/util/debug/blob/blob.hh"
 #include "unisim/util/debug/dwarf/dwarf.hh"
+#include "unisim/util/debug/elf_symtab/elf_symtab.hh"
 #include "unisim/util/debug/stmt.hh"
 #include "unisim/util/debug/symbol.hh"
 #include "unisim/util/debug/symbol_table.hh"
@@ -518,7 +519,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(phdr_table) free(phdr_table);
 	if(hdr) free(hdr);
 	
-	symtab_handler = new ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>(logger, blob);
+	symtab_handler = new unisim::util::debug::elf_symtab::ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>(logger, blob);
 	
 	if(symtab_handler)
 	{
@@ -1078,7 +1079,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 {
 	os << "---- Symbol ---";
 	os << std::endl << "Name : \"" << (string_table + sym->st_name) << "\"";
-	os << std::endl << "Value : 0x" << hex << sym->st_value << dec;
+	os << std::endl << "Value : 0x" << std::hex << sym->st_value << std::dec;
 	os << std::endl << "Size : " << sym->st_size;
 	os << std::endl << "Binding : ";
 	switch(ELF32_ST_BIND(unisim::util::endian::Target2Host(endianness, sym->st_info)))
