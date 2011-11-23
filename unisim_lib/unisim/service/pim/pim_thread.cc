@@ -77,7 +77,7 @@ void PIMThread::Run(){
 			super::stop();
 		} else {
 
-// qRcmd,cmd;var_name[:value];{var_name[:value];}
+// qRcmd,cmd;var_name[:value]{;var_name[:value]}
 			int start_index = 0;
 			int end_index = buf_str.find(',');
 			string qRcmd = buf_str.substr(start_index, end_index-start_index);
@@ -86,6 +86,7 @@ void PIMThread::Run(){
 
 			end_index = buf_str.find(';', start_index);
 			string cmd = buf_str.substr(start_index, end_index-start_index);
+
 			start_index = end_index+1;
 
 			if (cmd.compare("read") == 0) {
@@ -96,26 +97,27 @@ void PIMThread::Run(){
 
 				do {
 
-					end_index = buf_str.find(';', start_index);
+					string name = buf_str.substr(start_index, end_index-start_index);
+					start_index = end_index+1;
 
-					if (end_index != string::npos) {
-						string name = buf_str.substr(start_index, end_index-start_index);
-						start_index = end_index+1;
+					for (int i=0; i < simulator_variables.size(); i++) {
+						if (name.compare(simulator_variables[i]->GetName()) == 0) {
 
-						for (int i=0; i < simulator_variables.size(); i++) {
-							if (name.compare(simulator_variables[i]->GetName()) == 0) {
+							os << simulator_variables[i]->GetName() << ":";
 
-								os << simulator_variables[i]->GetName() << ":";
+							double val = *(simulator_variables[i]);
 
-								double val = *(simulator_variables[i]);
-								os << stringify(val);
+							os << stringify(val);
 
-								os << ";";
+							os << ";";
 
-								break;
-							}
+							break;
 						}
+					}
 
+					end_index = buf_str.find(';', start_index);
+					if (end_index != string::npos) {
+						start_index = end_index+1;
 					}
 				} while (end_index != string::npos);
 
@@ -153,7 +155,24 @@ void PIMThread::Run(){
 				for (int i=0; i < simulator_variables.size(); i++) {
 					if (name.compare(simulator_variables[i]->GetName()) == 0) {
 
-						*(simulator_variables[i]) = convertTo<double>(value);
+						if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
+							*(simulator_variables[i]) = convertTo<double>(value);
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
+							*(simulator_variables[i]) = convertTo<float>(value);
+						}
+						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
+
+							*(simulator_variables[i]) = value.compare("false");
+//							bool t = true;
+//							bool f = false;
+//							std::cout << std::noboolalpha << t << " == " << std::boolalpha << t << std::endl;
+//							std::cout << std::noboolalpha << f << " == " << std::boolalpha << f << std::endl;
+						}
+						else {
+							*(simulator_variables[i]) = convertTo<uint64_t>(value);
+						}
+
 						break;
 					}
 				}
