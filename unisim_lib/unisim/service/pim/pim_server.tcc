@@ -1531,7 +1531,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 			const Statement<ADDRESS> *stmt = 0;
 			ADDRESS addr = *pc_reg;
-			long mcuAddress = Object::GetSimulator()->GetMCUAddress(addr);
+			long mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
 
 			Number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
@@ -1573,7 +1573,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		OutputText(packet.c_str(), packet.length());
 
 	}
-	else if (cmdPrefix.compare("mcuAddress") == 0) {
+	else if (cmdPrefix.compare("physicalAddress") == 0) {
 
 		if (separator_index == string::npos) {
 			PutPacket("E00");
@@ -1598,7 +1598,45 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				string packet("T05");
 				std::stringstream sstr;
 
-				uint64_t mcuAddress = Object::GetSimulator()->GetMCUAddress(logical_address);
+				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
+
+				Number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+				packet += hex;
+
+				PutPacket(packet);
+
+			}
+
+		}
+
+	}
+	else if (cmdPrefix.compare("structuredAddress") == 0) {
+
+		if (separator_index == string::npos) {
+			PutPacket("E00");
+		} else {
+			separator_index++;
+			long logical_address;
+
+			int start_index = 0;
+			int end_index = command.find(':', start_index);
+			if(end_index == string::npos) {
+				PutPacket("E00");
+			} else {
+
+				string cmd = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+
+				string hex = command.substr(start_index);
+				start_index = end_index+1;
+
+				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+				string packet("T05");
+				std::stringstream sstr;
+
+				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
 
 				Number2HexString((uint8_t*) &mcuAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 

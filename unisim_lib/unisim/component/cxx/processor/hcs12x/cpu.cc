@@ -632,7 +632,13 @@ uint8_t CPU::Step()
 		Stop(1);
 	}
 
-	if (instruction_counter >= max_inst) Stop(0);
+//	if (instruction_counter >= max_inst) Stop(0);
+	if ((instruction_counter % max_inst) == 0) {
+		if (trap_reporting_import) {
+			trap_reporting_import->ReportTrap();
+		}
+
+	}
 
 	return opCycles;
 }

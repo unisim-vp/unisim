@@ -118,7 +118,8 @@ public:
 
 	virtual double GetSimTime()	{ if (sim_time) { return sim_time->GetTime(); } else { return 0; }	}
 	virtual double GetHostTime()	{ if (host_time) { return host_time->GetTime(); } else { return 0; }	}
-	virtual long   GetMCUAddress(long logicalAddress) { return mmc->getPagedAddress(logicalAddress); }
+	virtual long   GetStructuredAddress(long logicalAddress) { return mmc->getPagedAddress(logicalAddress); }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return mmc->getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00); }
 
 	void GeneratePim() {
 		PIM *pim = new PIM("pim");

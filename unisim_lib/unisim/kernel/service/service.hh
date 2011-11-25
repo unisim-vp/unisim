@@ -283,7 +283,8 @@ public:
 	
 	virtual double GetSimTime()	{ return 0;	}
 	virtual double GetHostTime()	{ return 0;	}
-	virtual long   GetMCUAddress(long logicalAddress) { return 0; }
+	virtual long   GetStructuredAddress(long logicalAddress) { return logicalAddress; }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return logicalAddress; }
 
 	bool IsWarningEnabled() const;
 
