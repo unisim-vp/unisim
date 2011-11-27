@@ -35,6 +35,7 @@
 #define __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
 
 #include "unisim/util/os/linux/linux.hh"
+#include "unisim/util/os/linux/files_flags.hh"
 
 namespace unisim {
 namespace util {

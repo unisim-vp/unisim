@@ -160,7 +160,16 @@ set ( ELF_LOADER_SRCS
 set ( LINUX_SRCS_PATH
   ${UNISIM_LIB_PATH}/unisim/util/os/linux )
 set ( LINUX_SRCS
-  ${LINUX_SRCS_PATH}/linux.cc )
+  ${LINUX_SRCS_PATH}/linux.cc
+  ${LINUX_SRCS_PATH}/linux.hh
+  ${LINUX_SRCS_PATH}/linux.tcc
+  ${LINUX_SRCS_PATH}/arm.hh
+  ${LINUX_SRCS_PATH}/ppc.hh
+  ${LINUX_SRCS_PATH}/calls.tcc
+  ${LINUX_SRCS_PATH}/environment.hh
+  ${LINUX_SRCS_PATH}/environment.cc
+  ${LINUX_SRCS_PATH}/aux_table.hh
+  ${LINUX_SRCS_PATH}/files_flags.hh )
 add_library ( unisim_util_os_linux
   ${LINUX_SRCS}
   ${ENDIAN_SRCS}
