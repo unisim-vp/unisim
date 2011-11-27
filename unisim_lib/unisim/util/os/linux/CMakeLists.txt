@@ -169,3 +169,12 @@ add_library ( unisim_util_os_linux
   ${DWARF_SRCS}
   ${ELF_SYMTAB_SRCS}
   ${ELF_LOADER_SRCS} )
+
+set ( TEST_SRCS_PATH
+  ${UNISIM_LIB_PATH}/unisim/util/os/linux )
+set ( TEST_SRCS
+  ${TEST_SRCS_PATH}/test.cc )
+add_executable ( unisim_util_os_linux_test
+  ${TEST_SRCS} )
+target_link_libraries ( unisim_util_os_linux_test
+  unisim_util_os_linux )

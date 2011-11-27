@@ -13,6 +13,7 @@
       <file>unisim/util/os/linux/environment.cc</file>
       <file>unisim/util/os/linux/aux_table.hh</file>
       <file>unisim/util/os/linux/CMakeLists.txt</file>
+      <file>unisim/util/os/linux/test.cc</file>
     </files>
     <depends>
       <dep>unisim::util::loader::elf_loader</dep>
