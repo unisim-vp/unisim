@@ -44,21 +44,21 @@ namespace linux_os {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
-  string name = "exit";
+  std::string name = "exit";
   int ret;
 
   ret = GetSystemCallParam(0);
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "LSC_exit with ret = 0X" << hex << ret << dec
-        << LOCATION
-        << EndDebugInfo;
-  Object::Stop(ret);
+  if (unlikely(verbose_))
+    *logger_ << "LSC_exit with ret = 0X" << std::hex << ret << std::dec
+        << std::endl;
+  std::cerr << "TODO exit system call was called, so we are exiting, but a "
+      << "cleaner stop method should be provided" << std::endl;
+  // Object::Stop(ret);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read() {
-  string name = "read";
+  std::string name = "read";
   int fd;
   size_t count;
   ADDRESS_TYPE buf_addr;
@@ -78,12 +78,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read() {
   } else
     ret = (size_t)-1;
 
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "read(fd=" << fd << ", buf=0x" << hex << buf_addr << dec
-        << ", count=" << count << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "read(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
+        << ", count=" << count << ") return " << ret << std::endl
+        << std::endl;
 
   SetSystemCallStatus(ret, ret < 0);
 }
@@ -109,9 +108,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_write() {
       char *tbuf = new char[count + 1];
       memcpy(tbuf, buf, count);
       tbuf[count] = '\0';
-      string str(tbuf);
-      cout << (str);
-      cout << flush;
+      std::string str(tbuf);
+      std::cout << (str);
+      std::cout << std::flush;
       ret = count;
       delete[] tbuf;
     } else
@@ -120,12 +119,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_write() {
   } else
     ret = (size_t)-1;
 
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "write(fd=" << fd << ", buf=0x" << hex << buf_addr << dec
-        << ", count=" << count << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "write(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
+        << ", count=" << count << ") return " << ret << std::endl
+        << std::endl;
   SetSystemCallStatus(ret, ret < 0);
 }
 
@@ -173,12 +171,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open() {
   }
 #endif
 
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "open(pathname=\"" << pathname << "\", flags=0x" << hex << flags
-        << ", mode=0x" << mode << dec << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags
+        << ", mode=0x" << mode << std::dec << ") return " << ret << std::endl
+        << std::endl;
 
   free(pathname);
   SetSystemCallStatus(ret, (ret < 0));
@@ -191,11 +188,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_close() {
 
   fd = GetSystemCallParam(0);
   ret = close(fd);
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "close(fd=" << fd << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "close(fd=" << fd << ") return " << ret << std::endl
+        << std::endl;
   SetSystemCallStatus(ret, ret < 0);
 }
 
@@ -210,12 +206,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_lseek() {
   offset = GetSystemCallParam(1);
   whence = GetSystemCallParam(2);
   ret = lseek(fildes, offset, whence);
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "lseek(fildes=" << fildes << ", offset=" << offset
-        << ", whence=" << whence << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+        << ", whence=" << whence << ") return " << ret << std::endl
+        << std::endl;
 
   if (ret == (off_t)-1)
     SetSystemCallStatus(errno, true);
@@ -228,11 +223,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getpid() {
   pid_t ret;
 
   ret = (pid_t) 1000;
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "getpid() return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "getpid() return " << ret << std::endl
+        << std::endl;
   SetSystemCallStatus(ret,false);
 }
 
@@ -245,11 +239,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid() {
 
   ret = getuid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "getuid() return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "getuid() return " << ret << std::endl
+        << std::endl;
   SetSystemCallStatus(ret,false);
 }
 
@@ -273,12 +266,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_access() {
 #else
   ret = access(pathname, mode);
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "access(pathname=\"" << pathname
-        << "\", mode=0x" << hex << mode << dec << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+        << "\", mode=0x" << std::hex << mode << std::dec << ") return " << ret << std::endl
+        << std::endl;
   free(pathname);
   SetSystemCallStatus(ret, ret < 0);
 }
@@ -305,12 +297,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_times() {
     }
   } else ret = -1;
 
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "times(buf=0x" << hex << buf_addr << dec << ") return " << ret
-        << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "times(buf=0x" << std::hex << buf_addr << std::dec << ") return " << ret
+        << std::endl;
   SetSystemCallStatus(ret, ret != -1);
 }
 
@@ -323,12 +313,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_brk() {
   if (new_brk_point > GetBrkPoint())
     SetBrkPoint(new_brk_point);
 
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "brk(new_brk_point=0x" << hex << new_brk_point
-        << ") return 0x" << GetBrkPoint() << dec << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "brk(new_brk_point=0x" << std::hex << new_brk_point
+        << ") return 0x" << GetBrkPoint() << std::dec
+        << std::endl;
   SetSystemCallStatus(GetBrkPoint(),false);
 }
 
@@ -341,11 +330,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid() {
 
   ret = getgid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "getgid() return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "getgid() return " << ret << std::endl;
   SetSystemCallStatus(ret,false);
 }
 
@@ -358,11 +345,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid() {
 
   ret = geteuid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "geteuid() return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "geteuid() return " << ret << std::endl;
   SetSystemCallStatus(ret,false);
 }
 
@@ -375,11 +360,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid() {
 
   ret = getegid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "getegid() return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "getegid() return " << ret << std::endl;
   SetSystemCallStatus(ret,false);
 }
 
@@ -389,12 +372,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
 
   if (GetMmapBrkPoint() - u > GetMmapBrkPoint()) {
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-    if (unlikely(verbose))
-      logger << DebugInfo
+    if (unlikely(verbose_))
+      *logger_ 
           << "size = " << u
-          << ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-          << endl
-          << LOCATION << EndDebugInfo;
+          << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+          << std::endl;
     return;
   }
 
@@ -403,31 +385,28 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
 
   if (GetMmapBrkPoint() - u >= GetMmapBrkPoint()) {
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-    if (unlikely(verbose))
-      logger << DebugInfo
+    if (unlikely(verbose_))
+      *logger_ 
           << "size = " << u
-          << ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-          << endl
-          << LOCATION << EndDebugInfo;
+          << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+          << std::endl;
     return;
   }
 
   SetSystemCallStatus((PARAMETER_TYPE)0,false);
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "size = " << u
-        << ", ret = 0x" << hex << 0 << dec
-        << endl
-        << LOCATION << EndDebugInfo;
+        << ", ret = 0x" << std::hex << 0 << std::dec
+        << std::endl;
   SetMmapBrkPoint(GetMmapBrkPoint() - u);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat() {
-  logger << DebugWarning
-      << "TODO" << endl
-      << LOCATION
-      << EndDebugWarning;
+  // TODO write LSC_stat
+  *logger_
+      << "TODO LSC_stat" << std::endl;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -931,13 +910,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat() {
   }
   else ret = -1;
 
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "stat(fd=" << fd
-        << ", buf_addr=0x" << hex << buf_address << dec
-        << ") return " << ret << endl
-        << LOCATION
-        << EndDebugInfo;
+        << ", buf_addr=0x" << std::hex << buf_address << std::dec
+        << ") return " << ret << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
@@ -977,13 +954,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
   offset_low = GetSystemCallParam(2);
   result_addr = GetSystemCallParam(3);
   whence = GetSystemCallParam(4);
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "llseek(fd=" << fd
         << ", offset=" << (((int64_t) offset_high << 32) | (int64_t) offset_low)
-        << ", result_addr=0x" << hex << result_addr << dec
-        << ", whence=" << whence << ")" << endl
-        << LOCATION << EndDebugInfo;
+        << ", result_addr=0x" << std::hex << result_addr << std::dec
+        << ", whence=" << whence << ")" << std::endl;
   if (offset_high == 0) {
     lseek_ret = lseek(fd, offset_low, whence);
     if (lseek_ret >= 0) {
@@ -1000,11 +976,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_writev() {
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "ret = 0x"
-        << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec << endl
-        << LOCATION << EndDebugInfo;
+        << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec << std::endl;
 
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
@@ -1014,31 +989,30 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap() {
   SetSystemCallStatus(-1,true); return;
   if (GetSystemCallParam(3) == 0x32) { /* MAP_PRIVATE | MAP_ANONYMOUS */
     SetSystemCallStatus(GetSystemCallParam(0),false);
-    if (unlikely(verbose))
-      logger << DebugInfo << "map_type = 0x" << hex << GetSystemCallParam(3) <<
-          dec << ", size = " << GetSystemCallParam(1) << ", ret = 0x" << hex <<
-          ((PARAMETER_TYPE)GetSystemCallParam(0)) << dec << endl << LOCATION <<
-          EndDebugInfo;
+    if (unlikely(verbose_))
+      *logger_  << "map_type = 0x" << std::hex << GetSystemCallParam(3) <<
+          dec << ", size = " << GetSystemCallParam(1) << ", ret = 0x" << std::hex <<
+          ((PARAMETER_TYPE)GetSystemCallParam(0)) << std::dec << std::endl;
     return;
   }
 
   if ((GetSystemCallParam(3)&0xFF) != 0x22) { /* MAP_PRIVATE | MAP_ANONYMOUS */
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-    if (unlikely(verbose))
-      logger << DebugInfo
-          << "map_type = 0x" << hex << GetSystemCallParam(3) << dec
+    if (unlikely(verbose_))
+      *logger_ 
+          << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
-          << ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-          << endl << LOCATION << EndDebugInfo;
+          << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+          << std::endl;
     return;
   }
   SetSystemCallStatus(GetMmapBrkPoint(),false);
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "map_type = 0x" << hex << GetSystemCallParam(3) << dec
+  if (unlikely(verbose_))
+    *logger_ 
+        << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
         << ", size = " << GetSystemCallParam(1)
-        << ", ret = 0x" << hex << GetMmapBrkPoint() << dec
-        << endl << LOCATION << EndDebugInfo;
+        << ", ret = 0x" << std::hex << GetMmapBrkPoint() << std::dec
+        << std::endl;
   SetMmapBrkPoint(GetMmapBrkPoint() + GetSystemCallParam(1));
 }
 
@@ -1046,31 +1020,31 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap2() {
   if (GetSystemCallParam(3) != 0x22) { /* MAP_PRIVATE | MAP_ANONYMOUS */
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
-    if (unlikely(verbose))
-      logger << DebugInfo
-          << "map_type = 0x" << hex << GetSystemCallParam(3) << dec
+    if (unlikely(verbose_))
+      *logger_ 
+          << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
-          << ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-          << endl << LOCATION << EndDebugInfo;
+          << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+          << std::endl;
     return;
   }
 
   if (GetMmapBrkPoint() + GetSystemCallParam(1) > GetSystemCallParam(1)) {
     SetSystemCallStatus(GetMmapBrkPoint(),false);
-    if (unlikely(verbose))
-      logger << DebugInfo
-          << "map_type = 0x" << hex << GetSystemCallParam(3) << dec
+    if (unlikely(verbose_))
+      *logger_ 
+          << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
-          << ", ret = 0x" << hex << GetMmapBrkPoint() << dec
-          << endl << LOCATION << EndDebugInfo;
+          << ", ret = 0x" << std::hex << GetMmapBrkPoint() << std::dec
+          << std::endl;
     SetMmapBrkPoint(GetMmapBrkPoint() + GetSystemCallParam(1));
   } else {
-    if (unlikely(verbose))
-      logger << DebugInfo
-          << "map_type = 0x" << hex << GetSystemCallParam(3) << dec
+    if (unlikely(verbose_))
+      *logger_ 
+          << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
-          << ", ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-          << endl << LOCATION << EndDebugInfo;
+          << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+          << std::endl;
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
   }
 }
@@ -1092,11 +1066,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat64() {
     ret = Stat64(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
   } else ret = -1;
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "fd = " << fd << ", buf_address = 0x" << hex << buf_address << dec
-        << ", ret = 0x" << hex << ret << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "fd = " << fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+        << ", ret = 0x" << std::hex << ret << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
@@ -1117,11 +1091,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64() {
     ret = Stat64(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
   } else ret = -1;
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "fd = " << fd << ", buf_address = 0x" << hex << buf_address << dec
-        << ", ret = 0x" << hex << ret << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "fd = " << fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
+        << ", ret = 0x" << std::hex << ret << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
@@ -1134,10 +1108,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid32() {
 
   ret = getuid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 
@@ -1150,10 +1124,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid32() {
 
   ret = getgid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 
@@ -1166,10 +1140,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid32() {
 
   ret = geteuid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 
@@ -1182,26 +1156,27 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid32() {
 
   ret = getegid();
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_flistxattr() {
-  logger << DebugWarning
-      << "TODO"
-      << endl << LOCATION << EndDebugWarning;
+  // TODO implement LSC_flistxattr
+  *logger_
+      << "TODO LSC_flistxattr"
+      << std::endl;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit_group() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
@@ -1216,19 +1191,19 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl() {
               GetSystemCallParam(1),
               GetSystemCallParam(2));
 #endif
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "ret = " <<  ((PARAMETER_TYPE)ret)
-        << endl << LOCATION << EndDebugInfo;
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl64() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
@@ -1238,118 +1213,118 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_dup() {
   int oldfd = GetSystemCallParam(0);
 
   ret = dup(oldfd);
-  if (unlikely(verbose))
-    logger << DebugInfo
+  if (unlikely(verbose_))
+    *logger_ 
         << "oldfd = " << oldfd << ", new fd = " << ((PARAMETER_TYPE)ret)
-        << endl << LOCATION << EndDebugInfo;
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret, ret < 0);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ioctl() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ugetrlimit() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getrlimit() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_setrlimit() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rt_sigaction() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getrusage() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unlink() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rename() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_time() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_socketcall() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rt_sigprocmask() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_kill() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)0, false);
 }
 
@@ -1359,47 +1334,47 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ftruncate() {
 
   ret = ftruncate(GetSystemCallParam(0), GetSystemCallParam(1));
 
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)ret) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
+        << std::endl;
 
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_breakpoint() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_cacheflush() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr26() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr32() {
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
 }
 
@@ -1407,10 +1382,10 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
   uint32_t r0 = GetSystemCallParam(0);
   WriteMem(0xffff0ff0UL, (void *)&(r0), 4);
-  if (unlikely(verbose))
-    logger << DebugInfo
-        << "ret = 0x" << hex << ((PARAMETER_TYPE)0) << dec
-        << endl << LOCATION << EndDebugInfo;
+  if (unlikely(verbose_))
+    *logger_ 
+        << "ret = 0x" << std::hex << ((PARAMETER_TYPE)0) << std::dec
+        << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)0, true);
 }
 
