@@ -228,6 +228,10 @@ class Linux {
   int current_syscall_id_;
   std::string current_syscall_name_;
 
+  // stubs for reading the osrelease file (see calls.tcc LSC_open)
+  const char *kOsreleaseFilename;
+  const char *kFakeOsreleaseFilename;
+
   // activate the verbose
   bool verbose_;
   // logger stream

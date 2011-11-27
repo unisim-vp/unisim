@@ -35,6 +35,7 @@
 #define __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
 
 #include <fcntl.h>
+#include <fstream>
 
 #include "unisim/util/os/linux/linux.hh"
 #include "unisim/util/os/linux/files_flags.hh"
@@ -162,12 +163,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open() {
 #else
   host_mode = mode; // other UNIX systems should have the same bit encoding for protection
 #endif
-  if (strcmp(pathname, osrelease_filename) == 0) {
+  if (strcmp(pathname, kOsreleaseFilename) == 0) {
     {
-      std::ofstream fake_file(fake_osrelease_filename);
+      std::ofstream fake_file(kFakeOsreleaseFilename);
       fake_file << utsname_release_ << std::endl;
     }
-    ret = open(fake_osrelease_filename, host_flags, host_mode);
+    ret = open(kFakeOsreleaseFilename, host_flags, host_mode);
   } else {
     ret = open(pathname, host_flags, host_mode);
   }

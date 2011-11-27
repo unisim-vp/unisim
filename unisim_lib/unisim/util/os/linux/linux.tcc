@@ -108,6 +108,13 @@ Linux(bool verbose, std::ostringstream * const logger)
     , blob_(NULL)
     , register_interface_(NULL)
     , memory_interface_(NULL)
+    , syscall_name_map_()
+    , syscall_name_assoc_map_()
+    , syscall_impl_assoc_map_()
+    , current_syscall_id_(0)
+    , current_syscall_name_("(NONE)")
+    , kOsreleaseFilename("/proc/sys/kernel/osrelease")
+    , kFakeOsreleaseFilename("osrelease")
     // , registers_(NULL) // TODO Remove
     , logger_(logger)
     , loader_logger_(std::ostringstream::out) {
