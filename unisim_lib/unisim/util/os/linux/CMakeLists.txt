@@ -16,7 +16,7 @@ foreach ( CXX_INCLUDE ${CXX_INCLUDES} )
   endif ( NOT HAVE_${CXX_INCLUDE} )
 endforeach ( CXX_INCLUDE )
 
-set ( C_INCLUDES string stdlib inttypes )
+set ( C_INCLUDES string stdlib inttypes fcntl )
 foreach ( C_INCLUDE ${C_INCLUDES} )
   check_include_file( ${C_INCLUDE}.h HAVE_${C_INCLUDE}_H )
   if ( NOT HAVE_${C_INCLUDE}_H )
