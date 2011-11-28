@@ -10,6 +10,7 @@
 
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
+#include "unisim/util/endian/endian.hh"
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
@@ -18,6 +19,9 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
+
+using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
 
 /**
  * Constructor.
@@ -972,7 +976,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		case RESERVED3:	*((uint8_t *) buffer) = reserved3_reg; break;
 		case EADDRHI: {
 			if (data_length == 2) {
-				*((uint16_t *) buffer) = eaddr_reg;
+				*((uint16_t *) buffer) = Host2BigEndian(eaddr_reg);
 			} else {
 				*((uint8_t *) buffer) = (uint8_t) ((eaddr_reg & 0xFF00) >> 8);
 			}
@@ -981,7 +985,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		case EADDRLO: *((uint8_t *) buffer) = (uint8_t) (eaddr_reg & 0x00FF); break;
 		case EDATAHI: {
 			if (data_length == 2) {
-				*((uint16_t *) buffer) = edata_reg;
+				*((uint16_t *) buffer) = Host2BigEndian(edata_reg);
 			} else {
 				*((uint8_t *) buffer) = (uint8_t) ((edata_reg & 0xFF00) >> 8);
 			}
@@ -1159,7 +1163,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			case RESERVED3:	ecmd_reg = *((uint8_t *) buffer); break;
 			case EADDRHI: {
 				if (data_length == 2) {
-					eaddr_reg = *((uint16_t *) buffer);
+					eaddr_reg = BigEndian2Host(*((uint16_t *) buffer));
 				} else {
 					eaddr_reg = (eaddr_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
 				}
@@ -1169,7 +1173,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			case EADDRLO: eaddr_reg = (eaddr_reg & 0xFF00) | *((uint8_t *) buffer);	break;
 			case EDATAHI: {
 				if (data_length == 2) {
-					edata_reg = *((uint16_t *) buffer);
+					edata_reg = BigEndian2Host(*((uint16_t *) buffer));
 				} else {
 					edata_reg = (edata_reg & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
 				}

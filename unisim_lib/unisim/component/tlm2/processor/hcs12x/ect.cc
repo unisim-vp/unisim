@@ -34,6 +34,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include "unisim/util/debug/simple_register.hh"
+#include "unisim/util/endian/endian.hh"
 
 namespace unisim {
 namespace component {
@@ -42,6 +43,8 @@ namespace processor {
 namespace hcs12x {
 
 using unisim::util::debug::SimpleRegister;
+using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
 
 //template void ECT::IOC_Channel_t::checkChangeStateAndWait<uint8_t>(const sc_time clk);
 //template void ECT::IOC_Channel_t::checkChangeStateAndWait<uint16_t>(const sc_time clk);
@@ -359,6 +362,7 @@ void ECT::assertInterrupt(uint8_t interrupt_offset) {
 	if ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) == 0)) return;
 	if ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) == 0) return;
 
+	std::cerr << "ECT Interrupt => 0x" << std::hex << (unsigned int) interrupt_offset << std::endl;
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
@@ -445,7 +449,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TCNT_HIGH: {
 			if (size == 2) {
-				*((uint16_t *)value) = tcnt_register;
+				*((uint16_t *)value) = Host2BigEndian(tcnt_register);
 			} else {
 				*((uint8_t *)value) = tcnt_register >> 8;
 			}
@@ -467,7 +471,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TCTL1: {
 			if (size == 2) {
-				*((uint16_t *)value) = tctl12_register;
+				*((uint16_t *)value) = Host2BigEndian(tctl12_register);
 			} else {
 				*((uint8_t *)value) =  tctl12_register >> 8;
 			}
@@ -478,7 +482,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TCTL3: {
 			if (size == 2) {
-				*((uint16_t *)value) = tctl34_register;
+				*((uint16_t *)value) = Host2BigEndian(tctl34_register);
 			} else {
 				*((uint8_t *)value) = tctl34_register >> 8;
 			}
@@ -507,7 +511,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case PACN3: {
 			if (size == 2) {
-				*((uint16_t *)value) = (((uint16_t) pacn_register[3]) << 8) | pacn_register[2];
+				*((uint16_t *)value) = Host2BigEndian((((uint16_t) pacn_register[3]) << 8) | pacn_register[2]);
 			} else {
 				*((uint8_t *)value) = pacn_register[3];
 			}
@@ -525,7 +529,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case PACN1: {
 			if (size == 2) {
-				*((uint16_t *)value) = (((uint16_t) pacn_register[1]) << 8) | pacn_register[0];
+				*((uint16_t *)value) = Host2BigEndian((((uint16_t) pacn_register[1]) << 8) | pacn_register[0]);
 			} else {
 				*((uint8_t *)value) = pacn_register[1];
 			}
@@ -587,7 +591,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 
 				if (offset == MCCNT_HIGH) {
 					if (size == 2) {
-						*((uint16_t *)value) = readed_value;
+						*((uint16_t *)value) = Host2BigEndian(readed_value);
 					} else {
 						*((uint8_t *)value) = readed_value >> 8;
 					}
@@ -604,7 +608,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 				if ((tc_offset % 2) == 0) // TCx_High ?
 				{
 					if (size == 2) {
-						*((uint16_t *)value) = tc_registers[tc_offset/2];
+						*((uint16_t *)value) = Host2BigEndian(tc_registers[tc_offset/2]);
 						tc_registers[tc_offset/2] = 0x0000;
 					} else {
 						*((uint8_t *)value) =  tc_registers[tc_offset/2] >> 8;
@@ -629,7 +633,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 				if ((tcxh_offset % 2) == 0) // TCxH_High ?
 				{
 					if (size == 2) {
-						*((uint16_t *)value) = tcxh_registers[tcxh_offset/2];
+						*((uint16_t *)value) = Host2BigEndian(tcxh_registers[tcxh_offset/2]);
 						tcxh_registers[tcxh_offset/2] = 0x0000;
 					} else {
 						*((uint8_t *)value) = tcxh_registers[tcxh_offset/2] >> 8;
@@ -662,14 +666,14 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 	return true;
 }
 
-bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
+bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 	switch (offset) {
 		case TIOS: {
-			 tios_register = *((uint8_t *)value);
+			 tios_register = *((uint8_t *)data);
 		} break;
 		case CFORC: {
-			cforc_register = *((uint8_t *)value);
+			cforc_register = *((uint8_t *)data);
 
 			for (uint8_t i=0; i<8; i++) {
 				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
@@ -682,19 +686,19 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 		} break;
 		case OC7M: {
-			oc7m_register = *((uint8_t *)value);
+			oc7m_register = *((uint8_t *)data);
 		} break;
 		case OC7D: {
-			oc7d_register = *((uint8_t *)value);
+			oc7d_register = *((uint8_t *)data);
 		} break;
 		case TCNT_HIGH: {
 
 			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
 
 			if (size == 2) {
-				tcnt_register = *((uint16_t *)value);
+				tcnt_register = BigEndian2Host(*((uint16_t *)data));
 			} else {
-				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
 			}
 
 			if ((tscr1_register & 0x10) != 0) {
@@ -705,7 +709,7 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 		case TCNT_LOW: {
 			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
 
-			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)value);
+			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)data);
 
 			if ((tscr1_register & 0x10) != 0) {
 				tflg2_register = tflg2_register & 0x7F;
@@ -714,14 +718,14 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case TSCR1: {
 			uint8_t old_prnt_bit = tscr1_register & 0x08;
-			*((uint8_t *)value) = (tscr1_register & 0x07) | (*((uint8_t *)value) & 0xF8);
+			*((uint8_t *)data) = (tscr1_register & 0x07) | (*((uint8_t *)data) & 0xF8);
 
 			if (prnt_write) {
-				*((uint8_t *)value) = (*((uint8_t *)value) & 0xF7) | old_prnt_bit;
+				*((uint8_t *)data) = (*((uint8_t *)data) & 0xF7) | old_prnt_bit;
 			} else {
 				prnt_write = true;
 			}
-			tscr1_register = *((uint8_t *)value);
+			tscr1_register = *((uint8_t *)data);
 
 			if ((tscr1_register & 0x80) != 0) {
 				main_timer_enable();
@@ -731,39 +735,39 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 		} break;
 		case TTOV: {
-			ttov_register = *((uint8_t *)value);
+			ttov_register = *((uint8_t *)data);
 		} break;
 		case TCTL1: {
 			if (size == 2) {
-				tctl12_register = *((uint16_t *)value);
+				tctl12_register = BigEndian2Host(*((uint16_t *)data));
 			} else {
-				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
 			}
 			configureOutputAction();
 
 		} break;
 		case TCTL2: {
-			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)value);
+			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)data);
 			configureOutputAction();
 
 		} break;
 		case TCTL3: {
 			if (size == 2) {
-				tctl34_register = *((uint16_t *)value);
+				tctl34_register = BigEndian2Host(*((uint16_t *)data));
 			} else {
-				tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+				tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
 			}
 			configureEdgeDetector();
 		} break;
 		case TCTL4: {
-			tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)value);
+			tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)data);
 			configureEdgeDetector();
 		} break;
 		case TIE: {
-			tie_register = *((uint8_t *)value);
+			tie_register = *((uint8_t *)data);
 		} break;
 		case TSCR2: {
-			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)value) & 0x8F);
+			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)data) & 0x8F);
 			ComputeTimerPrescaledClock();
 
 		} break;
@@ -774,7 +778,7 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 			// chech TSCR1::TFFCA bit is cleared
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = *((uint8_t *)value);
+				uint8_t val = *((uint8_t *)data);
 				tflg1_register = tflg1_register & ~val;
 			}
 		} break;
@@ -784,14 +788,14 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
 
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = (*((uint8_t *)value) & 0x80);
+				uint8_t val = (*((uint8_t *)data) & 0x80);
 
 				tflg2_register = tflg2_register & ~val;
 			}
 
 		} break;
 		case PACTL: {
-			uint8_t masked_value = (pactl_register & 0x80) | (*((uint8_t *)value) & 0x7F);
+			uint8_t masked_value = (pactl_register & 0x80) | (*((uint8_t *)data) & 0x7F);
 			pactl_register = masked_value;
 
 			switch ((pactl_register & 0x30) >> 4) {
@@ -833,16 +837,16 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
 
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = (*((uint8_t *)value) & 0x03);
+				uint8_t val = (*((uint8_t *)data) & 0x03);
 				paflg_register = paflg_register & ~val;
 			}
 		} break;
 		case PACN3: {
 			if (size == 2) {
-				pacn_register[3] = *((uint16_t *)value) >> 8;
-				pacn_register[2] = *((uint16_t *)value) & 0x00FF;
+				pacn_register[3] = BigEndian2Host(*((uint16_t *)data)) >> 8;
+				pacn_register[2] = BigEndian2Host(*((uint16_t *)data)) & 0x00FF;
 			} else {
-				pacn_register[3] = *((uint8_t *)value);
+				pacn_register[3] = *((uint8_t *)data);
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				paflg_register = paflg_register & 0xFC;
@@ -850,17 +854,17 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 		} break;
 		case PACN2: {
-			pacn_register[2] = *((uint8_t *)value);
+			pacn_register[2] = *((uint8_t *)data);
 			if ((tscr1_register & 0x10) != 0) {
 				paflg_register = paflg_register & 0xFC;
 			}
 		} break;
 		case PACN1: {
 			if (size == 2) {
-				pacn_register[1] = *((uint16_t *)value) >> 8;
-				pacn_register[0] = *((uint16_t *)value) & 0x00FF;
+				pacn_register[1] = BigEndian2Host(*((uint16_t *)data)) >> 8;
+				pacn_register[0] = BigEndian2Host(*((uint16_t *)data)) & 0x00FF;
 			} else {
-				pacn_register[1] = *((uint8_t *)value);
+				pacn_register[1] = *((uint8_t *)data);
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				pbflg_register = pbflg_register & 0xFD;
@@ -868,13 +872,13 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 		} break;
 		case PACN0: {
-			pacn_register[0] = *((uint8_t *)value);
+			pacn_register[0] = *((uint8_t *)data);
 			if ((tscr1_register & 0x10) != 0) {
 				pbflg_register = pbflg_register & 0xFD;
 			}
 		} break;
 		case MCCTL: {
-			mcctl_register = *((uint8_t *)value);
+			mcctl_register = *((uint8_t *)data);
 
 			// MCCTL::ICLAT input Capture Force latch Action ?
 			if ((mcctl_register & 0x10) !=0) {
@@ -903,47 +907,47 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 		} break;
 		case MCFLG: {
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = *((uint8_t *)value) & 0x80;
+				uint8_t val = *((uint8_t *)data) & 0x80;
 				mcflg_register = mcflg_register & ~val;
 			}
 
 		} break;
 		case ICPAR: {
-			icpar_register = (icpar_register & 0xF0) | (*((uint8_t *)value) & 0x0F);
+			icpar_register = (icpar_register & 0xF0) | (*((uint8_t *)data) & 0x0F);
 		} break;
 		case DLYCT: {
-			dlyct_register = *((uint8_t *)value);
+			dlyct_register = *((uint8_t *)data);
 			computeDelayCounter();
 		} break;
 		case ICOVW: {
-			icovw_register = *((uint8_t *)value);
+			icovw_register = *((uint8_t *)data);
 		} break;
 		case ICSYS: {
 			if (icsys_write) {
 				*logger << DebugWarning << "ICSYS register has already been written! This register is write once in normal modes." << std::endl << EndDebugWarning;
 			} else {
 				icsys_write = true;
-				icsys_register = *((uint8_t *)value);
+				icsys_register = *((uint8_t *)data);
 			}
 
 		} break;
 		case RESERVED: { /* Reserved Address */} break;
 		case TIMTST: { /* Timer Test Register */} break;
 		case PTPSR: {
-			ptpsr_register = *((uint8_t *)value);
+			ptpsr_register = *((uint8_t *)data);
 		} break;
 		case PTMCPSR: {
-			ptmcpsr_register = *((uint8_t *)value);
+			ptmcpsr_register = *((uint8_t *)data);
 		} break;
 		case PBCTL: {
-			pbctl_register = (pbctl_register & 0xBD) | (*((uint8_t *)value) & 0x42);
+			pbctl_register = (pbctl_register & 0xBD) | (*((uint8_t *)data) & 0x42);
 			 pacB->wakeup();
 
 		} break;
 		case PBFLG: {
 			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = *((uint8_t *)value) & 0x02;
+				uint8_t val = *((uint8_t *)data) & 0x02;
 				pbflg_register = pbflg_register & ~val;
 			}
 
@@ -959,12 +963,12 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 
 				if (offset == MCCNT_HIGH) {
 					if (size == 2) {
-						mccnt_load_register = *((uint16_t *)value);
+						mccnt_load_register = BigEndian2Host(*((uint16_t *)data));
 					} else {
-						mccnt_load_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)value) << 8));
+						mccnt_load_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)data) << 8));
 					}
 				} else {
-					mccnt_load_register = (mccnt_load_register & 0xFF00) | *((uint8_t *)value);
+					mccnt_load_register = (mccnt_load_register & 0xFF00) | *((uint8_t *)data);
 				}
 
 				/**
@@ -1016,13 +1020,13 @@ bool ECT::write(uint8_t offset, uint8_t* value, uint32_t size) {
 					if ((tc_offset % 2) == 0) // TCx_High ?
 					{
 						if (size == 2) {
-							tc_registers[tc_offset] = *((uint16_t *)value);
+							tc_registers[tc_offset] = BigEndian2Host(*((uint16_t *)data));
 						} else {
-							tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+							tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
 						}
 
 					} else {
-						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)value);
+						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)data);
 					}
 				}
 
