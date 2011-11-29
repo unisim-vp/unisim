@@ -103,6 +103,7 @@ stop.execute = {
 		  */
 		 
 	 	 cpu->Sleep();
+//	 	cpu->Stop(0);
 	 	 
 	 	 /* TODO:
 	 	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled), 
