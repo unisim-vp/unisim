@@ -508,7 +508,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.debug-enabled", false);
 
 	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
-	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
+	simulator->SetVariable("ECT.built-in-signal-generator-period", 500000);
 
 
 	simulator->SetVariable("RAM.org", 0x0F8000);
@@ -537,11 +537,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("global-router.port_buffer_size", 0x0);
 	simulator->SetVariable("global-router.mapping_0", "range_start=\"0x34\" range_end=\"0x3f\" output_port=\"0\" translation=\"34\"");
 	simulator->SetVariable("global-router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
-	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
+	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xAF\" output_port=\"2\" translation=\"80\"");
 	simulator->SetVariable("global-router.mapping_3", "range_start=\"0x110\" range_end=\"0x11B\" output_port=\"3\" translation=\"110\"");
-	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"4\" translation=\"120\"");
-	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"5\" translation=\"2c0\"");
-	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"6\" translation=\"300\"");
+	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x120\" range_end=\"0x12F\" output_port=\"4\" translation=\"120\"");
+	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x2c0\" range_end=\"0x2df\" output_port=\"5\" translation=\"2c0\"");
+	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x300\" range_end=\"0x327\" output_port=\"6\" translation=\"300\"");
 	simulator->SetVariable("global-router.mapping_7", "range_start=\"0x0f8000\" range_end=\"0x0fffff\" output_port=\"7\" translation=\"0f8000\"");
 	simulator->SetVariable("global-router.mapping_8", "range_start=\"0x13f000\" range_end=\"0x13ffff\" output_port=\"8\" translation=\"13f000\"");
 	simulator->SetVariable("global-router.mapping_9", "range_start=\"0x780000\" range_end=\"0x7fffff\" output_port=\"9\" translation=\"780000\"");
