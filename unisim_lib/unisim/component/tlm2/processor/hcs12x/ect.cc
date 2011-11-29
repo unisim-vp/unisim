@@ -94,7 +94,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	, builtin_signal_generator(true)
 	, param_builtin_signal_generator("built-in-signal-generator-enable", this, builtin_signal_generator, "Use built-in signal generator or external instrument")
-	, signal_generator_period_int(25000)
+	, signal_generator_period_int(500000)
 	, param_signal_generator_period("built-in-signal-generator-period", this, signal_generator_period_int, "Built-in Signal generator period in pico-seconds. Default 25000ps.")
 
 	, prnt_write(false)
@@ -361,8 +361,6 @@ void ECT::assertInterrupt(uint8_t interrupt_offset) {
 	if ((interrupt_offset == pulse_accumulatorB_overflow_interrupt) && ((pbctl_register & 0x02) == 0)) return;
 	if ((interrupt_offset == pulse_accumulatorA_input_edge_interrupt) && ((pactl_register & 0x01) == 0)) return;
 	if ((interrupt_offset == modulus_counter_interrupt) && (mcctl_register & 0x80) == 0) return;
-
-	std::cerr << "ECT Interrupt => 0x" << std::hex << (unsigned int) interrupt_offset << std::endl;
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
