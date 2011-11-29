@@ -258,196 +258,6 @@ void CPU::OnBusCycle()
 {
 }
 
-//uint8_t CPU::Step()
-//{
-//	address_t 	current_pc;
-//
-//	uint8_t 	buffer[MAX_INS_SIZE];
-//
-//	Operation 	*op;
-//	uint8_t	opCycles = 0;
-//
-//	current_pc = getRegPC();
-//
-//	try
-//	{
-//
-//		VerboseDumpRegsStart();
-//
-//		if(debug_enabled && verbose_step)
-//			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << current_pc << std::dec << std::endl << EndDebugInfo;
-//
-//		if(debug_control_import) {
-//			DebugControl<service_address_t>::DebugCommand dbg_cmd;
-//
-//			do {
-//				if(debug_enabled && verbose_step)
-//					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
-//						<< std::endl << EndDebugInfo;
-//
-////				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
-//				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(current_pc));
-//
-//				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
-//					if(debug_enabled && verbose_step)
-//						*logger << DebugInfo
-//							<< "Received debug DBG_STEP command (PC = 0x"
-//							<< std::hex << current_pc << std::dec << ")"
-//							<< std::endl << EndDebugInfo;
-//					break;
-//				}
-//				if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
-//					if(debug_enabled && verbose_step)
-//						*logger << DebugInfo
-//							<< "Received debug DBG_SYNC command (PC = 0x"
-//							<< std::hex << current_pc << std::dec << ")"
-//							<< std::endl << EndDebugInfo;
-//					Sync();
-//					continue;
-//				}
-//
-//				if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
-//					if(debug_enabled && verbose_step)
-//						*logger << DebugInfo
-//							<< "Received debug DBG_KILL command (PC = 0x"
-//							<< std::hex << current_pc << std::dec << ")"
-//							<< std::endl << EndDebugInfo;
-//					Stop(0);
-//				}
-//				if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
-//					if(debug_enabled && verbose_step)
-//						*logger << DebugInfo
-//							<< "Received debug DBG_RESET command (PC = 0x"
-//							<< std::hex << current_pc << std::dec << ")"
-//							<< std::endl << EndDebugInfo;
-//				}
-//			} while(1);
-//		}
-//
-//		if(requires_memory_access_reporting) {
-//			if(memory_access_reporting_import) {
-//				if(debug_enabled && verbose_step)
-//					*logger << DebugInfo
-//						<< "Reporting memory access for fetch at address 0x"
-//						<< std::hex << current_pc << std::dec
-//						<< std::endl << EndDebugInfo;
-//
-//				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
-//			}
-//		}
-//
-//
-//		if(debug_enabled && verbose_step)
-//		{
-//			*logger << DebugInfo
-//				<< "Fetching (reading) instruction at address 0x"
-//				<< std::hex << current_pc << std::dec
-//				<< std::endl << EndDebugInfo;
-//		}
-//
-//		queueFetch(current_pc, buffer, MAX_INS_SIZE);
-//		CodeType 	insn( buffer, MAX_INS_SIZE*8);
-//
-//		/* Decode current PC */
-//		if(debug_enabled && verbose_step)
-//		{
-//			stringstream ctstr;
-//			ctstr << insn;
-//			*logger << DebugInfo
-//				<< "Decoding instruction at 0x"
-//				<< std::hex << current_pc << std::dec
-//				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
-//				<< std::endl << EndDebugInfo;
-//		}
-//
-//		op = this->Decode(current_pc, insn);
-//		lastPC = current_pc;
-//      unsigned int insn_length = op->GetLength();
-//      if (insn_length % 8) throw "InternalError";
-//
-//		queueFlush(insn_length/8);
-//
-//		/* Execute instruction */
-//
-//		if (trace_enable) {
-//			stringstream disasm_str;
-//			stringstream ctstr;
-//
-//			op->disasm(disasm_str);
-//
-//			ctstr << op->GetEncoding();
-//
-//			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-//				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
-//				<< GetFunctionFriendlyName(current_pc) << " : "
-//				<< disasm_str.str()
-//				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
-//
-//		}
-//
-//		if (debug_enabled && verbose_step) {
-//			stringstream disasm_str;
-//			stringstream ctstr;
-//
-//			op->disasm(disasm_str);
-//
-//			ctstr << op->GetEncoding();
-//			*logger << DebugInfo << GetSimulatedTime() << "ms: "
-//				<< "Executing instruction "
-//				<< disasm_str.str()
-//				<< " at PC = 0x" << std::hex << current_pc << std::dec
-//				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
-//				<< "  " << EndDebugInfo	<< std::endl;
-//		}
-//
-//		setRegPC(current_pc + (insn_length/8));
-//
-//		op->execute(this);
-//
-//		opCycles = op->getCycles();
-//
-//		cycles_counter += opCycles;
-//
-//		VerboseDumpRegsEnd();
-//
-//		instruction_counter++;
-//
-//		RegistersInfo();
-//
-//		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
-//			trap_reporting_import->ReportTrap();
-//		}
-//
-//		if(requires_finished_instruction_reporting)
-//			if(memory_access_reporting_import) {
-////				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
-//				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(getRegPC()));
-//
-//			}
-//
-//		if(HasAsynchronousInterrupt())
-//		{
-//			throw AsynchronousException();
-//		}
-//
-//	}
-//	catch (AsynchronousException& exc) { HandleException(exc); }
-//	catch (NonMaskableAccessErrorInterrupt& exc) { HandleException(exc); }
-//	catch (NonMaskableSWIInterrupt& exc) { HandleException(exc); }
-//	catch (TrapException& exc) { HandleException(exc); }
-//	catch (SysCallInterrupt& exc) { HandleException(exc); }
-//	catch (SpuriousInterrupt& exc) { HandleException(exc); }
-//	catch(Exception& e)
-//	{
-//		if(debug_enabled && verbose_step)
-//			*logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
-//		Stop(1);
-//	}
-//
-//	if (instruction_counter >= max_inst) Stop(0);
-//
-//	return opCycles;
-//}
 
 uint8_t CPU::Step()
 {
@@ -473,7 +283,6 @@ uint8_t CPU::Step()
 					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-//				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
 				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(getRegPC()));
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
@@ -600,15 +409,12 @@ uint8_t CPU::Step()
 
 		instruction_counter++;
 
-		RegistersInfo();
-
 		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
 			trap_reporting_import->ReportTrap();
 		}
 
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import) {
-//				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
 				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(getRegPC()));
 
 			}
@@ -632,13 +438,13 @@ uint8_t CPU::Step()
 		Stop(1);
 	}
 
-//	if (instruction_counter >= max_inst) Stop(0);
-	if ((instruction_counter % max_inst) == 0) {
-		if (trap_reporting_import) {
-			trap_reporting_import->ReportTrap();
-		}
-
-	}
+	if (instruction_counter >= max_inst) Stop(0);
+//	if ((instruction_counter % max_inst) == 0) {
+//		if (trap_reporting_import) {
+//			trap_reporting_import->ReportTrap();
+//		}
+//
+//	}
 
 	return opCycles;
 }
@@ -742,14 +548,17 @@ void CPU::HandleException(const AsynchronousException& exc)
 
 	asynchronous_interrupt = false;
 
-	if (CONFIG::HAS_RESET && HasReset())
+	if (CONFIG::HAS_RESET && HasReset()) {
 		HandleResetException(asyncVector);
+	}
 
-	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0))
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0)) {
 		HandleNonMaskableXIRQException(asyncVector, newIPL);
+	}
 
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && /*(ccr->getX() == 0) &&*/ (ccr->getI() == 0))
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && /*(ccr->getX() == 0) &&*/ (ccr->getI() == 0)) {
 		HandleMaskableIbitException(asyncVector, newIPL);
+	}
 
 	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
 	AckAsynchronousInterrupt();
@@ -831,7 +640,14 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 		// clear U-bit for CPU12XV2
 		ccr->setIPL(newIPL);
 
-		SetEntryPoint(memRead16(ibitVector));
+		address_t address = memRead16(ibitVector);
+
+//		std::cerr << "Int vector 0x" << std::hex << (unsigned int) ibitVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//		if (trap_reporting_import) {
+//			trap_reporting_import->ReportTrap();
+//		}
+
+		SetEntryPoint(address);
 	}
 
 }
@@ -1234,16 +1050,6 @@ void CPU::VerboseDumpRegsEnd() {
 			<< "Register dump at the end of instruction execution: " << std::endl;
 		VerboseDumpRegs();
 		*logger << EndDebugInfo;
-	}
-}
-
-inline INLINE
-void CPU::RegistersInfo() {
-
-	if (debug_enabled) {
-		cout << "CPU:: Registers Info " << std::endl;
-		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
-		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
 	}
 }
 
