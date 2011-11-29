@@ -160,7 +160,7 @@ public:
 
 	// MemoryAccessReportingInterface
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
@@ -198,6 +198,7 @@ private:
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
 	ADDRESS cont_until_addr;
+	bool profile;
 
 	std::list<std::string> exec_queue;
 	string prompt;
@@ -272,6 +273,8 @@ private:
 	const Symbol<ADDRESS> *FindSymbolByName(const char *s);
 	const Statement<ADDRESS> *FindStatement(ADDRESS addr);
 	const Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno);
+	void EnableProfiling();
+	void DisableProfiling();
 };
 
 } // end of namespace inline_debugger

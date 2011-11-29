@@ -119,6 +119,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, disasm_addr(0)
 	, dump_addr(0)
 	, cont_until_addr(0)
+	, profile(false)
 	, prompt(string(_name) + "> ")
 	, hex_addr_fmt(0)
 	, int_addr_fmt(0)
@@ -306,23 +307,27 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
-	if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
+	if(unlikely(profile))
 	{
-		if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+		if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
 		{
-			data_write_profile.Accumulate(addr, 1);
-		}
-		else
-		{
-			data_read_profile.Accumulate(addr, 1);
+			if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+			{
+				data_write_profile.Accumulate(addr, 1);
+			}
+			else
+			{
+				data_read_profile.Accumulate(addr, 1);
+			}
 		}
 	}
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void InlineDebugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr)) trap = true;
+	if(unlikely(profile)) program_profile.Accumulate(addr, 1);
 }
 
 template <class ADDRESS>
@@ -381,7 +386,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{
-		program_profile.Accumulate(cia, 1);
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 	
@@ -393,7 +397,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
 	{
 		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-		program_profile.Accumulate(cia, 1);
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 
@@ -471,7 +474,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
 					if(interactive) last_line = line;
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -490,7 +492,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						cont_until_addr = cont_addr;
 						SetBreakpoint(cont_until_addr);
 					}
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -498,7 +499,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
 					if(interactive) last_line = line;
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -659,7 +659,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					if(interactive) last_line = line;
 					cont_until_addr = cont_addr;
 					SetBreakpoint(cont_until_addr);
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				
@@ -693,7 +692,19 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 				if(IsProfileCommand(parm[0].c_str()))
 				{
-					if(strcmp(parm[1].c_str(), "program") == 0)
+					if(strcmp(parm[1].c_str(), "on") == 0)
+					{
+						recognized = true;
+						EnableProfiling();
+						break;
+					}
+					else if(strcmp(parm[1].c_str(), "off") == 0)
+					{
+						recognized = true;
+						DisableProfiling();
+						break;
+					}
+					else if(strcmp(parm[1].c_str(), "program") == 0)
 					{
 						recognized = true;
 						DumpProgramProfile();
@@ -931,6 +942,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<sym | symbol> [<symbol name>]" << endl;
 	(*std_output_stream) << "    Display information about symbols having 'symbol name' in their name" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<p | prof | profile> on" << endl;
+	(*std_output_stream) << "<p | prof | profile> off" << endl;
+	(*std_output_stream) << "    enable/disable the program and data profiling" << endl;
 	(*std_output_stream) << "<p | prof | profile>" << endl;
 	(*std_output_stream) << "<p | prof | profile> program" << endl;
 	(*std_output_stream) << "<p | prof | profile> data" << endl;
@@ -2273,6 +2287,28 @@ const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *fil
 		}
 	}
 	return stmt;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableProfiling()
+{
+	profile = true;
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(true);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(true);
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableProfiling()
+{
+	profile = false;
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(false);
+	}
 }
 
 template <class ADDRESS>
