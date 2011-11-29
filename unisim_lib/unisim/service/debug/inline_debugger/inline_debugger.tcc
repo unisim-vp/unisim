@@ -400,14 +400,13 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 
-	trap = false;
-
 	int nparms = 0;
 
 	Disasm(cia, 1);
 
 	while(1)
 	{
+		trap = false;
 		bool interactive = false;
 		//(*std_output_stream) << "> ";
 		if(!GetLine(prompt.c_str(), line, interactive))
@@ -575,8 +574,8 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					recognized = true;
 					DumpProgramProfile();
-					DumpDataProfile(false /* read */);
-					DumpDataProfile(true /* write */);
+					if(!trap) DumpDataProfile(false /* read */);
+					if(!trap) DumpDataProfile(true /* write */);
 					break;
 				}
 				
@@ -1659,7 +1658,7 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 	typename std::map<ADDRESS, uint64_t> map = program_profile;
 	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
 
-	for(iter = map.begin(); iter != map.end(); iter++)
+	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
 		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
@@ -1897,7 +1896,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	typename std::map<ADDRESS, uint64_t> map = write ? data_write_profile : data_read_profile;
 	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
 
-	for(iter = map.begin(); iter != map.end(); iter++)
+	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
 		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
