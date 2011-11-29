@@ -378,12 +378,12 @@ class Linux {
   void LSC_arm_set_tls();
 
   // system call 'stat' helper methods
-  int Stat(int fd, struct powerpc_stat_t *target_stat);
-  int Stat64(int fd, struct powerpc_stat64_t *target_stat);
-  int Stat64(int fd, struct arm_stat64_t *target_stat);
+  int Stat(int fd, struct powerpc_stat *target_stat);
+  int Stat64(int fd, struct powerpc_stat64 *target_stat);
+  int Stat64(int fd, struct arm_stat64 *target_stat);
   // system call 'times' helper methods
-  int Times(struct powerpc_tms_t *target_tms);
-  int Times(struct arm_tms_t *target_tms);
+  int Times(struct powerpc_tms *target_tms);
+  int Times(struct arm_tms *target_tms);
   // handling the mmap base address
   ADDRESS_TYPE GetMmapBase() const;
   void SetMmapBase(ADDRESS_TYPE base);

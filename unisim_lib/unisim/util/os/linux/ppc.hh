@@ -195,6 +195,14 @@ struct powerpc_tms {
   int32_t tms_cstime;     /* System CPU time of dead children.  */
 };
 
+struct ppc_utsname {
+  char sysname[65];
+  char nodename[65];
+  char release[65];
+  char version[65];
+  char machine[65];
+};
+
 } // end of namespace linux_os
 } // end of namespace os
 } // end of namespace util

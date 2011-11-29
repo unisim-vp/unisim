@@ -35,15 +35,31 @@
 #define __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
 
 #include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/times.h>
 #include <fstream>
 
+#include "unisim/util/endian/endian.hh"
 #include "unisim/util/os/linux/linux.hh"
 #include "unisim/util/os/linux/files_flags.hh"
+#include "unisim/util/os/linux/arm.hh"
+#include "unisim/util/os/linux/ppc.hh"
 
 namespace unisim {
 namespace util {
 namespace os {
 namespace linux_os {
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unknown()
+{
+  if (unlikely(verbose_))
+    *logger_
+        << "Unimplemented system call #" << current_syscall_id_ << std::endl;
+  SetSystemCallStatus(-1, true);
+}
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
@@ -82,7 +98,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read() {
     ret = (size_t)-1;
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "read(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
         << ", count=" << count << ") return " << ret << std::endl
         << std::endl;
@@ -123,7 +139,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_write() {
     ret = (size_t)-1;
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "write(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
         << ", count=" << count << ") return " << ret << std::endl
         << std::endl;
@@ -175,7 +191,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open() {
 #endif
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "open(pathname=\"" << pathname << "\", flags=0x" << std::hex << flags
         << ", mode=0x" << mode << std::dec << ") return " << ret << std::endl
         << std::endl;
@@ -192,7 +208,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_close() {
   fd = GetSystemCallParam(0);
   ret = close(fd);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "close(fd=" << fd << ") return " << ret << std::endl
         << std::endl;
   SetSystemCallStatus(ret, ret < 0);
@@ -210,7 +226,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_lseek() {
   whence = GetSystemCallParam(2);
   ret = lseek(fildes, offset, whence);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "lseek(fildes=" << fildes << ", offset=" << offset
         << ", whence=" << whence << ") return " << ret << std::endl
         << std::endl;
@@ -227,7 +243,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getpid() {
 
   ret = (pid_t) 1000;
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "getpid() return " << ret << std::endl
         << std::endl;
   SetSystemCallStatus(ret,false);
@@ -243,7 +259,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid() {
   ret = getuid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "getuid() return " << ret << std::endl
         << std::endl;
   SetSystemCallStatus(ret,false);
@@ -270,7 +286,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_access() {
   ret = access(pathname, mode);
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "access(pathname=\"" << pathname
         << "\", mode=0x" << std::hex << mode << std::dec << ") return " << ret << std::endl
         << std::endl;
@@ -284,15 +300,16 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_times() {
   ADDRESS_TYPE buf_addr;
   buf_addr = GetSystemCallParam(0);
 
-  if ( (system == "arm") || (system == "arm-eabi") ) {
-    struct arm_tms_t target_tms;
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0)) {
+    struct arm_tms target_tms;
     ret = Times(&target_tms);
 
     if (ret >= 0) {
       WriteMem(buf_addr, &target_tms, sizeof(target_tms));
     }
-  } else if (system == "powerpc") {
-    struct powerpc_tms_t target_tms;
+  } else if (system_type_.compare("powerpc") == 0) {
+    struct powerpc_tms target_tms;
     ret = Times(&target_tms);
 
     if (ret >= 0) {
@@ -301,7 +318,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_times() {
   } else ret = -1;
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "times(buf=0x" << std::hex << buf_addr << std::dec << ") return " << ret
         << std::endl;
   SetSystemCallStatus(ret, ret != -1);
@@ -317,7 +334,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_brk() {
     SetBrkPoint(new_brk_point);
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "brk(new_brk_point=0x" << std::hex << new_brk_point
         << ") return 0x" << GetBrkPoint() << std::dec
         << std::endl;
@@ -334,7 +351,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid() {
   ret = getgid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "getgid() return " << ret << std::endl;
   SetSystemCallStatus(ret,false);
 }
@@ -349,7 +366,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid() {
   ret = geteuid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "geteuid() return " << ret << std::endl;
   SetSystemCallStatus(ret,false);
 }
@@ -364,7 +381,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid() {
   ret = getegid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "getegid() return " << ret << std::endl;
   SetSystemCallStatus(ret,false);
 }
@@ -376,7 +393,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
   if (GetMmapBrkPoint() - u > GetMmapBrkPoint()) {
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
     if (unlikely(verbose_))
-      *logger_ 
+      *logger_
           << "size = " << u
           << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
           << std::endl;
@@ -389,7 +406,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
   if (GetMmapBrkPoint() - u >= GetMmapBrkPoint()) {
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
     if (unlikely(verbose_))
-      *logger_ 
+      *logger_
           << "size = " << u
           << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
           << std::endl;
@@ -398,7 +415,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_munmap() {
 
   SetSystemCallStatus((PARAMETER_TYPE)0,false);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "size = " << u
         << ", ret = 0x" << std::hex << 0 << std::dec
         << std::endl;
@@ -415,7 +432,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat() {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(
     int fd,
-    struct powerpc_stat_t *target_stat) {
+    struct powerpc_stat *target_stat) {
   int ret;
   struct stat host_stat;
   ret = fstat(fd, &host_stat);
@@ -423,120 +440,120 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(
 
 #if defined(__x86_64) || defined(__amd64) || defined(__LP64__) || defined(_LP64) || defined(__amd64__)
   // 64-bit host
-  target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
-  target_stat->st_ino = Host2Target(endianess, (uint64_t) host_stat.st_ino);
-  target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
-  target_stat->st_nlink = Host2Target(endianess, (uint64_t) host_stat.st_nlink);
-  target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
-  target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
-  target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-  target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
+  target_stat->st_dev = Host2Target(endianess_, (uint64_t) host_stat.st_dev);
+  target_stat->st_ino = Host2Target(endianess_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianess_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianess_, (uint64_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianess_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianess_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianess_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianess_, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
   target_stat->st_blksize = Host2Target((int32_t) 512);
   target_stat->st_blocks =
       Host2Target((int64_t)((host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim);
   target_stat->st_atim.tv_nsec = 0;
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim);
   target_stat->st_mtim.tv_nsec = 0;
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim);
   target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
   target_stat->st_blksize =
-      Host2Target(endianess, (int64_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int64_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // darwin PPC64/x86_64
   target_stat->st_blksize =
-      Host2Target(endianess, (int64_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int64_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atimespec.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atimespec.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtimespec.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtimespec.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctimespec.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #else
   // 32-bit host
-  target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
-  target_stat->st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
-  target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
-  target_stat->st_nlink = Host2Target(endianess, (uint32_t) host_stat.st_nlink);
-  target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
-  target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
-  target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-  target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
+  target_stat->st_dev = Host2Target(endianess_, (uint64_t) host_stat.st_dev);
+  target_stat->st_ino = Host2Target(endianess_, (uint32_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianess_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianess_, (uint32_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianess_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianess_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianess_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianess_, (int64_t) host_stat.st_size);
 #if defined(WIN32) // Windows 32
-  target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t) 512);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
+      Host2Target(endianess_, (int64_t)((host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atime);
+      Host2Target(endianess_, (int32_t) host_stat.st_atime);
   target_stat->st_atim.tv_nsec = 0;
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtime);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtime);
   target_stat->st_mtim.tv_nsec = 0;
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctime);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctime);
   target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux 32
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atim.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_atim.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atim.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtim.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtim.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctim.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC32/x86
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atimespec.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atimespec.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtimespec.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtimespec.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctimespec.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #endif
@@ -549,7 +566,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
-    int fd, struct powerpc_stat64_t *target_stat) {
+    int fd, struct powerpc_stat64 *target_stat) {
   int ret;
 #if defined(WIN32) || defined(WIN64)
   struct _stati64 host_stat;
@@ -566,120 +583,120 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
 
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
   // 64-bit host
-  target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
-  target_stat->st_ino = Host2Target(endianess, (uint64_t) host_stat.st_ino);
-  target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
-  target_stat->st_nlink = Host2Target(endianess, (uint64_t) host_stat.st_nlink);
-  target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
-  target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
-  target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-  target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
+  target_stat->st_dev = Host2Target(endianess_, (uint64_t) host_stat.st_dev);
+  target_stat->st_ino = Host2Target(endianess_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianess_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianess_, (uint64_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianess_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianess_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianess_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianess_, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
-  target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t) 512);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
+      Host2Target(endianess_, (int64_t)((host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim);
   target_stat->st_atim.tv_nsec = 0;
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim);
   target_stat->st_mtim.tv_nsec = 0;
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim);
   target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC64/x86_64
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atimespec.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atimespec.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtimespec.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtimespec.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctimespec.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #else
   // 32-bit host
-  target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
-  target_stat->st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
-  target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
-  target_stat->st_nlink = Host2Target(endianess, (uint32_t) host_stat.st_nlink);
-  target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
-  target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
-  target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-  target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
+  target_stat->st_dev = Host2Target(endianess_, (uint64_t) host_stat.st_dev);
+  target_stat->st_ino = Host2Target(endianess_, (uint32_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianess_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianess_, (uint32_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianess_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianess_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianess_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianess_, (int64_t) host_stat.st_size);
 #if defined(WIN32) // Windows 32
-  target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t) 512);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
+      Host2Target(endianess_, (int64_t)((host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atime);
+      Host2Target(endianess_, (int32_t) host_stat.st_atime);
   target_stat->st_atim.tv_nsec = 0;
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtime);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtime);
   target_stat->st_mtim.tv_nsec = 0;
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctime);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctime);
   target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux 32
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atim.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atim.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_atim.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atim.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtim.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtim.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtim.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctim.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctim.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC32/x86
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atimespec.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_atimespec.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_atimespec.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtimespec.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtimespec.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtimespec.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_sec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctimespec.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctimespec.tv_nsec);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #endif
@@ -691,7 +708,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
-    int fd, arm_stat64_t *target_stat) {
+    int fd, struct arm_stat64 *target_stat) {
   int ret;
 #if defined(WIN32) || defined(WIN64)
   struct _stati64 host_stat;
@@ -707,121 +724,121 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
 
 #if defined(__x86_64) || defined(__amd64) || defined(__x86_64__) || defined(__amd64__) || defined(__LP64__) || defined(_LP64)
   // 64-bit host
-  target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
-  target_stat->__st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
-  target_stat->st_ino = Host2Target(endianess, (uint64_t) host_stat.st_ino);
-  target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
-  target_stat->st_nlink = Host2Target(endianess, (uint64_t) host_stat.st_nlink);
-  target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
-  target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
-  target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-  target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
+  target_stat->st_dev = Host2Target(endianess_, (uint64_t) host_stat.st_dev);
+  target_stat->__st_ino = Host2Target(endianess_, (uint32_t) host_stat.st_ino);
+  target_stat->st_ino = Host2Target(endianess_, (uint64_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianess_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianess_, (uint64_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianess_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianess_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianess_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianess_, (int64_t) host_stat.st_size);
 #if defined(WIN64) // Windows x64
-  target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t) 512);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
+      Host2Target(endianess_, (int64_t)((host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim);
   target_stat->st_atim.tv_nsec = 0;
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim);
   target_stat->st_mtim.tv_nsec = 0;
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim);
   target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux x64
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_atim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atim.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtim.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctim.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // darwin PPC64/x86_64
   target_stat->st_blksize =
-      Host2Target(endianess, (int32_t) host_stat.st_blksize);
+      Host2Target(endianess_, (int32_t) host_stat.st_blksize);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t) host_stat.st_blocks);
+      Host2Target(endianess_, (int64_t) host_stat.st_blocks);
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atimespec.tv_sec);
   target_stat->st_atim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_atimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_atimespec.tv_nsec);
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtimespec.tv_sec);
   target_stat->st_mtim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_mtimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_mtimespec.tv_nsec);
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_sec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctimespec.tv_sec);
   target_stat->st_ctim.tv_nsec =
-      Host2Target(endianess, (int64_t) host_stat.st_ctimespec.tv_nsec);
+      Host2Target(endianess_, (int64_t) host_stat.st_ctimespec.tv_nsec);
 #endif
 
 #else
   // 32-bit host
-  target_stat->st_dev = Host2Target(endianess, (uint64_t) host_stat.st_dev);
-  target_stat->__st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
-  target_stat->st_ino = Host2Target(endianess, (uint32_t) host_stat.st_ino);
-  target_stat->st_mode = Host2Target(endianess, (uint32_t) host_stat.st_mode);
-  target_stat->st_nlink = Host2Target(endianess, (uint32_t) host_stat.st_nlink);
-  target_stat->st_uid = Host2Target(endianess, (uint32_t) host_stat.st_uid);
-  target_stat->st_gid = Host2Target(endianess, (uint32_t) host_stat.st_gid);
-  target_stat->st_rdev = Host2Target(endianess, (int64_t) host_stat.st_rdev);
-  target_stat->st_size = Host2Target(endianess, (int64_t) host_stat.st_size);
+  target_stat->st_dev = Host2Target(endianess_, (uint64_t) host_stat.st_dev);
+  target_stat->__st_ino = Host2Target(endianess_, (uint32_t) host_stat.st_ino);
+  target_stat->st_ino = Host2Target(endianess_, (uint32_t) host_stat.st_ino);
+  target_stat->st_mode = Host2Target(endianess_, (uint32_t) host_stat.st_mode);
+  target_stat->st_nlink = Host2Target(endianess_, (uint32_t) host_stat.st_nlink);
+  target_stat->st_uid = Host2Target(endianess_, (uint32_t) host_stat.st_uid);
+  target_stat->st_gid = Host2Target(endianess_, (uint32_t) host_stat.st_gid);
+  target_stat->st_rdev = Host2Target(endianess_, (int64_t) host_stat.st_rdev);
+  target_stat->st_size = Host2Target(endianess_, (int64_t) host_stat.st_size);
 #if defined(WIN32) // Windows 32
-  target_stat->st_blksize = Host2Target(endianess, (int32_t) 512);
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t) 512);
   target_stat->st_blocks =
-      Host2Target(endianess, (int64_t)((host_stat.st_size + 511) / 512));
+      Host2Target(endianess_, (int64_t)((host_stat.st_size + 511) / 512));
   target_stat->st_atim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_atime);
+      Host2Target(endianess_, (int32_t) host_stat.st_atime);
   target_stat->st_atim.tv_nsec = 0;
   target_stat->st_mtim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_mtime);
+      Host2Target(endianess_, (int32_t) host_stat.st_mtime);
   target_stat->st_mtim.tv_nsec = 0;
   target_stat->st_ctim.tv_sec =
-      Host2Target(endianess, (int32_t) host_stat.st_ctime);
+      Host2Target(endianess_, (int32_t) host_stat.st_ctime);
   target_stat->st_ctim.tv_nsec = 0;
 #elif defined(linux) // Linux 32
-  target_stat->st_blksize = Host2Target(endianess, (int32_t)
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t)
                                         host_stat.st_blksize);
-  target_stat->st_blocks = Host2Target(endianess, (int64_t)
+  target_stat->st_blocks = Host2Target(endianess_, (int64_t)
                                        host_stat.st_blocks);
-  target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t)
+  target_stat->st_atim.tv_sec = Host2Target(endianess_, (int32_t)
                                             host_stat.st_atim.tv_sec);
-  target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t)
+  target_stat->st_atim.tv_nsec = Host2Target(endianess_, (int32_t)
                                              host_stat.st_atim.tv_nsec);
-  target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t)
+  target_stat->st_mtim.tv_sec = Host2Target(endianess_, (int32_t)
                                             host_stat.st_mtim.tv_sec);
-  target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t)
+  target_stat->st_mtim.tv_nsec = Host2Target(endianess_, (int32_t)
                                              host_stat.st_mtim.tv_nsec);
-  target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t)
+  target_stat->st_ctim.tv_sec = Host2Target(endianess_, (int32_t)
                                             host_stat.st_ctim.tv_sec);
-  target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t)
+  target_stat->st_ctim.tv_nsec = Host2Target(endianess_, (int32_t)
                                              host_stat.st_ctim.tv_nsec);
 #elif defined(__APPLE_CC__) // Darwin PPC32/x86
-  target_stat->st_blksize = Host2Target(endianess, (int32_t)
+  target_stat->st_blksize = Host2Target(endianess_, (int32_t)
                                         host_stat.st_blksize);
-  target_stat->st_blocks = Host2Target(endianess, (int64_t)
+  target_stat->st_blocks = Host2Target(endianess_, (int64_t)
                                        host_stat.st_blocks);
-  target_stat->st_atim.tv_sec = Host2Target(endianess, (int32_t)
+  target_stat->st_atim.tv_sec = Host2Target(endianess_, (int32_t)
                                             host_stat.st_atimespec.tv_sec);
-  target_stat->st_atim.tv_nsec = Host2Target(endianess, (int32_t)
+  target_stat->st_atim.tv_nsec = Host2Target(endianess_, (int32_t)
                                              host_stat.st_atimespec.tv_nsec);
-  target_stat->st_mtim.tv_sec = Host2Target(endianess, (int32_t)
+  target_stat->st_mtim.tv_sec = Host2Target(endianess_, (int32_t)
                                             host_stat.st_mtimespec.tv_sec);
-  target_stat->st_mtim.tv_nsec = Host2Target(endianess, (int32_t)
+  target_stat->st_mtim.tv_nsec = Host2Target(endianess_, (int32_t)
                                              host_stat.st_mtimespec.tv_nsec);
-  target_stat->st_ctim.tv_sec = Host2Target(endianess, (int32_t)
+  target_stat->st_ctim.tv_sec = Host2Target(endianess_, (int32_t)
                                             host_stat.st_ctimespec.tv_sec);
-  target_stat->st_ctim.tv_nsec = Host2Target(endianess, (int32_t)
+  target_stat->st_ctim.tv_nsec = Host2Target(endianess_, (int32_t)
                                              host_stat.st_ctimespec.tv_nsec);
 #endif
 
@@ -833,7 +850,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Stat64(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(
-    struct powerpc_tms_t *target_tms) {
+    struct powerpc_tms *target_tms) {
   int ret;
 #ifdef WIN32
   FILETIME ftCreationTime;
@@ -844,9 +861,9 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(
   if (GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime,
                       &ftKernelTime, &ftUserTime)) return -1;
 
-  target_tms->tms_utime = Host2Target(endianess, (uint32_t)
+  target_tms->tms_utime = Host2Target(endianess_, (uint32_t)
                                       ftUserTime.dwLowDateTime);
-  target_tms->tms_stime = Host2Target(endianess, (uint32_t)
+  target_tms->tms_stime = Host2Target(endianess_, (uint32_t)
                                       ftKernelTime.dwLowDateTime);
   target_tms->tms_cutime = 0;   // User CPU time of dead children
   target_tms->tms_cstime = 0;   // System CPU time of dead children
@@ -854,18 +871,18 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(
   struct tms host_tms;
 
   ret = (int) times(&host_tms);
-  target_tms->tms_utime = Host2Target(endianess, (int32_t) host_tms.tms_utime);
-  target_tms->tms_stime = Host2Target(endianess, (int32_t) host_tms.tms_stime);
-  target_tms->tms_cutime = Host2Target(endianess, (int32_t)
+  target_tms->tms_utime = Host2Target(endianess_, (int32_t) host_tms.tms_utime);
+  target_tms->tms_stime = Host2Target(endianess_, (int32_t) host_tms.tms_stime);
+  target_tms->tms_cutime = Host2Target(endianess_, (int32_t)
                                        host_tms.tms_cutime);
-  target_tms->tms_cstime = Host2Target(endianess, (int32_t)
+  target_tms->tms_cstime = Host2Target(endianess_, (int32_t)
                                        host_tms.tms_cstime);
 #endif
   return ret;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms_t *target_tms) {
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms *target_tms) {
   int ret;
 #ifdef WIN32
   FILETIME ftCreationTime;
@@ -876,9 +893,9 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms_t *target_tms) {
   if (GetProcessTimes(GetCurrentProcess(), &ftCreationTime, &ftExitTime,
                       &ftKernelTime, &ftUserTime)) return -1;
 
-  target_tms->tms_utime = Host2Target(endianess, (uint32_t)
+  target_tms->tms_utime = Host2Target(endianess_, (uint32_t)
                                       ftUserTime.dwLowDateTime);
-  target_tms->tms_stime = Host2Target(endianess, (uint32_t)
+  target_tms->tms_stime = Host2Target(endianess_, (uint32_t)
                                       ftKernelTime.dwLowDateTime);
   target_tms->tms_cutime = 0;   // User CPU time of dead children
   target_tms->tms_cstime = 0;   // System CPU time of dead children
@@ -886,11 +903,11 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Times(struct arm_tms_t *target_tms) {
   struct tms host_tms;
 
   ret = (int) times(&host_tms);
-  target_tms->tms_utime = Host2Target(endianess, (int32_t) host_tms.tms_utime);
-  target_tms->tms_stime = Host2Target(endianess, (int32_t) host_tms.tms_stime);
-  target_tms->tms_cutime = Host2Target(endianess, (int32_t)
+  target_tms->tms_utime = Host2Target(endianess_, (int32_t) host_tms.tms_utime);
+  target_tms->tms_stime = Host2Target(endianess_, (int32_t) host_tms.tms_stime);
+  target_tms->tms_cutime = Host2Target(endianess_, (int32_t)
                                        host_tms.tms_cutime);
-  target_tms->tms_cstime = Host2Target(endianess, (int32_t)
+  target_tms->tms_cstime = Host2Target(endianess_, (int32_t)
                                        host_tms.tms_cstime);
 #endif
   return ret;
@@ -904,17 +921,18 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat() {
 
   fd = GetSystemCallParam(0);
   buf_address = GetSystemCallParam(1);
-  if ( (system == "arm") || (system == "arm-eabi") )
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0))
     ret = -1;
-  else if (system == "powerpc") {
-    struct powerpc_stat_t target_stat;
+  else if (system_type_.compare("powerpc") == 0) {
+    struct powerpc_stat target_stat;
     ret = Stat(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
   }
   else ret = -1;
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "stat(fd=" << fd
         << ", buf_addr=0x" << std::hex << buf_address << std::dec
         << ") return " << ret << std::endl;
@@ -925,20 +943,38 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname() {
   int ret;
   ADDRESS_TYPE buf_addr = GetSystemCallParam(0);
-  struct utsname_t value;
-  memset(&value, 0, sizeof(value));
-  memcpy(&(value.sysname),
-         utsname_sysname_.c_str(), utsname_sysname_.length() + 1);
-  memcpy(&(value.nodename),
-         utsname_nodename_.c_str(), utsname_nodename_.length() + 1);
-  memcpy(&(value.release),
-         utsname_release_.c_str(), utsname_release_.length() + 1);
-  memcpy(&(value.version),
-         utsname_version_.c_str(), utsname_version_.length() + 1);
-  memcpy(&(value.machine),
-         utsname_machine_.c_str(), utsname_machine_.length() + 1);
-  WriteMem(buf_addr, &value, sizeof(value));
   ret = 0;
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0)) {
+    struct arm_utsname value;
+    memset(&value, 0, sizeof(value));
+    memcpy(&(value.sysname),
+           utsname_sysname_.c_str(), utsname_sysname_.length() + 1);
+    memcpy(&(value.nodename),
+           utsname_nodename_.c_str(), utsname_nodename_.length() + 1);
+    memcpy(&(value.release),
+           utsname_release_.c_str(), utsname_release_.length() + 1);
+    memcpy(&(value.version),
+           utsname_version_.c_str(), utsname_version_.length() + 1);
+    memcpy(&(value.machine),
+           utsname_machine_.c_str(), utsname_machine_.length() + 1);
+    WriteMem(buf_addr, &value, sizeof(value));
+  } else if (system_type_.compare("powerpc") == 0) {
+    struct ppc_utsname value;
+    memset(&value, 0, sizeof(value));
+    memcpy(&(value.sysname),
+           utsname_sysname_.c_str(), utsname_sysname_.length() + 1);
+    memcpy(&(value.nodename),
+           utsname_nodename_.c_str(), utsname_nodename_.length() + 1);
+    memcpy(&(value.release),
+           utsname_release_.c_str(), utsname_release_.length() + 1);
+    memcpy(&(value.version),
+           utsname_version_.c_str(), utsname_version_.length() + 1);
+    memcpy(&(value.machine),
+           utsname_machine_.c_str(), utsname_machine_.length() + 1);
+    WriteMem(buf_addr, &value, sizeof(value));
+  } else
+    ret = -1;
   SetSystemCallStatus((PARAMETER_TYPE) ret, ret < 0);
 }
 
@@ -958,7 +994,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
   result_addr = GetSystemCallParam(3);
   whence = GetSystemCallParam(4);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "llseek(fd=" << fd
         << ", offset=" << (((int64_t) offset_high << 32) | (int64_t) offset_low)
         << ", result_addr=0x" << std::hex << result_addr << std::dec
@@ -980,7 +1016,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_writev() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x"
         << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec << std::endl;
 
@@ -993,16 +1029,18 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap() {
   if (GetSystemCallParam(3) == 0x32) { /* MAP_PRIVATE | MAP_ANONYMOUS */
     SetSystemCallStatus(GetSystemCallParam(0),false);
     if (unlikely(verbose_))
-      *logger_  << "map_type = 0x" << std::hex << GetSystemCallParam(3) <<
-          dec << ", size = " << GetSystemCallParam(1) << ", ret = 0x" << std::hex <<
-          ((PARAMETER_TYPE)GetSystemCallParam(0)) << std::dec << std::endl;
+      *logger_  << "map_type = 0x" << std::hex << GetSystemCallParam(3)
+          << std::dec << ", size = " << GetSystemCallParam(1)
+          << ", ret = 0x"
+          << std::hex << ((PARAMETER_TYPE)GetSystemCallParam(0)) << std::dec
+          << std::endl;
     return;
   }
 
   if ((GetSystemCallParam(3)&0xFF) != 0x22) { /* MAP_PRIVATE | MAP_ANONYMOUS */
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
     if (unlikely(verbose_))
-      *logger_ 
+      *logger_
           << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
           << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
@@ -1011,7 +1049,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap() {
   }
   SetSystemCallStatus(GetMmapBrkPoint(),false);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
         << ", size = " << GetSystemCallParam(1)
         << ", ret = 0x" << std::hex << GetMmapBrkPoint() << std::dec
@@ -1024,7 +1062,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap2() {
   if (GetSystemCallParam(3) != 0x22) { /* MAP_PRIVATE | MAP_ANONYMOUS */
     SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
     if (unlikely(verbose_))
-      *logger_ 
+      *logger_
           << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
           << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
@@ -1035,7 +1073,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap2() {
   if (GetMmapBrkPoint() + GetSystemCallParam(1) > GetSystemCallParam(1)) {
     SetSystemCallStatus(GetMmapBrkPoint(),false);
     if (unlikely(verbose_))
-      *logger_ 
+      *logger_
           << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
           << ", ret = 0x" << std::hex << GetMmapBrkPoint() << std::dec
@@ -1043,7 +1081,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_mmap2() {
     SetMmapBrkPoint(GetMmapBrkPoint() + GetSystemCallParam(1));
   } else {
     if (unlikely(verbose_))
-      *logger_ 
+      *logger_
           << "map_type = 0x" << std::hex << GetSystemCallParam(3) << std::dec
           << ", size = " << GetSystemCallParam(1)
           << ", ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
@@ -1060,17 +1098,18 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat64() {
 
   fd = GetSystemCallParam(0);
   buf_address = GetSystemCallParam(1);
-  if ( (system == "arm") || (system == "arm-eabi") ) {
-    struct arm_stat64_t target_stat;
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0)) {
+    struct arm_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
-  } else if (system == "powerpc") {
-    struct powerpc_stat64_t target_stat;
+  } else if (system_type_.compare("powerpc") == 0) {
+    struct powerpc_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
   } else ret = -1;
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "fd = " << fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
         << ", ret = 0x" << std::hex << ret << std::dec
         << std::endl;
@@ -1085,17 +1124,18 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64() {
 
   fd = GetSystemCallParam(0);
   buf_address = GetSystemCallParam(1);
-  if ( (system == "arm") || (system == "arm-eabi") ) {
-    struct arm_stat64_t target_stat;
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0)) {
+    struct arm_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
-  } else if (system == "powerpc") {
-    struct powerpc_stat64_t target_stat;
+  } else if (system_type_.compare("powerpc") == 0) {
+    struct powerpc_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
     WriteMem(buf_address, &target_stat, sizeof(target_stat));
   } else ret = -1;
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "fd = " << fd << ", buf_address = 0x" << std::hex << buf_address << std::dec
         << ", ret = 0x" << std::hex << ret << std::dec
         << std::endl;
@@ -1112,7 +1152,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getuid32() {
   ret = getuid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
@@ -1128,7 +1168,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getgid32() {
   ret = getgid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
@@ -1144,7 +1184,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_geteuid32() {
   ret = geteuid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
@@ -1160,7 +1200,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getegid32() {
   ret = getegid();
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,false);
@@ -1177,7 +1217,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_flistxattr() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit_group() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1195,7 +1235,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl() {
               GetSystemCallParam(2));
 #endif
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = " <<  ((PARAMETER_TYPE)ret)
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret,ret < 0);
@@ -1204,7 +1244,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl64() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1217,7 +1257,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_dup() {
 
   ret = dup(oldfd);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "oldfd = " << oldfd << ", new fd = " << ((PARAMETER_TYPE)ret)
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)ret, ret < 0);
@@ -1226,7 +1266,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_dup() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ioctl() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1235,7 +1275,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ioctl() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ugetrlimit() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1244,7 +1284,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ugetrlimit() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getrlimit() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1253,7 +1293,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getrlimit() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_setrlimit() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1262,7 +1302,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_setrlimit() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rt_sigaction() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1271,7 +1311,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rt_sigaction() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getrusage() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1280,7 +1320,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_getrusage() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unlink() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1289,7 +1329,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unlink() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rename() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
@@ -1298,7 +1338,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rename() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_time() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1307,7 +1347,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_time() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_socketcall() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1316,7 +1356,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_socketcall() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rt_sigprocmask() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1325,7 +1365,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_rt_sigprocmask() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_kill() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)0, false);
@@ -1338,7 +1378,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ftruncate() {
   ret = ftruncate(GetSystemCallParam(0), GetSystemCallParam(1));
 
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)ret) << std::dec
         << std::endl;
 
@@ -1348,7 +1388,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_ftruncate() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_breakpoint() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1357,7 +1397,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_breakpoint() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_cacheflush() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1366,7 +1406,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_cacheflush() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr26() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1375,7 +1415,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr26() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr32() {
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)(-EINVAL)) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
@@ -1386,7 +1426,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
   uint32_t r0 = GetSystemCallParam(0);
   WriteMem(0xffff0ff0UL, (void *)&(r0), 4);
   if (unlikely(verbose_))
-    *logger_ 
+    *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)0) << std::dec
         << std::endl;
   SetSystemCallStatus((PARAMETER_TYPE)0, true);
@@ -1427,9 +1467,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetBrkPoint(
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSystemCallParam(
     int id) {
-  if ( system == "arm" )
+  if (system_type_.compare("arm") == 0)
     return ARMGetSystemCallParam(id);
-  else if ( system == "arm-eabi" )
+  else if (system_type_.compare("arm-eabi") == 0)
     return ARMEABIGetSystemCallParam(id);
   else
     return PPCGetSystemCallParam(id);
@@ -1444,7 +1484,7 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSystemCallParam(
   if (!register_interface_->GetRegister(id, &val))
     // TODO warning if GetRegister fails
     return val;
-  return val
+  return val;
   //arm_regs[id]->GetValue(&val);
   //return val;
 }
@@ -1458,7 +1498,7 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSystemCallParam(
   if (!register_interface_->GetRegister(id, &val))
     // TODO warning if GetRegister fails
     return val;
-  return val
+  return val;
   //arm_regs[id]->GetValue(&val);
   //return val;
 }
@@ -1472,7 +1512,7 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSystemCallParam(
   if (!register_interface_->GetRegister(id+3, &val))
     // TODO warning if GetRegister fails
     return val;
-  return val
+  return val;
   //ppc_regs[id+3]->GetValue(&val);
   //return val;
 }
@@ -1480,9 +1520,9 @@ PARAMETER_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSystemCallParam(
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemCallStatus(
     int ret, bool error) {
-  if ( system == "arm" )
+  if (system_type_.compare("arm") == 0)
     ARMSetSystemCallStatus(ret, error);
-  else if ( system == "arm-eabi" )
+  else if (system_type_.compare("arm-eabi") == 0)
     ARMEABISetSystemCallStatus(ret, error);
   else
     PPCSetSystemCallStatus(ret, error);
@@ -1546,7 +1586,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
     //ppc_cr->SetValue(&val);
   }
   if (!register_interface_->SetRegister(kPPC_r3, val))
-    // TOCO warning if SetRegister fails
+    // TODO warning if SetRegister fails
+    return;
   //val = (PARAMETER_TYPE)ret;
   //ppc_regs[3]->SetValue(&val);
 }
@@ -1554,10 +1595,10 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Swap() {
 #if BYTE_ORDER == BIG_ENDIAN
-  if (GetEndianess() == E_BIG_ENDIAN) return false;
+  if (endianess_ == unisim::util::endian::E_BIG_ENDIAN) return false;
   else return true;
 #else
-  if (GetEndianess() == E_BIG_ENDIAN) return true;
+  if (endianess_ == unisim::util::endian::E_BIG_ENDIAN) return true;
   else return false;
 #endif
 }
@@ -1583,7 +1624,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PerformSwap(void *buf, int count) {
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::StringLength(ADDRESS_TYPE addr) {
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::StringLength(ADDRESS_TYPE addr) {
   int len = 0;
   char buffer;
 

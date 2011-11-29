@@ -32,10 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/util/os/linux/environment.hh"
-
 #include <string>
 #include <vector>
+#ifdef __APPLE__
+#include <crt_externs.h>
+#define environ (*_NSGetEnviron())
+#endif
+
+#include "unisim/util/os/linux/environment.hh"
 
 namespace unisim {
 namespace util {
@@ -48,7 +52,7 @@ namespace linux_os {
 // empty string.
 std::string GetEnvironmentVariable(std::string env_entry) {
   size_t pos = env_entry.find("=");
-  if (pos == string::npos) return env_entry;
+  if (pos == std::string::npos) return env_entry;
   if (pos == 0) return std::string("");
   return env_entry.substr(0, pos - 1);
 }
@@ -72,17 +76,17 @@ void GetHostEnvironment(std::vector<std::string> input_envp,
   for (std::vector<std::string>::iterator input_it = input_envp.begin();
        input_it != input_envp.end();
        input_it++) {
-    std::string input_variable(GetEnvironmentVariable((input_it*)));
+    std::string input_variable(GetEnvironmentVariable(*input_it));
     bool variable_found = false;
-    for (std::vector<std::string>::iterator envp_it = envp.begin();
-         (!variable_found) && (envp_it != envp.end());
+    for (std::vector<std::string>::iterator envp_it = envp->begin();
+         (!variable_found) && (envp_it != envp->end());
          envp_it++) {
-      std::string envp_variable(GetEnvironmentVariable((envp_it*)));
+      std::string envp_variable(GetEnvironmentVariable(*envp_it));
       variable_found = (envp_variable.compare(input_variable) == 0);
-      (envp_it*) = (input_it*);
+      *envp_it = *input_it;
     }
     if (!variable_found)
-      envp->push_back((input_it*));
+      envp->push_back(*input_it);
   }
 }
 
