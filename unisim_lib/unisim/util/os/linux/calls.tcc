@@ -92,7 +92,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read() {
 
   if (buf) {
     ret = read(fd, buf, count);
-    if (ret > 0) WriteMem(buf_addr, buf, ret);
+    if (ret > 0) WriteMem(buf_addr, (uint8_t *)buf, ret);
     free(buf);
   } else
     ret = (size_t)-1;
@@ -122,7 +122,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_write() {
   ret = (size_t)-1;
 
   if (buf) {
-    ReadMem(buf_addr, buf, count);
+    ReadMem(buf_addr, (uint8_t *)buf, count);
     if ((fd == 1 || fd == 2)) {
       char *tbuf = new char[count + 1];
       memcpy(tbuf, buf, count);
@@ -158,7 +158,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_open() {
   addr = GetSystemCallParam(0);
   pathnamelen = StringLength(addr);
   pathname = (char *) malloc(pathnamelen + 1);
-  ReadMem(addr, pathname, pathnamelen + 1);
+  ReadMem(addr, (uint8_t *)pathname, pathnamelen + 1);
   flags = GetSystemCallParam(1);
   mode = GetSystemCallParam(2);
 #if defined(linux)
@@ -276,7 +276,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_access() {
   addr = GetSystemCallParam(0);
   pathnamelen = StringLength(addr);
   pathname = (char *) malloc(pathnamelen + 1);
-  ReadMem(addr, pathname, pathnamelen + 1);
+  ReadMem(addr, (uint8_t *)pathname, pathnamelen + 1);
   mode = GetSystemCallParam(1);
 #if defined(WIN32) || defined(WIN64)
   int win_mode = 0;
@@ -306,14 +306,14 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_times() {
     ret = Times(&target_tms);
 
     if (ret >= 0) {
-      WriteMem(buf_addr, &target_tms, sizeof(target_tms));
+      WriteMem(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
     }
   } else if (system_type_.compare("powerpc") == 0) {
     struct powerpc_tms target_tms;
     ret = Times(&target_tms);
 
     if (ret >= 0) {
-      WriteMem(buf_addr, &target_tms, sizeof(target_tms));
+      WriteMem(buf_addr, (uint8_t *)&target_tms, sizeof(target_tms));
     }
   } else ret = -1;
 
@@ -927,7 +927,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat() {
   else if (system_type_.compare("powerpc") == 0) {
     struct powerpc_stat target_stat;
     ret = Stat(fd, &target_stat);
-    WriteMem(buf_address, &target_stat, sizeof(target_stat));
+    WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   }
   else ret = -1;
 
@@ -958,7 +958,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname() {
            utsname_version_.c_str(), utsname_version_.length() + 1);
     memcpy(&(value.machine),
            utsname_machine_.c_str(), utsname_machine_.length() + 1);
-    WriteMem(buf_addr, &value, sizeof(value));
+    WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
   } else if (system_type_.compare("powerpc") == 0) {
     struct ppc_utsname value;
     memset(&value, 0, sizeof(value));
@@ -972,7 +972,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname() {
            utsname_version_.c_str(), utsname_version_.length() + 1);
     memcpy(&(value.machine),
            utsname_machine_.c_str(), utsname_machine_.length() + 1);
-    WriteMem(buf_addr, &value, sizeof(value));
+    WriteMem(buf_addr, (uint8_t *)&value, sizeof(value));
   } else
     ret = -1;
   SetSystemCallStatus((PARAMETER_TYPE) ret, ret < 0);
@@ -1005,7 +1005,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
       lseek_ret64 = lseek_ret;
       if (Swap())
         PerformSwap(&lseek_ret64, sizeof(lseek_ret64));
-      WriteMem(result_addr, &lseek_ret64, sizeof(lseek_ret64));
+      WriteMem(result_addr, (uint8_t *)&lseek_ret64, sizeof(lseek_ret64));
       SetSystemCallStatus((PARAMETER_TYPE)lseek_ret, false);
     } else
       SetSystemCallStatus((PARAMETER_TYPE)errno, true);
@@ -1102,11 +1102,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_stat64() {
       (system_type_.compare("arm-eabi") == 0)) {
     struct arm_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
-    WriteMem(buf_address, &target_stat, sizeof(target_stat));
+    WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else if (system_type_.compare("powerpc") == 0) {
     struct powerpc_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
-    WriteMem(buf_address, &target_stat, sizeof(target_stat));
+    WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else ret = -1;
   if (unlikely(verbose_))
     *logger_
@@ -1128,11 +1128,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fstat64() {
       (system_type_.compare("arm-eabi") == 0)) {
     struct arm_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
-    WriteMem(buf_address, &target_stat, sizeof(target_stat));
+    WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else if (system_type_.compare("powerpc") == 0) {
     struct powerpc_stat64 target_stat;
     ret = Stat64(fd, &target_stat);
-    WriteMem(buf_address, &target_stat, sizeof(target_stat));
+    WriteMem(buf_address, (uint8_t *)&target_stat, sizeof(target_stat));
   } else ret = -1;
   if (unlikely(verbose_))
     *logger_
@@ -1424,7 +1424,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr32() {
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
   uint32_t r0 = GetSystemCallParam(0);
-  WriteMem(0xffff0ff0UL, (void *)&(r0), 4);
+  WriteMem(0xffff0ff0UL, (uint8_t *)&(r0), 4);
   if (unlikely(verbose_))
     *logger_
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)0) << std::dec
@@ -1630,7 +1630,7 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::StringLength(ADDRESS_TYPE addr) {
 
   while (1)
   {
-    ReadMem(addr, &buffer, 1);
+    ReadMem(addr, (uint8_t *)&buffer, 1);
     if (buffer == 0) return len;
     len++;
     addr += 1;

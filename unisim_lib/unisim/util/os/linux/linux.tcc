@@ -1063,14 +1063,14 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
-    ADDRESS_TYPE addr, void * buffer, uint32_t size) {
+    ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size) {
   if (memory_interface_ != NULL) return false;
   return memory_interface_->ReadMemory(addr, buffer, size);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
-    ADDRESS_TYPE addr, const void *buffer, uint32_t size) {
+    ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) {
   if (memory_interface_ == NULL) return false;
   return memory_interface_->WriteMemory(addr, buffer, size);
 }

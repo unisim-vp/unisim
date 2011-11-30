@@ -62,9 +62,10 @@ namespace linux_os {
 template <class ADDRESS_TYPE>
 class LinuxMemoryInterface {
  public:
-  virtual bool ReadMemory(ADDRESS_TYPE addr, void *buffer, uint32_t size) = 0;
-  virtual bool WriteMemory(ADDRESS_TYPE addr, const void *buffer,
-                           uint32_t size) = 0;
+  virtual bool ReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
+                          ADDRESS_TYPE size) = 0;
+  virtual bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
+                           ADDRESS_TYPE size) = 0;
 };
 
 template <class PARAMETER_TYPE>
@@ -89,10 +90,12 @@ class Linux {
   // endianess the Load() method will fail.
   void SetEndianess(unisim::util::endian::endian_type endianess);
 
-  // Sets the stack size that will be reserved for the application stack
+  // Sets the stack size in bytes that will be reserved for the application
+  // stack
   void SetStackSize(unsigned int stack_size);
 
-  // Sets the memory page size that will be used by the linux os emulator
+  // Sets the memory page size in bytes that will be used by the linux os
+  // emulator
   void SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
 
   // Sets the values that will be used by the uname system call.
@@ -300,8 +303,8 @@ class Linux {
 
   // helper methods to read/write from/into the system memory for performing
   // system calls or loading the initial memory image
-  bool ReadMem(ADDRESS_TYPE addr, void *buffer, uint32_t size);
-  bool WriteMem(ADDRESS_TYPE addr, const void *buffer, uint32_t size);
+  bool ReadMem(ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
+  bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
 
   // Cleans the contents of the loader logger_ and clean error flags
   void ResetLoaderLogger() {
