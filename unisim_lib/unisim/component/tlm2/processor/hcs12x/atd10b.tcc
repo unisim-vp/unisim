@@ -76,7 +76,6 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	baseAddress(0x0080), // MC9S12XDP512V2 - ATD baseAddress
 	param_baseAddress("base-address", this, baseAddress),
-//	interruptOffset(0xD2), // ATD0 - ATDCTL2 (ASCIE)
 	interruptOffset(0xD0), // ATD1 - ATDCTL2 (ASCIE)
 	param_interruptOffset("interrupt-offset", this, interruptOffset),
 
@@ -216,11 +215,10 @@ void ATD10B<ATD_SIZE>::Process()
 {
 	while(1)
 	{
-		// is ATD power ON (enabled)
-		while ((atdctl2_register & 0x80) == 0)
+
+		while ((atdctl2_register & 0x80) == 0) // is ATD power ON (enabled)
 		{
 			wait(scan_event);
-
 		}
 
 		if (use_atd_stub) {
@@ -766,7 +764,6 @@ bool ATD10B<ATD_SIZE>::write(uint8_t offset, const void *buffer) {
 			if ((atdctl2_register & 0x80) != 0) {
 				scan_event.notify();
 			}
-
 		} break;
 		case ATDCTL3: {
 			atdctl3_register = *((uint8_t *) buffer) & 0x7F;

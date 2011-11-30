@@ -47,7 +47,6 @@ namespace hcs12x {
 using unisim::util::debug::SimpleRegister;
 
 address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
-uint8_t XINT::XINT_REGS_RESET_VALUES[XINT::XINT_MEMMAP_SIZE];
 
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
@@ -77,42 +76,31 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Run);
 
+	int_cfwdata = (uint8_t *) malloc (XINT_SIZE * sizeof(uint8_t));
+
 	zeroTime = sc_time((double)0, SC_PS);
 
 	XINT_REGS_ADDRESSES[IVBR]		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
-	XINT_REGS_RESET_VALUES[IVBR]	= 0xFF;		// IVBR is only one.
 
 	XINT_REGS_ADDRESSES[INT_XGPRIO] = 0x0126;
-	XINT_REGS_RESET_VALUES[INT_XGPRIO]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFADDR] = 0x0127;
-	XINT_REGS_RESET_VALUES[INT_CFADDR] = 0x10;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA0] = 0x0128;
-	XINT_REGS_RESET_VALUES[INT_CFDATA0]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA1] = 0x0129;
-	XINT_REGS_RESET_VALUES[INT_CFDATA1]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA2] = 0x012A;
-	XINT_REGS_RESET_VALUES[INT_CFDATA2]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA3] = 0x012B;
-	XINT_REGS_RESET_VALUES[INT_CFDATA3]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA4] = 0x012C;
-	XINT_REGS_RESET_VALUES[INT_CFDATA4]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA5] = 0x012D;
-	XINT_REGS_RESET_VALUES[INT_CFDATA5]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA6] = 0x012E;
-	XINT_REGS_RESET_VALUES[INT_CFDATA6]	= 0x01;
 
 	XINT_REGS_ADDRESSES[INT_CFDATA7] = 0x012F;
-	XINT_REGS_RESET_VALUES[INT_CFDATA7]	= 0x01;
-
-	Reset();
 
 }
 
@@ -129,6 +117,13 @@ XINT::~XINT() {
 
 	registers_registry.clear();
 
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
+	free(int_cfwdata);
 }
 
 // Master methods
@@ -200,9 +195,6 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	uint8_t newIPL = 0;
 	address_t vectorAddress = 0;
 
-	/*
-	 * Check if it is reset
-	 */
 	if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]) {
 		vectorAddress = get_ClockMonitorReset_Vector();
 		interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2] = false;
@@ -225,18 +217,17 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	}
 	else {
 		uint8_t selectedInterrupt = 0;
-		uint8_t visibleFlags = getINT_CFADDR()/2;
 
-		for (int index=0; index < CFDATA_SIZE; index++) { // Check only the selected interrupts
-			if (interrupt_flags[visibleFlags+index]) {
-				uint8_t dataPriority = int_cfdata[index] && 0x07;
+		for (int index=0; index < XINT_SIZE; index++) { // Check only the selected interrupts
+			if (interrupt_flags[index]) {
+				uint8_t dataPriority = int_cfwdata[index] & 0x07;
 
 				// if 7-bit=0 then cpu else xgate
-				if ((int_cfdata[index] & 0x80) == 0)
+				if ((int_cfwdata[index] & 0x80) == 0)
 				{
 					if (dataPriority >= newIPL) {  // priority of maskable interrupts is from high offset to low
 						newIPL = dataPriority;
-						selectedInterrupt = visibleFlags+index;
+						selectedInterrupt = index;
 					}
 				}
 				else ;
@@ -245,7 +236,9 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 		}
 
 
-		vectorAddress = (getIVBR() << 8) + selectedInterrupt * 2;
+		vectorAddress = ((address_t) getIVBR() << 8) + selectedInterrupt * 2;
+
+//		std::cerr << "Vector Addr 0x" << std::hex << (unsigned int) vectorAddress << std::endl;
 		interrupt_flags[selectedInterrupt] = false;
 	}
 
@@ -262,10 +255,6 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 	buffer->ipl = newIPL;
 	buffer->vectorAddress = vectorAddress;
 
-//	if (debug_enabled) {
-//		cout << "XINT::  Vector Address 0x" << std::hex << vectorAddress << std::dec << endl;
-//	}
-
 	isHardwareInterrupt = false;
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
@@ -275,15 +264,11 @@ void XINT::Run()
 {
 	XINT_Payload *payload;
 
-	bool hasVisibleInterrupt;
-
 	// This thread is waked-up by any not CPU interrupt
 
 	while (true) {
 
 		wait(input_payload_queue.get_event());
-
-		hasVisibleInterrupt = false;
 
 		do
 		{
@@ -291,24 +276,7 @@ void XINT::Run()
 			payload = input_payload_queue.get_next_transaction();
 			if (payload) {
 
-//				if (debug_enable) {
-//					cout << "*************  XINT: Receive INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
-//				}
-
-				if ((payload->interrupt_offset == XINT::INT_CLK_MONITOR_RESET_OFFSET) ||
-					(payload->interrupt_offset == XINT::INT_COP_WATCHDOG_RESET_OFFSET) ||
-					(payload->interrupt_offset == XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET) ||
-					(payload->interrupt_offset == XINT::INT_SYS_RESET_OFFSET) ||
-					(payload->interrupt_offset == XINT::INT_XIRQ_OFFSET) ||
-					((payload->interrupt_offset >= getINT_CFADDR()) && (payload->interrupt_offset < (getINT_CFADDR() + 16)))) {
-
-					if (debug_enabled) {
-						cout << "*************  XINT: Receive Visible INT-ID (offset/2) " << std::hex << payload->interrupt_offset/2 << std::dec << std::endl;
-					}
-
-					interrupt_flags[payload->interrupt_offset/2] = true;
-					hasVisibleInterrupt = true;
-				}
+				interrupt_flags[payload->interrupt_offset/2] = true;
 
 				payload->release();
 			}
@@ -317,24 +285,22 @@ void XINT::Run()
 
 		payload = NULL;
 
-		if (hasVisibleInterrupt) {
-			isHardwareInterrupt = true;
+		isHardwareInterrupt = true;
 
-			// Rise interrupt
+		// Rise interrupt
 
-			tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+		tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
-			trans->set_command( tlm::TLM_WRITE_COMMAND );
-			trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+		trans->set_command( tlm::TLM_WRITE_COMMAND );
+		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-			toCPU_Initiator->b_transport( *trans, zeroTime );
+		toCPU_Initiator->b_transport( *trans, zeroTime );
 
-			if (trans->is_response_error() )
-				SC_REPORT_ERROR("XINT : ", " interrupt notification failed.");
+		if (trans->is_response_error() )
+			SC_REPORT_ERROR("XINT : ", " interrupt notification failed.");
 
 
-			trans->release();
-		}
+		trans->release();
 	}
 
 }
@@ -342,17 +308,19 @@ void XINT::Run()
 
 void XINT::Reset() {
 
-	ivbr = XINT_REGS_RESET_VALUES[IVBR];
-	int_xgprio = XINT_REGS_RESET_VALUES[INT_XGPRIO];
-	int_cfaddr = XINT_REGS_RESET_VALUES[INT_CFADDR];
-	int_cfdata[0] = XINT_REGS_RESET_VALUES[INT_CFDATA0];
-	int_cfdata[1] = XINT_REGS_RESET_VALUES[INT_CFDATA1];
-	int_cfdata[2] = XINT_REGS_RESET_VALUES[INT_CFDATA2];
-	int_cfdata[3] =  XINT_REGS_RESET_VALUES[INT_CFDATA3];
-	int_cfdata[4] =  XINT_REGS_RESET_VALUES[INT_CFDATA4];
-	int_cfdata[5] =  XINT_REGS_RESET_VALUES[INT_CFDATA5];
-	int_cfdata[6] =  XINT_REGS_RESET_VALUES[INT_CFDATA6];
-	int_cfdata[7] =  XINT_REGS_RESET_VALUES[INT_CFDATA7];
+	XINT_REGS_ADDRESSES[IVBR]		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
+
+	XINT_REGS_ADDRESSES[INT_XGPRIO] = 0x0126;
+
+	XINT_REGS_ADDRESSES[INT_CFADDR] = 0x0127;
+
+	ivbr = 0xFF;
+	int_xgprio = 0x01;
+	int_cfaddr = 0x10;
+
+	for (uint8_t i=0; i<XINT_SIZE; i++) {
+		int_cfwdata[i] = 0x01;
+	}
 
 	for (int i=0; i<XINT_SIZE; i++) {
 		interrupt_flags[i] = false;
@@ -362,20 +330,28 @@ void XINT::Reset() {
 
 bool XINT::BeginSetup() {
 
+	Reset();
+
 	char buf[80];
 
 	sprintf(buf, "%s.IVBR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ivbr);
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)"));
 
 	sprintf(buf, "%s.INT_XGPRIO",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)"));
 
 	sprintf(buf, "%s.INT_CFADDR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
+//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)"));
 
-	for (uint8_t i=0; i<8; i++) {
+	for (uint8_t i=0; i<XINT_SIZE; i++) {
 		sprintf(buf, "%s.INT_CFDATA%d", name(), i);
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfdata[i]);
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfwdata[i]);
+
+//		sprintf(buf, "INT_CFDATA%d", i);
+//		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)"));
 	}
 
 	return true;
@@ -468,7 +444,6 @@ void XINT::setINT_CFADDR(uint8_t value) { int_cfaddr = value; }
 
 uint8_t	XINT::read_INT_CFDATA(uint8_t index)
 {
-	assert(index < CFDATA_SIZE);
 
 	uint8_t cfaddr = getINT_CFADDR();
 
@@ -479,13 +454,13 @@ uint8_t	XINT::read_INT_CFDATA(uint8_t index)
 		 *   - write access to PRIOLVL[2:0] are ignored
 		 *   - read access of PRIOLVL[2:0] return all 0s
 		 */
-		if (index > 1) return int_cfdata[index] & 0x80;
+		if (index > 1) return int_cfwdata[getINT_CFADDR()/2 + index] & 0x80;
 
 		/*
 		 * CFDATA1 register is used for IRQ interrupt when writing 0xF0 to CFADDR
 		 * The !IRQ interrupt cannot be handled by XGATE module. For this reason RQST is always set to 0.
 		 */
-		if (index == 1) return int_cfdata[index] & 0x7F;
+		if (index == 1) return int_cfwdata[getINT_CFADDR()/2 + index] & 0x7F;
 	}
 	else
 		/*
@@ -497,16 +472,14 @@ uint8_t	XINT::read_INT_CFDATA(uint8_t index)
 	 * - Write access to CFDATA of the spurious interrupt will be ignored
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
-	if (cfaddr+index == XINT::INT_SPURIOUS_OFFSET) return 0x7;
+	if ((getINT_CFADDR() + index*2) == XINT::INT_SPURIOUS_OFFSET) return 0x7;
 
 
-	return int_cfdata[index];
+	return int_cfwdata[getINT_CFADDR()/2 + index];
 }
 
 void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 {
-	assert(index < CFDATA_SIZE);
-
 	uint8_t cfaddr = getINT_CFADDR();
 
 	if (cfaddr == 0xF0) {
@@ -524,7 +497,7 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 		 */
 		if (index == 1)
 		{
-			int_cfdata[index] = value & 0x7F;
+			int_cfwdata[getINT_CFADDR()/2 + index] = value & 0x7F;
 			return;
 
 		}
@@ -539,9 +512,9 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 	 * - Write access to CFDATA of the spurious interrupt will be ignored
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
-	if (cfaddr+index == XINT::INT_SPURIOUS_OFFSET) return;
+	if ((getINT_CFADDR() + index*2) == XINT::INT_SPURIOUS_OFFSET) return;
 
-	int_cfdata[index] = value;
+	int_cfwdata[getINT_CFADDR()/2 + index] = value;
 }
 
 
@@ -554,14 +527,14 @@ bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return true; }
 	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return true; }
 	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfdata[0]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfdata[1]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfdata[2]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfdata[3]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfdata[4]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfdata[5]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfdata[6]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfdata[7]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 0]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 1]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 2]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 3]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 4]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 5]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 6]; return true; }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 7]; return true; }
 
 	return false;
 }

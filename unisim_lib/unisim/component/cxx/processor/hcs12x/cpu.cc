@@ -586,7 +586,15 @@ void CPU::HandleResetException(address_t resetVector)
 	this->Reset();
 	// clear U-bit for CPU12XV2
 	ccr->clrIPL();
-	SetEntryPoint(memRead16(resetVector));
+
+	address_t address = memRead16(resetVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) resetVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 }
 
@@ -613,7 +621,13 @@ void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 	ccr->setIPL(newIPL);
 	ccr->setX();
 
-	SetEntryPoint(memRead16(xirqVector));
+	address_t address = memRead16(xirqVector);
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) xirqVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 }
 
@@ -678,7 +692,14 @@ void CPU::HandleException(const TrapException& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(trapVector));
+	address_t address = memRead16(trapVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) trapVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckTrapInterrupt();
 }
@@ -707,7 +728,14 @@ void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(swiVector));
+	address_t address = memRead16(swiVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) swiVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckSWIInterrupt();
 }
@@ -736,7 +764,14 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(sysCallVector));
+	address_t address = memRead16(sysCallVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) sysCallVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckSysInterrupt();
 }
@@ -765,7 +800,14 @@ void CPU::HandleException(const SpuriousInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(spuriousVector));
+	address_t address = memRead16(spuriousVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) spuriousVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckSpuriousInterrupt();
 }
@@ -789,7 +831,14 @@ void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 
 	address_t accessErrorVector = GetIntVector(newIPL);
 
-	SetEntryPoint(memRead16(accessErrorVector));
+	address_t address = memRead16(accessErrorVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) accessErrorVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckAccessErrorInterrupt();
 
