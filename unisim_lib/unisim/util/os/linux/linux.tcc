@@ -135,6 +135,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
   // method is called more than once it will return false.
   if (load_files_.size() != 0) return false;
 
+  // check that filename points to something
+  if (filename == NULL) {
+    std::cerr << "WARNING(unisim::util::os::linux): calling AddLoadFile "
+        << "without handling file." << std::endl;
+    return false;
+  }
+
   ResetLoaderLogger();
   // check that the file exists and that the elf loader can create a blob from it
   unisim::util::loader::elf_loader::Elf32Loader<ADDRESS_TYPE> *loader =
@@ -148,10 +155,16 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
     PrintLoaderLogger();
     return false;
   }
-  if (verbose_) {
+
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+
+  if (!loader->Load()) {
+    std::cerr
+        << "ERROR(unisim::util::os::linux): Could not load the given file "
+        << "\"" << filename << "\"" << std::endl;
     PrintLoaderLogger();
-  } else {
-    ResetLoaderLogger();
+    return false;
   }
 
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const blob =

@@ -47,11 +47,17 @@ int main(int argc, char *argv[])
       << std::endl;
 
   std::ostringstream log;
-  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> prog(false, &log);
+  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> prog(true, &log);
 
   if (!prog.SetSystemType("arm-eabi")) {
     std::cout << "Could not set arm-eabi system type" << std::endl;
     std::cerr << log << std::endl;
+    return -1;
+  }
+
+  if (!prog.AddLoadFile(argv[1])) {
+    std::cout << "Could not set load file \"" << argv[1] << "\"" << std::endl;
+    std::cerr << log.str() << std::endl;
     return -1;
   }
 
