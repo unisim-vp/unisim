@@ -420,8 +420,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>:: GetMainBlob() const {
-  /* TODO */
-  return NULL;
+  /* NOTE only one file is supported, so we just get the first one if any */
+  typename std::map<std::string,
+      unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator
+      it = load_files_.begin();
+  if (it == load_files_.end()) return NULL;
+  else return it->second;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
