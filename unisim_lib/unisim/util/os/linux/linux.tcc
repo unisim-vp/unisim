@@ -269,15 +269,26 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   blob->Catch();
 
   // load and add files to the blob
+  if (verbose_)
+    std::cout << "(unisim::util::os::linux_os::Linux.Load): "
+        << "Loading elf files." << std::endl;
   if (!LoadFiles(blob)) {
+    PrintLoaderLogger();
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
+        << "Could not load elf files." << std::endl;
     blob->Release();
     return false;
   }
 
   // create the stack footprint and add it to the blob
+  if (verbose_)
+    std::cout << "(unisim::util::os::linux_os::Linux.Load): "
+        << "Creating the Linux software stack." << std::endl;
   if (!CreateStack(blob)) {
     // TODO
     // Remove non finished state (i.e., unfinished blob, reset values, ...)
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
+        << "Could not create the Linux software stack." << std::endl;
     blob->Release();
     return false;
   }
@@ -527,10 +538,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
 
   // make sure argv has been defined, at least for the application to execute
-  if ((argc_ == 0) || (argv_.size() == 0)) return false;
+  if ((argc_ == 0) || (argv_.size() == 0)) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
+        << "argc and/or size(argv) is/are 0." << std::endl;
+    return false;
+  }
   // Create the stack
   // TODO: maybe we should check for a bigger stack
-  if (stack_size_ == 0) return false;
+  if (stack_size_ == 0) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
+        << "defined stack size is 0." << std::endl;
+        return false;
+  }
   uint8_t *stack_data = (uint8_t *)calloc(stack_size_, 1);
   ADDRESS_TYPE sp = stack_size_;
   // Fill the stack
