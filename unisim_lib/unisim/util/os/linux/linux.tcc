@@ -129,6 +129,45 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetCommandLine(
+    std::vector<std::string> const &cmd) {
+  argc_ = cmd.size();
+  argv_ = cmd;
+
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetCommandLine() {
+  return argv_;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEnvironment(
+    std::vector<std::string> const &env) {
+  envc_ = env.size();
+  envp_ = env;
+
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetEnvironment() {
+  return envp_;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetApplyHostEnvironment(
+    bool use_host_environment) {
+  apply_host_environnement_ = use_host_environment;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetApplyHostEnvironment() {
+  return apply_host_environnement_;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
     char const * const filename) {
   // NOTE: for the moment we only support one file to load, if this

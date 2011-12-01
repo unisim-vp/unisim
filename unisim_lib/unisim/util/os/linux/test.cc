@@ -34,6 +34,8 @@
 #include <iostream>
 #include <sstream>
 #include <map>
+#include <vector>
+#include <string>
 #include <inttypes.h>
 
 #include "unisim/util/endian/endian.hh"
@@ -153,6 +155,8 @@ int main(int argc, char *argv[])
   std::ostringstream log;
   unisim::util::os::linux_os::Linux<uint32_t, uint32_t> prog(true, &log);
 
+  std::cout << "Setting up the linux library ..." << std::endl;
+
   if (!prog.SetSystemType("arm-eabi")) {
     std::cout << "Could not set arm-eabi system type" << std::endl;
     std::cerr << log << std::endl;
@@ -176,11 +180,25 @@ int main(int argc, char *argv[])
     return -1;
   }
 
+  std::cout << "... linux library setup completed." << std::endl;
+
+  std::cout << "Setting command line and environment ..." << std::endl;
+
+  std::vector<std::string> cmd_line;
+  /// std::string argv_1(argv[1]);
+  cmd_line.push_back(argv[1]);
+  prog.SetCommandLine(cmd_line);
+  prog.SetApplyHostEnvironment(true);
+
+  std::cout << "... command line and environment set." << std::endl;
+
+  std::cout << "Performing load ..." << std::endl;
   if (!prog.Load()) {
     std::cerr << "Could not perform the load" << std::endl;
     std::cerr << log.str() << std::endl;
     return -1;
   }
+  std::cout << "... load completed." << std::endl;
 
   return 0;
 }

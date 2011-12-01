@@ -81,6 +81,18 @@ class Linux {
   Linux(bool verbose, std::ostringstream * const logger);
   ~Linux();
 
+  bool SetCommandLine(std::vector<std::string> const &cmd);
+
+  std::vector<std::string> GetCommandLine();
+
+  bool SetEnvironment(std::vector<std::string> const &env);
+
+  std::vector<std::string> GetEnvironment();
+
+  void SetApplyHostEnvironment(bool use_host_environment);
+
+  bool GetApplyHostEnvironment();
+
   bool AddLoadFile(char const * const file);
 
   bool SetSystemType(char const * const system_type);
