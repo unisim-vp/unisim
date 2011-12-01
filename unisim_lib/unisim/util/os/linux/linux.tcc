@@ -987,7 +987,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   // TODO
-  return true;
+  return false;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
