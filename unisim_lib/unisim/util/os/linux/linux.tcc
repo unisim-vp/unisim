@@ -334,10 +334,16 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
 
   // finish the state of the memory image depending on the system we are running
   // on
+  if (verbose_)
+    std::cout << "(unisim::util::os::linux_os::Linux.Load): "
+        << "Setting the system blob." << std::endl;
   if (!SetSystemBlob(blob)) {
     // TODO
     // Remove non finished state (i.e., unfinished blob, reset values, ...)
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
+        << "Could not set the system blob." << std::endl;
     blob->Release();
+    return false;
   }
 
   blob_ = blob;
