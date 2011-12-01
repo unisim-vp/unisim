@@ -177,6 +177,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
     return false;
   }
 
+  blob->Catch();
   std::string filename_str(filename);
   load_files_[filename_str] = blob;
   delete loader;
@@ -392,6 +393,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
   // blob, the main executable blob
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const main_blob =
       GetMainBlob();
+
+  if (main_blob == NULL) return false;
 
   // compute the different structure addresses from the given blob
   if (!ComputeStructuralAddresses(*main_blob))
