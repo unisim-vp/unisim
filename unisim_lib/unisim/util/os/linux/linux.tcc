@@ -352,6 +352,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::IsLoad() {
+  return blob_ != NULL;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
