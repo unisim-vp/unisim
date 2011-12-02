@@ -48,6 +48,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::logger::Logger;
 
@@ -253,6 +254,12 @@ private:
 
 	uint8_t eclkdiv_reg, reserved1_reg, reserved2_reg, ecnfg_reg, eprot_reg, estat_reg, ecmd_reg, reserved3_reg;
 	uint16_t eaddr_reg, edata_reg;
+
+	uint64_t read_counter;
+	uint64_t write_counter;
+
+	Statistic<uint64_t> stat_read_counter;
+	Statistic<uint64_t> stat_write_counter;
 
 };
 

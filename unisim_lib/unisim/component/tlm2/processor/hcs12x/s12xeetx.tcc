@@ -57,6 +57,11 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, erase_fail_ratio(0.01)
 	, param_erase_fail_ratio("erase-fail-ratio", this, erase_fail_ratio, "Ration to emulate erase failing. ")
 
+	, read_counter(0)
+	, write_counter(0)
+
+	, stat_read_counter("read-counter", this, read_counter, "read counter")
+	, stat_write_counter("write-counter", this, write_counter, "write counter")
 
 	, eclkdiv_reg(0)
 	, reserved1_reg(0)
@@ -78,6 +83,9 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, cmd_queue_back(0)
 
 {
+
+	stat_read_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_write_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &S12XEETX::read_write);
@@ -681,8 +689,11 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		read_counter++;
+
 		return inherited::transport_dbg(payload);
 	} else {
+		write_counter++;
 
 		write_to_eeprom( address, data_ptr, data_length);
 
@@ -703,8 +714,11 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		read_counter++;
+
 		return inherited::nb_transport_fw(payload, phase, t);
 	} else {
+		write_counter++;
 
 		write_to_eeprom(address, data_ptr, data_length);
 
@@ -732,8 +746,11 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		read_counter++;
+
 		inherited::b_transport(payload, t);
 	} else {
+		write_counter++;
 
 		write_to_eeprom(address, data_ptr, data_length);
 
@@ -810,6 +827,9 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	edata_reg = 0x0000;
 
 	protected_area_start_address = inherited::hi_addr - 64 * ((eprot_reg & 0x07) + 1) + 1;
+
+	read_counter = 0;
+	write_counter = 0;
 
 	empty_cmd_queue();
 
