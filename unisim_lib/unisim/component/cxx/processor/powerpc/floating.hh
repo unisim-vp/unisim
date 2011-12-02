@@ -47,6 +47,10 @@ static const unsigned int RN_ZERO = 1;
 static const unsigned int RN_UP = 2;
 static const unsigned int RN_DOWN = 3;
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -230,7 +234,7 @@ class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble
   public:
    SoftDouble() : inherited() {}
    SoftDouble(const SoftFloat& sfFloat, Flags& rpParams);
-   SoftDouble(const uint64_t& uDouble) { setChunk((void *) &uDouble, true /* little endian */); }
+   SoftDouble(const uint64_t& uDouble) { setChunk((void *) &uDouble, unisim::util::endian::IsHostLittleEndian()); }
    SoftDouble& operator=(const SoftDouble& sdSource)
       {  return (SoftDouble&) inherited::operator=(sdSource); }
    SoftDouble& assign(const SoftDouble& sdSource)
@@ -238,7 +242,7 @@ class SoftDouble : public unisim::util::simfloat::Numerics::Double::TBuiltDouble
    SoftDouble& assign(const SoftFloat& sfFloat, Flags& rpParams);
 
    uint64_t queryValue() const
-      {  uint64_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
+      {  uint64_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
 };
 
 class BuiltFloatTraits : public unisim::util::simfloat::Numerics::Double::BuiltDoubleTraits<23, 8> {
@@ -257,7 +261,7 @@ class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<
   public:
    SoftFloat() : inherited() {}
    SoftFloat(const SoftDouble& sdDouble, Flags& rpParams);
-   SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, true /* little endian */); }
+   SoftFloat(const uint32_t& uFloat) { setChunk((void *) &uFloat, unisim::util::endian::IsHostLittleEndian()); }
 
    SoftFloat& operator=(const SoftFloat& sfSource)
       {  return (SoftFloat&) inherited::operator=(sfSource); }
@@ -265,7 +269,7 @@ class SoftFloat : public unisim::util::simfloat::Numerics::Double::TBuiltDouble<
       {  return (SoftFloat&) inherited::operator=(sfSource); }
    SoftFloat& assign(const SoftDouble& sdDouble, Flags& rpParams);
    uint32_t queryValue() const
-      {  uint32_t uResult; fillChunk(&uResult, true /* little endian */); return uResult; }
+      {  uint32_t uResult; fillChunk(&uResult, unisim::util::endian::IsHostLittleEndian()); return uResult; }
 };
 
 inline SoftDouble&

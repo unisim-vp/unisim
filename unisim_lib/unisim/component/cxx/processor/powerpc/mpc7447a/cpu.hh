@@ -64,6 +64,10 @@
 #include <map>
 #include <iosfwd>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -1655,7 +1659,9 @@ private:
 	//=====================================================================
 
 	Statistic<uint64_t> stat_instruction_counter;
+#if 0
 	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
+#endif
 	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
 	Statistic<uint64_t> stat_num_il1_accesses;
 	Statistic<uint64_t> stat_num_il1_misses;

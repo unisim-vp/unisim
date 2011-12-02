@@ -43,6 +43,10 @@
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_mmu.tcc>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/cpu_perf_model.tcc>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

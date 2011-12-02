@@ -52,7 +52,7 @@ public:
 	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
 
 	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
-	virtual void ReportFinishedInstruction(ADDRESS next_addr) = 0;
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr) = 0;
 };
 
 class MemoryAccessReportingControl : public unisim::kernel::service::ServiceInterface

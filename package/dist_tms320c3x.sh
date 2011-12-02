@@ -22,12 +22,12 @@ UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
 UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/ppcemu
 UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/cxx/tms320c3x
-UNISIM_DOCS_DIR=${MY_DIR}/../unisim_docs
+# UNISIM_DOCS_DIR=${MY_DIR}/../unisim_docs
 
 TMS320C3X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-tms320c3x-${TMS320C3X_VERSION}
 
-DOCS_VERSION=lastest-tms320c3x-${TMS320C3X_VERSION}
+# DOCS_VERSION=lastest-tms320c3x-${TMS320C3X_VERSION}
 
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
@@ -360,48 +360,48 @@ c31boot.out \
 fibo.out \
 "
 
-UNISIM_DOCS_FILES="\
-genisslib_manual.pdf \
-tms320c3x_manual.pdf \
-genisslib_manual.tex \
-genisslib/genisslib.tex \
-tms320c3x_manual.tex \
-tms320c3x/tms320c3x.tex \
-tms320c3x/service_instanciation.tex \
-tms320c3x/service_connection.tex \
-tms320c3x/simple_service.tex \
-tms320c3x/simple_client.tex \
-tms320c3x/run_time_parameter.tex \
-tms320c3x/debug_control_interface.tex \
-tms320c3x/disassembly_interface.tex \
-tms320c3x/loader_interface.tex \
-tms320c3x/memory_access_reporting_control_interface.tex \
-tms320c3x/memory_access_reporting_interface.tex \
-tms320c3x/memory_injection_interface.tex \
-tms320c3x/memory_interface.tex \
-tms320c3x/registers_interface.tex \
-tms320c3x/symbol_table_lookup_interface.tex \
-tms320c3x/ti_c_io_interface.tex \
-tms320c3x/time_interface.tex \
-tms320c3x/trap_reporting_interface.tex \
-tms320c3x/including_logger.tex \
-tms320c3x/deriving_from_object.tex \
-tms320c3x/binding_logger.tex \
-tms320c3x/using_logger.tex \
-tms320c3x/register_interface.tex \
-tms320c3x/assembly_pattern.tex \
-tms320c3x/fig_tms320c3x.pdf \
-tms320c3x/fig_object_hierarchy.pdf \
-tms320c3x/fig_code_composer.jpg \
-tms320c3x/fig_tms320c3x_board.jpg \
-tms320c3x/fig_tms320c3x_dev_kit.jpg \
-tms320c3x/fig_unit_test_generator.pdf \
-tms320c3x/fig_unit_test.pdf \
-tms320c3x/fig_driver_error.jpg \
-tms320c3x/fig_fft512_output0.pdf \
-tms320c3x/fig_iir_output.pdf \
-tms320c3x/fig_bp_output.pdf \
-tms320c3x/fig_lp_output.pdf"
+# UNISIM_DOCS_FILES="\
+# genisslib_manual.pdf \
+# tms320c3x_manual.pdf \
+# genisslib_manual.tex \
+# genisslib/genisslib.tex \
+# tms320c3x_manual.tex \
+# tms320c3x/tms320c3x.tex \
+# tms320c3x/service_instanciation.tex \
+# tms320c3x/service_connection.tex \
+# tms320c3x/simple_service.tex \
+# tms320c3x/simple_client.tex \
+# tms320c3x/run_time_parameter.tex \
+# tms320c3x/debug_control_interface.tex \
+# tms320c3x/disassembly_interface.tex \
+# tms320c3x/loader_interface.tex \
+# tms320c3x/memory_access_reporting_control_interface.tex \
+# tms320c3x/memory_access_reporting_interface.tex \
+# tms320c3x/memory_injection_interface.tex \
+# tms320c3x/memory_interface.tex \
+# tms320c3x/registers_interface.tex \
+# tms320c3x/symbol_table_lookup_interface.tex \
+# tms320c3x/ti_c_io_interface.tex \
+# tms320c3x/time_interface.tex \
+# tms320c3x/trap_reporting_interface.tex \
+# tms320c3x/including_logger.tex \
+# tms320c3x/deriving_from_object.tex \
+# tms320c3x/binding_logger.tex \
+# tms320c3x/using_logger.tex \
+# tms320c3x/register_interface.tex \
+# tms320c3x/assembly_pattern.tex \
+# tms320c3x/fig_tms320c3x.pdf \
+# tms320c3x/fig_object_hierarchy.pdf \
+# tms320c3x/fig_code_composer.jpg \
+# tms320c3x/fig_tms320c3x_board.jpg \
+# tms320c3x/fig_tms320c3x_dev_kit.jpg \
+# tms320c3x/fig_unit_test_generator.pdf \
+# tms320c3x/fig_unit_test.pdf \
+# tms320c3x/fig_driver_error.jpg \
+# tms320c3x/fig_fft512_output0.pdf \
+# tms320c3x/fig_iir_output.pdf \
+# tms320c3x/fig_bp_output.pdf \
+# tms320c3x/fig_lp_output.pdf"
 
 has_to_build_configure=no
 has_to_build_genisslib_configure=no
@@ -409,7 +409,7 @@ has_to_build_tms320c3x_configure=no
 
 mkdir -p ${DEST_DIR}/genisslib
 mkdir -p ${DEST_DIR}/tms320c3x
-mkdir -p ${DEST_DIR}/docs
+# mkdir -p ${DEST_DIR}/docs
 
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
@@ -479,21 +479,21 @@ for file in ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}; do
 	fi
 done
 
-for file in ${UNISIM_DOCS_FILES}; do
-	mkdir -p "${DEST_DIR}/docs/`dirname ${file}`"
-	has_to_copy=no
-	if [ -e "${DEST_DIR}/docs/${file}" ]; then
-		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/docs/${file}" ]; then
-			has_to_copy=yes
-		fi
-	else
-		has_to_copy=yes
-	fi
-	if [ "${has_to_copy}" = "yes" ]; then
-		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/docs/${file}"
-		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/docs/${file}" || exit
-	fi
-done
+# for file in ${UNISIM_DOCS_FILES}; do
+# 	mkdir -p "${DEST_DIR}/docs/`dirname ${file}`"
+# 	has_to_copy=no
+# 	if [ -e "${DEST_DIR}/docs/${file}" ]; then
+# 		if [ "${UNISIM_DOCS_DIR}/${file}" -nt "${DEST_DIR}/docs/${file}" ]; then
+# 			has_to_copy=yes
+# 		fi
+# 	else
+# 		has_to_copy=yes
+# 	fi
+# 	if [ "${has_to_copy}" = "yes" ]; then
+# 		echo "${UNISIM_DOCS_DIR}/${file} ==> ${DEST_DIR}/docs/${file}"
+# 		cp -f "${UNISIM_DOCS_DIR}/${file}" "${DEST_DIR}/docs/${file}" || exit
+# 	fi
+# done
 
 
 mkdir -p ${DEST_DIR}/config
@@ -501,8 +501,8 @@ mkdir -p ${DEST_DIR}/tms320c3x/config
 mkdir -p ${DEST_DIR}/tms320c3x/m4
 mkdir -p ${DEST_DIR}/genisslib/config
 mkdir -p ${DEST_DIR}/genisslib/m4
-mkdir -p ${DEST_DIR}/docs/config
-mkdir -p ${DEST_DIR}/docs/m4
+# mkdir -p ${DEST_DIR}/docs/config
+# mkdir -p ${DEST_DIR}/docs/m4
 
 for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	has_to_copy=no
@@ -598,12 +598,13 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
 	echo "AC_CONFIG_SUBDIRS([genisslib])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_SUBDIRS([tms320c3x])"  >> "${CONFIGURE_AC}" 
-	echo "AC_CONFIG_SUBDIRS([docs])"  >> "${CONFIGURE_AC}" 
+# 	echo "AC_CONFIG_SUBDIRS([docs])"  >> "${CONFIGURE_AC}" 
 	echo "AC_CONFIG_FILES([Makefile])" >> "${CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${CONFIGURE_AC}"
 
 	echo "Generating Makefile.am"
-	echo "SUBDIRS=genisslib tms320c3x docs" > "${MAKEFILE_AM}"
+# 	echo "SUBDIRS=genisslib tms320c3x docs" > "${MAKEFILE_AM}"
+	echo "SUBDIRS=genisslib tms320c3x" > "${MAKEFILE_AM}"
 
 	echo "Building configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal && autoconf --force && automake -ac"
@@ -611,106 +612,106 @@ fi
 
 # Documentation
 
-DOCS_CONFIGURE_AC="${DEST_DIR}/docs/configure.ac"
-DOCS_MAKEFILE_AM="${DEST_DIR}/docs/Makefile.am"
-
-
-if [ ! -e "${DOCS_CONFIGURE_AC}" ]; then
-	has_to_build_docs_configure=yes
-else
-	if [ "$0" -nt "${DOCS_CONFIGURE_AC}" ]; then
-		has_to_build_docs_configure=yes
-	fi
-fi
-
-if [ ! -e "${DOCS_MAKEFILE_AM}" ]; then
-	has_to_build_docs_configure=yes
-else
-	if [ "$0" -nt "${DOCS_MAKEFILE_AM}" ]; then
-		has_to_build_docs_configure=yes
-	fi
-fi
-
-if [ "${has_to_build_docs_configure}" = "yes" ]; then
-	echo "Generating docs configure.ac"
-	echo "AC_INIT([UNISIM Documentation], [${DOCS_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-docs])" > "${DOCS_CONFIGURE_AC}"
-	echo "AC_CONFIG_AUX_DIR(config)" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CANONICAL_BUILD" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CANONICAL_HOST" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CANONICAL_TARGET" >> "${DOCS_CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_PATH_PROGS(SH, sh)" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_PROG_INSTALL" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_PROG_LN_S" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_CONFIG_FILES([Makefile])" >> "${DOCS_CONFIGURE_AC}"
-	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
-
-	echo "Generating docs Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
-	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
-	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
-	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
-
-	cat << EOF > "${DEST_DIR}/docs/README"
-This is the documentation of UNISIM GenISSLib, an instruction set simulator generator, and the UNISIM TMS320C3X instruction set simulator.
-See INSTALL for installation instructions.
-See COPYING for licensing.
-See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools.
-EOF
-
-	echo "" > "${DEST_DIR}/docs/NEWS"
-	echo "" > "${DEST_DIR}/docs/ChangeLog"
-	
-	cat << EOF > "${DEST_DIR}/docs/AUTHORS"
-Gilles Mouchard <gilles.mouchard@cea.fr>
-Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
-EOF
-
-	cat << EOF > "${DEST_DIR}/docs/INSTALL"
-Requirements:
- - Latex
- - rubber
-
-Build the documentation:
- $ rubber -d genisslib_manual
- $ rubber -d tms320c3x_manual
-EOF
-
-cat << EOF > "${DEST_DIR}/docs/COPYING"
-Copyright (c) 2009,
-Commissariat a l'Energie Atomique (CEA)
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
- - Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
- - Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
- - Neither the name of CEA nor the names of its contributors may be used to
-   endorse or promote products derived from this software without specific prior
-   written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED.
-IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-EOF
-
-	echo "Building configure"
-	${SHELL} -c "cd ${DEST_DIR}/docs && aclocal && autoconf --force && automake -ac"
-fi
+# DOCS_CONFIGURE_AC="${DEST_DIR}/docs/configure.ac"
+# DOCS_MAKEFILE_AM="${DEST_DIR}/docs/Makefile.am"
+# 
+# 
+# if [ ! -e "${DOCS_CONFIGURE_AC}" ]; then
+# 	has_to_build_docs_configure=yes
+# else
+# 	if [ "$0" -nt "${DOCS_CONFIGURE_AC}" ]; then
+# 		has_to_build_docs_configure=yes
+# 	fi
+# fi
+# 
+# if [ ! -e "${DOCS_MAKEFILE_AM}" ]; then
+# 	has_to_build_docs_configure=yes
+# else
+# 	if [ "$0" -nt "${DOCS_MAKEFILE_AM}" ]; then
+# 		has_to_build_docs_configure=yes
+# 	fi
+# fi
+# 
+# if [ "${has_to_build_docs_configure}" = "yes" ]; then
+# 	echo "Generating docs configure.ac"
+# 	echo "AC_INIT([UNISIM Documentation], [${DOCS_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-docs])" > "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CONFIG_AUX_DIR(config)" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CANONICAL_BUILD" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CANONICAL_HOST" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CANONICAL_TARGET" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_PATH_PROGS(SH, sh)" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_PROG_INSTALL" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_PROG_LN_S" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_CONFIG_FILES([Makefile])" >> "${DOCS_CONFIGURE_AC}"
+# 	echo "AC_OUTPUT" >> "${DOCS_CONFIGURE_AC}"
+# 
+# 	echo "Generating docs Makefile.am"
+# 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${DOCS_MAKEFILE_AM}"
+# 	echo "EXTRA_DIST = ${UNISIM_DOCS_FILES}" >> "${DOCS_MAKEFILE_AM}"
+# 	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${DOCS_MAKEFILE_AM}"
+# 	echo "share_DATA = tms320c3x_manual.pdf" >> "${DOCS_MAKEFILE_AM}"
+# 
+# 	cat << EOF > "${DEST_DIR}/docs/README"
+# This is the documentation of UNISIM GenISSLib, an instruction set simulator generator, and the UNISIM TMS320C3X instruction set simulator.
+# See INSTALL for installation instructions.
+# See COPYING for licensing.
+# See tms320c3x_manual.pdf and genisslib_manual.pdf for a printable documentation of these tools.
+# EOF
+# 
+# 	echo "" > "${DEST_DIR}/docs/NEWS"
+# 	echo "" > "${DEST_DIR}/docs/ChangeLog"
+# 	
+# 	cat << EOF > "${DEST_DIR}/docs/AUTHORS"
+# Gilles Mouchard <gilles.mouchard@cea.fr>
+# Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+# EOF
+# 
+# 	cat << EOF > "${DEST_DIR}/docs/INSTALL"
+# Requirements:
+#  - Latex
+#  - rubber
+# 
+# Build the documentation:
+#  $ rubber -d genisslib_manual
+#  $ rubber -d tms320c3x_manual
+# EOF
+# 
+# cat << EOF > "${DEST_DIR}/docs/COPYING"
+# Copyright (c) 2009,
+# Commissariat a l'Energie Atomique (CEA)
+# All rights reserved.
+# 
+# Redistribution and use in source and binary forms, with or without modification,
+# are permitted provided that the following conditions are met:
+# 
+#  - Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+# 
+#  - Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+# 
+#  - Neither the name of CEA nor the names of its contributors may be used to
+#    endorse or promote products derived from this software without specific prior
+#    written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED.
+# IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+# EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# EOF
+# 
+# 	echo "Building configure"
+# 	${SHELL} -c "cd ${DEST_DIR}/docs && aclocal && autoconf --force && automake -ac"
+# fi
 
 # GENISSLIB
 

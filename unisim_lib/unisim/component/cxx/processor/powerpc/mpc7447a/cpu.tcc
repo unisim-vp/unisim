@@ -47,6 +47,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -185,7 +189,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
+#if 0
 	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle, "number of simulated CPU cycles")
+#endif
 	, stat_bus_cycle("bus-cycle",  this,  bus_cycle, "number of simulated bus cycles")
 	, stat_num_il1_accesses("num-il1-accesses", this, num_il1_accesses, "number of accesses to L1 instruction cache")
 	, stat_num_il1_misses("num-il1-misses", this, num_il1_misses, "number of misses to L1 instruction cache")
@@ -231,7 +237,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	//param_bus_cycle_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_bus_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+#if 0
 	stat_cpu_cycle.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+#endif
 	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
 	unsigned int i;

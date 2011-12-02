@@ -49,6 +49,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -1518,11 +1522,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
-	SetCIA(GetNIA());
-
-	/* update the instruction counter */
-	instruction_counter++;
-
 	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
 	{
 		trap_reporting_import->ReportTrap();
@@ -1532,9 +1531,14 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
+			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
 		}
 	}
+
+	SetCIA(GetNIA());
+
+	/* update the instruction counter */
+	instruction_counter++;
 
 	if(unlikely(instruction_counter >= max_inst)) Stop(0);
 	

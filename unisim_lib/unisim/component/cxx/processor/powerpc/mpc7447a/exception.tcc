@@ -38,6 +38,10 @@
 #include <unisim/component/cxx/processor/powerpc/exception.tcc>
 #include <sstream>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

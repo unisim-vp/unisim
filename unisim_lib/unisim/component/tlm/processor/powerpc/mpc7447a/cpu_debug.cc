@@ -36,6 +36,10 @@
 #include <unisim/component/tlm/processor/powerpc/mpc7447a/cpu.tcc>
 #include <unisim/component/cxx/processor/powerpc/mpc7447a/config.hh>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm {

@@ -112,11 +112,17 @@ unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
+unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
+unisim/util/debug/symbol_64.cc \
 unisim/util/debug/symbol_table_32.cc \
+unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
+unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
+unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/stmt_32.cc \
+unisim/util/debug/stmt_64.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -127,8 +133,11 @@ unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/section64.cc \
 unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
 unisim/util/endian/endian.cc \
@@ -157,6 +166,7 @@ unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/config.cc \
+unisim/component/cxx/processor/powerpc/mpc7447a/vr_debug_if.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/tlm2/processor/powerpc/mpc7447a/cpu.cc \
@@ -548,34 +558,47 @@ done
 
 # Top level
 
-echo "This package contains:" > "${DEST_DIR}/README"
-echo "  - UNISIM GenISSLib: an instruction set simulator generator" >> "${DEST_DIR}/README"
-echo "  - UNISIM ppcemu: a user level PowerPC SystemC TLM simulator." >> "${DEST_DIR}/README"
-echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+cat << EOF > "${DEST_DIR}/AUTHORS"
+Gilles Mouchard <gilles.mouchard@cea.fr>
+Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+EOF
 
-echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
-echo "------------" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Requirements:" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bash" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU make" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU autoconf" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU automake" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU flex" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bison" >> "${DEST_DIR}/INSTALL"
-echo "  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
-echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
-echo "  $ make" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Installing (optional):" >> "${DEST_DIR}/INSTALL"
-echo "  $ make install" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
+cat << EOF > "${DEST_DIR}/README"
+This package contains:
+  - UNISIM GenISSLib: an instruction set simulator generator
+  - UNISIM ppcemu: An user level PowerPC simulator with support of ELF32 binaries and Linux system call translation.
+                   This simulator can run simple PowerPC Linux applications.
+
+See INSTALL for installation instructions.
+EOF
+
+cat << EOF > "${DEST_DIR}/INSTALL"
+INSTALLATION
+------------
+
+Requirements:
+  - GNU C++ compiler
+  - GNU C++ standard library
+  - GNU bash
+  - GNU make
+  - GNU autoconf
+  - GNU automake
+  - GNU flex
+  - GNU bison
+  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
+  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
+  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
+  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
+  - Core SystemC Language >= 2.1 (http://www.systemc.org)
+  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+
+Building instructions:
+  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ make
+
+Installing (optional):
+  $ make install
+EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
@@ -599,7 +622,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${PPCEMU_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-ppcemu])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${PPCEMU_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-ppcemu])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -706,7 +729,7 @@ fi
 
 if [ "${has_to_build_ppcemu_configure}" = "yes" ]; then
 	echo "Generating ppcemu configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${PPCEMU_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-ppcemu-core])" > "${PPCEMU_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${PPCEMU_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-ppcemu-core])" > "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${PPCEMU_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${PPCEMU_CONFIGURE_AC}"
