@@ -218,13 +218,15 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		if (cmd_queue.empty()) {
 			estat_reg = estat_reg | 0x40;
 			assertInterrupt(cmd_interruptOffset);
+		}
 
-			// isn't sector_erase_abort
-			if ((ecmd_reg & 0x7F) != 0x47) {
-				wait(bus_cycle_time * 4);
-			}
+		// isn't sector_erase_abort
+		if ((ecmd_reg & 0x7F) != 0x47) {
+			wait(bus_cycle_time * 4);
+		}
 
-			// set CBEIF flag when address, data, command buffers are empty
+		// set CBEIF flag when address, data, command buffers are empty. This enable new write sequence.
+		if (cmd_queue.empty()) {
 			estat_reg = estat_reg | 0x80;
 			assertInterrupt(cmd_interruptOffset);
 		}
