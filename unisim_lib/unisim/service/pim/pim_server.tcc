@@ -337,15 +337,17 @@ bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 template <class ADDRESS>
 void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
+
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
+
 		trap = true;
 		synched = false;
 	}
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{

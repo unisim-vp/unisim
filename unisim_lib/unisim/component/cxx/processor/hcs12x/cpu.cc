@@ -415,7 +415,7 @@ uint8_t CPU::Step()
 
 		if(requires_finished_instruction_reporting)
 			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(getRegPC()));
+				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(lastPC), MMC::getPagedAddress(getRegPC()));
 
 			}
 

@@ -154,27 +154,6 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 		fetchCommand();
 
-		// set CCIF flag when all commands are completed
-		if (cmd_queue.empty()) {
-			estat_reg = estat_reg | 0x40;
-			assertInterrupt(cmd_interruptOffset);
-
-			/**
-			 * For all command write sequences except sector erase abort,
-			 * the CBEIF flag will set four bus cycles after the CCIF flag is cleared indicating that the address, data, and command buffers are ready for a new command write sequence to begin.
-			 * For sector erase abort operations, the CBEIF flag will remain clear until the operations completes.
-			 */
-
-			// is sector_erase_abort
-			if ((ecmd_reg & 0x7F) != 0x47) {
-				wait(bus_cycle_time * 4);
-
-				// set CBEIF flag when address, data, command buffers are empty
-				estat_reg = estat_reg | 0x80;
-				assertInterrupt(cmd_interruptOffset);
-			}
-		}
-
 		// run the fetched command
 		switch (ecmd_reg & 0x7F) {
 			case 0x05: {
@@ -214,14 +193,32 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			}
 		}
 
+		/**
+		 * For all command write sequences except sector erase abort,
+		 * the CBEIF flag will set four bus cycles after the CCIF flag is cleared indicating
+		 * that the address, data, and command buffers are ready for a new command write sequence to begin.
+		 * For sector erase abort operations, the CBEIF flag will remain clear until the operation completes.
+		 * Except for the sector erase abort command, a buffered command will wait for the active operation to be completed
+		 * before being launched.
+		 * The sector erase abort command is launched when the CBEIF flag is cleared as part
+		 * of a sector erase abort command write sequence.
+		 * Once a command is launched, the completion of the command operation is indicated by the setting of the CCIF flag in the ESTAT register.
+		 * The CCIF flag will set upon completion of all active and buffered commands.
+		 */
+
+		// set CCIF flag when all commands are completed
 		if (cmd_queue.empty()) {
-			// operations completes
-			// is sector_erase_abort
-			if ((ecmd_reg & 0x7F) == 0x47) {
-				// set CBEIF flag when address, data, command buffers are empty
-				estat_reg = estat_reg | 0x80;
-				assertInterrupt(cmd_interruptOffset);
+			estat_reg = estat_reg | 0x40;
+			assertInterrupt(cmd_interruptOffset);
+
+			// isn't sector_erase_abort
+			if ((ecmd_reg & 0x7F) != 0x47) {
+				wait(bus_cycle_time * 4);
 			}
+
+			// set CBEIF flag when address, data, command buffers are empty
+			estat_reg = estat_reg | 0x80;
+			assertInterrupt(cmd_interruptOffset);
 		}
 
 	}
@@ -391,6 +388,14 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	 * The EEPROM sector should not be considered erased if the ACCERR flag is set upon command completion.
 	 */
 
+//	sector_erase_abort_command_req = false;
+//
+//	sector_erase_abort_active = true;
+//
+//	wait(bus_cycle_time * (1 + 14));
+//
+//	sector_erase_abort_active = false;
+
 	sector_erase_abort_command_req = false;
 
 	sector_erase_abort_active = true;
@@ -398,6 +403,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	wait(bus_cycle_time * (1 + 14));
 
 	sector_erase_abort_active = false;
+
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -574,12 +580,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		cmd_queue_back->setCmd(_cmd);
 
 		// is sector erase abort command ?
-		if ((_cmd == 0x47) && sector_erase_modify_active) {
-			/**
-			 * Set ESTAT::ACCERR because Launching the sector erase abort command while a sector erase or sector modify operation is active
-			 * results in the early termination of the sector erase or sector modify operation.
-			 */
-			setACCERR();
+		if (_cmd == 0x47) {
 			sector_erase_abort_command_req = true;
 		}
 	}
