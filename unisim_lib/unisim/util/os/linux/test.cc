@@ -92,6 +92,7 @@ bool RegInterface::SetRegister(uint32_t id, uint32_t value) {
   else
     std::cout << " (0x" << std::hex << it->second << std::dec << ")";
   std::cout << std::endl;
+  return true;
 }
 
 class MemInterface:

@@ -612,7 +612,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   sp -= sizeof(ADDRESS_TYPE);
   ADDRESS_TYPE cur_length = argv_[0].length() + 1;
   sp = sp - cur_length;
-  ADDRESS_TYPE sp_argc = sp;
+  // TODO Remove this line? What was this being used for?
+  // ADDRESS_TYPE sp_argc = sp;
   memcpy(stack_data + sp, argv_[0].c_str(), cur_length);
   ADDRESS_TYPE argv0_bottom = sp;
   Section* argv0_section = new Section(Section::TY_PROGBITS, Section::SA_AW,
@@ -780,6 +781,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   env_section->Release();
   argv0_section->Release();
   stack_segment->Release();
+
+  return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -887,8 +890,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
   if ((system_type_.compare("arm") == 0) ||
       (system_type_.compare("arm-eabi") == 0))
     return SetArmBlob(blob);
-  if (system_type_.compare("ppc") == 0)
+  else if (system_type_.compare("ppc") == 0)
     return SetPPCBlob(blob);
+
+  std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetSystemBlob): "
+      << "Unknown system type (" << system_type_ << ")" << std::endl;
+  return false;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
