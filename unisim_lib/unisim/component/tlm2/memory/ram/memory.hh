@@ -54,6 +54,7 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::logger::Logger;
 
 typedef uint64_t DEFAULT_ADDRESS;
@@ -93,6 +94,8 @@ public:
 	virtual ~Memory();
 
 	/* Service methods */
+	virtual void Reset();
+
 	/** BeginSetup
 	 * Initializes the service interface. */
 	virtual bool BeginSetup();
@@ -113,6 +116,10 @@ protected:
 
 	/** Logger */
 	Logger logger;
+
+	uint64_t read_counter;
+	uint64_t write_counter;
+
 
 private:
 	sc_time& GetBurstLatency(unsigned int num_burst_beats);
@@ -138,6 +145,11 @@ private:
 	Parameter<sc_time> param_write_latency;
 	/** The parameter to set the verbosity */
 	Parameter<bool> param_verbose;
+
+	Statistic<uint64_t> stat_read_counter;
+	Statistic<uint64_t> stat_write_counter;
+
+
 };
 
 } // end of namespace ram

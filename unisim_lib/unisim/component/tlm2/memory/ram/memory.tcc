@@ -70,6 +70,11 @@ Memory(const sc_module_name& name, Object *parent) :
 	param_read_latency("read-latency", this, read_latency, "memory read latency"),
 	param_write_latency("write-latency", this, write_latency, "memory write latency"),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity")
+	, read_counter(0)
+	, write_counter(0)
+	, stat_read_counter("read-counter", this, read_counter, "read counter")
+	, stat_write_counter("write-counter", this, write_counter, "write counter")
+
 {
 	slave_sock(*this);
 	
@@ -78,6 +83,10 @@ Memory(const sc_module_name& name, Object *parent) :
 	{
 		burst_latency_fast_lookup[burst_length] = burst_length * cycle_time;
 	}
+
+	stat_read_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	stat_write_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 }
 
 /* Destructor */
@@ -86,6 +95,14 @@ Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 ~Memory() {
 }
 
+template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
+void Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
+Reset() {
+	inherited::Reset();
+
+	read_counter = 0;
+	write_counter = 0;
+}
 /* ClientIndependentSetup */
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
@@ -215,6 +232,11 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
+
+			if (status) {
+				read_counter++;
+			}
+
 			break;
 		case tlm::TLM_WRITE_COMMAND:
 			if(IsVerbose())
@@ -230,6 +252,10 @@ unsigned int Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transpor
 				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
+
+			if (status) {
+				write_counter++;
+			}
 			break;
 		case tlm::TLM_IGNORE_COMMAND:
 			// transport_dbg should not receive such a command
@@ -292,6 +318,10 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
 			
+			if (status) {
+				read_counter++;
+			}
+
 			UpdateTime(data_length, read_latency, t);
 			break;
 		case tlm::TLM_WRITE_COMMAND:
@@ -308,6 +338,10 @@ tlm::tlm_sync_enum Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::nb
 				status = inherited::WriteMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
+
+			if (status) {
+				write_counter++;
+			}
 
 			UpdateTime(data_length, write_latency, t);
 			break;
@@ -369,7 +403,11 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 				status = inherited::ReadMemory(addr, data_ptr, data_length, byte_enable_ptr, byte_enable_length, streaming_width);
 			else
 				status = inherited::ReadMemory(addr, data_ptr, data_length);
-			
+
+			if (status) {
+				read_counter++;
+			}
+
 			if (status && IsVerbose())
 			{
 				logger << DebugInfo << LOCATION
@@ -396,6 +434,10 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 			else
 				status = inherited::WriteMemory(addr, data_ptr, data_length);
 			
+			if (status) {
+				write_counter++;
+			}
+
 			UpdateTime(data_length, write_latency, t);
 			break;
 		case tlm::TLM_IGNORE_COMMAND:

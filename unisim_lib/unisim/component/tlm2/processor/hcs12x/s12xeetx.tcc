@@ -57,12 +57,6 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, erase_fail_ratio(0.01)
 	, param_erase_fail_ratio("erase-fail-ratio", this, erase_fail_ratio, "Ration to emulate erase failing. ")
 
-	, read_counter(0)
-	, write_counter(0)
-
-	, stat_read_counter("read-counter", this, read_counter, "read counter")
-	, stat_write_counter("write-counter", this, write_counter, "write counter")
-
 	, eclkdiv_reg(0)
 	, reserved1_reg(0)
 	, reserved2_reg(0)
@@ -83,9 +77,6 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, cmd_queue_back(0)
 
 {
-
-	stat_read_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	stat_write_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &S12XEETX::read_write);
@@ -306,9 +297,12 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	 * Writing a byte or misaligned word to a valid EEPROM address is illegal and ACCERR flag is set.
 	 */
 
-	WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2);
+	if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2)) {
 
-	wait(bus_cycle_time * (1 + 14));
+		wait(bus_cycle_time * (1 + 14));
+	}
+
+	inherited::write_counter++;
 
 }
 
@@ -350,14 +344,18 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			break;
 		}
 
-		WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1);
+		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1)) {
 
-		wait(bus_cycle_time);
+			wait(bus_cycle_time);
+
+		}
 	}
 
 	if (sector_erase_abort_command_req) {
 		sector_erase_abort_command_req = false;
 	}
+
+	inherited::write_counter++;
 
 	wait(bus_cycle_time * 14);
 
@@ -386,6 +384,8 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		return;
 	}
 
+	inherited::write_counter++;
+
 	wait(bus_cycle_time * (inherited::bytesize/2 + 14));
 
 }
@@ -397,14 +397,6 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	 * The sector erase operation will terminate according to set procedure.
 	 * The EEPROM sector should not be considered erased if the ACCERR flag is set upon command completion.
 	 */
-
-//	sector_erase_abort_command_req = false;
-//
-//	sector_erase_abort_active = true;
-//
-//	wait(bus_cycle_time * (1 + 14));
-//
-//	sector_erase_abort_active = false;
 
 	sector_erase_abort_command_req = false;
 
@@ -455,19 +447,23 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			break;
 		}
 
-		WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1);
+		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFC) + i, &data[i], 1)) {
 
-		wait(bus_cycle_time);
+			wait(bus_cycle_time);
+		}
 	}
 
 	if (sector_erase_abort_command_req) {
 		sector_erase_abort_command_req = false;
 	} else {
 		// program word at global_address while byte address bit 0 is ignored
-		WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2);
+		if (WriteMemory(inherited::org + (eaddr_reg & 0xFFFE), &edata_reg, 2)) {
+
+			wait(bus_cycle_time * (14 + 1));
+		}
 	}
 
-	wait(bus_cycle_time * 14);
+	inherited::write_counter++;
 
 	sector_erase_modify_active = false;
 
@@ -691,12 +687,8 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		read_counter++;
-
 		return inherited::transport_dbg(payload);
 	} else {
-		write_counter++;
-
 		write_to_eeprom( address, data_ptr, data_length);
 
 		payload.set_response_status(tlm::TLM_OK_RESPONSE);
@@ -716,11 +708,9 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		read_counter++;
 
 		return inherited::nb_transport_fw(payload, phase, t);
 	} else {
-		write_counter++;
 
 		write_to_eeprom(address, data_ptr, data_length);
 
@@ -748,11 +738,9 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		read_counter++;
 
 		inherited::b_transport(payload, t);
 	} else {
-		write_counter++;
 
 		write_to_eeprom(address, data_ptr, data_length);
 
@@ -829,9 +817,6 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	edata_reg = 0x0000;
 
 	protected_area_start_address = inherited::hi_addr - 64 * ((eprot_reg & 0x07) + 1) + 1;
-
-	read_counter = 0;
-	write_counter = 0;
 
 	empty_cmd_queue();
 
