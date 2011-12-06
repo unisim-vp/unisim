@@ -63,11 +63,15 @@ echo "<?xml version='1.0' encoding='UTF-8'?>
 # copy files required into the src directory
 python3.1 ${REPO_PATH}/package/puscomp/puscomp.py -c config.xml -o src unisim_simulator::tlm2::armemu
 
+# remove previous builds
+rm *.tar.bz2
 # configure and build the simulator
 cd build
 cmake ../src -DCMAKE_BUILD_TYPE=RELEASE -Dwith_osci_systemc=$SYSTEMC_PATH -Dwith_osci_tlm2=$TLM2_PATH -DCMAKE_INSTALL_PREFIX=../install
 make -j
 make install
+make package_source
+cp *.tar.bz2 ..
 cd ..
 tar jcvf simulator.tar.bz2 install
 
