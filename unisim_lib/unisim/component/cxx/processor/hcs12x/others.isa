@@ -102,8 +102,8 @@ stop.execute = {
 		  * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
 		  */
 		 
-	 	 cpu->Sleep();
-//	 	cpu->Stop(0);
+//	 	 cpu->Sleep();
+	 	cpu->Stop(0);
 	 	 
 	 	 /* TODO:
 	 	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled), 
