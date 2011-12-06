@@ -647,6 +647,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
 
+  // make sure a blob is being handled
+  if (blob == NULL) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
+        << "no blob handled to method." << std::endl;
+    return false;
+  }
   // make sure argv has been defined, at least for the application to execute
   if ((argc_ == 0) || (argv_.size() == 0)) {
     std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
@@ -660,6 +666,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
         << "defined stack size is 0." << std::endl;
         return false;
   }
+
   uint8_t *stack_data = (uint8_t *)calloc(stack_size_, 1);
   ADDRESS_TYPE sp = stack_size_;
   // Fill the stack
@@ -838,7 +845,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   argv0_section->Release();
   stack_segment->Release();
 
-  return false;
+  return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
