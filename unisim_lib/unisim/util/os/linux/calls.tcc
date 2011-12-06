@@ -1646,4 +1646,4 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::StringLength(ADDRESS_TYPE addr) {
 } // end of namespace os
 } // end of namespace linux_os
 
-#endif __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
+#endif // __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
