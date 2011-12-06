@@ -201,5 +201,13 @@ int main(int argc, char *argv[])
   }
   std::cout << "... load completed." << std::endl;
 
+  std::cout << "Setting up target ..." << std::endl;
+  if (!prog.SetupTarget()) {
+    std::cerr << "Could not finish target setup" << std::endl;
+    std::cerr << log.str() << std::endl;
+    return -1;
+  }
+  std::cout << "... target setup completed." << std::endl;
+
   return 0;
 }

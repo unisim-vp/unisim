@@ -357,6 +357,60 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::IsLoad() {
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget() {
+  if (blob_ == NULL) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
+        << "The linux system was not loaded." << std::endl;
+    return false;
+  }
+
+  if ((system_type_.compare("arm") == 0) || 
+      (system_type_.compare("arm-eabi") == 0))
+    return SetupARMTarget();
+  else if (system_type_.compare("powerpc") == 0)
+    return SetupPPCTarget();
+
+  std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
+      << "Unknown system to setup (" << system_type_ << ")." << std::endl;
+  return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
+  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+  typedef std::vector<const Segment*> SegmentVector;
+  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
+
+  bool success = true;
+  SegmentVector segments = blob_->GetSegments();
+  for (SegmentVectorIterator it = segments.begin();
+       success && (it != segments.end()); it++) {
+    if ((*it)->GetType() == Segment::TY_LOADABLE) {
+      std::cerr << "--> writing memory segment" << std::endl;
+      uint8_t const * data = (uint8_t const *)(*it)->GetData();
+      ADDRESS_TYPE start, end;
+      (*it)->GetAddrRange(start, end);
+
+      success = memory_interface_->WriteMemory(start, data, end - start + 1);
+    }
+  }
+
+  if (!success) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
+        << "Error while writing the segments into the target memory."
+        << std::endl;
+    return false;
+  }
+
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupPPCTarget() {
+  return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 

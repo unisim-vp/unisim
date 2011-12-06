@@ -142,8 +142,8 @@ class Linux {
   //   else // failure
   //     ...;
   // Once Load() has been called and successfully returned, the user can get
-  // information from the loaded system with the GetBlob, GetRegister, and
-  // other get methods.
+  // information from the loaded system with the GetBlob or request setup of the
+  // target emulator with SetupTarget.
   // Returns: true on success, false otherwise.
   bool Load();
   // Checks if the system was already successfully loaded or not.
@@ -151,6 +151,13 @@ class Linux {
   //          if the system has not been loaded or if the Load() method
   //          failed.
   bool IsLoad();
+
+  // Sets up the target system using the currently loaded configuration (blob)
+  // using the register and memory interface.
+  // Returns: true on success, false otherwise.
+  bool SetupTarget();
+  bool SetupARMTarget();
+  bool SetupPPCTarget();
 
   // Gets the memory footprint of the application as a blob.
   // Returns: a blob describing the memory footprint of the application. NULL
