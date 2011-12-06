@@ -41,6 +41,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string.h>
+#include <stdlib.h>
 
 #include "unisim/util/likely/likely.hh"
 #include "unisim/util/debug/blob/blob.hh"
