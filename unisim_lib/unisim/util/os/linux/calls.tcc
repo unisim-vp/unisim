@@ -1560,8 +1560,12 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCSetSystemCallStatus(
     int ret, bool error) {
   PARAMETER_TYPE val;
-  if (register_interface_ == NULL)
+  if (register_interface_ == NULL) {
     // TODO warning if register_interface_ is not present
+    std::cerr << "WARNING(unisim::util::os::linux::Linux.PPCSetSystemCallStatus): "
+        << "register interface not available." << std::endl;
+    return;
+  }
   if (error) {
     if (!register_interface_->GetRegister(kPPC_cr, &val))
       // TODO warning if GetRegister fails
