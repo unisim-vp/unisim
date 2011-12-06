@@ -117,6 +117,7 @@ Linux(bool verbose, std::ostringstream * const logger)
     , kOsreleaseFilename("/proc/sys/kernel/osrelease")
     , kFakeOsreleaseFilename("osrelease")
     // , registers_(NULL) // TODO Remove
+    , verbose_(verbose)
     , logger_(logger)
     , loader_logger_(std::ostringstream::out) {
   //for (int i = 0; i < kArmNumRegs; ++i)
