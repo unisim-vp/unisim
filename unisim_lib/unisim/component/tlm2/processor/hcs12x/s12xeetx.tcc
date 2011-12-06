@@ -51,9 +51,6 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 	, cmd_interruptOffset(0xBA)
 	, param_cmd_interruptOffset("command-interrupt", this, cmd_interruptOffset)
 
-	, eeprom_protection_byte_addr(0x13FFFD)
-	, param_eeprom_protection_byte_addr("eeprom-protection-byte-addr", this, eeprom_protection_byte_addr, "EEPROM protection byte used to initialize EPROT register during reset phase.")
-
 	, erase_fail_ratio(0.01)
 	, param_erase_fail_ratio("erase-fail-ratio", this, erase_fail_ratio, "Ration to emulate erase failing. ")
 
@@ -139,8 +136,9 @@ template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, 
 void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 {
 
-	// initialize EPROT register from EEPROM Protection byte
-	ReadMemory(eeprom_protection_byte_addr, &eprot_reg, 1);
+	/**
+	 *	The Initialization of the EPROT register is done by the Application Software
+	 */
 
 	sc_time delay;
 
@@ -1008,8 +1006,9 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(uint8_t offset, const void *buffer, unsigned int data_length)
+bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned int offset, const void *buffer, unsigned int data_length)
 {
+
 	if ((offset != ECMD) && ((cmd_queue_back != NULL) && !cmd_queue_back->isCmdWrite())) {
 		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
 

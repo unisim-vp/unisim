@@ -173,7 +173,7 @@ public:
 	//=             registers setters and getters                         =
 	//=====================================================================
 	bool read(uint8_t offset, void *buffer, unsigned int data_length);
-	bool write(uint8_t offset, const void *buffer, unsigned int data_length);
+	bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 
 protected:
@@ -240,9 +240,6 @@ private:
 
 	uint8_t cmd_interruptOffset;
 	Parameter<uint8_t> param_cmd_interruptOffset;
-
-	physical_address_t eeprom_protection_byte_addr;
-	Parameter<physical_address_t> param_eeprom_protection_byte_addr;
 
 	double erase_fail_ratio;
 	Parameter<double> param_erase_fail_ratio;

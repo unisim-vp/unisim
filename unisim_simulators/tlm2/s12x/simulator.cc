@@ -522,7 +522,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 250000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
-	simulator->SetVariable("EEPROM.eeprom-protection-byte-addr", 0x13FFFD);
 	simulator->SetVariable("EEPROM.erase-fail-ratio", 0.01);
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
 	simulator->SetVariable("EEPROM.verbose", false);

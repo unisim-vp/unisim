@@ -603,22 +603,23 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 				 *  - A holding register is empty when it has been read
 				 */
 				uint8_t tc_offset = offset - TC0_HIGH;
+				uint8_t tc_offset_index = tc_offset/2;
 				if ((tc_offset % 2) == 0) // TCx_High ?
 				{
 					if (size == 2) {
-						*((uint16_t *)value) = Host2BigEndian(tc_registers[tc_offset/2]);
-						tc_registers[tc_offset/2] = 0x0000;
+						*((uint16_t *)value) = Host2BigEndian(tc_registers[tc_offset_index]);
+						tc_registers[tc_offset_index] = 0x0000;
 					} else {
-						*((uint8_t *)value) =  tc_registers[tc_offset/2] >> 8;
-						tc_registers[tc_offset] = tc_registers[tc_offset] & 0x00FF;
+						*((uint8_t *)value) =  tc_registers[tc_offset_index] >> 8;
+						tc_registers[tc_offset_index] = tc_registers[tc_offset_index] & 0x00FF;
 					}
 				} else {
-					*((uint8_t *)value) =  tc_registers[tc_offset/2] & 0x00FF;
-					tc_registers[tc_offset] = tc_registers[tc_offset/2] & 0xFF00;
+					*((uint8_t *)value) =  tc_registers[tc_offset_index] & 0x00FF;
+					tc_registers[tc_offset_index] = tc_registers[tc_offset_index] & 0xFF00;
 				}
 
 				if ((tscr1_register & 0x10) != 0) {
-					tflg1_register = tflg1_register & ~(1 << (tc_offset/2));
+					tflg1_register = tflg1_register & ~(1 << (tc_offset_index));
 				}
 			}
 			else if ((offset >= PA3H) && (offset <= PA0H)) {
@@ -627,20 +628,21 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 			}
 			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 				uint8_t tcxh_offset = offset - TC0H_HIGH;
+				uint8_t tcxh_offset_index = tcxh_offset/2;
 
 				if ((tcxh_offset % 2) == 0) // TCxH_High ?
 				{
 					if (size == 2) {
-						*((uint16_t *)value) = Host2BigEndian(tcxh_registers[tcxh_offset/2]);
-						tcxh_registers[tcxh_offset/2] = 0x0000;
+						*((uint16_t *)value) = Host2BigEndian(tcxh_registers[tcxh_offset_index]);
+						tcxh_registers[tcxh_offset_index] = 0x0000;
 					} else {
-						*((uint8_t *)value) = tcxh_registers[tcxh_offset/2] >> 8;
-						tcxh_registers[tcxh_offset/2] = tcxh_registers[tcxh_offset/2] & 0x00FF;
+						*((uint8_t *)value) = tcxh_registers[tcxh_offset_index] >> 8;
+						tcxh_registers[tcxh_offset_index] = tcxh_registers[tcxh_offset_index] & 0x00FF;
 					}
 
 				} else {
-					*((uint8_t *)value) = tcxh_registers[tcxh_offset/2] & 0x00FF;
-					tcxh_registers[tcxh_offset/2] = tcxh_registers[tcxh_offset/2] & 0xFF00;
+					*((uint8_t *)value) = tcxh_registers[tcxh_offset_index] & 0x00FF;
+					tcxh_registers[tcxh_offset_index] = tcxh_registers[tcxh_offset_index] & 0xFF00;
 				}
 				/**
 				 * In queue mode, reads of the holding register will latch the corresponding pulse accumulator value to its holding register
@@ -1007,7 +1009,8 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 			} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
 				uint8_t tc_offset = offset - TC0_HIGH;
-				uint8_t channel_mask = (1 << tc_offset);
+				uint8_t tc_offset_index = (tc_offset/2);
+				uint8_t channel_mask = (1 << tc_offset_index);
 
 				// is the channel configured for "input capture" ?
 				if ((tios_register & channel_mask) == 0) {
@@ -1018,13 +1021,13 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 					if ((tc_offset % 2) == 0) // TCx_High ?
 					{
 						if (size == 2) {
-							tc_registers[tc_offset] = BigEndian2Host(*((uint16_t *)data));
+							tc_registers[tc_offset_index] = BigEndian2Host(*((uint16_t *)data));
 						} else {
-							tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
+							tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
 						}
 
 					} else {
-						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)data);
+						tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0xFF00) | *((uint8_t *)data);
 					}
 				}
 
@@ -1973,15 +1976,16 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 				} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
 
 					uint8_t tc_offset = offset - TC0_HIGH;
+					uint8_t tc_offset_index = tc_offset/2;
 					if ((tc_offset % 2) == 0) // TCx_High ?
 					{
 						if (size == 2) {
-							*((uint16_t *)buffer) = tc_registers[tc_offset/2];
+							*((uint16_t *)buffer) = tc_registers[tc_offset_index];
 						} else {
-							*((uint8_t *)buffer) =  tc_registers[tc_offset/2] >> 8;
+							*((uint8_t *)buffer) =  tc_registers[tc_offset_index] >> 8;
 						}
 					} else {
-						*((uint8_t *)buffer) =  tc_registers[tc_offset/2] & 0x00FF;
+						*((uint8_t *)buffer) =  tc_registers[tc_offset_index] & 0x00FF;
 					}
 
 				}
@@ -1991,17 +1995,18 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 				}
 				else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 					uint8_t tcxh_offset = offset - TC0H_HIGH;
+					uint8_t tcxh_offset_index = tcxh_offset/2;
 
 					if ((tcxh_offset % 2) == 0) // TCxH_High ?
 					{
 						if (size == 2) {
-							*((uint16_t *)buffer) = tcxh_registers[tcxh_offset/2];
+							*((uint16_t *)buffer) = tcxh_registers[tcxh_offset_index];
 						} else {
-							*((uint8_t *)buffer) = tcxh_registers[tcxh_offset/2] >> 8;
+							*((uint8_t *)buffer) = tcxh_registers[tcxh_offset_index] >> 8;
 						}
 
 					} else {
-						*((uint8_t *)buffer) = tcxh_registers[tcxh_offset/2] & 0x00FF;
+						*((uint8_t *)buffer) = tcxh_registers[tcxh_offset_index] & 0x00FF;
 					}
 				} else {
 					return false;
@@ -2172,16 +2177,17 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 
 				} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
 					uint8_t tc_offset = offset - TC0_HIGH;
+					uint8_t tc_offset_index = tc_offset/2;
 					if ((tc_offset % 2) == 0) // TCx_High ?
 					{
 						if (size == 2) {
-							tc_registers[tc_offset] = *((uint16_t *)value);
+							tc_registers[tc_offset_index] = *((uint16_t *)value);
 						} else {
-							tc_registers[tc_offset] = (tc_registers[tc_offset] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+							tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 						}
 
 					} else {
-						tc_registers[tc_offset] = (tc_registers[tc_offset] & 0xFF00) | *((uint8_t *)value);
+						tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0xFF00) | *((uint8_t *)value);
 					}
 
 				}
@@ -2192,17 +2198,18 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 				else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 
 					uint8_t tcxh_offset = offset - TC0H_HIGH;
+					uint8_t tcxh_offset_index = tcxh_offset/2;
 
 					if ((tcxh_offset % 2) == 0) // TCxH_High ?
 					{
 						if (size == 2) {
-							tcxh_registers[tcxh_offset/2] = *((uint16_t *)value);
+							tcxh_registers[tcxh_offset_index] = *((uint16_t *)value);
 						} else {
-							tcxh_registers[tcxh_offset/2] = (tcxh_registers[tcxh_offset/2] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
+							tcxh_registers[tcxh_offset_index] = (tcxh_registers[tcxh_offset_index] & 0x00FF) | ((uint16_t) *((uint8_t *)value) << 8);
 						}
 
 					} else {
-						tcxh_registers[tcxh_offset/2] = (tcxh_registers[tcxh_offset/2] & 0xFF00) | *((uint8_t *)value);
+						tcxh_registers[tcxh_offset_index] = (tcxh_registers[tcxh_offset_index] & 0xFF00) | *((uint8_t *)value);
 					}
 
 				} else {
