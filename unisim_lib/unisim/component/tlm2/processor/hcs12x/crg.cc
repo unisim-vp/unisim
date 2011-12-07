@@ -432,9 +432,12 @@ void CRG::RunClockMonitor() {
 			wait(osc_ok);
 
 // note: all the prime numbers under 100
-//    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97
+//  2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97
 
-			if (osc_fail || ((rand() % 97) == 0)) {
+// 481th prime number to 500th prime number
+// 	3433, 3449, 3457, 3461, 3463, 3467, 3469, 3491, 3499, 3511, 3517, 3527, 3529, 3533, 3539, 3541, 3547, 3557, 3559, 3571
+
+			if (osc_fail /*|| ((rand() % 3571) == 0)*/) {
 				// check SCME bit
 				if ((pllctl_register & 0x01) != 0) {
 					activateSelfClockMode();
