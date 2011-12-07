@@ -41,8 +41,8 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-static const int kARMNumRegs = 16;
-static const int kARMNumSysRegs = 0;
+static const uint32_t kARMNumRegs = 16;
+static const uint32_t kARMNumSysRegs = 0;
 // registers indexes
 static const uint32_t kARM_r0 = 0;
 static const uint32_t kARM_r1 = 1;
