@@ -404,6 +404,48 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
     return false;
   }
 
+  // Reset all the target registers
+  unsigned int reg_id = 0;
+  for (reg_id = 0; success && (reg_id < kARMNumRegs); reg_id++) {
+    success = register_interface_->SetRegister(reg_id, 0);
+  }
+  if (!success) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
+        << "Error while setting register '" << (reg_id - 1) << "'" << std::endl;
+    return false;
+  }
+  // Set PC to the program entry point
+  success = register_interface_->SetRegister(kARM_pc, entry_point_);
+  if (!success) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
+        << "Error while setting pc register (" << kARM_pc << ")" << std::endl;
+    return false;
+  }
+  // Set SP to the base of the created stack
+  unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
+      blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
+  if (sp_section == NULL) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
+        << "Could not find the stack pointer section." << std::endl;
+    return false;
+  }
+  success = register_interface_->SetRegister(kARM_sp, sp_section->GetAddr());
+  if (!success) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
+        << "Error while setting sp register (" << kARM_sp << ")" << std::endl;
+    return false;
+  }
+  ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
+  ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
+  PARAMETER_TYPE par1 = 0;
+  PARAMETER_TYPE par2 = 0;
+  // TODO check endianess conversions
+  success = memory_interface_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+  success = memory_interface_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+  register_interface_->SetRegister(kARM_r1, par1);
+  register_interface_->SetRegister(kARM_r2, par2);
+
+
   return true;
 }
 
@@ -612,7 +654,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
     // ignore the segment if it is not a loadable
     if (type != unisim::util::debug::blob::Segment<ADDRESS_TYPE>::TY_LOADABLE)
       continue;
-    // Istanbul et son festival de cinema 2011
 
     blob->AddSegment((*it));
   }
