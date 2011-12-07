@@ -126,7 +126,7 @@ bool MemInterface::ReadMemory(uint32_t addr, uint8_t * const buffer,
   }
   std::cout << "            --->" << std::hex;
   for ( uint32_t index = 0; index < size; ++index)
-    std::cout << " " << buffer[index];
+    std::cout << " " << (unsigned int)buffer[index];
   std::cout << std::dec << std::endl;
   return true;
 }
