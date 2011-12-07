@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
+#include <stdexcept>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -306,7 +307,16 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
+	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
+	{
+		const Watchpoint<ADDRESS> *watchpoint = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
+		
+		if(!watchpoint) throw std::runtime_error("Internal error");
+		
+		trap = true;
+		
+		(*std_output_stream) << "Reached " << (*watchpoint) << std::endl;
+	}
 	if(unlikely(profile))
 	{
 		if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
@@ -326,7 +336,15 @@ void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
-	if(breakpoint_registry.HasBreakpoint(next_addr)) trap = true;
+	if(breakpoint_registry.HasBreakpoint(next_addr))
+	{
+		trap = true;
+		const Breakpoint<ADDRESS> *breakpoint = breakpoint_registry.FindBreakpoint(next_addr);
+		
+		if(!breakpoint) throw std::runtime_error("Internal error");
+		
+		(*std_output_stream) << "Reached " << (*breakpoint) << std::endl;
+	}
 	if(unlikely(profile)) program_profile.Accumulate(addr, 1);
 }
 
