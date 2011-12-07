@@ -101,6 +101,12 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	param_hasExternalTrigger("Has-External-Trigger", this, hasExternalTrigger)
 {
 	
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_vrl.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_vrh.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_vih.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_vil.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	for (uint8_t i=0; i<ATD_SIZE; i++) {
 		analog_signal[i] = vrl;
 		analog_signal_reg[i].SetMutable(true);

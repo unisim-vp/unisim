@@ -75,6 +75,8 @@ S12XEETX(const sc_module_name& name, Object *parent) :
 
 {
 
+	param_oscillator_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	interrupt_request(*this);
 	slave_socket.register_b_transport(this, &S12XEETX::read_write);
 	bus_clock_socket.register_b_transport(this, &S12XEETX::updateBusClock);

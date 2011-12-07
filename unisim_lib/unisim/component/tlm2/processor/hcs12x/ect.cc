@@ -104,6 +104,9 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	, delay_counter_enabled(false)
 {
 
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_signal_generator_period.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	char channelName[20];
 
 	for (uint8_t i=0; i<4; i++) {

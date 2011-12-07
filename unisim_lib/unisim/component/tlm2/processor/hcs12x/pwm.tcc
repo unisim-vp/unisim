@@ -75,6 +75,8 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	param_interruptOffset("interrupt-offset", this, interruptOffset)
 {
 
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	uint8_t channel_number;
 
 	char channelName[20];

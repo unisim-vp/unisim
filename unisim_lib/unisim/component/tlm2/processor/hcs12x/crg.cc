@@ -109,6 +109,12 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 {
 
+	param_oscillator_clock_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_self_clock_mode_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_pll_stabilization_delay.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_check_window.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_osc_ok.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	var_osc_fail.SetMutable(true);
 	var_osc_fail.SetSerializable(false);
 	var_osc_fail.SetVisible(true);
