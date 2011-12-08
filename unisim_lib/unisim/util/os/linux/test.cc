@@ -164,6 +164,7 @@ int main(int argc, char *argv[])
     return -1;
   }
   prog.SetEndianess(unisim::util::endian::E_LITTLE_ENDIAN);
+  prog.SetStackBase(0xc0000000UL);
   prog.SetStackSize(0x800000UL);
   prog.SetMemoryPageSize(4096);
   prog.SetUname("Linux",

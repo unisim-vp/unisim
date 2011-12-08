@@ -244,6 +244,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianess(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackBase(
+    ADDRESS_TYPE stack_base) {
+  stack_base_ = stack_base;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackSize(
     unsigned int stack_size) {
   stack_size_ = stack_size;

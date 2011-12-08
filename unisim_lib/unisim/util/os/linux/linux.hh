@@ -102,6 +102,11 @@ class Linux {
   // endianess the Load() method will fail.
   void SetEndianess(unisim::util::endian::endian_type endianess);
 
+  // Sets the stack base address that will be used for the application stack.
+  // Combined with SetStackSize the memory addresses from stack base to 
+  // (stack base + stack size) will be reserved for the stack.
+  void SetStackBase(ADDRESS_TYPE stack_base);
+
   // Sets the stack size in bytes that will be reserved for the application
   // stack
   void SetStackSize(unsigned int stack_size);
