@@ -1270,7 +1270,10 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 						breakpoint_registry.HasBreakpoints());
 			return PutPacket("OK");
 		case 2:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1280,7 +1283,10 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			else
 				return PutPacket("E00");
 		case 3:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1291,7 +1297,10 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				return PutPacket("E00");
 
 		case 4:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1299,7 +1308,9 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 			else
 				return PutPacket("E00");
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1336,7 +1347,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			return PutPacket("OK");
 
 		case 2:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE,
+                                              unisim::util::debug::MT_DATA,
+                                              addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1346,7 +1360,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			else
 				return PutPacket("E00");
 		case 3:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ,
+                                              unisim::util::debug::MT_DATA,
+                                              addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1356,7 +1373,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			else
 				return PutPacket("E00");
 		case 4:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ,
+                                              unisim::util::debug::MT_DATA,
+                                              addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1364,7 +1384,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			}
 			else
 				return PutPacket("E00");
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(!watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE,
+                                               unisim::util::debug::MT_DATA,
+                                               addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(

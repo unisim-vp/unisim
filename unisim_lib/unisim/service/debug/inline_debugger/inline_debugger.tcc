@@ -306,14 +306,12 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
-	if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
-	{
-		if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
-		{
+	//if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
+	if(mt == unisim::util::debug::MT_DATA) {
+		//if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+		if(mat == unisim::util::debug::MAT_WRITE) {
 			data_write_profile.Accumulate(addr, 1);
-		}
-		else
-		{
+    } else {
 			data_read_profile.Accumulate(addr, 1);
 		}
 	}
@@ -1050,8 +1048,10 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
-	{
+	//if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ,
+                                        unisim::util::debug::MT_DATA,
+                                        addr, size)) {
 		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
 
@@ -1063,8 +1063,10 @@ void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
-	{
+	//if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE,
+                                        unisim::util::debug::MT_DATA,
+                                        addr, size)) {
 		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
 
@@ -1089,8 +1091,10 @@ void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
-	{
+	//if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size)) {
 		(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
 
@@ -1102,8 +1106,10 @@ void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
-	{
+	//if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size)) {
 		(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
 
@@ -1172,25 +1178,31 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 	{
 		ADDRESS addr = iter->GetAddress();
 		uint32_t size = iter->GetSize();
-		typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
-		typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
+		//typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
+		typename unisim::util::debug::MemoryAccessType mat = iter->GetMemoryAccessType();
+		typename unisim::util::debug::MemoryType mt = iter->GetMemoryType();
 		
 		switch(mt)
 		{
-			case MemoryAccessReporting<ADDRESS>::MT_INSN:
+			//case MemoryAccessReporting<ADDRESS>::MT_INSN:
+      case unisim::util::debug::MT_INSN:
 				(*std_output_stream) << "insn"; // it should never occur
 				break;
-			case MemoryAccessReporting<ADDRESS>::MT_DATA:
+			//case MemoryAccessReporting<ADDRESS>::MT_DATA:
+      case unisim::util::debug::MT_DATA:
 				(*std_output_stream) << "data";
 				break;
 		}
 		(*std_output_stream) << " ";
 		switch(mat)
 		{
-			case MemoryAccessReporting<ADDRESS>::MAT_READ:
+			//case MemoryAccessReporting<ADDRESS>::MAT_READ:
+      case unisim::util::debug::MAT_READ:
 				(*std_output_stream) << " read";
 				break;
-			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+			//case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+      case unisim::util::debug::MAT_WRITE:
 				(*std_output_stream) << "write";
 				break;
 			default:
@@ -1797,7 +1809,8 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
+						//unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(std::cout);
 						
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
@@ -1816,7 +1829,8 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
+						// unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(std::cout);
 						
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);

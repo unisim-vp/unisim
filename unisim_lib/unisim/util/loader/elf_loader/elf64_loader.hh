@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
 
+#include <ostream>
+
 #include "unisim/util/loader/elf_loader/elf_loader.hh"
 #include "unisim/util/loader/elf_loader/elf_common.h"
 #include "unisim/util/loader/elf_loader/elf64.h"
@@ -50,11 +52,11 @@ template <class MEMORY_ADDR = uint64_t>
 class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
 {
 public:
-	Elf64Loader(unisim::kernel::logger::Logger& logger);
+	Elf64Loader(std::ostream& logger);
 };
 
 template <class MEMORY_ADDR>
-Elf64Loader<MEMORY_ADDR>::Elf64Loader(unisim::kernel::logger::Logger& _logger)
+Elf64Loader<MEMORY_ADDR>::Elf64Loader(std::ostream& _logger)
 	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_logger)
 {
 }

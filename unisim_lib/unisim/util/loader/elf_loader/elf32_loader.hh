@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_LOADER_HH__
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF32_LOADER_HH__
 
+#include <ostream>
+
 #include "unisim/util/loader/elf_loader/elf_loader.hh"
 #include "unisim/util/loader/elf_loader/elf_common.h"
 #include "unisim/util/loader/elf_loader/elf32.h"
