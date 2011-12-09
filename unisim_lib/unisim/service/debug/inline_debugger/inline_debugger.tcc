@@ -120,6 +120,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, disasm_addr(0)
 	, dump_addr(0)
 	, cont_until_addr(0)
+	, last_stmt(0)
 	, profile(false)
 	, prompt(string(_name) + "> ")
 	, hex_addr_fmt(0)
@@ -315,7 +316,7 @@ void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<
 		
 		trap = true;
 		
-		(*std_output_stream) << "Reached " << (*watchpoint) << std::endl;
+		(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
 	}
 	if(unlikely(profile))
 	{
@@ -343,7 +344,7 @@ void InlineDebugger<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS ne
 		
 		if(!breakpoint) throw std::runtime_error("Internal error");
 		
-		(*std_output_stream) << "Reached " << (*breakpoint) << std::endl;
+		(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
 	}
 	if(unlikely(profile)) program_profile.Accumulate(addr, 1);
 }
@@ -417,6 +418,12 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
+	
+	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+	{
+		const Statement<ADDRESS> *stmt = FindStatement(cia);
+		if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+	}
 
 	int nparms = 0;
 
@@ -487,16 +494,23 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					return DebugControl<ADDRESS>::DBG_KILL;
 				}
 
-				if(IsStepCommand(parm[0].c_str()))
+				if(IsStepInstructionCommand(parm[0].c_str()))
 				{
-					running_mode = INLINE_DEBUGGER_MODE_STEP;
+					running_mode = INLINE_DEBUGGER_MODE_STEP_INSTRUCTION;
 					if(interactive) last_line = line;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
-				if(IsNextCommand(parm[0].c_str()))
+				if(IsStepCommand(parm[0].c_str()))
 				{
-					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
+					running_mode = INLINE_DEBUGGER_MODE_STEP;
+					if(interactive) last_line = line;
+					last_stmt = FindStatement(cia);
+					return DebugControl<ADDRESS>::DBG_STEP;
+				}
+
+				if(IsNextInstructionCommand(parm[0].c_str()))
+				{
 					if(interactive) last_line = line;
 					disasm_import->Disasm(cia, cont_addr);
 					if(HasBreakpoint(cont_addr))
@@ -908,10 +922,12 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "    continue to execute instructions until program reaches a breakpoint," << endl;
 	(*std_output_stream) << "    a watchpoint, 'symbol' or 'address'" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<s | si | step | stepi>" << endl;
+	(*std_output_stream) << "<si | stepi>" << endl;
 	(*std_output_stream) << "    execute one instruction" << endl;
+	(*std_output_stream) << "<s | step>" << endl;
+	(*std_output_stream) << "    continue executing instructions until control reaches a different source line" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<n | ni | next | nexti>" << endl;
+	(*std_output_stream) << "<ni | nexti>" << endl;
 	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << endl;
 	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
@@ -2279,6 +2295,38 @@ const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr)
 }
 
 template <class ADDRESS>
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindNextStatement(ADDRESS addr)
+{
+	const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+	ADDRESS top_addr = addr;
+	if(symbol)
+	{
+		ADDRESS symbol_addr = symbol->GetAddress();
+		ADDRESS symbol_size = symbol->GetSize();
+		typename Symbol<ADDRESS>::Type symbol_type = symbol->GetType();
+		if((symbol_size != 0) && (symbol_type == Symbol<ADDRESS>::SYM_FUNC))
+		{
+			top_addr = symbol_addr + symbol_size - 1;
+		}
+	}
+
+	addr++;
+	const Statement<ADDRESS> *stmt = 0;
+	
+	if(addr <= top_addr)
+	{
+		do
+		{
+			stmt = FindStatement(addr);
+			addr++;
+		}
+		while(!stmt && (addr <= top_addr));
+	}
+	
+	return stmt;
+}
+
+template <class ADDRESS>
 const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
 {
 	unsigned int i;
@@ -2414,15 +2462,21 @@ bool InlineDebugger<ADDRESS>::IsQuitCommand(const char *cmd)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsStepCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd)
 {
-	return strcmp(cmd, "s") == 0 || strcmp(cmd, "si") == 0 || strcmp(cmd, "step") == 0 || strcmp(cmd, "stepi") == 0;
+	return strcmp(cmd, "si") == 0 || strcmp(cmd, "stepi") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsNextCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsStepCommand(const char *cmd)
 {
-	return strcmp(cmd, "n") == 0 || strcmp(cmd, "ni") == 0 || strcmp(cmd, "next") == 0 || strcmp(cmd, "nexti") == 0;
+	return strcmp(cmd, "s") == 0 || strcmp(cmd, "step") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsNextInstructionCommand(const char *cmd)
+{
+	return strcmp(cmd, "ni") == 0 || strcmp(cmd, "nexti") == 0;
 }
 
 template <class ADDRESS>
