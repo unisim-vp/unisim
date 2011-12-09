@@ -37,7 +37,10 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CCR_HH__
 
 #include <inttypes.h>
+#include <stdlib.h>
+
 #include <unisim/util/debug/register.hh>
+#include <unisim/kernel/service/service.hh>
 
 namespace unisim {
 namespace component {
@@ -78,7 +81,7 @@ class CCR_t : public unisim::util::debug::Register
 {
 public:
 
-	CCR_t() { };
+	CCR_t(uint16_t* _ccrReg) : ccrReg(_ccrReg) { };
 	~CCR_t() { };
 
 	inline uint8_t getC();
@@ -126,7 +129,7 @@ public:
 	inline uint16_t getCCR();
 	inline void setCCR(uint16_t val);
 
-	void reset() { ccrVal = 0x00D0; /* S=1 X=1 I=1 */ }
+	void reset() { *ccrReg = 0x00D0; /* S=1 X=1 I=1 */ }
 
 	virtual const char *GetName() const;
 	virtual void GetValue(void *buffer) const;
@@ -135,81 +138,113 @@ public:
 
 	unisim::util::debug::Register *GetLowRegister();
 	unisim::util::debug::Register *GetHighRegister();
+
+//	uint16_t *ccrReg; // u----ipl(3bits) SXHI NZVC
+
 private:
 
-	uint16_t ccrVal; // u----ipl(3bits) SXHI NZVC
+	uint16_t* ccrReg; // u----ipl(3bits) SXHI NZVC
 
 }; // end class CCR_t
 
 
-inline uint8_t CCR_t::getC() { return ccrVal & SETC;};
-inline void 	CCR_t::setC() { ccrVal |= SETC;};
-inline void 	CCR_t::clrC() { ccrVal &= CLRC;};
+inline uint8_t CCR_t::getC() { return *ccrReg & SETC;};
+inline void 	CCR_t::setC() { *ccrReg |= SETC;};
+inline void 	CCR_t::clrC() { *ccrReg &= CLRC;};
 
-inline uint8_t CCR_t::getV() { return (ccrVal & SETV) >> 1;};
-inline void 	CCR_t::setV() { ccrVal |= SETV;};
-inline void 	CCR_t::clrV() { ccrVal &= CLRV;};
+inline uint8_t CCR_t::getV() { return (*ccrReg & SETV) >> 1;};
+inline void 	CCR_t::setV() { *ccrReg |= SETV;};
+inline void 	CCR_t::clrV() { *ccrReg &= CLRV;};
 
-inline uint8_t CCR_t::getZ() { return (ccrVal & SETZ) >> 2;};
-inline void 	CCR_t::setZ() { ccrVal |= SETZ;};
-inline void 	CCR_t::clrZ() { ccrVal &= CLRZ;};
+inline uint8_t CCR_t::getZ() { return (*ccrReg & SETZ) >> 2;};
+inline void 	CCR_t::setZ() { *ccrReg |= SETZ;};
+inline void 	CCR_t::clrZ() { *ccrReg &= CLRZ;};
 
-inline uint8_t CCR_t::getN() { return (ccrVal & SETN) >> 3;};
-inline void 	CCR_t::setN() { ccrVal |= SETN;};
-inline void 	CCR_t::clrN() { ccrVal &= CLRN;};
+inline uint8_t CCR_t::getN() { return (*ccrReg & SETN) >> 3;};
+inline void 	CCR_t::setN() { *ccrReg |= SETN;};
+inline void 	CCR_t::clrN() { *ccrReg &= CLRN;};
 
-inline uint8_t CCR_t::getI() { return (ccrVal & SETI) >> 4;};
-inline void 	CCR_t::setI() { ccrVal |= SETI;};
-inline void 	CCR_t::clrI() { ccrVal &= CLRI;};
+inline uint8_t CCR_t::getI() { return (*ccrReg & SETI) >> 4;};
+inline void 	CCR_t::setI() { *ccrReg |= SETI;};
+inline void 	CCR_t::clrI() { *ccrReg &= CLRI;};
 
-inline uint8_t CCR_t::getH() { return (ccrVal & SETH) >> 5;};
-inline void 	CCR_t::setH() { ccrVal |= SETH;};
-inline void 	CCR_t::clrH() { ccrVal &= CLRH;};
+inline uint8_t CCR_t::getH() { return (*ccrReg & SETH) >> 5;};
+inline void 	CCR_t::setH() { *ccrReg |= SETH;};
+inline void 	CCR_t::clrH() { *ccrReg &= CLRH;};
 
-inline uint8_t CCR_t::getX() { return (ccrVal & SETX) >> 6;};
-inline void	CCR_t::setX() { ccrVal |= SETX;};
-inline void 	CCR_t::clrX() { ccrVal &= CLRX;};
+inline uint8_t CCR_t::getX() { return (*ccrReg & SETX) >> 6;};
+inline void	CCR_t::setX() { *ccrReg |= SETX;};
+inline void 	CCR_t::clrX() { *ccrReg &= CLRX;};
 
-inline uint8_t CCR_t::getS() { return (ccrVal & SETS) >> 7;};
-inline void 	CCR_t::setS() { ccrVal |= SETS;};
-inline void 	CCR_t::clrS() { ccrVal &= CLRS;};
+inline uint8_t CCR_t::getS() { return (*ccrReg & SETS) >> 7;};
+inline void 	CCR_t::setS() { *ccrReg |= SETS;};
+inline void 	CCR_t::clrS() { *ccrReg &= CLRS;};
 
 // IPL is 3-bits
-inline uint8_t CCR_t::getIPL() { return (ccrVal & SETIPL) >> 8;};
-inline void 	CCR_t::setIPL(uint8_t newIPL) { clrIPL(); ccrVal |= (((uint16_t) newIPL) & 0x00FF) << 8;};
-inline void 	CCR_t::clrIPL() { ccrVal &= CLRIPL;};
+inline uint8_t CCR_t::getIPL() { return (*ccrReg & SETIPL) >> 8;};
+inline void 	CCR_t::setIPL(uint8_t newIPL) { clrIPL(); *ccrReg |= (((uint16_t) newIPL) & 0x00FF) << 8;};
+inline void 	CCR_t::clrIPL() { *ccrReg &= CLRIPL;};
 
 inline uint8_t CCR_t::getCCRLow() {
-	uint8_t val = (uint8_t) (ccrVal & 0x00FF);
+	uint8_t val = (uint8_t) (*ccrReg & 0x00FF);
 
 	return val;
 };
 inline void CCR_t::setCCRLow(uint8_t val) {
 	// before check the X-bit: once cleared it cannot be set by program instructions
 	if (getX() == 0) val &= 0xBF;
-	ccrVal = (ccrVal & 0xFF00) | val;
+	*ccrReg = (*ccrReg & 0xFF00) | val;
 };
 
 inline uint8_t CCR_t::getCCRHigh() {
-	uint8_t val = (uint8_t) ((ccrVal >> 8) & 0x00FF);
+	uint8_t val = (uint8_t) ((*ccrReg >> 8) & 0x00FF);
 
 	return val;
 };
 
 inline void CCR_t::setCCRHigh(uint8_t val) {
-	ccrVal = (ccrVal & 0x00FF) | ((uint16_t) val << 8);
+	*ccrReg = (*ccrReg & 0x00FF) | ((uint16_t) val << 8);
 };
 
 
 inline uint16_t CCR_t::getCCR() {
-	return ccrVal;
+	return *ccrReg;
 };
 
 inline void CCR_t::setCCR(uint16_t val) {
 	// before check the X-bit: once cleared it cannot be set by program instructions
 	if (getX() == 0) val &= 0xFFBF;
 
-	ccrVal = val;
+	*ccrReg = val;
+};
+
+// **************************
+
+class TimeBaseRegisterView : public unisim::kernel::service::VariableBase
+{
+public:
+	typedef enum
+	{
+		TB_LOW,
+		TB_HIGH
+	} Type;
+	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint16_t& storage, Type type, const char *description);
+	virtual ~TimeBaseRegisterView();
+	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator std::string () const;
+	virtual unisim::kernel::service::VariableBase& operator = (bool value);
+	virtual unisim::kernel::service::VariableBase& operator = (long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (double value);
+	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+private:
+	uint16_t& storage;
+	Type type;
 };
 
 

@@ -79,9 +79,13 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, param_org("org", this, org, "memory origin/base address")
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 	, stat_memory_usage("memory-usage", this, memory_usage, "host memory usage in bytes of simulated memory")
+
+
 {
+	stat_memory_usage.SetVisible(false);
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -108,6 +112,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
 {
 	hash_table.Reset();
 	memory_usage = 0;
+
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>

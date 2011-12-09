@@ -220,7 +220,7 @@ protected:
 
 private:
 	static const uint8_t XINT_SIZE		= 128; // Number of recognized/handled interrupts
-	static const uint8_t CFDATA_SIZE	= 8;
+	static const uint8_t CFDATA_WINDOW_SIZE	= 8;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
@@ -235,7 +235,8 @@ private:
 	uint8_t ivbr;
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
-	uint8_t	int_cfdata[CFDATA_SIZE];
+//	uint8_t	int_cfwdata[XINT_SIZE];
+	uint8_t	*int_cfwdata;
 
 	bool isHardwareInterrupt;
 
@@ -244,6 +245,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 public:
 

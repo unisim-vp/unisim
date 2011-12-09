@@ -171,7 +171,7 @@ public:
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
-	//=             XINT Registers Interface interface methods               =
+	//=             ATD Registers Interface interface methods               =
 	//=====================================================================
 
 	/**
@@ -253,6 +253,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	void InputANx(double anValue[ATD_SIZE]);
 	void abortConversion();

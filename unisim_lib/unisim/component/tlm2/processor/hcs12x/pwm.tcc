@@ -75,6 +75,8 @@ PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	param_interruptOffset("interrupt-offset", this, interruptOffset)
 {
 
+	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	uint8_t channel_number;
 
 	char channelName[20];
@@ -118,6 +120,12 @@ PWM<PWM_SIZE>::~PWM() {
 	}
 
 	registers_registry.clear();
+
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
 
 }
 
@@ -689,41 +697,54 @@ bool PWM<PWM_SIZE>::BeginSetup() {
 
 	sprintf(buf, "%s.PWME",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwme_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWME", this, pwme_register, "PWM Enable Register (PWME)"));
 
 	sprintf(buf, "%s.PWMPOL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmpol_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMPOL", this, pwmpol_register, "PWM Polarity Register (PWMPOL)"));
 
 	sprintf(buf, "%s.PWMCLK",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmclk_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMCLK", this, pwmclk_register, "PWM Clock Select Register (PWMCLK)"));
 
 	sprintf(buf, "%s.PWMPRCLK",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmprclk_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMPRCLK", this, pwmprclk_register, "PWM Prescale Clock Select Register (PWMPRCLK)"));
 
 	sprintf(buf, "%s.PWMCAE",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmcae_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMCAE", this, pwmcae_register, "PWM Center Align Enable Register (PWMCAE)"));
 
 	sprintf(buf, "%s.PWMCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmctl_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMCTL", this, pwmctl_register, "PWM Control Register (PWMCTL)"));
 
 	sprintf(buf, "%s.PWMTST",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmtst_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMTST", this, pwmtst_register, "Reserved Register (PWMTST)"));
 
 	sprintf(buf, "%s.PWMPRSC",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmprsc_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMPRSC", this, pwmprsc_register, "Reserved Register (PWMPRSC)"));
 
 	sprintf(buf, "%s.PWMSCLA",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscla_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMSCLA", this, pwmscla_register, "PWM Scale A Register (PWMSCLA)"));
 
 	sprintf(buf, "%s.PWMSCLB",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsclb_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMSCLB", this, pwmsclb_register, "PWM Scale B Register (PWMSCLB)"));
 
 	sprintf(buf, "%s.PWMSCNTA",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscnta_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMSCNTA", this, pwmscnta_register, "Reserved Registers (PWMSCNTA)"));
 
 	sprintf(buf, "%s.PWMSCNTB",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmscntb_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMSCNTB", this, pwmscntb_register, "Reserved Registers (PWMSCNTB)"));
 
 	uint8_t channel_number;
+	char shortName[20];
 
 	for (int i=0; i<PWM_SIZE; i++) {
 #if BYTE_ORDER == BIG_ENDIAN
@@ -732,19 +753,26 @@ bool PWM<PWM_SIZE>::BeginSetup() {
 		channel_number =  PWM_SIZE-i-1;
 #endif
 
-		sprintf(buf, "%s.PWMCNT%d", name(), channel_number);
+		sprintf(shortName, "PWMCNT%d", channel_number);
+		sprintf(buf, "%s.%s", name(), shortName);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmcnt16_register[i]);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(shortName, this, pwmcnt16_register[i], "PWM Channel Counter Register"));
 
-		sprintf(buf, "%s.PWMPER%d", name(), channel_number);
+		sprintf(shortName, "PWMPER%d", channel_number);
+		sprintf(buf, "%s.%s", name(), shortName);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmper16_register[i]);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(shortName, this, pwmper16_register[i], "PWM Channel Period Register"));
 
-		sprintf(buf, "%s.PWMDTY%d", name(), channel_number);
+		sprintf(shortName, "PWMDTY%d", channel_number);
+		sprintf(buf, "%s.%s", name(), shortName);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmdty16_register_value[i]);
+		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(shortName, this, pwmdty16_register_value[i], "PWM Channel Duty Register"));
 
 	}
 
 	sprintf(buf, "%s.PWMSDN",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pwmsdn_register);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PWMSDN", this, pwmsdn_register, "PWM Shutdown Register (PWMSDN)"));
 
 	ComputeInternalTime();
 
@@ -1072,9 +1100,10 @@ void PWM<PWM_SIZE>::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_bu
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
 
-	if (offset <= PWMSDN) {
+		service_address_t offset = addr-baseAddress;
+
 		switch (offset) {
 			case PWME: *((uint8_t *)buffer) = pwme_register; break;
 			case PWMPOL: *((uint8_t *)buffer) = pwmpol_register; break;
@@ -1092,13 +1121,13 @@ bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t si
 			default: {
 				// PWMCNTx
 				if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
-					*((uint8_t *)buffer) = channel[offset-PWMCNT0]->getPwmcnt_register();
+					*((uint8_t *)buffer) = pwmcnt16_register[offset - PWMCNT0];
 				} else	// PWMPERx
 				if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
-					*((uint8_t *)buffer) = channel[offset-PWMPER0]->getPWMPERValue();
+					*((uint8_t *)buffer) = pwmper16_register[offset - PWMPER0];
 				} else	// PWMDTYx
 				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
-					*((uint8_t *)buffer) = channel[offset-PWMDTY0]->getPWMDTYValue();
+					*((uint8_t *)buffer) = pwmdty16_register_value[offset - PWMDTY0];
 				} else {
 					return false;
 				}
@@ -1111,17 +1140,65 @@ bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t si
 	return false;
 }
 
+//template <uint8_t PWM_SIZE>
+//bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+//
+//	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
+//
+//		if (size == 0) {
+//			return true;
+//		}
+//
+//		service_address_t offset = addr-baseAddress;
+//
+//		return write(offset, *((uint8_t *)buffer));
+//	}
+//
+//	return false;
+//}
+
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
 
-	if (size == 0) {
+		if (size == 0) {
+			return true;
+		}
+
+		service_address_t offset = addr-baseAddress;
+
+		switch (offset) {
+			case PWME: pwme_register = *((uint8_t *)buffer); break;
+			case PWMPOL: pwmpol_register = *((uint8_t *)buffer); break;
+			case PWMCLK: pwmclk_register = *((uint8_t *)buffer); break;
+			case PWMPRCLK: pwmprclk_register = *((uint8_t *)buffer); break;
+			case PWMCAE: pwmcae_register = *((uint8_t *)buffer); break;
+			case PWMCTL: pwmctl_register = *((uint8_t *)buffer); break;
+			case PWMTST: pwmtst_register = *((uint8_t *)buffer); break;
+			case PWMPRSC: pwmprsc_register = *((uint8_t *)buffer); break;
+			case PWMSCLA: pwmscla_register = *((uint8_t *)buffer); break;
+			case PWMSCLB: pwmsclb_register = *((uint8_t *)buffer); break;
+			case PWMSCNTA: pwmscnta_register = *((uint8_t *)buffer); break;
+			case PWMSCNTB: pwmscntb_register = *((uint8_t *)buffer); break;
+			case PWMSDN: pwmsdn_register = *((uint8_t *)buffer); break;
+			default: {
+				// PWMCNTx
+				if ((offset >= PWMCNT0) && (offset <= PWMCNT7)) {
+					pwmcnt16_register[offset - PWMCNT0] = *((uint8_t *)buffer);
+				} else	// PWMPERx
+				if ((offset >= PWMPER0) && (offset <= PWMPER7)) {
+					pwmper16_register[offset - PWMPER0] = *((uint8_t *)buffer);
+				} else	// PWMDTYx
+				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
+					pwmdty16_register_value[offset - PWMDTY0] = offset >= PWMDTY0;
+				} else {
+					return false;
+				}
+			}
+		}
+
 		return true;
-	}
-
-	if (offset <= PWMSDN) {
-		return write(offset, *((uint8_t *)buffer));
 	}
 
 	return false;

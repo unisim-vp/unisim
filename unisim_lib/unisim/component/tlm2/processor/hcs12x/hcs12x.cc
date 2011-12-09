@@ -81,6 +81,9 @@ HCS12X(const sc_module_name& name, Object *parent) :
 	last_instruction_counter(0)
 {
 
+	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_core_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	SC_HAS_PROCESS(HCS12X);
 
 	interrupt_request.register_b_transport(this, &HCS12X::AsyncIntThread);
@@ -275,9 +278,16 @@ HCS12X ::EndSetup() {
 
 void HCS12X::ComputeInternalTime() {
 
-	cpu_cycle_time = sc_time((double)core_clock_int, SC_PS);
-	// From CRG specification (page 100) : BusClock = 2 * CoreClock
-	bus_cycle_time = cpu_cycle_time * 2;
+	/*
+	 * From CRG specification (page 100) :
+	 * The core clock is twice the bus clock as shown in Figure 2-18.
+	 * But note that a CPU cycle corresponds to one bus clock.
+	 */
+	core_clock_time = sc_time((double)core_clock_int, SC_PS);
+
+	bus_cycle_time = core_clock_time * 2;
+
+	cpu_cycle_time = bus_cycle_time;
 
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 

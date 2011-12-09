@@ -192,6 +192,7 @@ public:
 	virtual VariableBase& operator [] (unsigned int index);
 	virtual const VariableBase& operator [] (unsigned int index) const;
 	virtual unsigned int GetLength() const;
+	virtual unsigned int GetBitSize() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
 	virtual std::string GetSymbolicValue() const;
@@ -282,6 +283,8 @@ public:
 	
 	virtual double GetSimTime()	{ return 0;	}
 	virtual double GetHostTime()	{ return 0;	}
+	virtual long   GetStructuredAddress(long logicalAddress) { return logicalAddress; }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return logicalAddress; }
 
 	bool IsWarningEnabled() const;
 
@@ -426,6 +429,7 @@ public:
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
 	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;
@@ -436,8 +440,13 @@ public:
 	virtual VariableBase& operator = (unsigned long long value);
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
-private:
+
+//private:
+//	TYPE *storage;
+
+protected:
 	TYPE *storage;
+
 };
 
 template <class TYPE>
@@ -458,8 +467,53 @@ template <class TYPE>
 class Register : public Variable<TYPE>
 {
 public:
+
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+
 };
+
+// ************ REDA *****************
+
+//I have to pass RegisterBack as Template Parameter to Register (e.g. RegisterBack is a storage)
+
+template <class OwnerType, class TYPE>
+class RegisterBack : public Variable<TYPE>
+{
+public:
+
+	RegisterBack(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
+
+	RegisterBack(const char *name, Object *owner, unsigned int _offset, TYPE& storage, bool (OwnerType::*_write)(unsigned int offset, const void* valuePtr, unsigned int size) = NULL, const char *description = NULL) :
+		Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description), offset(_offset), write(_write)
+
+		{
+			ownerBack = dynamic_cast<OwnerType*>(owner);
+
+		}
+
+	virtual VariableBase& operator = (TYPE value) {
+
+		if (write != NULL) {
+			std::cerr << "I do callback" << std::endl;
+
+			(ownerBack->write)(offset, &value, sizeof(value));
+		} else {
+			*(inherited::storage) = value;
+		}
+
+	}
+
+private:
+	typedef unisim::kernel::service::Variable<TYPE> inherited;
+
+	OwnerType *ownerBack;
+
+	unsigned int offset;
+	bool (OwnerType::*write)(unsigned int offset, const void* valuePtr, unsigned int size);
+
+};
+
+// ********* END REDA ***************
 
 template <class TYPE>
 class Formula;

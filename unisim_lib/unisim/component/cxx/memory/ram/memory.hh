@@ -106,6 +106,8 @@ private:
 	Parameter<PHYSICAL_ADDR> param_org;
 	Parameter<PHYSICAL_ADDR> param_bytesize;
 	Statistic<PHYSICAL_ADDR> stat_memory_usage;
+
+
 };
 
 } // end of namespace ram

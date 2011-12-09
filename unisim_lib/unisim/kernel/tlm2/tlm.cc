@@ -56,6 +56,9 @@ const char *Variable<sc_time>::GetDataTypeName() const
 	return "sc_time";
 }
 
+template <>
+unsigned int Variable<sc_time>::GetBitSize() const { return sizeof(sc_dt::uint64) * 8; }
+
 template <> 
 Variable<sc_time>::operator bool () const
 { 

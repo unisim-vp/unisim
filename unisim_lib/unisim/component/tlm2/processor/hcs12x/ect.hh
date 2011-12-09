@@ -127,7 +127,7 @@ public:
 	//=========================================================
 
 	enum REGS_OFFSETS {TIOS, CFORC, OC7M, OC7D, TCNT_HIGH, TCNT_LOW, TSCR1,
-						TTOF, TCTL1, TCTL2, TCTL3, TCTL4, TIE, TSCR2, TFLG1, TFLG2,
+						TTOV, TCTL1, TCTL2, TCTL3, TCTL4, TIE, TSCR2, TFLG1, TFLG2,
 						TC0_HIGH, TC0_LOW, TC1_HIGH, TC1_LOW, TC2_HIGH, TC2_LOW,
 						TC3_HIGH, TC3_LOW, TC4_HIGH, TC4_LOW, TC5_HIGH, TC5_LOW,
 						TC6_HIGH, TC6_LOW, TC7_HIGH, TC7_LOW, PACTL, PAFLG,
@@ -402,6 +402,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	bool prnt_write; // TSCR1::PRNT is write once bit
 	bool icsys_write; // ICSYS register is write once in normal mode

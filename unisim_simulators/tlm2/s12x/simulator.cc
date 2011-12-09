@@ -35,10 +35,11 @@ Simulator::Simulator(int argc, char **argv)
 	, atd1(0)
 	, atd0(0)
 	, pwm(0)
-	, external_router(0)
-	, internal_router(0)
-	, internal_memory(0)
-	, external_memory(0)
+	, global_router(0)
+//	, global_memory(0)
+	, global_ram(0)
+	, global_eeprom(0)
+	, global_flash(0)
 	, s12xint(0)
 	, registersTee(0)
 	, memoryImportExportTee(0)
@@ -62,6 +63,11 @@ Simulator::Simulator(int argc, char **argv)
 	, dump_formulas(false)
 	, dump_statistics(true)
 
+	, endian("")
+//	, param_endian("endian", this, endian)
+	, program_counter_name("")
+//	, param_pc_reg_name("program-counter-name", this, program_counter_name)
+
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
@@ -70,6 +76,15 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
 {
+
+	param_endian = new Parameter<string>("endian", 0, endian, "Target endianness");
+	param_endian->SetMutable(false);
+	param_endian->SetVisible(true);
+
+	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
+	param_pc_reg_name->SetMutable(false);
+	param_pc_reg_name->SetVisible(true);
+
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
 	//=========================================================================
@@ -101,12 +116,14 @@ Simulator::Simulator(int argc, char **argv)
 	pwm = new PWM("PWM");
 
 	//  - tlm2 router
-	external_router = new EXTERNAL_ROUTER("external_router");
-	internal_router = new INTERNAL_ROUTER("internal_router");
+	global_router = new GLOBAL_ROUTER("global-router");
 
 	//  - Memories
-	internal_memory = new MEMORY("internal-memory");
-	external_memory = new MEMORY("external-memory");
+//	global_memory = new MEMORY("global-memory");
+	global_ram = new RAM("RAM");
+	global_flash = new FLASH("FLASH");
+
+	global_eeprom = new EEPROM("EEPROM");
 
 	// - Interrupt controller
 	s12xint = new XINT("XINT");
@@ -173,6 +190,7 @@ Simulator::Simulator(int argc, char **argv)
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
+	global_eeprom->interrupt_request(s12xint->interrupt_request);
 
 #ifdef HAVE_RTBCOB
 	rtbStub->atd1_master_sock(atd1->anx_socket);
@@ -184,22 +202,24 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
 #endif
 
-	mmc->local_socket(*internal_router->targ_socket[0]);
-	mmc->external_socket(*external_router->targ_socket[0]);
+	mmc->memory_socket(*global_router->targ_socket[0]);
 
 	// This order is mandatory (see the memoryMapping)
-	(*internal_router->init_socket[0])(crg->slave_socket);
-	(*internal_router->init_socket[1])(ect->slave_socket);
-	(*internal_router->init_socket[2])(atd1->slave_socket);
-	(*internal_router->init_socket[3])(s12xint->slave_socket);
-	(*internal_router->init_socket[4])(atd0->slave_socket);
-	(*internal_router->init_socket[5])(pwm->slave_socket);
-	(*internal_router->init_socket[6])(internal_memory->slave_sock); // to connect to the MMC
+	(*global_router->init_socket[0])(crg->slave_socket);
+	(*global_router->init_socket[1])(ect->slave_socket);
+	(*global_router->init_socket[2])(atd1->slave_socket);
+	(*global_router->init_socket[3])(global_eeprom->slave_socket);
+	(*global_router->init_socket[4])(s12xint->slave_socket);
+	(*global_router->init_socket[5])(atd0->slave_socket);
+	(*global_router->init_socket[6])(pwm->slave_socket);
 
-	(*external_router->init_socket[0])(external_memory->slave_sock);
+	(*global_router->init_socket[7])(global_ram->slave_sock);
+	(*global_router->init_socket[8])(global_eeprom->slave_sock);
+	(*global_router->init_socket[9])(global_flash->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
+	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
 	crg->bus_clock_socket(atd0->bus_clock_socket);
@@ -216,11 +236,14 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[3]) >> atd0->memory_export;
 	*(memoryImportExportTee->memory_import[4]) >> pwm->memory_export;
 	*(memoryImportExportTee->memory_import[5]) >> ect->memory_export;
-	*(memoryImportExportTee->memory_import[6]) >> internal_memory->memory_export;
 
-	mmc->internal_memory_import >> memoryImportExportTee->memory_export;
+//	*(memoryImportExportTee->memory_import[6]) >> global_memory->memory_export;
+	*(memoryImportExportTee->memory_import[6]) >> global_ram->memory_export;
+	*(memoryImportExportTee->memory_import[7]) >> global_eeprom->memory_export;
+	*(memoryImportExportTee->memory_import[8]) >> global_flash->memory_export;
 
-	mmc->external_memory_import >> external_memory->memory_export;
+	mmc->memory_import >> memoryImportExportTee->memory_export;
+
 
 	*(registersTee->registers_import[0]) >> cpu->registers_export;
 	*(registersTee->registers_import[1]) >> mmc->registers_export;
@@ -340,10 +363,12 @@ Simulator::~Simulator()
 	if (xml_atd_pwm_stub) { delete xml_atd_pwm_stub; xml_atd_pwm_stub = NULL; }
 #endif
 
-	if(external_memory) { delete external_memory; external_memory = NULL; }
-	if(internal_memory) { delete internal_memory; internal_memory = NULL; }
-	if(external_router) { delete external_router; external_router = NULL; }
-	if(internal_router) { delete internal_router; internal_router = NULL; }
+//	if(global_memory) { delete global_memory; global_memory = NULL; }
+	if(global_ram) { delete global_ram; global_ram = NULL; }
+	if(global_flash) { delete global_eeprom; global_eeprom = NULL; }
+	if (global_eeprom) { delete global_eeprom; global_eeprom = NULL; }
+
+	if(global_router) { delete global_router; global_router = NULL; }
 
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
@@ -372,6 +397,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("dump-parameters", false);
 	simulator->SetVariable("dump-formulas", false);
 	simulator->SetVariable("dump-statistics", true);
+
+	simulator->SetVariable("endian", "big");
+	simulator->SetVariable("program-counter-name", "CPU.PC");
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_hcs12x.xml";
@@ -420,7 +448,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
 	simulator->SetVariable("atd-pwm-stub.stub-enabled", false);
 
-	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD0.bus-cycle-time", 80000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
 	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
 	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
@@ -430,7 +458,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
-	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
+
+	simulator->SetVariable("ATD1.bus-cycle-time", 80000);
 	simulator->SetVariable("ATD1.base-address", 0x80);
 	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
 	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
@@ -440,6 +469,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
+
 	simulator->SetVariable("CPU.trace-enable", false);
 	simulator->SetVariable("CPU.verbose-all", false);
 	simulator->SetVariable("CPU.verbose-setup", false);
@@ -452,13 +482,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("CPU.nice-time", "1 ms");
-	simulator->SetVariable("CPU.core-clock", 250000);
+	simulator->SetVariable("CPU.core-clock", 40000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 
-	simulator->SetVariable("CRG.oscillator-clock", 250000);
+	simulator->SetVariable("CRG.oscillator-clock", 40000);
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
@@ -467,7 +497,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
 	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
 
-	simulator->SetVariable("ECT.bus-cycle-time", 250000);
+	simulator->SetVariable("ECT.bus-cycle-time", 80000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
 	simulator->SetVariable("ECT.interrupt-offset-timer-overflow", 0xde);
@@ -478,29 +508,42 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.debug-enabled", false);
 
 	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
-	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
+	simulator->SetVariable("ECT.built-in-signal-generator-period", 80000);
 
 
-	simulator->SetVariable("external-memory.org", 0x0);
-	simulator->SetVariable("external-memory.bytesize", 0x800000);
-	simulator->SetVariable("external-memory.cycle-time", 250000);
-	simulator->SetVariable("external-memory.verbose", false);
-	simulator->SetVariable("external_router.cycle_time", 250000);
-	simulator->SetVariable("external_router.port_buffer_size", 0x0);
-	simulator->SetVariable("external_router.mapping_0", "range_start=\"0x800\" range_end=\"0x7fffff\" output_port=\"0\" translation=\"800\"");
-	simulator->SetVariable("internal-memory.org", 0x0);
-	simulator->SetVariable("internal-memory.bytesize", 0x10000);
-	simulator->SetVariable("internal-memory.cycle-time", 250000);
-	simulator->SetVariable("internal-memory.verbose", false);
-	simulator->SetVariable("internal_router.cycle_time", 250000);
-	simulator->SetVariable("internal_router.port_buffer_size", 0x0);
-	simulator->SetVariable("internal_router.mapping_0", "range_start=\"0x34\" range_end=\"0x40\" output_port=\"0\" translation=\"34\"");
-	simulator->SetVariable("internal_router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
-	simulator->SetVariable("internal_router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
-	simulator->SetVariable("internal_router.mapping_3", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"3\" translation=\"120\"");
-	simulator->SetVariable("internal_router.mapping_4", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"4\" translation=\"2c0\"");
-	simulator->SetVariable("internal_router.mapping_5", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"5\" translation=\"300\"");
-	simulator->SetVariable("internal_router.mapping_6", "range_start=\"0x800\" range_end=\"0xffff\" output_port=\"6\" translation=\"800\"");
+	simulator->SetVariable("RAM.org", 0x0F8000);
+	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
+	simulator->SetVariable("RAM.cycle-time", 80000);
+	simulator->SetVariable("RAM.verbose", false);
+
+	simulator->SetVariable("EEPROM.org", 0x13F000);
+	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
+	simulator->SetVariable("EEPROM.cycle-time", 80000);
+	simulator->SetVariable("EEPROM.oscillator-cycle-time", 40000);
+	simulator->SetVariable("EEPROM.base-address", 0x0110);
+	simulator->SetVariable("EEPROM.erase-fail-ratio", 0.01);
+	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
+	simulator->SetVariable("EEPROM.verbose", false);
+
+	simulator->SetVariable("FLASH.org", 0x780000);
+	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
+	simulator->SetVariable("FLASH.cycle-time", 80000);
+	simulator->SetVariable("FLASH.verbose", false);
+
+
+	simulator->SetVariable("global-router.cycle_time", 80000);
+	simulator->SetVariable("global-router.port_buffer_size", 0x0);
+	simulator->SetVariable("global-router.mapping_0", "range_start=\"0x34\" range_end=\"0x3f\" output_port=\"0\" translation=\"34\"");
+	simulator->SetVariable("global-router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
+	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xAF\" output_port=\"2\" translation=\"80\"");
+	simulator->SetVariable("global-router.mapping_3", "range_start=\"0x110\" range_end=\"0x11B\" output_port=\"3\" translation=\"110\"");
+	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x120\" range_end=\"0x12F\" output_port=\"4\" translation=\"120\"");
+	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x2c0\" range_end=\"0x2df\" output_port=\"5\" translation=\"2c0\"");
+	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x300\" range_end=\"0x327\" output_port=\"6\" translation=\"300\"");
+	simulator->SetVariable("global-router.mapping_7", "range_start=\"0x0f8000\" range_end=\"0x0fffff\" output_port=\"7\" translation=\"0f8000\"");
+	simulator->SetVariable("global-router.mapping_8", "range_start=\"0x13f000\" range_end=\"0x13ffff\" output_port=\"8\" translation=\"13f000\"");
+	simulator->SetVariable("global-router.mapping_9", "range_start=\"0x780000\" range_end=\"0x7fffff\" output_port=\"9\" translation=\"780000\"");
+
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);
 	simulator->SetVariable("kernel_logger.std_err_color", false);
@@ -514,7 +557,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.mode", 0x80);
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
-	simulator->SetVariable("PWM.bus-cycle-time", 250000);
+	simulator->SetVariable("PWM.bus-cycle-time", 80000);
 	simulator->SetVariable("PWM.base-address", 0x300);
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
@@ -548,12 +591,8 @@ void Simulator::Run() {
 	physical_address_t entry_point;
 
 
-//**************
-	// entry_point = loaderELF->GetEntryPoint();
-
 	const unisim::util::debug::blob::Blob<uint64_t>* blob = ((Elf32Loader*) loaderELF)->GetBlob();
 	entry_point = blob->GetEntryPoint();
-//***********
 
 	address_t cpu_address;
 	uint8_t page = 0;
@@ -615,8 +654,8 @@ void Simulator::Run() {
 		DumpStatistics(cerr);
 		cerr << endl;
 
-		cerr << "simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << " MHz" << endl;
+		cerr << "Simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "Core Clock             : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << " MHz" << endl;
 		cerr << "Target speed           : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << " MIPS" << endl;
 		cerr << "Target speed           : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << " MHz" << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;

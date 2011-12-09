@@ -96,6 +96,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Simulator;
+using unisim::kernel::service::VariableBase;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
@@ -106,29 +107,6 @@ using unisim::service::pim::PIMThread;
 typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER_MODE_CONTINUE } GDBServerRunningMode;
 
 typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
-
-class GDBRegister
-{
-public:
-	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian, unsigned int reg_num);
-	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num);
-	inline const char *GetName() const { return name.c_str(); }
-	inline int GetSize() const { return size; }
-	bool SetValue(const string& hex);
-	void SetValue(const void *buffer);
-	void GetValue(string& hex) const;
-	void GetValue(void *buffer) const;
-	inline int GetHexLength() const { return 2 * size; }
-	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
-	unsigned int GetRegNum() const { return reg_num; }
-private:
-	string name;
-	int size;
-	unisim::util::debug::Register *reg;
-	GDBEndian endian;
-	unsigned int reg_num;
-};
 
 template <class ADDRESS>
 class PIMServer :
@@ -159,7 +137,7 @@ public:
 	virtual ~PIMServer();
 
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -231,9 +209,9 @@ private:
 	uint16_t tcp_port;
 	string architecture_description_filename;
 
-//	int sock;
-	vector<GDBRegister> gdb_registers;
-	GDBRegister *gdb_pc;
+	vector<VariableBase*> simulator_registers;
+	VariableBase* pc_reg;
+	uint32_t pc_reg_index;
 	GDBEndian endian;
 
 	bool killed;

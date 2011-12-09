@@ -65,14 +65,17 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	deviceMap[2].start_address = 0x0080;  // ATD1
 	deviceMap[2].end_address = 0x00AF;
 
-	deviceMap[3].start_address = 0x0120;  // XINT
-	deviceMap[3].end_address = 0x012F;
+	deviceMap[3].start_address = 0x0110;  // EEPROM
+	deviceMap[3].end_address = 0x011B;
 
-	deviceMap[4].start_address = 0x02C0;  // ATD0
-	deviceMap[4].end_address = 0x02DF;
+	deviceMap[4].start_address = 0x0120;  // XINT
+	deviceMap[4].end_address = 0x012F;
 
-	deviceMap[5].start_address = 0x0300;  // PWM
-	deviceMap[5].end_address = 0x0327;
+	deviceMap[5].start_address = 0x02C0;  // ATD0
+	deviceMap[5].end_address = 0x02DF;
+
+	deviceMap[6].start_address = 0x0300;  // PWM
+	deviceMap[6].end_address = 0x0327;
 
 /*
 	SC_HAS_PROCESS(S12XMMC);
@@ -138,7 +141,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 						trap_reporting_import->ReportTrap();
 					}
 */
-					cout << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				}
 				memset(buffer->buffer, 0, buffer->data_size);
 			}
@@ -167,16 +170,8 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
 
-			if (isPaged(logicalAddress, 0x00, buffer->isGlobal, false)) {
-				mmc_trans->set_address( addr & 0x7FFFFF);
-				external_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-			} else {
-				mmc_trans->set_address( addr & 0xFFFF);
-				local_socket->b_transport( *mmc_trans, tlm2_btrans_time );
-				unsigned int i;
-				for(i = 0; i < buffer->data_size; i++)
-					if(((uint8_t *) buffer->buffer)[i]) std::cerr << "";
-			}
+			mmc_trans->set_address( addr & 0x7FFFFF);
+			memory_socket->b_transport( *mmc_trans, tlm2_btrans_time );
 
 			if (mmc_trans->is_response_error() ) {
 				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;

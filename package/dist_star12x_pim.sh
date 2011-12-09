@@ -161,6 +161,7 @@ unisim/component/tlm2/processor/hcs12x/pwm.cc \
 unisim/component/tlm2/processor/hcs12x/atd10b.cc \
 unisim/component/tlm2/processor/hcs12x/crg.cc \
 unisim/component/tlm2/processor/hcs12x/ect.cc \
+unisim/component/tlm2/processor/hcs12x/s12xeetx.cc \
 unisim/component/tlm2/processor/hcs12x/tlm_types.cc \
 unisim/component/tlm2/interconnect/generic_router/router.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
@@ -306,6 +307,7 @@ unisim/component/tlm2/processor/hcs12x/pwm.hh \
 unisim/component/tlm2/processor/hcs12x/atd10b.hh \
 unisim/component/tlm2/processor/hcs12x/crg.hh \
 unisim/component/tlm2/processor/hcs12x/ect.hh \
+unisim/component/tlm2/processor/hcs12x/s12xeetx.hh \
 unisim/service/pim/pim.hh \
 unisim/service/pim/pim_server.hh \
 unisim/service/pim/pim_thread.hh \
@@ -357,6 +359,7 @@ unisim/component/cxx/memory/ram/memory.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
 unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
+unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \
 unisim/service/pim/pim_server.tcc "
 
 UNISIM_LIB_STAR12X_M4_FILES="\

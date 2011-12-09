@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -30,16 +30,53 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Reda   NOUACER  (reda.nouacer@cea.fr)
+ *          Reda Nouacer <reda.nouacer@cea.fr> 
  */
 
-#include <unisim/service/pim/pim_server.hh>
+#include <jni.h>
 
-namespace unisim {
-namespace service {
-namespace pim {
+#include "NativeShmidcat.h"
+#include "shmidcat.h"
 
+/*
+ * Class:     NativeShmidcat
+ * Method:    shmidcat_init
+ * Signature: (Ljava/lang/String;)I
+ */
+JNIEXPORT jint JNICALL Java_NativeShmidcat_shmidcat_1init
+  (JNIEnv *env, jobject jobj, jstring gtk_wave_path)
 
-} // end of namespace pim
-} // end of namespace service
-} // end of namespace unisim
+{
+
+	jboolean iscopy;
+	const char* cc = (*env)->GetStringUTFChars(env, gtk_wave_path, &iscopy);
+	return shmidcat_init((char*) cc);
+}
+
+/*
+ * Class:     NativeShmidcat
+ * Method:    shmidcat_emit_string
+ * Signature: (Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_NativeShmidcat_shmidcat_1emit_1string
+  (JNIEnv *env, jobject jobj, jstring s)
+
+{
+	jboolean iscopy;
+	const char* cc = (*env)->GetStringUTFChars(env, s, &iscopy);
+
+	shmidcat_emit_string((char*) cc);
+}
+
+/*
+ * Class:     NativeShmidcat
+ * Method:    shmidcat_exit
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_NativeShmidcat_shmidcat_1exit
+  (JNIEnv *env, jobject jobj)
+
+{
+	shmidcat_exit();
+}
+
