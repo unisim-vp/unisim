@@ -647,32 +647,45 @@ template <class TYPE> Variable<TYPE>::operator string () const
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
-	if ( IsMutable() )
-		*storage = value ? 1 : 0;
+	if ( IsMutable() ) {
+		if (!assign(value ? 1 : 0)) {
+			*storage = value ? 1 : 0;
+		}
+
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
-	if ( IsMutable() )
-		*storage = value;
+	if ( IsMutable() ) {
+		if (!assign(value)) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value)
 {
-	if ( IsMutable() )
-		*storage = value;
+	if ( IsMutable() ) {
+		if (!assign(value)) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
-	if ( IsMutable() )
-		*storage = (TYPE) value;
+	if ( IsMutable() ) {
+		if (!assign((TYPE) value)) {
+			*storage = (TYPE) value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1267,92 +1280,131 @@ template <> Variable<bool>::operator string () const
 
 template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0))) {
+			*storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<char>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<double>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	if ( IsMutable() ) {
+		if (!assign((strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0)))) {
+			*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1365,8 +1417,11 @@ template <> Variable<string>::operator string () const { return *storage; }
 
 template <> VariableBase& Variable<string>::operator = (bool value)
 {
-	if ( IsMutable() )
-		*storage = value ? "true" : "false";
+	if ( IsMutable() ) {
+		if (!assign(value ? "true" : "false")) {
+			*storage = value ? "true" : "false";
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1376,7 +1431,9 @@ template <> VariableBase& Variable<string>::operator = (long long value)
 	{
 		stringstream sstr;
 		sstr << "0x" << hex << value;
-		*storage = sstr.str();
+		if (!assign(sstr.str())) {
+			*storage = sstr.str();
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1387,7 +1444,9 @@ template <> VariableBase& Variable<string>::operator = (unsigned long long value
 	{
 		stringstream sstr;
 		sstr << "0x" << hex << value;
-		*storage = sstr.str();
+		if (!assign(sstr.str())) {
+			*storage = sstr.str();
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1398,7 +1457,9 @@ template <> VariableBase& Variable<string>::operator = (double value)
 	{
 		stringstream sstr;
 		sstr << value;
-		*storage = sstr.str();
+		if (!assign(sstr.str())) {
+			*storage = sstr.str();
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1407,7 +1468,9 @@ template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
 	{
-		*storage = value;
+		if (!assign(std::string(value))) {
+			*storage = value;
+		}
 	}
 	NotifyListeners();
 	return *this;

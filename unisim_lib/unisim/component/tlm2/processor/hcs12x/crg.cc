@@ -443,17 +443,19 @@ void CRG::RunClockMonitor() {
 // 481th prime number to 500th prime number
 // 	3433, 3449, 3457, 3461, 3463, 3467, 3469, 3491, 3499, 3511, 3517, 3527, 3529, 3533, 3539, 3541, 3547, 3557, 3559, 3571
 
-			if (osc_fail /*|| ((rand() % 3571) == 0)*/) {
-				// check SCME bit
-				if ((pllctl_register & 0x01) != 0) {
-					activateSelfClockMode();
-				} else {
-					systemReset();
-				}
+			if (osc_fail) {
+				if ((rand() % 3571) == 0) {
+					// check SCME bit
+					if ((pllctl_register & 0x01) != 0) {
+						activateSelfClockMode();
+					} else {
+						systemReset();
+					}
 
-			} else {
-				if ((crgflg_register & 0x01) != 0) {
-					deactivateSelfClockMode();
+				} else {
+					if ((crgflg_register & 0x01) != 0) {
+						deactivateSelfClockMode();
+					}
 				}
 			}
 

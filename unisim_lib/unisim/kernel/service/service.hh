@@ -43,7 +43,9 @@
 #include <map>
 #include <vector>
 #include <sstream>
+#include <memory>
 #include <string.h>
+#include <assert.h>
 
 #if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
 #if defined(likely)
@@ -418,6 +420,42 @@ public:
 };
 
 //=============================================================================
+//=                  CallBackObject and  TCallBack<TYPE>                      =
+//=============================================================================
+
+class CallBackObject {
+public:
+	virtual ~CallBackObject() {}
+
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length) {
+		return false;
+	}
+
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length) {
+		return false;
+	}
+
+	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
+
+};
+
+template <typename DataType> class TCallBack : public CallBackObject {
+private:
+	CallBackObject *m_owner;
+	unsigned int m_offset;
+
+	cbwrite write;
+
+public:
+	TCallBack(CallBackObject *owner, unsigned int offset, cbwrite _write) :
+		m_owner(owner), m_offset(offset), write(_write) {}
+
+	void Write(DataType storage) {
+		(m_owner->*write)(m_offset, &storage, sizeof(DataType));
+	}
+};
+
+//=============================================================================
 //=                            Variable<TYPE>                                =
 //=============================================================================
 
@@ -427,6 +465,10 @@ class Variable : public VariableBase
 public:
 	typedef VariableBase::Type Type;
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
+
+	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int)) {
+		m_callback.reset(new TCallBack<TYPE>(owner, offset, _write));
+	}
 
 	virtual const char *GetDataTypeName() const;
 	virtual unsigned int GetBitSize() const;
@@ -441,12 +483,26 @@ public:
 	virtual VariableBase& operator = (double value);
 	virtual VariableBase& operator = (const char * value);
 
-//private:
-//	TYPE *storage;
-
 protected:
-	TYPE *storage;
 
+	bool assign(TYPE storage) {
+
+		if (m_callback.get() != NULL) {
+
+			((TCallBack<TYPE>&) *m_callback).Write(storage);
+
+			return true;
+		}
+
+		return false;
+	}
+
+	const CallBackObject& callback() const { return *m_callback; }
+	CallBackObject& scallback() { return *m_callback; }
+
+private:
+	TYPE *storage;
+	std::auto_ptr<CallBackObject> m_callback;
 };
 
 template <class TYPE>
@@ -471,49 +527,6 @@ public:
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
 
 };
-
-// ************ REDA *****************
-
-//I have to pass RegisterBack as Template Parameter to Register (e.g. RegisterBack is a storage)
-
-template <class OwnerType, class TYPE>
-class RegisterBack : public Variable<TYPE>
-{
-public:
-
-	RegisterBack(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
-
-	RegisterBack(const char *name, Object *owner, unsigned int _offset, TYPE& storage, bool (OwnerType::*_write)(unsigned int offset, const void* valuePtr, unsigned int size) = NULL, const char *description = NULL) :
-		Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description), offset(_offset), write(_write)
-
-		{
-			ownerBack = dynamic_cast<OwnerType*>(owner);
-
-		}
-
-	virtual VariableBase& operator = (TYPE value) {
-
-		if (write != NULL) {
-			std::cerr << "I do callback" << std::endl;
-
-			(ownerBack->write)(offset, &value, sizeof(value));
-		} else {
-			*(inherited::storage) = value;
-		}
-
-	}
-
-private:
-	typedef unisim::kernel::service::Variable<TYPE> inherited;
-
-	OwnerType *ownerBack;
-
-	unsigned int offset;
-	bool (OwnerType::*write)(unsigned int offset, const void* valuePtr, unsigned int size);
-
-};
-
-// ********* END REDA ***************
 
 template <class TYPE>
 class Formula;
