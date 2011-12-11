@@ -36,12 +36,22 @@
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 #define __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
 
+#if !defined(linux) && !defined(__APPLE_CC__) && !defined(WIN32) && !defined(WIN64)
+#error "Unsupported host machine for Linux system call translation !"
+#endif
+
 #include <string>
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
 #include <string.h>
 #include <stdlib.h>
+
+#ifdef WIN32
+#include <process.h>
+#else
+#include <sys/times.h>
+#endif
 
 #include "unisim/util/likely/likely.hh"
 #include "unisim/util/debug/blob/blob.hh"
