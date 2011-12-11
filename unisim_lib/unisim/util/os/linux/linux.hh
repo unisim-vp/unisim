@@ -78,8 +78,10 @@ class LinuxRegisterInterface {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux {
  public:
-  Linux(bool verbose, std::ostringstream * const logger);
+  Linux(std::ostringstream * const logger);
   ~Linux();
+
+  void  SetVerbose(bool verbose);
 
   bool SetCommandLine(std::vector<std::string> const &cmd);
 

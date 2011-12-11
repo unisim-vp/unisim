@@ -80,7 +80,7 @@ supported_system_types_(tmp_supported_system_types,
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(bool verbose, std::ostringstream * const logger)
+Linux(std::ostringstream * const logger)
     : is_load_(false)
     , system_type_("arm-eabi")
     , endianess_(unisim::util::endian::E_LITTLE_ENDIAN)
@@ -127,7 +127,7 @@ Linux(bool verbose, std::ostringstream * const logger)
     , kOsreleaseFilename("/proc/sys/kernel/osrelease")
     , kFakeOsreleaseFilename("osrelease")
     // , registers_(NULL) // TODO Remove
-    , verbose_(verbose)
+    , verbose_(false)
     , logger_(logger)
     , loader_logger_(std::ostringstream::out) {
   //for (int i = 0; i < kArmNumRegs; ++i)
@@ -138,6 +138,11 @@ Linux(bool verbose, std::ostringstream * const logger)
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetVerbose(bool verbose) {
+  verbose_ = verbose;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>

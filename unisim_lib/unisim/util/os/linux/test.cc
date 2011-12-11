@@ -154,7 +154,9 @@ int main(int argc, char *argv[])
       << std::endl;
 
   std::ostringstream log;
-  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> prog(true, &log);
+  unisim::util::os::linux_os::Linux<uint32_t, uint32_t> prog(&log);
+
+  prog.SetVerbose(true);
 
   std::cout << "Setting up the linux library ..." << std::endl;
 
