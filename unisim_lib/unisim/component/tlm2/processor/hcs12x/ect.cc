@@ -423,6 +423,7 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	assert(address >= baseAddress);
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
+		memset(data_ptr, 0, data_length);
 		read(address - baseAddress, data_ptr, data_length);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 		write(address - baseAddress, data_ptr, data_length);
@@ -431,90 +432,88 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
-
-	memset(value, 0, size);
+bool ECT::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
 		case TIOS: {
-			*((uint8_t *)value) =  tios_register;
+			*((uint8_t *)buffer) =  tios_register;
 		} break;
 		case CFORC: {
-			*((uint8_t *)value) = 0x00;
+			*((uint8_t *)buffer) = 0x00;
 		} break;
 		case OC7M: {
-			*((uint8_t *)value) = oc7m_register;
+			*((uint8_t *)buffer) = oc7m_register;
 		} break;
 		case OC7D: {
-			*((uint8_t *)value) =  oc7d_register;
+			*((uint8_t *)buffer) =  oc7d_register;
 		} break;
 		case TCNT_HIGH: {
-			if (size == 2) {
-				*((uint16_t *)value) = Host2BigEndian(tcnt_register);
+			if (data_length == 2) {
+				*((uint16_t *)buffer) = Host2BigEndian(tcnt_register);
 			} else {
-				*((uint8_t *)value) = tcnt_register >> 8;
+				*((uint8_t *)buffer) = tcnt_register >> 8;
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				tflg2_register = tflg2_register & 0x7F;
 			}
 		} break;
 		case TCNT_LOW: {
-			*((uint8_t *)value) = tcnt_register & 0x00FF;
+			*((uint8_t *)buffer) = tcnt_register & 0x00FF;
 			if ((tscr1_register & 0x10) != 0) {
 				tflg2_register = tflg2_register & 0x7F;
 			}
 		} break;
 		case TSCR1: {
-			*((uint8_t *)value) = tscr1_register & 0xF8;
+			*((uint8_t *)buffer) = tscr1_register & 0xF8;
 		} break;
 		case TTOV: {
-			*((uint8_t *)value) = ttov_register;
+			*((uint8_t *)buffer) = ttov_register;
 		} break;
 		case TCTL1: {
-			if (size == 2) {
-				*((uint16_t *)value) = Host2BigEndian(tctl12_register);
+			if (data_length == 2) {
+				*((uint16_t *)buffer) = Host2BigEndian(tctl12_register);
 			} else {
-				*((uint8_t *)value) =  tctl12_register >> 8;
+				*((uint8_t *)buffer) =  tctl12_register >> 8;
 			}
 
 		} break;
 		case TCTL2: {
-			*((uint8_t *)value) =  tctl12_register & 0x00FF;
+			*((uint8_t *)buffer) =  tctl12_register & 0x00FF;
 		} break;
 		case TCTL3: {
-			if (size == 2) {
-				*((uint16_t *)value) = Host2BigEndian(tctl34_register);
+			if (data_length == 2) {
+				*((uint16_t *)buffer) = Host2BigEndian(tctl34_register);
 			} else {
-				*((uint8_t *)value) = tctl34_register >> 8;
+				*((uint8_t *)buffer) = tctl34_register >> 8;
 			}
 
 		} break;
 		case TCTL4: {
-			*((uint8_t *)value) = tctl34_register & 0x00FF;
+			*((uint8_t *)buffer) = tctl34_register & 0x00FF;
 		} break;
 		case TIE: {
-			*((uint8_t *)value) =  tie_register;
+			*((uint8_t *)buffer) =  tie_register;
 		} break;
 		case TSCR2: {
-			*((uint8_t *)value) =  tscr2_register & 0x8F;
+			*((uint8_t *)buffer) =  tscr2_register & 0x8F;
 		} break;
 		case TFLG1: {
-			*((uint8_t *)value) = tflg1_register;
+			*((uint8_t *)buffer) = tflg1_register;
 		} break;
 		case TFLG2: {
-			*((uint8_t *)value) = tflg2_register;
+			*((uint8_t *)buffer) = tflg2_register;
 		} break;
 		case PACTL: {
-			*((uint8_t *)value) =  pactl_register & 0x7F;
+			*((uint8_t *)buffer) =  pactl_register & 0x7F;
 		} break;
 		case PAFLG: {
-			*((uint8_t *)value) = paflg_register & 0x03;
+			*((uint8_t *)buffer) = paflg_register & 0x03;
 		} break;
 		case PACN3: {
-			if (size == 2) {
-				*((uint16_t *)value) = Host2BigEndian((((uint16_t) pacn_register[3]) << 8) | pacn_register[2]);
+			if (data_length == 2) {
+				*((uint16_t *)buffer) = Host2BigEndian((((uint16_t) pacn_register[3]) << 8) | pacn_register[2]);
 			} else {
-				*((uint8_t *)value) = pacn_register[3];
+				*((uint8_t *)buffer) = pacn_register[3];
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				paflg_register = paflg_register & 0xFC;
@@ -522,17 +521,17 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 
 		} break;
 		case PACN2: {
-			*((uint8_t *)value) = pacn_register[2];
+			*((uint8_t *)buffer) = pacn_register[2];
 			if ((tscr1_register & 0x10) != 0) {
 				paflg_register = paflg_register & 0xFC;
 			}
 
 		} break;
 		case PACN1: {
-			if (size == 2) {
-				*((uint16_t *)value) = Host2BigEndian((((uint16_t) pacn_register[1]) << 8) | pacn_register[0]);
+			if (data_length == 2) {
+				*((uint16_t *)buffer) = Host2BigEndian((((uint16_t) pacn_register[1]) << 8) | pacn_register[0]);
 			} else {
-				*((uint8_t *)value) = pacn_register[1];
+				*((uint8_t *)buffer) = pacn_register[1];
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				pbflg_register = pbflg_register & 0xFD;
@@ -540,42 +539,42 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 
 		} break;
 		case PACN0: {
-			*((uint8_t *)value) = pacn_register[0];
+			*((uint8_t *)buffer) = pacn_register[0];
 			if ((tscr1_register & 0x10) != 0) {
 				pbflg_register = pbflg_register & 0xFD;
 			}
 		} break;
 		case MCCTL: {
-			*((uint8_t *)value) = mcctl_register & 0xE7;
+			*((uint8_t *)buffer) = mcctl_register & 0xE7;
 		} break;
 		case MCFLG: {
-			*((uint8_t *)value) = mcflg_register & 0x8F;
+			*((uint8_t *)buffer) = mcflg_register & 0x8F;
 		} break;
 		case ICPAR: {
-			*((uint8_t *)value) = icpar_register & 0x0F;
+			*((uint8_t *)buffer) = icpar_register & 0x0F;
 		} break;
 		case DLYCT: {
-			*((uint8_t *)value) = dlyct_register;
+			*((uint8_t *)buffer) = dlyct_register;
 		} break;
 		case ICOVW: {
-			*((uint8_t *)value) = icovw_register;
+			*((uint8_t *)buffer) = icovw_register;
 		} break;
 		case ICSYS: {
-			*((uint8_t *)value) = icsys_register;
+			*((uint8_t *)buffer) = icsys_register;
 		} break;
 		case RESERVED: { /* Reserved Address */} break;
 		case TIMTST: { /* Timer Test Register */} break;
 		case PTPSR: {
-			*((uint8_t *)value) = ptpsr_register;
+			*((uint8_t *)buffer) = ptpsr_register;
 		} break;
 		case PTMCPSR: {
-			*((uint8_t *)value) = ptmcpsr_register;
+			*((uint8_t *)buffer) = ptmcpsr_register;
 		} break;
 		case PBCTL: {
-			*((uint8_t *)value) = pbctl_register & 0x42;
+			*((uint8_t *)buffer) = pbctl_register & 0x42;
 		} break;
 		case PBFLG: {
-			*((uint8_t *)value) = pbflg_register & 0x02;
+			*((uint8_t *)buffer) = pbflg_register & 0x02;
 		} break;
 
 		default: {
@@ -591,13 +590,13 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 				}
 
 				if (offset == MCCNT_HIGH) {
-					if (size == 2) {
-						*((uint16_t *)value) = Host2BigEndian(readed_value);
+					if (data_length == 2) {
+						*((uint16_t *)buffer) = Host2BigEndian(readed_value);
 					} else {
-						*((uint8_t *)value) = readed_value >> 8;
+						*((uint8_t *)buffer) = readed_value >> 8;
 					}
 				} else {
-					*((uint8_t *)value) = readed_value & 0x00FF;
+					*((uint8_t *)buffer) = readed_value & 0x00FF;
 				}
 			} else if ((offset >= TC0_HIGH) && (offset <= TC7_LOW)) {
 				/**
@@ -609,15 +608,15 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 				uint8_t tc_offset_index = tc_offset/2;
 				if ((tc_offset % 2) == 0) // TCx_High ?
 				{
-					if (size == 2) {
-						*((uint16_t *)value) = Host2BigEndian(tc_registers[tc_offset_index]);
+					if (data_length == 2) {
+						*((uint16_t *)buffer) = Host2BigEndian(tc_registers[tc_offset_index]);
 						tc_registers[tc_offset_index] = 0x0000;
 					} else {
-						*((uint8_t *)value) =  tc_registers[tc_offset_index] >> 8;
+						*((uint8_t *)buffer) =  tc_registers[tc_offset_index] >> 8;
 						tc_registers[tc_offset_index] = tc_registers[tc_offset_index] & 0x00FF;
 					}
 				} else {
-					*((uint8_t *)value) =  tc_registers[tc_offset_index] & 0x00FF;
+					*((uint8_t *)buffer) =  tc_registers[tc_offset_index] & 0x00FF;
 					tc_registers[tc_offset_index] = tc_registers[tc_offset_index] & 0xFF00;
 				}
 
@@ -627,7 +626,7 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 			}
 			else if ((offset >= PA3H) && (offset <= PA0H)) {
 				uint8_t paxh_offset = offset - PA3H;
-				*((uint8_t *)value) = paxh_registers[paxh_offset];
+				*((uint8_t *)buffer) = paxh_registers[paxh_offset];
 			}
 			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 				uint8_t tcxh_offset = offset - TC0H_HIGH;
@@ -635,16 +634,16 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 
 				if ((tcxh_offset % 2) == 0) // TCxH_High ?
 				{
-					if (size == 2) {
-						*((uint16_t *)value) = Host2BigEndian(tcxh_registers[tcxh_offset_index]);
+					if (data_length == 2) {
+						*((uint16_t *)buffer) = Host2BigEndian(tcxh_registers[tcxh_offset_index]);
 						tcxh_registers[tcxh_offset_index] = 0x0000;
 					} else {
-						*((uint8_t *)value) = tcxh_registers[tcxh_offset_index] >> 8;
+						*((uint8_t *)buffer) = tcxh_registers[tcxh_offset_index] >> 8;
 						tcxh_registers[tcxh_offset_index] = tcxh_registers[tcxh_offset_index] & 0x00FF;
 					}
 
 				} else {
-					*((uint8_t *)value) = tcxh_registers[tcxh_offset_index] & 0x00FF;
+					*((uint8_t *)buffer) = tcxh_registers[tcxh_offset_index] & 0x00FF;
 					tcxh_registers[tcxh_offset_index] = tcxh_registers[tcxh_offset_index] & 0xFF00;
 				}
 				/**
@@ -669,14 +668,14 @@ bool ECT::read(uint8_t offset, uint8_t* value, uint32_t size) {
 	return true;
 }
 
-bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
+bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
 		case TIOS: {
-			 tios_register = *((uint8_t *)data);
+			 tios_register = *((uint8_t *)buffer);
 		} break;
 		case CFORC: {
-			cforc_register = *((uint8_t *)data);
+			cforc_register = *((uint8_t *)buffer);
 
 			for (uint8_t i=0; i<8; i++) {
 				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
@@ -689,19 +688,19 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 		} break;
 		case OC7M: {
-			oc7m_register = *((uint8_t *)data);
+			oc7m_register = *((uint8_t *)buffer);
 		} break;
 		case OC7D: {
-			oc7d_register = *((uint8_t *)data);
+			oc7d_register = *((uint8_t *)buffer);
 		} break;
 		case TCNT_HIGH: {
 
 			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
 
-			if (size == 2) {
-				tcnt_register = BigEndian2Host(*((uint16_t *)data));
+			if (data_length == 2) {
+				tcnt_register = BigEndian2Host(*((uint16_t *)buffer));
 			} else {
-				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
+				tcnt_register = (tcnt_register & 0x00FF) | ((uint16_t) *((uint8_t *)buffer) << 8);
 			}
 
 			if ((tscr1_register & 0x10) != 0) {
@@ -712,7 +711,7 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 		case TCNT_LOW: {
 			*logger << DebugWarning << "Try writing to TCNT High register! Has no meaning or effect." << std::endl << EndDebugWarning;
 
-			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)data);
+			tcnt_register = (tcnt_register & 0xFF00) | *((uint8_t *)buffer);
 
 			if ((tscr1_register & 0x10) != 0) {
 				tflg2_register = tflg2_register & 0x7F;
@@ -721,14 +720,14 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 		} break;
 		case TSCR1: {
 			uint8_t old_prnt_bit = tscr1_register & 0x08;
-			*((uint8_t *)data) = (tscr1_register & 0x07) | (*((uint8_t *)data) & 0xF8);
+			*((uint8_t *)buffer) = (tscr1_register & 0x07) | (*((uint8_t *)buffer) & 0xF8);
 
 			if (prnt_write) {
-				*((uint8_t *)data) = (*((uint8_t *)data) & 0xF7) | old_prnt_bit;
+				*((uint8_t *)buffer) = (*((uint8_t *)buffer) & 0xF7) | old_prnt_bit;
 			} else {
 				prnt_write = true;
 			}
-			tscr1_register = *((uint8_t *)data);
+			tscr1_register = *((uint8_t *)buffer);
 
 			if ((tscr1_register & 0x80) != 0) {
 				main_timer_enable();
@@ -738,39 +737,39 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 		} break;
 		case TTOV: {
-			ttov_register = *((uint8_t *)data);
+			ttov_register = *((uint8_t *)buffer);
 		} break;
 		case TCTL1: {
-			if (size == 2) {
-				tctl12_register = BigEndian2Host(*((uint16_t *)data));
+			if (data_length == 2) {
+				tctl12_register = BigEndian2Host(*((uint16_t *)buffer));
 			} else {
-				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
+				tctl12_register = (tctl12_register & 0x00FF) | ((uint16_t) *((uint8_t *)buffer) << 8);
 			}
 			configureOutputAction();
 
 		} break;
 		case TCTL2: {
-			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)data);
+			tctl12_register = (tctl12_register & 0xFF00) | *((uint8_t *)buffer);
 			configureOutputAction();
 
 		} break;
 		case TCTL3: {
-			if (size == 2) {
-				tctl34_register = BigEndian2Host(*((uint16_t *)data));
+			if (data_length == 2) {
+				tctl34_register = BigEndian2Host(*((uint16_t *)buffer));
 			} else {
-				tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
+				tctl34_register = (tctl34_register & 0x00FF) | ((uint16_t) *((uint8_t *)buffer) << 8);
 			}
 			configureEdgeDetector();
 		} break;
 		case TCTL4: {
-			tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)data);
+			tctl34_register = (tctl34_register & 0xFF00) | *((uint8_t *)buffer);
 			configureEdgeDetector();
 		} break;
 		case TIE: {
-			tie_register = *((uint8_t *)data);
+			tie_register = *((uint8_t *)buffer);
 		} break;
 		case TSCR2: {
-			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)data) & 0x8F);
+			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)buffer) & 0x8F);
 			ComputeTimerPrescaledClock();
 
 		} break;
@@ -781,7 +780,7 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 			// chech TSCR1::TFFCA bit is cleared
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = *((uint8_t *)data);
+				uint8_t val = *((uint8_t *)buffer);
 				tflg1_register = tflg1_register & ~val;
 			}
 		} break;
@@ -791,14 +790,14 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
 
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = (*((uint8_t *)data) & 0x80);
+				uint8_t val = (*((uint8_t *)buffer) & 0x80);
 
 				tflg2_register = tflg2_register & ~val;
 			}
 
 		} break;
 		case PACTL: {
-			uint8_t masked_value = (pactl_register & 0x80) | (*((uint8_t *)data) & 0x7F);
+			uint8_t masked_value = (pactl_register & 0x80) | (*((uint8_t *)buffer) & 0x7F);
 			pactl_register = masked_value;
 
 			switch ((pactl_register & 0x30) >> 4) {
@@ -840,16 +839,16 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
 
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = (*((uint8_t *)data) & 0x03);
+				uint8_t val = (*((uint8_t *)buffer) & 0x03);
 				paflg_register = paflg_register & ~val;
 			}
 		} break;
 		case PACN3: {
-			if (size == 2) {
-				pacn_register[3] = BigEndian2Host(*((uint16_t *)data)) >> 8;
-				pacn_register[2] = BigEndian2Host(*((uint16_t *)data)) & 0x00FF;
+			if (data_length == 2) {
+				pacn_register[3] = BigEndian2Host(*((uint16_t *)buffer)) >> 8;
+				pacn_register[2] = BigEndian2Host(*((uint16_t *)buffer)) & 0x00FF;
 			} else {
-				pacn_register[3] = *((uint8_t *)data);
+				pacn_register[3] = *((uint8_t *)buffer);
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				paflg_register = paflg_register & 0xFC;
@@ -857,17 +856,17 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 		} break;
 		case PACN2: {
-			pacn_register[2] = *((uint8_t *)data);
+			pacn_register[2] = *((uint8_t *)buffer);
 			if ((tscr1_register & 0x10) != 0) {
 				paflg_register = paflg_register & 0xFC;
 			}
 		} break;
 		case PACN1: {
-			if (size == 2) {
-				pacn_register[1] = BigEndian2Host(*((uint16_t *)data)) >> 8;
-				pacn_register[0] = BigEndian2Host(*((uint16_t *)data)) & 0x00FF;
+			if (data_length == 2) {
+				pacn_register[1] = BigEndian2Host(*((uint16_t *)buffer)) >> 8;
+				pacn_register[0] = BigEndian2Host(*((uint16_t *)buffer)) & 0x00FF;
 			} else {
-				pacn_register[1] = *((uint8_t *)data);
+				pacn_register[1] = *((uint8_t *)buffer);
 			}
 			if ((tscr1_register & 0x10) != 0) {
 				pbflg_register = pbflg_register & 0xFD;
@@ -875,13 +874,13 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 
 		} break;
 		case PACN0: {
-			pacn_register[0] = *((uint8_t *)data);
+			pacn_register[0] = *((uint8_t *)buffer);
 			if ((tscr1_register & 0x10) != 0) {
 				pbflg_register = pbflg_register & 0xFD;
 			}
 		} break;
 		case MCCTL: {
-			mcctl_register = *((uint8_t *)data);
+			mcctl_register = *((uint8_t *)buffer);
 
 			// MCCTL::ICLAT input Capture Force latch Action ?
 			if ((mcctl_register & 0x10) !=0) {
@@ -910,47 +909,47 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 		} break;
 		case MCFLG: {
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = *((uint8_t *)data) & 0x80;
+				uint8_t val = *((uint8_t *)buffer) & 0x80;
 				mcflg_register = mcflg_register & ~val;
 			}
 
 		} break;
 		case ICPAR: {
-			icpar_register = (icpar_register & 0xF0) | (*((uint8_t *)data) & 0x0F);
+			icpar_register = (icpar_register & 0xF0) | (*((uint8_t *)buffer) & 0x0F);
 		} break;
 		case DLYCT: {
-			dlyct_register = *((uint8_t *)data);
+			dlyct_register = *((uint8_t *)buffer);
 			computeDelayCounter();
 		} break;
 		case ICOVW: {
-			icovw_register = *((uint8_t *)data);
+			icovw_register = *((uint8_t *)buffer);
 		} break;
 		case ICSYS: {
 			if (icsys_write) {
 				*logger << DebugWarning << "ICSYS register has already been written! This register is write once in normal modes." << std::endl << EndDebugWarning;
 			} else {
 				icsys_write = true;
-				icsys_register = *((uint8_t *)data);
+				icsys_register = *((uint8_t *)buffer);
 			}
 
 		} break;
 		case RESERVED: { /* Reserved Address */} break;
 		case TIMTST: { /* Timer Test Register */} break;
 		case PTPSR: {
-			ptpsr_register = *((uint8_t *)data);
+			ptpsr_register = *((uint8_t *)buffer);
 		} break;
 		case PTMCPSR: {
-			ptmcpsr_register = *((uint8_t *)data);
+			ptmcpsr_register = *((uint8_t *)buffer);
 		} break;
 		case PBCTL: {
-			pbctl_register = (pbctl_register & 0xBD) | (*((uint8_t *)data) & 0x42);
+			pbctl_register = (pbctl_register & 0xBD) | (*((uint8_t *)buffer) & 0x42);
 			 pacB->wakeup();
 
 		} break;
 		case PBFLG: {
 			// when TSCR1::TFFCA=1, the flag cannot be cleared via the normal flag clearing mechanism
 			if ((tscr1_register & 0x10) == 0) {
-				uint8_t val = *((uint8_t *)data) & 0x02;
+				uint8_t val = *((uint8_t *)buffer) & 0x02;
 				pbflg_register = pbflg_register & ~val;
 			}
 
@@ -965,13 +964,13 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 				}
 
 				if (offset == MCCNT_HIGH) {
-					if (size == 2) {
-						mccnt_load_register = BigEndian2Host(*((uint16_t *)data));
+					if (data_length == 2) {
+						mccnt_load_register = BigEndian2Host(*((uint16_t *)buffer));
 					} else {
-						mccnt_load_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)data) << 8));
+						mccnt_load_register = (mccnt_load_register & 0x00FF) | ((uint16_t) (*((uint8_t *)buffer) << 8));
 					}
 				} else {
-					mccnt_load_register = (mccnt_load_register & 0xFF00) | *((uint8_t *)data);
+					mccnt_load_register = (mccnt_load_register & 0xFF00) | *((uint8_t *)buffer);
 				}
 
 				/**
@@ -1023,14 +1022,14 @@ bool ECT::write(uint8_t offset, uint8_t* data, uint32_t size) {
 				else {
 					if ((tc_offset % 2) == 0) // TCx_High ?
 					{
-						if (size == 2) {
-							tc_registers[tc_offset_index] = BigEndian2Host(*((uint16_t *)data));
+						if (data_length == 2) {
+							tc_registers[tc_offset_index] = BigEndian2Host(*((uint16_t *)buffer));
 						} else {
-							tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0x00FF) | ((uint16_t) *((uint8_t *)data) << 8);
+							tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0x00FF) | ((uint16_t) *((uint8_t *)buffer) << 8);
 						}
 
 					} else {
-						tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0xFF00) | *((uint8_t *)data);
+						tc_registers[tc_offset_index] = (tc_registers[tc_offset_index] & 0xFF00) | *((uint8_t *)buffer);
 					}
 				}
 
@@ -1533,95 +1532,164 @@ bool ECT::BeginSetup() {
 
 	sprintf(buf, "%s.TIOS",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tios_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TIOS", this, tios_register, "Timer Input Capture/Output Compare Select"));
+
+	unisim::kernel::service::Register<uint8_t> *tios_var = new unisim::kernel::service::Register<uint8_t>("TIOS", this, tios_register, "Timer Input Capture/Output Compare Select");
+	extended_registers_registry.push_back(tios_var);
+	tios_var->setCallBack(this, TIOS, &CallBackObject::write);
 
 	sprintf(buf, "%s.CFORC",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cforc_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("CFORC", this, cforc_register, "Timer Compare Force Register"));
+
+	unisim::kernel::service::Register<uint8_t> *cforc_var = new unisim::kernel::service::Register<uint8_t>("CFORC", this, cforc_register, "Timer Compare Force Register");
+	extended_registers_registry.push_back(cforc_var);
+	cforc_var->setCallBack(this, CFORC, &CallBackObject::write);
 
 	sprintf(buf, "%s.OC7M",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7m_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("OC7M", this, oc7m_register, "Output Compare 7 Mask Register"));
+
+	unisim::kernel::service::Register<uint8_t> *oc7m_var = new unisim::kernel::service::Register<uint8_t>("OC7M", this, oc7m_register, "Output Compare 7 Mask Register");
+	extended_registers_registry.push_back(oc7m_var);
+	oc7m_var->setCallBack(this, OC7M, &CallBackObject::write);
 
 	sprintf(buf, "%s.OC7D",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7d_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("OC7D", this, oc7d_register, "Output Compare 7 Data Register"));
+
+	unisim::kernel::service::Register<uint8_t> *oc7d_var = new unisim::kernel::service::Register<uint8_t>("OC7D", this, oc7d_register, "Output Compare 7 Data Register");
+	extended_registers_registry.push_back(oc7d_var);
+	oc7d_var->setCallBack(this, OC7D, &CallBackObject::write);
 
 	sprintf(buf, "%s.TCNT",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcnt_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TCNT", this, tcnt_register, "Timer Count Register"));
+
+	unisim::kernel::service::Register<uint16_t> *tcnt_var = new unisim::kernel::service::Register<uint16_t>("TCNT", this, tcnt_register, "Timer Count Register");
+	extended_registers_registry.push_back(tcnt_var);
+	tcnt_var->setCallBack(this, TCNT_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TSCR1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr1_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TSCR1", this, tscr1_register, "Timer System Control Register 1"));
+
+	unisim::kernel::service::Register<uint8_t> *tscr1_var = new unisim::kernel::service::Register<uint8_t>("TSCR1", this, tscr1_register, "Timer System Control Register 1");
+	extended_registers_registry.push_back(tscr1_var);
+	tscr1_var->setCallBack(this, TSCR1, &CallBackObject::write);
 
 	sprintf(buf, "%s.TTOV",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttov_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TTOV", this, ttov_register, "Timer Toggle Overflow Register"));
+
+	unisim::kernel::service::Register<uint16_t> *ttov_var = new unisim::kernel::service::Register<uint16_t>("TTOV", this, ttov_register, "Timer Toggle Overflow Register");
+	extended_registers_registry.push_back(ttov_var);
+	ttov_var->setCallBack(this, TTOV, &CallBackObject::write);
 
 	sprintf(buf, "%s.TCTL12",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl12_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TCTL12", this, tctl12_register, "Timer Control Register 1-2"));
+
+	unisim::kernel::service::Register<uint16_t> *tctl12_var = new unisim::kernel::service::Register<uint16_t>("TCTL12", this, tctl12_register, "Timer Control Register 1-2");
+	extended_registers_registry.push_back(tctl12_var);
+	tctl12_var->setCallBack(this, TCTL1, &CallBackObject::write);
 
 	sprintf(buf, "%s.TCTL34",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl34_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TCTL34", this, tctl34_register, "Timer Control Register 3-4"));
+
+	unisim::kernel::service::Register<uint16_t> *tctl34_var = new unisim::kernel::service::Register<uint16_t>("TCTL34", this, tctl34_register, "Timer Control Register 3-4");
+	extended_registers_registry.push_back(tctl34_var);
+	tctl34_var->setCallBack(this, TCTL3, &CallBackObject::write);
 
 	sprintf(buf, "%s.TIE",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tie_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TIE", this, tie_register, "Timer Interrupt Enable Register"));
+
+	unisim::kernel::service::Register<uint8_t> *tie_var = new unisim::kernel::service::Register<uint8_t>("TIE", this, tie_register, "Timer Interrupt Enable Register");
+	extended_registers_registry.push_back(tie_var);
+	tie_var->setCallBack(this, TIE, &CallBackObject::write);
 
 	sprintf(buf, "%s.TSCR2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr2_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TSCR2", this, tscr2_register, "Timer System Control Register 2"));
+
+	unisim::kernel::service::Register<uint8_t> *tscr2_var = new unisim::kernel::service::Register<uint8_t>("TSCR2", this, tscr2_register, "Timer System Control Register 2");
+	extended_registers_registry.push_back(tscr2_var);
+	tscr2_var->setCallBack(this, TSCR2, &CallBackObject::write);
 
 	sprintf(buf, "%s.TFLG1",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg1_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TFLG1", this, tflg1_register, "Main Timer Interrupt Flag 1"));
+
+	unisim::kernel::service::Register<uint8_t> *tflg1_var = new unisim::kernel::service::Register<uint8_t>("TFLG1", this, tflg1_register, "Main Timer Interrupt Flag 1");
+	extended_registers_registry.push_back(tflg1_var);
+	tflg1_var->setCallBack(this, TFLG1, &CallBackObject::write);
 
 	sprintf(buf, "%s.TFLG2",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg2_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TFLG2", this, tflg2_register, "Main Timer Interrupt Flag 2"));
+
+	unisim::kernel::service::Register<uint8_t> *tflg2_var = new unisim::kernel::service::Register<uint8_t>("TFLG2", this, tflg2_register, "Main Timer Interrupt Flag 2");
+	extended_registers_registry.push_back(tflg2_var);
+	tflg2_var->setCallBack(this, TFLG2, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC0",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[0]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC0", this, tc_registers[0], "Timer Input Capture/Output Compare Register 0"));
+
+	unisim::kernel::service::Register<uint16_t> *tc0_var = new unisim::kernel::service::Register<uint16_t>("TC0", this, tc_registers[0], "Timer Input Capture/Output Compare Register 0");
+	extended_registers_registry.push_back(tc0_var);
+	tc0_var->setCallBack(this, TC0_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC1",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[1]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC1", this, tc_registers[1], "Timer Input Capture/Output Compare Register 1"));
+
+	unisim::kernel::service::Register<uint16_t> *tc1_var = new unisim::kernel::service::Register<uint16_t>("TC1", this, tc_registers[1], "Timer Input Capture/Output Compare Register 1");
+	extended_registers_registry.push_back(tc1_var);
+	tc1_var->setCallBack(this, TC1_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC2",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[2]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC2", this, tc_registers[2], "Timer Input Capture/Output Compare Register 2"));
+
+	unisim::kernel::service::Register<uint16_t> *tc2_var = new unisim::kernel::service::Register<uint16_t>("TC2", this, tc_registers[2], "Timer Input Capture/Output Compare Register 2");
+	extended_registers_registry.push_back(tc2_var);
+	tc2_var->setCallBack(this, TC2_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC3",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[3]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC3", this, tc_registers[3], "Timer Input Capture/Output Compare Register 3"));
+
+	unisim::kernel::service::Register<uint16_t> *tc3_var = new unisim::kernel::service::Register<uint16_t>("TC3", this, tc_registers[3], "Timer Input Capture/Output Compare Register 3");
+	extended_registers_registry.push_back(tc3_var);
+	tc3_var->setCallBack(this, TC3_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC4",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[4]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC4", this, tc_registers[4], "Timer Input Capture/Output Compare Register 4"));
+
+	unisim::kernel::service::Register<uint16_t> *tc4_var = new unisim::kernel::service::Register<uint16_t>("TC4", this, tc_registers[4], "Timer Input Capture/Output Compare Register 4");
+	extended_registers_registry.push_back(tc4_var);
+	tc4_var->setCallBack(this, TC4_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC5",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[5]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC5", this, tc_registers[5], "Timer Input Capture/Output Compare Register 5"));
+
+	unisim::kernel::service::Register<uint16_t> *tc5_var = new unisim::kernel::service::Register<uint16_t>("TC5", this, tc_registers[5], "Timer Input Capture/Output Compare Register 5");
+	extended_registers_registry.push_back(tc5_var);
+	tc5_var->setCallBack(this, TC5_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC6",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[6]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC6", this, tc_registers[6], "Timer Input Capture/Output Compare Register 6"));
+
+	unisim::kernel::service::Register<uint16_t> *tc6_var = new unisim::kernel::service::Register<uint16_t>("TC6", this, tc_registers[6], "Timer Input Capture/Output Compare Register 6");
+	extended_registers_registry.push_back(tc6_var);
+	tc6_var->setCallBack(this, TC6_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC7",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[7]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC7", this, tc_registers[7], "Timer Input Capture/Output Compare Register 7"));
+
+	unisim::kernel::service::Register<uint16_t> *tc7_var = new unisim::kernel::service::Register<uint16_t>("TC7", this, tc_registers[7], "Timer Input Capture/Output Compare Register 7");
+	extended_registers_registry.push_back(tc7_var);
+	tc7_var->setCallBack(this, TC7_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.PACTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pactl_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PACTL", this, pactl_register, "16-Bit Pulse Accumulator A Control Register"));
+
+	unisim::kernel::service::Register<uint8_t> *pactl_var = new unisim::kernel::service::Register<uint8_t>("PACTL", this, pactl_register, "16-Bit Pulse Accumulator A Control Register");
+	extended_registers_registry.push_back(pactl_var);
+	pactl_var->setCallBack(this, PACTL, &CallBackObject::write);
 
 	sprintf(buf, "%s.PAFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paflg_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register"));
+
+	unisim::kernel::service::Register<uint8_t> *paflg_var = new unisim::kernel::service::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register");
+	extended_registers_registry.push_back(paflg_var);
+	paflg_var->setCallBack(this, PAFLG, &CallBackObject::write);
 
 	uint8_t pacn_number;
 
@@ -1629,78 +1697,132 @@ bool ECT::BeginSetup() {
 		sprintf(buf, "%s.PACN%d",name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &pacn_register[i]));
 		sprintf(buf, "PACN%d", i);
-		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, pacn_register[i], "Pulse Accumulator Count Register"));
+
+		unisim::kernel::service::Register<uint8_t> *pacn_var = new unisim::kernel::service::Register<uint8_t>(buf, this, pacn_register[i], "Pulse Accumulator Count Register");
+		extended_registers_registry.push_back(pacn_var);
+		pacn_var->setCallBack(this, PACN0-i, &CallBackObject::write);
 
 		sprintf(buf, "%s.PA%dH",name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &paxh_registers[i]));
 		sprintf(buf, "PA%dH", i);
-		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, paxh_registers[i], "8-Bit Pulse Accumulator Holding Register"));
+
+		unisim::kernel::service::Register<uint8_t> *paxh_var = new unisim::kernel::service::Register<uint8_t>(buf, this, paxh_registers[i], "8-Bit Pulse Accumulator Holding Register");
+		extended_registers_registry.push_back(paxh_var);
+		paxh_var->setCallBack(this, PA0H-i, &CallBackObject::write);
 
 	}
 
 	sprintf(buf, "%s.MCCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcctl_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MCCTL", this, mcctl_register, "16-Bit Modulus Down Counter Register"));
+
+	unisim::kernel::service::Register<uint8_t> *mcctl_var = new unisim::kernel::service::Register<uint8_t>("MCCTL", this, mcctl_register, "16-Bit Modulus Down Counter Register");
+	extended_registers_registry.push_back(mcctl_var);
+	mcctl_var->setCallBack(this, MCCTL, &CallBackObject::write);
 
 	sprintf(buf, "%s.MCFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcflg_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("MCFLG", this, mcflg_register, "16-Bit Modulus Down Counter Flag Register"));
+
+	unisim::kernel::service::Register<uint8_t> *mcflg_var = new unisim::kernel::service::Register<uint8_t>("MCFLG", this, mcflg_register, "16-Bit Modulus Down Counter Flag Register");
+	extended_registers_registry.push_back(mcflg_var);
+	mcflg_var->setCallBack(this, MCFLG, &CallBackObject::write);
 
 	sprintf(buf, "%s.ICPAR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icpar_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ICPAR", this, icpar_register, "Input Control Pulse Accumulator Register"));
+
+	unisim::kernel::service::Register<uint8_t> *icpar_var = new unisim::kernel::service::Register<uint8_t>("ICPAR", this, icpar_register, "Input Control Pulse Accumulator Register");
+	extended_registers_registry.push_back(icpar_var);
+	icpar_var->setCallBack(this, ICPAR, &CallBackObject::write);
 
 	sprintf(buf, "%s.DLYCT",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &dlyct_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("DLYCT", this, dlyct_register, "Delay Counter Control Register"));
+
+	unisim::kernel::service::Register<uint8_t> *dlyct_var = new unisim::kernel::service::Register<uint8_t>("DLYCT", this, dlyct_register, "Delay Counter Control Register");
+	extended_registers_registry.push_back(dlyct_var);
+	dlyct_var->setCallBack(this, DLYCT, &CallBackObject::write);
 
 	sprintf(buf, "%s.ICOVW",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icovw_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ICOVW", this, icovw_register, "Input Control Overwrite Register"));
+
+	unisim::kernel::service::Register<uint8_t> *icovw_var = new unisim::kernel::service::Register<uint8_t>("ICOVW", this, icovw_register, "Input Control Overwrite Register");
+	extended_registers_registry.push_back(icovw_var);
+	icovw_var->setCallBack(this, ICOVW, &CallBackObject::write);
 
 	sprintf(buf, "%s.ICSYS",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icsys_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("ICSYS", this, icsys_register, "Input Control System Control Register"));
+
+	unisim::kernel::service::Register<uint8_t> *icsys_var = new unisim::kernel::service::Register<uint8_t>("ICSYS", this, icsys_register, "Input Control System Control Register");
+	extended_registers_registry.push_back(icsys_var);
+	icsys_var->setCallBack(this, ICSYS, &CallBackObject::write);
 
 	sprintf(buf, "%s.TIMTST",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &timtst_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("TIMTST", this, timtst_register, "Timer Test Register"));
+
+	unisim::kernel::service::Register<uint8_t> *timtst_var = new unisim::kernel::service::Register<uint8_t>("TIMTST", this, timtst_register, "Timer Test Register");
+	extended_registers_registry.push_back(timtst_var);
+	timtst_var->setCallBack(this, TIMTST, &CallBackObject::write);
 
 	sprintf(buf, "%s.PTPSR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptpsr_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PTPSR", this, ptpsr_register, "Precision Timer Prescaler Select Register"));
+
+	unisim::kernel::service::Register<uint8_t> *ptpsr_var = new unisim::kernel::service::Register<uint8_t>("PTPSR", this, ptpsr_register, "Precision Timer Prescaler Select Register");
+	extended_registers_registry.push_back(ptpsr_var);
+	ptpsr_var->setCallBack(this, PTPSR, &CallBackObject::write);
 
 	sprintf(buf, "%s.PTMCPSR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptmcpsr_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PTMCPSR", this, ptmcpsr_register, "Precision Timer Modulus Counter Prescaler Select Register"));
+
+	unisim::kernel::service::Register<uint8_t> *ptmcpsr_var = new unisim::kernel::service::Register<uint8_t>("PTMCPSR", this, ptmcpsr_register, "Precision Timer Modulus Counter Prescaler Select Register");
+	extended_registers_registry.push_back(ptmcpsr_var);
+	ptmcpsr_var->setCallBack(this, PTMCPSR, &CallBackObject::write);
 
 	sprintf(buf, "%s.PBCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbctl_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PBCTL", this, pbctl_register, "16-Bit Pulse Accumulator B Control Register"));
+
+	unisim::kernel::service::Register<uint8_t> *pbctl_var = new unisim::kernel::service::Register<uint8_t>("PBCTL", this, pbctl_register, "16-Bit Pulse Accumulator B Control Register");
+	extended_registers_registry.push_back(pbctl_var);
+	pbctl_var->setCallBack(this, PBCTL, &CallBackObject::write);
 
 	sprintf(buf, "%s.PBFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbflg_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("PBFLG", this, pbflg_register, "16-Bit Pulse Accumulator B Flag Register"));
+
+	unisim::kernel::service::Register<uint8_t> *pbflg_var = new unisim::kernel::service::Register<uint8_t>("PBFLG", this, pbflg_register, "16-Bit Pulse Accumulator B Flag Register");
+	extended_registers_registry.push_back(pbflg_var);
+	pbflg_var->setCallBack(this, PBFLG, &CallBackObject::write);
 
 	sprintf(buf, "%s.MCCNT",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &mccnt_register);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("MCCNT", this, mccnt_register, "Modulus Down-Counter Count Register"));
+
+	unisim::kernel::service::Register<uint16_t> *mccnt_var = new unisim::kernel::service::Register<uint16_t>("MCCNT", this, mccnt_register, "Modulus Down-Counter Count Register");
+	extended_registers_registry.push_back(mccnt_var);
+	mccnt_var->setCallBack(this, MCCNT_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC0H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[0]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC0H", this, tcxh_registers[0], "Timer Input Capture Holding Register 0"));
+
+	unisim::kernel::service::Register<uint16_t> *tc0h_var = new unisim::kernel::service::Register<uint16_t>("TC0H", this, tcxh_registers[0], "Timer Input Capture Holding Register 0");
+	extended_registers_registry.push_back(tc0h_var);
+	tc0h_var->setCallBack(this, TC0H_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC1H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[1]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC1H", this, tcxh_registers[1], "Timer Input Capture Holding Register 1"));
+
+	unisim::kernel::service::Register<uint16_t> *tc1h_var = new unisim::kernel::service::Register<uint16_t>("TC1H", this, tcxh_registers[1], "Timer Input Capture Holding Register 1");
+	extended_registers_registry.push_back(tc1h_var);
+	tc1h_var->setCallBack(this, TC1H_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC2H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[2]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC2H", this, tcxh_registers[2], "Timer Input Capture Holding Register 2"));
+
+	unisim::kernel::service::Register<uint16_t> *tc2h_var = new unisim::kernel::service::Register<uint16_t>("TC2H", this, tcxh_registers[2], "Timer Input Capture Holding Register 2");
+	extended_registers_registry.push_back(tc2h_var);
+	tc2h_var->setCallBack(this, TC2H_HIGH, &CallBackObject::write);
 
 	sprintf(buf, "%s.TC3H",name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[3]);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("TC3H", this, tcxh_registers[3], "Timer Input Capture Holding Register 3"));
+
+	unisim::kernel::service::Register<uint16_t> *tc3h_var = new unisim::kernel::service::Register<uint16_t>("TC3H", this, tcxh_registers[3], "Timer Input Capture Holding Register 3");
+	extended_registers_registry.push_back(tc3h_var);
+	tc3h_var->setCallBack(this, TC3H_HIGH, &CallBackObject::write);
 
 
 	ComputeInternalTime();

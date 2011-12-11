@@ -336,22 +336,34 @@ bool XINT::BeginSetup() {
 
 	sprintf(buf, "%s.IVBR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ivbr);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)"));
+
+	unisim::kernel::service::Register<uint8_t> *ivbr_var = new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
+	extended_registers_registry.push_back(ivbr_var);
+	ivbr_var->setCallBack(this, IVBR, &CallBackObject::write);
 
 	sprintf(buf, "%s.INT_XGPRIO",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)"));
+
+	unisim::kernel::service::Register<uint8_t> *int_xgprio_var = new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
+	extended_registers_registry.push_back(int_xgprio_var);
+	int_xgprio_var->setCallBack(this, INT_XGPRIO, &CallBackObject::write);
 
 	sprintf(buf, "%s.INT_CFADDR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
-//	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)"));
+
+	unisim::kernel::service::Register<uint8_t> *int_cfaddr_var = new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
+	extended_registers_registry.push_back(int_cfaddr_var);
+	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write);
 
 	for (uint8_t i=0; i<XINT_SIZE; i++) {
 		sprintf(buf, "%s.INT_CFDATA%d", name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfwdata[i]);
 
-//		sprintf(buf, "INT_CFDATA%d", i);
-//		extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)"));
+		sprintf(buf, "INT_CFDATA%d", i);
+
+		unisim::kernel::service::Register<uint8_t> *int_cfwdata_var = new unisim::kernel::service::Register<uint8_t>(buf, this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)");
+		extended_registers_registry.push_back(int_cfwdata_var);
+		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write);
 	}
 
 	return true;
@@ -385,20 +397,21 @@ void XINT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+	unsigned int data_length = trans.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		unsigned int data_length = trans.get_data_length();
 		memset(data_ptr, 0, data_length);
-		read((address_t) address, *data_ptr);
+		read((address_t) address, data_ptr, data_length);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-		write((address_t) address, *data_ptr);
+		write((address_t) address, data_ptr, data_length);
 	}
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-bool XINT::write(address_t address, uint8_t value)
+bool XINT::write(unsigned int address, const void *buffer, unsigned int data_length)
 {
+	uint8_t value = *((uint8_t *) buffer);
 	if (address == XINT_REGS_ADDRESSES[IVBR]) setIVBR(value);
 	else if (address == XINT_REGS_ADDRESSES[INT_XGPRIO]) setINT_XGPRIO(value);
 	else if (address == XINT_REGS_ADDRESSES[INT_CFADDR]) setINT_CFADDR(value);
@@ -415,19 +428,19 @@ bool XINT::write(address_t address, uint8_t value)
 	return true;
 }
 
-bool XINT::read(address_t address, uint8_t &value)
+bool XINT::read(unsigned int address, const void *buffer, unsigned int data_length)
 {
-	if (address == XINT_REGS_ADDRESSES[IVBR]) value = getIVBR();
-	else if (address == XINT_REGS_ADDRESSES[INT_XGPRIO]) value = getINT_XGPRIO();
-	else if (address == XINT_REGS_ADDRESSES[INT_CFADDR]) value = getINT_CFADDR();
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA0]) value = read_INT_CFDATA(0);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA1]) value = read_INT_CFDATA(1);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA2]) value = read_INT_CFDATA(2);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA3]) value = read_INT_CFDATA(3);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA4]) value = read_INT_CFDATA(4);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA5]) value = read_INT_CFDATA(5);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA6]) value = read_INT_CFDATA(6);
-	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA7]) value = read_INT_CFDATA(7);
+	if (address == XINT_REGS_ADDRESSES[IVBR]) *((uint8_t *) buffer) = getIVBR();
+	else if (address == XINT_REGS_ADDRESSES[INT_XGPRIO]) *((uint8_t *) buffer) = getINT_XGPRIO();
+	else if (address == XINT_REGS_ADDRESSES[INT_CFADDR]) *((uint8_t *) buffer) = getINT_CFADDR();
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA0]) *((uint8_t *) buffer) = read_INT_CFDATA(0);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA1]) *((uint8_t *) buffer) = read_INT_CFDATA(1);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA2]) *((uint8_t *) buffer) = read_INT_CFDATA(2);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA3]) *((uint8_t *) buffer) = read_INT_CFDATA(3);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA4]) *((uint8_t *) buffer) = read_INT_CFDATA(4);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA5]) *((uint8_t *) buffer) = read_INT_CFDATA(5);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA6]) *((uint8_t *) buffer) = read_INT_CFDATA(6);
+	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA7]) *((uint8_t *) buffer) = read_INT_CFDATA(7);
 	else return false;
 
 	return true;
@@ -543,7 +556,7 @@ bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size
 
 	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
 		if (XINT_REGS_ADDRESSES[i] == addr) {
-			write(addr, *(uint8_t *) buffer);
+			write(addr, buffer, size);
 			return true;
 		}
 	}
