@@ -1370,7 +1370,47 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		cmdPrefix = command.substr(0, separator_index);
 	}
 
-	if (cmdPrefix.compare("symboles") == 0) {
+	if (cmdPrefix.compare("parameters") == 0) {
+		Simulator *simulator = Object::GetSimulator();
+
+		std::list<VariableBase *> lst;
+		simulator->GetParameters(lst);
+
+		std::stringstream strstm;
+
+		for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+			if (!((VariableBase *) *it)->IsVisible()) continue;
+
+			std::string name = ((VariableBase *) *it)->GetName();
+			std::string dataType = ((VariableBase *) *it)->GetDataTypeName();
+			std::string value = *((VariableBase *) *it);
+			std::string type = ((VariableBase *) *it)->GetTypeName();
+			std::string format = "";
+			switch (((VariableBase *) *it)->GetFormat()) {
+				case VariableBase::FMT_HEX: format = "HEX"; break;
+				case VariableBase::FMT_DEC: format = "DEC"; break;
+				default: format = "Default";
+			}
+
+			const char *description = ((VariableBase *) *it)->GetDescription();
+
+			strstm << type << ":" << name << ":" << dataType << ":" << value << ":" << format << ":" << ((strlen(description) != 0)? std::string(description): "No description available!");
+
+			string str = strstm.str();
+
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+
+		}
+
+		lst.clear();
+
+		PutPacket("T05");
+
+	}
+	else if (cmdPrefix.compare("symboles") == 0) {
 
 		/**
 		 * command: qRcmd, symboles
@@ -1652,7 +1692,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	}
 	else if (cmdPrefix.compare("srcaddr") == 0) {
-// ******************************
+
 		// qRcmd,saddr:filename;lineno;colno
 		std::stringstream sstr;
 
@@ -1692,8 +1732,6 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			PutPacket("E00");
 		}
 
-
-// ******************************
 	}
 	else if (cmdPrefix.compare("statistics") == 0) {
 
