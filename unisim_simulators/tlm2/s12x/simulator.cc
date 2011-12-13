@@ -513,11 +513,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("RAM.org", 0x0F8000);
 	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
+	simulator->SetVariable("RAM.initial-byte-value", 0x00);
 	simulator->SetVariable("RAM.cycle-time", 80000);
 	simulator->SetVariable("RAM.verbose", false);
 
 	simulator->SetVariable("EEPROM.org", 0x13F000);
 	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
+	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
 	simulator->SetVariable("EEPROM.cycle-time", 80000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 40000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
@@ -527,6 +529,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("FLASH.org", 0x780000);
 	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
+	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
 	simulator->SetVariable("FLASH.cycle-time", 80000);
 	simulator->SetVariable("FLASH.verbose", false);
 
