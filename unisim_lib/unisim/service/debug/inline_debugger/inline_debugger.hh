@@ -102,6 +102,7 @@ using std::string;
 typedef enum
 {
 	INLINE_DEBUGGER_MODE_WAITING_USER,
+	INLINE_DEBUGGER_MODE_STEP_INSTRUCTION,
 	INLINE_DEBUGGER_MODE_STEP,
 	INLINE_DEBUGGER_MODE_CONTINUE,
 	INLINE_DEBUGGER_MODE_CONTINUE_UNTIL,
@@ -198,6 +199,7 @@ private:
 	ADDRESS disasm_addr;
 	ADDRESS dump_addr;
 	ADDRESS cont_until_addr;
+	const Statement<ADDRESS> *last_stmt;
 	bool profile;
 
 	std::list<std::string> exec_queue;
@@ -216,8 +218,9 @@ private:
 	bool GetLine(const char *prompt, std::string& line, bool& interactive);
 	bool IsBlankLine(const std::string& line);
 	bool IsQuitCommand(const char *cmd);
+	bool IsStepInstructionCommand(const char *cmd);
 	bool IsStepCommand(const char *cmd);
-	bool IsNextCommand(const char *cmd);
+	bool IsNextInstructionCommand(const char *cmd);
 	bool IsContinueCommand(const char *cmd);
 	bool IsDisasmCommand(const char *cmd);
 	bool IsBreakCommand(const char *cmd);
@@ -273,6 +276,7 @@ private:
 	const Symbol<ADDRESS> *FindSymbolByName(const char *s);
 	const Statement<ADDRESS> *FindStatement(ADDRESS addr);
 	const Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno);
+	const Statement<ADDRESS> *FindNextStatement(ADDRESS addr);
 	void EnableProfiling();
 	void DisableProfiling();
 };
