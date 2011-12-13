@@ -1364,7 +1364,8 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
-	if (separator_index == string::npos) {
+
+	if (separator_index == static_cast<unsigned int>(string::npos)) {
 		cmdPrefix = command;
 	} else {
 		cmdPrefix = command.substr(0, separator_index);
@@ -1406,6 +1407,58 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		}
 
 		lst.clear();
+
+		PutPacket("T05");
+
+	}
+	else if (cmdPrefix.compare("parameter") == 0) {
+
+		std::string str = command.substr(separator_index+1);
+
+		separator_index = str.find_first_of(':');
+		string name;
+		if (separator_index == static_cast<unsigned int>(string::npos)) {
+			name = str;
+		} else {
+			name = str.substr(0, separator_index);
+		}
+
+		VariableBase* parameter = Simulator::simulator->FindParameter(name.c_str());
+		if (parameter) {
+			if (separator_index == static_cast<unsigned int>(string::npos)) // read parameter request
+			{
+				std::ostringstream os;
+
+				if (strcmp(parameter->GetDataTypeName(), "double precision floating-point") == 0) {
+					double val = *parameter;
+					os << stringify(val);
+				}
+				else if (strcmp(parameter->GetDataTypeName(), "single precision floating-point") == 0) {
+					float val = *parameter;
+					os << stringify(val);
+				}
+				else if (strcmp(parameter->GetDataTypeName(), "boolean") == 0) {
+					bool val = *parameter;
+					os << stringify(val);
+				}
+				else {
+					uint64_t val = *parameter;
+					os << stringify(val);
+				}
+
+				std::string value = os.str();
+				OutputText(value.c_str(), value.size());
+			}
+			else // write parameter request
+			{
+				std::string value = str.substr(separator_index+1);
+
+				*parameter = value.c_str();
+			}
+
+		} else {
+
+		}
 
 		PutPacket("T05");
 
