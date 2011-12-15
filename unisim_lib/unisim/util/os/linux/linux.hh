@@ -99,10 +99,10 @@ class Linux {
 
   bool SetSystemType(char const * const system_type);
 
-  // Sets the endianess of the system.
-  // Note that if the loaded files endianess is different from the set
-  // endianess the Load() method will fail.
-  void SetEndianess(unisim::util::endian::endian_type endianess);
+  // Sets the endianness of the system.
+  // Note that if the loaded files endianness is different from the set
+  // endianness the Load() method will fail.
+  void SetEndianness(unisim::util::endian::endian_type endianness);
 
   // Sets the stack base address that will be used for the application stack.
   // Combined with SetStackSize the memory addresses from stack base to 
@@ -179,7 +179,7 @@ class Linux {
   std::string system_type_;
   static const int kNumSupportedSystemTypes;
   static const std::vector<std::string> supported_system_types_; // [kNumSupportedSystemTypes];
-  unisim::util::endian::endian_type endianess_;
+  unisim::util::endian::endian_type endianness_;
 
   // files to load
   std::map<std::string,

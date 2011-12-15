@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
     std::cerr << log << std::endl;
     return -1;
   }
-  prog.SetEndianess(unisim::util::endian::E_LITTLE_ENDIAN);
+  prog.SetEndianness(unisim::util::endian::E_LITTLE_ENDIAN);
   prog.SetStackBase(0xc0000000UL);
   prog.SetStackSize(0x800000UL);
   prog.SetMemoryPageSize(4096);

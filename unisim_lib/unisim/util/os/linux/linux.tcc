@@ -83,7 +83,7 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
 Linux(std::ostringstream * const logger)
     : is_load_(false)
     , system_type_("arm-eabi")
-    , endianess_(unisim::util::endian::E_LITTLE_ENDIAN)
+    , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
     , load_files_()
     , entry_point_(0)
     , load_addr_set_(false)
@@ -253,9 +253,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianess(
-    unisim::util::endian::endian_type endianess) {
-  endianess = endianess_;
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianness(
+    unisim::util::endian::endian_type endianness) {
+  endianness = endianness_;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -460,7 +460,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
   ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
   PARAMETER_TYPE par1 = 0;
   PARAMETER_TYPE par2 = 0;
-  // TODO check endianess conversions
+  // TODO check endianness conversions
   success = memory_interface_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
   success = memory_interface_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
   register_interface_->SetRegister(kARM_r1, par1);
@@ -1051,7 +1051,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     blob_tls_buf = (uint32_t *)malloc(sizeof(uint32_t) * tls_buf_length);
 
     for (unsigned int i = 0; i < tls_buf_length; ++i) {
-      if (endianess_ == unisim::util::endian::E_BIG_ENDIAN)
+      if (endianness_ == unisim::util::endian::E_BIG_ENDIAN)
         blob_tls_buf[i] = unisim::util::endian::Host2BigEndian(tls_buf[i]);
       else
         blob_tls_buf[i] = unisim::util::endian::Host2LittleEndian(tls_buf[i]);
@@ -1087,7 +1087,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
                                           cmpxchg_buf_length);
 
     for (unsigned int i = 0; i < cmpxchg_buf_length; ++i) {
-      if ( endianess_ == unisim::util::endian::E_BIG_ENDIAN )
+      if ( endianness_ == unisim::util::endian::E_BIG_ENDIAN )
         blob_cmpxchg_buf[i] =
             unisim::util::endian::Host2BigEndian(cmpxchg_buf[i]);
       else
