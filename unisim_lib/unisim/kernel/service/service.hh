@@ -469,51 +469,7 @@ class Register : public Variable<TYPE>
 public:
 
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
-
 };
-
-// ************ REDA *****************
-
-//I have to pass RegisterBack as Template Parameter to Register (e.g. RegisterBack is a storage)
-
-template <class OwnerType, class TYPE>
-class RegisterBack : public Variable<TYPE>
-{
-public:
-
-	RegisterBack(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
-
-	RegisterBack(const char *name, Object *owner, unsigned int _offset, TYPE& storage, bool (OwnerType::*_write)(unsigned int offset, const void* valuePtr, unsigned int size) = NULL, const char *description = NULL) :
-		Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description), offset(_offset), write(_write)
-
-		{
-			ownerBack = dynamic_cast<OwnerType*>(owner);
-
-		}
-
-	virtual VariableBase& operator = (TYPE value) {
-
-		if (write != NULL) {
-			std::cerr << "I do callback" << std::endl;
-
-			(ownerBack->write)(offset, &value, sizeof(value));
-		} else {
-			*(inherited::storage) = value;
-		}
-
-	}
-
-private:
-	typedef unisim::kernel::service::Variable<TYPE> inherited;
-
-	OwnerType *ownerBack;
-
-	unsigned int offset;
-	bool (OwnerType::*write)(unsigned int offset, const void* valuePtr, unsigned int size);
-
-};
-
-// ********* END REDA ***************
 
 template <class TYPE>
 class Formula;

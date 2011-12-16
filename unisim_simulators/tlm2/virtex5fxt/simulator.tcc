@@ -471,7 +471,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	double cpu_frequency = 400.0; // in Mhz
 	double cpu_clock_multiplier = 2.0;
 	double ext_timer_clock_divisor = 2.0;
-	uint32_t tech_node = 130; // in nm
+	uint32_t tech_node = 65; // in nm
 	double cpu_ipc = 1.0; // in instructions per cycle
 	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
@@ -487,7 +487,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.ext-timer-cycle-time", sc_time(ext_timer_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("cpu.voltage", 1.3 * 1e3); // mV
+	simulator->SetVariable("cpu.voltage", 1.0 * 1e3); // mV
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
 	simulator->SetVariable("cpu.ipc", cpu_ipc);

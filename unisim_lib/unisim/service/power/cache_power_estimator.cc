@@ -75,6 +75,12 @@ const char *Variable<unisim::service::power::CachePowerEstimator::AccessMode>::G
 	return "cache power estimator access mode";
 }
 
+template <>
+unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetBitSize() const
+{
+	return 0;
+}
+
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
