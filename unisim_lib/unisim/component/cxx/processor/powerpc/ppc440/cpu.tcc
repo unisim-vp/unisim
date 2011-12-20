@@ -132,6 +132,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, enable_linux_syscall_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
+	, enable_halt_on(false)
 	, halt_on_addr(0)
 	, halt_on()
 	, max_inst(0xffffffffffffffffULL)
@@ -706,6 +707,7 @@ bool CPU<CONFIG>::EndSetup()
 		if(halt_on_symbol)
 		{
 			halt_on_addr = halt_on_symbol->GetAddress();
+			enable_halt_on = true;
 			if(IsVerboseSetup())
 			{
 				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
@@ -717,6 +719,7 @@ bool CPU<CONFIG>::EndSetup()
 			sstr >> std::hex;
 			if(sstr >> halt_on_addr)
 			{
+				enable_halt_on = true;
 				if(IsVerboseSetup())
 				{
 					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
@@ -1578,7 +1581,7 @@ void CPU<CONFIG>::StepOneInstruction()
 	/* update the instruction counter */
 	instruction_counter++;
 
-	if(unlikely((instruction_counter >= max_inst) || (halt_on_addr && (GetCIA() == halt_on_addr)))) Stop(0);
+	if(unlikely((instruction_counter >= max_inst) || (enable_halt_on && (GetCIA() == halt_on_addr)))) Stop(0);
 	
 	//DL1SanityCheck();
 	//IL1SanityCheck();

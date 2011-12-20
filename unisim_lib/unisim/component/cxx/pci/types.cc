@@ -58,6 +58,12 @@ const char *Variable<PCISpace>::GetDataTypeName() const
 	return "pci space";
 }
 
+template <>
+unsigned int Variable<PCISpace>::GetBitSize() const
+{
+	return 2;
+}
+
 template <> Variable<PCISpace>::operator bool () const {
 	//this should't be implemented 
 	return false; 

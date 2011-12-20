@@ -1055,7 +1055,7 @@ protected:
     /** indicates if the finished instructions require to be reported */
     bool requires_finished_instruction_reporting;
 	
-	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
+	inline bool IsVerboseSetup() const { return verbose_all || verbose_setup; }
 	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
 	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
 	inline bool IsVerboseITLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
@@ -1339,6 +1339,9 @@ private:
 	bool verbose_set_hid1;
 	bool verbose_set_hid2;
 	bool verbose_set_l2cr;
+	bool enable_halt_on;
+	typename CONFIG::address_t halt_on_addr;
+	std::string halt_on;
 	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
@@ -1653,6 +1656,7 @@ private:
 	Parameter<bool> param_verbose_set_hid2;
 	Parameter<bool> param_verbose_set_l2cr;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
+	Parameter<std::string> param_halt_on;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
