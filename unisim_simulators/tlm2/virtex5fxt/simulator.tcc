@@ -567,7 +567,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - Cache/TLB power estimators run-time configuration
 	simulator->SetVariable("il1-power-estimator.cache-size", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_SIZE);
 	simulator->SetVariable("il1-power-estimator.line-size", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE);
-	simulator->SetVariable("il1-power-estimator.associativity", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_ASSOCIATIVITY);
+	simulator->SetVariable("il1-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("il1-power-estimator.rw-ports", 0);
 	simulator->SetVariable("il1-power-estimator.excl-read-ports", 1);
 	simulator->SetVariable("il1-power-estimator.excl-write-ports", 0);
@@ -580,7 +580,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("dl1-power-estimator.cache-size", CONFIG::CPU_CONFIG::IL1_CONFIG::CACHE_SIZE);
 	simulator->SetVariable("dl1-power-estimator.line-size", CONFIG::CPU_CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE);
-	simulator->SetVariable("dl1-power-estimator.associativity", CONFIG::CPU_CONFIG::IL1_CONFIG::CACHE_ASSOCIATIVITY);
+	simulator->SetVariable("dl1-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("dl1-power-estimator.rw-ports", 1);
 	simulator->SetVariable("dl1-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("dl1-power-estimator.excl-write-ports", 0);
@@ -593,7 +593,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("itlb-power-estimator.cache-size", CONFIG::CPU_CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES * (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
 	simulator->SetVariable("itlb-power-estimator.line-size", (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
-	simulator->SetVariable("itlb-power-estimator.associativity", CONFIG::CPU_CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY);
+	simulator->SetVariable("itlb-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("itlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("itlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("itlb-power-estimator.excl-write-ports", 0);
@@ -606,7 +606,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("dtlb-power-estimator.cache-size", CONFIG::CPU_CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES * (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
 	simulator->SetVariable("dtlb-power-estimator.line-size", (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
-	simulator->SetVariable("dtlb-power-estimator.associativity", CONFIG::CPU_CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY);
+	simulator->SetVariable("dtlb-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("dtlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("dtlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("dtlb-power-estimator.excl-write-ports", 0);
@@ -619,7 +619,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("utlb-power-estimator.cache-size", CONFIG::CPU_CONFIG::UTLB_CONFIG::TLB_NUM_ENTRIES * (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
 	simulator->SetVariable("utlb-power-estimator.line-size", (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
-	simulator->SetVariable("utlb-power-estimator.associativity", CONFIG::CPU_CONFIG::UTLB_CONFIG::TLB_ASSOCIATIVITY);
+	simulator->SetVariable("utlb-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("utlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("utlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("utlb-power-estimator.excl-write-ports", 0);
