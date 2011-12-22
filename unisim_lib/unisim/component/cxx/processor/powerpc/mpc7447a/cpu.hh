@@ -1000,6 +1000,10 @@ public:
 	virtual const char *GetArchitectureName() const;
 	string GetObjectFriendlyName(typename CONFIG::address_t addr);
 	string GetFunctionFriendlyName(typename CONFIG::address_t addr);
+	int StringLength(typename CONFIG::address_t addr);
+	std::string ReadString(typename CONFIG::address_t addr, unsigned int count = 0);
+	typename CONFIG::address_t linux_printk_buf_addr;
+	uint32_t linux_printk_buf_size;
 
 	
 	//=====================================================================
@@ -1339,6 +1343,8 @@ private:
 	bool verbose_set_hid1;
 	bool verbose_set_hid2;
 	bool verbose_set_l2cr;
+	bool enable_linux_printk_snooping;
+	bool enable_linux_syscall_snooping;
 	bool enable_halt_on;
 	typename CONFIG::address_t halt_on_addr;
 	std::string halt_on;
@@ -1655,6 +1661,8 @@ private:
 	Parameter<bool> param_verbose_set_hid1;
 	Parameter<bool> param_verbose_set_hid2;
 	Parameter<bool> param_verbose_set_l2cr;
+	Parameter<bool> param_enable_linux_printk_snooping;
+	Parameter<bool> param_enable_linux_syscall_snooping;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Parameter<std::string> param_halt_on;
 

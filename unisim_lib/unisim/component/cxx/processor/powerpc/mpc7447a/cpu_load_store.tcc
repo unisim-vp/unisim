@@ -142,6 +142,27 @@ template <class CONFIG>
 template <bool TRANSLATE_ADDR>
 void CPU<CONFIG>::EmuStore(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
+	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
+	{
+		if(unlikely(enable_linux_printk_snooping))
+		{
+			if(linux_printk_buf_addr && (addr >= linux_printk_buf_addr) && (addr < (linux_printk_buf_addr + linux_printk_buf_size)))
+			{
+				uint32_t i;
+				//cout << "\033[31m";
+				for(i = 0; i < size; i++)
+				{
+					char c = ((const char *) buffer)[i];
+					if(c != 0) {
+							//cerr << c;
+							cout << c;
+					}
+				}
+				//cout << "\033[37m";
+			}
+		}
+	}
+
 	if(unlikely(IsVerboseStore()))
 	{
 		uint32_t i;
