@@ -98,8 +98,8 @@ private:
 
   std::string system_;
   unisim::kernel::service::Parameter<std::string> param_system_;
-  unisim::util::endian::endian_type endianess_;
-  std::string endianess_string_;
+  unisim::util::endian::endian_type endianness_;
+  std::string endianness_string_;
   unisim::kernel::service::Parameter<std::string> param_endian_;
   ADDRESS_TYPE memory_page_size_;
   unisim::kernel::service::Parameter<ADDRESS_TYPE> param_memory_page_size_;

@@ -684,7 +684,7 @@ ExecuteSystemCall(int id)
 }
 
 /**
- * Checks if the endianess of the host and the target system differs.
+ * Checks if the endianness of the host and the target system differs.
  */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool 
@@ -692,10 +692,10 @@ LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 Swap() 
 {
 #if BYTE_ORDER == BIG_ENDIAN
-	if (GetEndianess() == E_BIG_ENDIAN) return false;
+	if (GetEndianness() == E_BIG_ENDIAN) return false;
 	else return true;
 #else
-    if (GetEndianess() == E_BIG_ENDIAN) return true;
+    if (GetEndianness() == E_BIG_ENDIAN) return true;
     else return false;
 #endif
 }
