@@ -72,6 +72,7 @@ public:
 class SimConfig
 {
 public:
+	typedef uint64_t MEMORY_ADDR;
 	static const bool DEBUG_INFORMATION = false;
 	
 	//=========================================================================
@@ -182,6 +183,22 @@ public:
 	//=========================================================================
 
 	typedef unisim::component::cxx::memory::flash::am29::S29GL256PConfig AM29_CONFIG;
+	static const MEMORY_ADDR FLASH_BASE_ADDR = 0xfc000000ULL;
+	static const MEMORY_ADDR FLASH_BYTE_SIZE = 32 * 1024 * 1024; // 32 MB
+
+	//=========================================================================
+	//===                 BRAM compile time configuration                   ===
+	//=========================================================================
+
+	static const MEMORY_ADDR BRAM_BASE_ADDR = 0xfffc0000ULL;
+	static const MEMORY_ADDR BRAM_BYTE_SIZE = 256 * 1024; // 256 KB
+
+	//=========================================================================
+	//===                 RAM compile time configuration                    ===
+	//=========================================================================
+
+	static const MEMORY_ADDR RAM_BASE_ADDR = 0x00000000ULL;
+	static const MEMORY_ADDR RAM_BYTE_SIZE = 256 * 1024 * 1024; // 256 MB
 
 	//=========================================================================
 	//===           DCR controller compile time configuration               ===

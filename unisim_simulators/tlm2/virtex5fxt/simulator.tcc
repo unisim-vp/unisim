@@ -503,32 +503,63 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
-	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
-	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
-	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xfffc0000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfffc0000\""); // 256 KB XPS BRAM
-	simulator->SetVariable("mplb.mapping_4", "range_start=\"0x84000000\" range_end=\"0x8400ffff\" output_port=\"4\" translation=\"0x84000000\""); // XPS UART Lite
-	simulator->SetVariable("mplb.mapping_5", "range_start=\"0x81460000\" range_end=\"0x8146ffff\" output_port=\"5\" translation=\"0x81460000\""); // GPIO DIP SWITCHES 8BIT
-	simulator->SetVariable("mplb.mapping_6", "range_start=\"0x81400000\" range_end=\"0x8140ffff\" output_port=\"6\" translation=\"0x81400000\""); // GPIO LEDS 8BIT
-	simulator->SetVariable("mplb.mapping_7", "range_start=\"0x81420000\" range_end=\"0x8142ffff\" output_port=\"7\" translation=\"0x81420000\""); // GPIO 5 LEDS POSITIONS
-	simulator->SetVariable("mplb.mapping_8", "range_start=\"0x81440000\" range_end=\"0x8144ffff\" output_port=\"8\" translation=\"0x81440000\""); // GPIO PUSH BUTTONS 5BIT
 	
+	std::stringstream sstr_intc_mapping;
+	sstr_intc_mapping << "range_start=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"0\" translation=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_0", sstr_intc_mapping.str().c_str()); // XPS IntC
+
+	std::stringstream sstr_timer_mapping;
+	sstr_timer_mapping << "range_start=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"1\" translation=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_1", sstr_timer_mapping.str().c_str()); // XPS Timer/Counter
+	
+	std::stringstream sstr_flash_mapping;
+	sstr_flash_mapping << "range_start=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec << "\" output_port=\"2\" translation=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_2", sstr_flash_mapping.str().c_str()); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
+	
+	std::stringstream sstr_bram_mapping;
+	sstr_bram_mapping << "range_start=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec << "\" output_port=\"3\" translation=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_3", sstr_bram_mapping.str().c_str()); // 256 KB XPS BRAM
+
+	std::stringstream sstr_uart_lite_mapping;
+	sstr_uart_lite_mapping << "range_start=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"4\" translation=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_4", sstr_uart_lite_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_dip_switches_8bit_mapping;
+	sstr_gpio_dip_switches_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"5\" translation=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_5", sstr_gpio_dip_switches_8bit_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_leds_8bit_mapping;
+	sstr_gpio_leds_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"6\" translation=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_6", sstr_gpio_leds_8bit_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_5_leds_positions_mapping;
+	sstr_gpio_5_leds_positions_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"7\" translation=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_7", sstr_gpio_5_leds_positions_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_push_buttons_5bit_mapping;
+	sstr_gpio_push_buttons_5bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"8\" translation=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable("mplb.mapping_8", sstr_gpio_push_buttons_5bit_mapping.str().c_str()); // XPS Timer/Counter
+
 	// - Loader memory router
-	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,bram-effective-to-physical-address-translator:0xfffc0000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
+	std::stringstream sstr_loader_mapping;
+	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::RAM_BASE_ADDR + CONFIG::RAM_BYTE_SIZE - 1) << std::dec;
+	sstr_loader_mapping << ",bram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec;
+	sstr_loader_mapping << ",flash-effective-to-physical-address-translator:0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec;
+	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str()); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
 	//  - RAM
 	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("ram.org", 0x00000000UL);
-	simulator->SetVariable("ram.bytesize", 256 * 1024 * 1024); // 256 MB
+	simulator->SetVariable("ram.org", CONFIG::RAM_BASE_ADDR);
+	simulator->SetVariable("ram.bytesize", CONFIG::RAM_BYTE_SIZE);
 
 	//  - BRAM
 	simulator->SetVariable("bram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("bram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("bram.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("bram.org", 0xfffc0000UL);
-	simulator->SetVariable("bram.bytesize", 256 * 1024); // 256 KB
+	simulator->SetVariable("bram.org", CONFIG::BRAM_BASE_ADDR);
+	simulator->SetVariable("bram.bytesize", CONFIG::BRAM_BYTE_SIZE);
 	
 	//  - Interrupt controller
 	simulator->SetVariable("intc.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
@@ -546,8 +577,8 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("gpio-push-buttons-5bit.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - Flash
-	simulator->SetVariable("flash.org", 0xfc000000UL);
-	simulator->SetVariable("flash.bytesize", 32 * 1024 * 1024); // 32 MB
+	simulator->SetVariable("flash.org", CONFIG::FLASH_BASE_ADDR);
+	simulator->SetVariable("flash.bytesize", CONFIG::FLASH_BYTE_SIZE);
 	simulator->SetVariable("flash.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	
 	//  - Capture Trigger stubs

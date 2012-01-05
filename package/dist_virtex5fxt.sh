@@ -896,6 +896,7 @@ chmod +x Makefile.cross
 
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
+	chmod +x "${CONFIGURE_CROSS}"
 fi  # has_to_build_configure_cross = "yes"
 
 # GENISSLIB

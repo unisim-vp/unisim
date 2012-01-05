@@ -157,6 +157,8 @@ param_verbose_tlm_debug(0),
 verbose_memory_interface(false),
 param_verbose_memory_interface(0)
 {
+	param_port_buffer_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	if (VERBOSE)
 	{
 		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose_all", this, verbose_all, "Activate all the verbose options");
