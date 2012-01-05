@@ -35,6 +35,9 @@
 #ifndef __UNISIM_SERVICE_OS_OS_LINUX_LINUX_OS_TCC__
 #define __UNISIM_SERVICE_OS_OS_LINUX_LINUX_OS_TCC__
 
+#include <string>
+#include <sstream>
+
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
@@ -42,7 +45,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
-#include "unisim/service/os/linux_os/linux_os_exception.hh"
+// #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/likely/likely.hh"
@@ -57,38 +60,13 @@ namespace service {
 namespace os {
 namespace os_linux {
 
-//using std::runtime_error;
-//using std::string;
-//using std::stringstream;
-//using std::hex;
-//using std::dec;
-//using std::endl;
-//using std::flush;
-//using std::cout;
-//using std::cerr;
-//using unisim::kernel::service::Service;
-//using unisim::kernel::service::Client;
-//using unisim::kernel::service::ServiceImport;
-//using unisim::kernel::service::ServiceExport;
-//using unisim::kernel::service::Parameter;
-//using unisim::kernel::logger::DebugInfo;
-//using unisim::kernel::logger::EndDebugInfo;
-//using unisim::kernel::logger::DebugWarning;
-//using unisim::kernel::logger::EndDebugWarning;
-//using unisim::kernel::logger::DebugError;
-//using unisim::kernel::logger::EndDebugError;
-//using unisim::kernel::logger::EndDebug;
-//using unisim::service::interfaces::Loader;
-//using unisim::service::interfaces::Memory;
-//using unisim::service::interfaces::MemoryInjection;
-//using unisim::service::interfaces::Registers;
-//using unisim::util::endian::endian_type;
-//using unisim::util::debug::Register;
-//using unisim::util::endian::E_BIG_ENDIAN;
-//using unisim::util::endian::E_LITTLE_ENDIAN;
-//using unisim::util::endian::Host2BigEndian;
-//using unisim::util::endian::Host2LittleEndian;
-//using unisim::util::endian::Host2Target;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebug;
 
 /** Constructor. */
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -97,15 +75,17 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     : unisim::kernel::service::Object(name, parent)
     , unisim::kernel::service::Service<unisim::service::interfaces::LinuxOS>(
         name, parent)
-    , unisim::kernel::service::Service<unisim::service::interfaces::Loader>(
-        name, parent)
+    //, unisim::kernel::service::Service<unisim::service::interfaces::Loader>(
+    //    name, parent)
     , unisim::kernel::service::Client<
       unisim::service::interfaces::Memory<ADDRESS_TYPE> >(name, parent)
     , unisim::kernel::service::Client<
-      unisim::servcie::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
+      unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
     , unisim::kernel::service::Client<unisim::service::interfaces::Registers>(
         name, parent)
-    , loader_export_("loader-export", this)
+    , unisim::util::os::linux_os::LinuxMemoryInterface<ADDRESS_TYPE>()
+    , unisim::util::os::linux_os::LinuxRegisterInterface<PARAMETER_TYPE>()
+    // , loader_export_("loader-export", this)
     , linux_os_export_("linux-os-export", this)
     , memory_import_("memory-import", this)
     , memory_injection_import_("memory-injection-import", this)
@@ -125,22 +105,26 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     , stack_base_(0x4000000UL)
     , param_stack_base_("stack-base", this, stack_base_,
                         "The stack base address used for the load and execution"
-                        " of the linux application"),
+                        " of the linux application")
     , stack_size_(0x800000UL)
     , param_stack_size_("stack-size", this, stack_size_,
                         "The stack size used for the load and execution of the"
                         " linux application. The top of the stack will be"
-                        " stack-base + stack-size."),
+                        " stack-base + stack-size.")
     , max_environ_(0)
     , param_max_environ_("max-environ", this, max_environ_,
                          "The maximum size of the program environment during"
-                         " its execution."),
+                         " its execution.")
+    , binary_()
+    , param_binary_("binary", this, binary_,
+                    "The binary to execute on the target simulator. Usually it"
+                    " is the same value than the argv[1] parameter.")
     , argc_(0)
     , param_argc_("argc", this, argc_,
                   "Number of commands in the program execution line (usually at"
                   " least one which is the name of the program executed). The"
                   " different tokens can be set up with the parameters"
-                  " argv[<n>] where <n> can go up to argc - 1."),
+                  " argv[<n>] where <n> can go up to argc - 1.")
     , argv_()
     , param_argv_()
     , apply_host_environment_(true)
@@ -148,7 +132,7 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
                                     apply_host_environment_,
                                     "Wether to apply the host environment on"
                                     " the target simulator or use the provided"
-                                    " envc and envp."),
+                                    " envc and envp.")
     , envc_(0)
     , param_envc_("envc", this, envc_,
                   "Number of environment variables defined for the program"
@@ -198,24 +182,26 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     argv_name << "argv[" << i << "]";
     argv_desc << "The '" << i << "' token in the command line.";
     argv_val << "Undefined argv[" << i << "] value";
-    argv.push_back(new string(argv_val.str().c_str()));
-    param_argv.push_back(
-        new Parameter<string>(argv_name.str().c_str(), this, 
-                              *(argv[i]), argv_desc.str().c_str()));
+    argv_.push_back(new std::string(argv_val.str().c_str()));
+    param_argv_.push_back(
+        new unisim::kernel::service::Parameter<std::string>(
+            argv_name.str().c_str(), this, *(argv_[i]),
+            argv_desc.str().c_str()));
   }
   //param_argc.AddListener(this);
   //param_argc.NotifyListeners();
 
-  param_envc.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+  param_envc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   for (unsigned int i = 0; i < ((envc_ == 0)?1:envc_); i++) {
     std::stringstream envp_name, envp_desc, envp_val;
     envp_name << "envp[" << i << "]";
     envp_desc << "The '" << i << "' token in the environment.";
     envp_val << "Undefined envp[" << i << "] value";
-    envp.push_back(new string(envp_val.str().c_str()));
-    param_envp.push_back(
-        new Parameter<string>(envp_name.str().c_str(), this,
-                              *(envp[i]), envp_desc.str().c_str()));
+    envp_.push_back(new std::string(envp_val.str().c_str()));
+    param_envp_.push_back(
+        new unisim::kernel::service::Parameter<std::string>(
+            envp_name.str().c_str(), this, *(envp_[i]),
+            envp_desc.str().c_str()));
   }
   //param_envc.AddListener(this);
   //param_envc.NotifyListeners();
@@ -265,138 +251,162 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   // set up the different linuxlib parameters
   linuxlib_.SetVerbose(true);
 
+  // set the linuxlib command line
+  if (argc_ != 0) {
+    std::vector<std::string> cmdline;
+    for (unsigned int i = 0; i < argc_; i++)
+      cmdline.push_back(*argv_[i]);
+    bool success = linuxlib_.SetCommandLine(cmdline);
+    if (!success) {
+      logger_ << DebugError
+          << "Could not set the command line."
+          << EndDebugError;
+      return false;
+    }
+  } else {
+    logger_ << DebugError
+        << "No command line was given for the target simulator."
+        << EndDebugError;
+    return false;
+  }
+
+  // set the linuxlib environment
+  if (envc_ != 0) {
+    std::vector<std::string> envparms;
+    for (unsigned int i = 0; i < envc_; i++)
+      envparms.push_back(*envp_[i]);
+    bool success = linuxlib_.SetEnvironment(envparms);
+    if (!success) {
+      logger_ << DebugError
+          << "Could not set the application environment."
+          << EndDebugError;
+      return false;
+    }
+  }
+
+  // set the linuxlib option to set the target environment with the host
+  // environment
+  linuxlib_.SetApplyHostEnvironment(apply_host_environment_);
+
+  // set the binary that will be simulated in the target simulator
+  {
+    bool success = linuxlib_.AddLoadFile(binary_.c_str());
+    if (!success) {
+      logger_ << DebugError
+          << "Could not set the binary file to simulate on the target"
+          << " simulator." << EndDebugError;
+      return false;
+    }
+  }
+
+  // set the system type of the target simulator (should be the same than the
+  // binary)
+  {
+    bool success = linuxlib_.SetSystemType(system_.c_str());
+    if (!success) {
+      logger_ << DebugError
+          << "System type not supported (\"" << system_ << "\")."
+          << EndDebugError;
+      return false;
+    }
+  }
+
+  // set the endianness of the target simulator
+  linuxlib_.SetEndianness(endianness_);
+  // .. the stack base address
+  linuxlib_.SetStackBase(stack_base_);
+  // .. the stack size
+  linuxlib_.SetStackSize(stack_size_);
+  // .. and memory page size
+  linuxlib_.SetMemoryPageSize(memory_page_size_);
+  // .. and the uname information
+  linuxlib_.SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
+                     utsname_release_.c_str(), utsname_version_.c_str(),
+                     utsname_machine_.c_str(), utsname_domainname_.c_str());
+
+  // now it is time to try to run the initialization of the linuxlib
+  {
+    bool success = linuxlib_.Load();
+    if (!success) {
+      logger_ << DebugError
+          << "Could not initialize the linux support with the given parameters"
+          << ", please check them."
+          << EndDebugError;
+      return false;
+    }
+  }
+
+  // TODO set the memory and the register interface for the linuxlib
+
   return true;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLoad() {
-  if (!memory_import_) {
-    logger_ << DebugError
-        << memory_import_.GetName() << " is not connected" << std::endl
-        << LOCATION << EndDebugError;
-    return false;
-  }
-
-  if (!memory_injection_import_) {
-    logger_ << DebugError
-        << memory_injection_import_.GetName() << " is not connected"
-        << std::endl << LOCATION <<  EndDebugError;
-    return false;
-  }
-
-  if (!registers_import_) {
-    logger_ << DebugError
-        << registers_import_.GetName() << " is not connected" << std::endl
-        << LOCATION << EndDebugError;
-    return false;
-  }
-
-  return true;
-}
-
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOS() {
-  return false;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupBlob() {
-  return false;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupBlobARM() {
-  return false;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupBlobPPC() {
-  return false;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLoadARM() {
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLoadPPC() {
-  return false;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
-  return false;
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC() {
-  return false;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(
     unisim::kernel::service::ServiceExportBase *srv_export) {
-  if ( srv_export == &loader_export ) {
-    if ( !SetupLoad() ) {
-      logger << DebugError
-          << "Failed the setup of the load_export."
+  //if ( srv_export == &loader_export ) {
+    //return true;
+  //}
+
+  if ( srv_export == &linux_os_export_ ) {
+    if (!linuxlib_.SetupTarget()) {
+      logger_ << DebugError << "Could not setup the linux system"
           << EndDebugError;
       return false;
     }
     return true;
   }
 
-  if ( srv_export == &linux_os_export ) {
-    if ( !SetupLinuxOS() ) {
-      logger << DebugError
-          << "Failed to setup of the linux_os_export."
-          << EndDebugError;
-      return false;
-    }
-    return true;
-  }
-
-  logger << DebugError << "Internal error" << EndDebugError;
+  logger_ << DebugError << "Internal error" << EndDebugError;
 
   return false;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-EndSetup()
-{
-	if ( (system == "arm") || (system == "arm-eabi") )
-	{
-		if ( !LoadARM() )
-		{
-			logger << DebugError
-				<< "Failed the ARM setup."
-				<< EndDebugError;
-			return false;
-		}
-		return true;
-	}
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::EndSetup() {
+  return true;
+  //if ( (system_.compare("arm") == 0) || (system_.compare("arm-eabi") == 0) )
+  //{
+    //if ( !LoadARM() )
+    //{
+      //logger << DebugError
+        //<< "Failed the ARM setup."
+        //<< EndDebugError;
+      //return false;
+    //}
+    //return true;
+  //}
 
-	if ( system == "powerpc" )
-	{
-		if ( !LoadPPC() )
-		{
-			logger << DebugError
-				<< "Failed the PowerPC setup."
-				<< EndDebugError;
-			return false;
-		}
-		return true;
-	}
-	
-	logger << DebugError
-		<< "Unknown system to load (supported arm and powerpc)."
-		<< EndDebugError;
-	return false;
+  //if ( system_.compare("powerpc") == 0 )
+  //{
+    //if ( !LoadPPC() )
+    //{
+      //logger << DebugError
+        //<< "Failed the PowerPC setup."
+        //<< EndDebugError;
+      //return false;
+    //}
+    //return true;
+  //}
+  
+  //logger << DebugError
+    //<< "Unknown system to load (supported arm and powerpc)."
+    //<< EndDebugError;
+  //return false;
 }
 
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
+  linuxlib_stream_.str("");
+  linuxlib_.ExecuteSystemCall(id);
+  if (!linuxlib_stream_.str().empty()) {
+    logger_ << DebugInfo
+        << linuxlib_stream_.str()
+        << EndDebugInfo;
+  }
+}
+
+#if 0
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
@@ -2805,6 +2815,9 @@ GetEndianness()
 //	return cpu_arm_linux_os_import->WriteMemory(addr, buffer, size);
 //}
 //
+
+#endif
+
 } // end of os_linux namespace
 } // end of os namespace
 } // end of service namespace

@@ -479,6 +479,35 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
+  if (is_load_) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.ExecuteSystemCall): "
+        << "Trying to execute system call with id " << id << " while the linux "
+        << "emulation has not been correctly loaded." << std::endl;
+    return;
+  }
+
+  int translated_id = GetSyscallNumber(id);
+
+  if (HasSyscall(translated_id)) {
+    current_syscall_id_ = translated_id;
+    current_syscall_name_ = syscall_name_assoc_map_[translated_id];
+    if (unlikely(verbose_))
+      (*logger_)
+          << "Executing syscall(name = " << current_syscall_name_ << ";"
+          << " id = " << translated_id << ";"
+          << " unstranslated id = " << id << ")" << std::endl;
+    syscall_t y = syscall_impl_assoc_map_[translated_id];
+    (this->*y)();
+  } else {
+    (*logger_)
+        << "Could not find system call id " << id << " (translated id = "
+        << translated_id << "), aborting system call "
+        << "execution." << std::endl;
+  }
+}
+
 //template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 //bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapRegisters() {
   //typedef std::vector<unisim::util::debug::Register *>::iterator RegIterator;

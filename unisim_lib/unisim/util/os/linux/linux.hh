@@ -171,6 +171,10 @@ class Linux {
   //          if the system has not been successfully loaded.
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const GetBlob() const;
 
+  // Executes the given system call id depending on the architecture the linux
+  // emulation is working on.
+  void ExecuteSystemCall(int id);
+
  private:
   bool is_load_; // true if a program has been successfully loaded, false
                  // otherwise
