@@ -122,6 +122,12 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, killed(false)
 	, trap(false)
 	, synched(false)
+
+	, watchpoint_hit(NULL)
+	, watchpoint_hit_addr(-1)
+	, watchpoint_hit_size(0)
+
+
 	, breakpoint_registry()
 	, watchpoint_registry()
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
@@ -340,6 +346,9 @@ void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRE
 
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
+		watchpoint_hit = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
+		watchpoint_hit_addr = addr;
+		watchpoint_hit_size = size;
 
 		trap = true;
 		synched = false;
@@ -1210,18 +1219,21 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 {
 	string packet("T05");
 
-	if(pc_reg)
-	{
-		std::stringstream sstr;
-		string hex;
-		ADDRESS val = (ADDRESS) *pc_reg;
-		Number2HexString((uint8_t*) &val, pc_reg->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+	if (watchpoint_hit != NULL) {
 
-		sstr << std::hex << pc_reg_index;
+		std::stringstream sstr;
+		if (watchpoint_hit->GetMemoryAccessType() == MemoryAccessReporting<ADDRESS>::MAT_READ) {
+			sstr << "rwatch";
+		} else {
+			sstr << "watch";
+		}
+		sstr << ":" << std::hex;
+		sstr << watchpoint_hit_addr;
+
 		packet += sstr.str();
-		packet += ":";
-		packet += hex;
 		packet += ";";
+
+		watchpoint_hit = NULL;
 	}
 
 	return PutPacket(packet);
