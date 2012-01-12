@@ -485,7 +485,7 @@ public:
 
 protected:
 
-	bool assign(TYPE storage) {
+	bool WriteBack(TYPE storage) {
 
 		if (m_callback.get() != NULL) {
 
