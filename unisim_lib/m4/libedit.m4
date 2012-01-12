@@ -1,6 +1,6 @@
 ## UNISIM_CHECK_LIBEDIT
 ## Checks if the libedit library (Port of NetBSD alternative 'editline' to GNU GPL 'readline') is installed
-## Does not take parameters
+## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_LIBEDIT], [
     # Check if libedit path has been overloaded
@@ -16,8 +16,8 @@ AC_DEFUN([UNISIM_CHECK_LIBEDIT], [
     AC_CHECK_HEADER(editline/readline.h, broken_libedit=no, broken_libedit=yes)
 
     # Check for functions readline and add_history in libedit
-    AC_CHECK_LIB(edit, readline,
-    AC_CHECK_LIB(edit, add_history, broken_libedit=no,
+    UNISIM_CHECK_LIB(edit, readline, $1,
+    UNISIM_CHECK_LIB(edit, add_history, $1, broken_libedit=no,
     broken_libedit=yes),
     broken_libedit=yes)
 	

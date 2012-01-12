@@ -1,6 +1,6 @@
 ## UNISIM_CHECK_SDL
 ## Checks if the SDL library is installed
-## Does not take parameters
+## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_SDL], [
     # Check if SDL path has been overloaded
