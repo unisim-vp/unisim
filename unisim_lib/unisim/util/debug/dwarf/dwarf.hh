@@ -85,6 +85,8 @@ public:
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
+	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
+	const DWARF_RuleMatrix<MEMORY_ADDR> *GetRuleMatrix(MEMORY_ADDR pc) const;
 
 private:
 	endian_type endianness;

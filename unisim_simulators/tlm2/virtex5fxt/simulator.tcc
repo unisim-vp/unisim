@@ -242,15 +242,15 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
 	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
 	
-	(*mplb->init_socket[0])(intc->slave_sock);      // MPLB <-> INTC
-	(*mplb->init_socket[1])(timer->slave_sock);     // MPLB <-> TIMER
-	(*mplb->init_socket[2])(flash->slave_sock);     // MPLB <-> FLASH
-	(*mplb->init_socket[3])(bram->slave_sock);      // MPLB <-> BRAM
-	(*mplb->init_socket[4])(uart_lite->slave_sock); // MPLB <-> UART Lite
-	(*mplb->init_socket[5])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
-	(*mplb->init_socket[6])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
-	(*mplb->init_socket[7])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
-	(*mplb->init_socket[8])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
+	(*mplb->init_socket[CONFIG::INTC_CONFIG::MPLB_PORT])(intc->slave_sock);      // MPLB <-> INTC
+	(*mplb->init_socket[CONFIG::TIMER_CONFIG::MPLB_PORT])(timer->slave_sock);     // MPLB <-> TIMER
+	(*mplb->init_socket[CONFIG::FLASH_MPLB_PORT])(flash->slave_sock);     // MPLB <-> FLASH
+	(*mplb->init_socket[CONFIG::BRAM_MPLB_PORT])(bram->slave_sock);      // MPLB <-> BRAM
+	(*mplb->init_socket[CONFIG::UART_LITE_CONFIG::MPLB_PORT])(uart_lite->slave_sock); // MPLB <-> UART Lite
+	(*mplb->init_socket[CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
+	(*mplb->init_socket[CONFIG::GPIO_LEDS_8BIT_CONFIG::MPLB_PORT])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
+	(*mplb->init_socket[CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
+	(*mplb->init_socket[CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
 	
 	for(irq = 0; irq < CONFIG::INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
@@ -315,15 +315,15 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	crossbar->mci_memory_import >> mci->memory_export;
 	crossbar->mplb_memory_import >> mplb->memory_export;
 	mci->memory_import >> ram->memory_export;
-	(*mplb->memory_import[0]) >> intc->memory_export;
-	(*mplb->memory_import[1]) >> timer->memory_export;
-	(*mplb->memory_import[2]) >> flash->memory_export;
-	(*mplb->memory_import[3]) >> bram->memory_export;
-	(*mplb->memory_import[4]) >> uart_lite->memory_export;
-	(*mplb->memory_import[5]) >> gpio_dip_switches_8bit->memory_export;
-	(*mplb->memory_import[6]) >> gpio_leds_8bit->memory_export;
-	(*mplb->memory_import[7]) >> gpio_5_leds_positions->memory_export;
-	(*mplb->memory_import[8]) >> gpio_push_buttons_5bit->memory_export;
+	(*mplb->memory_import[CONFIG::INTC_CONFIG::MPLB_PORT]) >> intc->memory_export;
+	(*mplb->memory_import[CONFIG::TIMER_CONFIG::MPLB_PORT]) >> timer->memory_export;
+	(*mplb->memory_import[CONFIG::FLASH_MPLB_PORT]) >> flash->memory_export;
+	(*mplb->memory_import[CONFIG::BRAM_MPLB_PORT]) >> bram->memory_export;
+	(*mplb->memory_import[CONFIG::UART_LITE_CONFIG::MPLB_PORT]) >> uart_lite->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT]) >> gpio_dip_switches_8bit->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_LEDS_8BIT_CONFIG::MPLB_PORT]) >> gpio_leds_8bit->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT]) >> gpio_5_leds_positions->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT]) >> gpio_push_buttons_5bit->memory_export;
 	cpu->loader_import >> loader->loader_export;
 	
 	if(enable_inline_debugger)
@@ -504,41 +504,61 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	
+	unsigned int mapping_num = 0;
+	
+	std::stringstream sstr_intc_mapping_name;
+	sstr_intc_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_intc_mapping;
-	sstr_intc_mapping << "range_start=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"0\" translation=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_0", sstr_intc_mapping.str().c_str()); // XPS IntC
+	sstr_intc_mapping << "range_start=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::INTC_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_intc_mapping_name.str().c_str(), sstr_intc_mapping.str().c_str()); // XPS IntC
 
+	std::stringstream sstr_timer_mapping_name;
+	sstr_timer_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_timer_mapping;
-	sstr_timer_mapping << "range_start=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"1\" translation=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_1", sstr_timer_mapping.str().c_str()); // XPS Timer/Counter
+	sstr_timer_mapping << "range_start=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::TIMER_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_timer_mapping_name.str().c_str(), sstr_timer_mapping.str().c_str()); // XPS Timer/Counter
 	
+	std::stringstream sstr_flash_mapping_name;
+	sstr_flash_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_flash_mapping;
-	sstr_flash_mapping << "range_start=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec << "\" output_port=\"2\" translation=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_2", sstr_flash_mapping.str().c_str()); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
+	sstr_flash_mapping << "range_start=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec << "\" output_port=\"" << CONFIG::FLASH_MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_flash_mapping_name.str().c_str(), sstr_flash_mapping.str().c_str()); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
 	
+	std::stringstream sstr_bram_mapping_name;
+	sstr_bram_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_bram_mapping;
-	sstr_bram_mapping << "range_start=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec << "\" output_port=\"3\" translation=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_3", sstr_bram_mapping.str().c_str()); // 256 KB XPS BRAM
+	sstr_bram_mapping << "range_start=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec << "\" output_port=\"" << CONFIG::BRAM_MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_bram_mapping_name.str().c_str(), sstr_bram_mapping.str().c_str()); // 256 KB XPS BRAM
 
+	std::stringstream sstr_uart_lite_mapping_name;
+	sstr_uart_lite_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_uart_lite_mapping;
-	sstr_uart_lite_mapping << "range_start=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"4\" translation=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_4", sstr_uart_lite_mapping.str().c_str()); // XPS Timer/Counter
+	sstr_uart_lite_mapping << "range_start=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::UART_LITE_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_uart_lite_mapping_name.str().c_str(), sstr_uart_lite_mapping.str().c_str()); // XPS Timer/Counter
 
+	std::stringstream sstr_gpio_dip_switches_8bit_mapping_name;
+	sstr_gpio_dip_switches_8bit_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_gpio_dip_switches_8bit_mapping;
-	sstr_gpio_dip_switches_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"5\" translation=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_5", sstr_gpio_dip_switches_8bit_mapping.str().c_str()); // XPS Timer/Counter
+	sstr_gpio_dip_switches_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_dip_switches_8bit_mapping_name.str().c_str(), sstr_gpio_dip_switches_8bit_mapping.str().c_str()); // XPS Timer/Counter
 
+	std::stringstream sstr_gpio_leds_8bit_mapping_name;
+	sstr_gpio_leds_8bit_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_gpio_leds_8bit_mapping;
-	sstr_gpio_leds_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"6\" translation=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_6", sstr_gpio_leds_8bit_mapping.str().c_str()); // XPS Timer/Counter
+	sstr_gpio_leds_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_LEDS_8BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_leds_8bit_mapping_name.str().c_str(), sstr_gpio_leds_8bit_mapping.str().c_str()); // XPS Timer/Counter
 
+	std::stringstream sstr_gpio_5_leds_positions_mapping_name;
+	sstr_gpio_5_leds_positions_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_gpio_5_leds_positions_mapping;
-	sstr_gpio_5_leds_positions_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"7\" translation=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_7", sstr_gpio_5_leds_positions_mapping.str().c_str()); // XPS Timer/Counter
+	sstr_gpio_5_leds_positions_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_5_leds_positions_mapping_name.str().c_str(), sstr_gpio_5_leds_positions_mapping.str().c_str()); // XPS Timer/Counter
 
+	std::stringstream sstr_gpio_push_buttons_5bit_mapping_name;
+	sstr_gpio_push_buttons_5bit_mapping_name << "mplb.mapping_" << mapping_num++;
 	std::stringstream sstr_gpio_push_buttons_5bit_mapping;
-	sstr_gpio_push_buttons_5bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"8\" translation=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\"";
-	simulator->SetVariable("mplb.mapping_8", sstr_gpio_push_buttons_5bit_mapping.str().c_str()); // XPS Timer/Counter
+	sstr_gpio_push_buttons_5bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_push_buttons_5bit_mapping_name.str().c_str(), sstr_gpio_push_buttons_5bit_mapping.str().c_str()); // XPS Timer/Counter
 
 	// - Loader memory router
 	std::stringstream sstr_loader_mapping;

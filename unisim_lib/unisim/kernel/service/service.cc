@@ -2003,8 +2003,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	// parse command line arguments
 	int state = 0;
+	int arg_num;
 	char **arg;
-	for(arg = argv + 1; *arg != 0 && state != -1;)
+	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
 	{
 		switch(state)
 		{
@@ -2022,14 +2023,17 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 							{
 								case 's':
 									arg++;
+									arg_num++;
 									state = 1;
 									break;
 								case 'c':
 									arg++;
+									arg_num++;
 									state = 2;
 									break;
 								case 'g':
 									arg++;
+									arg_num++;
 									state = 3;
 									break;
 								case 'l':
@@ -2038,23 +2042,28 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									break;
 								case 'v':
 									arg++;
+									arg_num++;
 									enable_version = true;
 									break;
 								case 'h':
 									arg++;
+									arg_num++;
 									enable_help = true;
 									break;
 								case 'w':
 									arg++;
+									arg_num++;
 									enable_warning = true;
 									break;
 								case 'd':
 									arg++;
+									arg_num++;
 									state = 4;
 									break;
 								case 'p':
 									has_share_data_dir_hint = true;
 									arg++;
+									arg_num++;
 									state = 5;
 									break;
 								default:
@@ -2072,27 +2081,32 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			case 1:
 				// skipping set variable
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 2:
 				// skipping loading variables
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 3:
 				// skipping get config
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 4:
 				// skipping generate doc
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 5:
 				// getting the share data path
 				shared_data_dir_hint = *arg;
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			default:
@@ -2133,7 +2147,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// char **arg;
 	state = 0;
 	
-	for(arg = argv + 1; *arg != 0 && state != -1;)
+	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
 	{
 		switch(state)
 		{
@@ -2151,30 +2165,37 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 							{
 								case 's':
 									arg++;
+									arg_num++;
 									state = 1;
 									break;
 								case 'c':
 									arg++;
+									arg_num++;
 									state = 2;
 									break;
 								case 'g':
 									arg++;
+									arg_num++;
 									state = 3;
 									break;
 								case 'l':
 									arg++;
+									arg_num++;
 									list_parms = true;
 									break;
 								case 'v':
 									arg++;
+									arg_num++;
 									enable_version = true;
 									break;
 								case 'h':
 									arg++;
+									arg_num++;
 									enable_help = true;
 									break;
 								case 'w':
 									arg++;
+									arg_num++;
 									enable_warning = true;
 									if(!LoadBuiltInConfig)
 									{
@@ -2193,10 +2214,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									break;
 								case 'd':
 									arg++;
+									arg_num++;
 									state = 4;
 									break;
 								case 'p':
 									arg++;
+									arg_num++;
 									state = 5;
 									break;
 								default:
@@ -2232,6 +2255,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					}
 				}
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 2:
@@ -2244,22 +2268,26 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
 				}
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 3:
 				get_config = true;
 				get_config_filename = *arg;
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 4:
 				generate_doc = true;
 				generate_doc_filename = *arg;
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 5:
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			default:
