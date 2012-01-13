@@ -75,6 +75,10 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
+	, time_start(0)
+	, spent_time(0)
+	, stat_spent_time("simulation-time", 0, spent_time, "Simulation time")
+
 {
 
 	param_endian = new Parameter<string>("endian", 0, endian, "Target endianness");
@@ -84,6 +88,8 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
+
+	stat_spent_time.setCallBack(this, 0, NULL, &CallBackObject::read);
 
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -582,6 +588,23 @@ void Simulator::Stop(Object *object, int _exit_status)
 	wait();
 }
 
+bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	switch (offset) {
+		case 0: {
+			*((double *) buffer) = host_time->GetTime() - time_start;
+			return true;
+		}
+
+	}
+
+	return false;
+}
+
+bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+	return false;
+}
+
 void Simulator::Run() {
 
 	// If no filename has been specified, abort simulation
@@ -610,7 +633,8 @@ void Simulator::Run() {
 
 	cerr << "Starting simulation ..." << endl;
 
-	double time_start = host_time->GetTime();
+//	double time_start = host_time->GetTime();
+	time_start = host_time->GetTime();
 
 	EnableDebug();
 	void (*prev_sig_int_handler)(int) = 0;
@@ -651,7 +675,8 @@ void Simulator::Run() {
 
 	if (dump_statistics) {
 		double time_stop = host_time->GetTime();
-		double spent_time = time_stop - time_start;
+//		double spent_time = time_stop - time_start;
+		spent_time = time_stop - time_start;
 
 		cerr << "Simulation statistics:" << endl;
 		DumpStatistics(cerr);

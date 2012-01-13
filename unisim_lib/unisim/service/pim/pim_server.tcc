@@ -1811,6 +1811,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		sstr << "simulated time" << ":" << GetSimTime()*1000 << " ms";
 
 		for (iter = lst.begin(); iter != lst.end(); iter++) {
+
 			sstr << ";" << (*iter)->GetName() << ":" << (string) *(*iter);
 		}
 

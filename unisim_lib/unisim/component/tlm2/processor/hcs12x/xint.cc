@@ -339,21 +339,21 @@ bool XINT::BeginSetup() {
 
 	unisim::kernel::service::Register<uint8_t> *ivbr_var = new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
 	extended_registers_registry.push_back(ivbr_var);
-	ivbr_var->setCallBack(this, IVBR, &CallBackObject::write);
+	ivbr_var->setCallBack(this, IVBR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.INT_XGPRIO",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
 
 	unisim::kernel::service::Register<uint8_t> *int_xgprio_var = new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
 	extended_registers_registry.push_back(int_xgprio_var);
-	int_xgprio_var->setCallBack(this, INT_XGPRIO, &CallBackObject::write);
+	int_xgprio_var->setCallBack(this, INT_XGPRIO, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.INT_CFADDR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
 
 	unisim::kernel::service::Register<uint8_t> *int_cfaddr_var = new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
 	extended_registers_registry.push_back(int_cfaddr_var);
-	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write);
+	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write, NULL);
 
 	for (uint8_t i=0; i<XINT_SIZE; i++) {
 		sprintf(buf, "%s.INT_CFDATA%d", name(), i);
@@ -363,7 +363,7 @@ bool XINT::BeginSetup() {
 
 		unisim::kernel::service::Register<uint8_t> *int_cfwdata_var = new unisim::kernel::service::Register<uint8_t>(buf, this, int_cfwdata[i], "Interrupt Request Configuration Data Registers (INT_CFDATA)");
 		extended_registers_registry.push_back(int_cfwdata_var);
-		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write);
+		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write, NULL);
 	}
 
 	return true;

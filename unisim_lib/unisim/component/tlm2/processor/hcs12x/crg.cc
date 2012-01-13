@@ -849,84 +849,84 @@ bool CRG::BeginSetup() {
 
 	unisim::kernel::service::Register<uint8_t> *synr_var = new unisim::kernel::service::Register<uint8_t>("SYNR", this, synr_register, "CRG Synthesizer Register (SYNR)");
 	extended_registers_registry.push_back(synr_var);
-	synr_var->setCallBack(this, SYNR, &CallBackObject::write);
+	synr_var->setCallBack(this, SYNR, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.REFDV",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &refdv_register);
 
 	unisim::kernel::service::Register<uint8_t> *refdv_var = new unisim::kernel::service::Register<uint8_t>("REFDV", this, refdv_register, "CRG Reference Divider Register (REFDV)");
 	extended_registers_registry.push_back(refdv_var);
-	refdv_var->setCallBack(this, REFDV, &CallBackObject::write);
+	refdv_var->setCallBack(this, REFDV, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CTFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctflg_register);
 
 	unisim::kernel::service::Register<uint8_t> *ctflg_var = new unisim::kernel::service::Register<uint8_t>("CTFLG", this, ctflg_register, "CRG Test Flags Register (CTFLG)");
 	extended_registers_registry.push_back(ctflg_var);
-	ctflg_var->setCallBack(this, CTFLG, &CallBackObject::write);
+	ctflg_var->setCallBack(this, CTFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CRGFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgflg_register);
 
 	unisim::kernel::service::Register<uint8_t> *crgflg_var = new unisim::kernel::service::Register<uint8_t>("CRGFLG", this, crgflg_register, "CRG Flags Register (CRGFLG)");
 	extended_registers_registry.push_back(crgflg_var);
-	crgflg_var->setCallBack(this, CRGFLG, &CallBackObject::write);
+	crgflg_var->setCallBack(this, CRGFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CRGINT",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgint_register);
 
 	unisim::kernel::service::Register<uint8_t> *crgint_var = new unisim::kernel::service::Register<uint8_t>("CRGINT", this, crgint_register, "CRG Interrupt Enable Register (CRGINT)");
 	extended_registers_registry.push_back(crgint_var);
-	crgint_var->setCallBack(this, CRGINT, &CallBackObject::write);
+	crgint_var->setCallBack(this, CRGINT, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CLKSEL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &clksel_register);
 
 	unisim::kernel::service::Register<uint8_t> *clksel_var = new unisim::kernel::service::Register<uint8_t>("CLKSEL", this, clksel_register, "CRG Clock Select Register (CLKSEL)");
 	extended_registers_registry.push_back(clksel_var);
-	clksel_var->setCallBack(this, CLKSEL, &CallBackObject::write);
+	clksel_var->setCallBack(this, CLKSEL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PLLCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pllctl_register);
 
 	unisim::kernel::service::Register<uint8_t> *pllctl_var = new unisim::kernel::service::Register<uint8_t>("PLLCTL", this, pllctl_register, "CRG PLL Control Register (PLLCTL)");
 	extended_registers_registry.push_back(pllctl_var);
-	pllctl_var->setCallBack(this, PLLCTL, &CallBackObject::write);
+	pllctl_var->setCallBack(this, PLLCTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.RTICTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &rtictl_register);
 
 	unisim::kernel::service::Register<uint8_t> *rtictl_var = new unisim::kernel::service::Register<uint8_t>("RTICTL", this, rtictl_register, "CRG RTI Control Register (RTICTL)");
 	extended_registers_registry.push_back(rtictl_var);
-	rtictl_var->setCallBack(this, RTICTL, &CallBackObject::write);
+	rtictl_var->setCallBack(this, RTICTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.COPCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &copctl_register);
 
 	unisim::kernel::service::Register<uint8_t> *copctl_var = new unisim::kernel::service::Register<uint8_t>("COPCTL", this, copctl_register, "CRG COP Control Register (COPCTL)");
 	extended_registers_registry.push_back(copctl_var);
-	copctl_var->setCallBack(this, COPCTL, &CallBackObject::write);
+	copctl_var->setCallBack(this, COPCTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.FORBYP",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &forbyp_register);
 
 	unisim::kernel::service::Register<uint8_t> *forbyp_var = new unisim::kernel::service::Register<uint8_t>("FORBYP", this, forbyp_register, "CRG Force and Bypass Test Register (FORBYP)");
 	extended_registers_registry.push_back(forbyp_var);
-	forbyp_var->setCallBack(this, FORBYP, &CallBackObject::write);
+	forbyp_var->setCallBack(this, FORBYP, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CTCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctctl_register);
 
 	unisim::kernel::service::Register<uint8_t> *ctctl_var = new unisim::kernel::service::Register<uint8_t>("CTCTL", this, ctctl_register, "CRG Test Control Register (CTCTL)");
 	extended_registers_registry.push_back(ctctl_var);
-	ctctl_var->setCallBack(this, CTCTL, &CallBackObject::write);
+	ctctl_var->setCallBack(this, CTCTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ARMCOP",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &armcop_register);
 
 	unisim::kernel::service::Register<uint8_t> *armcop_var = new unisim::kernel::service::Register<uint8_t>("ARMCOP", this, armcop_register, "CRG COP Arm/Timer Reset (ARMCOP)");
 	extended_registers_registry.push_back(armcop_var);
-	armcop_var->setCallBack(this, ARMCOP, &CallBackObject::write);
+	armcop_var->setCallBack(this, ARMCOP, &CallBackObject::write, NULL);
 
 	oscillator_clock = sc_time((double) oscillator_clock_value, SC_PS);
 

@@ -620,70 +620,70 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	unisim::kernel::service::Register<uint8_t> *eclkdiv_var = new unisim::kernel::service::Register<uint8_t>("ECLKDIV", this, eclkdiv_reg, "EEPROM Clock Divider Register (ECLKDIV)");
 	extended_registers_registry.push_back(eclkdiv_var);
-	eclkdiv_var->setCallBack(this, ECLKDIV, &CallBackObject::write);
+	eclkdiv_var->setCallBack(this, ECLKDIV, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.RESERVED1",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved1_reg);
 
 	unisim::kernel::service::Register<uint8_t> *reserved1_var = new unisim::kernel::service::Register<uint8_t>("RESERVED1", this, reserved1_reg, "RESERVED1");
 	extended_registers_registry.push_back(reserved1_var);
-	reserved1_var->setCallBack(this, RESERVED1, &CallBackObject::write);
+	reserved1_var->setCallBack(this, RESERVED1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.RESERVED2",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved2_reg);
 
 	unisim::kernel::service::Register<uint8_t> *reserved2_var = new unisim::kernel::service::Register<uint8_t>("RESERVED2", this, reserved2_reg, "RESERVED2");
 	extended_registers_registry.push_back(reserved2_var);
-	reserved2_var->setCallBack(this, RESERVED2, &CallBackObject::write);
+	reserved2_var->setCallBack(this, RESERVED2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ECNFG",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecnfg_reg);
 
 	unisim::kernel::service::Register<uint8_t> *ecnfg_var = new unisim::kernel::service::Register<uint8_t>("ECNFG", this, ecnfg_reg, "EEPROM Configuration Register (ECNFG)");
 	extended_registers_registry.push_back(ecnfg_var);
-	ecnfg_var->setCallBack(this, ECNFG, &CallBackObject::write);
+	ecnfg_var->setCallBack(this, ECNFG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.EPROT",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eprot_reg);
 
 	unisim::kernel::service::Register<uint8_t> *eprot_var = new unisim::kernel::service::Register<uint8_t>("EPROT", this, eprot_reg, "EEPROM Protection Register (EPROT)");
 	extended_registers_registry.push_back(eprot_var);
-	eprot_var->setCallBack(this, EPROT, &CallBackObject::write);
+	eprot_var->setCallBack(this, EPROT, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ESTAT",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &estat_reg);
 
 	unisim::kernel::service::Register<uint8_t> *estat_var = new unisim::kernel::service::Register<uint8_t>("ESTAT", this, estat_reg, "EEPROM Status Register (ESTAT)");
 	extended_registers_registry.push_back(estat_var);
-	estat_var->setCallBack(this, ESTAT, &CallBackObject::write);
+	estat_var->setCallBack(this, ESTAT, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.ECMD",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecmd_reg);
 
 	unisim::kernel::service::Register<uint8_t> *ecmd_var = new unisim::kernel::service::Register<uint8_t>("ECMD", this, ecmd_reg, "EEPROM Command Register (ECMD)");
 	extended_registers_registry.push_back(ecmd_var);
-	ecmd_var->setCallBack(this, ECMD, &CallBackObject::write);
+	ecmd_var->setCallBack(this, ECMD, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.RESERVED3",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved3_reg);
 
 	unisim::kernel::service::Register<uint8_t> *reserved3_var = new unisim::kernel::service::Register<uint8_t>("RESERVED3", this, reserved3_reg, "RESERVED3");
 	extended_registers_registry.push_back(reserved3_var);
-	reserved3_var->setCallBack(this, RESERVED3, &CallBackObject::write);
+	reserved3_var->setCallBack(this, RESERVED3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.EADDR",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &eaddr_reg);
 
 	unisim::kernel::service::Register<uint16_t> *eaddr_var = new unisim::kernel::service::Register<uint16_t>("EADDR", this, eaddr_reg, "EEPROM Address Register");
 	extended_registers_registry.push_back(eaddr_var);
-	eaddr_var->setCallBack(this, EADDRHI, &CallBackObject::write);
+	eaddr_var->setCallBack(this, EADDRHI, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.EDATA",inherited::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &edata_reg);
 
 	unisim::kernel::service::Register<uint16_t> *edata_var = new unisim::kernel::service::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register");
 	extended_registers_registry.push_back(edata_var);
-	edata_var->setCallBack(this, EDATAHI, &CallBackObject::write);
+	edata_var->setCallBack(this, EDATAHI, &CallBackObject::write, NULL);
 
 	oscillator_cycle_time = sc_time(oscillator_cycle_time_int, SC_PS);
 

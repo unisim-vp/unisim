@@ -436,6 +436,7 @@ public:
 	}
 
 	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
+	typedef bool (CallBackObject::*cbread)(unsigned int offset, const void*, unsigned int size);
 
 };
 
@@ -445,14 +446,20 @@ private:
 	unsigned int m_offset;
 
 	cbwrite write;
+	cbwrite read;
 
 public:
-	TCallBack(CallBackObject *owner, unsigned int offset, cbwrite _write) :
-		m_owner(owner), m_offset(offset), write(_write) {}
+	TCallBack(CallBackObject *owner, unsigned int offset, cbwrite _write, cbwrite _read) :
+		m_owner(owner), m_offset(offset), write(_write), read(_read) {}
 
-	void Write(DataType storage) {
-		(m_owner->*write)(m_offset, &storage, sizeof(DataType));
+	bool Write(DataType storage) {
+		return ((write != NULL)? (m_owner->*write)(m_offset, &storage, sizeof(DataType)) : false);
 	}
+
+	bool Read(DataType& storage) {
+		return ((read != NULL)? (m_owner->*read)(m_offset, &storage, sizeof(DataType)) : false);
+	}
+
 };
 
 //=============================================================================
@@ -466,8 +473,8 @@ public:
 	typedef VariableBase::Type Type;
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
-	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int)) {
-		m_callback.reset(new TCallBack<TYPE>(owner, offset, _write));
+	void setCallBack(CallBackObject *owner, unsigned int offset, bool (CallBackObject::*_write)(unsigned int, const void*, unsigned int), bool (CallBackObject::*_read)(unsigned int, const void*, unsigned int)) {
+		m_callback.reset(new TCallBack<TYPE>(owner, offset, _write, _read));
 	}
 
 	virtual const char *GetDataTypeName() const;
@@ -487,11 +494,19 @@ protected:
 
 	bool WriteBack(TYPE storage) {
 
-		if (m_callback.get() != NULL) {
+		CallBackObject *cb = m_callback.get();
+		if (cb != NULL) {
+			return ((TCallBack<TYPE>&) *m_callback).Write(storage);
+		}
 
-			((TCallBack<TYPE>&) *m_callback).Write(storage);
+		return false;
+	}
 
-			return true;
+	bool ReadBack(TYPE& storage) const {
+
+		CallBackObject *cb = m_callback.get();
+		if (cb != NULL) {
+			return ((TCallBack<TYPE>&) *m_callback).Read(storage);
 		}
 
 		return false;
