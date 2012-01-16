@@ -257,9 +257,11 @@ private:
 	Parameter<bool> param_dump_formulas;
 	Parameter<bool> param_dump_statistics;
 
-	double time_start;
-	double spent_time;
-	Statistic<double> stat_spent_time;
+	enum {DATA_LOAD_RATIO, DATA_STORE_RATIO} ReadBackOffsets;
+
+	double null_stat_var;
+	Statistic<double> stat_data_load_ratio;
+	Statistic<double> stat_data_store_ratio;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 };

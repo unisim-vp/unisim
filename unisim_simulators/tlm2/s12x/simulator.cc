@@ -36,7 +36,6 @@ Simulator::Simulator(int argc, char **argv)
 	, atd0(0)
 	, pwm(0)
 	, global_router(0)
-//	, global_memory(0)
 	, global_ram(0)
 	, global_eeprom(0)
 	, global_flash(0)
@@ -64,9 +63,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dump_statistics(true)
 
 	, endian("")
-//	, param_endian("endian", this, endian)
 	, program_counter_name("")
-//	, param_pc_reg_name("program-counter-name", this, program_counter_name)
 
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
@@ -75,9 +72,9 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
 
-	, time_start(0)
-	, spent_time(0)
-	, stat_spent_time("simulation-time", 0, spent_time, "Simulation time")
+	, null_stat_var(0)
+	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
+	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
 
 {
 
@@ -89,7 +86,8 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
 
-	stat_spent_time.setCallBack(this, 0, NULL, &CallBackObject::read);
+	stat_data_load_ratio.setCallBack(this, DATA_LOAD_RATIO, NULL, &CallBackObject::read);
+	stat_data_store_ratio.setCallBack(this, DATA_STORE_RATIO, NULL, &CallBackObject::read);
 
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -590,9 +588,16 @@ void Simulator::Stop(Object *object, int _exit_status)
 
 bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
+	uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
+	uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+
 	switch (offset) {
-		case 0: {
-			*((double *) buffer) = host_time->GetTime() - time_start;
+		case DATA_LOAD_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
+			return true;
+		}
+		case DATA_STORE_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
 			return true;
 		}
 
@@ -633,8 +638,7 @@ void Simulator::Run() {
 
 	cerr << "Starting simulation ..." << endl;
 
-//	double time_start = host_time->GetTime();
-	time_start = host_time->GetTime();
+	double time_start = host_time->GetTime();
 
 	EnableDebug();
 	void (*prev_sig_int_handler)(int) = 0;
@@ -675,8 +679,7 @@ void Simulator::Run() {
 
 	if (dump_statistics) {
 		double time_stop = host_time->GetTime();
-//		double spent_time = time_stop - time_start;
-		spent_time = time_stop - time_start;
+		double spent_time = time_stop - time_start;
 
 		cerr << "Simulation statistics:" << endl;
 		DumpStatistics(cerr);
