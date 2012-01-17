@@ -203,10 +203,10 @@ Simulator::Simulator(int argc, char **argv)
   // linux_loader->memory_import >> memory->memory_export;
   // linux_loader->loader_import >> elf32_loader->loader_export;
   // linux_loader->blob_import >> elf32_loader->blob_export;
-  cpu->linux_os_import >> linux_os->linux_os_export;
+  cpu->linux_os_import >> linux_os->linux_os_export_;
   // linux_os->memory_import >> cpu->memory_export;
-  linux_os->memory_injection_import >> cpu->memory_injection_export;
-  linux_os->registers_import >> cpu->registers_export;
+  linux_os->memory_injection_import_ >> cpu->memory_injection_export;
+  linux_os->registers_import_ >> cpu->registers_export;
   // linux_os->loader_import >> linux_loader->loader_export;
   // linux_os->blob_import >> linux_loader->blob_export;
   // cpu->exception_trap_reporting_import >> *trap_handler->trap_reporting_export[0];
@@ -228,7 +228,7 @@ Simulator::Simulator(int argc, char **argv)
   }
 #endif // SIM_POWER_ESTIMATOR_SUPPORT
 
-  cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+  // cpu->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
   // bridge->memory_import >> memory->memory_export;
 }
 
@@ -605,12 +605,12 @@ EnableInlineDebugger()
     inline_debugger->registers_import >> cpu->registers_export;
     inline_debugger->memory_access_reporting_control_import >>
         cpu->memory_access_reporting_control_export;
-    *inline_debugger->loader_import[0] >>
-        linux_os->loader_export;
-    *inline_debugger->symbol_table_lookup_import[0] >>
-        elf32_loader->symbol_table_lookup_export;
-    *inline_debugger->stmt_lookup_import[0] >>
-        elf32_loader->stmt_lookup_export;
+    //*inline_debugger->loader_import[0] >>
+        //linux_os->loader_export_;
+    //*inline_debugger->symbol_table_lookup_import[0] >>
+        //elf32_loader->symbol_table_lookup_export;
+    //*inline_debugger->stmt_lookup_import[0] >>
+        //elf32_loader->stmt_lookup_export;
   }
 }
 #endif // SIM_INLINE_DEBUGGER_SUPPORT
@@ -630,12 +630,12 @@ EnableSimDebugger()
     sim_debugger->registers_import >> cpu->registers_export;
     sim_debugger->memory_access_reporting_control_import >>
         cpu->memory_access_reporting_control_export;
-    *sim_debugger->loader_import[0] >>
-        linux_os->loader_export;
-    *sim_debugger->symbol_table_lookup_import[0] >>
-        elf32_loader->symbol_table_lookup_export;
-    *sim_debugger->stmt_lookup_import[0] >>
-        elf32_loader->stmt_lookup_export;
+    // *sim_debugger->loader_import[0] >>
+    //    linux_os->loader_export;
+    // *sim_debugger->symbol_table_lookup_import[0] >>
+    //     elf32_loader->symbol_table_lookup_export;
+    // *sim_debugger->stmt_lookup_import[0] >>
+    //     elf32_loader->stmt_lookup_export;
   }
 }
 #endif // SIM_SIM_DEBUGGER_SUPPORT
