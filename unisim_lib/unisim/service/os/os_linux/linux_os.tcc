@@ -336,7 +336,8 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
     }
   }
 
-  // TODO set the memory and the register interface for the linuxlib
+  linuxlib_.SetRegisterInterface(*this);
+  linuxlib_.SetMemoryInterface(*this);
 
   return true;
 }
@@ -404,6 +405,30 @@ void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
         << linuxlib_stream_.str()
         << EndDebugInfo;
   }
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory(ADDRESS_TYPE addr, 
+    uint8_t * const buffer, ADDRESS_TYPE size) {
+  return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory(ADDRESS_TYPE addr,
+    uint8_t const * const buffer, ADDRESS_TYPE size) {
+  return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id,
+    PARAMETER_TYPE * const value) {
+  return false;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
+    PARAMETER_TYPE value) {
+  return false;
 }
 
 #if 0
