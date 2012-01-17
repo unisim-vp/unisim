@@ -431,6 +431,12 @@ set ( SERVICE_DEBUG_INLINE_DEBUGGER_SRCS
   ${SERVICE_DEBUG_INLINE_DEBUGGER_SRCS_PATH}/inline_debugger_32.cc
   ${SERVICE_DEBUG_INLINE_DEBUGGER_SRCS_PATH}/inline_debugger_64.cc
   )
+set_source_files_properties (
+  ${SERVICE_DEBUG_INLINE_DEBUGGER_SRCS_PATH}/inline_debugger_32.cc
+  ${SERVICE_DEBUG_INLINE_DEBUGGER_SRCS_PATH}/inline_debugger_64.cc
+  PROPERTIES
+    COMPILE_DEFINITIONS HAVE_LIBEDIT
+  )
 
 set ( SERVICE_DEBUG_SIM_DEBUGGER_SRCS_PATH
   ${UNISIM_LIB_PATH}/unisim/service/debug/sim_debugger )
@@ -919,11 +925,13 @@ set ( SIMULATOR_SRCS
   ${COMP_CXX_MEMORY_SRCS}
   ${COMP_TLM2_ARMEMU_SRCS}
   ${COMP_TLM2_MEMORY_SRCS}
+  ${API_DEBUG_SRCS}
   )
 
 set ( SIMULATOR_REQUIRED_LIBRARIES
   ${OSCI_SYSTEMC_LIBRARIES}
-  ${LIBXML2_LIBRARIES} )
+  ${LIBXML2_LIBRARIES}
+  ${LIBEDIT} )
 
 if ( BUILD_SIM_PIM_SUPPORT )
   list ( APPEND SIMULATOR_SRCS
@@ -1255,9 +1263,9 @@ configure_file (
 # 		COMPILE_DEFINITIONS SIM_EXECUTABLE
 # 	)
 
-add_library ( SIMULATOR_LIB
+add_library ( simulator
   ${SIMULATOR_SRCS} )
-set_target_properties ( SIMULATOR_LIB
+set_target_properties ( simulator
   PROPERTIES
     COMPILE_DEFINITIONS SIM_LIBRARY )
 #add_library ( simulatorlib
@@ -1315,6 +1323,8 @@ add_library ( libuapi SHARED
 set_target_properties ( libuapi
   PROPERTIES
     COMPILE_DEFINITIONS SIM_LIBRARY )
+target_link_libraries ( libuapi
+  ${SIMULATOR_REQUIRED_LIBRARIES} )
 #add_library ( libuapi SHARED
   #${API_SRCS}
   #)
