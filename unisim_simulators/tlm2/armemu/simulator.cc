@@ -427,14 +427,31 @@ DefaultConfiguration(unisim::kernel::service::Simulator *sim)
   sim->SetVariable("memory.cycle-time",        "31250 ps");
   sim->SetVariable("memory.read-latency",      "31250 ps");
   sim->SetVariable("memory.write-latency",     "0 ps");
-  sim->SetVariable("linux-loader.stack-base",  0x40000000UL);
-  sim->SetVariable("linux-loader.max-environ", 0x4000UL);
-  sim->SetVariable("linux-loader.endianness",  "little-endian");
-  sim->SetVariable("linux-loader.argc",        1);
-  sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
   sim->SetVariable("linux-os.system",          "arm-eabi");
   sim->SetVariable("linux-os.endianness",      "little-endian");
-  sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
+  sim->SetVariable("linux-os.memory-page-size",0x01000UL);
+  sim->SetVariable("linux-os.stack-base",      0x40000000UL);
+  sim->SetVariable("linux-os.stack-size",      0x800000UL);
+  sim->SetVariable("linux-os.max-environ",     0x4000UL);
+  sim->SetVariable("linux-os.binary",          "/Users/gracia/Developer/unisim/armemu2/build/share/unisim-armemu-0.6.1/test/install/test.armv5l");
+  sim->SetVariable("linux-os.argc",            1);
+  sim->SetVariable("linux-os.argv[0]",         "test/install/test.armv5l");
+  sim->SetVariable("linux-os.apply-host-environment", true);
+  sim->SetVariable("linux-os.envc",            0);
+  sim->SetVariable("linux-os.utsname-sysname", "Linux");
+  sim->SetVariable("linux-os.utsname-nodename","localhost");
+  sim->SetVariable("linux-os.utsname-release", "2.6.27.35");
+  sim->SetVariable("linux-os.utsname-version", "#UNISIM SMP Fri Mar 12 05:23:09 UTC 2010");
+  sim->SetVariable("linux-os.utsname-machine", "armv5");
+  sim->SetVariable("linux-os.utsname-domainname","localhost");
+  //sim->SetVariable("linux-loader.stack-base",  0x40000000UL);
+  //sim->SetVariable("linux-loader.max-environ", 0x4000UL);
+  //sim->SetVariable("linux-loader.endianness",  "little-endian");
+  //sim->SetVariable("linux-loader.argc",        1);
+  //sim->SetVariable("linux-loader.argv[0]",     "test/install/test.armv5l");
+  //sim->SetVariable("linux-os.system",          "arm-eabi");
+  //sim->SetVariable("linux-os.endianness",      "little-endian");
+  //sim->SetVariable("elf-loader.filename",      "test/install/test.armv5l");
 
   sim->SetVariable("trap-handler.num-traps", 3);
   sim->SetVariable("trap-handler.trap-reporting-export-name[0]",
