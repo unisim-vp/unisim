@@ -52,6 +52,8 @@
 
 #include "unisim/service/os/os_linux/linux_os.hh"
 #include "unisim/util/os/linux/linux.hh"
+#include "unisim/util/os/linux/arm.hh"
+#include "unisim/util/os/linux/ppc.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/os_linux/linux_os.tcc:" << __LINE__
 
@@ -421,16 +423,95 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory(ADDRESS_TYPE addr,
   return false;
 }
 
+unisim::util::debug::Register * GetRegisterFromId(
+    unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> &import,
+    std::string &system,
+    uint32_t id) {
+  if (!import) return NULL;
+  char const * reg_name = 0;
+  if ((system.compare("arm") == 0) || (system.compare("arm-eabi") == 0)) {
+    switch(id) {
+      case unisim::util::os::linux_os::kARM_r0: reg_name = "r0"; break;
+      case unisim::util::os::linux_os::kARM_r1: reg_name = "r1"; break;
+      case unisim::util::os::linux_os::kARM_r2: reg_name = "r2"; break;
+      case unisim::util::os::linux_os::kARM_r3: reg_name = "r3"; break;
+      case unisim::util::os::linux_os::kARM_r4: reg_name = "r4"; break;
+      case unisim::util::os::linux_os::kARM_r5: reg_name = "r5"; break;
+      case unisim::util::os::linux_os::kARM_r6: reg_name = "r6"; break;
+      case unisim::util::os::linux_os::kARM_r7: reg_name = "r7"; break;
+      case unisim::util::os::linux_os::kARM_r8: reg_name = "r8"; break;
+      case unisim::util::os::linux_os::kARM_r9: reg_name = "r9"; break;
+      case unisim::util::os::linux_os::kARM_r10: reg_name = "r10"; break;
+      case unisim::util::os::linux_os::kARM_r11: reg_name = "r11"; break;
+      case unisim::util::os::linux_os::kARM_r12: reg_name = "r12"; break;
+      //case unisim::util::os::linux_os::kARM_r13: reg_name = "r13"; break;
+      //case unisim::util::os::linux_os::kARM_r14: reg_name = "r14"; break;
+      //case unisim::util::os::linux_os::kARM_r15: reg_name = "r15"; break;
+      case unisim::util::os::linux_os::kARM_sp: reg_name = "sp"; break;
+      case unisim::util::os::linux_os::kARM_lr: reg_name = "lr"; break;
+      case unisim::util::os::linux_os::kARM_pc: reg_name = "pc"; break;
+      default: return NULL;
+    }
+  } else if (system.compare("powerpc") == 0) {
+    switch(id) {
+      case unisim::util::os::linux_os::kPPC_r0: reg_name = "r0"; break;
+      case unisim::util::os::linux_os::kPPC_r1: reg_name = "r1"; break;
+      case unisim::util::os::linux_os::kPPC_r2: reg_name = "r2"; break;
+      case unisim::util::os::linux_os::kPPC_r3: reg_name = "r3"; break;
+      case unisim::util::os::linux_os::kPPC_r4: reg_name = "r4"; break;
+      case unisim::util::os::linux_os::kPPC_r5: reg_name = "r5"; break;
+      case unisim::util::os::linux_os::kPPC_r6: reg_name = "r6"; break;
+      case unisim::util::os::linux_os::kPPC_r7: reg_name = "r7"; break;
+      case unisim::util::os::linux_os::kPPC_r8: reg_name = "r8"; break;
+      case unisim::util::os::linux_os::kPPC_r9: reg_name = "r9"; break;
+      case unisim::util::os::linux_os::kPPC_r10: reg_name = "r10"; break;
+      case unisim::util::os::linux_os::kPPC_r11: reg_name = "r11"; break;
+      case unisim::util::os::linux_os::kPPC_r12: reg_name = "r12"; break;
+      case unisim::util::os::linux_os::kPPC_r13: reg_name = "r13"; break;
+      case unisim::util::os::linux_os::kPPC_r14: reg_name = "r14"; break;
+      case unisim::util::os::linux_os::kPPC_r15: reg_name = "r15"; break;
+      case unisim::util::os::linux_os::kPPC_r16: reg_name = "r16"; break;
+      case unisim::util::os::linux_os::kPPC_r17: reg_name = "r17"; break;
+      case unisim::util::os::linux_os::kPPC_r18: reg_name = "r18"; break;
+      case unisim::util::os::linux_os::kPPC_r19: reg_name = "r19"; break;
+      case unisim::util::os::linux_os::kPPC_r20: reg_name = "r20"; break;
+      case unisim::util::os::linux_os::kPPC_r21: reg_name = "r21"; break;
+      case unisim::util::os::linux_os::kPPC_r22: reg_name = "r22"; break;
+      case unisim::util::os::linux_os::kPPC_r23: reg_name = "r23"; break;
+      case unisim::util::os::linux_os::kPPC_r24: reg_name = "r24"; break;
+      case unisim::util::os::linux_os::kPPC_r25: reg_name = "r25"; break;
+      case unisim::util::os::linux_os::kPPC_r26: reg_name = "r26"; break;
+      case unisim::util::os::linux_os::kPPC_r27: reg_name = "r27"; break;
+      case unisim::util::os::linux_os::kPPC_r28: reg_name = "r28"; break;
+      case unisim::util::os::linux_os::kPPC_r29: reg_name = "r29"; break;
+      case unisim::util::os::linux_os::kPPC_r30: reg_name = "r30"; break;
+      case unisim::util::os::linux_os::kPPC_r31: reg_name = "r31"; break;
+      case unisim::util::os::linux_os::kPPC_cr: reg_name = "cr"; break;
+      case unisim::util::os::linux_os::kPPC_cia: reg_name = "cia"; break;
+      default: return NULL;
+    }
+  }
+  return import->GetRegister(reg_name);
+}
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id,
     PARAMETER_TYPE * const value) {
-  return false;
+  unisim::util::debug::Register *reg = 0;
+  reg = GetRegisterFromId(registers_import_, system_, id);
+  if (reg == NULL) return false;
+  reg->GetValue(value);
+  return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
     PARAMETER_TYPE value) {
-  return false;
+  unisim::util::debug::Register *reg = 0;
+  reg = GetRegisterFromId(registers_import_, system_, id);
+  if (reg == NULL) return false;
+  reg->SetValue(&value);
+  return true;
 }
 
 #if 0
