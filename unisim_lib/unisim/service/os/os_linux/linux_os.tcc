@@ -239,7 +239,9 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
 
   // check that the given system is supported
   // NOTE: This should not be done because the linux library is already doing it
-  if (system_ != "arm" && system_ != "arm-eabi" && system_ != "powerpc") {
+  if ((system_.compare("arm") != 0) &&
+      (system_.compare("arm-eabi") != 0) &&
+      (system_.compare("powerpc") != 0)) {
     logger_ << DebugError
         << "Unsupported system (" << system_ << "), this service only supports"
         << " arm and ppc systems" << std::endl
