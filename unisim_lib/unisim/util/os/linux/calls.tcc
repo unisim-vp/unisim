@@ -138,11 +138,17 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_write() {
   } else
     ret = (size_t)-1;
 
-  if (unlikely(verbose_))
+  if (unlikely(verbose_)) {
     *logger_
         << "write(fd=" << fd << ", buf=0x" << std::hex << buf_addr << std::dec
         << ", count=" << count << ") return " << ret << std::endl
+        << "buffer =";
+    for (size_t i = 0; i < count; i++)
+      *logger_
+          << " " << std::hex << (unsigned int)((uint8_t *)buf)[i] << std::dec;
+    *logger_
         << std::endl;
+  }
   SetSystemCallStatus(ret, ret < 0);
 }
 
