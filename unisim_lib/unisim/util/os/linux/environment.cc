@@ -39,6 +39,8 @@
 #define environ (*_NSGetEnviron())
 #endif
 
+#include <string>
+
 #include "unisim/util/os/linux/environment.hh"
 
 namespace unisim {
@@ -68,7 +70,7 @@ void GetHostEnvironment(std::vector<std::string> input_envp,
   // Obtain the current host environment
   for (char **env = environ; *env != NULL; env++)
   {
-   envp->push_back(std::string(*env));
+    envp->push_back(std::string(*env));
   }
 
   // Parse the input_envp and modify the variables from envp that match,
