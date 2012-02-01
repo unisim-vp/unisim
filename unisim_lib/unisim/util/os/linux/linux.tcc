@@ -1315,8 +1315,8 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
     return 0;
   }
 
-  if (!register_interface_->GetRegister(kARMEABISyscallNumberReg,
-                                        &translated_id))
+  if (register_interface_->GetRegister(kARMEABISyscallNumberReg,
+                                       &translated_id))
     return (int)translated_id;
   return 0;
   //arm_regs[7]->GetValue(&translated_id);
