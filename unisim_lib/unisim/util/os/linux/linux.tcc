@@ -370,6 +370,29 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
     return false;
   }
 
+  // Set the linux calls maps
+  syscall_impl_assoc_map_.clear();
+  SetSyscallNameMap();
+  if ((system_type_.compare("arm") == 0) ||
+      (system_type_.compare("arm-eabi") == 0)) {
+    if (!SetupLinuxOSARM()) {
+      std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
+          << "Error while trying to setup the linux os arm"
+          << std::endl;
+      blob->Release();
+      return false;
+    }
+  }
+  if (system_type_.compare("powerpc") == 0) {
+    if (!SetupLinuxOSPPC()) {
+      std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
+          << "Error while trying to setup the linux os powerpc"
+          << std::endl;
+      blob->Release();
+      return false;
+    }
+  }
+
   // Set mmap_brk_point and brk_point
   mmap_brk_point_ = mmap_base_;
 
@@ -1180,6 +1203,105 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   // TODO
   return false;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
+  SetSyscallId(std::string("exit"), 1);
+  SetSyscallId(std::string("read"), 3);
+  SetSyscallId(std::string("write"), 4);
+  SetSyscallId(std::string("open"), 5);
+  SetSyscallId(std::string("close"), 6);
+  SetSyscallId(std::string("unlink"), 10);
+  SetSyscallId(std::string("time"), 13);
+  SetSyscallId(std::string("lseek"), 19);
+  SetSyscallId(std::string("getpid"), 20);
+  SetSyscallId(std::string("getuid"), 24);
+  SetSyscallId(std::string("access"), 33);
+  SetSyscallId(std::string("kill"), 37);
+  SetSyscallId(std::string("rename"), 38);
+  SetSyscallId(std::string("times"), 43);
+  SetSyscallId(std::string("brk"), 45);
+  SetSyscallId(std::string("getgid"), 47);
+  SetSyscallId(std::string("geteuid"), 49);
+  SetSyscallId(std::string("getegid"), 50);
+  SetSyscallId(std::string("ioctl"), 54);
+  SetSyscallId(std::string("setrlimit"), 75);
+  SetSyscallId(std::string("getrusage"), 77);
+  SetSyscallId(std::string("munmap"), 91);
+  SetSyscallId(std::string("ftruncate"), 93);
+  SetSyscallId(std::string("socketcall"), 102);
+  SetSyscallId(std::string("stat"), 106);
+  SetSyscallId(std::string("fstat"), 108);
+  SetSyscallId(std::string("uname"), 122);
+  SetSyscallId(std::string("llseek"), 140);
+  SetSyscallId(std::string("writev"), 146);
+  SetSyscallId(std::string("rt_sigaction"), 174);
+  SetSyscallId(std::string("rt_sigprocmask"), 175);
+  SetSyscallId(std::string("ugetrlimit"), 191);
+  SetSyscallId(std::string("mmap2"), 192);
+  SetSyscallId(std::string("stat64"), 195);
+  SetSyscallId(std::string("fstat64"), 197);
+  SetSyscallId(std::string("getuid32"), 199);
+  SetSyscallId(std::string("getgid32"), 200);
+  SetSyscallId(std::string("geteuid32"), 201);
+  SetSyscallId(std::string("getegid32"), 202);
+  SetSyscallId(std::string("flistxattr"), 234);
+  SetSyscallId(std::string("exit_group"), 248);
+  // the following are private to the arm
+  SetSyscallId(std::string("breakpoint"), 983041);
+  SetSyscallId(std::string("cacheflush"), 983042);
+  SetSyscallId(std::string("usr26"), 983043);
+  SetSyscallId(std::string("usr32"), 983044);
+  SetSyscallId(std::string("set_tls"), 983045);
+
+  return true;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC() {
+  SetSyscallId(std::string("exit"), 1);
+  SetSyscallId(std::string("read"), 3);
+  SetSyscallId(std::string("write"), 4);
+  SetSyscallId(std::string("open"), 5);
+  SetSyscallId(std::string("close"), 6);
+  SetSyscallId(std::string("unlink"), 10);
+  SetSyscallId(std::string("time"), 13);
+  SetSyscallId(std::string("lseek"), 19);
+  SetSyscallId(std::string("getpid"), 20);
+  SetSyscallId(std::string("getuid"), 24);
+  SetSyscallId(std::string("access"), 33);
+  SetSyscallId(std::string("kill"), 37);
+  SetSyscallId(std::string("rename"), 38);
+  SetSyscallId(std::string("times"), 43);
+  SetSyscallId(std::string("brk"), 45);
+  SetSyscallId(std::string("getgid"), 47);
+  SetSyscallId(std::string("geteuid"), 49);
+  SetSyscallId(std::string("getegid"), 50);
+  SetSyscallId(std::string("ioctl"), 54);
+  SetSyscallId(std::string("setrlimit"), 75);
+  SetSyscallId(std::string("getrlimit"), 76);
+  SetSyscallId(std::string("getrusage"), 77);
+  SetSyscallId(std::string("mmap"), 90);
+  SetSyscallId(std::string("munmap"), 91);
+  SetSyscallId(std::string("ftruncate"), 93);
+  SetSyscallId(std::string("socketcall"), 102);
+  SetSyscallId(std::string("stat"), 106);
+  SetSyscallId(std::string("fstat"), 108);
+  SetSyscallId(std::string("uname"), 122);
+  SetSyscallId(std::string("llseek"), 140);
+  SetSyscallId(std::string("writev"), 146);
+  SetSyscallId(std::string("rt_sigaction"), 173);
+  SetSyscallId(std::string("rt_sigprocmask"), 174);
+  SetSyscallId(std::string("ugetrlimit"), 190);
+  SetSyscallId(std::string("mmap2"), 192);
+  SetSyscallId(std::string("stat64"), 195);
+  SetSyscallId(std::string("fstat64"), 197);
+  SetSyscallId(std::string("fcntl64"), 204);
+  SetSyscallId(std::string("flistxattr"), 217);
+  SetSyscallId(std::string("exit_group"), 234);
+
+  return true;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

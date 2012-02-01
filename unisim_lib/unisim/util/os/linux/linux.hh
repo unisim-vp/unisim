@@ -319,6 +319,12 @@ class Linux {
   // Fills the given blob with PPC dependent information
   bool SetPPCBlob(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const;
 
+  // Set the ARM syscall mappings
+  bool SetupLinuxOSARM();
+
+  // Set the PowerPC syscall mappings
+  bool SetupLinuxOSPPC();
+
   // Associate the syscall identifier to its name
   void SetSyscallId(const std::string &syscall_name, int syscall_id);
 
