@@ -404,10 +404,12 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
   linuxlib_stream_.str("");
   linuxlib_.ExecuteSystemCall(id);
-  if (!linuxlib_stream_.str().empty()) {
-    logger_ << DebugInfo
-        << linuxlib_stream_.str()
-        << EndDebugInfo;
+  if (unlikely(verbose_)) {
+    if (!linuxlib_stream_.str().empty()) {
+      logger_ << DebugInfo
+          << linuxlib_stream_.str()
+          << EndDebugInfo;
+    }
   }
 }
 
