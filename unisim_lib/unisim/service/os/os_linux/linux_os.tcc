@@ -444,9 +444,6 @@ unisim::util::debug::Register * GetRegisterFromId(
       case unisim::util::os::linux_os::kARM_r10: reg_name = "r10"; break;
       case unisim::util::os::linux_os::kARM_r11: reg_name = "r11"; break;
       case unisim::util::os::linux_os::kARM_r12: reg_name = "r12"; break;
-      //case unisim::util::os::linux_os::kARM_r13: reg_name = "r13"; break;
-      //case unisim::util::os::linux_os::kARM_r14: reg_name = "r14"; break;
-      //case unisim::util::os::linux_os::kARM_r15: reg_name = "r15"; break;
       case unisim::util::os::linux_os::kARM_sp: reg_name = "sp"; break;
       case unisim::util::os::linux_os::kARM_lr: reg_name = "lr"; break;
       case unisim::util::os::linux_os::kARM_pc: reg_name = "pc"; break;
