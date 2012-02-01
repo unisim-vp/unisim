@@ -66,6 +66,11 @@ class LinuxMemoryInterface {
                           ADDRESS_TYPE size) = 0;
   virtual bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
                            ADDRESS_TYPE size) = 0;
+  virtual bool InjectReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
+                          ADDRESS_TYPE size) = 0;
+  virtual bool InjectWriteMemory(ADDRESS_TYPE addr,
+                                 uint8_t const * const buffer,
+                                 ADDRESS_TYPE size) = 0;
 };
 
 template <class PARAMETER_TYPE>

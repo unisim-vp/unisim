@@ -147,6 +147,10 @@ class LinuxOS :
                           ADDRESS_TYPE size);
   bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
                            ADDRESS_TYPE size);
+  bool InjectReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
+                          ADDRESS_TYPE size);
+  bool InjectWriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
+                           ADDRESS_TYPE size);
 
   /* Register methods required by the linux library */
   bool GetRegister(uint32_t id, PARAMETER_TYPE * const value);

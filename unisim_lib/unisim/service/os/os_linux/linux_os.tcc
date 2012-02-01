@@ -416,13 +416,29 @@ void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory(ADDRESS_TYPE addr, 
     uint8_t * const buffer, ADDRESS_TYPE size) {
-  return false;
+  if (!memory_import_) return false;
+  return memory_import_->ReadMemory(addr, buffer, size);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory(ADDRESS_TYPE addr,
     uint8_t const * const buffer, ADDRESS_TYPE size) {
-  return false;
+  if (!memory_import_) return false;
+  return memory_import_->WriteMemory(addr, buffer, size);
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::InjectReadMemory(ADDRESS_TYPE addr, 
+    uint8_t * const buffer, ADDRESS_TYPE size) {
+  if (!memory_injection_import_) return false;
+  return memory_injection_import_->InjectReadMemory(addr, buffer, size);
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::InjectWriteMemory(ADDRESS_TYPE addr,
+    uint8_t const * const buffer, ADDRESS_TYPE size) {
+  if (!memory_injection_import_) return false;
+  return memory_injection_import_->InjectWriteMemory(addr, buffer, size);
 }
 
 unisim::util::debug::Register * GetRegisterFromId(

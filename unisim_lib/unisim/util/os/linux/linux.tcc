@@ -1308,15 +1308,40 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
     ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size) {
-  if (memory_interface_ != NULL) return false;
-  return memory_interface_->ReadMemory(addr, buffer, size);
+  if (memory_interface_ == NULL) return false;
+  if (memory_interface_->InjectReadMemory(addr, buffer, size)) {
+    if (unlikely(verbose_)) {
+      *logger_ << "linux-os: OS read memory:" << std::endl
+          << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+          << "\tsize = " << size << std::endl
+          << "\tdata =" << std::hex;
+      for (unsigned int i = 0; i < size; i++)
+        *logger_ << " " << (unsigned int)buffer[i];
+      *logger_ << std::dec << std::endl;
+    }
+    return true;
+  } else {
+    *logger_ << "linux-os: failed OS read memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl;
+    return false;
+  }
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
     ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) {
   if (memory_interface_ == NULL) return false;
-  return memory_interface_->WriteMemory(addr, buffer, size);
+  if (unlikely(verbose_)) {
+    *logger_ << "linux-os: OS write memory:" << std::endl
+        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+        << "\tsize = " << size << std::endl
+        << "\tdata =" << std::hex;
+    for (unsigned int i = 0; i < size; i++)
+      *logger_ << " " << (unsigned int)buffer[i];
+    *logger_ << std::dec << std::endl;
+  }
+  return memory_interface_->InjectWriteMemory(addr, buffer, size);
 }
 
 } // end of namespace linux
