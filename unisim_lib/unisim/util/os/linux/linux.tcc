@@ -507,7 +507,7 @@ unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
-  if (is_load_) {
+  if (!is_load_) {
     std::cerr << "ERROR(unisim::util::os::linux_os::Linux.ExecuteSystemCall): "
         << "Trying to execute system call with id " << id << " while the linux "
         << "emulation has not been correctly loaded." << std::endl;
