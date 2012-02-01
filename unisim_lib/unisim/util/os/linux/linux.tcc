@@ -788,8 +788,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   ADDRESS_TYPE sp = stack_size_;
   // Fill the stack
   // - copy the filename
+  sp = sp - sizeof(ADDRESS_TYPE);
   ADDRESS_TYPE argv0_top = sp;
-  sp -= sizeof(ADDRESS_TYPE);
   ADDRESS_TYPE cur_length = argv_[0].length() + 1;
   sp = sp - cur_length;
   // TODO Remove this line? What was this being used for?
