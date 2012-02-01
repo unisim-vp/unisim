@@ -434,6 +434,15 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::IsLoad() {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget() {
+  if (memory_interface_ == NULL
+      || register_interface_ == NULL
+      || control_interface_ == NULL) {
+    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
+        << "The linux system interfaces (memory/register/control) were not"
+        << " assigned" << std::endl;
+    return false;
+  }
+
   if (blob_ == NULL) {
     std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
         << "The linux system was not loaded." << std::endl;
