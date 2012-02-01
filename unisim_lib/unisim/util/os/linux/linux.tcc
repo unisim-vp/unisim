@@ -370,7 +370,29 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
     return false;
   }
 
+  // Set mmap_brk_point and brk_point
+  mmap_brk_point_ = mmap_base_;
+
+  ADDRESS_TYPE top_addr = /*blob->GetStackBase()*/ stack_base_ + stack_size_ - 1;
+  std::cerr << "=== top_addr = 0x" << std::hex << top_addr << std::dec
+      << std::endl;
+  //logger << DebugInfo
+      //<< "top_addr = 0x" << std::hex << top_addr << std::dec
+      //<< EndDebugInfo;
+
+  brk_point_ = top_addr +
+      (memory_page_size_ - (top_addr % memory_page_size_));
+
+  std::cerr
+      << "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
+      << "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
+      << "=== mmap_base_ = 0x" << mmap_base_ << std::endl
+      << "=== memory_page_size_ = 0x" << memory_page_size_ << "("
+      << std::dec << memory_page_size_ << ")" << std::endl;
+
+
   blob_ = blob;
+  is_load_ = true;
 
   return true;
 }
