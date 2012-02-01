@@ -204,7 +204,7 @@ Simulator::Simulator(int argc, char **argv)
   // linux_loader->loader_import >> elf32_loader->loader_export;
   // linux_loader->blob_import >> elf32_loader->blob_export;
   cpu->linux_os_import >> linux_os->linux_os_export_;
-  // linux_os->memory_import >> cpu->memory_export;
+  linux_os->memory_import_ >> cpu->memory_export;
   linux_os->memory_injection_import_ >> cpu->memory_injection_export;
   linux_os->registers_import_ >> cpu->registers_export;
   // linux_os->loader_import >> linux_loader->loader_export;
