@@ -432,10 +432,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
   for (SegmentVectorIterator it = segments.begin();
        success && (it != segments.end()); it++) {
     if ((*it)->GetType() == Segment::TY_LOADABLE) {
-      std::cerr << "--> writing memory segment" << std::endl;
       uint8_t const * data = (uint8_t const *)(*it)->GetData();
       ADDRESS_TYPE start, end;
       (*it)->GetAddrRange(start, end);
+
+      std::cerr << "--> writing memory segment start = 0x"
+          << std::hex << start << " end = 0x" << end << std::dec
+          << std::endl;
 
       success = memory_interface_->WriteMemory(start, data, end - start + 1);
     }
