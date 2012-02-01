@@ -1263,12 +1263,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(int syscall_id) {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
-  if ( system_type_ == "arm" )
+  if ( system_type_.compare("arm") == 0 )
     return ARMGetSyscallNumber(id);
-  else if ( system_type_ == "arm-eabi" )
+  else if ( system_type_.compare("arm-eabi") == 0 )
     return ARMEABIGetSyscallNumber(id);
-  else
+  else if ( system_type_.compare("powerpc") == 0 )
     return PPCGetSyscallNumber(id);
+  std::cerr
+      << "ERROR(unisim::util::os::linux): Could not translate syscall number "
+      << id << " (" << std::hex << id << std::dec << ") for system \""
+      << system_type_ << "\". Returning untranslated id."
+      << std::endl;
+  return id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
