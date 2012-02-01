@@ -80,6 +80,11 @@ class LinuxRegisterInterface {
   virtual bool SetRegister(uint32_t id, PARAMETER_TYPE value) = 0;
 };
 
+class LinuxControlInterface {
+ public:
+  virtual bool ExitSysCall() = 0;
+};
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux {
  public:
@@ -110,7 +115,7 @@ class Linux {
   void SetEndianness(unisim::util::endian::endian_type endianness);
 
   // Sets the stack base address that will be used for the application stack.
-  // Combined with SetStackSize the memory addresses from stack base to 
+  // Combined with SetStackSize the memory addresses from stack base to
   // (stack base + stack size) will be reserved for the stack.
   void SetStackBase(ADDRESS_TYPE stack_base);
 
@@ -140,6 +145,9 @@ class Linux {
 
   // Set the memory interface to be used
   void SetMemoryInterface(LinuxMemoryInterface<ADDRESS_TYPE> &iface);
+
+  // Set the control interface to be used
+  void SetControlInterface(LinuxControlInterface &iface);
 
   // Loads all the defined files using the user settings.
   // Basic usage:
@@ -253,6 +261,9 @@ class Linux {
   // pointer to the interface for memory to use
   LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface_;
 
+  // pointer to the interface for control to use
+  LinuxControlInterface *control_interface_;
+
   // syscall type shortener
   typedef Linux<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
   typedef void (thistype::*syscall_t)();
@@ -346,6 +357,9 @@ class Linux {
   // system calls or loading the initial memory image
   bool ReadMem(ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
   bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
+
+  // helper methods to control the simulator from the system calls
+  bool ExitSysCall();
 
   // Cleans the contents of the loader logger_ and clean error flags
   void ResetLoaderLogger() {

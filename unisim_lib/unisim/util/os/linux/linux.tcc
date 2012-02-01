@@ -120,6 +120,7 @@ Linux(std::ostringstream * const logger)
     , blob_(NULL)
     , register_interface_(NULL)
     , memory_interface_(NULL)
+    , control_interface_(NULL)
     , syscall_name_map_()
     , syscall_name_assoc_map_()
     , syscall_impl_assoc_map_()
@@ -310,6 +311,12 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryInterface(
     LinuxMemoryInterface<ADDRESS_TYPE> &iface) {
   memory_interface_ = &iface;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetControlInterface(
+    LinuxControlInterface &iface) {
+  control_interface_ = &iface;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1487,6 +1494,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
     *logger_ << std::dec << std::endl;
   }
   return memory_interface_->InjectWriteMemory(addr, buffer, size);
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExitSysCall() {
+  if (control_interface_ == NULL) return false;
+  return control_interface_->ExitSysCall();
 }
 
 } // end of namespace linux

@@ -72,6 +72,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
         << std::endl;
   std::cerr << "TODO exit system call was called, so we are exiting, but a "
       << "cleaner stop method should be provided" << std::endl;
+  ExitSysCall();
   // Object::Stop(ret);
 }
 
