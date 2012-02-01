@@ -1308,10 +1308,12 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
   // the arm eabi ignores the given id and uses register 7
   //   as the id and translated id
-  uint32_t translated_id = 0;
-  if (register_interface_ == NULL) 
-    // TODO Add warning
+  PARAMETER_TYPE translated_id = 0;
+  if (register_interface_ == NULL) {
+    std::cerr << "ERROR(unisim::util::os::linux::ARMEABIGetSyscallNumber): "
+        << "no register interface available." << std::endl;
     return 0;
+  }
 
   if (!register_interface_->GetRegister(kARMEABISyscallNumberReg,
                                         &translated_id))
