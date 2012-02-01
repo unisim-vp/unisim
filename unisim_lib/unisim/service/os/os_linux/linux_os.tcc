@@ -2399,16 +2399,22 @@ SetSyscallNameMap()
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetSyscallNumber(int id) 
-{
-	if ( system == "arm" )
-		return ARMGetSyscallNumber(id);
-	else if ( system == "arm-eabi" )
-		return ARMEABIGetSyscallNumber(id);
-	else
-		return PPCGetSyscallNumber(id);
+int LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
+  if ( system_.compare("arm") == 0 )
+    std::cerr << "getsyscallnumber arm " << id << std::endl;
+  else if ( system_.compare("arm-eabi") == 0 )
+    std::cerr << "getsyscallnumber arm-eabi " << id << std::endl;
+  else if ( system_.compare("powerpc") == 0 )
+    std::cerr << "getsyscallnumber powerpc " << id << std::endl;
+  if ( system_.compare("arm") == 0 )
+    return ARMGetSyscallNumber(id);
+  else if ( system_.compare("arm-eabi") == 0 )
+    return ARMEABIGetSyscallNumber(id);
+  else if ( system_.compare("powerpc") == 0 )
+    return PPCGetSyscallNumber(id);
+  std::cerr << "ERROR(unisim::service::os::os_linux): Did not know how to"
+      << " translate syscall number " << id << " (0x" << std::hex << id
+      << std::dec << ") for system \"" << system_ << "\"" << std::endl;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
