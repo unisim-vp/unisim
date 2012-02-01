@@ -1189,10 +1189,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
     *logger_ << "Associating syscall_name \"" << syscall_name << "\""
         << "to syscall_id number " << syscall_id << std::endl
         << std::endl;
-  if (HasSyscall(syscall_name))
-  {
-    if (HasSyscall(syscall_id))
-    {
+  if (HasSyscall(syscall_name)) {
+    if (HasSyscall(syscall_id)) {
       std::stringstream s;
       s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
       s << "syscall_id already associated to syscall \""
@@ -1202,9 +1200,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
     }
     syscall_name_assoc_map_[syscall_id] = syscall_name;
     syscall_impl_assoc_map_[syscall_id] = syscall_name_map_[syscall_name];
-  }
-  else
-  {
+  } else {
     std::stringstream s;
     s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
     s << "Unimplemented system call (" << syscall_name << ")";
