@@ -82,7 +82,7 @@ class LinuxRegisterInterface {
 
 class LinuxControlInterface {
  public:
-  virtual bool ExitSysCall() = 0;
+  virtual bool ExitSysCall(int ret) = 0;
 };
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -359,7 +359,7 @@ class Linux {
   bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
 
   // helper methods to control the simulator from the system calls
-  bool ExitSysCall();
+  bool ExitSysCall(int ret);
 
   // Cleans the contents of the loader logger_ and clean error flags
   void ResetLoaderLogger() {

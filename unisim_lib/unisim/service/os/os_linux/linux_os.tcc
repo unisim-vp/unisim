@@ -342,6 +342,7 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
 
   linuxlib_.SetRegisterInterface(*this);
   linuxlib_.SetMemoryInterface(*this);
+  linuxlib_.SetControlInterface(*this);
 
   return true;
 }
@@ -526,6 +527,12 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
   reg = GetRegisterFromId(registers_import_, system_, id);
   if (reg == NULL) return false;
   reg->SetValue(&value);
+  return true;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExitSysCall(int ret) {
+  Object::Stop(ret);
   return true;
 }
 

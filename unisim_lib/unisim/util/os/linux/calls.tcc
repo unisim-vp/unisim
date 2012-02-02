@@ -70,10 +70,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
   if (unlikely(verbose_))
     *logger_ << "LSC_exit with ret = 0X" << std::hex << ret << std::dec
         << std::endl;
-  std::cerr << "TODO exit system call was called, so we are exiting, but a "
-      << "cleaner stop method should be provided" << std::endl;
-  ExitSysCall();
-  // Object::Stop(ret);
+  ExitSysCall(ret);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

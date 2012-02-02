@@ -1506,9 +1506,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExitSysCall() {
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExitSysCall(int ret) {
   if (control_interface_ == NULL) return false;
-  return control_interface_->ExitSysCall();
+  return control_interface_->ExitSysCall(ret);
 }
 
 } // end of namespace linux

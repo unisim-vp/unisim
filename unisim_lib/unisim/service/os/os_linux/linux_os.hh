@@ -62,7 +62,8 @@ class LinuxOS :
     public unisim::kernel::service::Client<
       unisim::service::interfaces::Registers>,
     public unisim::util::os::linux_os::LinuxMemoryInterface<ADDRESS_TYPE>,
-    public unisim::util::os::linux_os::LinuxRegisterInterface<PARAMETER_TYPE> {
+    public unisim::util::os::linux_os::LinuxRegisterInterface<PARAMETER_TYPE>,
+    public unisim::util::os::linux_os::LinuxControlInterface {
  public:
   /* Exported services */
   //unisim::kernel::service::ServiceExport<unisim::service::interfaces::Loader>
@@ -155,6 +156,10 @@ class LinuxOS :
   /* Register methods required by the linux library */
   bool GetRegister(uint32_t id, PARAMETER_TYPE * const value);
   bool SetRegister(uint32_t id, PARAMETER_TYPE value);
+
+  /* Control methods required by the linux library */
+  bool ExitSysCall(int ret);
+
 };
 
 } // end of os_linux namespace
