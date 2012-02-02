@@ -77,6 +77,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::RegisterArray;
 
 using unisim::component::cxx::processor::hcs12x::service_address_t;
@@ -96,6 +97,7 @@ using unisim::component::tlm2::processor::hcs12x::ATD_Payload;
 template <uint8_t ATD_SIZE>
 class ATD10B :
 	public sc_module,
+	public CallBackObject,
 	virtual public tlm_fw_transport_if<UNISIM_ATD_ProtocolTypes<ATD_SIZE> >,
 	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
 	public Service<Memory<service_address_t> >,
@@ -185,8 +187,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-	bool read(uint8_t offset, void *buffer);
-	bool write(uint8_t offset, const void *buffer);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 protected:
 

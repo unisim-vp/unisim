@@ -559,7 +559,7 @@ void GDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRE
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{

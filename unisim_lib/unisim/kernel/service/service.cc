@@ -619,61 +619,135 @@ Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type
 template <class TYPE>
 unsigned int Variable<TYPE>::GetBitSize() const { return sizeof(TYPE) * 8; }
 
-template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage) ? true : false; }
-template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }
-template <class TYPE> Variable<TYPE>::operator unsigned long long () const { return (unsigned long long) *storage; }
-template <class TYPE> Variable<TYPE>::operator double () const { return (double) *storage; }
+template <class TYPE> Variable<TYPE>::operator bool () const {
+//	return (*storage) ? true : false;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (tmp? true : false) : ((*storage) ? true : false));
+}
+
+template <class TYPE> Variable<TYPE>::operator long long () const {
+//	return (long long) *storage;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (long long) tmp : (long long) *storage);
+
+}
+
+template <class TYPE> Variable<TYPE>::operator unsigned long long () const {
+//	return (unsigned long long) *storage;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (unsigned long long) tmp : (unsigned long long) *storage);
+}
+
+template <class TYPE> Variable<TYPE>::operator double () const {
+//	return (double) *storage;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (double) tmp : (double) *storage);
+
+}
+
 template <class TYPE> Variable<TYPE>::operator string () const
 {
+//	stringstream sstr;
+//	switch(GetFormat())
+//	{
+//		case FMT_DEFAULT:
+//		case FMT_HEX:
+//			sstr << "0x" << hex;
+//			sstr.fill('0');
+//			sstr.width(2 * sizeof(TYPE));
+//			sstr << (unsigned long long) *storage;
+//			break;
+//		case FMT_DEC:
+//			sstr << dec;
+//			if(std::numeric_limits<TYPE>::is_signed)
+//				sstr << (long long) *storage;
+//			else
+//				sstr << (unsigned long long) *storage;
+//			break;
+//	}
+//	return sstr.str();
+
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
+			sstr << (result? tmp: *storage);
 		case FMT_HEX:
 			sstr << "0x" << hex;
 			sstr.fill('0');
 			sstr.width(2 * sizeof(TYPE));
-			sstr << (unsigned long long) *storage;
+			sstr << (result? (unsigned long long) tmp : (unsigned long long) *storage);
 			break;
 		case FMT_DEC:
 			sstr << dec;
 			if(std::numeric_limits<TYPE>::is_signed)
-				sstr << (long long) *storage;
+				sstr << (result? (long long) tmp: (long long) *storage);
 			else
-				sstr << (unsigned long long) *storage;
+				sstr << (result? (unsigned long long) tmp : (unsigned long long) *storage);
 			break;
 	}
 	return sstr.str();
+
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
-	if ( IsMutable() )
-		*storage = value ? 1 : 0;
+	if ( IsMutable() ) {
+		TYPE tmp = value ? 1 : 0;
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
-	if ( IsMutable() )
-		*storage = value;
+	if ( IsMutable() ) {
+		if (!WriteBack(value)) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value)
 {
-	if ( IsMutable() )
-		*storage = value;
+	if ( IsMutable() ) {
+		if (!WriteBack(value)) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
-	if ( IsMutable() )
-		*storage = (TYPE) value;
+	if ( IsMutable() ) {
+		if (!WriteBack((TYPE) value)) {
+			*storage = (TYPE) value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1209,9 +1283,17 @@ const char *Variable<double>::GetDataTypeName() const
 template <>
 Variable<double>::operator string () const
 {
+//	stringstream sstr;
+//	sstr << *storage;
+//	return sstr.str();
+
+	double tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
-	sstr << *storage;
+	sstr << (result? tmp : *storage);
 	return sstr.str();
+
 }
 
 template <> 
@@ -1230,9 +1312,18 @@ const char *Variable<float>::GetDataTypeName() const
 template <>
 Variable<float>::operator string () const
 {
+//	stringstream sstr;
+//	sstr << *storage;
+//	return sstr.str();
+
+
+	float tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
-	sstr << *storage;
+	sstr << (result? tmp : *storage);
 	return sstr.str();
+
 }
 
 template <> 
@@ -1250,110 +1341,182 @@ const char *Variable<string>::GetDataTypeName() const
 
 template <> Variable<bool>::operator string () const
 {
+//	stringstream sstr;
+//	switch(GetFormat())
+//	{
+//		case FMT_DEFAULT:
+//			sstr << (*storage ? "true" : "false");
+//			break;
+//		case FMT_HEX:
+//			sstr << (*storage ? "0x1" : "0x0");
+//			break;
+//		case FMT_DEC:
+//			sstr << (*storage ? "1" : "0");
+//			break;
+//	}
+//	return sstr.str();
+
+
+	bool tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
-			sstr << (*storage ? "true" : "false");
+			sstr << (result? (tmp?  "true" : "false") : (*storage ? "true" : "false"));
 			break;
 		case FMT_HEX:
-			sstr << (*storage ? "0x1" : "0x0");
+			sstr << (result? (tmp?  "0x1" : "0x0") : (*storage ? "0x1" : "0x0"));
 			break;
 		case FMT_DEC:
-			sstr << (*storage ? "1" : "0");
+			sstr << (result? (tmp?  "1" : "0") : (*storage ? "1" : "0"));
 			break;
 	}
 	return sstr.str();
+
 }
 
 template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+	if ( IsMutable() ) {
+		bool tmp = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<char>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	if ( IsMutable() ) {
+		float tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<double>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	if ( IsMutable() ) {
+		double tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1366,8 +1529,12 @@ template <> Variable<string>::operator string () const { return *storage; }
 
 template <> VariableBase& Variable<string>::operator = (bool value)
 {
-	if ( IsMutable() )
-		*storage = value ? "true" : "false";
+	if ( IsMutable() ) {
+		string tmp = value ? "true" : "false";
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1377,7 +1544,10 @@ template <> VariableBase& Variable<string>::operator = (long long value)
 	{
 		stringstream sstr;
 		sstr << "0x" << hex << value;
-		*storage = sstr.str();
+		string tmp = sstr.str();
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1388,7 +1558,10 @@ template <> VariableBase& Variable<string>::operator = (unsigned long long value
 	{
 		stringstream sstr;
 		sstr << "0x" << hex << value;
-		*storage = sstr.str();
+		string tmp = sstr.str();
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1399,7 +1572,10 @@ template <> VariableBase& Variable<string>::operator = (double value)
 	{
 		stringstream sstr;
 		sstr << value;
-		*storage = sstr.str();
+		string tmp = sstr.str();
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1408,7 +1584,9 @@ template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
 	{
-		*storage = value;
+		if (!WriteBack(std::string(value))) {
+			*storage = value;
+		}
 	}
 	NotifyListeners();
 	return *this;

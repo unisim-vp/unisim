@@ -48,7 +48,9 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
+using unisim::kernel::service::CallBackObject;
 using unisim::kernel::logger::Logger;
 
 using unisim::kernel::logger::Logger;
@@ -81,12 +83,12 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 template <unsigned int CMD_PIPELINE_SIZE = DEFAULT_CMD_PIPELINE_SIZE, unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class S12XEETX :
 	public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
+	, public CallBackObject
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 
 {
 public:
 	typedef unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG> inherited;
-
 
 	//=========================================================
 	//=                REGISTERS OFFSETS                      =
@@ -171,8 +173,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-	bool read(uint8_t offset, void *buffer, unsigned int data_length);
-	bool write(uint8_t offset, const void *buffer, unsigned int data_length);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 
 protected:
@@ -240,9 +242,6 @@ private:
 	uint8_t cmd_interruptOffset;
 	Parameter<uint8_t> param_cmd_interruptOffset;
 
-	physical_address_t eeprom_protection_byte_addr;
-	Parameter<physical_address_t> param_eeprom_protection_byte_addr;
-
 	double erase_fail_ratio;
 	Parameter<double> param_erase_fail_ratio;
 
@@ -255,6 +254,7 @@ private:
 	uint16_t eaddr_reg, edata_reg;
 
 };
+
 
 } // end of hcs12x
 } // end of processor

@@ -36,7 +36,6 @@ Simulator::Simulator(int argc, char **argv)
 	, atd0(0)
 	, pwm(0)
 	, global_router(0)
-//	, global_memory(0)
 	, global_ram(0)
 	, global_eeprom(0)
 	, global_flash(0)
@@ -64,9 +63,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dump_statistics(true)
 
 	, endian("")
-//	, param_endian("endian", this, endian)
 	, program_counter_name("")
-//	, param_pc_reg_name("program-counter-name", this, program_counter_name)
 
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
@@ -74,6 +71,10 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
+
+	, null_stat_var(0)
+	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
+	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
 
 {
 
@@ -84,6 +85,9 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
+
+	stat_data_load_ratio.setCallBack(this, DATA_LOAD_RATIO, NULL, &CallBackObject::read);
+	stat_data_store_ratio.setCallBack(this, DATA_STORE_RATIO, NULL, &CallBackObject::read);
 
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -448,7 +452,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
 	simulator->SetVariable("atd-pwm-stub.stub-enabled", false);
 
-	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD0.bus-cycle-time", 80000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
 	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
 	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
@@ -459,7 +463,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
 
-	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD1.bus-cycle-time", 80000);
 	simulator->SetVariable("ATD1.base-address", 0x80);
 	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
 	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
@@ -482,13 +486,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("CPU.nice-time", "1 ms");
-	simulator->SetVariable("CPU.core-clock", 250000);
+	simulator->SetVariable("CPU.core-clock", 40000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 
-	simulator->SetVariable("CRG.oscillator-clock", 250000);
+	simulator->SetVariable("CRG.oscillator-clock", 40000);
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
@@ -497,7 +501,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
 	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
 
-	simulator->SetVariable("ECT.bus-cycle-time", 250000);
+	simulator->SetVariable("ECT.bus-cycle-time", 80000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
 	simulator->SetVariable("ECT.interrupt-offset-timer-overflow", 0xde);
@@ -508,40 +512,41 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.debug-enabled", false);
 
 	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
-	simulator->SetVariable("ECT.built-in-signal-generator-period", 25000);
+	simulator->SetVariable("ECT.built-in-signal-generator-period", 80000);
 
 
 	simulator->SetVariable("RAM.org", 0x0F8000);
 	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
-	simulator->SetVariable("RAM.cycle-time", 250000);
+	simulator->SetVariable("RAM.initial-byte-value", 0x00);
+	simulator->SetVariable("RAM.cycle-time", 80000);
 	simulator->SetVariable("RAM.verbose", false);
 
 	simulator->SetVariable("EEPROM.org", 0x13F000);
 	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
-	simulator->SetVariable("EEPROM.cycle-time", 250000);
-	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
-	simulator->SetVariable("EEPROM.oscillator-cycle-time", 250000);
+	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
+	simulator->SetVariable("EEPROM.cycle-time", 80000);
+	simulator->SetVariable("EEPROM.oscillator-cycle-time", 40000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
-	simulator->SetVariable("EEPROM.eeprom-protection-byte-addr", 0x13FFFD);
 	simulator->SetVariable("EEPROM.erase-fail-ratio", 0.01);
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
 	simulator->SetVariable("EEPROM.verbose", false);
 
 	simulator->SetVariable("FLASH.org", 0x780000);
 	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
-	simulator->SetVariable("FLASH.cycle-time", 250000);
+	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
+	simulator->SetVariable("FLASH.cycle-time", 80000);
 	simulator->SetVariable("FLASH.verbose", false);
 
 
-	simulator->SetVariable("global-router.cycle_time", 250000);
+	simulator->SetVariable("global-router.cycle_time", 80000);
 	simulator->SetVariable("global-router.port_buffer_size", 0x0);
 	simulator->SetVariable("global-router.mapping_0", "range_start=\"0x34\" range_end=\"0x3f\" output_port=\"0\" translation=\"34\"");
 	simulator->SetVariable("global-router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
-	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xb0\" output_port=\"2\" translation=\"80\"");
+	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xAF\" output_port=\"2\" translation=\"80\"");
 	simulator->SetVariable("global-router.mapping_3", "range_start=\"0x110\" range_end=\"0x11B\" output_port=\"3\" translation=\"110\"");
-	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x120\" range_end=\"0x130\" output_port=\"4\" translation=\"120\"");
-	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x2c0\" range_end=\"0x2e0\" output_port=\"5\" translation=\"2c0\"");
-	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x300\" range_end=\"0x328\" output_port=\"6\" translation=\"300\"");
+	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x120\" range_end=\"0x12F\" output_port=\"4\" translation=\"120\"");
+	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x2c0\" range_end=\"0x2df\" output_port=\"5\" translation=\"2c0\"");
+	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x300\" range_end=\"0x327\" output_port=\"6\" translation=\"300\"");
 	simulator->SetVariable("global-router.mapping_7", "range_start=\"0x0f8000\" range_end=\"0x0fffff\" output_port=\"7\" translation=\"0f8000\"");
 	simulator->SetVariable("global-router.mapping_8", "range_start=\"0x13f000\" range_end=\"0x13ffff\" output_port=\"8\" translation=\"13f000\"");
 	simulator->SetVariable("global-router.mapping_9", "range_start=\"0x780000\" range_end=\"0x7fffff\" output_port=\"9\" translation=\"780000\"");
@@ -559,7 +564,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.mode", 0x80);
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
-	simulator->SetVariable("PWM.bus-cycle-time", 250000);
+	simulator->SetVariable("PWM.bus-cycle-time", 80000);
 	simulator->SetVariable("PWM.base-address", 0x300);
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
@@ -579,6 +584,30 @@ void Simulator::Stop(Object *object, int _exit_status)
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
 	wait();
+}
+
+bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
+	uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+
+	switch (offset) {
+		case DATA_LOAD_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
+			return true;
+		}
+		case DATA_STORE_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
+			return true;
+		}
+
+	}
+
+	return false;
+}
+
+bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+	return false;
 }
 
 void Simulator::Run() {
@@ -656,8 +685,8 @@ void Simulator::Run() {
 		DumpStatistics(cerr);
 		cerr << endl;
 
-		cerr << "simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Target frequency       : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << " MHz" << endl;
+		cerr << "Simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
+		cerr << "Core Clock             : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << " MHz" << endl;
 		cerr << "Target speed           : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << " MIPS" << endl;
 		cerr << "Target speed           : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << " MHz" << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;

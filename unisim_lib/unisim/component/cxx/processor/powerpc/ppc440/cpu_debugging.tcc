@@ -343,7 +343,7 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	{
 		EmuTranslateAddress<true>(mmu_access); // debug is enabled
 	}
-	catch(InstructionTLBErrorException<CONFIG>& exc) { string("not mapped"); }
+	catch(InstructionTLBErrorException<CONFIG>& exc) { return string("not mapped ?"); }
 
 	bool hit = false;
 

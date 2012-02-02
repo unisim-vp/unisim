@@ -519,7 +519,7 @@ void CPU<CONFIG>::HandleException(const ProgramException<CONFIG>& exc)
 	switch(exc.GetType())
 	{
 		case ProgramException<CONFIG>::PX_UNIMPLEMENTED_INSTRUCTION:
-			// should never occur as all supported instructions are implemented and if such exist there's no way to tell it to the software
+			// should never occur as all supported instructions but altivec instructions are implemented and if such exist there's no way to tell it to the software
 			logger << DebugError << "Unimplemented instruction" << EndDebugError;
 			Stop(-1);
 			break;

@@ -42,6 +42,11 @@ namespace unisim {
 namespace util {
 namespace debug {
 
+template <class ADDRESS> class Breakpoint;
+
+template <class ADDRESS>
+std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp);
+
 template <class ADDRESS>
 class Breakpoint
 {
@@ -53,14 +58,18 @@ public:
 
 	inline ADDRESS GetAddress() const { return addr; }
 	
-	friend std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brk)
-	{
-		os << "breakpoint(0x" << std::hex << brk.addr << std::dec << ")";
-		return os;
-	}
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Breakpoint<ADDRESS>& brkp);
 private:
 	ADDRESS addr;
 };
+
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp)
+{
+	os << "breakpoint at 0x" << std::hex << brkp.addr << std::dec;
+	
+	return os;
+}
 
 } // end of namespace debug
 } // end of namespace util

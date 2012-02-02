@@ -79,6 +79,7 @@ using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::service::interfaces::TrapReporting;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::RegisterArray;
 
 using unisim::service::interfaces::Memory;
@@ -96,13 +97,14 @@ using unisim::component::tlm2::processor::hcs12x::PWM_Payload;
 
 template <uint8_t PWM_SIZE>
 class PWM :
-	public sc_module,
-	virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >,
-	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
-	public Service<Memory<service_address_t> >,
-	public Service<Registers>,
-	public Client<Memory<service_address_t> >,
-	public Client<TrapReporting >
+	public sc_module
+	, public CallBackObject
+	, virtual public tlm_bw_transport_if<UNISIM_PWM_ProtocolTypes<PWM_SIZE> >
+	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, public Service<Memory<service_address_t> >
+	, public Service<Registers>
+	, public Client<Memory<service_address_t> >
+	, public Client<TrapReporting >
 
 {
 public:
@@ -195,8 +197,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, uint8_t &value);
-    bool write(uint8_t offset, uint8_t val);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;

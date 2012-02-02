@@ -2118,7 +2118,7 @@ void DWARF_Handler<MEMORY_ADDR>::BuildStatementMatrix()
 
 /*
 template <class MEMORY_ADDR>
-bool DWARF_Handler<MEMORY_ADDR>::GetCFI(MEMORY_ADDR pc, std::vector<DWARF_RuleMatrixRow<MEMORY_ADDR> *>& backtrace) const
+bool DWARF_Handler<MEMORY_ADDR>::GetCFI(MEMORY_ADDR pc, DWARF_UnwindContext<MEMORY_ADDR>& unwind_context, std::vector<DWARF_RuleMatrixRow<MEMORY_ADDR> *>& backtrace) const
 {
 	unsigned int i;
 	unsigned int num_fdes = dw_fdes.size();
@@ -2165,6 +2165,7 @@ bool DWARF_Handler<MEMORY_ADDR>::GetCFI(MEMORY_ADDR pc, std::vector<DWARF_RuleMa
 			
 		}
 	}
+	return false;
 }
 */
 template <class MEMORY_ADDR>
