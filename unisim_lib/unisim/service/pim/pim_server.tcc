@@ -37,8 +37,6 @@
 #ifndef __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 #define __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 
-#include <unisim/util/xml/xml.hh>
-
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -65,6 +63,9 @@
 #include <fcntl.h>
 
 #endif
+
+#include "unisim/util/xml/xml.hh"
+#include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
 namespace service {
@@ -1248,7 +1249,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 						breakpoint_registry.HasBreakpoints());
 			return true;
 		case 2:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1258,7 +1259,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			else
 				return false;
 		case 3:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1269,7 +1270,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				return false;
 
 		case 4:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1277,7 +1278,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 			else
 				return false;
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1314,7 +1315,7 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			return true;
 
 		case 2:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1324,7 +1325,7 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			else
 				return false;
 		case 3:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1334,7 +1335,7 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			else
 				return false;
 		case 4:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1342,7 +1343,7 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			}
 			else
 				return false;
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(!watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(

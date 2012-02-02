@@ -573,7 +573,7 @@ Simulator::EnablePimServer()
 
     //		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
 
-    pim_server->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
+    // pim_server->symbol_table_lookup_import >> elf32_loader->symbol_table_lookup_export;
 
     cpu->debug_control_import >> pim_server->debug_control_export;
     cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;

@@ -834,9 +834,10 @@ set ( KERNEL_SRCS
   ${KERNEL_SRCS_PATH}/logger/logger_server.cc
   ${KERNEL_SRCS_PATH}/debug/debug.hh
   ${KERNEL_SRCS_PATH}/debug/debug.cc
-  ${KERNEL_SRCS_PATH}/tlm/tlm.hh
-  ${KERNEL_SRCS_PATH}/tlm/tlm.cc
+  #${KERNEL_SRCS_PATH}/tlm/tlm.hh
+  #${KERNEL_SRCS_PATH}/tlm/tlm.cc
   ${KERNEL_SRCS_PATH}/tlm2/tlm.hh
+  ${KERNEL_SRCS_PATH}/tlm2/tlm.cc
   )
 set_source_files_properties ( ${KERNEL_SRCS_PATH}/service/service.cc
   PROPERTIES

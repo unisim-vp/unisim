@@ -15,6 +15,7 @@
 			<file>unisim/kernel/logger/logger_server.cc</file>
 			<file>unisim/kernel/logger/logger_server.hh</file>
 			<file>unisim/kernel/tlm2/tlm.hh</file>
+			<file>unisim/kernel/tlm2/tlm.cc</file>
 			<file>unisim/kernel/tlm/tlm.hh</file>
 			<file>unisim/kernel/tlm/tlm.cc</file>
 			<file>unisim/kernel/debug/debug.hh</file>
