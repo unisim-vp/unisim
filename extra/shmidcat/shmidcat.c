@@ -20,7 +20,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-/* Gilles Mouchard <gilles.mouchard@cea.fr>: make shmidcat loadable as a dynamic library
+/* 
+   Gilles Mouchard <gilles.mouchard@cea.fr>: make shmidcat loadable as a dynamic library
+   Reda Nouacer <reda.nouacer@cea.fr>
  */
 
 #include <config.h>
@@ -116,141 +118,215 @@ if((rc = *consume_ptr))
 return(rc);
 }
 
-
 void shmidcat_emit_string(char *s)
 {
-int len = strlen(s);
-long l_top, l_curr;
-int consumed;
-int blksiz;
+	int len = strlen(s);
+	long l_top, l_curr;
+	int consumed;
+	int blksiz;
 
-for(;;)
+	for(;;)
 	{
-	while(!*buf_top)
+		while(!*buf_top)
 		{
-		if((blksiz = get_32(buf_top+1)))
+			if((blksiz = get_32(buf_top+1)))
 			{
-			buf_top += 1 + 4 + blksiz;
-			if(buf_top >= (buf + WAVE_PARTIAL_VCD_RING_BUFFER_SIZE))
-			        {  
-			        buf_top -= WAVE_PARTIAL_VCD_RING_BUFFER_SIZE;
-			        }
+				buf_top += 1 + 4 + blksiz;
+				if(buf_top >= (buf + WAVE_PARTIAL_VCD_RING_BUFFER_SIZE))
+				{
+					buf_top -= WAVE_PARTIAL_VCD_RING_BUFFER_SIZE;
+				}
 			}
 			else
 			{
-			break;
+				break;
 			}
 		}
 
-	l_top = (long)buf_top;
-	l_curr = (long)buf_curr;
+		l_top = (long)buf_top;
+		l_curr = (long)buf_curr;
 
-	if(l_curr >= l_top)
+		if(l_curr >= l_top)
 		{
-		consumed = l_curr - l_top;
+			consumed = l_curr - l_top;
 		}
 		else
 		{
-		consumed = (l_curr + WAVE_PARTIAL_VCD_RING_BUFFER_SIZE) - l_top;
+			consumed = (l_curr + WAVE_PARTIAL_VCD_RING_BUFFER_SIZE) - l_top;
 		}
-	
-	if((consumed + len + 16) > WAVE_PARTIAL_VCD_RING_BUFFER_SIZE) /* just a guardband, it's oversized */
+
+		if((consumed + len + 16) > WAVE_PARTIAL_VCD_RING_BUFFER_SIZE) /* just a guardband, it's oversized */
 		{
 #ifdef __MINGW32__
-		Sleep(10);
+			Sleep(10);
 #else
-		struct timeval tv;
-	
+			struct timeval tv;
+
 	        tv.tv_sec = 0;
 	        tv.tv_usec = 1000000 / 100;
 	        select(0, NULL, NULL, NULL, &tv);
 #endif
-		continue;
+			continue;
 		}
 		else
 		{
-		char *ss, *sd;
-		put_32(buf_curr + 1, len);
-		
-		sd = buf_curr + 1 + 4;
-		ss = s;
-		while(*ss)
+			char *ss, *sd;
+			put_32(buf_curr + 1, len);
+
+			sd = buf_curr + 1 + 4;
+			ss = s;
+			while(*ss)
 			{
-			put_8(sd, *ss);
-			ss++;
-			sd++;
+				put_8(sd, *ss);
+				ss++;
+				sd++;
 			}
-		put_8(sd, 0);	/* next valid */
-		put_32(sd+1, 0);	/* next len */
-		put_8(buf_curr, 1); /* current valid */
 
-                buf_curr += 1 + 4 + len;
-                if(buf_curr >= (buf + WAVE_PARTIAL_VCD_RING_BUFFER_SIZE))
-                        {
-                        buf_curr -= WAVE_PARTIAL_VCD_RING_BUFFER_SIZE;
-                        }
+			put_8(sd, 0);	/* next valid */
+			put_32(sd+1, 0);	/* next len */
+			put_8(buf_curr, 1); /* current valid */
 
-		break;
+			buf_curr += 1 + 4 + len;
+
+			if(buf_curr >= (buf + WAVE_PARTIAL_VCD_RING_BUFFER_SIZE))
+			{
+				buf_curr -= WAVE_PARTIAL_VCD_RING_BUFFER_SIZE;
+			}
+
+			break;
 		}
 	}
 }
+
 
 #ifdef __MINGW32__
 static char mapName[65];
 static HANDLE hMapFile;
+
+static STARTUPINFO si;
+static PROCESS_INFORMATION pi;
+
 #else
 static struct shmid_ds ds;
+static int gtkwave_pid;
 #endif
+
 static int shmid;
 
-static int gtkwave_pid;
 
 int shmidcat_init(char *gtk_wave_path)
 {
-	gtkwave_pid = fork();
-	
-	if(gtkwave_pid < 0) return -1;
-	if(gtkwave_pid == 0)
+
+	// parent process
 	{
-		if(execlp(gtk_wave_path, "-v", "-I") < 0) exit(-1);
-	}
-	
+
+		// Code only executed by parent process
+
 #ifdef __MINGW32__
-	shmid = getpid();
-	sprintf(mapName, "shmidcat%d", shmid);
-	hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE, mapName);
-	if(hMapFile == NULL) return -1;
-	buf_top = buf_curr = buf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE);
+
+		shmid = getpid();
+		sprintf(mapName, "shmidcat%d", shmid);
+		hMapFile = CreateFileMapping(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE, mapName);
+		if(hMapFile == NULL) return -1;
+		buf_top = buf_curr = buf = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE);
 #else
-	shmid = shmget(0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE, IPC_CREAT | 0600 );
-	if(shmid < 0) return -1;
-	buf_top = buf_curr = buf = shmat(shmid, NULL, 0);
+
+		shmid = shmget(0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE, IPC_CREAT | 0600 );
+
+		if(shmid < 0) return -1;
+
+		buf_top = buf_curr = buf = shmat(shmid, NULL, 0);
 #endif
-	memset(buf, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE);
+		memset(buf, 0, WAVE_PARTIAL_VCD_RING_BUFFER_SIZE);
 
 #ifdef __linux__
-	shmctl(shmid, IPC_RMID, &ds); /* mark for destroy, linux allows queuing up destruction now */
+		shmctl(shmid, IPC_RMID, &ds); /* mark for destroy, linux allows queuing up destruction now */
 #endif
 
-	consume_ptr = buf;
+		consume_ptr = buf;
 
-	return 0;
+	}
+
+
+	char handle_str[80];
+	sprintf(handle_str, "%08x", shmid);
+
+#ifdef __MINGW32__
+
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
+
+    char cmdline[256];
+    memset(cmdline, 0, 256);
+
+    sprintf(cmdline, "%s -v -I %s", gtk_wave_path, handle_str);
+
+    // Start the child process. 
+    if( !CreateProcess( NULL,   // No module name (use command line)
+        cmdline,        // Command line
+        NULL,           // Process handle not inheritable
+        NULL,           // Thread handle not inheritable
+        TRUE,          // Set handle inheritance to FALSE
+        0,              // No creation flags
+        NULL,           // Use parent's environment block
+        NULL,           // Use parent's starting directory 
+        &si,            // Pointer to STARTUPINFO structure
+        &pi )           // Pointer to PROCESS_INFORMATION structure
+    ) 
+    {
+        printf( "CreateProcess failed (%d).\n", GetLastError() );
+        return -1;
+    }
+
+
+#else
+
+	gtkwave_pid = fork();
+
+	if(gtkwave_pid == 0) // child process
+	{
+		// Code only executed by child process
+
+	int ret = execlp(gtk_wave_path, "-v", "-I", handle_str, (char *)0);
+
+		if(ret < 0) {
+			printf("Failed to execute gtk-wave Code= %d\n", ret);
+			// Throw exception
+			return -1;
+		}
+	}
+	else if(gtkwave_pid < 0) // failed to fork
+	{
+		printf("Failed to fork\n");
+		// Throw exception
+		return -1;
+	}
+#endif
+
+	return shmid;
 }
 
 void shmidcat_exit()
 {
+#ifdef __MINGW32__
+    // Close process and thread handles. 
+    CloseHandle( pi.hProcess );
+    CloseHandle( pi.hThread );
+
+	UnmapViewOfFile(buf);
+	CloseHandle(hMapFile);
+
+#else
 	if(gtkwave_pid > 0)
 	{
 		kill(gtkwave_pid, SIGTERM);
 	}
-#ifndef __linux__
-#ifdef __MINGW32__
-	UnmapViewOfFile(buf);
-	CloseHandle(hMapFile);
-#else
+
 	shmctl(shmid, IPC_RMID, &ds); /* mark for destroy */
+
 #endif
-#endif
+
 }
 
 /*

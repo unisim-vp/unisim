@@ -61,6 +61,7 @@
 #include "unisim/service/interfaces/trap_reporting.hh"
 
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/debug/simple_register.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -91,6 +92,7 @@ using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::Register;
+using unisim::util::debug::SimpleRegister;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
@@ -261,6 +263,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	// RTI Frequency Divide Rate
 	double rti_fdr;

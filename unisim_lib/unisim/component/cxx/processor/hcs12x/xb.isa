@@ -41,6 +41,7 @@ set subdecoder_p true
 
 // address {uint16_t}
 set addressclass {uint16_t}
+//set addressclass {uint32_t}
 
 // big_endian
 set endianness big
@@ -175,7 +176,7 @@ xb_5bit_cst.getXbMode = { return XbModes::IDX; }
 
 xb_5bit_cst.getEAddr = {
 
-	address_t addr = cpu->xb_getAddrRegValue(rr) + nnnnn;
+	uint16_t addr = cpu->xb_getAddrRegValue(rr) + nnnnn;
 	
     return addr;
 
@@ -201,7 +202,7 @@ xb_9_cst_z0.getXbMode = { return XbModes::IDX1; }
 
 xb_9_cst_z0.getEAddr = {
 
-	address_t addr;
+	uint16_t addr;
 /*	
 	if (s==0) {
 		addr = cpu->xb_getAddrRegValue(rr) + (n8 & 0xFF);
@@ -301,8 +302,8 @@ xb_auto.getXbMode = { return XbModes::IDX; }
 
 xb_auto.getEAddr = {
 
-	address_t regOldVal = cpu->xb_getAddrRegValue(rr);
-	address_t regNewVal;
+	uint16_t regOldVal = cpu->xb_getAddrRegValue(rr);
+	uint16_t regNewVal;
 
 	short val = nnnn;
 	// if (val > 7) then decrement else increment

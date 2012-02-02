@@ -194,6 +194,7 @@ public:
 	virtual VariableBase& operator [] (unsigned int index);
 	virtual const VariableBase& operator [] (unsigned int index) const;
 	virtual unsigned int GetLength() const;
+	virtual unsigned int GetBitSize() const;
 	
 	virtual VariableBase& operator = (const VariableBase& variable);
 	virtual std::string GetSymbolicValue() const;
@@ -285,6 +286,8 @@ public:
 	
 	virtual double GetSimTime()	{ return 0;	}
 	virtual double GetHostTime()	{ return 0;	}
+	virtual long   GetStructuredAddress(long logicalAddress) { return logicalAddress; }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return logicalAddress; }
 
 	bool IsWarningEnabled() const;
 
@@ -437,6 +440,7 @@ public:
 	Variable(const char *name, Object *owner, TYPE& storage, VariableBase::Type type, const char *description = NULL);
 
 	virtual const char *GetDataTypeName() const;
+	virtual unsigned int GetBitSize() const;
 	virtual operator bool () const;
 	virtual operator long long () const;
 	virtual operator unsigned long long () const;

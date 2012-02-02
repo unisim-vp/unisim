@@ -104,17 +104,20 @@ public:
 	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload);
 	virtual tlm::tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t);
-	
-private:
+
+protected:
 	/**
 	 * Check the verbosity
 	 */
 	inline bool IsVerbose() { return (DEBUG && verbose); }
-	sc_time& GetBurstLatency(unsigned int num_burst_beats);
-	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
 
 	/** Logger */
 	Logger logger;
+
+private:
+	sc_time& GetBurstLatency(unsigned int num_burst_beats);
+	void UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t);
+
 	/** Verbosity */
 	bool verbose;
 	/** The cycle time */

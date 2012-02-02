@@ -245,9 +245,7 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 		}
 
 
-//		vectorAddress = (getIVBR() << 8) + selectedInterrupt * 2;
-		vectorAddress = getIVBR();
-		vectorAddress = (vectorAddress << 8) + selectedInterrupt * 2;
+		vectorAddress = (getIVBR() << 8) + selectedInterrupt * 2;
 		interrupt_flags[selectedInterrupt] = false;
 	}
 
@@ -569,10 +567,6 @@ bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 }
 
 bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
-
-	if (size == 0) {
-		return true;
-	}
 
 	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
 		if (XINT_REGS_ADDRESSES[i] == addr) {

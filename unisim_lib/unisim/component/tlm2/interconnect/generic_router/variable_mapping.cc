@@ -45,6 +45,9 @@ template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapp
 	Simulator::simulator->Initialize(this);
 }
 
+template <>
+unsigned int Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::GetBitSize() const { return 0; }
+
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator bool () const { return false; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator long long () const { return 0; }
 template <> Variable<unisim::component::tlm2::interconnect::generic_router::Mapping>::operator unsigned long long () const { return 0; }

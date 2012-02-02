@@ -425,6 +425,9 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		switch(nparms)
 		{
+			case 0:
+				if(!interactive) continue;
+				break;
 			case 1:
 				{
 					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
@@ -1879,8 +1882,9 @@ void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 			(*std_error_stream) << "WARNING! I/O error while reading file \"" << path << "\"" << std::endl;
 			return;
 		}
+		if (f.eof()) break;
 		macro.push(line);
-	} while(!f.eof());
+	} while(true);
 	
 	while(!macro.empty())
 	{
@@ -2335,7 +2339,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 			std::cout << prompt;
 		}
 		(*std_output_stream) << prompt;
-		getline(line, cin);
+		getline(cin, line);
 		if(cin.fail()) return false;
 		if(std_output_stream != &std::cout)
 		{

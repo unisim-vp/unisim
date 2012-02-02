@@ -464,8 +464,8 @@ public:
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
-	inline void MonitorStore(address_t ea, uint32_t size);
-	inline void MonitorLoad(address_t ea, uint32_t size);
+	inline void MonitorStore(physical_address_t pea, uint32_t size);
+	inline void MonitorLoad(physical_address_t pea, uint32_t size);
 
 	inline void ReportTrap();
 
@@ -577,7 +577,7 @@ protected:
 
 private:
 	uint8_t		regA, regB;
-    uint16_t    regX, regY, regSP, regPC;
+    uint16_t    regX, regY, regSP, regPC, ccrReg;
     uint16_t	regTMP[3];
 
     address_t lastPC;
@@ -600,6 +600,8 @@ private:
 	// Registers map
 	map<string, Register *> registers_registry;
 
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
 	/** the instruction counter */
 	uint64_t instruction_counter;
 	uint64_t cycles_counter;
@@ -620,31 +622,30 @@ private:
 // =          MEMORY ACCESS ROUTINES            =
 // ==============================================
 
-inline void CPU::MonitorLoad(address_t ea, uint32_t size)
+inline void CPU::MonitorLoad(physical_address_t pea, uint32_t size)
 {
 	data_load_counter++;
 
 	// Memory access reporting
-	if(requires_memory_access_reporting && memory_access_reporting_import)
+	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_DATA, pea, size);
 	}
 }
 
-inline void CPU::MonitorStore(address_t ea, uint32_t size)
+inline void CPU::MonitorStore(physical_address_t pea, uint32_t size)
 {
 	data_store_counter++;
 
 	// Memory access reporting
-	if(requires_memory_access_reporting && memory_access_reporting_import)
+	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_WRITE, MemoryAccessReporting<service_address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_WRITE, MemoryAccessReporting<service_address_t>::MT_DATA, pea, size);
 	}
 }
 
 inline void CPU::ReportTrap() {
 	if (debug_enabled && trap_reporting_import) {
-		std::cout << "*** CPU12 ReprotTrap *** 0x" << std::hex << getLastPC() << std::dec << std::endl;
 		trap_reporting_import->ReportTrap();
 	}
 
@@ -662,7 +663,10 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 
 	BusRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	MonitorLoad(logicalAddress, sizeof(data));
+//	MonitorLoad(logicalAddress, sizeof(data));
+
+	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	MonitorLoad(pea, sizeof(data));
 
 	return data;
 }
@@ -681,40 +685,49 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 
 	data = BigEndian2Host(data);
 
-	MonitorLoad(logicalAddress, sizeof(data));
+//	MonitorLoad(logicalAddress, sizeof(data));
+
+	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	MonitorLoad(pea, sizeof(data));
 
 	return data;
 }
 
-inline void CPU::memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE type, bool isGlobal) {
+inline void CPU::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE type, bool isGlobal) {
 
 	MMC_DATA mmc_data;
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
-	mmc_data.buffer = &val;
+	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
 	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	MonitorStore(logicalAddress, sizeof(val));
+//	MonitorStore(logicalAddress, sizeof(val));
+
+	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	MonitorStore(pea, sizeof(data));
 
 }
 
-inline void CPU::memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE type, bool isGlobal) {
+inline void CPU::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MODE type, bool isGlobal) {
 
 	MMC_DATA mmc_data;
 
-	val = Host2BigEndian(val);
+	data = Host2BigEndian(data);
 
 	mmc_data.type = type;
 	mmc_data.isGlobal = isGlobal;
-	mmc_data.buffer = &val;
+	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
 	BusWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	MonitorStore(logicalAddress, sizeof(val));
+//	MonitorStore(logicalAddress, sizeof(val));
+
+	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	MonitorStore(pea, sizeof(data));
 
 }
 

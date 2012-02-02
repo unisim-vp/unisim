@@ -140,11 +140,55 @@ CPU::CPU(const char *name, Object *parent):
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
-    ccr = new CCR_t();
+    ccr = new CCR_t(&ccrReg);
 
     eblb = new EBLB(this);
 
 	logger = new unisim::kernel::logger::Logger(*this);
+
+	char buf[80];
+
+	sprintf(buf, "A");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regA, "Accumulator register A"));
+
+	sprintf(buf, "B");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regB, "Accumulator register B"));
+
+	sprintf(buf, "D");
+	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
+	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>(buf, this,  &regA, &regB, "Accumulator register D"));
+
+	sprintf(buf, "X");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regX);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regX, "Index register X"));
+
+	sprintf(buf, "Y");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regY);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regY, "Index register Y"));
+
+	sprintf(buf, "SP");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regSP);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regSP, "Stack Pointer SP"));
+
+	sprintf(buf, "PC");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regPC);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regPC, "Program counter PC"));
+
+	sprintf(buf, "%s", ccr->GetName());
+	registers_registry[buf] = ccr;
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, ccrReg, "CCR"));
+
+	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	sprintf(buf, "%s", ccrl->GetName());
+	registers_registry[buf] = ccrl;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
+
+	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	sprintf(buf, "%s", ccrh->GetName());
+	registers_registry[buf] = ccrh;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
 }
 
@@ -163,7 +207,11 @@ CPU::~CPU()
 			delete reg_iter->second;
 	}
 
-	registers_registry.clear();
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
 
 	if (logger) { delete logger; logger = NULL;}
 }
@@ -210,16 +258,204 @@ void CPU::OnBusCycle()
 {
 }
 
+//uint8_t CPU::Step()
+//{
+//	address_t 	current_pc;
+//
+//	uint8_t 	buffer[MAX_INS_SIZE];
+//
+//	Operation 	*op;
+//	uint8_t	opCycles = 0;
+//
+//	current_pc = getRegPC();
+//
+//	try
+//	{
+//
+//		VerboseDumpRegsStart();
+//
+//		if(debug_enabled && verbose_step)
+//			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << current_pc << std::dec << std::endl << EndDebugInfo;
+//
+//		if(debug_control_import) {
+//			DebugControl<service_address_t>::DebugCommand dbg_cmd;
+//
+//			do {
+//				if(debug_enabled && verbose_step)
+//					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
+//						<< std::endl << EndDebugInfo;
+//
+////				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+//				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(current_pc));
+//
+//				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
+//					if(debug_enabled && verbose_step)
+//						*logger << DebugInfo
+//							<< "Received debug DBG_STEP command (PC = 0x"
+//							<< std::hex << current_pc << std::dec << ")"
+//							<< std::endl << EndDebugInfo;
+//					break;
+//				}
+//				if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
+//					if(debug_enabled && verbose_step)
+//						*logger << DebugInfo
+//							<< "Received debug DBG_SYNC command (PC = 0x"
+//							<< std::hex << current_pc << std::dec << ")"
+//							<< std::endl << EndDebugInfo;
+//					Sync();
+//					continue;
+//				}
+//
+//				if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
+//					if(debug_enabled && verbose_step)
+//						*logger << DebugInfo
+//							<< "Received debug DBG_KILL command (PC = 0x"
+//							<< std::hex << current_pc << std::dec << ")"
+//							<< std::endl << EndDebugInfo;
+//					Stop(0);
+//				}
+//				if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
+//					if(debug_enabled && verbose_step)
+//						*logger << DebugInfo
+//							<< "Received debug DBG_RESET command (PC = 0x"
+//							<< std::hex << current_pc << std::dec << ")"
+//							<< std::endl << EndDebugInfo;
+//				}
+//			} while(1);
+//		}
+//
+//		if(requires_memory_access_reporting) {
+//			if(memory_access_reporting_import) {
+//				if(debug_enabled && verbose_step)
+//					*logger << DebugInfo
+//						<< "Reporting memory access for fetch at address 0x"
+//						<< std::hex << current_pc << std::dec
+//						<< std::endl << EndDebugInfo;
+//
+//				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
+//			}
+//		}
+//
+//
+//		if(debug_enabled && verbose_step)
+//		{
+//			*logger << DebugInfo
+//				<< "Fetching (reading) instruction at address 0x"
+//				<< std::hex << current_pc << std::dec
+//				<< std::endl << EndDebugInfo;
+//		}
+//
+//		queueFetch(current_pc, buffer, MAX_INS_SIZE);
+//		CodeType 	insn( buffer, MAX_INS_SIZE*8);
+//
+//		/* Decode current PC */
+//		if(debug_enabled && verbose_step)
+//		{
+//			stringstream ctstr;
+//			ctstr << insn;
+//			*logger << DebugInfo
+//				<< "Decoding instruction at 0x"
+//				<< std::hex << current_pc << std::dec
+//				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
+//				<< std::endl << EndDebugInfo;
+//		}
+//
+//		op = this->Decode(current_pc, insn);
+//		lastPC = current_pc;
+//      unsigned int insn_length = op->GetLength();
+//      if (insn_length % 8) throw "InternalError";
+//
+//		queueFlush(insn_length/8);
+//
+//		/* Execute instruction */
+//
+//		if (trace_enable) {
+//			stringstream disasm_str;
+//			stringstream ctstr;
+//
+//			op->disasm(disasm_str);
+//
+//			ctstr << op->GetEncoding();
+//
+//			*logger << DebugInfo << GetSimulatedTime() << " ms: "
+//				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
+//				<< GetFunctionFriendlyName(current_pc) << " : "
+//				<< disasm_str.str()
+//				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
+//
+//		}
+//
+//		if (debug_enabled && verbose_step) {
+//			stringstream disasm_str;
+//			stringstream ctstr;
+//
+//			op->disasm(disasm_str);
+//
+//			ctstr << op->GetEncoding();
+//			*logger << DebugInfo << GetSimulatedTime() << "ms: "
+//				<< "Executing instruction "
+//				<< disasm_str.str()
+//				<< " at PC = 0x" << std::hex << current_pc << std::dec
+//				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
+//				<< "  " << EndDebugInfo	<< std::endl;
+//		}
+//
+//		setRegPC(current_pc + (insn_length/8));
+//
+//		op->execute(this);
+//
+//		opCycles = op->getCycles();
+//
+//		cycles_counter += opCycles;
+//
+//		VerboseDumpRegsEnd();
+//
+//		instruction_counter++;
+//
+//		RegistersInfo();
+//
+//		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
+//			trap_reporting_import->ReportTrap();
+//		}
+//
+//		if(requires_finished_instruction_reporting)
+//			if(memory_access_reporting_import) {
+////				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+//				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(getRegPC()));
+//
+//			}
+//
+//		if(HasAsynchronousInterrupt())
+//		{
+//			throw AsynchronousException();
+//		}
+//
+//	}
+//	catch (AsynchronousException& exc) { HandleException(exc); }
+//	catch (NonMaskableAccessErrorInterrupt& exc) { HandleException(exc); }
+//	catch (NonMaskableSWIInterrupt& exc) { HandleException(exc); }
+//	catch (TrapException& exc) { HandleException(exc); }
+//	catch (SysCallInterrupt& exc) { HandleException(exc); }
+//	catch (SpuriousInterrupt& exc) { HandleException(exc); }
+//	catch(Exception& e)
+//	{
+//		if(debug_enabled && verbose_step)
+//			*logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
+//		Stop(1);
+//	}
+//
+//	if (instruction_counter >= max_inst) Stop(0);
+//
+//	return opCycles;
+//}
+
 uint8_t CPU::Step()
 {
-	address_t 	current_pc;
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
 	uint8_t	opCycles = 0;
-
-	current_pc = getRegPC();
 
 	try
 	{
@@ -227,23 +463,24 @@ uint8_t CPU::Step()
 		VerboseDumpRegsStart();
 
 		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << current_pc << std::dec << std::endl << EndDebugInfo;
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
 			DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
 			do {
 				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
+					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+//				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(getRegPC()));
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					break;
 				}
@@ -251,7 +488,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Sync();
 					continue;
@@ -261,7 +498,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Stop(0);
 				}
@@ -269,7 +506,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 				}
 			} while(1);
@@ -279,11 +516,11 @@ uint8_t CPU::Step()
 			if(memory_access_reporting_import) {
 				if(debug_enabled && verbose_step)
 					*logger << DebugInfo
-						<< "Reporting memory acces for fetch at address 0x"
-						<< std::hex << current_pc << std::dec
+						<< "Reporting memory access for fetch at address 0x"
+						<< std::hex << getRegPC() << std::dec
 						<< std::endl << EndDebugInfo;
 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
 			}
 		}
 
@@ -292,11 +529,11 @@ uint8_t CPU::Step()
 		{
 			*logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << current_pc << std::dec
+				<< std::hex << getRegPC() << std::dec
 				<< std::endl << EndDebugInfo;
 		}
 
-		queueFetch(current_pc, buffer, MAX_INS_SIZE);
+		queueFetch(getRegPC(), buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
 		/* Decode current PC */
@@ -306,16 +543,15 @@ uint8_t CPU::Step()
 			ctstr << insn;
 			*logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< std::hex << current_pc << std::dec
+				<< std::hex << getRegPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
 				<< std::endl << EndDebugInfo;
 		}
 
-		op = this->Decode(current_pc, insn);
-		lastPC = current_pc;
-                unsigned int insn_length = op->GetLength();
-                if (insn_length % 8) throw "InternalError";
-		setRegPC(current_pc + (insn_length/8));
+		op = this->Decode(getRegPC(), insn);
+		lastPC = getRegPC();
+        unsigned int insn_length = op->GetLength();
+        if (insn_length % 8) throw "InternalError";
 
 		queueFlush(insn_length/8);
 
@@ -327,20 +563,17 @@ uint8_t CPU::Step()
 
 			op->disasm(disasm_str);
 
-			std::cerr <<  DebugInfo << GetSimulatedTime() << " ms: "
-					<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
-					<< GetFunctionFriendlyName(current_pc) << " : "
-					<< disasm_str.str()
-					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
-
 			ctstr << op->GetEncoding();
+
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
-				<< GetFunctionFriendlyName(current_pc) << " : "
+				<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
+				<< GetFunctionFriendlyName(getRegPC()) << " : "
 				<< disasm_str.str()
 				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
-		} else if (debug_enabled && verbose_step) {
+		}
+
+		if (debug_enabled && verbose_step) {
 			stringstream disasm_str;
 			stringstream ctstr;
 
@@ -350,10 +583,12 @@ uint8_t CPU::Step()
 			*logger << DebugInfo << GetSimulatedTime() << "ms: "
 				<< "Executing instruction "
 				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << current_pc << std::dec
+				<< " at PC = 0x" << std::hex << getRegPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
 				<< "  " << EndDebugInfo	<< std::endl;
 		}
+
+		setRegPC(getRegPC() + (insn_length/8));
 
 		op->execute(this);
 
@@ -372,8 +607,11 @@ uint8_t CPU::Step()
 		}
 
 		if(requires_finished_instruction_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+			if(memory_access_reporting_import) {
+//				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(getRegPC()));
+
+			}
 
 		if(HasAsynchronousInterrupt())
 		{
@@ -394,7 +632,13 @@ uint8_t CPU::Step()
 		Stop(1);
 	}
 
-	if (instruction_counter >= max_inst) Stop(0);
+//	if (instruction_counter >= max_inst) Stop(0);
+	if ((instruction_counter % max_inst) == 0) {
+		if (trap_reporting_import) {
+			trap_reporting_import->ReportTrap();
+		}
+
+	}
 
 	return opCycles;
 }
@@ -907,41 +1151,6 @@ bool CPU::BeginSetup() {
 		*logger << DebugInfo
 			<< "Initializing debugging registers"
 			<< std::endl << EndDebugInfo;
-
-	char buf[80];
-
-	sprintf(buf, "A");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
-
-	sprintf(buf, "B");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
-
-	sprintf(buf, "D");
-	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
-
-	sprintf(buf, "X");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
-
-	sprintf(buf, "Y");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
-
-	sprintf(buf, "SP");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
-
-	sprintf(buf, "PC");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
-
-	sprintf(buf, "%s", ccr->GetName());
-	registers_registry[buf] = ccr;
-
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	sprintf(buf, "%s", ccrl->GetName());
-	registers_registry[buf] = ccrl;
-
-
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	sprintf(buf, "%s", ccrh->GetName());
-	registers_registry[buf] = ccrh;
 
 	return true;
 }
