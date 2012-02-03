@@ -143,11 +143,6 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 	return *this;
 }
 
-template <>
-unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetBitSize() const {
-  return sizeof(unisim::service::power::CachePowerEstimator::AccessMode) * 8;
-}
-
 template class Variable<unisim::service::power::CachePowerEstimator::AccessMode>;
 
 } // end of namespace service
