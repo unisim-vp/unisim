@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
 #include <inttypes.h>
+#include <iostream>
 
 #include "unisim/util/debug/memory_access_type.hh"
 
@@ -91,23 +92,23 @@ inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& w
 {
 	switch(wp.mt)
 	{
-		case MemoryAccessReporting<ADDRESS>::MT_DATA:
+		case unisim::util::debug::MT_DATA:
 			os << "data";
 			break;
-		case MemoryAccessReporting<ADDRESS>::MT_INSN:
+		case unisim::util::debug::MT_INSN:
 			os << "instruction";
 			break;
 	}
 	os << " ";
-	if(wp.mat & (MemoryAccessReporting<ADDRESS>::MAT_WRITE | MemoryAccessReporting<ADDRESS>::MAT_READ))
+	if(wp.mat & (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ))
 	{
 		os << "read/write";
 	}
-	else if(wp.mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+	else if(wp.mat & unisim::util::debug::MAT_WRITE)
 	{
 		os << "write";
 	}
-	else if(wp.mat & MemoryAccessReporting<ADDRESS>::MAT_READ)
+	else if(wp.mat & unisim::util::debug::MAT_READ)
 	{
 		os << "read";
 	}
