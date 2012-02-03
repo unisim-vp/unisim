@@ -1223,7 +1223,7 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 	if (watchpoint_hit != NULL) {
 
 		std::stringstream sstr;
-		if (watchpoint_hit->GetMemoryAccessType() == MemoryAccessReporting<ADDRESS>::MAT_READ) {
+		if (watchpoint_hit->GetMemoryAccessType() == unisim::util::debug::MAT_READ) {
 			sstr << "rwatch";
 		} else {
 			sstr << "watch";

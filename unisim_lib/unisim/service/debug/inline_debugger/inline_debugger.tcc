@@ -51,7 +51,6 @@
 #include <editline/readline.h>
 #endif
 
-#include <unisim/util/endian/endian.hh>
 #include <fstream>
 #include <iostream>
 
@@ -60,6 +59,9 @@
 #else
 #include <unistd.h>
 #endif
+
+#include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {
@@ -320,9 +322,9 @@ void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<
 	}
 	if(unlikely(profile))
 	{
-		if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
+		if(mt == unisim::util::debug::MT_DATA)
 		{
-			if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+			if(mat == unisim::util::debug::MAT_WRITE)
 			{
 				data_write_profile.Accumulate(addr, 1);
 			}
@@ -1933,11 +1935,7 @@ void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 		}
 		if (f.eof()) break;
 		macro.push(line);
-<<<<<<< HEAD
-	} while(true);
-=======
 	} while(!f.eof());
->>>>>>> star12x
 	
 	while(!macro.empty())
 	{
