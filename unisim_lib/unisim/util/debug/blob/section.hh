@@ -52,7 +52,7 @@ public:
 		TY_NULL,
 		TY_PROGBITS, // there's data in data
 		TY_NOBITS,   // all zero's
-		TY_STAB,     // old stab symbol table (should have a link to a string table)
+		TY_ELF_SYMTAB,   // ELF symtab symbol table (should have a link to a string table)
 		TY_STRTAB    // string table
 	} Type;
 	

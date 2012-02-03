@@ -1749,7 +1749,7 @@ mtfsb0.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 mtfsb0.disasm = {
-	os << "mtfsb0" << (rc ? "." : "") << " crb" << crbD;
+	os << "mtfsb0" << (rc ? "." : "") << " crb" << (unsigned int) crbD;
 }
 
 op mtfsb1(63[6]:crbD[5]:?[10]:38[10]:rc[1])
@@ -1773,7 +1773,7 @@ mtfsb1.execute = {
 	if(unlikely(rc)) cpu->SetCR((cpu->GetCR() & ~(CONFIG::CR0_MASK >> 4)) | ((fpscr >> 4) & (CONFIG::CR0_MASK >> 4)));
 }
 mtfsb1.disasm = {
-	os << "mtfsb1" << (rc ? "." : "") << " cr" << crbD;
+	os << "mtfsb1" << (rc ? "." : "") << " cr" << (unsigned int) crbD;
 }
 
 op mtfsf(63[6]:?[1]:fm[8]:?[1]:fb[5]:711[10]:rc[1])

@@ -20,25 +20,47 @@ AC_PROG_LN_S
 
 AC_LANG([C])
 
+# -----------------------------------
+    # Check if JDK path has been overloaded
+AC_ARG_WITH(jdk,
+	AS_HELP_STRING([--with-jdk=<path>], [JDK home directory]))
+    if test "x$with_jdk" != "x"; then
+	AC_MSG_NOTICE([using JDK at $with_jdk])
+case $host in
+*mingw32*)  # win32 host
+	CPPFLAGS=${CPPFLAGS}" -I$with_jdk/include -I$with_jdk/include/win32"
+;;
+*)
+	CPPFLAGS=${CPPFLAGS}" -I$with_jdk/include -I$with_jdk/include/linux"
+;;
+esac
+
+	JDK_PATH=$with_jdk
+	AC_SUBST(JDK_PATH)
+    fi
+
+    # Check for jni.h
+AC_CHECK_HEADER(jni.h,, AC_MSG_ERROR([jni.h not found. Please install the JDK. Use --with-jdk=<path> to overload default search path.]))
+
+# --------------------------------------
+
 AC_CHECK_HEADERS([stdio.h stdlib.h string.h sys/time.h sys/types.h unistd.h signal.h],,\
                   AC_MSG_ERROR([Some standard headers are missing.]))
 
 
 case $host in
 *mingw32*)  # win32 host
-	AC_CHECK_HEADERS([windows.h],,\
-	                 AC_MSG_ERROR([windows.h is missing.]))
-	;;
+	AC_CHECK_HEADER([windows.h],,AC_MSG_ERROR([windows.h is missing.]))
+;;
 *)
-	AC_CHECK_HEADERS([sys/ipc.h sys/shm.h],,\
-                     AC_MSG_ERROR([Some IPC System V headers are missing.]))
-	;;
+	AC_CHECK_HEADERS([sys/ipc.h sys/shm.h],,AC_MSG_ERROR([Some IPC System V headers are missing.]))
+;;
 esac
 
 case $host in
 	*mingw32*)  # win32 host
-		if [ "$enable_win32_dll" = "yes" ]; then
-			LDFLAGS="-no-undefined ${LDFLAGS}"
+		if test "$enable_win32_dll" = "yes"; then
+			LDFLAGS="-no-undefined -Wl,--add-stdcall-alias ${LDFLAGS}"
 		fi
 		;;
 esac

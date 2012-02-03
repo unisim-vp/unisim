@@ -64,6 +64,10 @@
 #include <map>
 #include <iosfwd>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -209,6 +213,32 @@ public:
 private:
 	std::string name;
 	uint64_t *value;
+	Type type;
+};
+
+class TimeBaseRegisterView : public unisim::kernel::service::VariableBase
+{
+public:
+	typedef enum
+	{
+		TB_LOW,
+		TB_HIGH
+	} Type;
+	TimeBaseRegisterView(const char *name, unisim::kernel::service::Object *owner, uint64_t& storage, Type type, const char *description);
+	virtual ~TimeBaseRegisterView();
+	virtual const char *GetDataTypeName() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator std::string () const;
+	virtual unisim::kernel::service::VariableBase& operator = (bool value);
+	virtual unisim::kernel::service::VariableBase& operator = (long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (double value);
+	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+private:
+	uint64_t& storage;
 	Type type;
 };
 
@@ -865,7 +895,7 @@ protected:
     /** indicates if the finished instructions require to be reported */
     bool requires_finished_instruction_reporting;
 	
-	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
+	inline bool IsVerboseSetup() const { return verbose_all || verbose_setup; }
 	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
 	inline bool IsVerboseITLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
 	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
@@ -994,10 +1024,14 @@ private:
 	bool enable_linux_syscall_snooping;
 	uint64_t trap_on_instruction_counter;
 	bool enable_trap_on_exception;
+	bool enable_halt_on;
+	typename CONFIG::address_t halt_on_addr;
+	std::string halt_on;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 	uint64_t num_interrupts;
 
-	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
+	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces
+	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;
@@ -1173,6 +1207,7 @@ private:
 	Parameter<bool> param_enable_linux_syscall_snooping;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Parameter<bool> param_enable_trap_on_exception;
+	Parameter<std::string> param_halt_on;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =

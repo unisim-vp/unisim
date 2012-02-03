@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
-#define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
+#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
+#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_HH__
 
 #include <systemc.h>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -245,7 +245,6 @@ private:
 	/** The parameter for the cycle time */
 	Parameter<sc_time> param_cycle_time;
 	Parameter<sc_time> param_telnet_refresh_time;
-	Statistic<bool> stat_interrupt_output;
 
 	PayloadFabric<InterruptPayload> interrupt_payload_fabric;
 	Schedule<Event> schedule;

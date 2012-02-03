@@ -466,8 +466,10 @@ StepInstruction()
 			else
 				insn_size = 4;
 			memory_access_reporting_import->ReportMemoryAccess(
-				MemoryAccessReporting<uint32_t>::MAT_READ, 
-				MemoryAccessReporting<uint32_t>::MT_INSN, 
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_INSN,
+				//MemoryAccessReporting<uint32_t>::MAT_READ, 
+				//MemoryAccessReporting<uint32_t>::MT_INSN, 
 				current_pc, insn_size);
 		}
 	}
@@ -508,7 +510,7 @@ StepInstruction()
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportFinishedInstruction(
-					GetGPR(PC_reg));
+					current_pc, GetGPR(PC_reg));
 }
 
 /** Inject an intrusive read memory operation.
@@ -1045,8 +1047,10 @@ Read32toPCUpdateT(uint32_t address)
 	if (requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address & ~((uint32_t)0x3), 4);
 }
 
@@ -1075,8 +1079,10 @@ Read32toPC(uint32_t address)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,				
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,				
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address & ~((uint32_t)0x3), 4);
 }
 
@@ -1106,8 +1112,10 @@ Read32toGPR(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address & ~((uint32_t)0x3), 4);
 }
 
@@ -1140,8 +1148,10 @@ Read32toGPRAligned(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 4);
 }
 
@@ -1174,8 +1184,10 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 2);
 }
 
@@ -1208,8 +1220,10 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 2);
 }
 
@@ -1239,8 +1253,10 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 1);
 }
 
@@ -1271,8 +1287,10 @@ Read8toGPR(uint32_t address, uint32_t reg)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 1);
 }
 
@@ -1302,8 +1320,10 @@ Write32(uint32_t address, uint32_t value)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_WRITE,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 4);
 }
 
@@ -1333,8 +1353,10 @@ Write16(uint32_t address, uint16_t value)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_WRITE,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 2);
 }
 
@@ -1363,8 +1385,10 @@ Write8(uint32_t address, uint8_t value)
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_WRITE,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					address, 1);
 }
 
@@ -1727,8 +1751,10 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_WRITE,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 
@@ -1879,8 +1905,10 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 
@@ -2000,8 +2028,10 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 
@@ -2125,8 +2155,10 @@ PerformReadToPCUpdateTAccess(
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint32_t>::MAT_READ,
-					MemoryAccessReporting<uint32_t>::MT_DATA,
+          unisim::util::debug::MAT_READ,
+          unisim::util::debug::MT_DATA,
+					//MemoryAccessReporting<uint32_t>::MAT_READ,
+					//MemoryAccessReporting<uint32_t>::MT_DATA,
 					addr, size);
 }
 

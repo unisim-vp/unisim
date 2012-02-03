@@ -142,6 +142,7 @@ static Translation conversion_table[] = {
 	{"<", "$<$"},
 	{">", "$>$"},
 	{"%", "\\%"},
+	{"$", "\\$"},
 	{"//(1)", "\\ding{202}"},
 	{"//(2)", "\\ding{203}"},
 	{"//(3)", "\\ding{204}"},
@@ -541,6 +542,8 @@ unsigned int VariableBase::GetLength() const
 	return 0;
 }
 
+unsigned int VariableBase::GetBitSize() const { return 0; }
+
 VariableBase& VariableBase::operator = (const VariableBase& variable)
 {
 	string variable_value = (string) variable;
@@ -613,58 +616,138 @@ Variable<TYPE>::Variable(const char *_name, Object *_owner, TYPE& _storage, Type
 	Simulator::simulator->Initialize(this);
 }
 
-template <class TYPE> Variable<TYPE>::operator bool () const { return (*storage) ? true : false; }
-template <class TYPE> Variable<TYPE>::operator long long () const { return (long long) *storage; }
-template <class TYPE> Variable<TYPE>::operator unsigned long long () const { return (unsigned long long) *storage; }
-template <class TYPE> Variable<TYPE>::operator double () const { return (double) *storage; }
+template <class TYPE>
+unsigned int Variable<TYPE>::GetBitSize() const { return sizeof(TYPE) * 8; }
+
+template <class TYPE> Variable<TYPE>::operator bool () const {
+//	return (*storage) ? true : false;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (tmp? true : false) : ((*storage) ? true : false));
+}
+
+template <class TYPE> Variable<TYPE>::operator long long () const {
+//	return (long long) *storage;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (long long) tmp : (long long) *storage);
+
+}
+
+template <class TYPE> Variable<TYPE>::operator unsigned long long () const {
+//	return (unsigned long long) *storage;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (unsigned long long) tmp : (unsigned long long) *storage);
+}
+
+template <class TYPE> Variable<TYPE>::operator double () const {
+//	return (double) *storage;
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
+	return (result? (double) tmp : (double) *storage);
+
+}
+
 template <class TYPE> Variable<TYPE>::operator string () const
 {
+//	stringstream sstr;
+//	switch(GetFormat())
+//	{
+//		case FMT_DEFAULT:
+//		case FMT_HEX:
+//			sstr << "0x" << hex;
+//			sstr.fill('0');
+//			sstr.width(2 * sizeof(TYPE));
+//			sstr << (unsigned long long) *storage;
+//			break;
+//		case FMT_DEC:
+//			sstr << dec;
+//			if(std::numeric_limits<TYPE>::is_signed)
+//				sstr << (long long) *storage;
+//			else
+//				sstr << (unsigned long long) *storage;
+//			break;
+//	}
+//	return sstr.str();
+
+
+	TYPE tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
+			sstr << (result? tmp: *storage);
 		case FMT_HEX:
-			sstr << "0x" << hex << (unsigned long long) *storage;
+			sstr << "0x" << hex;
+			sstr.fill('0');
+			sstr.width(2 * sizeof(TYPE));
+			sstr << (result? (unsigned long long) tmp : (unsigned long long) *storage);
 			break;
 		case FMT_DEC:
 			sstr << dec;
 			if(std::numeric_limits<TYPE>::is_signed)
-				sstr << (long long) *storage;
+				sstr << (result? (long long) tmp: (long long) *storage);
 			else
-				sstr << (unsigned long long) *storage;
+				sstr << (result? (unsigned long long) tmp : (unsigned long long) *storage);
 			break;
 	}
 	return sstr.str();
+
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (bool value)
 {
-	if ( IsMutable() )
-		*storage = value ? 1 : 0;
+	if ( IsMutable() ) {
+		TYPE tmp = value ? 1 : 0;
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (long long value)
 {
-	if ( IsMutable() )
-		*storage = value;
+	if ( IsMutable() ) {
+		if (!WriteBack(value)) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (unsigned long long value)
 {
-	if ( IsMutable() )
-		*storage = value;
+	if ( IsMutable() ) {
+		if (!WriteBack(value)) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 
 template <class TYPE> VariableBase& Variable<TYPE>::operator = (double value)
 {
-	if ( IsMutable() )
-		*storage = (TYPE) value;
+	if ( IsMutable() ) {
+		if (!WriteBack((TYPE) value)) {
+			*storage = (TYPE) value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1200,9 +1283,17 @@ const char *Variable<double>::GetDataTypeName() const
 template <>
 Variable<double>::operator string () const
 {
+//	stringstream sstr;
+//	sstr << *storage;
+//	return sstr.str();
+
+	double tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
-	sstr << *storage;
+	sstr << (result? tmp : *storage);
 	return sstr.str();
+
 }
 
 template <> 
@@ -1221,9 +1312,18 @@ const char *Variable<float>::GetDataTypeName() const
 template <>
 Variable<float>::operator string () const
 {
+//	stringstream sstr;
+//	sstr << *storage;
+//	return sstr.str();
+
+
+	float tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
-	sstr << *storage;
+	sstr << (result? tmp : *storage);
 	return sstr.str();
+
 }
 
 template <> 
@@ -1241,110 +1341,182 @@ const char *Variable<string>::GetDataTypeName() const
 
 template <> Variable<bool>::operator string () const
 {
+//	stringstream sstr;
+//	switch(GetFormat())
+//	{
+//		case FMT_DEFAULT:
+//			sstr << (*storage ? "true" : "false");
+//			break;
+//		case FMT_HEX:
+//			sstr << (*storage ? "0x1" : "0x0");
+//			break;
+//		case FMT_DEC:
+//			sstr << (*storage ? "1" : "0");
+//			break;
+//	}
+//	return sstr.str();
+
+
+	bool tmp;
+	bool result = ReadBack(tmp);
+
 	stringstream sstr;
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
-			sstr << (*storage ? "true" : "false");
+			sstr << (result? (tmp?  "true" : "false") : (*storage ? "true" : "false"));
 			break;
 		case FMT_HEX:
-			sstr << (*storage ? "0x1" : "0x0");
+			sstr << (result? (tmp?  "0x1" : "0x0") : (*storage ? "0x1" : "0x0"));
 			break;
 		case FMT_DEC:
-			sstr << (*storage ? "1" : "0");
+			sstr << (result? (tmp?  "1" : "0") : (*storage ? "1" : "0"));
 			break;
 	}
 	return sstr.str();
+
 }
 
 template <> VariableBase& Variable<bool>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+	if ( IsMutable() ) {
+		bool tmp = (strcmp(value, "true") == 0) || (strcmp(value, "0x1") == 0) || (strcmp(value, "1") == 0);
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<char>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<short>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<int>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<long long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+	if ( IsMutable() ) {
+		long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoll(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned char>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned char tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned short>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned short tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned int>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned int tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<unsigned long long>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+	if ( IsMutable() ) {
+		unsigned long long tmp = (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<float>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	if ( IsMutable() ) {
+		float tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
 template <> VariableBase& Variable<double>::operator = (const char *value)
 {
-	if ( IsMutable() )
-		*storage = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+	if ( IsMutable() ) {
+		double tmp = (strcmp(value, "true") == 0) ? 1.0 : ((strcmp(value, "false") == 0) ? 0.0 : strtod(value, 0));
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1357,8 +1529,12 @@ template <> Variable<string>::operator string () const { return *storage; }
 
 template <> VariableBase& Variable<string>::operator = (bool value)
 {
-	if ( IsMutable() )
-		*storage = value ? "true" : "false";
+	if ( IsMutable() ) {
+		string tmp = value ? "true" : "false";
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1368,7 +1544,10 @@ template <> VariableBase& Variable<string>::operator = (long long value)
 	{
 		stringstream sstr;
 		sstr << "0x" << hex << value;
-		*storage = sstr.str();
+		string tmp = sstr.str();
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1379,7 +1558,10 @@ template <> VariableBase& Variable<string>::operator = (unsigned long long value
 	{
 		stringstream sstr;
 		sstr << "0x" << hex << value;
-		*storage = sstr.str();
+		string tmp = sstr.str();
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1390,7 +1572,10 @@ template <> VariableBase& Variable<string>::operator = (double value)
 	{
 		stringstream sstr;
 		sstr << value;
-		*storage = sstr.str();
+		string tmp = sstr.str();
+		if (!WriteBack(tmp)) {
+			*storage = tmp;
+		}
 	}
 	NotifyListeners();
 	return *this;
@@ -1398,7 +1583,11 @@ template <> VariableBase& Variable<string>::operator = (double value)
 template <> VariableBase& Variable<string>::operator = (const char *value)
 {
 	if ( IsMutable() )
-		*storage = value;
+	{
+		if (!WriteBack(std::string(value))) {
+			*storage = value;
+		}
+	}
 	NotifyListeners();
 	return *this;
 }
@@ -1994,8 +2183,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	
 	// parse command line arguments (first pass)
 	int state = 0;
+	int arg_num;
 	char **arg;
-	for(arg = argv + 1; *arg != 0 && state != -1;)
+	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
 	{
 		switch(state)
 		{
@@ -2013,14 +2203,17 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 							{
 								case 's':
 									arg++;
+									arg_num++;
 									state = 1;
 									break;
 								case 'c':
 									arg++;
+									arg_num++;
 									state = 2;
 									break;
 								case 'g':
 									arg++;
+									arg_num++;
 									state = 3;
 									break;
 								case 'l':
@@ -2029,23 +2222,28 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									break;
 								case 'v':
 									arg++;
+									arg_num++;
 									enable_version = true;
 									break;
 								case 'h':
 									arg++;
+									arg_num++;
 									enable_help = true;
 									break;
 								case 'w':
 									arg++;
+									arg_num++;
 									enable_warning = true;
 									break;
 								case 'd':
 									arg++;
+									arg_num++;
 									state = 4;
 									break;
 								case 'p':
 									has_share_data_dir_hint = true;
 									arg++;
+									arg_num++;
 									state = 5;
 									break;
 								default:
@@ -2063,27 +2261,32 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			case 1:
 				// skipping set variable
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 2:
 				// skipping loading variables
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 3:
 				// skipping get config
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 4:
 				// skipping generate doc
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 5:
 				// getting the share data path
 				shared_data_dir_hint = *arg;
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			default:
@@ -2133,7 +2336,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	// parse command line arguments (second pass)
 	state = 0;
 	
-	for(arg = argv + 1; *arg != 0 && state != -1;)
+	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
 	{
 		switch(state)
 		{
@@ -2151,30 +2354,37 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 							{
 								case 's':
 									arg++;
+									arg_num++;
 									state = 1;
 									break;
 								case 'c':
 									arg++;
+									arg_num++;
 									state = 2;
 									break;
 								case 'g':
 									arg++;
+									arg_num++;
 									state = 3;
 									break;
 								case 'l':
 									arg++;
+									arg_num++;
 									list_parms = true;
 									break;
 								case 'v':
 									arg++;
+									arg_num++;
 									enable_version = true;
 									break;
 								case 'h':
 									arg++;
+									arg_num++;
 									enable_help = true;
 									break;
 								case 'w':
 									arg++;
+									arg_num++;
 									enable_warning = true;
 									if(!LoadBuiltInConfig)
 									{
@@ -2193,10 +2403,12 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									break;
 								case 'd':
 									arg++;
+									arg_num++;
 									state = 4;
 									break;
 								case 'p':
 									arg++;
+									arg_num++;
 									state = 5;
 									break;
 								default:
@@ -2232,6 +2444,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					}
 				}
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 2:
@@ -2244,22 +2457,26 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 					cerr << "WARNING! Loading parameters set from file \"" << (*arg) << "\" failed" << endl;
 				}
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 3:
 				get_config = true;
 				get_config_filename = *arg;
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 4:
 				generate_doc = true;
 				generate_doc_filename = *arg;
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			case 5:
 				arg++;
+				arg_num++;
 				state = 0;
 				break;
 			default:
@@ -2287,6 +2504,9 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	param_cmd_args->SetVisible(false);
 	param_cmd_args->SetMutable(false);
 	param_cmd_args->SetSerializable(false);
+	
+	// Setup logger
+	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 }
 
 Simulator::~Simulator()
@@ -2418,7 +2638,11 @@ void Simulator::Initialize(VariableBase *variable)
 	
 	if(set_var_iter != set_vars.end())
 	{
-		*variable = (*set_var_iter).second.c_str();
+		const char *value = (*set_var_iter).second.c_str();
+#ifdef DEBUG_VARIABLES
+		std::cerr << variable->GetName() << " <- \"" << value << "\"" << std::endl;
+#endif
+		*variable = value;
 		set_vars.erase(set_var_iter);
 	}
 }
@@ -2874,9 +3098,6 @@ Simulator::SetupStatus Simulator::Setup()
 	topological_sort(dependency_graph, std::front_inserter(setup_order));
 
 	SetupStatus status = ST_OK_TO_START;
-	
-	// Setup logger
-	unisim::kernel::logger::LoggerServer::GetInstanceWithoutCountingReference()->Setup();
 	
 	// Call all methods "BeginSetup()"
 	map<const char *, Object *, ltstr>::iterator object_iter;
@@ -3355,7 +3576,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	os << "This documentation has been automatically generated from the simulator \\texttt{" << string_to_latex(program_name.c_str()) << "} version " << string_to_latex(version.c_str()) << " on " << string_to_latex(__DATE__) << "." << std::endl;
 
-	os << "\\section{Introduction}" << endl;
+	os << "\\subsection{Introduction}" << endl;
 	os << string_to_latex(description.c_str()) << ".\\\\" << endl;
 	os << "Section \\ref{" << program_name << "_licensing} gives licensing informations about the simulator." << endl;
 	os << "Section \\ref{" << program_name << "_simulated_configuration} shows the set of modules and services that compose the simulator." << endl;
@@ -3364,14 +3585,14 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "Section \\ref{" << program_name << "_statistics} gives the simulator statistic counters." << endl;
 	os << "Section \\ref{" << program_name << "_formulas} gives the simulator statistic formulas." << endl;
 
-	os << "\\section{Licensing}" << endl;
+	os << "\\subsection{Licensing}" << endl;
 	os << "\\label{" << program_name << "_licensing}" << endl;
 	os << string_to_latex(program_name.c_str()) << " " << string_to_latex(version.c_str()) << "\\\\" << endl;
 	os << string_to_latex(copyright.c_str()) << "\\\\" << endl;
 	os << "License: " << string_to_latex(license.c_str()) << "\\\\" << endl;
 	os << "Authors: " << string_to_latex(authors.c_str()) << "\\\\" << endl;
 	
-	os << "\\section{Simulated configuration}" << endl;
+	os << "\\subsection{Simulated configuration}" << endl;
 	os << "\\label{" << program_name << "_simulated_configuration}" << endl;
 	
 	if(!schematic.empty())
@@ -3398,7 +3619,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	}
 	os << "\\end{itemize}" << endl;
 
-	os << "\\section{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
+	os << "\\subsection{Using the " << string_to_latex(program_name.c_str()) << " simulator}" << endl;
 	os << "\\label{" << program_name << "_using}" << endl;
 	os << "The " << string_to_latex(program_name.c_str()) << " simulator has the following command line options:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3428,19 +3649,19 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	
 	// 	std::stringstream sstr_version;
 // 	Version(sstr_version);
-// 	os << "\\section{Version}" << std::endl;
+// 	os << "\\subsection{Version}" << std::endl;
 // 	os << string_to_latex(sstr_version.str().c_str()) << std::endl;
 // 	
 // 	std::stringstream sstr_help;
 // 	Help(sstr_help);
-// 	os << "\\section{Usage}" << std::endl;
+// 	os << "\\subsection{Usage}" << std::endl;
 // 	os << string_to_latex(sstr_help.str().c_str(), 80, "texttt") << std::endl;
 
 	std::map<const char *, VariableBase *, ltstr>::const_iterator variable_iter;
 	bool header_printed = false;
 	
 	//----------------------- Configuration -----------------------
-	os << "\\section{Configuration}" << std::endl;
+	os << "\\subsection{Configuration}" << std::endl;
 	os << "\\label{" << program_name << "_configuration}" << endl;
 	os << "Simulator configuration (see below) can be modified using command line Options \\texttt{--set $<$param=value$>$} or \\texttt{--config $<$config file$>$}.\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3477,7 +3698,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\end{supertabular}" << std::endl;
 
 	//----------------------- Statistics -----------------------
-	os << "\\section{Statistics}" << std::endl;
+	os << "\\subsection{Statistics}" << std::endl;
 	os << "\\label{" << program_name << "_statistics}" << endl;
 	os << "Simulation statistic counters are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;
@@ -3515,7 +3736,7 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 	os << "\\end{supertabular}" << std::endl;
 
 	//----------------------- Formulas -----------------------
-	os << "\\section{Formulas}" << std::endl;
+	os << "\\subsection{Formulas}" << std::endl;
 	os << "\\label{" << program_name << "_formulas}" << endl;
 	os << "Simulation statistic formulas are listed below:\\\\" << std::endl;
 	os << "~\\\\" << std::endl;

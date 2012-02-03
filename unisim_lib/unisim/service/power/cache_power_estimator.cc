@@ -33,6 +33,12 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#include <iostream>
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -44,13 +50,7 @@
 #include <cacti4_2.hh>
 #endif
 
-#include <unisim/service/power/cache_power_estimator.hh>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "unisim/service/power/cache_power_estimator.hh"
 // #if defined(HAVE_CACTI4_2)
 // #define cacti (*(Cacti4_2 *) opaque)
 // #endif
@@ -73,6 +73,12 @@ template <>
 const char *Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetDataTypeName() const
 {
 	return "cache power estimator access mode";
+}
+
+template <>
+unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetBitSize() const
+{
+	return 0;
 }
 
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
@@ -427,7 +433,12 @@ bool CachePowerEstimator::SetupCacti()
 	{
 		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;
 		logger << DebugInfo << p_line_size << " bytes per line" << EndDebugInfo;
-		logger << DebugInfo << p_associativity << " way/set associative" << EndDebugInfo;
+		logger << DebugInfo;
+		if(p_associativity)
+			logger << p_associativity << " way/set associative";
+		else
+			logger << "fully associative";
+		logger << EndDebugInfo;
 		logger << DebugInfo << p_rw_ports << " read/write ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_read_ports << " read-only ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_write_ports << " write-only ports" << EndDebugInfo;

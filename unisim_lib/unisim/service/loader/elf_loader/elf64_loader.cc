@@ -32,16 +32,17 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/service/loader/elf_loader/elf_loader.hh>
-#include <unisim/service/loader/elf_loader/elf_loader.tcc>
+#include "unisim/service/loader/elf_loader/elf_loader.hh"
+#include "unisim/service/loader/elf_loader/elf_loader.tcc"
+#include "unisim/util/loader/elf_loader/elf64.h"
 
 namespace unisim {
 namespace service {
 namespace loader {
 namespace elf_loader {
 
-template class ElfLoaderImpl<uint32_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
-//template class ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
+// template class ElfLoaderImpl<uint32_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
+template class ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>;
 
 } // end of namespace elf_loader
 } // end of namespace loader

@@ -51,12 +51,12 @@ using unisim::kernel::service::Object;
 using unisim::kernel::service::Service;
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
-MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::MemoryPage(PHYSICAL_ADDR _key) :
+MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::MemoryPage(PHYSICAL_ADDR _key, uint8_t initial_byte_value) :
 	key(_key),
 	next(0)
 {
 	storage = new uint8_t[PAGE_SIZE];
-	memset(storage, 0, PAGE_SIZE);
+	memset(storage, initial_byte_value, PAGE_SIZE);
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -79,9 +79,14 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, param_org("org", this, org, "memory origin/base address")
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
 	, stat_memory_usage("memory-usage", this, memory_usage, "host memory usage in bytes of simulated memory")
+	, initial_byte_value(0x00)
+	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
+
 {
+	stat_memory_usage.SetVisible(false);
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_initial_byte_value.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -108,6 +113,7 @@ void Memory<PHYSICAL_ADDR, PAGE_SIZE>::Reset()
 {
 	hash_table.Reset();
 	memory_usage = 0;
+
 }
 
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
@@ -134,7 +140,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 		page = hash_table.Find(key);
 		if(!page)
 		{
-			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
 		}
@@ -180,7 +186,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 		page = hash_table.Find(key);
 		if(!page)
 		{
-			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
 		}
@@ -232,7 +238,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::WriteMemory(PHYSICAL_ADDR physical_addr, 
 		page = hash_table.Find(key);
 		if(!page)
 		{
-			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
 		}
@@ -327,7 +333,7 @@ bool Memory<PHYSICAL_ADDR, PAGE_SIZE>::ReadMemory(PHYSICAL_ADDR physical_addr, v
 		page = hash_table.Find(key);
 		if(!page)
 		{
-			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+			page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 			hash_table.Insert(page);
 			memory_usage += PAGE_SIZE;
 		}
@@ -407,7 +413,7 @@ void *Memory<PHYSICAL_ADDR, PAGE_SIZE>::GetDirectAccess(PHYSICAL_ADDR physical_a
 	page = hash_table.Find(key);
 	if(!page)
 	{
-		page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key);
+		page = new MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>(key, initial_byte_value);
 		hash_table.Insert(page);
 		memory_usage += PAGE_SIZE;
 	}

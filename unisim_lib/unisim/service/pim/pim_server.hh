@@ -45,6 +45,7 @@
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/trap_reporting.hh>
 #include <unisim/service/interfaces/time.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
 #include <unisim/service/pim/network/SocketThread.hpp>
@@ -81,9 +82,11 @@ using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 using unisim::service::interfaces::Time;
+using unisim::service::interfaces::StatementLookup;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
 using unisim::kernel::service::Parameter;
@@ -94,6 +97,7 @@ using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Simulator;
+using unisim::kernel::service::VariableBase;
 
 using unisim::service::pim::network::SocketThread;
 using unisim::service::pim::network::GenericThread;
@@ -105,30 +109,6 @@ typedef enum { GDBSERVER_MODE_WAITING_GDB_CLIENT, GDBSERVER_MODE_STEP, GDBSERVER
 
 typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 
-class GDBRegister
-{
-public:
-	GDBRegister(const string& reg_name, int reg_size, GDBEndian endian, unsigned int reg_num);
-	GDBRegister(unisim::util::debug::Register *reg, GDBEndian endian, unsigned int reg_num);
-	inline const char *GetName() const { return name.c_str(); }
-	inline int GetSize() const { return size; }
-	bool SetValue(const string& hex);
-	void SetValue(const void *buffer);
-	void GetValue(string& hex) const;
-	void GetValue(void *buffer) const;
-	inline int GetHexLength() const { return 2 * size; }
-	inline unisim::util::debug::Register *GetRegisterInterface() { return reg; }
-	inline void SetRegisterInterface(unisim::util::debug::Register *reg) { this->reg = reg; }
-	inline GDBEndian GetEndian() const { return endian; }
-	unsigned int GetRegNum() const { return reg_num; }
-private:
-	string name;
-	int size;
-	unisim::util::debug::Register *reg;
-	GDBEndian endian;
-	unsigned int reg_num;
-};
-
 template <class ADDRESS>
 class PIMServer :
 	public Service<DebugControl<ADDRESS> >,
@@ -138,6 +118,7 @@ class PIMServer :
 	public Client<Memory<ADDRESS> >,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
+	public Client<StatementLookup<ADDRESS> >,
 	public Client<Registers>,
 	public SocketThread
 {
@@ -151,12 +132,13 @@ public:
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
 	ServiceImport<SymbolTableLookup<ADDRESS> > symbol_table_lookup_import;
+	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
 
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
 
 	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -178,6 +160,9 @@ public:
 	string GetHost() { return fHost; }
 
 	double GetSimTime();
+	double GetHostTime();
+
+	inline GDBEndian GetEndian() const { return endian; }
 
 protected:
 	vector<SocketThread*> protocolHandlers;
@@ -225,12 +210,18 @@ private:
 	uint16_t tcp_port;
 	string architecture_description_filename;
 
-//	int sock;
-	vector<GDBRegister> gdb_registers;
-	GDBRegister *gdb_pc;
+	vector<VariableBase*> simulator_registers;
+	VariableBase* pc_reg;
+	uint32_t pc_reg_index;
+	GDBEndian endian;
+
 	bool killed;
 	bool trap;
 	bool synched;
+	const Watchpoint<ADDRESS> *watchpoint_hit;
+	ADDRESS watchpoint_hit_addr;
+	uint32_t watchpoint_hit_size;
+
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
 	GDBServerRunningMode running_mode;
@@ -257,6 +248,9 @@ private:
 	Parameter<string> param_architecture_description_filename;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
+
+//	ofstream pim_trace_file;
+//	double last_time_ratio;
 
 };
 

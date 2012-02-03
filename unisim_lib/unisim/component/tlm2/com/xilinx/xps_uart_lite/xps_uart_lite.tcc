@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
-#define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
+#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
+#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
 
 #include <systemc.h>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
@@ -66,7 +66,6 @@ XPS_UARTLite<CONFIG>::XPS_UARTLite(const sc_module_name& name, Object *parent)
 	, interrupt_output(false)
 	, param_cycle_time("cycle-time", this, cycle_time, "Cycle time")
 	, param_telnet_refresh_time("telnet-refresh-time", this, telnet_refresh_time, "Telnet refresh time")
-	, stat_interrupt_output("interrupt-output", this, interrupt_output, "Interrupt output level")
 	, schedule()
 {
 	slave_sock(*this); // Bind socket to implementer of interface

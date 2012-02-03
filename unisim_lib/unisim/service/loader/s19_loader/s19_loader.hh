@@ -49,16 +49,12 @@
 #include  <stdlib.h>
 #include  <string.h>
 
-typedef uint32_t physical_address_t;
-typedef uint64_t service_address_t;
-typedef uint16_t address_t;
-typedef uint32_t s19_address_t;
-typedef uint8_t page_t;
-
 namespace unisim {
 namespace service {
 namespace loader {
 namespace s19_loader {
+
+typedef uint32_t s19_address_t;
 
 using namespace std;
 using unisim::service::interfaces::Memory;
@@ -117,7 +113,7 @@ public:
 
 private:
 	string				filename;
-	physical_address_t	entry_point;
+	uint32_t	entry_point;
 
 	Parameter<string>	param_filename;
 
@@ -125,7 +121,7 @@ private:
 
 	bool	ProcessRecord(int linenum, char srec[S_RECORD_SIZE]);
 	void	ShowError(int  errnum, int linenum, char srec[S_RECORD_SIZE]);
-	bool	memWrite(physical_address_t addr, const void *buffer, uint32_t size);
+	bool	memWrite(uint32_t addr, const void *buffer, uint32_t size);
 	bool	Load();
 
 };

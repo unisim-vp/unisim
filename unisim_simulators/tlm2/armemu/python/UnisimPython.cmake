@@ -89,7 +89,7 @@ if ( ${PYTHONINTERP_FOUND} )
 			${CMAKE_SOURCE_DIR}/python/py_variable.cc
 			${CMAKE_SOURCE_DIR}/python/py_debugger.hh
 			${CMAKE_SOURCE_DIR}/python/py_debugger.cc
-			simulatorlib
+			simulator
 			libuapi
 			${sim__deps}
 		COMMENT

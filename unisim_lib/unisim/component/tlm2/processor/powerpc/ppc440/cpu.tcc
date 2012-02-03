@@ -37,6 +37,10 @@
 
 #include <unistd.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace tlm2 {

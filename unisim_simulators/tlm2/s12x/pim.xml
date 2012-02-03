@@ -5,44 +5,200 @@
         <!--ATD0 exported interface-->
         <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[0]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[1]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[2]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[3]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[4]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[5]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[6]</pin>
+    </component>
+    <component name="ATD0">
+        <!--ATD0 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[7]</pin>
     </component>
     <component name="ATD1">
         <!--ATD1 exported interface-->
         <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[0]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[10]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[11]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[12]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[13]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[14]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[15]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[1]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[2]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[3]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[4]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[5]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[6]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[7]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[8]</pin>
+    </component>
+    <component name="ATD1">
+        <!--ATD1 exported interface-->
+        <description>bla bla</description>
         <pin isMutable="true" dataType="double precision floating-point">ANx[9]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[0]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[1]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[2]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[3]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[4]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[5]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[6]</pin>
+    </component>
+    <component name="ECT">
+        <!--ECT exported interface-->
+        <description>bla bla</description>
+        <pin isMutable="true" dataType="boolean">ioc[7]</pin>
     </component>
     <component name="PWM">
         <!--PWM exported interface-->
         <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[0]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[1]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[2]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[3]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[4]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[5]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[6]</pin>
+    </component>
+    <component name="PWM">
+        <!--PWM exported interface-->
+        <description>bla bla</description>
         <pin isMutable="false" dataType="boolean">channel[7]</pin>
     </component>
 </pim>

@@ -70,7 +70,7 @@ The UNISIM Virtex 5 FXT is a virtual platform that tries to mimic a Xilinx ML507
 
 \noindent The UNISIM Virtex 5 FXT simulator, which Figure~\ref{fig:simulator_schematic} shows the schematic, implements the following:
 \begin{itemize}
-	\item PPC440 Embedded Processor Block (UG200):
+	\item PPC440 Embedded Processor Block (UG200~\cite{UG200}):
 		\begin{itemize}
 			\item All the PPC440x5 \cite{PPC440x5} instruction set of a Xilinx Virtex 5 FXT
 			\item Optional FPU that is similar to Xilinx FPU APU \cite{APU_FPU}
@@ -224,6 +224,168 @@ The simulators comes in four flavors in:
 \item \texttt{unisim-virtex5fxt-debug-1.0}: developement simulator
 \item \texttt{unisim-virtex5fxt-wfpu-debug-1.0}: developement simulator with FPU
 \end{itemize}
+
+\section{Cross-compiling the simulator}
+
+This section explains how to build (i.e. cross-compile) the simulator for a host system type (e.g. Windows) from another build system type (e.g. Linux/i386).
+The simulator is built on the build machine whereas it will run on the host machine.
+In later sub-sections, we consider cross-compiling the simulator for Windows from a Linux distribution using the mingw32 GCC cross-compiler.
+Most Linux distributions provide a mingw32 tool chain as a set of packages.
+Once installed the mingw32 tool chain binary file names are prefixed with:
+\begin{itemize}
+\item \texttt{i586-mingw32msvc-} on Ubuntu and Debian Linux distributions
+\item \texttt{i686-pc-mingw32-} on RedHat, Fedora, and SUSE Linux distributions
+\item \texttt{i586-pc-mingw32-} on Mandriva and Mageia Linux distributions
+\end{itemize}
+The later sub-sections will refer to the mingw32 tool chain of Ubuntu and Debian Linux distributions.
+
+\subsection{Requirements}
+
+\noindent The following tools must be installed on the Linux build system:
+\begin{itemize}
+\item GNU C++ cross-compiler for the host system type (aka. i586-mingw32msvc-g++)
+\item GNU Flex (aka. flex)
+\item GNU Bison (aka. bison)
+\item Standard GNU C++ library for the host machine (aka. libstdc++)
+\end{itemize}
+
+\subsection{Installing a cross-compiled SystemC 2.2.0 and SystemC TLM 2.0.1}
+\subsubsection{Download the source code}
+Register at \url{http://www.systemc.org} and then download systemc-2.2.0.tgz and TLM-2.0.1.tgz from the OSCI standards download page.
+
+\subsubsection{Uncompressing the source code tarballs}
+\begin{script}
+   $ tar zxvf systemc-2.2.0.tgz
+   $ tar zxvf TLM-2.0.1.tgz
+\end{script}
+  
+This will uncompress the source of SystemC in directory systemc-2.2.0 and the source TLM 2.0.1 in directory TLM-2009-07-15 
+\subsubsection{Patching the source code (recommended for g++ $\geq$ 4.1)}
+Apply the following patch to SystemC 2.2.0: patch-systemc-2.2.0.gz 
+
+\begin{script}
+   $ cd systemc-2.2.0
+   $ gzip -dc patch-systemc-2.2.0.gz | patch -p1
+\end{script}
+
+\subsubsection{Configuring SystemC}
+To configure, cross-compile, and install SystemC in your home directory, do the following at the command prompt: 
+
+\begin{script}
+   $ cd systemc-2.2.0
+   $ mkdir objdir
+   $ cd objdir
+   $ mkdir ${HOME}/systemc-mingw32
+   $ ../configure --prefix=${HOME}/systemc-mingw32 --host=i586-mingw32msvc
+\end{script}
+
+Note : if configure needs automake or autoconf, please install these tools, then rebuild SystemC configure script by running these commands before actually running the configure script:
+
+\begin{script}
+   $ cd systemc-2.2.0
+   $ aclocal
+   $ automake
+\end{script}
+
+\subsubsection{Cross-compiling and installing SystemC}
+To cross-compile SystemC, do the following at the command prompt: 
+\begin{script}
+   $ make
+   $ make install
+\end{script}
+
+\subsection{Cross-compiling zlib}
+
+Download the source code tarball at \url{http://zlib.net/zlib-1.2.5.tar.gz}.
+Uncompress the source code tarball and cross-compile the library:
+\begin{script}
+   $ tar zxvf zlib-1.2.5.tar.gz
+   $ cd zlib-1.2.5
+   $ mkdir ${HOME}/zlib-mingw32
+   $ make -f win32/Makefile.gcc \
+     PREFIX=i586-mingw32msvc- \
+     BINARY_PATH=${HOME}/zlib-mingw32/bin \
+     INCLUDE_PATH=${HOME}/zlib-mingw32/include \
+     LIBRARY_PATH=${HOME}/zlib-mingw32/lib \
+     SHARED_MODE=1 install
+   $ mv ${HOME}/zlib-mingw32/bin/zdll.a ${HOME}/zlib-mingw32/bin/z.dll.a
+\end{script}
+
+\subsection{Cross-compiling libxml2}
+
+Download the source code tarball at \url{ftp://xmlsoft.org/libxml2/libxml2-2.7.8.tar.gz}.
+Uncompress the source code tarball and cross-compile the library:
+\begin{script}
+   $ tar zxvf libxml2-2.7.8.tar.gz
+   $ cd libxml2-2.7.8
+   $ mkdir ${HOME}/libxml2-mingw32
+   $ ./configure  --host=i586-mingw32msvc \
+         --without-python --with-zlib=${HOME}/zlib-mingw32 \
+          CPPFLAGS='-DLIBXML_STATIC'
+   $ make
+   $ make install prefix=${HOME}/libxml2-mingw32
+\end{script}
+
+\subsection{Cross-compiling Boost}
+
+Download the source code tarball at \url{http://downloads.sourceforge.net/boost/boost\_1\_47\_0.tar.bz2}.
+Uncompress the source code tarball and cross-compile the library:
+
+\begin{script}
+   $ tar jxvf boost_1_47_0.tar.bz2
+   $ cd boost_1_47_0
+   $ mkdir ${HOME}/boost-mingw32
+   $ ./bootstrap.sh --without-icu
+   $ MINGW32_VERSION=$(i586-mingw32msvc-g++ -v 2>&1 | tail -1 | awk '{print $3}' | cut -f 1 -d '-')
+   $ echo "using gcc : ${MINGW32_VERSION} :
+                 i586-mingw32msvc-g++ :
+                 <rc>i586-mingw32msvc-windres
+                 <archiver>i586-mingw32msvc-ar
+            ;" > user-config.jam
+   $ ./bjam toolset=gcc target-os=windows variant=release threading=multi threadapi=win32 \
+          link=shared runtime-link=shared --prefix=${HOME}/boost-mingw32 --user-config=user-config.jam \
+          --without-mpi --without-python -sNO_BZIP2=1 -sZLIB_BINARY=z.dll \
+          -sZLIB_INCLUDE=${HOME}/zlib-mingw32/include -sZLIB_LIBPATH=${HOME}/zlib-mingw32/lib \
+          --layout=tagged install
+\end{script}
+
+\subsection{Cross-compiling the UNISIM Virtex 5 FXT simulator}
+\subsubsection{Uncompressing the source code tarball}
+\begin{script}
+   $ tar zxvf unisim-virtex5fxt-1.0.tar.gz
+\end{script}
+
+\subsubsection{Configuring the simulator building process}
+\begin{script}
+  $ cd unisim-virtex5fxt-1.0
+  $ ./configure.cross \
+          --host=i586-mingw32msvc \
+          --with-systemc=${HOME}/systemc-mingw32 \
+          --with-tlm20=${HOME}/TLM-2009-07-15 \
+          --with-zlib=${HOME}/zlib-mingw32 \
+          --with-libxml2=${HOME}/libxml2-mingw32 \
+          --with-boost=${HOME}/boost-mingw32 \
+          CXXFLAGS='-O3 -g3 -Wall'
+\end{script}
+
+\subsubsection{Cross-compiling the simulator}
+\begin{script}
+   $ make -f Makefile.cross
+\end{script}
+
+\noindent The simulator binaries are in \texttt{virtex5fxt/bin} subdirectory.
+The simulators comes in four flavors in:
+\begin{itemize}
+\item \texttt{unisim-virtex5fxt-1.0.exe}: release simulator without FPU
+\item \texttt{unisim-virtex5fxt-wfpu-1.0.exe}: release simulator with FPU
+\item \texttt{unisim-virtex5fxt-debug-1.0.exe}: developement simulator
+\item \texttt{unisim-virtex5fxt-wfpu-debug-1.0.exe}: developement simulator with FPU
+\end{itemize}
+
+The simulator binaries may need some DLLs from mingw32 (e.g. \texttt{libgcc\_s*.dll}) or third party libraries (e.g. \texttt{libxml2-2.dll}).
+Place these DLLs in the \texttt{virtex5fxt/bin} subdirectory.
+If you prefer not to use DLLs, add \texttt{LDFLAGS=-static} to the \texttt{configure.cross} command line arguments.
+The simulator binaries can run natively run on a Windows host system, or an emulated Windows using \texttt{wine} windows emulator.
 
 \section{Getting started}
 \label{getting_started}
@@ -450,16 +612,37 @@ $ powerpc-440fp-linux-gnu-gdb boot.elf
 
 In this section, we present some examples of use for the simulator.
 We provide you with scripts and makefiles to build in an automatic manner all the examples.
+These examples are available for download in source and binary forms on our web site (\url{http://unisim-vp.org}):
+\begin{itemize}
+\item Basic system level unit tests: [\href{http://unisim-vp.org/site/downloads/virtual-platforms/powerpc/virtex5fxt/unisim-virtex5fxt-basic-system-level-unit-tests-bin-v1.tar.gz}{hyperlink to binaries}], [\href{http://unisim-vp.org/site/downloads/virtual-platforms/powerpc/virtex5fxt/unisim-virtex5fxt-basic-system-level-unit-tests-source-v1.tar.gz}{hyperlink to sources}]
+\item MiBench version 1: [\href{http://unisim-vp.org/site/downloads/other/benchmarks/mibench/mibench-v1-bin-powerpc-440fp-linux-gnu-v1.tar.gz}{hyperlink to binaries}], [\href{http://unisim-vp.org/site/downloads/other/benchmarks/mibench/mibench-v1-source-powerpc-440fp-linux-gnu-v1.tar.gz}{hyperlink to sources}]
+\item light weight Linux distribution: [\href{http://unisim-vp.org/site/downloads/other/benchmarks/linux-distro/unisim-virtex5fxt-linux-distro-bin-v1.tar.gz}{hyperlink to binaries}], [\href{http://unisim-vp.org/site/downloads/other/benchmarks/linux-distro/unisim-virtex5fxt-linux-distro-source-v1.tar.gz}{hyperlink to sources}]
+\end{itemize}
 
 \subsection{Building the examples}
 
-The top level \texttt{build.sh} scripts take at least one argument, and an optional second argument.
-The first argument is either \texttt{all} or \texttt{clean}.
-The second optional argument is the path to a crosstool chain for target \texttt{powerpc-440fp-linux-gnu}, that is a GCC cross-compiler and its standard C library.
-If that second argument is ommitted, the \texttt{build.sh} script will build the crosstool chain itself.
-To launch the build of the crosstool chain and every binaries for target \texttt{powerpc-440fp-linux-gnu}, do the following at the command prompt:
+To build the examples you need a functional cross tool-chain for target for target \texttt{powerpc-440fp-linux-gnu}, see Section~\ref{building_crosstool_chain}.
+In later sub-sections, we assume that your cross tool-chain is installed in \texttt{/opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu}
+
+\subsubsection{Building the basic system level unit tests}
+
+From the directory where you uncompressed the archive, do the following at the command prompt:
 \begin{script}
-$ ./build.sh all
+$ make CROSS_COMPILE=/opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu/bin/powerpc-440fp-linux-gnu-
+\end{script}
+
+\subsubsection{Building the MiBench version 1 benchmarks}
+
+From the directory where you uncompressed the archive, do the following at the command prompt:
+\begin{script}
+./build.sh all /opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu
+\end{script}
+
+\subsubsection{Building the light weight Linux distribution}
+
+From the directory where you uncompressed the archive, do the following at the command prompt:
+\begin{script}
+./build.sh all /opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu
 \end{script}
 
 \subsection{Basic system level tests}
@@ -1253,6 +1436,8 @@ It then branches to the Linux kernel using an \texttt{rfi} instruction (return f
 
 \subsubsection{The Linux kernel}
 
+The Linux kernel (aka. \texttt{vmlinux}) must be configured and built for the target platform.
+\noindent The steps to follow are:
 \begin{enumerate}
 \item Get the Linux kernel source code: Download the \texttt{linux-2.6.38.7.tar.bz2} tarball at \url{ftp://ftp.kernel.org/pub/linux/kernel/v2.6/linux-2.6.38.7.tar.bz2}.
 \item Uncompress the tarball
@@ -1306,7 +1491,7 @@ Platform support  --->
 Device Drivers  --->
     [*] Block devices  --->
         (16)    Default number of RAM disks
-         (16384) Default RAM disk size (kbytes)
+         (65536) Default RAM disk size (kbytes)
 
         Character devices  --->
             Serial drivers  --->
@@ -1330,52 +1515,181 @@ Kernel hacking  --->
 \label{fig:kernel_configuration}
 \end{figure}
 
-
-
 \subsubsection{The device Tree}
 
 On PowerPC embedded platforms, the Linux kernel uses a hierarchical list of devices, namely a device tree where leaves are devices and non-leaf nodes are buses, bridges and interconnects.
-It is a rather detailed machine description to allow the Linux kernel correctly initialize devices and route interrupts to the interrupt routines.
+It is a rather detailed machine description to allow the Linux kernel to correctly initialize devices and route interrupts to the interrupt routines.
 The boot loader or anything else launching the Linux kernel should provide the Linux kernel with the device tree.
 Linux provides a device tree compiler that compile a text description (\texttt{.dts} file) in a loadable binary form (\texttt{.dtb} file).
+Our example provides user with three device trees, that is one for each initial RAM disk size (16 MB, 32 MB and 64 MB).
+The provided device trees are:
+\begin{enumerate}
+\item \texttt{device-tree-16m.dtb}: device tree for a 16 MB large initial RAM disk
+\item \texttt{device-tree-32m.dtb}: device tree for a 32 MB large initial RAM disk
+\item \texttt{device-tree-64m.dtb}: device tree for a 64 MB large initial RAM disk
+\end{enumerate}
 
 \subsubsection{The initial RAM disk}
-The initial RAM disk file is an file containing an image of the root file system.
-Data within the image is formated as an Ext2 file system.
-Creating an image requires root privileges because it involves mounting a file system which requires root privileges.
+The initial RAM disk file is a file containing an image of the root file system.
+We consider creating an initial RAM disk with an Ext2 file system in it.
+Note that creating an image requires root privileges because mounting a file system requires root privileges.
 
+The steps to follow are:
 \begin{enumerate}
 \item Create an empty image (\texttt{initrd.img}) of 16 MB:
 \begin{script}
 [root@localhost] $ dd if=/dev/zero of=initrd.img count=16384 bs=1024
 \end{script}
-\item Bind image to \texttt{/dev/loop0} virtual device:
+\item Create an \texttt{Ext2} file system in image:
 \begin{script}
-[root@localhost] $ losetup /dev/loop0 initrd.img
+[root@localhost] $ mke2fs -F -m 0 initrd.img
 \end{script}
-\item Create an \texttt{Ext2} file system on \texttt{/dev/loop0}:
-\begin{script}
-[root@localhost] $ mke2fs -m 0 /dev/loop0
-\end{script}
-\item Create a mount point and mount \texttt{/dev/loop0} on it:
+\item Create a mount point and mount image on it:
 \begin{script}
 [root@localhost] $ mkdir /media/initrd
-[root@localhost] $ mount /dev/loop0 /mnt/initrd
+[root@localhost] $ mount -o loop initrd.img /mnt/initrd
 \end{script}
 \item Now you can directly access withing the image using directory \texttt{/mnt/initrd}. In directory \texttt{/mnt/initrd}, copy every files and directories you want in your image.
-\item Unmount \texttt{/dev/loop0}:
+\item Unmount image:
 \begin{script}
-[root@localhost] $ umount /dev/loop0
-\end{script}
-\item Unbind image and \texttt{/dev/loop0}
-\begin{script}
-[root@localhost] $ losetup -d /dev/loop0
+[root@localhost] $ umount /media/initrd
 \end{script}
 \end{enumerate}
 
+We provide several prebuilt initial RAM disks.
+Some of the initial RAM disks contain a MiBench benchmark (see Table~\ref{table:mibench}) in \texttt{/opt}.
+Table~\ref{table:initrd} summarizes the prebuilt initial RAM disks.
+\begin{table}[!h]
+	\begin{center}
+		\begin{tabular}{|l|l|}
+		\hline
+		\multicolumn{1}{|c|}{\textbf{Initial RAM disk}} & \multicolumn{1}{|c|}{\textbf{Content}}\\
+		\hline
+		\texttt{initrd.img} & Busybox only\\
+		\hline
+		\texttt{initrd\_automotive\_basicmath.img} & Busybox + automotive/basicmath\\
+		\hline
+		\texttt{initrd\_consumer\_typeset.img} & Busybox + consumer/typeset\\
+		\hline
+		\texttt{initrd\_office\_rsynth.img} & Busybox + office/rsynth\\
+		\hline
+		\texttt{initrd\_telecomm\_adpcm.img} & Busybox + telecomm/ADPCM\\
+		\hline
+		\texttt{initrd\_automotive\_bitcount.img} & Busybox + automotive/bitcount\\
+		\hline
+		\texttt{initrd\_office\_stringsearch.img} & Busybox + office/stringsearch\\
+		\hline
+		\texttt{initrd\_telecomm\_crc32.img} & Busybox + telecomm/CRC32\\
+		\hline
+		\texttt{initrd\_automotive\_qsort.img} & Busybox + automotive/qsort\\
+		\hline
+		\texttt{initrd\_network\_dijkstra.img} & Busybox + network/dijkstra\\
+		\hline
+		\texttt{initrd\_security\_blowfish.img} & Busybox + security/blowfish\\
+		\hline
+		\texttt{initrd\_telecomm\_fft.img} & Busybox + telecomm/FFT\\
+		\hline
+		\texttt{initrd\_automotive\_susan.img} & Busybox + automotive/susan\\
+		\hline
+		\texttt{initrd\_network\_patricia.img} & Busybox + network/patricia\\
+		\hline
+		\texttt{initrd\_security\_pgp.img} & Busybox + security/PGP\\
+		\hline
+		\texttt{initrd\_telecomm\_gsm.img} & Busybox + telecomm/GSM\\
+		\hline
+		\texttt{initrd\_consumer\_jpeg.img} & Busybox + consumer/JPEG MiBench\\
+		\hline
+		\texttt{initrd\_office\_ghostscript.img} & Busybox + office/ghostscript\\
+		\hline
+		\texttt{initrd\_security\_rijndael.img} & Busybox + security/rijndael\\
+		\hline
+		\texttt{initrd\_consumer\_lame.img} & Busybox + consumer/lame\\
+		\hline
+		\texttt{initrd\_office\_ispell.img} & Busybox + office/ispell\\
+		\hline
+		\texttt{initrd\_security\_sha.img} & Busybox + security/sha\\
+		\hline
+		\end{tabular}
+	\end{center}
+	\caption{Initial RAM disks.}
+	\label{table:initrd}
+\end{table}
+
+\cleardoublepage
+
+\subsubsection{Busybox}
+
 Busybox is a light weight shell that includes most of standard UNIX commands. Actually commands are symbolic links to the busybox binary.
 Busybox knows which commands to implement looking at its \texttt{argv[0]}.
-It is usually a good idea to install Busybox in the initial RAM disk image of an Linux-based embedded platform.
+It is usually a good idea to install Busybox in the initial RAM disk image of an Linux-based embedded platform because it's tiny and easy to cross-compile.
+The Linux kernel (\texttt{vmlinux}), at the end of the boot procedure, starts \texttt{linuxrc} located at the root of the root file system (e.g. in an initial RAM disk on device \texttt{/dev/ram0}). Usually \texttt{linuxrc} is a symbolic link to the boot shell (e.g. the Busybox ash shell located at \texttt{/bin/ash}).
+
+\subsubsection{The MiBench version 1 benchmarks}
+
+The MiBench~\cite{mibench, mibenchwebsite} version 1 is a free, commercially representative embedded benchmark suite.
+Most of the benchmarks come with small and large data sets.
+Table~\ref{table:mibench} summarizes the available benchmarks and there current status.
+Be aware that some of the benchmarks are so difficult to cross-compile (they were only intended to be natively compiled on the machine that will run them) that we gave up to build them.
+Also note that some benchmarks do not run correctly on PowerPC processors because these benchmarks wrongly assumes endian (PowerPC processors natural endian is big-endian whether processors of standard PC are little-endian).
+When such limitations exist, they are explained in the status column of the table.
+
+\begin{table}[p]
+	\begin{center}
+		\begin{tabular}{|l|l|p{5cm}|p{5cm}|}
+		\hline
+		\multicolumn{1}{|c|}{\textbf{Benchmark}} & \multicolumn{1}{|c|}{\textbf{Category}} & \multicolumn{1}{|c|}{\textbf{Description}} & \multicolumn{1}{|c|}{\textbf{Status}}\\
+		\hline
+		\texttt{sha} & \texttt{security} & 160-bit secure hash algorithm & OK \\
+		\hline
+		\texttt{blowfish} & \texttt{security} & Blowfish encryption and decryption & OK \\
+		\hline
+		\texttt{rijndael} & \texttt{security} & AES encryption and decryption & OK after patching \texttt{aesxam.c} (use \texttt{ftell} instead of \texttt{fgetpos})\\
+		\hline
+		\texttt{pgp} & \texttt{security} & Asymetric (public key) encryption and decryption & OK \\
+		\hline
+		\texttt{qsort} & \texttt{automotive} & Sorting algorithm & OK \\
+		\hline
+		\texttt{susan} & \texttt{automotive} & Corner and edge recognition & OK \\
+		\hline
+		\texttt{basicmath} & \texttt{automotive} & Solving cubic polynomial, computing integer square root and converting angles & OK \\
+		\hline
+		\texttt{bitcount} & \texttt{automotive} & Count set bits in integer & OK \\
+		\hline
+		\texttt{dijkstra} & \texttt{network} & Shortest path in a graph & OK \\
+		\hline
+		\texttt{FFT} & \texttt{telecomm} & Fast Fourier Transform & OK \\
+		\hline
+		\texttt{GSM} & \texttt{telecomm} & Global System for Mobile Communications encoder and decoder & OK \\
+		\hline
+		\texttt{CRC32} & \texttt{telecomm} & 32-bit Cyclic Redundancy Check & OK \\
+		\hline
+		\texttt{ADPCM} & \texttt{telecomm} & Adaptative Differential Pulse Code Modulation encoder and decoder & OK with the small data set (a RAM disk of 64 MB is not sufficient to run the benchmark with the large data set) \\
+		\hline
+		\texttt{typeset} & \texttt{consumer} & A batch document formatter & OK \\
+		\hline
+		\texttt{lame} & \texttt{consumer} & MP3 encoder & OK \\
+		\hline
+		\texttt{mad} & \texttt{consumer} & MPEG audio decoding & Can't get it to cross-compile \\
+		\hline
+		\texttt{JPEG} & \texttt{consumer} & JPEG encoder and decoder & OK \\
+		\hline
+		\texttt{tiff} & \texttt{office} & Conversion and Dithering of pictures & Can't get it to cross-compile \\
+		\hline
+		\texttt{ghostscript} & \texttt{office} & Postscript renderer & Crashes on PowerPC  \\
+		\hline
+		\texttt{ispell} & \texttt{office} & Spell checker & Fail (input files are endian-sensitive)\\
+		\hline
+		\texttt{stringsearch} & \texttt{office} & Search for words in text & OK \\
+		\hline
+		\texttt{rsynth} & \texttt{office} & Text to speech synthesis & OK \\
+		\hline
+		\texttt{sphinx} & \texttt{office} & Speech decoder & Can't be compiled on modern compilers \\
+		\hline
+		\end{tabular}
+	\end{center}
+	\caption{MiBench version 1.0.}
+	\label{table:mibench}
+\end{table}
 
 \subsubsection{Running the example}
 \label{running_a_linux_distro}
@@ -1384,7 +1698,7 @@ A very small Linux distribution based on Busybox together with a configuration f
 To boot that small Linux distribution within the simulator, do the following at the command prompt:
 
 \begin{script}
-$ cd distro_linux
+$ cd linux_distro
 $ unisim-virtex5fxt-1.0-wfpu-1.0 -c sim_config.xml
 \end{script}
 
@@ -1395,5 +1709,133 @@ To connect the telnet client to the simulator, do the following at the command p
 $ telnet localhost 1234
 \end{script}
 
-\textit{Note: The UNISIM Virtex 5 FXT Simulator must have the hardware FPU enabled (\texttt{unisim\--virtex5fxt\--1.0\--wfpu}) to run a Linux kernel for \texttt{powerpc\--440fp\--linux\--gnu} or \texttt{powerpc\--440\--linux\--gnu}. When the simulator has the hardware FPU disabled (\texttt{unisim\--virtex5fxt\--1.0}, the simulator can only use the Linux kernel for \texttt{powerpc\--440\--linux\--gnu}.}
+You can see (in the telnet terminal) the Linux distribution booting in the simulator:
+\begin{script}
+[    0.000000] Using Xilinx Virtex440 machine description
+[    0.000000] Linux version 2.6.38.7 (gmouchard@is010192.saclay.cea.fr) (gcc version 
+4.4.6 (crosstool-NG-1.11.3) ) #1 PREEMPT Thu Sep 8 10:28:23 CEST 2011
+[    0.000000] Found initrd at 0xc0900000:0xc1900000
+[    0.000000] Zone PFN ranges:
+[    0.000000]   DMA      0x00000000 -> 0x00001000
+[    0.000000]   Normal   empty
+[    0.000000] Movable zone start PFN for each node
+[    0.000000] early_node_map[1] active PFN ranges
+[    0.000000]     0: 0x00000000 -> 0x00001000
+[    0.000000] MMU: Allocated 1088 bytes of context maps for 255 contexts
+[    0.000000] Built 1 zonelists in Zone order, mobility grouping off.  Total pages: 4094
+[    0.000000] Kernel command line: root=/dev/ram0 rw init=linuxrc console=ttyUL0
+[    0.000000] PID hash table entries: 1024 (order: -4, 4096 bytes)
+[    0.000000] Dentry cache hash table entries: 32768 (order: 1, 131072 bytes)
+[    0.000000] Inode-cache hash table entries: 16384 (order: 0, 65536 bytes)
+[    0.000000] Memory: 240192k/262144k available (3712k kernel code, 21952k reserved, 
+384k data, 689k bss, 256k init)
+[    0.000000] Kernel virtual memory layout:
+[    0.000000]   * 0xfffd0000..0xffff0000  : fixmap
+[    0.000000]   * 0xfde00000..0xfe000000  : consistent mem
+[    0.000000]   * 0xfde00000..0xfde00000  : early ioremap
+[    0.000000]   * 0xd1000000..0xfde00000  : vmalloc & ioremap
+[    0.000000] Preemptable hierarchical RCU implementation.
+[    0.000000]  RCU-based detection of stalled CPUs is disabled.
+[    0.000000]  Verbose stalled-CPUs detection is disabled.
+[    0.000000] NR_IRQS:512
+[    0.000000] clocksource: timebase mult[a00000] shift[22] registered
+[    0.000000] Console: colour dummy device 80x25
+[    0.000343] pid_max: default: 32768 minimum: 301
+[    0.000814] Mount-cache hash table entries: 8192
+[    0.007584] NET: Registered protocol family 16
+[    0.009029] PCI: Probing PCI hardware
+[    0.017297] bio: create slab <bio-0> at 0
+[    0.017779] XGpio: /plb@0/gpio@81460000: registered
+[    0.017978] XGpio: /plb@0/gpio@81400000: registered
+[    0.018185] XGpio: /plb@0/gpio@81420000: registered
+[    0.018389] XGpio: /plb@0/gpio@81440000: registered
+[    0.018872] vgaarb: loaded
+[    0.019767] Switching to clocksource timebase
+[    0.035481] NET: Registered protocol family 2
+[    0.035774] IP route cache hash table entries: 16384 (order: 0, 65536 bytes)
+[    0.037037] TCP established hash table entries: 8192 (order: 0, 65536 bytes)
+[    0.037372] TCP bind hash table entries: 8192 (order: -1, 32768 bytes)
+[    0.037569] TCP: Hash tables configured (established 8192 bind 8192)
+[    0.037584] TCP reno registered
+[    0.037601] UDP hash table entries: 4096 (order: 0, 65536 bytes)
+[    0.037941] UDP-Lite hash table entries: 4096 (order: 0, 65536 bytes)
+[    0.038918] NET: Registered protocol family 1
+[    0.039363] RPC: Registered udp transport module.
+[    0.039379] RPC: Registered tcp transport module.
+[    0.039392] RPC: Registered tcp NFSv4.1 backchannel transport module.
+[    0.039571] Trying to unpack rootfs image as initramfs...
+[    0.039920] rootfs image is not initramfs (junk in compressed archive); looks like an initrd
+[    0.086721] Freeing initrd memory: 16384k freed
+[    0.091563] ROMFS MTD (C) 2007 Red Hat, Inc.
+[    0.091826] msgmni has been set to 500
+[    0.092236] io scheduler noop registered
+[    0.092248] io scheduler deadline registered
+[    0.092332] io scheduler cfq registered (default)
+[    0.265669] 84000000.serial: ttyUL0 at MMIO 0x84000000 (irq = 19) is a uartlite
+[    0.266450] console [ttyUL0] enabled
+[    0.267903] brd: module loaded
+[    0.271850] loop: module loaded
+[    0.272234] Xilinx SystemACE device driver, major=254
+[    0.273794] mousedev: PS/2 mouse device common for all mice
+[    0.274285] PowerPC Book-E Watchdog Timer Loaded
+[    0.275977] TCP cubic registered
+[    0.275999] NET: Registered protocol family 17
+[    0.277548] RAMDISK: ext2 filesystem found at block 0
+[    0.277586] RAMDISK: Loading 16384KiB [1 disk] into ram disk... done.
+[    0.614251] VFS: Mounted root (ext2 filesystem) on device 1:0.
+[    0.614601] Freeing unused kernel memory: 256k init
+starting pid 741, tty '': '/etc/init.d/rcS'
+starting pid 744, tty '': '/bin/cttyhack /etc/init.sh'
 
+
+BusyBox v1.18.4 (2011-09-08 10:28:36 CEST) built-in shell (ash)
+Enter 'help' for a list of built-in commands.
+
+[/]$ 
+\end{script}
+
+Once the boot is over, you can enter shell commands at the command prompt in the telnet terminal.
+For example, you can ask for CPU informations to the Linux kernel by doing the following at the command prompt in the telnet terminal:
+\begin{script}
+[/]$ cat /proc/cpuinfo
+processor       : 0
+cpu             : 440 in Virtex-5 FXT
+clock           : 400.000000MHz
+revision        : 25.18 (pvr 7ff2 1912)
+bogomips        : 800.00
+timebase        : 400000000
+platform        : Xilinx Virtex440
+model           : testing
+Memory          : 256 MB
+[/]$ 
+\end{script}
+
+You may also want to try some MiBench benchmarks within that small Linux distribution.
+We provide an initial RAM disk for almost each MiBench benchmark and the corresponding simulator configuration file.
+\noindent For example, to run the MiBench Lame benchmark, do the following at the command prompt:
+
+\begin{script}
+$ cd linux_distro
+$ unisim-virtex5fxt-1.0-wfpu-1.0 -c sim_config_consumer_lame.xml
+\end{script}
+
+\noindent In another console, connect the telnet client to the simulator:
+\begin{script}
+$ telnet localhost 1234
+\end{script}
+
+\noindent Run the MiBench Lame benchmark:
+\begin{script}
+[/]$ cd /opt/consumer/lame
+[/opt/consumer/lame]$ PATH=$(pwd) ./runme_large.sh
+LAME version 3.70 (www.sulaco.org/mp3)
+GPSYCHO: GPL psycho-acoustic and noise shaping model version 0.77.
+Encoding large.wav to output_large.mp3
+Encoding as 44.1 kHz 128 kbps single-ch MPEG1 LayerIII ( 5.5x)  qval=5
+    Frame          |  CPU/estimated  |  time/estimated | play/CPU |   ETA
+  1149/  1150( 99%)| 0:00:04/ 0:00:04| 0:00:04/ 0:00:04|    7.9615| 0:00:00
+[/opt/consumer/lame]$ 
+\end{script}
+
+\textit{Note: The UNISIM Virtex 5 FXT Simulator must have the hardware FPU enabled (\texttt{unisim\--virtex5fxt\--1.0\--wfpu}) to run a Linux kernel for \texttt{powerpc\--440fp\--linux\--gnu}.
+When the simulator has the hardware FPU disabled (\texttt{unisim\--virtex5fxt\--1.0}, the simulator can only use the Linux kernel for \texttt{powerpc\--440\--linux\--gnu}.}

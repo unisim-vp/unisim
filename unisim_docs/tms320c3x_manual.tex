@@ -18,6 +18,8 @@
 \usepackage{rotating}
 \usepackage{latexsym}
 \usepackage{placeins}
+\usepackage{verbatim}
+\usepackage{appendix}
 \voffset -1.5cm
 \hoffset 0.0cm
 \textheight 25cm
@@ -51,5 +53,12 @@
 
 \maketitle
 \input{tms320c3x/tms320c3x}
+
+\newpage
+\appendix
+\appendixpage
+\section{Simulator technical reference (generated)}
+\label{techref}
+\input{tms320c3x/techref}
 
 \end{document}

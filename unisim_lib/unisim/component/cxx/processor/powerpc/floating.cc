@@ -34,6 +34,12 @@
  
 #include <unisim/component/cxx/processor/powerpc/floating.hh>
 #include <unisim/util/simfloat/floating.tcc>
+#include <stdlib.h>
+#include <sstream>
+
+#ifdef powerpc
+#undef powerpc
+#endif
 
 namespace unisim {
 namespace component {
@@ -69,6 +75,101 @@ void FloatingPointRegisterInterface::SetValue(const void *buffer)
 int FloatingPointRegisterInterface::GetSize() const
 {
 	return 8;
+}
+
+FloatingPointRegisterView::FloatingPointRegisterView(const char *name, unisim::kernel::service::Object *owner, SoftDouble& _storage, const char *description)
+	: unisim::kernel::service::VariableBase(name, owner, unisim::kernel::service::VariableBase::VAR_REGISTER, description)
+	, storage(_storage)
+{
+}
+
+FloatingPointRegisterView::~FloatingPointRegisterView()
+{
+}
+
+const char *FloatingPointRegisterView::GetDataTypeName() const
+{
+	return "64-bit floating-point register";
+}
+
+FloatingPointRegisterView::operator bool () const
+{
+	return (bool) storage.queryValue();
+}
+
+FloatingPointRegisterView::operator long long () const
+{
+	return (long long) storage.queryValue();
+}
+
+FloatingPointRegisterView::operator unsigned long long () const
+{
+	return (unsigned long long) storage.queryValue();
+}
+
+FloatingPointRegisterView::operator double () const
+{
+	return (double) storage.queryValue();
+}
+
+FloatingPointRegisterView::operator std::string () const
+{
+	std::stringstream sstr;
+	sstr << "0x" << std::hex;
+	sstr.fill('0');
+	sstr.width(8);
+	sstr << (uint64_t) storage.queryValue();
+	return sstr.str();
+}
+
+unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		storage = SoftDouble((uint64_t) value);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		storage = SoftDouble((int64_t) value);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		storage = SoftDouble((uint64_t) value);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (double value)
+{
+	if(IsMutable())
+	{
+		storage = SoftDouble((int64_t) value);
+		NotifyListeners();
+	}
+	return *this;
+}
+
+unisim::kernel::service::VariableBase& FloatingPointRegisterView::operator = (const char * value)
+{
+	if(IsMutable())
+	{
+		storage = SoftDouble((uint64_t) (strcmp(value, "true") == 0) ? 1 : ((strcmp(value, "false") == 0) ? 0 : strtoull(value, 0, 0)));
+		NotifyListeners();
+	}
+	return *this;
 }
 
 } // end of namespace powerpc

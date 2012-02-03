@@ -64,6 +64,10 @@
 #include <map>
 #include <iosfwd>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -564,6 +568,26 @@ private:
 	Queue<FreeListConfig> free_list;
 };
 
+class VectorRegisterView : public unisim::kernel::service::VariableBase
+{
+public:
+	VectorRegisterView(const char *name, unisim::kernel::service::Object *owner, vr_t& storage, const char *description);
+	virtual ~VectorRegisterView();
+	virtual const char *GetDataTypeName() const;
+	virtual operator bool () const;
+	virtual operator long long () const;
+	virtual operator unsigned long long () const;
+	virtual operator double () const;
+	virtual operator std::string () const;
+	virtual unisim::kernel::service::VariableBase& operator = (bool value);
+	virtual unisim::kernel::service::VariableBase& operator = (long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (unsigned long long value);
+	virtual unisim::kernel::service::VariableBase& operator = (double value);
+	virtual unisim::kernel::service::VariableBase& operator = (const char * value);
+private:
+	vr_t& storage;
+};
+
 template <class CONFIG>
 class CPU :
 	public unisim::component::cxx::processor::powerpc::mpc7447a::Decoder<CONFIG>,
@@ -1031,7 +1055,7 @@ protected:
     /** indicates if the finished instructions require to be reported */
     bool requires_finished_instruction_reporting;
 	
-	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
+	inline bool IsVerboseSetup() const { return verbose_all || verbose_setup; }
 	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
 	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
 	inline bool IsVerboseITLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
@@ -1315,10 +1339,14 @@ private:
 	bool verbose_set_hid1;
 	bool verbose_set_hid2;
 	bool verbose_set_l2cr;
+	bool enable_halt_on;
+	typename CONFIG::address_t halt_on_addr;
+	std::string halt_on;
 	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 
 	map<string, unisim::util::debug::Register *> registers_registry;       //!< Every CPU register interfaces excluding MMU/FPU registers
+	std::vector<unisim::kernel::service::VariableBase *> registers_registry2;       //!< Every CPU register
 	uint64_t instruction_counter;                              //!< Number of executed instructions
 	bool fp32_estimate_inv_warning;
 	bool fp64_estimate_inv_sqrt_warning;
@@ -1628,13 +1656,16 @@ private:
 	Parameter<bool> param_verbose_set_hid2;
 	Parameter<bool> param_verbose_set_l2cr;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
+	Parameter<std::string> param_halt_on;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =
 	//=====================================================================
 
 	Statistic<uint64_t> stat_instruction_counter;
+#if 0
 	Statistic<uint64_t> stat_cpu_cycle;                   //!< Number of cpu cycles
+#endif
 	Statistic<uint64_t> stat_bus_cycle;                   //!< Number of front side bus cycles
 	Statistic<uint64_t> stat_num_il1_accesses;
 	Statistic<uint64_t> stat_num_il1_misses;

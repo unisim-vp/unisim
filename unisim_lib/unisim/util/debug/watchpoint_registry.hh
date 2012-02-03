@@ -36,15 +36,16 @@
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_HH__
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_REGISTRY_HH__
 
-#include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/util/debug/watchpoint.hh>
 #include <list>
+
+#include "unisim/util/debug/memory_access_type.hh"
+#include "unisim/util/debug/watchpoint.hh"
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using unisim::service::interfaces::MemoryAccessReporting;
+// using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::util::debug::Watchpoint;
 using std::list;
 
@@ -55,9 +56,9 @@ public:
 	WatchpointMapPage(ADDRESS addr);
 	~WatchpointMapPage();
 
-	void SetWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size);
-	void RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size);
-	bool HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size);
+	void SetWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size);
+	void RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size);
+	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, uint32_t offset, uint32_t size);
 
 	static const uint32_t NUM_WATCHPOINTS_PER_PAGE = 128;//32768; // MUST BE a power of two !
 	ADDRESS base_addr;			/*< base effective address */
@@ -75,11 +76,11 @@ public:
 	virtual ~WatchpointRegistry();
 
 	void Reset();
-	bool SetWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	bool RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	bool HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
+	bool SetWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	bool RemoveWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
+	bool HasWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	bool HasWatchpoints() const;
-	const Watchpoint<ADDRESS> *FindWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
+	const Watchpoint<ADDRESS> *FindWatchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	const list<Watchpoint<ADDRESS> >& GetWatchpoints();
 
 private:
@@ -87,8 +88,8 @@ private:
 	list<Watchpoint<ADDRESS> > watchpoints;
 	WatchpointMapPage<ADDRESS> *hash_table[2][NUM_HASH_TABLE_ENTRIES];
 
-	void AllocatePage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr);
-	WatchpointMapPage<ADDRESS> *GetPage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr);
+	void AllocatePage(unisim::util::debug::MemoryType mt, ADDRESS addr);
+	WatchpointMapPage<ADDRESS> *GetPage(unisim::util::debug::MemoryType mt, ADDRESS addr);
 	
 };
 

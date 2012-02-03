@@ -38,4 +38,4 @@
 #include "unisim/component/tlm2/timer/xilinx/xps_timer/xps_timer.tcc"
 #include "config.hh"
 
-template class unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<TIMER_CONFIG>;
+template class unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<SimConfig::TIMER_CONFIG>;

@@ -77,6 +77,7 @@ using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
@@ -95,11 +96,12 @@ using unisim::kernel::tlm2::PayloadFabric;
 
 
 class XINT :
-	public sc_module,
-	public Service<Memory<service_address_t> >,
-	public Service<Registers>,
-	public Client<Memory<service_address_t> >,
-	virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
+	public sc_module
+	, public CallBackObject
+	, public Service<Memory<service_address_t> >
+	, public Service<Registers>
+	, public Client<Memory<service_address_t> >
+	, virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
 
 {
 public:
@@ -185,12 +187,12 @@ public:
 	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
-	bool write(address_t address, uint8_t value);
-	bool read(address_t address, uint8_t &value);
 
 	//=====================================================================
-	//=              Registers Interface interface methods               =
+	//=             registers setters and getters                         =
 	//=====================================================================
+	virtual bool read(unsigned int address, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int address, const void *buffer, unsigned int data_length);
 
 	/**
 	 * Gets a register interface to the register specified by name.
@@ -220,7 +222,7 @@ protected:
 
 private:
 	static const uint8_t XINT_SIZE		= 128; // Number of recognized/handled interrupts
-	static const uint8_t CFDATA_SIZE	= 8;
+	static const uint8_t CFDATA_WINDOW_SIZE	= 8;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
@@ -235,7 +237,8 @@ private:
 	uint8_t ivbr;
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
-	uint8_t	int_cfdata[CFDATA_SIZE];
+//	uint8_t	int_cfwdata[XINT_SIZE];
+	uint8_t	*int_cfwdata;
 
 	bool isHardwareInterrupt;
 
@@ -244,6 +247,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 public:
 
@@ -275,7 +280,7 @@ public:
 	address_t get_ECT_Ch7_Vector() { return ((address_t) getIVBR() << 8) + 0xE0 ; } // Enhanced Capture Timer Channel 7
 	address_t get_ECT_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xDE ; } // Enhanced capture Timer Overflow
 	address_t get_PAcc_A_Overflow_Vector() { return ((address_t) getIVBR() << 8) + 0xDC ; } // Pulse Accumulator A Overflow
-	address_t get_PAcc_Input_edge_Vector() { return ((address_t) getIVBR() << 8) + 0xDA ; } // Pulse Accumulator Input Edge
+	address_t get_PAcc_Input_edge_Vector() { return ((address_t) getIVBR() << 8) + 0xDA ; } // Pulse Accumulator A Input Edge
 	address_t get_SPI0_Vector() { return ((address_t) getIVBR() << 8) + 0xD8 ; }
 	address_t get_SCI0_Vector() { return ((address_t) getIVBR() << 8) + 0xD6 ; }
 	address_t get_SCI1_Vector() { return ((address_t) getIVBR() << 8) + 0xD4 ; }

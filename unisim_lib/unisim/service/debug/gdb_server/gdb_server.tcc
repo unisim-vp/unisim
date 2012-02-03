@@ -560,7 +560,7 @@ void GDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRE
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -1271,7 +1271,10 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 						breakpoint_registry.HasBreakpoints());
 			return PutPacket("OK");
 		case 2:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1281,7 +1284,10 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			else
 				return PutPacket("E00");
 		case 3:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1292,7 +1298,10 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				return PutPacket("E00");
 
 		case 4:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1300,7 +1309,9 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 			else
 				return PutPacket("E00");
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE,
+                                           unisim::util::debug::MT_DATA,
+                                           addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1337,7 +1348,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			return PutPacket("OK");
 
 		case 2:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE,
+                                              unisim::util::debug::MT_DATA,
+                                              addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1347,7 +1361,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			else
 				return PutPacket("E00");
 		case 3:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ,
+                                              unisim::util::debug::MT_DATA,
+                                              addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1357,7 +1374,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			else
 				return PutPacket("E00");
 		case 4:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ,
+                                              unisim::util::debug::MT_DATA,
+                                              addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1365,7 +1385,10 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			}
 			else
 				return PutPacket("E00");
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			// if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(!watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE,
+                                               unisim::util::debug::MT_DATA,
+                                               addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
@@ -1400,49 +1423,62 @@ void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 		 *
 		 * with: symbType in {"FUNCTION", "VARIABLE"}
 		 */
-		const list<Symbol<ADDRESS> *> *symbol_registries = symbol_table_lookup_import ? symbol_table_lookup_import->GetSymbols() : 0;
+		if(symbol_table_lookup_import)
+		{
+			list<const Symbol<ADDRESS> *> func_symbols;
+			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_FUNC);
 
-		if (symbol_registries != 0) {
+			if (!func_symbols.empty()) {
 
-			typename list<Symbol<ADDRESS> *>::const_iterator symbol_iter;
-			std::stringstream strstm;
+				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+				std::stringstream strstm;
 
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_FUNC].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_FUNC].end(); symbol_iter++)
-			{
-				strstm << "O";
-				strstm << (*symbol_iter)->GetName();
+				for(symbol_iter = func_symbols.begin(); symbol_iter != func_symbols.end(); symbol_iter++)
+				{
+					strstm << "O";
+					strstm << (*symbol_iter)->GetName();
 
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
+					strstm << ":" << std::hex;
+					strstm.width(8);
+					strstm << (*symbol_iter)->GetAddress();
 
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
 
-				strstm << ":" << "FUNCTION";
+					strstm << ":" << "FUNCTION";
 
-				PutPacket(strstm.str());
+					PutPacket(strstm.str());
 
-				strstm.str(std::string());
+					strstm.str(std::string());
+				}
 			}
+		
+			list<const Symbol<ADDRESS> *> obj_symbols;
+			symbol_table_lookup_import->GetSymbols(func_symbols, Symbol<ADDRESS>::SYM_OBJECT);
+		
+			if (!obj_symbols.empty()) {
 
-			for(symbol_iter = symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].begin(); symbol_iter != symbol_registries[Symbol<ADDRESS>::SYM_OBJECT].end(); symbol_iter++)
-			{
+				typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+				std::stringstream strstm;
 
-				strstm << "O";
-				strstm << (*symbol_iter)->GetName();
+				for(symbol_iter = obj_symbols.begin(); symbol_iter != obj_symbols.end(); symbol_iter++)
+				{
 
-				strstm << ":" << std::hex;
-				strstm.width(8);
-				strstm << (*symbol_iter)->GetAddress();
+					strstm << "O";
+					strstm << (*symbol_iter)->GetName();
 
-				strstm << ":" << std::dec << (*symbol_iter)->GetSize();
+					strstm << ":" << std::hex;
+					strstm.width(8);
+					strstm << (*symbol_iter)->GetAddress();
 
-				strstm << ":" << "VARIABLE";
+					strstm << ":" << std::dec << (*symbol_iter)->GetSize();
 
-				PutPacket(strstm.str());
+					strstm << ":" << "VARIABLE";
 
-				strstm.str(std::string());
+					PutPacket(strstm.str());
 
+					strstm.str(std::string());
+
+				}
 			}
 
 			PutPacket("T05");

@@ -1,5 +1,5 @@
 ## UNISIM_CHECK_RTBCOB
-## Does not take parameters
+## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_RTBCOB], [
 	# Check if RTBuilder Cob path has been overloaded
@@ -12,7 +12,7 @@ AC_DEFUN([UNISIM_CHECK_RTBCOB], [
 	fi
 
 	# Check for function 'init_network' in libcob.a
-	AC_CHECK_LIB(cob,init_network,broken_rtbcob=no,broken_rtbcob=yes)
+	UNISIM_CHECK_LIB(cob,init_network,$1,broken_rtbcob=no,broken_rtbcob=yes)
 
 	if test "$broken_rtbcob" == "yes"; then
 		AC_MSG_NOTICE([RTBuilder COB not found. Support for RTBuilder COB will be disabled.])
