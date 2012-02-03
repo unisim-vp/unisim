@@ -157,6 +157,11 @@ template <> VariableBase& Variable<unisim::service::power::CacheDynamicEnergy>::
 	return *this;
 }
 
+template <>
+unsigned int Variable<unisim::service::power::CacheDynamicEnergy>::GetBitSize() const {
+  return sizeof(unisim::service::power::CacheDynamicEnergy) * 8;
+}
+
 template class Variable<unisim::service::power::CacheDynamicEnergy>;
 
 } // end of namespace service

@@ -33,6 +33,12 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#include <iostream>
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -44,13 +50,7 @@
 #include <cacti4_2.hh>
 #endif
 
-#include <unisim/service/power/cache_power_estimator.hh>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "unisim/service/power/cache_power_estimator.hh"
 // #if defined(HAVE_CACTI4_2)
 // #define cacti (*(Cacti4_2 *) opaque)
 // #endif
@@ -135,6 +135,11 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 		if(strcmp(value, "fast") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 	}
 	return *this;
+}
+
+template <>
+unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetBitSize() const {
+  return sizeof(unisim::service::power::CachePowerEstimator::AccessMode) * 8;
 }
 
 template class Variable<unisim::service::power::CachePowerEstimator::AccessMode>;

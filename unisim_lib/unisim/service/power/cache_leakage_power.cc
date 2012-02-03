@@ -167,6 +167,11 @@ template <> VariableBase& Variable<unisim::service::power::CacheLeakagePower>::o
 	return *this;
 }
 
+template <>
+unsigned int Variable<unisim::service::power::CacheLeakagePower>::GetBitSize() const {
+  return sizeof(unisim::service::power::CacheLeakagePower) * 8;
+}
+
 template class Variable<unisim::service::power::CacheLeakagePower>;
 
 } // end of namespace service
