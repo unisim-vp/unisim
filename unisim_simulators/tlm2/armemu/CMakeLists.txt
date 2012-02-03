@@ -501,6 +501,11 @@ set ( SERVICE_POWER_SRCS
   ${SERVICE_POWER_SRCS_PATH}/cache_power_estimator.cc
   ${CMAKE_BINARY_DIR}/unisim/service/power/config.hh
   )
+set_source_files_properties (
+  ${SERVICE_POWER_SRCS}
+  PROPERTIES
+    COMPILE_DEFINITIONS HAVE_CONFIG_HH
+  )
 
 # Unisim services configuration and sources                                END #
 ################################################################################
@@ -933,6 +938,10 @@ set ( SIMULATOR_REQUIRED_LIBRARIES
   ${OSCI_SYSTEMC_LIBRARIES}
   ${LIBXML2_LIBRARIES}
   ${LIBEDIT} )
+if ( HAVE_CACTI4_2 )
+  list ( APPEND SIMULATOR_REQUIRED_LIBRARIES
+    ${CACTI_4_2_LIBRARY} )
+endif ( HAVE_CACTI4_2 )
 
 if ( BUILD_SIM_PIM_SUPPORT )
   list ( APPEND SIMULATOR_SRCS
@@ -945,7 +954,7 @@ endif ( BUILD_SIM_PIM_SUPPORT )
 
 if ( BUILD_ARMEMU_POWER_SUPPORT )
   list ( APPEND SIMULATOR_SRCS
-    ${SERVICE_POWER} )
+    ${SERVICE_POWER_SRCS} )
 endif ( BUILD_ARMEMU_POWER_SUPPORT )
 
 #set ( armemu__libraries
@@ -1195,6 +1204,7 @@ set ( PYTHON__ARMEMU__INCLUDE_DIRS
   '${OSCI_TLM2_INCLUDE_DIR}'")
 set ( PYTHON__ARMEMU__LIB_DIRS
   "'${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}'")
+message ( STATUS "python armemu lib dirs = ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY}" )
 foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
   get_filename_component( lib_path ${lib}
     PATH )
@@ -1203,7 +1213,7 @@ foreach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
     '${lib_path}'")
 endforeach ( lib ${OSCI_SYSTEMC_LIBRARIES} )
 set ( PYTHON__ARMEMU__LIBS
-  "'simulatorlib',
+  "'simulator',
   'xml2',
   'systemc'")
   #'unisim__component__tlm2__memory__ram',
