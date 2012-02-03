@@ -61,6 +61,8 @@ Memory(const sc_module_name& name, Object *parent) :
 	unisim::component::cxx::memory::ram::Memory<ADDRESS, PAGE_SIZE>(name, parent),
 	slave_sock("slave-sock"),
 	logger(*this),
+	read_counter(0),
+	write_counter(0),
 	verbose(false),
 	cycle_time(),
 	read_latency(cycle_time),
@@ -70,8 +72,6 @@ Memory(const sc_module_name& name, Object *parent) :
 	param_read_latency("read-latency", this, read_latency, "memory read latency"),
 	param_write_latency("write-latency", this, write_latency, "memory write latency"),
 	param_verbose("verbose", this, verbose, "enable/disable verbosity")
-	, read_counter(0)
-	, write_counter(0)
 	, stat_read_counter("read-counter", this, read_counter, "read counter")
 	, stat_write_counter("write-counter", this, write_counter, "write counter")
 
