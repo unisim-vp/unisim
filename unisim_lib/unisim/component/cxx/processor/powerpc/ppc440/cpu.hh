@@ -895,7 +895,7 @@ protected:
     /** indicates if the finished instructions require to be reported */
     bool requires_finished_instruction_reporting;
 	
-	inline bool IsVerboseSetup() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_SETUP_ENABLE && (verbose_all || verbose_setup); }
+	inline bool IsVerboseSetup() const { return verbose_all || verbose_setup; }
 	inline bool IsVerboseStep() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_STEP_ENABLE && (verbose_all || verbose_step); }
 	inline bool IsVerboseITLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_ITLB_ENABLE && (verbose_all || verbose_itlb); }
 	inline bool IsVerboseDTLB() const { return CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_DTLB_ENABLE && (verbose_all || verbose_dtlb); }
@@ -1024,6 +1024,9 @@ private:
 	bool enable_linux_syscall_snooping;
 	uint64_t trap_on_instruction_counter;
 	bool enable_trap_on_exception;
+	bool enable_halt_on;
+	typename CONFIG::address_t halt_on_addr;
+	std::string halt_on;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute
 	uint64_t num_interrupts;
 
@@ -1204,6 +1207,7 @@ private:
 	Parameter<bool> param_enable_linux_syscall_snooping;
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Parameter<bool> param_enable_trap_on_exception;
+	Parameter<std::string> param_halt_on;
 
 	//=====================================================================
 	//=                    CPU run-time statistics                        =

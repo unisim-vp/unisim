@@ -88,6 +88,12 @@ const char *Variable<unisim::service::power::CacheDynamicPower>::GetDataTypeName
 }
 
 template <>
+unsigned int Variable<unisim::service::power::CacheDynamicPower>::GetBitSize() const
+{
+	return 0;
+}
+
+template <>
 Variable<unisim::service::power::CacheDynamicPower>::operator bool () const
 {
 	if ( storage->GetDynamicPower() == 0.0) return false;

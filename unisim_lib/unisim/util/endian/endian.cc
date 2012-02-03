@@ -62,6 +62,11 @@ const char *Variable<endian_type>::GetDataTypeName() const
 	return "endianess";
 }
 
+template <>
+unsigned int Variable<endian_type>::GetBitSize() const
+{
+	return 1;
+}
 
 template <> Variable<endian_type>::operator bool () const { return *storage == E_LITTLE_ENDIAN; }
 template <> Variable<endian_type>::operator long long () const { return (*storage == E_LITTLE_ENDIAN)?1:0; }

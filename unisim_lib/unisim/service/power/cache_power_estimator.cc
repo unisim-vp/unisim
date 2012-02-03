@@ -75,6 +75,12 @@ const char *Variable<unisim::service::power::CachePowerEstimator::AccessMode>::G
 	return "cache power estimator access mode";
 }
 
+template <>
+unsigned int Variable<unisim::service::power::CachePowerEstimator::AccessMode>::GetBitSize() const
+{
+	return 0;
+}
+
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator bool () const { return false; }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator long long () const { return (long long)(*storage); }
 template <> Variable<unisim::service::power::CachePowerEstimator::AccessMode>::operator unsigned long long () const { return (unsigned long long)(*storage); }
@@ -432,7 +438,12 @@ bool CachePowerEstimator::SetupCacti()
 	{
 		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;
 		logger << DebugInfo << p_line_size << " bytes per line" << EndDebugInfo;
-		logger << DebugInfo << p_associativity << " way/set associative" << EndDebugInfo;
+		logger << DebugInfo;
+		if(p_associativity)
+			logger << p_associativity << " way/set associative";
+		else
+			logger << "fully associative";
+		logger << EndDebugInfo;
 		logger << DebugInfo << p_rw_ports << " read/write ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_read_ports << " read-only ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_write_ports << " write-only ports" << EndDebugInfo;
