@@ -510,7 +510,7 @@ StepInstruction()
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportFinishedInstruction(
-					GetGPR(PC_reg));
+					current_pc, GetGPR(PC_reg));
 }
 
 /** Inject an intrusive read memory operation.
