@@ -42,12 +42,14 @@
 #include <list>
 #include <fstream>
 #include <iostream>
+#include <stdexcept>
 
 #ifdef WIN32
 #include <unistd.h>
 #endif
 
-#include <unisim/util/endian/endian.hh>
+#include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {
@@ -229,10 +231,19 @@ ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat
 template <class ADDRESS>
 void
 SimDebugger<ADDRESS>::
-ReportFinishedInstruction(ADDRESS next_addr)
+ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
-	if ( breakpoint_registry.HasBreakpoint(next_addr) )
+	if(breakpoint_registry.HasBreakpoint(next_addr))
+	{
 		trap = true;
+		const Breakpoint<ADDRESS> *breakpoint = breakpoint_registry.FindBreakpoint(next_addr);
+		
+		if(!breakpoint) throw std::runtime_error("Internal error");
+		
+    std::cout << "-> Reached " << (*breakpoint) << std::endl;
+	}
+	// if(unlikely(profile))
+  program_profile.Accumulate(addr, 1);
 }
 
 template <class ADDRESS>
