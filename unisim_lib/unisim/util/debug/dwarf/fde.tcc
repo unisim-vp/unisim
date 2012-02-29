@@ -204,6 +204,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	
 	if(instructions_length > max_size) return -1;
 	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, instructions_length, rawdata, DW_CFP_INSTRUCTIONS);
+	dw_call_frame_prog->SetFDE(this);
 	size += instructions_length;
 
 	return size;
@@ -278,9 +279,15 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	os << "<tr>" << std::endl;
 	os << "<td>" << offset << "</td><td><a href=\"../../" << dw_cie->GetHREF() << "\">cie-" << dw_cie->GetId() << "</a></td>";
 	os << "<td>0x" << std::hex << initial_location << std::dec << "</td><td>0x" << std::hex << address_range << std::dec << "</td><td>";
-	std::stringstream sstr;
-	sstr << *dw_call_frame_prog;
-	c_string_to_HTML(os, sstr.str().c_str());
+	std::stringstream sstr_call_frame_prog;
+	sstr_call_frame_prog << *dw_call_frame_prog;
+	std::stringstream sstr_rule_matrix;
+	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+	const DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix = dw_call_frame_vm.ComputeRuleMatrix(this);
+	sstr_rule_matrix << *rule_matrix;
+	c_string_to_HTML(os, sstr_call_frame_prog.str().c_str());
+	os << "<hr>";
+	c_string_to_HTML(os, sstr_rule_matrix.str().c_str());
 	os << "</td></tr>" << std::endl;
 	return os;
 }

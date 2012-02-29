@@ -181,11 +181,13 @@ private:
 	std::string search_path;
 	std::string init_macro;
 	std::string output;
+	std::string architecture_description_filename;
 	Parameter<unsigned int> param_memory_atom_size;
 	Parameter<unsigned int> param_num_loaders;
 	Parameter<std::string> param_search_path;
 	Parameter<std::string> param_init_macro;
 	Parameter<std::string> param_output;
+	Parameter<std::string> param_architecture_description_filename;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;

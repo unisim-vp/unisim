@@ -1541,7 +1541,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 		debug_frame_fdes << "<th>CIE</th>" << std::endl;
 		debug_frame_fdes << "<th>Initial location</th>" << std::endl;
 		debug_frame_fdes << "<th>Address range</th>" << std::endl;
-		debug_frame_fdes << "<th>Call frame program</th>" << std::endl;
+		debug_frame_fdes << "<th>Call frame program/Computed call frame information</th>" << std::endl;
 		debug_frame_fdes << "</tr>" << std::endl;
 		unsigned int count = 0;
 		while(count < fdes_per_file && dw_fde_iter != dw_fdes.end())
@@ -2145,37 +2145,53 @@ const DWARF_FDE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindFDEByAddr(MEMORY_A
 }
 
 template <class MEMORY_ADDR>
-const DWARF_RuleMatrix<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetRuleMatrix(MEMORY_ADDR pc) const
+const DWARF_RuleMatrix<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::ComputeRuleMatrix(MEMORY_ADDR pc) const
 {
 	const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(pc);
 	
-	if(!dw_fde) return 0;
+	if(!dw_fde)
+	{
+		return 0;
+	}
 
+	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+	return dw_call_frame_vm.ComputeRuleMatrix(dw_fde);
+
+/*	
 	MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
+	MEMORY_ADDR address_range = dw_fde->GetAddressRange();
+	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
+	MEMORY_ADDR code_alignment_factor = (MEMORY_ADDR) dw_cie->GetCodeAlignmentFactor();
 		
 	DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix = new DWARF_RuleMatrix<MEMORY_ADDR>();
 			
-	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
-			
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *initial_instructions = dw_cie->GetInitialInstructions();
 			
-	MEMORY_ADDR location = initial_location;
-			
+	MEMORY_ADDR location = 0;
 	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+	
+	std::cerr << "Running initial instructions" << std::endl;
 	if(!dw_call_frame_vm.Execute(*initial_instructions, location, rule_matrix))
 	{
 		delete rule_matrix;
+		logger << DebugWarning << "Executing CIE initial instructions failed" << EndDebugWarning;
 		return 0;
 	}
-	
+	std::cerr << std::endl;
+	std::cerr << "Running instructions" << std::endl;
+	location = initial_location;
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *instructions = dw_fde->GetInstructions();
 	if(!dw_call_frame_vm.Execute(*instructions, location, rule_matrix))
 	{
 		delete rule_matrix;
+		logger << DebugWarning << "Executing FDE instructions failed" << EndDebugWarning;
 		return 0;
 	}
+	std::cerr << std::endl;
 	
+	std::cerr << "Done sucessfully" << std::endl;
 	return rule_matrix;
+	*/
 }
 
 /*
@@ -2201,10 +2217,18 @@ template <class MEMORY_ADDR>
 std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR pc) const
 {
 	std::vector<MEMORY_ADDR> *backtrace = new std::vector<MEMORY_ADDR>();
-	
-	//GetBackTrace(pc, *back_trace);
 
-	return backtrace;
+	const DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix = ComputeRuleMatrix(pc);
+	
+	if(rule_matrix)
+	{
+		logger << DebugInfo << "Computed call frame information:" << std::endl << *rule_matrix << EndDebugInfo;
+		delete rule_matrix;
+		return backtrace;
+	}
+
+	delete backtrace;
+	return 0;
 }
 
 } // end of namespace dwarf

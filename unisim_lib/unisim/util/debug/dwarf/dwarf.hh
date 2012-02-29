@@ -86,7 +86,7 @@ public:
 	
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
-	const DWARF_RuleMatrix<MEMORY_ADDR> *GetRuleMatrix(MEMORY_ADDR pc) const;
+	const DWARF_RuleMatrix<MEMORY_ADDR> *ComputeRuleMatrix(MEMORY_ADDR pc) const;
 
 private:
 	endian_type endianness;

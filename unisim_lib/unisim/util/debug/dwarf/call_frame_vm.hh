@@ -66,7 +66,7 @@ public:
 	DWARF_CFARule(unsigned int type);
 	virtual ~DWARF_CFARule();
 	unsigned int GetType() const;
-	static DWARF_CFARule<MEMORY_ADDR> *Clone(const DWARF_CFARule<MEMORY_ADDR> *cfa_rule);
+	DWARF_CFARule<MEMORY_ADDR> *Clone();
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CFARule<MEMORY_ADDR>& cfa_rule);
 protected:
 	virtual std::ostream& Print(std::ostream& os) const = 0;
@@ -115,7 +115,7 @@ public:
 	DWARF_RegisterRule(unsigned int dw_rule_type);
 	virtual ~DWARF_RegisterRule();
 	unsigned int GetType() const;
-	static DWARF_RegisterRule<MEMORY_ADDR> *Clone(const DWARF_RegisterRule<MEMORY_ADDR> *register_rule);
+	DWARF_RegisterRule<MEMORY_ADDR> *Clone();
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RegisterRule<MEMORY_ADDR>& register_rule);
 protected:
 	virtual std::ostream& Print(std::ostream& os) const = 0;
@@ -222,7 +222,9 @@ template <class MEMORY_ADDR>
 class DWARF_RuleMatrixRow
 {
 public:
+	DWARF_RuleMatrixRow();
 	DWARF_RuleMatrixRow(MEMORY_ADDR location);
+	DWARF_RuleMatrixRow(const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row);
 	DWARF_RuleMatrixRow(MEMORY_ADDR location, const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row);
 	~DWARF_RuleMatrixRow();
 	void SetCFARule(DWARF_CFARule<MEMORY_ADDR> *cfa_rule);
@@ -235,7 +237,7 @@ public:
 private:
 	MEMORY_ADDR location;
 	DWARF_CFARule<MEMORY_ADDR> *cfa_rule;
-	std::vector<DWARF_RegisterRule<MEMORY_ADDR> *> reg_rules;
+	std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *> reg_rules;
 };
 
 template <class MEMORY_ADDR>
@@ -251,11 +253,13 @@ public:
 	
 	DWARF_RuleMatrixRow<MEMORY_ADDR> *operator[](MEMORY_ADDR loc) const;
 	DWARF_RuleMatrixRow<MEMORY_ADDR> *GetRow(MEMORY_ADDR loc) const;
+	DWARF_RuleMatrixRow<MEMORY_ADDR> *GetInitialRow() const;
 	bool HasRow(MEMORY_ADDR loc) const;
 	void InsertRow(DWARF_RuleMatrixRow<MEMORY_ADDR> *rule_matrix_row);
 	void CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_RuleMatrix<MEMORY_ADDR>& rule_matrix);
 private:
+	DWARF_RuleMatrixRow<MEMORY_ADDR> *initial_row;
 	std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *> rule_matrix_rows;
 };
 
@@ -267,6 +271,7 @@ public:
 	~DWARF_CallFrameVM();
 	bool Disasm(std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
 	bool Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix);
+	const DWARF_RuleMatrix<MEMORY_ADDR> *ComputeRuleMatrix(const DWARF_FDE<MEMORY_ADDR> *dw_fde);
 private:
 	bool RememberState(DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix, MEMORY_ADDR loc);
 	bool RestoreState(DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix, MEMORY_ADDR loc);

@@ -2038,6 +2038,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 									break;
 								case 'l':
 									arg++;
+									arg_num++;
 									list_parms = true;
 									break;
 								case 'v':
@@ -2303,7 +2304,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 		cmd_args = new string[cmd_args_dim];
 		param_cmd_args = new ParameterArray<string>("cmd-args", 0, cmd_args, cmd_args_dim, "command line arguments");
 		int i;
-		for(i = 0; *arg != 0; arg++, i++)
+		for(i = 0; i < cmd_args_dim; arg++, i++)
 		{
 			(*param_cmd_args)[i] = *arg;
 		}
