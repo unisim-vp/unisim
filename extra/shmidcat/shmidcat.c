@@ -257,10 +257,11 @@ int shmidcat_init(char *gtk_wave_path)
     si.cb = sizeof(si);
     ZeroMemory( &pi, sizeof(pi) );
 
+
     char cmdline[256];
     memset(cmdline, 0, 256);
 
-    sprintf(cmdline, "%s -v -I %s", gtk_wave_path, handle_str);
+    sprintf(cmdline, "%s -I %s", gtk_wave_path, handle_str);
 
     // Start the child process. 
     if( !CreateProcess( NULL,   // No module name (use command line)
@@ -278,7 +279,6 @@ int shmidcat_init(char *gtk_wave_path)
         printf( "CreateProcess failed (%d).\n", GetLastError() );
         return -1;
     }
-
 
 #else
 
@@ -310,6 +310,7 @@ int shmidcat_init(char *gtk_wave_path)
 void shmidcat_exit()
 {
 #ifdef __MINGW32__
+
     // Close process and thread handles. 
     CloseHandle( pi.hProcess );
     CloseHandle( pi.hThread );

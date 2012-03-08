@@ -14,7 +14,7 @@ EXTRA_DIST= NativeShmidcat.java sample.vcd launch.sh
 
 all-local: NativeShmidcat.class
 clean-local:
-	rm -rf $(top_builddir)/org
+	rm -f $(top_builddir)/NativeShmidcat.class
 
 install-exec-local: $(top_builddir)/NativeShmidcat.class
 	mkdir -p $(DIST_DIR)$(bindir)
