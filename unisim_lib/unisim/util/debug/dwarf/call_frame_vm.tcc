@@ -394,7 +394,7 @@ std::ostream& DWARF_RegisterRuleValExpression<MEMORY_ADDR>::Print(std::ostream& 
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow()
+DWARF_CFIRow<MEMORY_ADDR>::DWARF_CFIRow()
 	: location(0)
 	, cfa_rule(0)
 	, reg_rules()
@@ -402,7 +402,7 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow()
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(MEMORY_ADDR _location)
+DWARF_CFIRow<MEMORY_ADDR>::DWARF_CFIRow(MEMORY_ADDR _location)
 	: location(_location)
 	, cfa_rule(0)
 	, reg_rules()
@@ -410,12 +410,12 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(MEMORY_ADDR _location)
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row)
-	: location(rule_matrix_row.location)
+DWARF_CFIRow<MEMORY_ADDR>::DWARF_CFIRow(const DWARF_CFIRow<MEMORY_ADDR>& cfi_row)
+	: location(cfi_row.location)
 	, cfa_rule(0)
 	, reg_rules()
 {
-	DWARF_CFARule<MEMORY_ADDR> *orig_cfa_rule = rule_matrix_row.GetCFARule();
+	DWARF_CFARule<MEMORY_ADDR> *orig_cfa_rule = cfi_row.GetCFARule();
 	
 	if(orig_cfa_rule)
 	{
@@ -424,7 +424,7 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(const DWARF_RuleMatrixRow<
 	
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it;
 	
-	for(it = rule_matrix_row.reg_rules.begin(); it != rule_matrix_row.reg_rules.end(); it++)
+	for(it = cfi_row.reg_rules.begin(); it != cfi_row.reg_rules.end(); it++)
 	{
 		unsigned int reg_num = (*it).first;
 		DWARF_RegisterRule<MEMORY_ADDR> *orig_rule = (*it).second;
@@ -434,12 +434,12 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(const DWARF_RuleMatrixRow<
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(MEMORY_ADDR _location, const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row)
+DWARF_CFIRow<MEMORY_ADDR>::DWARF_CFIRow(MEMORY_ADDR _location, const DWARF_CFIRow<MEMORY_ADDR>& cfi_row)
 	: location(_location)
 	, cfa_rule(0)
 	, reg_rules()
 {
-	DWARF_CFARule<MEMORY_ADDR> *orig_cfa_rule = rule_matrix_row.GetCFARule();
+	DWARF_CFARule<MEMORY_ADDR> *orig_cfa_rule = cfi_row.GetCFARule();
 	
 	if(orig_cfa_rule)
 	{
@@ -448,7 +448,7 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(MEMORY_ADDR _location, con
 		
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it;
 	
-	for(it = rule_matrix_row.reg_rules.begin(); it != rule_matrix_row.reg_rules.end(); it++)
+	for(it = cfi_row.reg_rules.begin(); it != cfi_row.reg_rules.end(); it++)
 	{
 		unsigned int reg_num = (*it).first;
 		DWARF_RegisterRule<MEMORY_ADDR> *orig_rule = (*it).second;
@@ -458,7 +458,7 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::DWARF_RuleMatrixRow(MEMORY_ADDR _location, con
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR>::~DWARF_RuleMatrixRow()
+DWARF_CFIRow<MEMORY_ADDR>::~DWARF_CFIRow()
 {
 	if(cfa_rule) delete cfa_rule;
 
@@ -472,14 +472,14 @@ DWARF_RuleMatrixRow<MEMORY_ADDR>::~DWARF_RuleMatrixRow()
 }
 
 template <class MEMORY_ADDR>
-void DWARF_RuleMatrixRow<MEMORY_ADDR>::SetCFARule(DWARF_CFARule<MEMORY_ADDR> *_cfa_rule)
+void DWARF_CFIRow<MEMORY_ADDR>::SetCFARule(DWARF_CFARule<MEMORY_ADDR> *_cfa_rule)
 {
 	if(cfa_rule) delete cfa_rule;
 	cfa_rule = _cfa_rule;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_RuleMatrixRow<MEMORY_ADDR>::SetRegisterRule(unsigned int reg_num, DWARF_RegisterRule<MEMORY_ADDR> *reg_rule)
+void DWARF_CFIRow<MEMORY_ADDR>::SetRegisterRule(unsigned int reg_num, DWARF_RegisterRule<MEMORY_ADDR> *reg_rule)
 {
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::iterator it = reg_rules.find(reg_num);
 	
@@ -496,31 +496,31 @@ void DWARF_RuleMatrixRow<MEMORY_ADDR>::SetRegisterRule(unsigned int reg_num, DWA
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR DWARF_RuleMatrixRow<MEMORY_ADDR>::GetLocation() const
+MEMORY_ADDR DWARF_CFIRow<MEMORY_ADDR>::GetLocation() const
 {
 	return location;
 }
 
 template <class MEMORY_ADDR>
-DWARF_CFARule<MEMORY_ADDR> *DWARF_RuleMatrixRow<MEMORY_ADDR>::GetCFARule() const
+DWARF_CFARule<MEMORY_ADDR> *DWARF_CFIRow<MEMORY_ADDR>::GetCFARule() const
 {
 	return cfa_rule;
 }
 
 template <class MEMORY_ADDR>
-DWARF_RegisterRule<MEMORY_ADDR> *DWARF_RuleMatrixRow<MEMORY_ADDR>::GetRegisterRule(unsigned int reg_num) const
+DWARF_RegisterRule<MEMORY_ADDR> *DWARF_CFIRow<MEMORY_ADDR>::GetRegisterRule(unsigned int reg_num) const
 {
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it = reg_rules.find(reg_num);
 	return (it != reg_rules.end()) ? (*it).second : 0;
 }
 
 template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_RuleMatrixRow<MEMORY_ADDR>& rule_matrix_row)
+std::ostream& operator << (std::ostream& os, const DWARF_CFIRow<MEMORY_ADDR>& cfi_row)
 {
-	os << std::hex << "pc=0x" << rule_matrix_row.location << std::dec << "  <";
-	if(rule_matrix_row.cfa_rule)
+	os << std::hex << "pc=0x" << cfi_row.location << std::dec << "  <";
+	if(cfi_row.cfa_rule)
 	{
-		os << *rule_matrix_row.cfa_rule;
+		os << *cfi_row.cfa_rule;
 	}
 	else
 	{
@@ -529,7 +529,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_RuleMatrixRow<MEMORY_AD
 	os << ">";
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it;
 		
-	for(it = rule_matrix_row.reg_rules.begin(); it != rule_matrix_row.reg_rules.end(); it++)
+	for(it = cfi_row.reg_rules.begin(); it != cfi_row.reg_rules.end(); it++)
 	{
 		os << " <";
 		DWARF_RegisterRule<MEMORY_ADDR> *reg_rule = (*it).second;
@@ -548,33 +548,33 @@ std::ostream& operator << (std::ostream& os, const DWARF_RuleMatrixRow<MEMORY_AD
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrix<MEMORY_ADDR>::DWARF_RuleMatrix()
-	: initial_row(new DWARF_RuleMatrixRow<MEMORY_ADDR>())
+DWARF_CFI<MEMORY_ADDR>::DWARF_CFI()
+	: initial_row(new DWARF_CFIRow<MEMORY_ADDR>())
 {
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrix<MEMORY_ADDR>::DWARF_RuleMatrix(const DWARF_RuleMatrix<MEMORY_ADDR>& rule_matrix)
+DWARF_CFI<MEMORY_ADDR>::DWARF_CFI(const DWARF_CFI<MEMORY_ADDR>& cfi)
 	: initial_row(0)
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::const_iterator iter;
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
 	
-	for(iter = rule_matrix.rule_matrix_rows.begin(); iter != rule_matrix.rule_matrix_rows.end(); iter++)
+	for(iter = cfi.cfi_rows.begin(); iter != cfi.cfi_rows.end(); iter++)
 	{
-		DWARF_RuleMatrixRow<MEMORY_ADDR> *row = (*iter).second;
-		DWARF_RuleMatrixRow<MEMORY_ADDR> *new_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(*row);
-		rule_matrix_rows.insert(std::pair<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>(new_row->GetLocation(), new_row));
+		DWARF_CFIRow<MEMORY_ADDR> *row = (*iter).second;
+		DWARF_CFIRow<MEMORY_ADDR> *new_row = new DWARF_CFIRow<MEMORY_ADDR>(*row);
+		cfi_rows.insert(std::pair<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>(new_row->GetLocation(), new_row));
 	}
 	
-	initial_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(*rule_matrix.GetInitialRow());
+	initial_row = new DWARF_CFIRow<MEMORY_ADDR>(*cfi.GetInitialRow());
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrix<MEMORY_ADDR>::~DWARF_RuleMatrix()
+DWARF_CFI<MEMORY_ADDR>::~DWARF_CFI()
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::iterator iter;
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::iterator iter;
 	
-	for(iter = rule_matrix_rows.begin(); iter != rule_matrix_rows.end(); iter++)
+	for(iter = cfi_rows.begin(); iter != cfi_rows.end(); iter++)
 	{
 		delete (*iter).second;
 	}
@@ -583,75 +583,94 @@ DWARF_RuleMatrix<MEMORY_ADDR>::~DWARF_RuleMatrix()
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR> *DWARF_RuleMatrix<MEMORY_ADDR>::operator[](MEMORY_ADDR loc) const
+DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::operator[](MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::const_iterator iter = rule_matrix_rows.find(loc);
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter = cfi_rows.find(loc);
 	
-	return (iter != rule_matrix_rows.end()) ? (*iter).second : 0;
+	return (iter != cfi_rows.end()) ? (*iter).second : 0;
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR> *DWARF_RuleMatrix<MEMORY_ADDR>::GetRow(MEMORY_ADDR loc) const
+DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetRow(MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::const_iterator iter = rule_matrix_rows.find(loc);
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter = cfi_rows.find(loc);
 	
-	return (iter != rule_matrix_rows.end()) ? (*iter).second : 0;
+	return (iter != cfi_rows.end()) ? (*iter).second : 0;
 }
 
 template <class MEMORY_ADDR>
-DWARF_RuleMatrixRow<MEMORY_ADDR> *DWARF_RuleMatrix<MEMORY_ADDR>::GetInitialRow() const
+DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetLowestRow(MEMORY_ADDR loc) const
+{
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
+	
+	MEMORY_ADDR prev_loc = 0;
+	DWARF_CFIRow<MEMORY_ADDR> *prev_row = 0;
+	for(iter = cfi_rows.begin(); iter != cfi_rows.end(); iter++)
+	{
+		MEMORY_ADDR cur_loc = (*iter).first;
+		DWARF_CFIRow<MEMORY_ADDR> *cur_row = (*iter).second;
+		
+		if(loc < cur_loc) break;
+		prev_loc = cur_loc;
+		prev_row = cur_row;
+	}
+	return prev_row;
+}
+
+template <class MEMORY_ADDR>
+DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetInitialRow() const
 {
 	return initial_row;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_RuleMatrix<MEMORY_ADDR>::HasRow(MEMORY_ADDR loc) const
+bool DWARF_CFI<MEMORY_ADDR>::HasRow(MEMORY_ADDR loc) const
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::const_iterator iter = rule_matrix_rows.find(loc);
-	return (iter != rule_matrix_rows.end());
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter = cfi_rows.find(loc);
+	return (iter != cfi_rows.end());
 }
 
 template <class MEMORY_ADDR>
-void DWARF_RuleMatrix<MEMORY_ADDR>::InsertRow(DWARF_RuleMatrixRow<MEMORY_ADDR> *rule_matrix_row)
+void DWARF_CFI<MEMORY_ADDR>::InsertRow(DWARF_CFIRow<MEMORY_ADDR> *cfi_row)
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::iterator iter = rule_matrix_rows.find(rule_matrix_row->GetLocation());
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::iterator iter = cfi_rows.find(cfi_row->GetLocation());
 	
-	if(iter != rule_matrix_rows.end())
+	if(iter != cfi_rows.end())
 	{
-		rule_matrix_rows.erase(iter);
+		cfi_rows.erase(iter);
 	}
 	
-	if(rule_matrix_row)
+	if(cfi_row)
 	{
-		rule_matrix_rows.insert(std::pair<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>(rule_matrix_row->GetLocation(), rule_matrix_row));
+		cfi_rows.insert(std::pair<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>(cfi_row->GetLocation(), cfi_row));
 	}
 }
 
 template <class MEMORY_ADDR>
-void DWARF_RuleMatrix<MEMORY_ADDR>::CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc)
+void DWARF_CFI<MEMORY_ADDR>::CloneRow(MEMORY_ADDR cur_loc, MEMORY_ADDR new_loc)
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::iterator iter = rule_matrix_rows.find(cur_loc);
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::iterator iter = cfi_rows.find(cur_loc);
 	
-	if(iter != rule_matrix_rows.end())
+	if(iter != cfi_rows.end())
 	{
-		DWARF_RuleMatrixRow<MEMORY_ADDR> *new_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(new_loc, *(*iter).second);
-		rule_matrix_rows.insert(std::pair<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>(new_loc, new_row));
+		DWARF_CFIRow<MEMORY_ADDR> *new_row = new DWARF_CFIRow<MEMORY_ADDR>(new_loc, *(*iter).second);
+		cfi_rows.insert(std::pair<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>(new_loc, new_row));
 	}
 	else
 	{
-		DWARF_RuleMatrixRow<MEMORY_ADDR> *new_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(new_loc, *initial_row);
-		rule_matrix_rows.insert(std::pair<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>(new_loc, new_row));
+		DWARF_CFIRow<MEMORY_ADDR> *new_row = new DWARF_CFIRow<MEMORY_ADDR>(new_loc, *initial_row);
+		cfi_rows.insert(std::pair<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>(new_loc, new_row));
 	}
 }
 
 template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_RuleMatrix<MEMORY_ADDR>& rule_matrix)
+std::ostream& operator << (std::ostream& os, const DWARF_CFI<MEMORY_ADDR>& cfi)
 {
-	typename std::map<MEMORY_ADDR, DWARF_RuleMatrixRow<MEMORY_ADDR> *>::const_iterator iter;
+	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
 	
-	for(iter = rule_matrix.rule_matrix_rows.begin(); iter != rule_matrix.rule_matrix_rows.end(); iter++)
+	for(iter = cfi.cfi_rows.begin(); iter != cfi.cfi_rows.end(); iter++)
 	{
-		DWARF_RuleMatrixRow<MEMORY_ADDR> *row = (*iter).second;
+		DWARF_CFIRow<MEMORY_ADDR> *row = (*iter).second;
 		os << *row << std::endl;
 	}
 	return os;
@@ -675,31 +694,31 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Disasm(std::ostream& os, const DWARF_CallFr
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CallFrameVM<MEMORY_ADDR>::Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix)
+bool DWARF_CallFrameVM<MEMORY_ADDR>::Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
-	return Run(dw_call_frame_prog, 0, &location, rule_matrix);
+	return Run(dw_call_frame_prog, 0, &location, cfi);
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CallFrameVM<MEMORY_ADDR>::RememberState(DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix, MEMORY_ADDR loc)
+bool DWARF_CallFrameVM<MEMORY_ADDR>::RememberState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc)
 {
-	DWARF_RuleMatrixRow<MEMORY_ADDR> *row = rule_matrix->GetRow(loc);
+	DWARF_CFIRow<MEMORY_ADDR> *row = cfi->GetRow(loc);
 	
 	if(!row) return false;
 
-	DWARF_RuleMatrixRow<MEMORY_ADDR> *row_copy = new DWARF_RuleMatrixRow<MEMORY_ADDR>(loc, *row);
+	DWARF_CFIRow<MEMORY_ADDR> *row_copy = new DWARF_CFIRow<MEMORY_ADDR>(loc, *row);
 	row_stack.push(row_copy);
 	return true;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CallFrameVM<MEMORY_ADDR>::RestoreState(DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix, MEMORY_ADDR loc)
+bool DWARF_CallFrameVM<MEMORY_ADDR>::RestoreState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc)
 {
 	if(row_stack.empty()) return false;
 
-	DWARF_RuleMatrixRow<MEMORY_ADDR> *row_copy = row_stack.top();
+	DWARF_CFIRow<MEMORY_ADDR> *row_copy = row_stack.top();
 	row_stack.pop();
-	rule_matrix->InsertRow(row_copy);
+	cfi->InsertRow(row_copy);
 	return true;
 }
 
@@ -708,14 +727,14 @@ void DWARF_CallFrameVM<MEMORY_ADDR>::ResetState()
 {
 	while(!row_stack.empty())
 	{
-		DWARF_RuleMatrixRow<MEMORY_ADDR> *row = row_stack.top();
+		DWARF_CFIRow<MEMORY_ADDR> *row = row_stack.top();
 		row_stack.pop();
 		delete row;
 	}
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, std::ostream *os, MEMORY_ADDR *_cur_location, DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix)
+bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, std::ostream *os, MEMORY_ADDR *_cur_location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_call_frame_prog.GetCIE();
 	const DWARF_FDE<MEMORY_ADDR> *dw_fde = dw_call_frame_prog.GetFDE();
@@ -731,19 +750,19 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 	
 	if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 	{
-		if(rule_matrix)
+		if(cfi)
 		{
-			if(!rule_matrix->HasRow(cur_location))
+			if(!cfi->HasRow(cur_location))
 			{
-				DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-				rule_matrix->InsertRow(cur_row);
+				DWARF_CFIRow<MEMORY_ADDR> *cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+				cfi->InsertRow(cur_row);
 			}
 		}
 	}
 
 	if(program_length)
 	{
-		DWARF_RuleMatrix<MEMORY_ADDR> *initial_rule_matrix = rule_matrix ? new DWARF_RuleMatrix<MEMORY_ADDR>(*rule_matrix) : 0;
+		DWARF_CFI<MEMORY_ADDR> *initial_cfi = cfi ? new DWARF_CFI<MEMORY_ADDR>(*cfi) : 0;
 		
 		do
 		{
@@ -773,9 +792,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 						{
 							new_location += advance_loc;
 							
-							if(rule_matrix && (cur_location != new_location))
+							if(cfi && (cur_location != new_location))
 							{
-								rule_matrix->CloneRow(cur_location, new_location);
+								cfi->CloneRow(cur_location, new_location);
 							}
 						}
 					}
@@ -803,9 +822,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 						if(os) *os << "DW_CFA_offset(" << (uint32_t) reg_num << "," << factored_offset.to_string(false) << ") /* r" << (uint32_t) reg_num << " at cfa" << (n >= 0 ? "+" : "") << n << " */";
 
-						if(rule_matrix)
+						if(cfi)
 						{
-							DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+							DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 							
 							if(!cur_row)
 							{
@@ -830,9 +849,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 						if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 						{
-							if(rule_matrix)
+							if(cfi)
 							{
-								DWARF_RuleMatrixRow<MEMORY_ADDR> *initial_row = initial_rule_matrix->GetRow(cur_location);
+								DWARF_CFIRow<MEMORY_ADDR> *initial_row = initial_cfi->GetRow(cur_location);
 								
 								if(!initial_row)
 								{
@@ -840,7 +859,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									break;
 								}
 
-								DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = rule_matrix->GetRow(cur_location);
+								DWARF_CFIRow<MEMORY_ADDR> *cur_row = cfi->GetRow(cur_location);
 								
 								if(!cur_row)
 								{
@@ -953,9 +972,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 								{
 									new_location += advance_loc;
-									if(rule_matrix && (cur_location != new_location))
+									if(cfi && (cur_location != new_location))
 									{
-										rule_matrix->CloneRow(cur_location, new_location);
+										cfi->CloneRow(cur_location, new_location);
 									}
 								}
 							}
@@ -983,9 +1002,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 								{
 									new_location += advance_loc;
-									if(rule_matrix && (cur_location != new_location))
+									if(cfi && (cur_location != new_location))
 									{
-										rule_matrix->CloneRow(cur_location, new_location);
+										cfi->CloneRow(cur_location, new_location);
 									}
 								}
 							}
@@ -1013,9 +1032,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 								{
 									new_location += advance_loc;
-									if(rule_matrix && (cur_location != new_location))
+									if(cfi && (cur_location != new_location))
 									{
-										rule_matrix->CloneRow(cur_location, new_location);
+										cfi->CloneRow(cur_location, new_location);
 									}
 								}
 							}
@@ -1048,9 +1067,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 								if(os) *os << "DW_CFA_offset_extended(" << reg_num.to_string(false) << "," << factored_offset.to_string(false) << ") /* r" << reg_num.to_string(false) << " at cfa" << (n >= 0 ? "+" : "") << n << " */";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1083,9 +1102,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 								if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 								{
-									if(rule_matrix)
+									if(cfi)
 									{
-										DWARF_RuleMatrixRow<MEMORY_ADDR> *initial_row = initial_rule_matrix->GetRow(cur_location);
+										DWARF_CFIRow<MEMORY_ADDR> *initial_row = initial_cfi->GetRow(cur_location);
 										
 										if(!initial_row)
 										{
@@ -1093,7 +1112,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 											break;
 										}
 										
-										DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = rule_matrix->GetRow(cur_location);
+										DWARF_CFIRow<MEMORY_ADDR> *cur_row = cfi->GetRow(cur_location);
 										
 										if(!cur_row)
 										{
@@ -1128,9 +1147,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_undefined(" << reg_num.to_string(false) << ") /* r" << reg_num.to_string(false) << " not preserved */";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1161,9 +1180,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_same_value(" << reg_num.to_string(false) << ") /* r" << reg_num.to_string(false) << " preserved */";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1202,9 +1221,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 								if(os) *os << "DW_CFA_register(" << reg_num1.to_string(false) << ", " << reg_num2.to_string(false) << ") /* r" << reg_num1.to_string(false) << "=r" << reg_num2.to_string(false) << " */";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1223,9 +1242,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 							if(os) *os << "DW_CFA_remember_state";
 							if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 							{
-								if(rule_matrix)
+								if(cfi)
 								{
-									if(!RememberState(rule_matrix, cur_location))
+									if(!RememberState(cfi, cur_location))
 									{
 										status = false;
 										break;
@@ -1239,9 +1258,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 							if(os) *os << "DW_CFA_restore_state";
 							if(dw_cfp_type == DW_CFP_INSTRUCTIONS)
 							{
-								if(rule_matrix)
+								if(cfi)
 								{
-									if(!RestoreState(rule_matrix, cur_location))
+									if(!RestoreState(cfi, cur_location))
 									{
 										status = false;
 										break;
@@ -1275,14 +1294,14 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_def_cfa(" << reg_num.to_string(false) << ", " << offset.to_string(false) << ") /* cfa=[r" << reg_num.to_string(false) << "]+" << offset.to_string(false) << " */";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if((dw_cfp_type == DW_CFP_INSTRUCTIONS) && !cur_row)
 									{
-										cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-										rule_matrix->InsertRow(cur_row);
+										cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+										cfi->InsertRow(cur_row);
 									}
 									
 									DWARF_CFARule<MEMORY_ADDR> *new_cfa_rule = new DWARF_CFARuleRegisterOffset<MEMORY_ADDR>(reg_num, offset);
@@ -1308,14 +1327,14 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_def_cfa_register(" << reg_num.to_string(false) << ")";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if((dw_cfp_type == DW_CFP_INSTRUCTIONS) && !cur_row)
 									{
-										cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-										rule_matrix->InsertRow(cur_row);
+										cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+										cfi->InsertRow(cur_row);
 									}
 									
 									DWARF_CFARule<MEMORY_ADDR> *cur_cfa_rule = cur_row->GetCFARule();
@@ -1348,14 +1367,14 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_def_cfa_offset(" << offset.to_string(false) << ")";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if((dw_cfp_type == DW_CFP_INSTRUCTIONS) && !cur_row)
 									{
-										cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-										rule_matrix->InsertRow(cur_row);
+										cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+										cfi->InsertRow(cur_row);
 									}
 									
 									DWARF_CFARule<MEMORY_ADDR> *cur_cfa_rule = cur_row->GetCFARule();
@@ -1401,21 +1420,21 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_def_cfa_expression({" << dw_expr->to_string() << "})";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if((dw_cfp_type == DW_CFP_INSTRUCTIONS) && !cur_row)
 									{
-										cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-										rule_matrix->InsertRow(cur_row);
+										cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+										cfi->InsertRow(cur_row);
 									}
 									
 									DWARF_CFARule<MEMORY_ADDR> *new_cfa_rule = new DWARF_CFARuleExpression<MEMORY_ADDR>(dw_expr);
 									
 									cur_row->SetCFARule(new_cfa_rule);
 								}
-								if(!rule_matrix) delete dw_expr;
+								if(!cfi) delete dw_expr;
 							}
 							break;
 						case DW_CFA_expression:
@@ -1462,9 +1481,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_expression(" << reg_num.to_string(false) << ", {" << dw_expr->to_string() << "})";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1476,7 +1495,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									cur_row->SetRegisterRule(reg_num, new_rule);
 								}
 								
-								if(!rule_matrix) delete dw_expr;
+								if(!cfi) delete dw_expr;
 							}
 							break;
 						case DW_CFA_offset_extended_sf:
@@ -1508,9 +1527,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_offset_extended_sf(" << reg_num.to_string(false) << "," << signed_factored_offset.to_string(true) << ") /* r" << reg_num.to_string(false) << " at cfa" << (n >= 0 ? "+" : "") << n << " */";
 								
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1549,14 +1568,14 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								int64_t n = (int64_t) signed_factored_offset * (int64_t) dw_cie->GetDataAlignmentFactor();
 								if(os) *os << "DW_CFA_def_cfa_sf(" << reg_num.to_string(false) << ", " << signed_factored_offset.to_string(true) << ") /* cfa=[" << reg_num.to_string(false) << "]+" << (n > 0 ? "+":"") << n << " */";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if((dw_cfp_type == DW_CFP_INSTRUCTIONS) && !cur_row)
 									{
-										cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-										rule_matrix->InsertRow(cur_row);
+										cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+										cfi->InsertRow(cur_row);
 									}
 									
 									DWARF_CFARule<MEMORY_ADDR> *new_cfa_rule = new DWARF_CFARuleRegisterOffset<MEMORY_ADDR>(reg_num, n);
@@ -1582,14 +1601,14 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								if(os) *os << "DW_CFA_def_cfa_offset_sf(" << signed_factored_offset.to_string(true) << ")";
 								int64_t n = (int64_t) signed_factored_offset * (int64_t) dw_cie->GetDataAlignmentFactor();
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if((dw_cfp_type == DW_CFP_INSTRUCTIONS) && !cur_row)
 									{
-										cur_row = new DWARF_RuleMatrixRow<MEMORY_ADDR>(cur_location, *rule_matrix->GetInitialRow());
-										rule_matrix->InsertRow(cur_row);
+										cur_row = new DWARF_CFIRow<MEMORY_ADDR>(cur_location, *cfi->GetInitialRow());
+										cfi->InsertRow(cur_row);
 									}
 									
 									DWARF_CFARule<MEMORY_ADDR> *cur_cfa_rule = cur_row->GetCFARule();
@@ -1632,9 +1651,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								int64_t n = (uint64_t) factored_offset * (int64_t) dw_cie->GetDataAlignmentFactor();
 								if(os) *os << "DW_CFA_val_offset(" << reg_num.to_string(false) << "," << factored_offset.to_string(false) << ") /* r" << reg_num.to_string(false) << "=cfa" << (n >= 0 ? "+" : "") << n << " */";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1675,9 +1694,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 								if(os) *os << "DW_CFA_val_offset_sf(" << reg_num.to_string(false) << "," << signed_factored_offset.to_string(true) << ") /* r" << reg_num.to_string(false) << "=cfa" << (n >= 0 ? "+" : "") << n << " */";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1733,9 +1752,9 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								if(os) *os << "DW_CFA_val_expression(" << reg_num.to_string(false) << ", {" << dw_expr->to_string() << "})";
 
-								if(rule_matrix)
+								if(cfi)
 								{
-									DWARF_RuleMatrixRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? rule_matrix->GetInitialRow() : rule_matrix->GetRow(cur_location);
+									DWARF_CFIRow<MEMORY_ADDR> *cur_row = (dw_cfp_type == DW_CFP_INITIAL_INSTRUCTIONS) ? cfi->GetInitialRow() : cfi->GetRow(cur_location);
 									
 									if(!cur_row)
 									{
@@ -1747,7 +1766,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									cur_row->SetRegisterRule(reg_num, new_rule);
 								}
 								
-								if(!rule_matrix) delete dw_expr;
+								if(!cfi) delete dw_expr;
 							}
 							break;
 						default:
@@ -1765,39 +1784,39 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 		}
 		while(status && program_length);
 		
-		if(initial_rule_matrix) delete initial_rule_matrix;
+		if(initial_cfi) delete initial_cfi;
 	}
 
 	return status;
 }
 
 template <class MEMORY_ADDR>
-const DWARF_RuleMatrix<MEMORY_ADDR> *DWARF_CallFrameVM<MEMORY_ADDR>::ComputeRuleMatrix(const DWARF_FDE<MEMORY_ADDR> *dw_fde)
+const DWARF_CFI<MEMORY_ADDR> *DWARF_CallFrameVM<MEMORY_ADDR>::ComputeCFI(const DWARF_FDE<MEMORY_ADDR> *dw_fde)
 {
 	MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
 	MEMORY_ADDR address_range = dw_fde->GetAddressRange();
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
 	MEMORY_ADDR code_alignment_factor = (MEMORY_ADDR) dw_cie->GetCodeAlignmentFactor();
 		
-	DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix = new DWARF_RuleMatrix<MEMORY_ADDR>();
+	DWARF_CFI<MEMORY_ADDR> *cfi = new DWARF_CFI<MEMORY_ADDR>();
 			
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *initial_instructions = dw_cie->GetInitialInstructions();
 			
 	MEMORY_ADDR location = 0;
 	
-	if(!Execute(*initial_instructions, location, rule_matrix))
+	if(!Execute(*initial_instructions, location, cfi))
 	{
-		delete rule_matrix;
+		delete cfi;
 		return 0;
 	}
 	location = initial_location;
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *instructions = dw_fde->GetInstructions();
-	if(!Execute(*instructions, location, rule_matrix))
+	if(!Execute(*instructions, location, cfi))
 	{
-		delete rule_matrix;
+		delete cfi;
 		return 0;
 	}
-	return rule_matrix;
+	return cfi;
 }
 
 } // end of namespace dwarf

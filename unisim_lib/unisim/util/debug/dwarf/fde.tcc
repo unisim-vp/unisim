@@ -281,13 +281,13 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	os << "<td>0x" << std::hex << initial_location << std::dec << "</td><td>0x" << std::hex << address_range << std::dec << "</td><td>";
 	std::stringstream sstr_call_frame_prog;
 	sstr_call_frame_prog << *dw_call_frame_prog;
-	std::stringstream sstr_rule_matrix;
+	std::stringstream sstr_cfi;
 	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
-	const DWARF_RuleMatrix<MEMORY_ADDR> *rule_matrix = dw_call_frame_vm.ComputeRuleMatrix(this);
-	sstr_rule_matrix << *rule_matrix;
+	const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(this);
+	sstr_cfi << *cfi;
 	c_string_to_HTML(os, sstr_call_frame_prog.str().c_str());
 	os << "<hr>";
-	c_string_to_HTML(os, sstr_rule_matrix.str().c_str());
+	c_string_to_HTML(os, sstr_cfi.str().c_str());
 	os << "</td></tr>" << std::endl;
 	return os;
 }

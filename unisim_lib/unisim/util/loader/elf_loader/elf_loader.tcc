@@ -39,6 +39,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
+#include <unisim/util/debug/dwarf/dwarf.tcc>
 
 namespace unisim {
 namespace util {
@@ -53,7 +54,7 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(unisim::kernel::logger::Logger& _logger)
+ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
 	: logger(_logger)
 	, filename()
 	, base_addr(0)
@@ -63,6 +64,8 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, blob(0)
 	, symtab_handler(0)
 	, dw_handler(0)
+	, regs_if(_regs_if)
+	, mem_if(_mem_if)
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
 	, parse_dwarf(true)
@@ -111,6 +114,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			dwarf_to_html_output_directory = s;
+			break;
+		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
+			dwarf_register_number_mapping_filename = s;
 			break;
 		default:
 			break;
@@ -166,6 +172,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			s = dwarf_to_html_output_directory;
+			break;
+		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
+			s = dwarf_register_number_mapping_filename;
 			break;
 		default:
 			s.clear();
@@ -520,7 +529,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(parse_dwarf)
 	{
-		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(blob, logger);
+		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(blob, dwarf_register_number_mapping_filename.c_str(), logger, regs_if, mem_if);
 
 		if(dw_handler)
 		{

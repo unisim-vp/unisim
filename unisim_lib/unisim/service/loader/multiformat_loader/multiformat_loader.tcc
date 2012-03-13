@@ -118,6 +118,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, stmt_lookup_export("stmt-lookup-export", this)
 	, backtrace_export("backtrace-export", this)
+	, registers_import("registers-import", this)
 	, logger(*this)
 	, verbose(false)
 	, verbose_parser(false)
@@ -284,6 +285,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 						*tee_stmt_lookup->stmt_lookup_import[stmt_idx] >> elf32_loader->stmt_lookup_export;
 						*tee_backtrace->backtrace_import[stmt_idx] >> elf32_loader->backtrace_export;
 						elf32_loader->memory_import >> memory_mapper->memory_export;
+						elf32_loader->registers_import >> registers_import;
 					}
 					break;
 				case FFMT_ELF64:
@@ -296,6 +298,7 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 						*tee_symbol_table_lookup->symbol_table_lookup_import[stmt_idx] >> elf64_loader->symbol_table_lookup_export;
 						*tee_stmt_lookup->stmt_lookup_import[stmt_idx] >> elf64_loader->stmt_lookup_export;
 						elf64_loader->memory_import >> memory_mapper->memory_export;
+						elf64_loader->registers_import >> registers_import;
 					}
 					break;
 				case FFMT_S19:

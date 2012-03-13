@@ -1848,7 +1848,7 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 			{
 				case 1:
 					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
+						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import);
 						
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
@@ -1867,7 +1867,7 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 					break;
 				case 2:
 					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
+						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import);
 						
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
@@ -2123,7 +2123,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 	}
 	else
 	{
-		(*std_output_stream) << "No bactrace" << std::endl;
+		(*std_output_stream) << "No backtrace" << std::endl;
 	}
 }
 

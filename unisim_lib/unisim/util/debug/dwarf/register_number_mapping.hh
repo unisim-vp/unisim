@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2012,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,34 +31,46 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
-#define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF64_LOADER_HH__
 
-#include <unisim/util/loader/elf_loader/elf_loader.hh>
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_REGISTER_NUMBER_MAPPING_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_REGISTER_NUMBER_MAPPING_HH__
+
+#include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/util/xml/xml.hh>
+#include <iosfwd>
+#include <set>
 
 namespace unisim {
 namespace util {
-namespace loader {
-namespace elf_loader {
+namespace debug {
+namespace dwarf {
 
-//typedef ElfLoaderImpl<uint64_t, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym> Elf64Loader;
+std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
 
-template <class MEMORY_ADDR = uint64_t>
-class Elf64Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>
+class DWARF_RegisterNumberMapping
 {
 public:
-	Elf64Loader(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	DWARF_RegisterNumberMapping(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if);
+	~DWARF_RegisterNumberMapping();
+	
+	bool Load(const char *filename, const char *architecture);
+	void Map(unsigned int dw_reg_num, unisim::util::debug::Register *arch_reg);
+	unisim::util::debug::Register *GetArchReg(unsigned int dw_reg_num);
+	const unisim::util::debug::Register *GetArchReg(unsigned int dw_reg_num) const;
+	void EnumRegisterNumbers(std::set<unsigned int>& reg_num_set) const;
+	friend std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
+private:
+	unisim::kernel::logger::Logger& logger;
+	unisim::service::interfaces::Registers *regs_if;
+	std::map<unsigned int, unisim::util::debug::Register *> reg_num_mapping;
+	
+	bool Load(unisim::util::xml::Node *xml_node);
 };
 
-template <class MEMORY_ADDR>
-Elf64Loader<MEMORY_ADDR>::Elf64Loader(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS64, Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym>(_logger, _regs_if, _mem_if)
-{
-}
-
-} // end of namespace elf_loader
-} // end of namespace loader
+} // end of namespace dwarf
+} // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 

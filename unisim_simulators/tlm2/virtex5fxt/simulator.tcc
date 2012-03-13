@@ -381,6 +381,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
 	*loader->memory_import[1] >> bram_effective_to_physical_address_translator->memory_export;
 	*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
+	loader->registers_import >> cpu->registers_export;
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 	if(enable_telnet)
