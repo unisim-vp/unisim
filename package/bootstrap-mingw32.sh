@@ -22,6 +22,8 @@ CROSS_GDB_VERSION=7.2
 CROSS_GDB_ARCHITECTURES="powerpc-440fp-linux-gnu powerpc-7450-linux-gnu armel-linux-gnu m6811-elf"
 ZLIB_VERSION=1.2.5
 BOOST_VERSION=1_47_0
+TCLTK_VERSION=8.5.11
+GPERF_VERSION=3.0.4
 
 HERE=`pwd`
 MY_DIR=$(cd $(dirname $0); pwd)
@@ -86,14 +88,39 @@ function Compile
 	make -j ${NUM_PROCESSORS} all || exit
 }
 
+function CompileSingleProcess
+{
+	NAME=$1
+	echo "========================================="
+	echo "=              Compiling                ="
+	echo "========================================="
+	cd ${BUILD_DIR}/${NAME}
+	make all || exit
+}
+
 function Install
 {
 	NAME=$1
+	NUM_FIXED_ARGS=1
+	
+	declare -a args
+	i=0
+	j=0
+	for arg in "$@"
+	do
+			if test ${i} -ge ${NUM_FIXED_ARGS}; then
+					args[${j}]=${arg}
+					j=$((${j}+1))
+			fi
+			i=$((${i}+1))
+	done
+
 	echo "========================================="
 	echo "=              Installing               ="
 	echo "========================================="
 	cd ${BUILD_DIR}/${NAME}
-	make install prefix=${INSTALL_DIR}/${NAME} || exit
+	echo "make install prefix=${INSTALL_DIR}/${NAME}" "${args[@]}"
+	make install prefix=${INSTALL_DIR}/${NAME} "${args[@]}" || exit
 }
 
 function Download
@@ -186,8 +213,13 @@ function InstallBinArchive
 function Package
 {
 	NAME=$1
+	if [ -n "$2" ]; then
+		DIRNAME=$2
+	else
+		DIRNAME="${NAME}"
+	fi
 
-	cd ${INSTALL_DIR}/${NAME}
+	cd ${INSTALL_DIR}/${DIRNAME}
 	tar jcvf ${PACKAGES_DIR}/${NAME}-mingw32.tar.bz2 * || exit -1
 }
 
@@ -215,9 +247,12 @@ case ${CMD} in
 		# zlib
 		if [ ! -e ${PACKAGES_DIR}/zlib-${ZLIB_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
-			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+#			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://prdownloads.sourceforge.net/libpng/zlib-${ZLIB_VERSION}.tar.gz\?download
 			make -C ${BUILD_DIR}/zlib-${ZLIB_VERSION} -f win32/Makefile.gcc PREFIX=${HOST}- BINARY_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/bin INCLUDE_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/include LIBRARY_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib SHARED_MODE=1 install
-			mv ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libz.dll.a
+			if [ -e ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ]; then
+				mv ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libz.dll.a
+			fi
 			Package zlib-${ZLIB_VERSION}
 			Clean
 		fi
@@ -263,6 +298,7 @@ case ${CMD} in
 			Clean
 		fi
 
+		# boost
 		if [ ! -e ${PACKAGES_DIR}/boost_${BOOST_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
 			Download boost_${BOOST_VERSION} boost_${BOOST_VERSION}.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_${BOOST_VERSION}.tar.bz2
@@ -281,6 +317,41 @@ case ${CMD} in
 			-sZLIB_INCLUDE=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/include -sZLIB_LIBPATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib \
 			--layout=tagged install || exit -1
 			Package boost_${BOOST_VERSION}
+			Clean
+		fi
+
+		# TCLTK
+		if [ ! -e ${PACKAGES_DIR}/tcltk-${TCLTK_VERSION}-mingw32.tar.bz2 ]; then
+			Clean
+			Download tcl${TCLTK_VERSION} tcl${TCLTK_VERSION}-src.tar.gz http://prdownloads.sourceforge.net/tcl/tcl${TCLTK_VERSION}-src.tar.gz
+			Download tk${TCLTK_VERSION} tk${TCLTK_VERSION}-src.tar.gz http://prdownloads.sourceforge.net/tcl/tk${TCLTK_VERSION}-src.tar.gz
+			cd ${BUILD_DIR}/tcl${TCLTK_VERSION}/win
+			./configure --host=${HOST} --prefix=/mingw
+			make
+			make install prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} exec_prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} libdir=${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib
+			sed -i "s#^\(TCL_BUILD_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltcl85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
+			sed -i "s#^\(TCL_BUILD_STUB_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltclstub85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
+			sed -i "s#^\(TCL_BUILD_STUB_LIB_PATH=\).*\$#\1'/mingw/lib/libtclstub85.a'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
+			sed -i "s#^\(TCL_SRC_DIR=\).*\$#\1'/mingw/include'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
+			cd ${BUILD_DIR}/tk${TCLTK_VERSION}/win
+			./configure --host=${HOST} --with-tcl=${BUILD_DIR}/tcl${TCLTK_VERSION}/win --prefix=/mingw
+			make
+			make install prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} exec_prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} libdir=${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib
+			sed -i "s#^\(TK_BUILD_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltk85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
+			sed -i "s#^\(TK_BUILD_STUB_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltkstub85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
+			sed -i "s#^\(TK_BUILD_STUB_LIB_PATH=\).*\$#\1'/mingw/lib/libtkstub85.a'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
+			sed -i "s#^\(TK_SRC_DIR=\).*\$#\1'/mingw/include'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
+			Package tcltk-${TCLTK_VERSION} tcltk${TCLTK_VERSION}
+			Clean
+		fi
+		# gperf
+		if [ ! -e ${PACKAGES_DIR}/gperf-${GPERF_VERSION}-mingw32.tar.bz2 ]; then
+			Clean
+			Download gperf-${GPERF_VERSION} gperf-${GPERF_VERSION}.tar.gz http://ftp.gnu.org/pub/gnu/gperf/gperf-${GPERF_VERSION}.tar.gz
+			Configure gperf-${GPERF_VERSION} --host=${HOST}
+			Compile gperf-${GPERF_VERSION}
+			Install gperf-${GPERF_VERSION}
+			Package gperf-${GPERF_VERSION}
 			Clean
 		fi
 		;;
