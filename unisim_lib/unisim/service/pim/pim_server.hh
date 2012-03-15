@@ -86,6 +86,7 @@ using unisim::service::interfaces::StatementLookup;
 
 using unisim::util::debug::BreakpointRegistry;
 using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
 using unisim::kernel::service::Parameter;
@@ -217,6 +218,10 @@ private:
 	bool killed;
 	bool trap;
 	bool synched;
+	const Watchpoint<ADDRESS> *watchpoint_hit;
+	ADDRESS watchpoint_hit_addr;
+	uint32_t watchpoint_hit_size;
+
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
 	GDBServerRunningMode running_mode;

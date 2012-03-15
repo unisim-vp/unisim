@@ -238,23 +238,13 @@ bool WatchpointRegistry<ADDRESS>::SetWatchpoint(typename MemoryAccessReporting<A
 template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
+
+	bool status = false;
+
 	if(size > 0)
 	{
-		do
-		{
-			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
-			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
-
-			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
-			if(!page) return false;
-		
-			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz);
-			size -= sz;
-			addr += sz;
-		} while(size > 0);
-
 		typename list<Watchpoint<ADDRESS> >::iterator watchpoint;
-	
+
 		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
 		{
 			if(watchpoint->GetAddress() == addr && watchpoint->GetSize() == size && watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat)
@@ -262,11 +252,28 @@ bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReportin
 				watchpoints.erase(watchpoint);
 				if(watchpoints.empty())
 					has_watchpoints = false;
-				return true;
+				status = true;
+				break;
 			}
 		}
+
+		do
+		{
+			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
+			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
+
+			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+			if(!page) return false;
+
+			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz);
+			size -= sz;
+			addr += sz;
+		} while(size > 0);
+
 	}
-	return false;
+
+   return status;
+
 }
 
 template <class ADDRESS>

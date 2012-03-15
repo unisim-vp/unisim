@@ -105,9 +105,30 @@ void PIMThread::Run(){
 
 							os << simulator_variables[i]->GetName() << ":";
 
-							double val = *(simulator_variables[i]);
+//							double val = *(simulator_variables[i]);
+//							os << stringify(val);
 
-							os << stringify(val);
+// **********************
+
+							if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
+								double val = *(simulator_variables[i]);
+								os << stringify(val);
+							}
+							else if (strcmp(simulator_variables[i]->GetDataTypeName(), "single precision floating-point") == 0) {
+								float val = *(simulator_variables[i]);
+								os << stringify(val);
+							}
+							else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
+								bool val = *(simulator_variables[i]);
+								os << stringify(val);
+							}
+							else {
+								uint64_t val = *(simulator_variables[i]);
+								os << stringify(val);
+							}
+
+// ***********************
+
 
 							os << ";";
 
@@ -164,10 +185,6 @@ void PIMThread::Run(){
 						else if (strcmp(simulator_variables[i]->GetDataTypeName(), "boolean") == 0) {
 
 							*(simulator_variables[i]) = value.compare("false");
-//							bool t = true;
-//							bool f = false;
-//							std::cout << std::noboolalpha << t << " == " << std::boolalpha << t << std::endl;
-//							std::cout << std::noboolalpha << f << " == " << std::boolalpha << f << std::endl;
 						}
 						else {
 							*(simulator_variables[i]) = convertTo<uint64_t>(value);

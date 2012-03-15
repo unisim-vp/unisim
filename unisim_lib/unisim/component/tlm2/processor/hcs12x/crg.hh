@@ -85,11 +85,12 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
-using unisim::service::interfaces::TrapReporting;
+using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::VariableBase;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
+using unisim::service::interfaces::TrapReporting;
 
 using unisim::util::debug::Register;
 using unisim::util::debug::SimpleRegister;
@@ -105,12 +106,13 @@ using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
 class CRG :
-	public sc_module,
-	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
-	public Client<TrapReporting >,
-	public Service<Memory<service_address_t> >,
-	public Service<Registers>,
-	public Client<Memory<service_address_t> >
+	public sc_module
+	, public CallBackObject
+	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, public Client<TrapReporting >
+	, public Service<Memory<service_address_t> >
+	, public Service<Registers>
+	, public Client<Memory<service_address_t> >
 
 {
 public:
@@ -186,8 +188,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, uint8_t &value);
-    bool write(uint8_t offset, uint8_t val);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 
 protected:

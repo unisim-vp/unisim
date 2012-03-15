@@ -117,9 +117,9 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 	if (find) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(buffer->buffer, 0, buffer->data_size);
-			*((uint8_t *) buffer->buffer) = inherited::read(logicalAddress);
+			inherited::read(logicalAddress, buffer->buffer, buffer->data_size);
 		} else {
-			inherited::write(logicalAddress, *((uint8_t *) buffer->buffer));
+			inherited::write(logicalAddress, buffer->buffer, buffer->data_size);
 		}
 
 	} else {

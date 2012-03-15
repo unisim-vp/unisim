@@ -36,7 +36,6 @@ Simulator::Simulator(int argc, char **argv)
 	, atd0(0)
 	, pwm(0)
 	, global_router(0)
-//	, global_memory(0)
 	, global_ram(0)
 	, global_eeprom(0)
 	, global_flash(0)
@@ -64,9 +63,7 @@ Simulator::Simulator(int argc, char **argv)
 	, dump_statistics(true)
 
 	, endian("")
-//	, param_endian("endian", this, endian)
 	, program_counter_name("")
-//	, param_pc_reg_name("program-counter-name", this, program_counter_name)
 
 	, param_enable_pim_server("enable-pim-server", 0, enable_pim_server, "Enable/Disable PIM server instantiation")
 	, param_enable_gdb_server("enable-gdb-server", 0, enable_gdb_server, "Enable/Disable GDB server instantiation")
@@ -74,6 +71,10 @@ Simulator::Simulator(int argc, char **argv)
 	, param_dump_parameters("dump-parameters", 0, dump_parameters, "")
 	, param_dump_formulas("dump-formulas", 0, dump_formulas, "")
 	, param_dump_statistics("dump-statistics", 0, dump_statistics, "")
+
+	, null_stat_var(0)
+	, stat_data_load_ratio("data-load-ratio %", 0, null_stat_var, "Data Load Ratio")
+	, stat_data_store_ratio("data-store-ratio %", 0, null_stat_var, "Data Store Ratio")
 
 {
 
@@ -84,6 +85,9 @@ Simulator::Simulator(int argc, char **argv)
 	param_pc_reg_name = new Parameter<string>("program-counter-name", 0, program_counter_name, "Target CPU program counter name");
 	param_pc_reg_name->SetMutable(false);
 	param_pc_reg_name->SetVisible(true);
+
+	stat_data_load_ratio.setCallBack(this, DATA_LOAD_RATIO, NULL, &CallBackObject::read);
+	stat_data_store_ratio.setCallBack(this, DATA_STORE_RATIO, NULL, &CallBackObject::read);
 
 	//=========================================================================
 	//===      Handling of file to load passed as command line argument     ===
@@ -513,11 +517,13 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("RAM.org", 0x0F8000);
 	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
+	simulator->SetVariable("RAM.initial-byte-value", 0x00);
 	simulator->SetVariable("RAM.cycle-time", 80000);
 	simulator->SetVariable("RAM.verbose", false);
 
 	simulator->SetVariable("EEPROM.org", 0x13F000);
 	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
+	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
 	simulator->SetVariable("EEPROM.cycle-time", 80000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 40000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
@@ -527,6 +533,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("FLASH.org", 0x780000);
 	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
+	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
 	simulator->SetVariable("FLASH.cycle-time", 80000);
 	simulator->SetVariable("FLASH.verbose", false);
 
@@ -577,6 +584,30 @@ void Simulator::Stop(Object *object, int _exit_status)
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
 	wait();
+}
+
+bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	uint64_t total_load = (uint64_t) (*cpu)["instruction-counter"] + (uint64_t) (*cpu)["data-load-counter"];
+	uint64_t total_access = total_load + (uint64_t) (*cpu)["store-counter"];
+
+	switch (offset) {
+		case DATA_LOAD_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
+			return true;
+		}
+		case DATA_STORE_RATIO: {
+			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
+			return true;
+		}
+
+	}
+
+	return false;
+}
+
+bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+	return false;
 }
 
 void Simulator::Run() {
