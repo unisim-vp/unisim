@@ -624,9 +624,9 @@ void PWM<PWM_SIZE>::updateScaledClockA() {
 	sc_time clockSA;
 
 	if (pwmscla_register != 0x00) {
-		clockSA = getClockA() / (2 * pwmscla_register);
+		clockSA = getClockA() * (2 * pwmscla_register);
 	} else {
-		clockSA = getClockA() / (2 * 256);
+		clockSA = getClockA() * (2 * 256);
 	}
 
 }
@@ -637,9 +637,9 @@ void PWM<PWM_SIZE>::updateScaledClockB() {
 	sc_time clockSB;
 
 	if (pwmsclb_register != 0x00) {
-		clockSB = getClockB() / (2 * pwmsclb_register);
+		clockSB = getClockB() * (2 * pwmsclb_register);
 	} else {
-		clockSB = getClockB() / (2 * 256);
+		clockSB = getClockB() * (2 * 256);
 	}
 
 }
@@ -670,7 +670,7 @@ void PWM<PWM_SIZE>::ComputeInternalTime() {
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
 	for (int i=0; i < 8; i++) {
-		clockVector[i] = bus_cycle_time/(1 << i);
+		clockVector[i] = bus_cycle_time * (1 << i);
 	}
 
 }

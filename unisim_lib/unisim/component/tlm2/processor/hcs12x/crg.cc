@@ -432,7 +432,7 @@ void CRG::RunClockMonitor() {
 	/**
 	 */
 
-	while (true) {
+	while (true && osc_fail) {
 
 		while (((pllctl_register & 0x80) == 0) || (!clock_monitor_enabled)) {
 			wait(clockmonitor_enable_event);
@@ -448,19 +448,17 @@ void CRG::RunClockMonitor() {
 // 481th prime number to 500th prime number
 // 	3433, 3449, 3457, 3461, 3463, 3467, 3469, 3491, 3499, 3511, 3517, 3527, 3529, 3533, 3539, 3541, 3547, 3557, 3559, 3571
 
-			if (osc_fail) {
-				if ((rand() % 3571) == 0) {
-					// check SCME bit
-					if ((pllctl_register & 0x01) != 0) {
-						activateSelfClockMode();
-					} else {
-						systemReset();
-					}
-
+			if ((rand() % 3571) == 0) {
+				// check SCME bit
+				if ((pllctl_register & 0x01) != 0) {
+					activateSelfClockMode();
 				} else {
-					if ((crgflg_register & 0x01) != 0) {
-						deactivateSelfClockMode();
-					}
+					systemReset();
+				}
+
+			} else {
+				if ((crgflg_register & 0x01) != 0) {
+					deactivateSelfClockMode();
 				}
 			}
 
@@ -604,9 +602,9 @@ void CRG::RunCOP() {
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
 			// PLLCLK at minimum frequency Fscm;
-			cop_timeout = pll_clock / (pow(2,14) * (copctl_register & 0x07));
+			cop_timeout = pll_clock * (pow(2,14) * (copctl_register & 0x07));
 		} else {
-			cop_timeout = oscillator_clock / (pow(2,14) * (copctl_register & 0x07));
+			cop_timeout = oscillator_clock * (pow(2,14) * (copctl_register & 0x07));
 		}
 
 		sc_time cop_timeout_75 = cop_timeout * 0.75;
@@ -659,9 +657,9 @@ void CRG::RunRTI() {
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
 			// PLLCLK at minimum frequency Fscm;
-			delay = rti_fdr * pll_clock;
+			delay = pll_clock * rti_fdr;
 		} else {
-			delay = rti_fdr * oscillator_clock;
+			delay = oscillator_clock * rti_fdr;
 		}
 
 		wait(delay);
@@ -738,12 +736,13 @@ void CRG::RunPLL_LockTrack_Detector() {
 
 		wait(lock_track_detector_event);
 
+		int multiply_coef = 2 * (synr_register + 1) / (refdv_register + 1);
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
 			// PLLCLK at minimum frequency Fscm;
-			pll_clock = 2 * self_clock_mode_clock * (synr_register + 1) / (refdv_register + 1);
+			pll_clock = self_clock_mode_clock / multiply_coef;
 		} else {
-			pll_clock = 2 * oscillator_clock * (synr_register + 1) / (refdv_register +1) ;
+			pll_clock = oscillator_clock / multiply_coef;
 		}
 
 		/**
@@ -753,8 +752,11 @@ void CRG::RunPLL_LockTrack_Detector() {
 		 *  - Implement Track detector functionality
 		 */
 		crgflg_register = crgflg_register & 0xF7; // clear LOCK bit
+
 		assertInterrupt(interrupt_offset_pll_lock);
+
 		wait(pll_stabilization_delay);
+
 		crgflg_register = crgflg_register | 0x08; // set LOCK bit
 
 		crgflg_register = crgflg_register | 0x04; // set TRACK bit

@@ -64,7 +64,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	input_anx_payload_queue("input_anx_payload_queue"),
 
-	bus_cycle_time_int(0),
+	bus_cycle_time_int(250000),
 	param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int),
 
 	conversionStop(false),
@@ -89,6 +89,9 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	use_atd_stub(false),
 	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
+
+	use_builtin_input_generator(false),
+	param_use_builtin_input_generator("use-builtin-input-generator", this, use_builtin_input_generator),
 
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
@@ -219,6 +222,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::Process()
 {
+	sc_time delay(80, SC_US);
 	while(1)
 	{
 
@@ -231,6 +235,15 @@ void ATD10B<ATD_SIZE>::Process()
 			wait(input_anx_payload_queue.get_event());
 
 			InputANx(analog_signal);
+		}
+		else if (use_builtin_input_generator) {
+
+			cout << name() << " random data @ " << sc_time_stamp().to_string() << endl;
+			for (int i=0; i<ATD_SIZE; i++) {
+				analog_signal[i] = vrh * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5.12 Volts
+				if (analog_signal[i] < vrl) analog_signal[i] = vrl;
+			}
+
 		}
 
 		RunScanMode();
@@ -340,9 +353,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 	// - check ATDCTL0::wrap bits to identify the channel to wrap around
 	uint8_t wrapArroundChannel = atdctl0_register & 0x0F;
 	if (wrapArroundChannel == 0) {
-		if (debug_enabled) {
-			cerr << "Warning: " << name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
-		}
+		cerr << "Warning: " << name() << " => WrapArroundChannel=0 is a reserved value. The wrap channel is assumed " << ATD_SIZE-1 << ".\n";
 
 		wrapArroundChannel = ATD_SIZE-1;
 	}
@@ -575,7 +586,8 @@ void ATD10B<ATD_SIZE>::setATDClock() {
 	uint8_t prsMask = 0x1F;
 	uint8_t prsValue = atdctl4_register & prsMask;
 
-	atd_clock = bus_cycle_time / (prsValue + 1) * 0.5;
+	atd_clock = bus_cycle_time * (prsValue + 1) / 0.5;
+
 	first_phase_clock = atd_clock * 2;
 	second_phase_clock = atd_clock * 2 * (1 << smpValue);
 
@@ -864,6 +876,8 @@ void ATD10B<ATD_SIZE>::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
+	setATDClock();
+
 }
 
 template <uint8_t ATD_SIZE>
@@ -1058,6 +1072,7 @@ void ATD10B<ATD_SIZE>::Reset() {
 	atdctl2_register = 0x00;
 	atdctl3_register = 0x20;
 	atdctl4_register = 0x05;
+//	atdctl4_register = 0x00; // set PRS=0 to match with bus frequency 4MHz
 	atdctl5_register = 0x00;
 	atdstat0_register = 0x00;
 	atdtest0_register = 0x80;
@@ -1071,8 +1086,6 @@ void ATD10B<ATD_SIZE>::Reset() {
 
 	for (int i=0; i < ATD_SIZE; i++)
 		atddrhl_register[i] = 0x00;
-
-	setATDClock();
 
 }
 

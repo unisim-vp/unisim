@@ -237,6 +237,9 @@ private:
 	bool	use_atd_stub;
 	Parameter<bool>		param_use_atd_stub;
 
+	bool	use_builtin_input_generator;
+	Parameter<bool>		param_use_builtin_input_generator;
+
 	RegisterArray<double> analog_signal_reg;
 
 

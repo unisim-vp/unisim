@@ -528,12 +528,18 @@ void CPU::PrepareInterrupt() {
 
 	setRegSP(getRegSP()-2);
 	memWrite16(getRegSP(), getRegPC());
+
 	setRegSP(getRegSP()-2);
 	memWrite16(getRegSP(), getRegY());
+
 	setRegSP(getRegSP()-2);
 	memWrite16(getRegSP(), getRegX());
-	setRegSP(getRegSP()-2);
-	memWrite16(getRegSP(), getRegD());
+
+	setRegSP(getRegSP()-1);
+	memWrite8(getRegSP(), getRegA());
+	setRegSP(getRegSP()-1);
+	memWrite8(getRegSP(), getRegB());
+
 	setRegSP(getRegSP()-2);
 	memWrite16(getRegSP(), ccr->getCCR());
 

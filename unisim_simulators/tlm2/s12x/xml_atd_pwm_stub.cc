@@ -188,7 +188,8 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 		}
 
 		/**
-		 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+		 * Note: The Software sample the ATDDRx every 1024us.
+		 * The injected trace file start at 20ms. The interval between two sample is 80us
 		 */
 		atd0_quantumkeeper.set(sc_time(20, SC_MS));
 		if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
@@ -254,7 +255,8 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 		}
 
 		/**
-		 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+		 * Note: The Software sample the ATDDRx every 1024us.
+		 * The injected trace file start at 20ms. The interval between two sample is 80us
 		 */
 		atd1_quantumkeeper.set(sc_time(20, SC_MS));
 		if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();

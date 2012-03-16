@@ -287,11 +287,9 @@ void HCS12X::ComputeInternalTime() {
 
 	bus_cycle_time = core_clock_time * 2;
 
-	cpu_cycle_time = bus_cycle_time;
-
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
-	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
+	for (int i=0; i<32; i++) opCyclesArray[i] = bus_cycle_time * i;
 
 }
 
