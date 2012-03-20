@@ -686,7 +686,6 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
-			sstr << (result? tmp: *storage);
 		case FMT_HEX:
 			sstr << "0x" << hex;
 			sstr.fill('0');
