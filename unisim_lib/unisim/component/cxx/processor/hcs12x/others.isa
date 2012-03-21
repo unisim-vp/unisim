@@ -70,7 +70,6 @@ stop.execute = {
 		/*
 		 * if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
 		 */
-		// TODO: consume two cycles	 
 	} else {
 		stopDisabled = false;
 		/*

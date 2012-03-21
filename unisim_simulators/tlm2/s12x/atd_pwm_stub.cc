@@ -51,8 +51,11 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	trace_enable(false),
 	param_trace_enable("trace-enable", this, trace_enable),
 
-	enabled(false),
-	param_enabled("stub-enabled", this, enabled),
+	atd0_stub_enabled(false),
+	param_atd0_stub_enabled("atd0-stub-enabled", this, atd0_stub_enabled),
+
+	atd1_stub_enabled(false),
+	param_atd1_stub_enabled("atd1-stub-enabled", this, atd1_stub_enabled),
 
 	anx_stimulus_period_sc(0),
 	param_anx_stimulus_period("anx-stimulus-period", this, anx_stimulus_period),

@@ -35,10 +35,15 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_ATD10B_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_ATD10B_HH__
 
-#include <systemc.h>
+#include <map>
 
 #include <inttypes.h>
-#include <map>
+
+#include <libxml/xmlmemory.h>
+#include <libxml/xpath.h>
+#include <libxml/parser.h>
+
+#include <systemc.h>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -237,9 +242,6 @@ private:
 	bool	use_atd_stub;
 	Parameter<bool>		param_use_atd_stub;
 
-	bool	use_builtin_input_generator;
-	Parameter<bool>		param_use_builtin_input_generator;
-
 	RegisterArray<double> analog_signal_reg;
 
 
@@ -303,6 +305,20 @@ private:
 	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
 	 */
 	double analog_signal[ATD_SIZE];
+	int start_scan_at;
+	Parameter<int> param_start_scan_at;
+
+	struct data_t {
+		double volte[ATD_SIZE];
+		double time;
+	};
+
+	std::vector<data_t > atd_vect;
+	string atd_anx_stimulus_file;
+	Parameter<string>	param_atd_anx_stimulus_file;
+
+	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
+	void LoadXmlData(const char *filename, std::vector<data_t > &vect);
 
 	// Authorised Bus Clock
 	struct {

@@ -144,8 +144,11 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-	bool	enabled;
-	Parameter<bool>		param_enabled;
+	bool	atd0_stub_enabled;
+	Parameter<bool>		param_atd0_stub_enabled;
+
+	bool	atd1_stub_enabled;
+	Parameter<bool>		param_atd1_stub_enabled;
 
 private:
 	Parameter<double>	param_anx_stimulus_period;

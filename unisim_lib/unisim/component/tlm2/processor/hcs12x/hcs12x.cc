@@ -123,7 +123,16 @@ void HCS12X ::Sleep() {
  * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode.
  */
 
-	wait(irq_event | reset_event);
+	inherited::SetState(STOP);
+
+	/*
+	 * Don't do wait because all clocks are stopped and there is no way to reset/resume the simulation.
+	 * The simulation control is done by the debugger engine.
+	 */
+	ReportTrap();
+
+//	wait(irq_event | reset_event);
+
 }
 
 void HCS12X ::Wait() {
@@ -133,7 +142,10 @@ void HCS12X ::Wait() {
  * Wait for not masked interrupts or non-masquable interrupts
  */
 
-	wait(irq_event);
+	inherited::SetState(WAIT);
+
+	wait(irq_event | reset_event);
+
 }
 
 address_t HCS12X ::GetIntVector(uint8_t &ipl)
@@ -287,9 +299,11 @@ void HCS12X::ComputeInternalTime() {
 
 	bus_cycle_time = core_clock_time * 2;
 
+	cpu_cycle_time = bus_cycle_time;
+
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
-	for (int i=0; i<32; i++) opCyclesArray[i] = bus_cycle_time * i;
+	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
 
 }
 

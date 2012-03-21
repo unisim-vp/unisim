@@ -281,17 +281,21 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 
-	/* TODO:
-	 * Stop All Clocks and puts the device in standby mode.
-	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
+	enum STATES {RUNNING, WAIT, STOP};
+	/**
+	 * RUNNING:
+	 * WAIT:
+	 *     Enter a wait state for an integer number of bus clock cycle
+	 *     Only CPU12 clocks are stopped
+	 *     Wait for not masked interrupt
+	 * STOP:
+	 *     Stop All Clocks and puts the device in standby mode.
+	 *     Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
+	 *     if S control bit = 1, the STOP instruction is disabled and acts like two-cycle NOP
 	 */
-	virtual void Sleep() = 0;
 
-	/* TODO:
-	 * Enter a wait state for an integer number of bus clock cycle
-	 * Only CPU12 clocks are stopped
-	 * Wait for not masked interrupt
-	 */
+	void SetState(STATES st) { state = st; }
+	virtual void Sleep() = 0;
 	virtual void Wait() = 0;
 
 	/*
@@ -573,13 +577,6 @@ protected:
 	Parameter<bool>	param_debug_enabled;
 
 
-private:
-	uint8_t		regA, regB;
-    uint16_t    regX, regY, regSP, regPC, ccrReg;
-    uint16_t	regTMP[3];
-
-    address_t lastPC;
-
 	//=====================================================================
 	//=                   68HCS12X interrupt signals                      =
 	//=====================================================================
@@ -594,6 +591,16 @@ private:
 	bool reset;						// Hardware and Software interrupt =>  0xFFFA-0xFFFE
 	bool syscall_interrupt;			// SYS call interrupt =>
 	bool spurious_interrupt;		// Spurious interrupt => IVBR + 0x0010 (default interrupt)
+
+private:
+	// cpu state
+	STATES state;
+
+	uint8_t		regA, regB;
+    uint16_t    regX, regY, regSP, regPC, ccrReg;
+    uint16_t	regTMP[3];
+
+    address_t lastPC;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -643,7 +650,7 @@ inline void CPU::MonitorStore(physical_address_t pea, uint32_t size)
 }
 
 inline void CPU::ReportTrap() {
-	if (debug_enabled && trap_reporting_import) {
+	if (trap_reporting_import) {
 		trap_reporting_import->ReportTrap();
 	}
 

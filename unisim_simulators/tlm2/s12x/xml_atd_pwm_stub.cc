@@ -177,7 +177,7 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 
 	int atd0_data_size, atd0_data_index = 0;
 
-	if (enabled) {
+	if (atd0_stub_enabled) {
 		LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
 
 
@@ -194,7 +194,7 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 		atd0_quantumkeeper.set(sc_time(20, SC_MS));
 		if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
 
-		while(enabled)
+		while(atd0_stub_enabled)
 		{
 			double atd0_anValue[ATD0_SIZE];
 
@@ -245,7 +245,7 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 
 	int atd1_data_size, atd1_data_index = 0;
 
-	if (enabled) {
+	if (atd1_stub_enabled) {
 		LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
 		atd1_data_size = atd1_vect.size();
@@ -261,7 +261,7 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 		atd1_quantumkeeper.set(sc_time(20, SC_MS));
 		if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
 
-		while(enabled)
+		while(atd1_stub_enabled)
 		{
 			double atd1_anValue[ATD1_SIZE];
 			uint8_t atd1_wrap_around;

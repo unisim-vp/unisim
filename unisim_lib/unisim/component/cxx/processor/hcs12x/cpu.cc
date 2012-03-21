@@ -72,6 +72,7 @@ CPU::CPU(const char *name, Object *parent):
 	Client<Memory<service_address_t> >(name, parent),
 	Client<SymbolTableLookup<service_address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
+	state(CPU::RUNNING),
 	queueCurrentAddress(0xFFFE),
 	queueFirst(-1),
 	queueNElement(0),
@@ -321,107 +322,114 @@ uint8_t CPU::Step()
 			} while(1);
 		}
 
-		if(requires_memory_access_reporting) {
-			if(memory_access_reporting_import) {
-				if(debug_enabled && verbose_step)
-					*logger << DebugInfo
-						<< "Reporting memory access for fetch at address 0x"
-						<< std::hex << getRegPC() << std::dec
-						<< std::endl << EndDebugInfo;
+		if (state != STOP) {
+			if(requires_memory_access_reporting) {
+				if(memory_access_reporting_import) {
+					if(debug_enabled && verbose_step)
+						*logger << DebugInfo
+							<< "Reporting memory access for fetch at address 0x"
+							<< std::hex << getRegPC() << std::dec
+							<< std::endl << EndDebugInfo;
 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
+					memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
+				}
 			}
-		}
 
 
-		if(debug_enabled && verbose_step)
-		{
-			*logger << DebugInfo
-				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << getRegPC() << std::dec
-				<< std::endl << EndDebugInfo;
-		}
+			if(debug_enabled && verbose_step)
+			{
+				*logger << DebugInfo
+					<< "Fetching (reading) instruction at address 0x"
+					<< std::hex << getRegPC() << std::dec
+					<< std::endl << EndDebugInfo;
+			}
 
-		queueFetch(getRegPC(), buffer, MAX_INS_SIZE);
-		CodeType 	insn( buffer, MAX_INS_SIZE*8);
+			queueFetch(getRegPC(), buffer, MAX_INS_SIZE);
+			CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
-		/* Decode current PC */
-		if(debug_enabled && verbose_step)
-		{
-			stringstream ctstr;
-			ctstr << insn;
-			*logger << DebugInfo
-				<< "Decoding instruction at 0x"
-				<< std::hex << getRegPC() << std::dec
-				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
-				<< std::endl << EndDebugInfo;
-		}
+			/* Decode current PC */
+			if(debug_enabled && verbose_step)
+			{
+				stringstream ctstr;
+				ctstr << insn;
+				*logger << DebugInfo
+					<< "Decoding instruction at 0x"
+					<< std::hex << getRegPC() << std::dec
+					<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
+					<< std::endl << EndDebugInfo;
+			}
 
-		op = this->Decode(getRegPC(), insn);
-		lastPC = getRegPC();
-        unsigned int insn_length = op->GetLength();
-        if (insn_length % 8) throw "InternalError";
+			op = this->Decode(getRegPC(), insn);
+			lastPC = getRegPC();
+	        unsigned int insn_length = op->GetLength();
+	        if (insn_length % 8) throw "InternalError";
 
-		queueFlush(insn_length/8);
+			queueFlush(insn_length/8);
 
-		/* Execute instruction */
+			/* Execute instruction */
 
-		if (trace_enable) {
-			stringstream disasm_str;
-			stringstream ctstr;
+			if (trace_enable) {
+				stringstream disasm_str;
+				stringstream ctstr;
 
-			op->disasm(disasm_str);
+				op->disasm(disasm_str);
 
-			ctstr << op->GetEncoding();
+				ctstr << op->GetEncoding();
 
-			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-				<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
-				<< GetFunctionFriendlyName(getRegPC()) << " : "
-				<< disasm_str.str()
-				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
-
-		}
-
-		if (debug_enabled && verbose_step) {
-			stringstream disasm_str;
-			stringstream ctstr;
-
-			op->disasm(disasm_str);
-
-			ctstr << op->GetEncoding();
-			*logger << DebugInfo << GetSimulatedTime() << "ms: "
-				<< "Executing instruction "
-				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << getRegPC() << std::dec
-				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
-				<< "  " << EndDebugInfo	<< std::endl;
-		}
-
-		setRegPC(getRegPC() + (insn_length/8));
-
-		op->execute(this);
-
-		opCycles = op->getCycles();
-
-		cycles_counter += opCycles;
-
-		VerboseDumpRegsEnd();
-
-		instruction_counter++;
-
-		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
-			trap_reporting_import->ReportTrap();
-		}
-
-		if(requires_finished_instruction_reporting)
-			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(lastPC), MMC::getPagedAddress(getRegPC()));
+				*logger << DebugInfo << GetSimulatedTime() << " ms: "
+					<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
+					<< GetFunctionFriendlyName(getRegPC()) << " : "
+					<< disasm_str.str()
+					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
 			}
+
+			if (debug_enabled && verbose_step) {
+				stringstream disasm_str;
+				stringstream ctstr;
+
+				op->disasm(disasm_str);
+
+				ctstr << op->GetEncoding();
+				*logger << DebugInfo << GetSimulatedTime() << "ms: "
+					<< "Executing instruction "
+					<< disasm_str.str()
+					<< " at PC = 0x" << std::hex << getRegPC() << std::dec
+					<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
+					<< "  " << EndDebugInfo	<< std::endl;
+			}
+
+			setRegPC(getRegPC() + (insn_length/8));
+
+			op->execute(this);
+
+			opCycles = op->getCycles();
+
+			cycles_counter += opCycles;
+
+			VerboseDumpRegsEnd();
+
+			instruction_counter++;
+
+			if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
+				trap_reporting_import->ReportTrap();
+			}
+
+			if(requires_finished_instruction_reporting) {
+				if(memory_access_reporting_import) {
+					memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(lastPC), MMC::getPagedAddress(getRegPC()));
+
+				}
+			}
+
+		}
 
 		if(HasAsynchronousInterrupt())
 		{
 			throw AsynchronousException();
+		}
+		else if (state == STOP) {
+			ReportTrap();
 		}
 
 	}
@@ -513,41 +521,50 @@ void CPU::queueFlush(uint8_t nByte)
 
 // compute return address, save the CPU registers and then set I/X bit before the interrupt handling began
 void CPU::PrepareInterrupt() {
-	/*
-	 * *** Save context sequence for CPU12X ***
-	 *
-	 * - The instruction queue is refilled
-	 * - The return address is calculated
-	 * - Save the return address and CPU registers as follow:
-	 *    . M(SP+8) <= RTNH:RTNL
-	 *    . M(SP+6) <= YH:YL
-	 *    . M(SP+4) <= XH:XL
-	 *    . M(SP+2) <= B:A
-	 *    . M(SP)   <= CCRH:CCRL
-	 */
 
-	setRegSP(getRegSP()-2);
-	memWrite16(getRegSP(), getRegPC());
+	if ((state == STOP) || (state == WAIT)) {
+		SetState(RUNNING);
+		// Don't save CPU context because STOP or WAI instructions have already done it.
+	} else {
 
-	setRegSP(getRegSP()-2);
-	memWrite16(getRegSP(), getRegY());
+		/*
+		 * *** Save context sequence for CPU12X ***
+		 *
+		 * - The instruction queue is refilled
+		 * - The return address is calculated
+		 * - Save the return address and CPU registers as follow:
+		 *    . M(SP+8) <= RTNH:RTNL
+		 *    . M(SP+6) <= YH:YL
+		 *    . M(SP+4) <= XH:XL
+		 *    . M(SP+2) <= B:A
+		 *    . M(SP)   <= CCRH:CCRL
+		 */
 
-	setRegSP(getRegSP()-2);
-	memWrite16(getRegSP(), getRegX());
+		setRegSP(getRegSP()-2);
+		memWrite16(getRegSP(), getRegPC());
 
-	setRegSP(getRegSP()-1);
-	memWrite8(getRegSP(), getRegA());
-	setRegSP(getRegSP()-1);
-	memWrite8(getRegSP(), getRegB());
+		setRegSP(getRegSP()-2);
+		memWrite16(getRegSP(), getRegY());
 
-	setRegSP(getRegSP()-2);
-	memWrite16(getRegSP(), ccr->getCCR());
+		setRegSP(getRegSP()-2);
+		memWrite16(getRegSP(), getRegX());
+
+		setRegSP(getRegSP()-1);
+		memWrite8(getRegSP(), getRegA());
+		setRegSP(getRegSP()-1);
+		memWrite8(getRegSP(), getRegB());
+
+		setRegSP(getRegSP()-2);
+		memWrite16(getRegSP(), ccr->getCCR());
+
+	}
 
 }
 
 // AsynchronousException
 void CPU::HandleException(const AsynchronousException& exc)
 {
+
 
 	uint8_t newIPL = ccr->getIPL();
 	address_t asyncVector = GetIntVector(newIPL);
@@ -558,16 +575,14 @@ void CPU::HandleException(const AsynchronousException& exc)
 		HandleResetException(asyncVector);
 	}
 
-	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0)) {
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt()) {
 		HandleNonMaskableXIRQException(asyncVector, newIPL);
 	}
 
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && /*(ccr->getX() == 0) &&*/ (ccr->getI() == 0)) {
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup()) {
 		HandleMaskableIbitException(asyncVector, newIPL);
 	}
 
-	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
-	AckAsynchronousInterrupt();
 }
 
 void CPU::AckAsynchronousInterrupt()
@@ -595,11 +610,6 @@ void CPU::HandleResetException(address_t resetVector)
 
 	address_t address = memRead16(resetVector);
 
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) resetVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
-
 	SetEntryPoint(address);
 
 }
@@ -620,6 +630,8 @@ void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 {
 	AckXIRQInterrupt();
 
+	if (ccr->getX() != 0) return;
+
 	PrepareInterrupt();
 
 	ccr->setI();
@@ -628,10 +640,6 @@ void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 	ccr->setX();
 
 	address_t address = memRead16(xirqVector);
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) xirqVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
 
 	SetEntryPoint(address);
 
@@ -653,6 +661,8 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 {
 	AckIbitInterrupt();
 
+	if (ccr->getI() != 0) return;
+
 	if (newIPL > ccr->getIPL()) {
 		PrepareInterrupt();
 
@@ -661,11 +671,6 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 		ccr->setIPL(newIPL);
 
 		address_t address = memRead16(ibitVector);
-
-//		std::cerr << "Int vector 0x" << std::hex << (unsigned int) ibitVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//		if (trap_reporting_import) {
-//			trap_reporting_import->ReportTrap();
-//		}
 
 		SetEntryPoint(address);
 	}
@@ -700,11 +705,6 @@ void CPU::HandleException(const TrapException& exc)
 
 	address_t address = memRead16(trapVector);
 
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) trapVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
-
 	SetEntryPoint(address);
 
 	AckTrapInterrupt();
@@ -735,11 +735,6 @@ void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 	// clear U-bit for CPU12XV2
 
 	address_t address = memRead16(swiVector);
-
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) swiVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
 
 	SetEntryPoint(address);
 
@@ -772,11 +767,6 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 
 	address_t address = memRead16(sysCallVector);
 
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) sysCallVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
-
 	SetEntryPoint(address);
 
 	AckSysInterrupt();
@@ -808,11 +798,6 @@ void CPU::HandleException(const SpuriousInterrupt& exc)
 
 	address_t address = memRead16(spuriousVector);
 
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) spuriousVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
-
 	SetEntryPoint(address);
 
 	AckSpuriousInterrupt();
@@ -838,11 +823,6 @@ void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 	address_t accessErrorVector = GetIntVector(newIPL);
 
 	address_t address = memRead16(accessErrorVector);
-
-//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) accessErrorVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
-//	if (trap_reporting_import) {
-//		trap_reporting_import->ReportTrap();
-//	}
 
 	SetEntryPoint(address);
 

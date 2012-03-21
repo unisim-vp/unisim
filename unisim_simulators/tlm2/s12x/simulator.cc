@@ -450,7 +450,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
-	simulator->SetVariable("atd-pwm-stub.stub-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
+	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
 
 	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
@@ -459,7 +460,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.vrh", 5.120000e+00);
 	simulator->SetVariable("ATD0.debug-enabled", false);
 	simulator->SetVariable("ATD0.use-atd-stub", false);
-	simulator->SetVariable("ATD0.use-builtin-input-generator", false);
+	simulator->SetVariable("ATD0.atd-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("ATD0.start-scan-at", 900);
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
@@ -471,7 +473,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.vrh", 5.120000e+00);
 	simulator->SetVariable("ATD1.debug-enabled", false);
 	simulator->SetVariable("ATD1.use-atd-stub", false);
-	simulator->SetVariable("ATD1.use-builtin-input-generator", false);
+	simulator->SetVariable("ATD1.atd-anx-stimulus-file", "ATD.xml");
+	simulator->SetVariable("ATD1.start-scan-at", 900);
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);

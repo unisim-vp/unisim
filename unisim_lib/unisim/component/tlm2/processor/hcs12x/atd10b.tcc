@@ -90,8 +90,11 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	use_atd_stub(false),
 	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
 
-	use_builtin_input_generator(false),
-	param_use_builtin_input_generator("use-builtin-input-generator", this, use_builtin_input_generator),
+	start_scan_at(900),
+	param_start_scan_at("start-scan-at", this, start_scan_at, "ATD start scan at <delay> ms"),
+
+	atd_anx_stimulus_file(""),
+	param_atd_anx_stimulus_file("atd-anx-stimulus-file", this, atd_anx_stimulus_file),
 
 	analog_signal_reg("ANx", this, analog_signal, ATD_SIZE, "ANx: ATD Analog Input Pins"),
 
@@ -152,6 +155,110 @@ ATD10B<ATD_SIZE>::~ATD10B() {
 		delete extended_registers_registry[i];
 	}
 
+	atd_vect.clear();
+}
+
+
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data) {
+
+	xmlChar *key;
+	vector<xmlNodePtr> rowCells;
+
+	if ((xmlStrcmp(cur->name, (const xmlChar *)"Row"))) {
+		cerr << "Error: Can't parse " << cur->name << endl;
+		return;
+	}
+
+	cur = cur->xmlChildrenNode;
+	while (cur != NULL) {
+		if ((!xmlStrcmp(cur->name, (const xmlChar *)"Cell"))) {
+			rowCells.push_back(cur);
+		}
+		cur = cur->next;
+	}
+
+	if ((rowCells.size() < 2) || (rowCells.size() > (ATD_SIZE+1))) {
+		cerr << "Error: Wrong row size. The minimum is 2 and the maximum is " << std::dec << (ATD_SIZE+1) << " cells by row." << endl;
+		return;
+	}
+
+	for (int i=0; i < ATD_SIZE; i++) {
+		data.volte[i] = 0;
+	}
+	data.time = 0;
+
+	/**
+	 * First cells of row are ATD voltage
+	 * The last cell is time of sampling
+	 */
+	for (unsigned int i=0; (i < rowCells.size()) && (i < ATD_SIZE); i++) {
+		cur = rowCells.at(i);
+
+		xmlNodePtr node = cur->children;
+		while (xmlStrcmp(node->name, (const xmlChar *)"Data")) {
+			node = node->next;
+		}
+
+		key = xmlNodeListGetString(doc, node->xmlChildrenNode, 1);
+		if (i < (rowCells.size()-1)) {
+			data.volte[i] = std::atof((const char *) key);
+		} else {
+			data.time = std::atof((const char *) key);
+		}
+
+		xmlFree(key);
+
+	}
+
+
+	return;
+}
+
+template <uint8_t ATD_SIZE>
+void ATD10B<ATD_SIZE>::LoadXmlData(const char *filename, std::vector<data_t> &vect) {
+
+	const char *path = "//Row";
+
+	xmlDocPtr doc = NULL;
+	xmlXPathContextPtr context = NULL;
+	xmlXPathObjectPtr xmlobject;
+	int result = 0;
+
+	cout << name() << " Parsing " << filename << endl;
+
+	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename).c_str());
+	if (!doc)
+	{
+		cerr << __FILE__ << ":" << __LINE__ << " Could not parse the document" << endl;
+		return ;
+	}
+
+	xmlXPathInit ();
+	context = xmlXPathNewContext (doc);
+
+	xmlobject = xmlXPathEval ((xmlChar *) path, context);
+	xmlXPathFreeContext (context);
+	if ((xmlobject->type == XPATH_NODESET) && (xmlobject->nodesetval))
+	{
+		if (xmlobject->nodesetval->nodeNr)
+		{
+			result = xmlobject->nodesetval->nodeNr;
+
+			xmlNodePtr node;
+			data_t data;
+			for (int i=0; i<xmlobject->nodesetval->nodeNr; i++) {
+				node = xmlobject->nodesetval->nodeTab[i];
+				parseRow (doc, node, data);
+				vect.push_back(data);
+			}
+		}
+	}
+
+	xmlXPathFreeObject (xmlobject);
+	xmlFreeDoc(doc);
+
+	return ;
 }
 
 
@@ -222,7 +329,15 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 template <uint8_t ATD_SIZE>
 void ATD10B<ATD_SIZE>::Process()
 {
-	sc_time delay(80, SC_US);
+	srand(12345);
+
+	int atd_data_index = -1;
+	int atd_data_size = atd_vect.size();
+
+	// wait before scanning ATD
+	sc_time delay(start_scan_at, SC_MS);
+	wait(delay);
+
 	while(1)
 	{
 
@@ -236,12 +351,21 @@ void ATD10B<ATD_SIZE>::Process()
 
 			InputANx(analog_signal);
 		}
-		else if (use_builtin_input_generator) {
+		else {
+			if (atd_data_size > 0) {
+				atd_data_index = (atd_data_index + 1) % atd_data_size;
+			}
 
-			cout << name() << " random data @ " << sc_time_stamp().to_string() << endl;
-			for (int i=0; i<ATD_SIZE; i++) {
-				analog_signal[i] = vrh * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5.12 Volts
-				if (analog_signal[i] < vrl) analog_signal[i] = vrl;
+			uint8_t j = 0;
+			for (uint8_t i=0; i < ATD_SIZE; i++) {
+				if (atd_data_size > 0) {
+//					analog_signal[i] = atd_vect.at(atd_data_index).volte[j++];
+					// Because I have just one value as input I have to use it for all port
+					analog_signal[i] = atd_vect.at(atd_data_index).volte[0];
+				} else {
+					analog_signal[i] = vrh * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5.12 Volts
+					if (analog_signal[i] < vrl) analog_signal[i] = vrl;
+				}
 			}
 
 		}
@@ -1035,6 +1159,11 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 	for (int i=0; i<32; i++) {
 		busClockRange[i].maxBusClock = 1e6/(i+1); // busClock is modeled in PS
 		busClockRange[i].minBusClock = 1e6/((i+1)*4);
+	}
+
+	if (!use_atd_stub) {
+		atd_vect.clear();
+		LoadXmlData(atd_anx_stimulus_file.c_str(), atd_vect);
 	}
 
 	return true;
