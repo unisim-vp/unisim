@@ -35,7 +35,6 @@ Simulator::Simulator(int argc, char **argv)
 	, atd1(0)
 	, atd0(0)
 	, pwm(0)
-	, global_router(0)
 	, global_ram(0)
 	, global_eeprom(0)
 	, global_flash(0)
@@ -119,14 +118,9 @@ Simulator::Simulator(int argc, char **argv)
 
 	pwm = new PWM("PWM");
 
-	//  - tlm2 router
-	global_router = new GLOBAL_ROUTER("global-router");
-
 	//  - Memories
-//	global_memory = new MEMORY("global-memory");
 	global_ram = new RAM("RAM");
 	global_flash = new FLASH("FLASH");
-
 	global_eeprom = new EEPROM("EEPROM");
 
 	// - Interrupt controller
@@ -206,20 +200,18 @@ Simulator::Simulator(int argc, char **argv)
 	xml_atd_pwm_stub->slave_sock(pwm->master_sock);
 #endif
 
-	mmc->memory_socket(*global_router->targ_socket[0]);
-
 	// This order is mandatory (see the memoryMapping)
-	(*global_router->init_socket[0])(crg->slave_socket);
-	(*global_router->init_socket[1])(ect->slave_socket);
-	(*global_router->init_socket[2])(atd1->slave_socket);
-	(*global_router->init_socket[3])(global_eeprom->slave_socket);
-	(*global_router->init_socket[4])(s12xint->slave_socket);
-	(*global_router->init_socket[5])(atd0->slave_socket);
-	(*global_router->init_socket[6])(pwm->slave_socket);
+	(*mmc->init_socket[0])(crg->slave_socket);
+	(*mmc->init_socket[1])(ect->slave_socket);
+	(*mmc->init_socket[2])(atd1->slave_socket);
+	(*mmc->init_socket[3])(global_eeprom->slave_socket);
+	(*mmc->init_socket[4])(s12xint->slave_socket);
+	(*mmc->init_socket[5])(atd0->slave_socket);
+	(*mmc->init_socket[6])(pwm->slave_socket);
 
-	(*global_router->init_socket[7])(global_ram->slave_sock);
-	(*global_router->init_socket[8])(global_eeprom->slave_sock);
-	(*global_router->init_socket[9])(global_flash->slave_sock);
+	(*mmc->init_socket[7])(global_ram->slave_sock);
+	(*mmc->init_socket[8])(global_eeprom->slave_sock);
+	(*mmc->init_socket[9])(global_flash->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
@@ -367,12 +359,9 @@ Simulator::~Simulator()
 	if (xml_atd_pwm_stub) { delete xml_atd_pwm_stub; xml_atd_pwm_stub = NULL; }
 #endif
 
-//	if(global_memory) { delete global_memory; global_memory = NULL; }
 	if(global_ram) { delete global_ram; global_ram = NULL; }
 	if(global_flash) { delete global_eeprom; global_eeprom = NULL; }
 	if (global_eeprom) { delete global_eeprom; global_eeprom = NULL; }
-
-	if(global_router) { delete global_router; global_router = NULL; }
 
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
@@ -541,20 +530,6 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
 	simulator->SetVariable("FLASH.cycle-time", 250000);
 	simulator->SetVariable("FLASH.verbose", false);
-
-
-	simulator->SetVariable("global-router.cycle_time", 250000);
-	simulator->SetVariable("global-router.port_buffer_size", 0x0);
-	simulator->SetVariable("global-router.mapping_0", "range_start=\"0x34\" range_end=\"0x3f\" output_port=\"0\" translation=\"34\"");
-	simulator->SetVariable("global-router.mapping_1", "range_start=\"0x40\" range_end=\"0x7f\" output_port=\"1\" translation=\"40\"");
-	simulator->SetVariable("global-router.mapping_2", "range_start=\"0x80\" range_end=\"0xAF\" output_port=\"2\" translation=\"80\"");
-	simulator->SetVariable("global-router.mapping_3", "range_start=\"0x110\" range_end=\"0x11B\" output_port=\"3\" translation=\"110\"");
-	simulator->SetVariable("global-router.mapping_4", "range_start=\"0x120\" range_end=\"0x12F\" output_port=\"4\" translation=\"120\"");
-	simulator->SetVariable("global-router.mapping_5", "range_start=\"0x2c0\" range_end=\"0x2df\" output_port=\"5\" translation=\"2c0\"");
-	simulator->SetVariable("global-router.mapping_6", "range_start=\"0x300\" range_end=\"0x327\" output_port=\"6\" translation=\"300\"");
-	simulator->SetVariable("global-router.mapping_7", "range_start=\"0x0f8000\" range_end=\"0x0fffff\" output_port=\"7\" translation=\"0f8000\"");
-	simulator->SetVariable("global-router.mapping_8", "range_start=\"0x13f000\" range_end=\"0x13ffff\" output_port=\"8\" translation=\"13f000\"");
-	simulator->SetVariable("global-router.mapping_9", "range_start=\"0x780000\" range_end=\"0x7fffff\" output_port=\"9\" translation=\"780000\"");
 
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);

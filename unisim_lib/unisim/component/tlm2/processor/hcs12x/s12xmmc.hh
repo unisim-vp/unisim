@@ -85,14 +85,16 @@ class S12XMMC :
 
 {
 public:
+	static const uint8_t MEMORY_MAP_SIZE = 10;
+	static const uint8_t DEVICE_MAP_SIZE = 7;
+
 	typedef MMC inherited;
+	typedef tlm_utils::simple_initiator_socket<S12XMMC> InitSocket;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
-//	tlm_utils::simple_initiator_socket<S12XMMC> local_socket;
-//	tlm_utils::simple_initiator_socket<S12XMMC> external_socket;
-	tlm_utils::simple_initiator_socket<S12XMMC> memory_socket;
+	InitSocket *init_socket[MEMORY_MAP_SIZE];
 
 	S12XMMC(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12XMMC();
@@ -107,11 +109,16 @@ private:
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
 	// TODO: complete by integrating the routing functionality to the MMC
-	static const uint8_t DEVICE_MAP_SIZE = 7;
 	struct {
 		address_t	start_address;
 		address_t	end_address;
 	} deviceMap[DEVICE_MAP_SIZE];
+
+
+	struct peripheral {
+		physical_address_t start_addr;
+		physical_address_t end_addr;
+	  } memory_map[MEMORY_MAP_SIZE];
 
 }; /* end class S12XMMC */
 

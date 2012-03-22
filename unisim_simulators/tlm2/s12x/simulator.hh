@@ -47,8 +47,6 @@
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 
@@ -142,22 +140,10 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-//	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
 	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
-
-	class GlobalRouterConfig {
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 10;
-		static const unsigned int MAX_NUM_MAPPINGS = 10; //256;
-		static const unsigned int BUSWIDTH = 32;
-		typedef tlm::tlm_base_protocol_types TYPES;
-		static const bool VERBOSE = false;
-	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<GlobalRouterConfig> GLOBAL_ROUTER;
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
@@ -189,9 +175,6 @@ private:
 	ATD0 *atd0;
 
 	PWM *pwm;
-
-	//  - tlm2 router
-	GLOBAL_ROUTER	*global_router;
 
 	//  - Memories
 //	MEMORY *global_memory;

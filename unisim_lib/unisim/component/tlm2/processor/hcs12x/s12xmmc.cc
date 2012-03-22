@@ -53,6 +53,14 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 	cpu_socket.register_b_transport(this, &S12XMMC::b_transport);
 
+	/* create initiator sockets */
+	for (unsigned int i = 0; i < MEMORY_MAP_SIZE; i++)
+	{
+		std::stringstream init_socket_name_sstr;
+		init_socket_name_sstr << "init_socket_" << i;
+		init_socket[i] = new InitSocket(init_socket_name_sstr.str().c_str());
+	}
+
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
 
@@ -76,6 +84,39 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 	deviceMap[6].start_address = 0x0300;  // PWM
 	deviceMap[6].end_address = 0x0327;
+
+	// ********** Physical memory Map ***
+
+	memory_map[0].start_addr = 0x34;
+	memory_map[0].end_addr = 0x3f;
+
+	memory_map[1].start_addr = 0x40;
+	memory_map[1].end_addr = 0x7f;
+
+	memory_map[2].start_addr = 0x80;
+	memory_map[2].end_addr = 0xAF;
+
+	memory_map[3].start_addr = 0x110;
+	memory_map[3].end_addr = 0x11B;
+
+	memory_map[4].start_addr = 0x120;
+	memory_map[4].end_addr = 0x12F;
+
+	memory_map[5].start_addr = 0x2c0;
+	memory_map[5].end_addr = 0x2df;
+
+	memory_map[6].start_addr = 0x300;
+	memory_map[6].end_addr = 0x327;
+
+	memory_map[7].start_addr = 0x0f8000;
+	memory_map[7].end_addr = 0x0fffff;
+
+	memory_map[8].start_addr = 0x13f000;
+	memory_map[8].end_addr = 0x13ffff;
+
+	memory_map[9].start_addr = 0x780000;
+	memory_map[9].end_addr = 0x7fffff;
+
 
 /*
 	SC_HAS_PROCESS(S12XMMC);
@@ -149,7 +190,6 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 		}
 
 		if (find) {
-// End => Workaround code for unimplemented controller
 
 			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
 
@@ -171,7 +211,13 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
 
 			mmc_trans->set_address( addr & 0x7FFFFF);
-			memory_socket->b_transport( *mmc_trans, tlm2_btrans_time );
+
+			for (int i=0; i <MEMORY_MAP_SIZE; i++) {
+				if ((memory_map[i].start_addr <= addr) && (memory_map[i].end_addr >= addr)) {
+					(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
+					break;
+				}
+			}
 
 			if (mmc_trans->is_response_error() ) {
 				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
