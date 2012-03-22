@@ -108,7 +108,6 @@ private:
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	// TODO: complete by integrating the routing functionality to the MMC
 	struct {
 		address_t	start_address;
 		address_t	end_address;

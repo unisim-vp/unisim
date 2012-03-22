@@ -117,13 +117,6 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	memory_map[9].start_addr = 0x780000;
 	memory_map[9].end_addr = 0x7fffff;
 
-
-/*
-	SC_HAS_PROCESS(S12XMMC);
-	sensitive << cpu_socket;
-
-	SC_THREAD(Run);
-*/
 }
 
 S12XMMC::~S12XMMC() {
@@ -143,13 +136,6 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 	tlm::tlm_command cmd = trans.get_command();
 
 
-	/**
-	 *  TODO:
-	 *   - remove internal router
-	 *   - use a Device Register Memory Map to identify the read/write target
-	 */
-
-
 	bool find = false;
 	for (int i=0; (i<MMC_MEMMAP_SIZE) && !find; i++) {
 		find = (MMC_REGS_ADDRESSES[i] == logicalAddress);
@@ -165,7 +151,6 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 	} else {
 
-// Start => Workaround code for unimplemented controller
 		find = true;
 		if (logicalAddress <= REG_HIGH_OFFSET) {
 
@@ -177,11 +162,6 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 			if (!find) {
 
 				if (debug_enabled) {
-/*
-					if (trap_reporting_import) {
-						trap_reporting_import->ReportTrap();
-					}
-*/
 					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				}
 				memset(buffer->buffer, 0, buffer->data_size);
