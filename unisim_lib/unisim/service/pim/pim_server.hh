@@ -249,8 +249,6 @@ private:
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
 
-//	ofstream pim_trace_file;
-//	double last_time_ratio;
 
 };
 

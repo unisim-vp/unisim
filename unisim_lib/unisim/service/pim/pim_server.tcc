@@ -37,6 +37,8 @@
 #ifndef __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 #define __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 
+#include <unisim/service/pim/pim_server.hh>
+
 #include <unisim/util/xml/xml.hh>
 
 #include <iostream>
@@ -175,8 +177,6 @@ PIMServer<ADDRESS>::~PIMServer()
 	if (target) { delete target; target = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
-//	pim_trace_file.close();
-
 }
 
 template <class ADDRESS>
@@ -301,8 +301,6 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::EndSetup() {
 
-//	pim_trace_file.open ("pim_trace.xls");
-
 	return true;
 }
 
@@ -405,24 +403,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	ADDRESS size;
 	ADDRESS reg_num;
 	ADDRESS type;
-
-/*
-	- add a time_ratio = HotsTime/SimulatedTime response
-	- the time_ratio is used by timed/periodic operations
-*/
-
-
-//	double new_time_ratio = last_time_ratio;
-//	double sim_time = GetSimTime();
-//	double host_time = GetHostTime();
-//	if (sim_time > 0) {
-//		new_time_ratio = host_time / sim_time;
-//	}
-//	if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
-//		pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
-//		last_time_ratio = new_time_ratio;
-//	}
-
 
 	if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
 	{

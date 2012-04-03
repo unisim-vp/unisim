@@ -26,6 +26,7 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 
 PIMThread::~PIMThread() {
 
+	pim_trace_file.close();
 }
 
 double PIMThread::GetSimTime() {
@@ -33,6 +34,9 @@ double PIMThread::GetSimTime() {
 }
 
 void PIMThread::Run(){
+
+	pim_trace_file.open ("pim_trace.xls");
+
 
 	cerr << "PIM::TargetThread start RUN " << std::endl;
 
