@@ -51,7 +51,7 @@ AsynchronousException::AsynchronousException()
 
 const char * AsynchronousException::what () const throw ()
 {
-	return "Asynchronous exception";
+	return ("Asynchronous exception");
 }
 
 TrapException::TrapException(uint8_t trapnum)
@@ -61,7 +61,7 @@ TrapException::TrapException(uint8_t trapnum)
 
 const char * TrapException::what () const throw ()
 {
-	return "Unimplemented opcode trap";
+	return ("Unimplemented opcode trap");
 }
 
 NonMaskableSWIInterrupt::NonMaskableSWIInterrupt()
@@ -70,7 +70,7 @@ NonMaskableSWIInterrupt::NonMaskableSWIInterrupt()
 
 const char * NonMaskableSWIInterrupt::what () const throw ()
 {
-	return "A software interrupt instruction (SWI) or BDM vector request";
+	return ("A software interrupt instruction (SWI) or BDM vector request");
 }
 
 SysCallInterrupt::SysCallInterrupt()
@@ -79,7 +79,7 @@ SysCallInterrupt::SysCallInterrupt()
 
 const char * SysCallInterrupt::what () const throw ()
 {
-	return "A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)";
+	return ("A system call interrupt instruction (SYS) (CPU12XV1 and CPU12XV2 only)");
 }
 
 NonMaskableAccessErrorInterrupt::NonMaskableAccessErrorInterrupt(ERROR_TYPE error)
@@ -99,7 +99,7 @@ const char * NonMaskableAccessErrorInterrupt::what () const throw ()
 	case NonMaskableAccessErrorInterrupt::INVALIDE_PPAGE: strStm << "PPAGE value"; break;
 	}
 
-	return strStm.str().c_str();
+	return (strStm.str().c_str());
 }
 
 SpuriousInterrupt::SpuriousInterrupt()
@@ -108,7 +108,7 @@ SpuriousInterrupt::SpuriousInterrupt()
 
 const char * SpuriousInterrupt::what () const throw ()
 {
-	return "Spurious interrupt";
+	return ("Spurious interrupt");
 }
 
 } // end of namespace hcs12x

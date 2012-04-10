@@ -49,10 +49,10 @@ template <uint8_t PWM_SIZE>
 PWM<PWM_SIZE>::PWM(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	Service<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
-	Client<Memory<service_address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
+	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Registers>(name, parent),
+	unisim::kernel::service::Client<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Client<TrapReporting>(name, parent),
 
 	master_sock("master_socket"),
 	slave_socket("slave_socket"),
@@ -187,9 +187,9 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phase& 
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		return TLM_COMPLETED;
+		return (TLM_COMPLETED);
 	}
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 
@@ -267,7 +267,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 			break;
 		case BEGIN_RESP:
 			payload.release();
-			return TLM_COMPLETED;
+			return (TLM_COMPLETED);
 		case END_RESP:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
 			Object::Stop(-1);
@@ -278,7 +278,7 @@ tlm_sync_enum PWM<PWM_SIZE>::nb_transport_bw(PWM_Payload<PWM_SIZE>& payload, tlm
 			break;
 	}
 
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 
@@ -417,12 +417,13 @@ bool PWM<PWM_SIZE>::read(unsigned int offset, const void *buffer, unsigned int d
 			if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
 				*((uint8_t *) buffer) = channel[offset-PWMDTY0]->getPWMDTYValue();
 			} else {
-				return false;
+				return (false);
 			}
 		}
+		break;
 	}
 
-	return true;
+	return (true);
 
 }
 
@@ -593,12 +594,13 @@ bool PWM<PWM_SIZE>::write(unsigned int offset, const void *buffer, unsigned int 
 				}
 
 			} else {
-				return false;
+				return (false);
 			}
 		}
+		break;
 	}
 
-	return true;
+	return (true);
 }
 
 template <uint8_t PWM_SIZE>
@@ -646,22 +648,22 @@ void PWM<PWM_SIZE>::updateScaledClockB() {
 
 template <uint8_t PWM_SIZE>
 sc_time PWM<PWM_SIZE>::getClockA() {
-	return clockA;
+	return (clockA);
 }
 
 template <uint8_t PWM_SIZE>
 sc_time PWM<PWM_SIZE>::getClockB() {
-	return clockB;
+	return (clockB);
 }
 
 template <uint8_t PWM_SIZE>
 sc_time PWM<PWM_SIZE>::getClockSA() {
-	return clockSA;
+	return (clockSA);
 }
 
 template <uint8_t PWM_SIZE>
 sc_time PWM<PWM_SIZE>::getClockSB() {
-	return clockSB;
+	return (clockSB);
 }
 
 template <uint8_t PWM_SIZE>
@@ -820,20 +822,20 @@ bool PWM<PWM_SIZE>::BeginSetup() {
 
 	ComputeInternalTime();
 
-	return true;
+	return (true);
 
 }
 
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::Setup(ServiceExportBase *srv_export) {
 
-	return true;
+	return (true);
 }
 
 template <uint8_t PWM_SIZE>
 bool PWM<PWM_SIZE>::EndSetup() {
 
-	return true;
+	return (true);
 }
 
 
@@ -847,9 +849,9 @@ template <uint8_t PWM_SIZE>
 Register* PWM<PWM_SIZE>::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -1089,7 +1091,7 @@ void PWM<PWM_SIZE>::Channel_t::disable() {
 }
 
 template <uint8_t PWM_SIZE>
-bool PWM<PWM_SIZE>::Channel_t::getOutput() { return pwmParent->getOutput(channel_index); }
+bool PWM<PWM_SIZE>::Channel_t::getOutput() { return (pwmParent->getOutput(channel_index)); }
 /**
  * The channel output is meaningful only if the channel is enabled
  */
@@ -1100,7 +1102,7 @@ void PWM<PWM_SIZE>::Channel_t::setOutput(bool val) {
 }
 
 template <uint8_t PWM_SIZE>
-uint8_t PWM<PWM_SIZE>::Channel_t::getPwmcnt_register() { return *pwmcnt_register_ptr; }
+uint8_t PWM<PWM_SIZE>::Channel_t::getPwmcnt_register() { return (*pwmcnt_register_ptr); }
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Channel_t::setPwmcnt_register(uint8_t val) {
@@ -1112,7 +1114,7 @@ void PWM<PWM_SIZE>::Channel_t::setPwmcnt_register(uint8_t val) {
 }
 
 template <uint8_t PWM_SIZE>
-uint8_t PWM<PWM_SIZE>::Channel_t::getPWMPERValue() { return *pwmper_register_value_ptr; }
+uint8_t PWM<PWM_SIZE>::Channel_t::getPWMPERValue() { return (*pwmper_register_value_ptr); }
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Channel_t::setPWMPERValue(uint8_t val) {
@@ -1120,19 +1122,19 @@ void PWM<PWM_SIZE>::Channel_t::setPWMPERValue(uint8_t val) {
 }
 
 template <uint8_t PWM_SIZE>
-uint8_t PWM<PWM_SIZE>::Channel_t::getPWMPERBuffer() { return pwmper_register_buffer; }
+uint8_t PWM<PWM_SIZE>::Channel_t::getPWMPERBuffer() { return (pwmper_register_buffer); }
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Channel_t::setPWMPERBuffer(uint8_t val) { pwmper_register_buffer = val; }
 
 template <uint8_t PWM_SIZE>
-uint8_t PWM<PWM_SIZE>::Channel_t::getPWMDTYValue() { return *pwmdty_register_value_ptr; }
+uint8_t PWM<PWM_SIZE>::Channel_t::getPWMDTYValue() { return (*pwmdty_register_value_ptr); }
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Channel_t::setPWMDTYValue(uint8_t val) { *pwmdty_register_value_ptr = val; }
 
 template <uint8_t PWM_SIZE>
-uint8_t PWM<PWM_SIZE>::Channel_t::getPWMDTYBuffer() { return pwmdty_register_buffer; }
+uint8_t PWM<PWM_SIZE>::Channel_t::getPWMDTYBuffer() { return (pwmdty_register_buffer); }
 
 template <uint8_t PWM_SIZE>
 void PWM<PWM_SIZE>::Channel_t::setPWMDTYBuffer(uint8_t val) { pwmdty_register_buffer = val; }
@@ -1173,15 +1175,16 @@ bool PWM<PWM_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t si
 				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
 					*((uint8_t *)buffer) = pwmdty16_register_value[offset - PWMDTY0];
 				} else {
-					return false;
+					return (false);
 				}
 			}
+			break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return false;
+	return (false);
 }
 
 //template <uint8_t PWM_SIZE>
@@ -1207,7 +1210,7 @@ bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint
 	if ((addr >= baseAddress) && (addr <= (baseAddress+PWMSDN))) {
 
 		if (size == 0) {
-			return true;
+			return (true);
 		}
 
 		service_address_t offset = addr-baseAddress;
@@ -1237,15 +1240,16 @@ bool PWM<PWM_SIZE>::WriteMemory(service_address_t addr, const void *buffer, uint
 				if ((offset >= PWMDTY0) && (offset <= PWMDTY7)) {
 					pwmdty16_register_value[offset - PWMDTY0] = offset >= PWMDTY0;
 				} else {
-					return false;
+					return (false);
 				}
 			}
+			break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return false;
+	return (false);
 }
 
 

@@ -116,7 +116,7 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 					case STT_HIOS: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_HIOS; break;
 					case STT_LOPROC: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_LOPROC; break;
 					case STT_HIPROC: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_HIPROC; break;
-					default: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_NOTYPE;
+					default: type = unisim::util::debug::Symbol<MEMORY_ADDR>::SYM_NOTYPE; break;
 				}
 
 				std::string symbol_name(string_table + unisim::util::endian::Target2Host(endian, sym->st_name));

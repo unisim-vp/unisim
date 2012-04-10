@@ -30,7 +30,7 @@ inline std::string stringify(T const& x) {
 		throw BadConversion(std::string("stringify(") + typeid(x).name() + ")");
 	}
 
-	return o.str();
+	return (o.str());
 }
 
 template<typename T>
@@ -52,32 +52,32 @@ inline T convertTo(std::string const& s, bool failIfLeftoverChars = true) {
 
 	convert(s, x, failIfLeftoverChars);
 
-	return x;
+	return (x);
 }
 
-inline bool IsHexChar(char ch)
+inline bool isHexChar(char ch)
 {
-	if(ch >= 'a' && ch <= 'f') return true;
-	if(ch >= '0' && ch <= '9') return true;
-	if(ch >= 'A' && ch <= 'F') return true;
-	return false;
+	if(ch >= 'a' && ch <= 'f') return (true);
+	if(ch >= '0' && ch <= '9') return (true);
+	if(ch >= 'A' && ch <= 'F') return (true);
+	return (false);
 }
 
-inline char Nibble2HexChar(uint8_t v)
+inline char nibble2HexChar(uint8_t v)
 {
 	v = v & 0xf; // keep only 4-bits
-	return v < 10 ? '0' + v : 'a' + v - 10;
+	return (v < 10 ? '0' + v : 'a' + v - 10);
 }
 
-inline uint8_t HexChar2Nibble(char ch)
+inline uint8_t hexChar2Nibble(char ch)
 {
-	if(ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
-	if(ch >= '0' && ch <= '9') return ch - '0';
-	if(ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
-	return 0;
+	if(ch >= 'a' && ch <= 'f') return (ch - 'a' + 10);
+	if(ch >= '0' && ch <= '9') return (ch - '0');
+	if(ch >= 'A' && ch <= 'F') return (ch - 'A' + 10);
+	return (0);
 }
 
-inline void Number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
+inline void number2HexString(uint8_t* value, unsigned int size, std::string& hex, std::string endian) {
 
 	int i;
 	char c[2];
@@ -93,9 +93,9 @@ inline void Number2HexString(uint8_t* value, unsigned int size, std::string& hex
 		for(i = size - 1; i >= 0; i--)
 #endif
 		{
-			c[0] = Nibble2HexChar(value[i] >> 4);
+			c[0] = nibble2HexChar(value[i] >> 4);
 			hex += c;
-			c[0] = Nibble2HexChar(value[i] & 0xf);
+			c[0] = nibble2HexChar(value[i] & 0xf);
 			hex += c;
 		}
 	}
@@ -107,16 +107,16 @@ inline void Number2HexString(uint8_t* value, unsigned int size, std::string& hex
 		for(i = size - 1; i >= 0; i--)
 #endif
 		{
-			c[0] = Nibble2HexChar(value[i] >> 4);
+			c[0] = nibble2HexChar(value[i] >> 4);
 			hex += c;
-			c[0] = Nibble2HexChar(value[i] & 0xf);
+			c[0] = nibble2HexChar(value[i] & 0xf);
 			hex += c;
 		}
 	}
 
 }
 
-inline bool HexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
+inline bool hexString2Number(const std::string& hex, void* value, unsigned int size, std::string endian) {
 
 	int i;
 	unsigned int len = hex.length();
@@ -130,9 +130,9 @@ inline bool HexString2Number(const std::string& hex, void* value, unsigned int s
 		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
 #endif
 		{
-			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
+			if(!isHexChar(hex[pos]) || !isHexChar(hex[pos + 1])) return (false);
 
-			((uint8_t*) value)[i] = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
+			((uint8_t*) value)[i] = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
 		}
 	}
 	else
@@ -143,25 +143,25 @@ inline bool HexString2Number(const std::string& hex, void* value, unsigned int s
 		for(i = size - 1; i >= 0 && pos < len; i--, pos += 2)
 #endif
 		{
-			if(!IsHexChar(hex[pos]) || !IsHexChar(hex[pos + 1])) return false;
+			if(!isHexChar(hex[pos]) || !isHexChar(hex[pos + 1])) return (false);
 
-			((uint8_t*) value)[i] = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
+			((uint8_t*) value)[i] = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
 		}
 	}
 
-	return true;
+	return (true);
 
 }
 
-inline void TextToHex(const char *s, int count, std::string& packet)
+inline void textToHex(const char *s, int count, std::string& packet)
 {
 	int i;
 	std::stringstream strm;
 
 	for(i = 0; (i<count); i++)
 	{
-		strm << Nibble2HexChar((uint8_t) s[i] >> 4);
-		strm << Nibble2HexChar((uint8_t) s[i] & 0xf);
+		strm << nibble2HexChar((uint8_t) s[i] >> 4);
+		strm << nibble2HexChar((uint8_t) s[i] & 0xf);
 	}
 
 	packet = strm.str();
@@ -169,14 +169,14 @@ inline void TextToHex(const char *s, int count, std::string& packet)
 
 }
 
-inline void HexToText(const char *s, int count, std::string& packet)
+inline void hexToText(const char *s, int count, std::string& packet)
 {
 	int i;
 	std::stringstream strm;
 	uint8_t c;
 
 	for (i = 0; i < count; i=i+2) {
-		c = (HexChar2Nibble((uint8_t) s[i]) << 4) | HexChar2Nibble((uint8_t) s[i+1]);
+		c = (hexChar2Nibble((uint8_t) s[i]) << 4) | hexChar2Nibble((uint8_t) s[i+1]);
 		strm << c;
 	}
 
@@ -184,7 +184,7 @@ inline void HexToText(const char *s, int count, std::string& packet)
 	strm.str(std::string());
 }
 
-inline void StringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
+inline void stringSplit(std::string str, const std::string delim, std::vector<std::string>& results)
 {
 	int cutAt;
 

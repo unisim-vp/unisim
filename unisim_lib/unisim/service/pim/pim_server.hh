@@ -154,15 +154,15 @@ public:
 
 	virtual void Stop(int exit_status);
 
-	virtual void Run() { cerr << "PIM-Server:: start RUN " << std::endl; }
+	virtual void run() { cerr << "PIM-Server:: start RUN " << std::endl; }
 
-	uint16_t GetTCPPort() { return tcp_port;}
-	string GetHost() { return fHost; }
+	uint16_t GetTCPPort() { return (tcp_port);}
+	string GetHost() { return (fHost); }
 
 	double GetSimTime();
 	double GetHostTime();
 
-	inline GDBEndian GetEndian() const { return endian; }
+	inline GDBEndian GetEndian() const { return (endian); }
 
 protected:
 	vector<SocketThread*> protocolHandlers;

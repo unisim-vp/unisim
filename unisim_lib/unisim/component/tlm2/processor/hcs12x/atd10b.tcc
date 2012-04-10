@@ -49,10 +49,10 @@ template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	Service<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
-	Client<Memory<service_address_t> >(name, parent),
-	Client<TrapReporting>(name, parent),
+	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Registers>(name, parent),
+	unisim::kernel::service::Client<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Client<TrapReporting>(name, parent),
 
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
@@ -273,7 +273,7 @@ template <uint8_t ATD_SIZE>
 unsigned int ATD10B<ATD_SIZE>::transport_dbg(ATD_Payload<ATD_SIZE>& payload)
 {
 	// Leave this empty as it is designed for memory mapped buses
-	return 0;
+	return (0);
 }
 
 template <uint8_t ATD_SIZE>
@@ -284,7 +284,7 @@ void ATD10B<ATD_SIZE>::b_transport(ATD_Payload<ATD_SIZE>& payload, sc_core::sc_t
 
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::get_direct_mem_ptr(ATD_Payload<ATD_SIZE>& payload, tlm_dmi&  dmi_data) {
-	return false;
+	return (false);
 }
 
 /**
@@ -304,7 +304,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 			payload.acquire();
 			input_anx_payload_queue.notify(payload, t); // queue the payload and the associative time
 
-			return TLM_UPDATED;
+			return (TLM_UPDATED);
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
 			Object::Stop(-1);
@@ -323,7 +323,7 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_fw(ATD_Payload<ATD_SIZE>& payload, 
 			break;
 	}
 
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 template <uint8_t ATD_SIZE>
@@ -530,6 +530,7 @@ void ATD10B<ATD_SIZE>::RunScanMode()
 							cerr << "Warning: " << name() << " => Reserved value of CD/CC/CB/CA.\n";
 						}
 						anSignal = vrl;
+						break;
 				}
 			} else {
 				anSignal = analog_signal[currentChannel];
@@ -599,9 +600,9 @@ tlm_sync_enum ATD10B<ATD_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phas
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		return TLM_COMPLETED;
+		return (TLM_COMPLETED);
 	}
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 
@@ -789,7 +790,7 @@ uint16_t ATD10B<ATD_SIZE>::getDigitalToken(double analogVoltage) {
 		digitalToken = digitalToken << (16 - resolution);
 	}
 
-	return digitalToken;
+	return (digitalToken);
 }
 
 
@@ -857,29 +858,31 @@ bool ATD10B<ATD_SIZE>::read(unsigned int offset, const void *buffer, unsigned in
 			*((uint8_t *) buffer) = portad1_register;
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
-			*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2] & 0xFFC0;
-			uint8_t index = (offset - ATDDR0H)/2;
-			uint8_t clearMask = 0xFF;
+		default:
+			if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
+				*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2] & 0xFFC0;
+				uint8_t index = (offset - ATDDR0H)/2;
+				uint8_t clearMask = 0xFF;
 
-			if (index < 8) {
-				clearMask = clearMask ^ (0x01 < index);
-				atdstat1_register = atdstat1_register & clearMask;
+				if (index < 8) {
+					clearMask = clearMask ^ (0x01 < index);
+					atdstat1_register = atdstat1_register & clearMask;
+				} else {
+					clearMask = clearMask ^ (0x01 < (index-8));
+					atdstat2_register = atdstat2_register & clearMask;
+				}
+
+				// check ATDCTL2::AFFC Fast Clear bit
+				if ((atdctl2_register & 0x40) != 0) {
+					atdstat0_register = atdstat0_register & 0x7F;
+				}
 			} else {
-				clearMask = clearMask ^ (0x01 < (index-8));
-				atdstat2_register = atdstat2_register & clearMask;
+				return (false);
 			}
-
-			// check ATDCTL2::AFFC Fast Clear bit
-			if ((atdctl2_register & 0x40) != 0) {
-				atdstat0_register = atdstat0_register & 0x7F;
-			}
-		} else {
-			return false;
-		}
+			break;
 	}
 
-	return true;
+	return (true);
 }
 
 template <uint8_t ATD_SIZE>
@@ -964,14 +967,16 @@ bool ATD10B<ATD_SIZE>::write(unsigned int offset, const void *buffer, unsigned i
 			/* write has no effect */
 		} break;
 
-		default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
-			/* write has no effect */
-		} else {
-			return false;
-		}
+		default:
+			if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
+				/* write has no effect */
+			} else {
+				return (false);
+			}
+			break;
 	}
 
-	return true;
+	return (true);
 }
 
 template <uint8_t ATD_SIZE>
@@ -1150,7 +1155,7 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 			cerr << "Warning: " << name() << " : Wrong Values of Vrl and Vrh.\n";
 		}
 
-		return false;
+		return (false);
 	}
 
 	ComputeInternalTime();
@@ -1166,26 +1171,26 @@ bool ATD10B<ATD_SIZE>::BeginSetup() {
 		LoadXmlData(atd_anx_stimulus_file.c_str(), atd_vect);
 	}
 
-	return true;
+	return (true);
 }
 
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::Setup(ServiceExportBase *srv_export) {
-	return true;
+	return (true);
 }
 
 template <uint8_t ATD_SIZE>
 bool ATD10B<ATD_SIZE>::EndSetup() {
-	return true;
+	return (true);
 }
 
 template <uint8_t ATD_SIZE>
 Register* ATD10B<ATD_SIZE>::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -1264,29 +1269,31 @@ bool ATD10B<ATD_SIZE>::ReadMemory(service_address_t addr, void *buffer, uint32_t
 			} break;
 			case PORTAD1: *((uint8_t *) buffer) = portad1_register; break;
 
-			default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
-				if (size == sizeof(uint8_t)) {
+			default:
+				if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
+					if (size == sizeof(uint8_t)) {
 
-					if (((offset-ATDDR0H) % 2) == 0) {
-						*((uint8_t *) buffer) = (uint8_t) ((atddrhl_register[(offset-ATDDR0H)/2] & 0xFF00) >> 8);
+						if (((offset-ATDDR0H) % 2) == 0) {
+							*((uint8_t *) buffer) = (uint8_t) ((atddrhl_register[(offset-ATDDR0H)/2] & 0xFF00) >> 8);
+						} else {
+							*((uint8_t *) buffer) = (uint8_t) (atddrhl_register[(offset-ATDDR0H)/2] & 0x00FF);
+						}
+
 					} else {
-						*((uint8_t *) buffer) = (uint8_t) (atddrhl_register[(offset-ATDDR0H)/2] & 0x00FF);
+						*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2];
 					}
 
 				} else {
-					*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2];
+					return (false);
 				}
-
-			} else {
-				return false;
-			}
+				break;
 		}
 
-		return true;
+		return (true);
 
 	}
 
-	return false;
+	return (false);
 }
 
 //template <uint8_t ATD_SIZE>
@@ -1313,7 +1320,7 @@ bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, u
 	if ((addr >= baseAddress) && (addr <= (baseAddress+(ATDDR0H + 2*ATD_SIZE - 1)))) {
 
 		if (size == 0) {
-			return true;
+			return (true);
 		}
 
 		service_address_t offset = addr-baseAddress;
@@ -1336,29 +1343,31 @@ bool ATD10B<ATD_SIZE>::WriteMemory(service_address_t addr, const void *buffer, u
 			case PORTAD0: portad0_register = *((uint8_t *) buffer); break;
 			case PORTAD1: portad1_register = *((uint8_t *) buffer); break;
 
-			default: if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
+			default:
+				if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
 
-				if (size == sizeof(uint8_t)) {
+					if (size == sizeof(uint8_t)) {
 
-					if (((offset-ATDDR0H) % 2) == 0) {
-						atddrhl_register[(offset-ATDDR0H)/2] = (atddrhl_register[(offset-ATDDR0H)/2] & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+						if (((offset-ATDDR0H) % 2) == 0) {
+							atddrhl_register[(offset-ATDDR0H)/2] = (atddrhl_register[(offset-ATDDR0H)/2] & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+						} else {
+							atddrhl_register[(offset-ATDDR0H)/2] = (atddrhl_register[(offset-ATDDR0H)/2] & 0xFF00) | *((uint8_t *) buffer);
+						}
+
 					} else {
-						atddrhl_register[(offset-ATDDR0H)/2] = (atddrhl_register[(offset-ATDDR0H)/2] & 0xFF00) | *((uint8_t *) buffer);
+						atddrhl_register[(offset-ATDDR0H)/2] = *((uint16_t *) buffer);
 					}
 
 				} else {
-					atddrhl_register[(offset-ATDDR0H)/2] = *((uint16_t *) buffer);
+					return (false);
 				}
-
-			} else {
-				return false;
-			}
+				break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return false;
+	return (false);
 
 }
 

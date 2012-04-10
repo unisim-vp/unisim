@@ -78,7 +78,7 @@ SocketServerThread::~SocketServerThread() {
 
 }
 
-void SocketServerThread::Run() {
+void SocketServerThread::run() {
 
 #ifdef WIN32
 		int cli_addr_len;
@@ -128,7 +128,7 @@ void SocketServerThread::Run() {
 
 #endif
 
-		protocolHandler->Start(sockfdTmp, blocking);
+		protocolHandler->startSocketThread(sockfdTmp, blocking);
 	}
 
 }

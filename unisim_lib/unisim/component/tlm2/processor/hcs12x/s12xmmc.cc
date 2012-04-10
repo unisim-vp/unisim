@@ -47,7 +47,7 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
 	MMC(name, parent),
-	Client<TrapReporting>(name, parent),
+	unisim::kernel::service::Client<TrapReporting>(name, parent),
 	trap_reporting_import("trap_reporting_import", this)
 {
 
@@ -121,12 +121,6 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 
 S12XMMC::~S12XMMC() {
 
-}
-
-void S12XMMC::Run() {
-	while (true) {
-		wait();
-	}
 }
 
 void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {

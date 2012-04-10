@@ -264,9 +264,9 @@ char* SocketReader::receive() {
         			}
 
         			getChar(c);
-        			pchk = HexChar2Nibble(c) << 4;
+        			pchk = hexChar2Nibble(c) << 4;
         			getChar(c);
-        			pchk = pchk + HexChar2Nibble(c);
+        			pchk = pchk + hexChar2Nibble(c);
 
         			if (checkSum != pchk) {
         				cerr << "wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
@@ -285,7 +285,7 @@ char* SocketReader::receive() {
 
         			break;
         		default:
-        			cerr << "packetParser: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+        			cerr << "packetParser: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
         	}
 
     	}

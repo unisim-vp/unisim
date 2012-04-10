@@ -22,7 +22,7 @@ public:
 	SocketClientThread(string host, uint16_t port, bool _blocking) :
 			SocketThread(host, port, _blocking) { };
 
-	virtual void Run();
+	virtual void run();
 
 };
 

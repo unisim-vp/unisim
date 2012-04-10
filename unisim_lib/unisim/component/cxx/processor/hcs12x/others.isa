@@ -81,27 +81,14 @@ stop.execute = {
 		 * Stop All Clocks and puts the device in standby mode
 		 */
 		 
-		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
-		 
-		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
-		 
-		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
-		 
-		 cpu->setRegSP(cpu->getRegSP()-2);
-		cpu->memWrite16(cpu->getRegSP(), cpu->getRegD());
-		 
-		 cpu->setRegSP(cpu->getRegSP()-2);
-		 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+		 cpu->saveCPUContext();
 
 		 /* TODO: 
 		  * Stop All Clocks and puts the device in standby mode.
 		  * Asserting the RESET, XIRQ, or IRQ signals ends standby mode. 
 		  */
 		 
-	 	 cpu->Sleep();
+	 	 cpu->sleep();
 //	 	cpu->Stop(0);
 	 	 
 	 	 /* TODO:
@@ -142,21 +129,7 @@ wai.execute = {
 	 * WAIT for not masked interrupt
 	 */
 	 
-	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegPC());
-	 
-	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegY());
-	 
-	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->getRegSP(), cpu->getRegX());
-	 
-	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite8(cpu->getRegSP(), cpu->getRegB());
-	 cpu->memWrite8(cpu->getRegSP()+1, cpu->getRegA());
-	 
-	 cpu->setRegSP(cpu->getRegSP()-2);
-	 cpu->memWrite16(cpu->getRegSP(), cpu->ccr->getCCR());
+	 cpu->saveCPUContext();
 
 	/* TODO: 
 	 * Enter a wait state for an integer number of bus clock cycle
@@ -164,7 +137,7 @@ wai.execute = {
 	 * Wait for not masked interrupt
 	 */
 
-	 cpu->Wait();
+	 cpu->wai();
 	 
 	 /*
 	  * If XIRQ is asserted while the X mask bit = 0 (XIRQ interrupts enabled),
@@ -190,7 +163,7 @@ bgnd.disasm = {
 
 bgnd.execute = {
 	// TODO
-	cpu->ReportTrap();
+	cpu->reportTrap();
 }
 
 /* ********** Interrupt instructions ******** */

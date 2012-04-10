@@ -825,7 +825,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case ELFDATANONE : os << "Invalid data encoding"; break;
 		case ELFDATA2LSB : os << "2's complement, little endian"; break;
 		case ELFDATA2MSB : os << "2's complement, big endian"; break;
-		default: os << "Unknown (" << hdr->e_ident[EI_DATA] << ")";
+		default: os << "Unknown (" << hdr->e_ident[EI_DATA] << ")"; break;
 	}
 
 	os << endl << "Version : " << (unsigned) hdr->e_ident[EI_VERSION];
@@ -846,7 +846,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case ELFOSABI_OPENBSD:os << "OpenBSD"; break;
 		case ELFOSABI_ARM:os << "ARM"; break;
 		case ELFOSABI_STANDALONE:os << "Standalone (embedded) application"; break;
-		default : os << "Unknown (" << hdr->e_ident[EI_OSABI] << ")";
+		default : os << "Unknown (" << hdr->e_ident[EI_OSABI] << ")"; break;
 	}
 
 	os << endl << "Object File Type : ";
@@ -943,7 +943,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case EM_ARC_A5: os << "ARC Cores Tangent-A5"; break;
 		case EM_XTENSA: os << "Tensilica Xtensa Architecture"; break;
 		case EM_ALPHA: os << "Alpha"; break;
-		default: os << "Unknown (" << hdr->e_machine << ")";
+		default: os << "Unknown (" << hdr->e_machine << ")"; break;
 	}
 	os << endl;
 	os << endl << "Number of program headers : " << hdr->e_phnum;
@@ -977,7 +977,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case PT_SUNWBSS: os << "Sun Specific segment"; break;
 		case PT_SUNWSTACK: os << "Stack segment"; break;
 		case PT_HISUNW: os << "HiSUNW"; break;
-		default: os << "Unknown (" << phdr->p_type << ")";
+		default: os << "Unknown (" << phdr->p_type << ")"; break;
 	}
 
 	os << endl << "File offset : " << phdr->p_offset;
@@ -1033,7 +1033,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case SHT_GNU_verdef:os << "Version definition section"; break;
 		case SHT_GNU_verneed:os << "Version needs section"; break;
 		case SHT_GNU_versym:os << "Version symbol table"; break;
-		default : os << "Unknown";
+		default : os << "Unknown"; break;
 	}
 
 	os << endl << "Link to section :" << shdr->sh_link;
@@ -1075,7 +1075,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STB_LOCAL: os << " Local symbol"; break;
 		case STB_GLOBAL: os << " Global symbol"; break;
 		case STB_WEAK: os << " Weak symbol"; break;
-		default: os << "Unknown";
+		default: os << "Unknown"; break;
 	}
 	os << endl << "Type : ";
 	switch(ELF32_ST_TYPE(unisim::util::endian::Target2Host(endianness, sym->st_info)))
@@ -1087,7 +1087,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STT_FILE: os << "Symbol's name is file name"; break;
 		case STT_COMMON: os << "Symbol is a common data object"; break;
 		case STT_TLS: os << "Symbol is thread-local data object"; break;
-		default: os << "Unknown";
+		default: os << "Unknown"; break;
 	}
 	os << endl << "Visibility : ";
 	switch(ELF_ST_VISIBILITY(unisim::util::endian::Target2Host(endianness, sym->st_other)))
@@ -1096,7 +1096,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STV_INTERNAL: os << "Processor specific hidden class"; break;
 		case STV_HIDDEN: os << "Sym unavailable in other modules"; break;
 		case STV_PROTECTED: os << "Not preemptible, not exported"; break;
-		default: os << "Unknown";
+		default: os << "Unknown"; break;
 	}
 	os << endl << "Section index : " << unisim::util::endian::Target2Host(endianness, sym->st_shndx);
 	os << endl;

@@ -44,7 +44,7 @@
 #include <cmath>
 #include <map>
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -75,6 +75,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -140,9 +142,9 @@ public:
 	CRG(const sc_module_name& name, Object *parent = 0);
 	virtual ~CRG();
 
-	void RunRTI();
-	void RunCOP();
-	void RunClockMonitor();
+	void runRTI();
+	void runCOP();
+	void runClockMonitor();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 
@@ -271,7 +273,7 @@ private:
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 
-	inline void RunPLL_LockTrack_Detector();
+	inline void runPLL_LockTrack_Detector();
 	inline void initialize_rti_counter();
 	inline void updateBusClock();
 

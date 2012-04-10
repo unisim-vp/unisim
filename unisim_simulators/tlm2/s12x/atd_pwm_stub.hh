@@ -38,7 +38,7 @@
 #define ATD_PWM_STUB_HH_
 
 
-#include <systemc.h>
+#include <systemc>
 #include <inttypes.h>
 
 #include <iostream>
@@ -60,6 +60,9 @@
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
 
 using namespace std;
+
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -127,9 +130,9 @@ public:
 	virtual void invalidate_direct_mem_ptr( sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 
 	// Implementation
-	void Input(bool pwmValue[PWM_SIZE]);
-	void Output_ATD1(double anValue[ATD1_SIZE]);
-	void Output_ATD0(double anValue[ATD0_SIZE]);
+	void input(bool pwmValue[PWM_SIZE]);
+	void output_ATD1(double anValue[ATD1_SIZE]);
+	void output_ATD0(double anValue[ATD0_SIZE]);
 
 //	virtual void ProcessATD();
 //	virtual void ProcessPWM();

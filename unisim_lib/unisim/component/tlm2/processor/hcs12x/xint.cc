@@ -51,8 +51,8 @@ address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	Service<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
+	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Registers>(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
 
 	interrupt_request("interrupt_request"),
@@ -74,7 +74,7 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(XINT);
 
-	SC_THREAD(Run);
+	SC_THREAD(run);
 
 	int_cfwdata = (uint8_t *) malloc (XINT_SIZE * sizeof(uint8_t));
 
@@ -135,7 +135,7 @@ void XINT::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 en
 unsigned int XINT::transport_dbg(XINT_Payload& payload)
 {
 	// Leave this empty as it is designed for memory mapped buses
-	return 0;
+	return (0);
 }
 
 void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
@@ -144,7 +144,7 @@ void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
 }
 
 bool XINT::get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data) {
-	return false;
+	return (false);
 }
 
 tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
@@ -158,7 +158,7 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			payload.acquire();
 			input_payload_queue.notify(payload, t); // queue the payload and the associative time
 
-			return TLM_UPDATED;
+			return (TLM_UPDATED);
 		case END_REQ:
 			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
 
@@ -181,7 +181,7 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			break;
 	}
 
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 /*
@@ -260,7 +260,7 @@ void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 }
 
-void XINT::Run()
+void XINT::run()
 {
 	XINT_Payload *payload;
 
@@ -366,15 +366,15 @@ bool XINT::BeginSetup() {
 		int_cfwdata_var->setCallBack(this, INT_CFDATA0+i, &CallBackObject::write, NULL);
 	}
 
-	return true;
+	return (true);
 }
 
 bool XINT::Setup(ServiceExportBase *srv_export) {
-	return true;
+	return (true);
 }
 
 bool XINT::EndSetup() {
-	return true;
+	return (true);
 }
 
 /**
@@ -386,9 +386,9 @@ bool XINT::EndSetup() {
 Register* XINT::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -423,9 +423,9 @@ bool XINT::write(unsigned int address, const void *buffer, unsigned int data_len
 	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA5]) write_INT_CFDATA(5, value);
 	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA6]) write_INT_CFDATA(6, value);
 	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA7]) write_INT_CFDATA(7, value);
-	else return false;
+	else return (false);
 
-	return true;
+	return (true);
 }
 
 bool XINT::read(unsigned int address, const void *buffer, unsigned int data_length)
@@ -441,18 +441,18 @@ bool XINT::read(unsigned int address, const void *buffer, unsigned int data_leng
 	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA5]) *((uint8_t *) buffer) = read_INT_CFDATA(5);
 	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA6]) *((uint8_t *) buffer) = read_INT_CFDATA(6);
 	else if (address == XINT_REGS_ADDRESSES[INT_CFDATA7]) *((uint8_t *) buffer) = read_INT_CFDATA(7);
-	else return false;
+	else return (false);
 
-	return true;
+	return (true);
 }
 
-uint8_t XINT::getIVBR() { return ivbr; }
+uint8_t XINT::getIVBR() { return (ivbr); }
 void XINT::setIVBR(uint8_t value) { ivbr = value; }
 
-uint8_t	XINT::getINT_XGPRIO() { return int_xgprio; }
+uint8_t	XINT::getINT_XGPRIO() { return (int_xgprio); }
 void XINT::setINT_XGPRIO(uint8_t value) { int_xgprio = value; }
 
-uint8_t	XINT::getINT_CFADDR() { return int_cfaddr; }
+uint8_t	XINT::getINT_CFADDR() { return (int_cfaddr); }
 void XINT::setINT_CFADDR(uint8_t value) { int_cfaddr = value; }
 
 uint8_t	XINT::read_INT_CFDATA(uint8_t index)
@@ -467,28 +467,28 @@ uint8_t	XINT::read_INT_CFDATA(uint8_t index)
 		 *   - write access to PRIOLVL[2:0] are ignored
 		 *   - read access of PRIOLVL[2:0] return all 0s
 		 */
-		if (index > 1) return int_cfwdata[getINT_CFADDR()/2 + index] & 0x80;
+		if (index > 1) return (int_cfwdata[getINT_CFADDR()/2 + index] & 0x80);
 
 		/*
 		 * CFDATA1 register is used for IRQ interrupt when writing 0xF0 to CFADDR
 		 * The !IRQ interrupt cannot be handled by XGATE module. For this reason RQST is always set to 0.
 		 */
-		if (index == 1) return int_cfwdata[getINT_CFADDR()/2 + index] & 0x7F;
+		if (index == 1) return (int_cfwdata[getINT_CFADDR()/2 + index] & 0x7F);
 	}
 	else
 		/*
 		 * - Writing all 0s selects non-existing configuration registers.
 		 */
-		if (cfaddr == 0x0) return 0;
+		if (cfaddr == 0x0) return (0);
 
 	/*
 	 * - Write access to CFDATA of the spurious interrupt will be ignored
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
-	if ((getINT_CFADDR() + index*2) == XINT::INT_SPURIOUS_OFFSET) return 0x7;
+	if ((getINT_CFADDR() + index*2) == XINT::INT_SPURIOUS_OFFSET) return (0x7);
 
 
-	return int_cfwdata[getINT_CFADDR()/2 + index];
+	return (int_cfwdata[getINT_CFADDR()/2 + index]);
 }
 
 void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
@@ -537,19 +537,19 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 
 bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 0]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 1]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 2]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 3]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 4]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 5]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 6]; return true; }
-	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 7]; return true; }
+	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFADDR]) { *(uint8_t *) buffer = getINT_CFADDR(); return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA0]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 0]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA1]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 1]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA2]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 2]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA3]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 3]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA4]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 4]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA5]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 5]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA6]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 6]; return (true); }
+	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_CFDATA7]) { *(uint8_t *) buffer = int_cfwdata[getINT_CFADDR()/2 + 7]; return (true); }
 
-	return false;
+	return (false);
 }
 
 bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
@@ -557,11 +557,11 @@ bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size
 	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
 		if (XINT_REGS_ADDRESSES[i] == addr) {
 			write(addr, buffer, size);
-			return true;
+			return (true);
 		}
 	}
 
-	return false;
+	return (false);
 }
 
 

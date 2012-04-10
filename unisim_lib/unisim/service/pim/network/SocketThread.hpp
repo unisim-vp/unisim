@@ -21,17 +21,14 @@ namespace network {
 class SocketThread: public GenericThread {
 public:
 
-	// Protocol list "NONE", "GDB", "PIM"
-
 	SocketThread(string host, uint16_t port, bool _blocking);
 	SocketThread();
 
-	~SocketThread();
+	virtual ~SocketThread();
 
-	void Start(int sockfd, bool _blocking);
+	void startSocketThread(int sockfd, bool _blocking);
 
-	virtual void Run() { };
-	virtual string getProtocol() { return "NONE"; }
+	virtual void run() { };
 
 	bool GetChar(char& c, bool blocking);
 	virtual bool GetPacket(string& s, bool blocking);
@@ -41,7 +38,7 @@ public:
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
 
-	void SetSockfd(int sockfd);
+	void setSockfd(int sockfd);
 	void waitConnection();
 
 protected:

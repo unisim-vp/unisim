@@ -35,7 +35,7 @@ namespace service {
 namespace pim {
 namespace network {
 
-void SocketClientThread::Run() {
+void SocketClientThread::run() {
 
 	struct sockaddr_in serv_addr;
 

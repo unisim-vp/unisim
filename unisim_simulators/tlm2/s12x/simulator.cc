@@ -381,7 +381,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("copyright", "Copyright (C) 2008-2010, Commissariat a l'Energie Atomique (CEA)");
 	simulator->SetVariable("license", "BSD (see file COPYING)");
 	simulator->SetVariable("authors", "Reda Nouacer <reda.nouacer@cea.fr>");
+
+#ifdef HAVE_CONFIG_H
 	simulator->SetVariable("version", VERSION);
+#endif
+
 	simulator->SetVariable("description", "UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications");
 
 	simulator->SetVariable("enable-pim-server", false);
@@ -574,20 +578,20 @@ bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_
 	switch (offset) {
 		case DATA_LOAD_RATIO: {
 			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-load-counter"])/(total_access)*100;
-			return true;
+			return (true);
 		}
 		case DATA_STORE_RATIO: {
 			*((double *) buffer) = (double) ((uint64_t) (*cpu)["data-store-counter"])/(total_access)*100;
-			return true;
+			return (true);
 		}
 
 	}
 
-	return false;
+	return (false);
 }
 
 bool Simulator::write(unsigned int offset, const void *buffer, unsigned int data_length) {
-	return false;
+	return (false);
 }
 
 void Simulator::Run() {
@@ -609,12 +613,12 @@ void Simulator::Run() {
 	uint8_t page = 0;
 
 	if (isS19) {
-		mmc->SplitPagedAddress(entry_point, page, cpu_address);
+		mmc->splitPagedAddress(entry_point, page, cpu_address);
 	} else {
 		cpu_address = (address_t) entry_point;
 	}
 
-	cpu->SetEntryPoint(cpu_address);
+	cpu->setEntryPoint(cpu_address);
 
 	cerr << "Starting simulation ..." << endl;
 

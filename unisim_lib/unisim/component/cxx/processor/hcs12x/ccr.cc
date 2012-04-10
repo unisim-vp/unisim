@@ -44,7 +44,7 @@ namespace hcs12x {
 
 const char *CCR_t::GetName() const
 {
-	return "CCR";
+	return ("CCR");
 }
 
 void CCR_t::GetValue(void *buffer) const
@@ -59,29 +59,29 @@ void CCR_t::SetValue(const void *buffer)
 
 int CCR_t::GetSize() const
 {
-	return 2;
+	return (2);
 }
 
 unisim::util::debug::Register *CCR_t::GetLowRegister()
 {
-	return new unisim::util::debug::SimpleRegister<uint8_t>("CCRL",
+	return (new unisim::util::debug::SimpleRegister<uint8_t>("CCRL",
 #if BYTE_ORDER == BIG_ENDIAN
             ((uint8_t *) ccrReg) + 1
 #else
             ((uint8_t *) ccrReg)
 #endif
-        );
+        ));
 }
 
 unisim::util::debug::Register *CCR_t::GetHighRegister()
 {
-	return new unisim::util::debug::SimpleRegister<uint8_t>("CCRH",
+	return (new unisim::util::debug::SimpleRegister<uint8_t>("CCRH",
 #if BYTE_ORDER == BIG_ENDIAN
             ((uint8_t *) ccrReg)
 #else
             ((uint8_t *) ccrReg) + 1
 #endif
-        );
+        ));
 }
 
 // ****************************************
@@ -99,29 +99,29 @@ TimeBaseRegisterView::~TimeBaseRegisterView()
 
 const char *TimeBaseRegisterView::GetDataTypeName() const
 {
-	return "unsigned 16-bit integer";
+	return ("unsigned 16-bit integer");
 }
 
-unsigned int TimeBaseRegisterView::GetBitSize() const { return 8; }
+unsigned int TimeBaseRegisterView::GetBitSize() const { return (8); }
 
 TimeBaseRegisterView::operator bool () const
 {
-	return (bool) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+	return ((bool) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8));
 }
 
 TimeBaseRegisterView::operator long long () const
 {
-	return (long long) (type == TB_LOW) ? (uint8_t) storage : (uint32_t)(storage >> 8);
+	return ((long long) (type == TB_LOW) ? (uint8_t) storage : (uint32_t)(storage >> 8));
 }
 
 TimeBaseRegisterView::operator unsigned long long () const
 {
-	return (unsigned long long) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+	return ((unsigned long long) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8));
 }
 
 TimeBaseRegisterView::operator double () const
 {
-	return (double) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8);
+	return ((double) (type == TB_LOW) ? (uint8_t) storage : (uint8_t)(storage >> 8));
 }
 
 TimeBaseRegisterView::operator std::string () const
@@ -142,7 +142,7 @@ TimeBaseRegisterView::operator std::string () const
 			sstr << std::dec << (unsigned int) value;
 			break;
 	}
-	return sstr.str();
+	return (sstr.str());
 }
 
 unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool value)
@@ -153,7 +153,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (bool va
 								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long long value)
@@ -164,7 +164,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (long lo
 								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigned long long value)
@@ -175,7 +175,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (unsigne
 								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double value)
@@ -186,7 +186,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (double 
 								: (storage & 0x00ffULL) | ((uint16_t) value << 8);
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (const char * value)
@@ -198,7 +198,7 @@ unisim::kernel::service::VariableBase& TimeBaseRegisterView::operator = (const c
 								: (storage & 0x00ffULL) | ((uint16_t) v << 8);
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 

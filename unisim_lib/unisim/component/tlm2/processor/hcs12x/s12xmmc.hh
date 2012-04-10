@@ -43,7 +43,7 @@
 #include <iostream>
 #include <cmath>
 
-#include <systemc.h>
+#include <systemc>
 
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
@@ -62,6 +62,9 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
+
+using namespace sc_core;
+using namespace sc_dt;
 
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Client;
@@ -98,8 +101,6 @@ public:
 
 	S12XMMC(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12XMMC();
-
-	void Run();
 
 	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 

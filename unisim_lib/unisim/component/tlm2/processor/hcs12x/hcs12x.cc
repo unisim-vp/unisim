@@ -86,7 +86,7 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(HCS12X);
 
-	interrupt_request.register_b_transport(this, &HCS12X::AsyncIntThread);
+	interrupt_request.register_b_transport(this, &HCS12X::asyncIntThread);
 	bus_clock_socket.register_b_transport(this, &HCS12X::updateCRGClock);
 
 	SC_THREAD(Run);
@@ -117,38 +117,38 @@ Sync() {
 	wait(time_spent);
 }
 
-void HCS12X ::Sleep() {
+void HCS12X ::sleep() {
 /* TODO:
  * Stop All Clocks and puts the device in standby mode.
  * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode.
  */
 
-	inherited::SetState(STOP);
+	inherited::setState(STOP);
 
 	/*
 	 * Don't do wait because all clocks are stopped and there is no way to reset/resume the simulation.
 	 * The simulation control is done by the debugger engine.
 	 */
-	ReportTrap();
+	reportTrap();
 
 //	wait(irq_event | reset_event);
 
 }
 
-void HCS12X ::Wait() {
+void HCS12X ::wai() {
 /* TODO:
  * Enter a wait state for an integer number of bus clock cycle
  * Only CPU12 clocks are stopped
  * Wait for not masked interrupts or non-masquable interrupts
  */
 
-	inherited::SetState(WAIT);
+	inherited::setState(WAIT);
 
 	wait(irq_event | reset_event);
 
 }
 
-address_t HCS12X ::GetIntVector(uint8_t &ipl)
+address_t HCS12X ::getIntVector(uint8_t &ipl)
 	/*
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
@@ -203,38 +203,39 @@ address_t HCS12X ::GetIntVector(uint8_t &ipl)
 	switch (address & 0x00FF)
 	{
 		case 0x00: { // The CPU is the initiator of the interrupt and only need the value of IVBR (interrupt vector base register)
-			if (HasNonMaskableAccessErrorInterrupt())
+			if (hasNonMaskableAccessErrorInterrupt())
 				address = (address & 0xFF00) | XINT::INT_RAM_ACCESS_VIOLATION_OFFSET;
 
-			if (HasNonMaskableSWIInterrupt())
+			if (hasNonMaskableSWIInterrupt())
 				address = (address & 0xFF00) | XINT::INT_SWI_OFFSET;
 
-			if (HasTrapInterrupt())
+			if (hasTrapInterrupt())
 				address = (address & 0xFF00) | XINT::INT_TRAP_OFFSET;
 
-			if (HasSysCallInterrupt())
+			if (hasSysCallInterrupt())
 				address = (address & 0xFF00) | XINT::INT_SYSCALL_OFFSET;
 		} break;
 		case XINT::INT_SYS_RESET_OFFSET:
 			/*
 			 * Are mapped to vector 0xFFFE: Pin reset, Power-on reset, low-voltage reset, illegal address reset
 			 */
-			ReqReset();
+			reqReset();
 			break;
 		case XINT::INT_CLK_MONITOR_RESET_OFFSET:
-			ReqReset();
+			reqReset();
 			break;
 		case XINT::INT_COP_WATCHDOG_RESET_OFFSET:
-			ReqReset();
+			reqReset();
 			break;
 		case XINT::INT_XIRQ_OFFSET:
-			ReqXIRQInterrupt();
+			reqXIRQInterrupt();
 			break;
 		default:
-			ReqIbitInterrupt();
+			reqIbitInterrupt();
+			break;
 	}
 
-	return address;
+	return (address);
 }
 
 bool
@@ -245,7 +246,7 @@ HCS12X ::BeginSetup() {
 			*inherited::logger << DebugError
 				<< "Error while trying to set up the HCS12X cpu"
 				<< std::endl << EndDebugError;
-		return false;
+		return (false);
 	}
 
 	/* check verbose settings */
@@ -263,7 +264,7 @@ HCS12X ::BeginSetup() {
 				<< std::endl << EndDebugInfo;
 	}
 
-	ComputeInternalTime();
+	computeInternalTime();
 
 	if(debug_enabled &&  inherited::verbose_setup) {
 		*inherited::logger << DebugInfo
@@ -274,21 +275,21 @@ HCS12X ::BeginSetup() {
 			<< EndDebugInfo;
 	}
 
-	return true;
+	return (true);
 
 }
 
 bool
 HCS12X ::Setup(ServiceExportBase *srv_export) {
-	return inherited::Setup(srv_export);
+	return (inherited::Setup(srv_export));
 }
 
 bool
 HCS12X ::EndSetup() {
-	return inherited::EndSetup();
+	return (inherited::EndSetup());
 }
 
-void HCS12X::ComputeInternalTime() {
+void HCS12X::computeInternalTime() {
 
 	/*
 	 * From CRG specification (page 100) :
@@ -398,7 +399,7 @@ Run() {
 				<< "Executing step"
 				<< std::endl << EndDebugInfo;
 
-		opCycles = inherited::Step();
+		opCycles = inherited::step();
 
 		if(debug_enabled && verbose_tlm_run_thread)
 			*inherited::logger << DebugInfo
@@ -428,7 +429,7 @@ double
 HCS12X ::
 GetSimulatedTime() {
 //	return cpu_time.to_seconds();
-	return cpu_time.to_default_time_units()/1e6;
+	return (cpu_time.to_default_time_units()/1e6);
 }
 
 void
@@ -437,7 +438,7 @@ Reset() {
 	inherited::Reset();
 }
 
-void HCS12X::BusWrite(address_t addr, const void *buffer, uint32_t size)
+void HCS12X::busWrite(address_t addr, const void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
@@ -460,7 +461,7 @@ void HCS12X::BusWrite(address_t addr, const void *buffer, uint32_t size)
 	trans->release();
 }
 
-void HCS12X::BusRead(address_t addr, void *buffer, uint32_t size)
+void HCS12X::busRead(address_t addr, void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
@@ -483,13 +484,13 @@ void HCS12X::BusRead(address_t addr, void *buffer, uint32_t size)
 	trans->release();
 }
 
-void HCS12X::AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
+void HCS12X::asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
 {
 	// The XINT wake-up the CPU to handle asynchronous interrupt
 
 	irq_event.notify();
 
-	ReqAsynchronousInterrupt();
+	reqAsynchronousInterrupt();
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
@@ -503,7 +504,7 @@ void HCS12X::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
     // From CRG specification (page 100) : BusClock = 2 * CoreClock
 	core_clock_int = *external_bus_clock / 2;
 
-	ComputeInternalTime();
+	computeInternalTime();
 }
 
 } // end of namespace hcs12x

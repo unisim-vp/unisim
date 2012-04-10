@@ -36,7 +36,7 @@ public:
 	PIMThread(const char *_name, Object *_parent = 0);
 	~PIMThread();
 
-	virtual void Run();
+	virtual void run();
 	double GetSimTime();
 
 	bool UpdateTimeRatio() {

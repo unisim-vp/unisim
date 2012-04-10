@@ -43,7 +43,7 @@
 #include <libxml/xpath.h>
 #include <libxml/parser.h>
 
-#include <systemc.h>
+#include "systemc"
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -69,6 +69,10 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
+
+
+using namespace sc_core;
+using namespace sc_dt;
 
 using namespace std;
 using namespace tlm;

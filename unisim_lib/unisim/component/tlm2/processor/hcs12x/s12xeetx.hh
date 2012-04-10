@@ -10,7 +10,7 @@
 
 #include <queue>
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -41,6 +41,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -187,12 +189,12 @@ private:
 		~TCommand() {}
 
 		void setCmd(uint8_t _cmd) { this->cmd = _cmd; cmdWrite = true; }
-		uint8_t getCmd() { return cmd; }
+		uint8_t getCmd() { return (cmd); }
 		void setAddr(uint16_t _addr) { this->addr = _addr; }
-		uint16_t getAddr() { return addr; }
+		uint16_t getAddr() { return (addr); }
 		void setData(uint16_t _data) { this->data = _data; }
-		uint16_t getData() { return data; }
-		bool isCmdWrite() { return cmdWrite; }
+		uint16_t getData() { return (data); }
+		bool isCmdWrite() { return (cmdWrite); }
 		void invalidateCmdWrite() { cmdWrite = false; }
 
 	private:

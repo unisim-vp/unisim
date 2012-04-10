@@ -90,7 +90,7 @@ public:
 			os << payload.pwmChannel[i] << " ";
 		}
 
-		return os;
+		return (os);
 	}
 
 };
@@ -119,7 +119,7 @@ public:
 
 		os << std::dec;
 
-		return os;
+		return (os);
 	}
 
 };

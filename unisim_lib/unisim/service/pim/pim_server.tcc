@@ -97,12 +97,12 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
 	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, Client<MemoryAccessReportingControl>(_name, _parent)
-	, Client<Memory<ADDRESS> >(_name, _parent)
-	, Client<Disassembly<ADDRESS> >(_name, _parent)
-	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<StatementLookup<ADDRESS> >(_name, _parent)
-	, Client<Registers>(_name, _parent)
+	, unisim::kernel::service::Client<MemoryAccessReportingControl>(_name, _parent)
+	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<Registers>(_name, _parent)
 	, SocketThread()
 	, debug_control_export("debug-control-export", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
@@ -181,12 +181,12 @@ PIMServer<ADDRESS>::~PIMServer()
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetSimTime() {
-	return Object::GetSimulator()->GetSimTime();
+	return (Object::GetSimulator()->GetSimTime());
 }
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetHostTime() {
-	return Object::GetSimulator()->GetHostTime();
+	return (Object::GetSimulator()->GetHostTime());
 }
 
 template <class ADDRESS>
@@ -199,7 +199,7 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	   memory_atom_size != 16)
 	{
 		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
-		return false;
+		return (false);
 	}
 
 	// Open Socket Stream
@@ -222,7 +222,7 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	if(!has_architecture_name)
 	{
 		logger << DebugError << "architecture has no property 'name'" << std::endl << EndDebugError;
-		return false;
+		return (false);
 	}
 
 	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
@@ -280,7 +280,7 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 
 	lst.clear();
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -295,13 +295,13 @@ bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
 	}
 
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::EndSetup() {
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -328,14 +328,14 @@ bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 	while(pos < len && n < 2 * sizeof(ADDRESS))
 	{
 		uint8_t nibble;
-		if(!IsHexChar(s[pos])) break;
-		nibble = HexChar2Nibble(s[pos]);
+		if(!isHexChar(s[pos])) break;
+		nibble = hexChar2Nibble(s[pos]);
 		value <<= 4;
 		value |= nibble;
 		pos++;
 		n++;
 	}
-	return n > 0;
+	return (n > 0);
 }
 
 template <class ADDRESS>
@@ -408,7 +408,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	{
 		if(--counter > 0)
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
+			return (DebugControl<ADDRESS>::DBG_STEP);
 		}
 
 		counter = period;
@@ -425,14 +425,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		}
 		else
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
+			return (DebugControl<ADDRESS>::DBG_STEP);
 		}
 	}
 
 	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
 	{
 		synched = true;
-		return DebugControl<ADDRESS>::DBG_SYNC;
+		return (DebugControl<ADDRESS>::DBG_SYNC);
 	}
 
 	if(trap || running_mode == GDBSERVER_MODE_STEP)
@@ -449,7 +449,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		if(!GetPacket(packet, true))
 		{
 			Object::Stop(0);
-			return DebugControl<ADDRESS>::DBG_KILL;
+			return (DebugControl<ADDRESS>::DBG_KILL);
 		}
 
 		unsigned int pos = 0;
@@ -461,7 +461,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ReadRegisters())
 				{
 					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					return (DebugControl<ADDRESS>::DBG_KILL);
 				}
 				break;
 
@@ -470,7 +470,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ReadRegister(reg_num))
 				{
 					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					return (DebugControl<ADDRESS>::DBG_KILL);
 				}
 				break;
 
@@ -502,7 +502,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ReadMemory(addr, size))
 				{
 					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					return (DebugControl<ADDRESS>::DBG_KILL);
 				}
 				break;
 
@@ -524,7 +524,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				{
 					running_mode = GDBSERVER_MODE_STEP;
 					synched = false;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				if (pc_reg) {
 					*pc_reg = addr;
@@ -538,14 +538,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				}
 				running_mode = GDBSERVER_MODE_STEP;
 				synched = false;
-				return DebugControl<ADDRESS>::DBG_STEP;
+				return (DebugControl<ADDRESS>::DBG_STEP);
 				break;
 
 			case 'c':
 				if(!ParseHex(packet, pos, addr))
 				{
 					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				if (pc_reg) {
 					*pc_reg = addr;
@@ -558,7 +558,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					}
 				}
 				running_mode = GDBSERVER_MODE_CONTINUE;
-				return DebugControl<ADDRESS>::DBG_STEP;
+				return (DebugControl<ADDRESS>::DBG_STEP);
 				break;
 
 			case 'H':
@@ -575,7 +575,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'R':
-				return DebugControl<ADDRESS>::DBG_RESET;
+				return (DebugControl<ADDRESS>::DBG_RESET);
 				break;
 
 			case '?':
@@ -624,7 +624,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 					if (!HandleSymbolLookup()) {
 						Object::Stop(0);
-						return DebugControl<ADDRESS>::DBG_KILL;
+						return (DebugControl<ADDRESS>::DBG_KILL);
 					}
 				}
 				else if(packet == "vCont?")
@@ -634,13 +634,13 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				else if(packet.substr(0, 7) == "vCont;c")
 				{
 					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				else if(packet.substr(0, 7) == "vCont;s")
 				{
 					running_mode = GDBSERVER_MODE_STEP;
 					synched = false;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				else if(packet.substr(0, 6) == "qRcmd,")
 				{
@@ -654,11 +654,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					}
 					PutPacket("");
 				}
+
+				break;
+
 		} // end of switch
 
 	}
 	Object::Stop(0);
-	return DebugControl<ADDRESS>::DBG_KILL;
+	return (DebugControl<ADDRESS>::DBG_KILL);
 }
 
 
@@ -679,7 +682,7 @@ bool PIMServer<ADDRESS>::FlushOutput()
 #endif
 			{
 				logger << DebugError << "can't write into socket" << EndDebugError;
-				return false;
+				return (false);
 			}
 
 			index += r;
@@ -688,7 +691,7 @@ bool PIMServer<ADDRESS>::FlushOutput()
 		while(output_buffer_size > 0);
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -696,11 +699,11 @@ bool PIMServer<ADDRESS>::PutChar(char c)
 {
 	if(output_buffer_size >= sizeof(output_buffer))
 	{
-		if(!FlushOutput()) return false;
+		if(!FlushOutput()) return (false);
 	}
 
 	output_buffer[output_buffer_size++] = c;
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -717,7 +720,7 @@ bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
 	{
 		while(1)
 		{
-			if(!GetChar(c, blocking)) return false;
+			if(!GetChar(c, blocking)) return (false);
 			if(c == '$') break;
 		}
 
@@ -725,7 +728,7 @@ bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
 
 		while(1)
 		{
-			if(!GetChar(c, true)) return false;
+			if(!GetChar(c, true)) return (false);
 			if(c == '$')
 			{
 				checksum = 0;
@@ -742,36 +745,36 @@ bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
 		if(c == '#')
 		{
 			if(!GetChar(c, true)) break;
-			received_checksum = HexChar2Nibble(c) << 4;
+			received_checksum = hexChar2Nibble(c) << 4;
 			if(!GetChar(c, true)) break;
-			received_checksum += HexChar2Nibble(c);
+			received_checksum += hexChar2Nibble(c);
 
 			if(verbose)
 			{
-				logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
+				logger << DebugInfo << "receiving $" << s << "#" << nibble2HexChar((received_checksum >> 4) & 0xf) << nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
 			}
 			if(checksum != received_checksum)
 			{
-				if(!PutChar('-')) return false;
-				if(!FlushOutput()) return false;
+				if(!PutChar('-')) return (false);
+				if(!FlushOutput()) return (false);
 			}
 			else
 			{
-				if(!PutChar('+')) return false;
-				if(!FlushOutput()) return false;
+				if(!PutChar('+')) return (false);
+				if(!FlushOutput()) return (false);
 
 				if(s.length() >= 3 && s[2] == ':')
 				{
-					if(!PutChar(s[0])) return false;
-					if(!PutChar(s[1])) return false;
-					if(!FlushOutput()) return false;
+					if(!PutChar(s[0])) return (false);
+					if(!PutChar(s[1])) return (false);
+					if(!FlushOutput()) return (false);
 					s.erase(0, 3);
 				}
-				return true;
+				return (true);
 			}
 		}
 	}
-	return false;
+	return (false);
 }
 
 template <class ADDRESS>
@@ -784,7 +787,7 @@ bool PIMServer<ADDRESS>::PutPacket(const string& s)
 
 	do
 	{
-		if(!PutChar('$')) return false;
+		if(!PutChar('$')) return (false);
 		checksum = 0;
 		pos = 0;
 		len = s.length();
@@ -792,20 +795,20 @@ bool PIMServer<ADDRESS>::PutPacket(const string& s)
 		while(pos < len)
 		{
 			c = s[pos];
-			if(!PutChar(c)) return false;
+			if(!PutChar(c)) return (false);
 			checksum += (uint8_t) c;
 			pos++;
 		}
-		if(!PutChar('#')) return false;
-		if(!PutChar(Nibble2HexChar(checksum >> 4))) return false;
-		if(!PutChar(Nibble2HexChar(checksum & 0xf))) return false;
+		if(!PutChar('#')) return (false);
+		if(!PutChar(nibble2HexChar(checksum >> 4))) return (false);
+		if(!PutChar(nibble2HexChar(checksum & 0xf))) return (false);
 		if(verbose)
 		{
-			logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
+			logger << DebugInfo << "sending $" << s << "#" << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf) << EndDebugInfo;
 		}
-		if(!FlushOutput()) return false;
+		if(!FlushOutput()) return (false);
 	} while(GetChar(c, true) && c != '+');
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -814,13 +817,13 @@ bool PIMServer<ADDRESS>::OutputText(const char *s, int count)
 	string packet = "";
 	string tmpPacket;
 
-	TextToHex(s, count, tmpPacket);
+	textToHex(s, count, tmpPacket);
 
 	packet.append("O");
 
 	packet.append(tmpPacket);
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -833,12 +836,12 @@ bool PIMServer<ADDRESS>::ReadRegisters()
 		ADDRESS val = **it;
 		string hex;
 
-		Number2HexString((uint8_t*) &val, ((VariableBase *) *it)->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+		number2HexString((uint8_t*) &val, ((VariableBase *) *it)->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 		packet += hex;
 	}
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 
 }
 
@@ -852,15 +855,15 @@ bool PIMServer<ADDRESS>::WriteRegisters(const string& hex)
 	{
 		ADDRESS val = 0;
 		string subhex = hex.substr(pos, 2 * (*it)->GetBitSize()/8);
-		if (HexString2Number(subhex, &val, (*it)->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
+		if (hexString2Number(subhex, &val, (*it)->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
 			*(*it) = val;
 		} else {
-			return false;
+			return (false);
 		}
 
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -870,9 +873,9 @@ bool PIMServer<ADDRESS>::ReadRegister(unsigned int regnum)
 	string packet;
 	string endianstr;
 	ADDRESS val = *(simulator_registers[regnum]);
-	Number2HexString((uint8_t*) &val, (simulator_registers[regnum])->GetBitSize()/8, packet, (endian == GDB_BIG_ENDIAN)? "big":"little");
+	number2HexString((uint8_t*) &val, (simulator_registers[regnum])->GetBitSize()/8, packet, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 
 }
 
@@ -884,13 +887,13 @@ bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 	ADDRESS val = 0;
 	unsigned int pos = 0;
 
-	if (HexString2Number(hex, &val, (simulator_registers[regnum])->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
+	if (hexString2Number(hex, &val, (simulator_registers[regnum])->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
 		*(simulator_registers[regnum]) = val;
 	} else {
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -903,7 +906,7 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 
 		if(!GetPacket(packet, true))
 		{
-			return false;
+			return (false);
 		}
 
 		if (packet.compare("OK") == 0) {
@@ -911,21 +914,21 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 		} else if (packet.substr(0, 8).compare("qSymbol:") == 0) {
 			vector<string> segments;
 
-			StringSplit(packet, ":", segments);
+			stringSplit(packet, ":", segments);
 
 			string name;
 			string value;
 
 			if (segments.size() == 2) // read request
 			{
-				HexToText(segments[1].c_str(), segments[1].size(), name);
+				hexToText(segments[1].c_str(), segments[1].size(), name);
 
 				ReadSymbol(name);
 
 			}
 			else if (segments.size() == 3) // write_symbol request
 			{
-				HexToText(segments[2].c_str(), segments[2].size(), name);
+				hexToText(segments[2].c_str(), segments[2].size(), name);
 
 				WriteSymbol(name, segments[1]);
 			}
@@ -945,7 +948,7 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 		}
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -978,10 +981,10 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 			} else {
 				hex_index = 1;
 				value_index = size - (hexValue.length() / 2) - 1;
-				value[value_index++] = HexChar2Nibble(hexValue[0]);
+				value[value_index++] = hexChar2Nibble(hexValue[0]);
 			}
 			for (; (hex_index < hexValue.length()); hex_index = hex_index+2) {
-				val = (HexChar2Nibble(hexValue[hex_index]) << 4) | HexChar2Nibble(hexValue[hex_index+1]);
+				val = (hexChar2Nibble(hexValue[hex_index]) << 4) | hexChar2Nibble(hexValue[hex_index+1]);
 				value[value_index++] = val;
 			}
 
@@ -993,7 +996,7 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 
 //				PutPacket("NOK");
 				OutputText("NOK", 3);
-				return false;
+				return (false);
 			} else {
 //				PutPacket("OK");
 				OutputText("OK", 2);
@@ -1004,7 +1007,7 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 
 	}
 
-	return true;
+	return (true);
 
 }
 
@@ -1040,7 +1043,7 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 
 			string hexName;
 
-			TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
+			textToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
 
 			packet.append("qSymbol:");
 			packet.append(value);
@@ -1071,7 +1074,7 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 	}
 
 
-	return true;
+	return (true);
 
 }
 
@@ -1097,9 +1100,9 @@ bool PIMServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string&
 					value = 0;
 				}
 			}
-			ch[0] = Nibble2HexChar(value >> 4);
+			ch[0] = nibble2HexChar(value >> 4);
 			packet += ch;
-			ch[0] = Nibble2HexChar(value & 0xf);
+			ch[0] = nibble2HexChar(value & 0xf);
 			packet += ch;
 			if((addr + 1) == 0) overwrapping = true;
 		} while(++addr, --size);
@@ -1107,10 +1110,10 @@ bool PIMServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string&
 
 	if(read_error)
 	{
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 
@@ -1127,7 +1130,7 @@ bool PIMServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1143,7 +1146,7 @@ bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		do
 		{
 			uint8_t value;
-			value = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
+			value = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
 			if(!overwrapping)
 			{
 				if(!memory_import->WriteMemory(addr, &value, 1))
@@ -1163,7 +1166,7 @@ bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		}
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -1183,7 +1186,7 @@ void PIMServer<ADDRESS>::Kill()
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReportProgramExit()
 {
-	return PutPacket("W00");
+	return (PutPacket("W00"));
 }
 
 template <class ADDRESS>
@@ -1191,7 +1194,7 @@ bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	char packet[4];
 	sprintf(packet, "S%02x", signum);
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1216,7 +1219,7 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		watchpoint_hit = NULL;
 	}
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1235,32 +1238,32 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.SetBreakpoint(addr + i)) return false;
+				if(!breakpoint_registry.SetBreakpoint(addr + i)) return (false);
 			}
 			if(memory_access_reporting_control_import)
 				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 						breakpoint_registry.HasBreakpoints());
-			return true;
+			return (true);
 		case 2:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+				return (false);
 		case 3:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+				return (false);
 
 		case 4:
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1270,18 +1273,18 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 							watchpoint_registry.HasWatchpoints());
 			}
 			else
-				return false;
+				return (false);
 			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							watchpoint_registry.HasWatchpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+				return (false);
 	}
-	return false;
+	return (false);
 }
 
 template <class ADDRESS>
@@ -1300,12 +1303,12 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return false;
+				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return (false);
 			}
 			if(memory_access_reporting_control_import)
 				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
 						breakpoint_registry.HasBreakpoints());
-			return true;
+			return (true);
 
 		case 2:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1314,11 +1317,11 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return true;
+				return (true);
 			}
 			else {
 
-				return false;
+				return (false);
 			}
 		case 3:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
@@ -1326,10 +1329,10 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+				return (false);
 		case 4:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
@@ -1338,18 +1341,18 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 							breakpoint_registry.HasBreakpoints());
 			}
 			else
-				return false;
+				return (false);
 			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+				return (false);
 	}
-	return false;
+	return (false);
 }
 
 // *** Start ************ REDA ADDED CODE ****************
@@ -1386,7 +1389,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			switch (((VariableBase *) *it)->GetFormat()) {
 				case VariableBase::FMT_HEX: format = "HEX"; break;
 				case VariableBase::FMT_DEC: format = "DEC"; break;
-				default: format = "Default";
+				default: format = "Default"; break;
 			}
 
 			const char *description = ((VariableBase *) *it)->GetDescription();
@@ -1623,7 +1626,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			ADDRESS addr = *pc_reg;
 			long mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
 
-			Number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+			number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 			sstr << hex << ":";
 
@@ -1683,14 +1686,14 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				string hex = command.substr(start_index);
 				start_index = end_index+1;
 
-				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				hexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				string packet("T05");
 				std::stringstream sstr;
 
 				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
 
-				Number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				packet += hex;
 
@@ -1721,14 +1724,14 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				string hex = command.substr(start_index);
 				start_index = end_index+1;
 
-				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				hexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				string packet("T05");
 				std::stringstream sstr;
 
 				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
 
-				Number2HexString((uint8_t*) &mcuAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &mcuAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				packet += hex;
 

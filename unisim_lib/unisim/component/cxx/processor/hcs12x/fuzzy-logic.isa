@@ -173,7 +173,7 @@ rev.execute = {
 	 	}
 	 	
 	 	// check asynchronous interruptions
-	 	if (cpu->HasAsynchronousInterrupt())
+	 	if (cpu->hasAsynchronousInterrupt())
 		{
 			throw AsynchronousException();
 		}
@@ -257,7 +257,7 @@ revw.execute = {
 	 	}
 	 
 	  	// check asynchronous interruptions
-	 	if (cpu->HasAsynchronousInterrupt())
+	 	if (cpu->hasAsynchronousInterrupt())
 		{
 			throw AsynchronousException();
 		}
@@ -333,7 +333,7 @@ wav.execute = {
 		 **/
 
 	 	// check asynchronous interruptions
-	 	if (cpu->HasAsynchronousInterrupt())
+	 	if (cpu->hasAsynchronousInterrupt())
 		{
 			cpu->setRegSP(cpu->getRegSP()-2);
 			cpu->memWrite16(cpu->getRegSP(), cpu->getRegTMP(2));

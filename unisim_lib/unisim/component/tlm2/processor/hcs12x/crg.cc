@@ -45,10 +45,10 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, Client<TrapReporting>(name, parent)
-	, Service<Memory<service_address_t> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Client<Memory<service_address_t> >(name, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, unisim::kernel::service::Service<Memory<service_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Client<Memory<service_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -127,10 +127,10 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(CRG);
 
-	SC_THREAD(RunPLL_LockTrack_Detector);
-	SC_THREAD(RunRTI);
-	SC_THREAD(RunCOP);
-	SC_THREAD(RunClockMonitor);
+	SC_THREAD(runPLL_LockTrack_Detector);
+	SC_THREAD(runRTI);
+	SC_THREAD(runCOP);
+	SC_THREAD(runClockMonitor);
 
 }
 
@@ -190,10 +190,10 @@ bool CRG::read(unsigned int offset, const void *buffer, unsigned int data_length
 		case FORBYP: *((uint8_t *) buffer) = 0; break;
 		case CTCTL: *((uint8_t *) buffer) = 0; break;
 		case ARMCOP: *((uint8_t *) buffer) = 0; break;
-		default: return false;
+		default: return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 //=====================================================================
@@ -207,7 +207,7 @@ bool CRG::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 		case SYNR: {
 			 // if (PLLSEL == 1) then return;
 			if ((clksel_register & 0x80) != 0) {
-				return true;
+				return (true);
 			}
 
 			synr_register = value & 0x3F;
@@ -222,7 +222,7 @@ bool CRG::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 		case REFDV: {
 			 // if (PLLSEL == 1) then return;
 			if ((clksel_register & 0x80) != 0) {
-				return true;
+				return (true);
 			}
 
 			refdv_register = value & 0x3F;
@@ -233,7 +233,7 @@ bool CRG::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 		} break;
 		case CTFLG: {
 			// This register is reserved for factory testing
-			return true;
+			return (true);
 		} break;
 		case CRGFLG: {
 
@@ -406,17 +406,17 @@ bool CRG::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 			}
 
 		} break;
-		default: return false;
+		default: return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 void CRG::systemReset() {
 	assertInterrupt(XINT::INT_SYS_RESET_OFFSET);
 }
 
-void CRG::RunClockMonitor() {
+void CRG::runClockMonitor() {
 
 /**
  * If no OSCCLK edges are detected within a certain time, the clock monitor within the oscillator block
@@ -581,7 +581,7 @@ void CRG::wakeupFromStopMode() {
 
 }
 
-void CRG::RunCOP() {
+void CRG::runCOP() {
 
 	/**
 	 * Windowed COP operation is enabled by setting WCOP bit in the COPCTL register.
@@ -602,9 +602,9 @@ void CRG::RunCOP() {
 		// is SCM bit set
 		if ((crgflg_register & 0x01) != 0) {
 			// PLLCLK at minimum frequency Fscm;
-			cop_timeout = pll_clock * (pow(2,14) * (copctl_register & 0x07));
+			cop_timeout = pll_clock * (pow((double) 2,14) * (copctl_register & 0x07));
 		} else {
-			cop_timeout = oscillator_clock * (pow(2,14) * (copctl_register & 0x07));
+			cop_timeout = oscillator_clock * (pow((double) 2,14) * (copctl_register & 0x07));
 		}
 
 		sc_time cop_timeout_75 = cop_timeout * 0.75;
@@ -639,7 +639,7 @@ void CRG::RunCOP() {
 	}
 }
 
-void CRG::RunRTI() {
+void CRG::runRTI() {
 	/**
 	 * - CRG generates a real-time interrupt when the selected interrupt time period elapses
 	 * - RTI interrupts are locally disabled by setting the RTIE bit to 0
@@ -719,12 +719,12 @@ tlm_sync_enum CRG::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		return TLM_COMPLETED;
+		return (TLM_COMPLETED);
 	}
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
-void CRG::RunPLL_LockTrack_Detector() {
+void CRG::runPLL_LockTrack_Detector() {
 
 	while (true) {
 
@@ -949,24 +949,24 @@ bool CRG::BeginSetup() {
 //	sc_time		check_window;
 //	uint32_t	check_window_int;
 
-	return true;
+	return (true);
 }
 
 bool CRG::Setup(ServiceExportBase *srv_export) {
 
-	return true;
+	return (true);
 }
 
 bool CRG::EndSetup() {
-	return true;
+	return (true);
 }
 
 Register* CRG::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -1016,14 +1016,14 @@ bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 			case FORBYP: *(uint8_t *) buffer = forbyp_register; break;
 			case CTCTL: *(uint8_t *) buffer = ctctl_register; break;
 			case ARMCOP: *(uint8_t *) buffer = armcop_register; break;
-			default: return false;
+			default: return (false);
 		}
 
-		return true;
+		return (true);
 
 	}
 
-	return false;
+	return (false);
 }
 
 //bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
@@ -1048,7 +1048,7 @@ bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
 
 		if (size == 0) {
-			return true;
+			return (true);
 		}
 
 		service_address_t offset = addr-baseAddress;
@@ -1068,10 +1068,10 @@ bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 			case ARMCOP: armcop_register = *((uint8_t *) buffer); break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return false;
+	return (false);
 
 }
 

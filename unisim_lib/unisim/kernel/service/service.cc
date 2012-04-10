@@ -2276,6 +2276,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			default:
 				cerr << "Internal error while parsing command line arguments" << endl;
 				state = -1;
+				break;
 		}
 	}
 
@@ -2443,6 +2444,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			default:
 				cerr << "Internal error while parsing command line arguments" << endl;
 				state = -1;
+				break;
 		}
 	}
 	

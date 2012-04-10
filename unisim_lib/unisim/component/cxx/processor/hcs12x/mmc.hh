@@ -222,7 +222,7 @@ public:
 
 	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
-	void SplitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);
+	void splitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);
 
 	//=====================================================================
 	//=             MMC Registers Interface interface methods               =
@@ -319,22 +319,22 @@ inline bool MMC::isPaged(address_t addr, page_t page, bool isGlobal, bool debugl
 
 		// Global PAGED RAM
 		if ((global_address >= GLOBAL_RAM_PAGED_LOW_OFFSET) && (global_address <= GLOBAL_RAM_PAGED_HIGH_OFFSET)) {
-			return true;
+			return (true);
 		}
 
 		// Global PAGED EEPROM
 		if ((global_address >= GLOBAL_EEPROM_PAGED_LOW_OFFSET) && (global_address <= GLOBAL_EEPROM_PAGED_HIGH_OFFSET)) {
-			return true;
+			return (true);
 		}
 
 		// Global EXTERNAL SPACE
 		if ((global_address >= GLOBAL_EXTERNAL_LOW_OFFSET) && (global_address <= GLOBAL_EXTERNAL_HIGH_OFFSET)) {
-			return true;
+			return (true);
 		}
 
 		// Global PAGED FLASH
 		if ((global_address >= GLOBAL_FLASH_PAGED_LOW_OFFSET) && (global_address <= GLOBAL_FLASH_PAGED_HIGH_OFFSET)) {
-			return true;
+			return (true);
 		}
 
 	} else {
@@ -345,7 +345,7 @@ inline bool MMC::isPaged(address_t addr, page_t page, bool isGlobal, bool debugl
 				page = getEpage();
 			}
 
-			return true;
+			return (true);
 		}
 
 		// RAM window
@@ -354,7 +354,7 @@ inline bool MMC::isPaged(address_t addr, page_t page, bool isGlobal, bool debugl
 				page = getRpage();
 			}
 
-			return true;
+			return (true);
 		}
 
 		// FLASH window
@@ -363,11 +363,11 @@ inline bool MMC::isPaged(address_t addr, page_t page, bool isGlobal, bool debugl
 				page = getPpage();
 			}
 
-			return true;
+			return (true);
 		}
 	}
 
-	return false;
+	return (false);
 }
 
 inline physical_address_t MMC::getPagedAddress(address_t cpu_address) {
@@ -386,7 +386,7 @@ inline physical_address_t MMC::getPagedAddress(address_t cpu_address) {
 		address = getPagedFlashAddress(cpu_address);
 	}
 
-	return address;
+	return (address);
 }
 
 inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload, uint8_t debug_page) {
@@ -424,7 +424,7 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 
 	}
 
-	return address;
+	return (address);
 }
 
 
@@ -435,22 +435,22 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 inline bool MMC::read(unsigned int address, const void *buffer, unsigned int data_length)
 {
 
-	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { *((uint8_t *) buffer) = mmcctl0; return true; }
-	if (address == MMC_REGS_ADDRESSES[MODE]) { *((uint8_t *) buffer) = mode; return true; }
-	if (address == MMC_REGS_ADDRESSES[GPAGE]) { *((uint8_t *) buffer) = gpage; return true; }
-	if (address == MMC_REGS_ADDRESSES[DIRECT]) { *((uint8_t *) buffer) = direct; return true; }
-	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { *((uint8_t *) buffer) = mmcctl1; return true; }
-	if (address == MMC_REGS_ADDRESSES[RPAGE]) { *((uint8_t *) buffer) = rpage; return true; }
-	if (address == MMC_REGS_ADDRESSES[EPAGE]) { *((uint8_t *) buffer) = epage; return true; }
-	if (address == MMC_REGS_ADDRESSES[PPAGE]) { *((uint8_t *) buffer) = ppage; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { *((uint8_t *) buffer) = ramwpc; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { *((uint8_t *) buffer) = ramxgu; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { *((uint8_t *) buffer) = ramshl; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { *((uint8_t *) buffer) = ramshu; return true; }
+	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { *((uint8_t *) buffer) = mmcctl0; return (true); }
+	if (address == MMC_REGS_ADDRESSES[MODE]) { *((uint8_t *) buffer) = mode; return (true); }
+	if (address == MMC_REGS_ADDRESSES[GPAGE]) { *((uint8_t *) buffer) = gpage; return (true); }
+	if (address == MMC_REGS_ADDRESSES[DIRECT]) { *((uint8_t *) buffer) = direct; return (true); }
+	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { *((uint8_t *) buffer) = mmcctl1; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RPAGE]) { *((uint8_t *) buffer) = rpage; return (true); }
+	if (address == MMC_REGS_ADDRESSES[EPAGE]) { *((uint8_t *) buffer) = epage; return (true); }
+	if (address == MMC_REGS_ADDRESSES[PPAGE]) { *((uint8_t *) buffer) = ppage; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { *((uint8_t *) buffer) = ramwpc; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { *((uint8_t *) buffer) = ramxgu; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { *((uint8_t *) buffer) = ramshl; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { *((uint8_t *) buffer) = ramshu; return (true); }
 
 	std::stringstream sstr;
 	sstr << "MMC::read: unhandled address 0x" << std::hex << address << std::dec;
-	return false;
+	return (false);
 }
 
 inline bool MMC::write(unsigned int address, const void *buffer, unsigned int data_length)
@@ -458,61 +458,62 @@ inline bool MMC::write(unsigned int address, const void *buffer, unsigned int da
 
 	uint8_t val = *((uint8_t *) buffer);
 
-	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { mmcctl0 = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[MODE]) { mode = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[GPAGE]) { gpage = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { mmcctl0 = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[MODE]) { mode = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[GPAGE]) { gpage = val; return (true); }
 	if (address == MMC_REGS_ADDRESSES[DIRECT]) {
 		if (!directSet) {
 			direct = val;
 			directSet = true;
 		}
-		return true;
+		return (true);
 	}
-	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { mmcctl1 = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[RPAGE]) { rpage = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[EPAGE]) { epage = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[PPAGE]) { ppage = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { ramwpc = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { ramxgu = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { ramshl = val; return true; }
-	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { ramshu = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { mmcctl1 = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RPAGE]) { rpage = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[EPAGE]) { epage = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[PPAGE]) { ppage = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { ramwpc = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { ramxgu = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { ramshl = val; return (true); }
+	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { ramshu = val; return (true); }
 
-	return false;
+	return (false);
 }
 
 
-inline uint8_t MMC::getMmcctl0 () { return mmcctl0; }
+inline uint8_t MMC::getMmcctl0 () { return (mmcctl0); }
 
-inline uint8_t MMC::getMode () { return mode; }
+inline uint8_t MMC::getMode () { return (mode); }
 
-inline uint8_t MMC::getMmcctl1 () { return mmcctl1; }
+inline uint8_t MMC::getMmcctl1 () { return (mmcctl1); }
 
-inline uint8_t MMC::getRamwpc () { return ramwpc; }
+inline uint8_t MMC::getRamwpc () { return (ramwpc); }
 
-inline uint8_t MMC::getRamxgu () { return ramxgu; }
+inline uint8_t MMC::getRamxgu () { return (ramxgu); }
 
-inline uint8_t MMC::getRamshl () { return ramshl; }
+inline uint8_t MMC::getRamshl () { return (ramshl); }
 
-inline uint8_t MMC::getRamshu () { return ramshu; }
+inline uint8_t MMC::getRamshu () { return (ramshu); }
 
-inline uint8_t MMC::getGpage () { return gpage; }
+inline uint8_t MMC::getGpage () { return (gpage); }
 
-inline uint8_t MMC::getDirect () { return direct; }
+inline uint8_t MMC::getDirect () { return (direct); }
 inline physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 
 	uint8_t _direct = getDirect ();
 
 	if (_direct != 0)
 	{
-		return (((address_t) getDirect()) << DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF);
+		return ((((address_t) getDirect()) << DIRECT_ADDRESS_SIZE) | ((address_t) lowByte & 0x00FF));
 	} else
 	{
-		return lowByte;
+		return (lowByte);
 	}
 
 }
 
-inline uint8_t MMC::getRpage () { return rpage; }
+inline uint8_t MMC::getRpage () { return (rpage); }
+
 inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	uint8_t _rpage;
@@ -541,35 +542,36 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool isGl
 	}
 
 	if (isPaged(logicalAddress, _rpage, isGlobal, debugload)) {
-		return shifted_gpage | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
+		return (shifted_gpage | ((physical_address_t) _rpage << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress));
 	} else {
 		if ((logicalAddress > 0x1FFF) && (logicalAddress < 0x3000)) {
-			return shifted_gpage | ((physical_address_t) URPAGE_1 << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
+			return (shifted_gpage | ((physical_address_t) URPAGE_1 << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress));
 		}
 		if ((logicalAddress > 0x2FFF) && (logicalAddress < 0x4000)) {
-			return shifted_gpage | ((physical_address_t) URPAGE_2 << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress);
+			return (shifted_gpage | ((physical_address_t) URPAGE_2 << RAM_ADDRESS_SIZE) | ((address_t) RAM_CPU_ADDRESS_BITS & logicalAddress));
 		}
 	}
 
-	return logicalAddress;
+	return (logicalAddress);
 }
 
 inline physical_address_t MMC::getPagedRamAddress(address_t logicalAddress) {
 
 
 	if ((logicalAddress > 0x1FFF) && (logicalAddress < 0x3000)) {
-		return logicalAddress;
+		return (logicalAddress);
 	}
 	else if ((logicalAddress > 0x2FFF) && (logicalAddress < 0x4000)) {
-		return logicalAddress;
+		return (logicalAddress);
 	}
 	else {
-		return ((physical_address_t) getRpage() << (sizeof(address_t) * 8)) | logicalAddress;
+		return (((physical_address_t) getRpage() << (sizeof(address_t) * 8)) | logicalAddress);
 	}
 
 }
 
-inline uint8_t MMC::getEpage () { return epage; }
+inline uint8_t MMC::getEpage () { return (epage); }
+
 inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	uint8_t _epage;
@@ -594,28 +596,29 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool i
 	}
 
 	if (isPaged(logicalAddress, _epage, isGlobal, debugload)) {
-		return shifted_gpage | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
+		return (shifted_gpage | ((physical_address_t) _epage << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress));
 	} else {
 		if ((logicalAddress > 0x0BFF) && (logicalAddress < 0x1000)) {
-			return shifted_gpage | ((physical_address_t) UEPAGE << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress);
+			return (shifted_gpage | ((physical_address_t) UEPAGE << EEPROM_ADDRESS_SIZE) | ((address_t) EEPROM_CPU_ADDRESS_BITS & logicalAddress));
 		}
 	}
 
-	return logicalAddress;
+	return (logicalAddress);
 }
 
 inline physical_address_t MMC::getPagedEepromAddress(address_t logicalAddress) {
 
 	if ((logicalAddress > 0x0BFF) && (logicalAddress < 0x1000)) {
-		return logicalAddress;
+		return (logicalAddress);
 	}
 	else {
-		return ((physical_address_t) getEpage() << (sizeof(address_t) * 8)) | logicalAddress;
+		return (((physical_address_t) getEpage() << (sizeof(address_t) * 8)) | logicalAddress);
 	}
 
 }
 
-inline uint8_t MMC::getPpage () { return ppage; }
+inline uint8_t MMC::getPpage () { return (ppage); }
+
 inline void MMC::setPpage(uint8_t page) { ppage = page; }
 
 inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
@@ -642,7 +645,7 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool is
 		// if ((ROMHM == 1) && logical_address in [0x4000-0x8000]) then  External Access window [0x14_4000, 0x14_8000]
 		if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
 			if ((getMmcctl1() & ROMHM_MASK) != 0) { // 0x4000-0x7FFF is mapped to 0x14_4000-0x14_7FFF (external access)
-				return (physical_address_t) (0x14 << 16) | logicalAddress;
+				return ((physical_address_t) (0x14 << 16) | logicalAddress);
 			} else { // 0x4000-0x7FFF is mapped to 0x7F_4000-0x7F_7FFF (page = 0xFD)
 				_ppage = 0xFD;
 			}
@@ -652,29 +655,29 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool is
 	}
 
 	if (isPaged(logicalAddress, _ppage, isGlobal, debugload)) {
-		return shifted_gpage | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+		return (shifted_gpage | ((physical_address_t) _ppage << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress));
 	} else {
 		if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
-			return shifted_gpage | ((physical_address_t) UPPAGE_1 << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+			return (shifted_gpage | ((physical_address_t) UPPAGE_1 << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress));
 		}
 		if ((logicalAddress > 0xBFFF) && (logicalAddress <= 0xFFFF)) {
-			return shifted_gpage | ((physical_address_t) UPPAGE_2 << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress);
+			return (shifted_gpage | ((physical_address_t) UPPAGE_2 << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_CPU_ADDRESS_BITS & logicalAddress));
 		}
 	}
 
-	return logicalAddress;
+	return (logicalAddress);
 
 }
 
 inline physical_address_t MMC::getPagedFlashAddress(address_t logicalAddress) {
 
 	if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
-		return logicalAddress;
+		return (logicalAddress);
 	}
 	else if ((logicalAddress > 0xBFFF) && (logicalAddress <= 0xFFFF)) {
-		return logicalAddress;
+		return (logicalAddress);
 	} else {
-		return ((physical_address_t) getPpage() << (sizeof(address_t) * 8)) | logicalAddress;
+		return (((physical_address_t) getPpage() << (sizeof(address_t) * 8)) | logicalAddress);
 	}
 
 }

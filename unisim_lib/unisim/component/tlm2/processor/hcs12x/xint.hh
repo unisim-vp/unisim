@@ -44,7 +44,7 @@
 #include <cmath>
 #include <map>
 
-#include <systemc.h>
+#include <systemc>
 #include "tlm_utils/tlm_quantumkeeper.h"
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
@@ -69,6 +69,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -164,7 +166,7 @@ public:
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
 
-	void Run(); // Priority Decoder and Interrupt selection
+	void run(); // Priority Decoder and Interrupt selection
 
 	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -256,13 +258,13 @@ public:
 	//=              Interrupt Vectors             =
 	//==============================================
 
-	address_t get_SysReset_Vector() { return 0xFFFE; }
-	address_t get_IllegalAccessReset_Vector() { return 0xFFFE; }
-	address_t get_ClockMonitorReset_Vector() { return 0xFFFC; }
-	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; }
-	address_t get_XIRQ_Vector() { return ((address_t) getIVBR() << 8) + INT_XIRQ_OFFSET; }
+	address_t get_SysReset_Vector() { return (0xFFFE); }
+	address_t get_IllegalAccessReset_Vector() { return (0xFFFE); }
+	address_t get_ClockMonitorReset_Vector() { return (0xFFFC); }
+	address_t get_COPWatchdogReset_Vector() { return (0xFFFA); }
+	address_t get_XIRQ_Vector() { return (((address_t) getIVBR() << 8) + INT_XIRQ_OFFSET); }
 
-	address_t get_Spurious_Vector() { return ((address_t) getIVBR() << 8) + INT_SPURIOUS_OFFSET; } // Spurious interrupt
+	address_t get_Spurious_Vector() { return (((address_t) getIVBR() << 8) + INT_SPURIOUS_OFFSET); } // Spurious interrupt
 
 /*
 	address_t get_Trap_Vector() { return ((address_t) getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)

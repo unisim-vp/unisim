@@ -57,9 +57,9 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 {
 	SC_HAS_PROCESS(XML_ATD_PWM_STUB);
 
-	SC_THREAD(ProcessATD0);
-	SC_THREAD(ProcessATD1);
-	SC_THREAD(ProcessPWM);
+	SC_THREAD(processATD0);
+	SC_THREAD(processATD1);
+	SC_THREAD(processPWM);
 	
 }
 
@@ -171,7 +171,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	return (result);
 }
 
-void XML_ATD_PWM_STUB::ProcessATD0()
+void XML_ATD_PWM_STUB::processATD0()
 {
 	srand(12345);
 
@@ -230,7 +230,7 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 				}
 			}
 
-			Output_ATD0(atd0_anValue);
+			output_ATD0(atd0_anValue);
 
 		}
 
@@ -239,7 +239,7 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 }
 
 
-void XML_ATD_PWM_STUB::ProcessATD1()
+void XML_ATD_PWM_STUB::processATD1()
 {
 	srand(12345);
 
@@ -296,14 +296,14 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 				}
 			}
 
-			Output_ATD1(atd1_anValue);
+			output_ATD1(atd1_anValue);
 
 		}
 	}
 
 }
 
-void XML_ATD_PWM_STUB::ProcessPWM()
+void XML_ATD_PWM_STUB::processPWM()
 {
 
 	bool pwmValue[PWM_SIZE];
@@ -315,7 +315,7 @@ void XML_ATD_PWM_STUB::ProcessPWM()
 
 	while(true)
 	{
-		Input(pwmValue);
+		input(pwmValue);
 	}
 
 }

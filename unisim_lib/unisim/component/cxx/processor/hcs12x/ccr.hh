@@ -148,47 +148,47 @@ private:
 }; // end class CCR_t
 
 
-inline uint8_t CCR_t::getC() { return *ccrReg & SETC;};
+inline uint8_t CCR_t::getC() { return (*ccrReg & SETC);};
 inline void 	CCR_t::setC() { *ccrReg |= SETC;};
 inline void 	CCR_t::clrC() { *ccrReg &= CLRC;};
 
-inline uint8_t CCR_t::getV() { return (*ccrReg & SETV) >> 1;};
+inline uint8_t CCR_t::getV() { return ((*ccrReg & SETV) >> 1);};
 inline void 	CCR_t::setV() { *ccrReg |= SETV;};
 inline void 	CCR_t::clrV() { *ccrReg &= CLRV;};
 
-inline uint8_t CCR_t::getZ() { return (*ccrReg & SETZ) >> 2;};
+inline uint8_t CCR_t::getZ() { return ((*ccrReg & SETZ) >> 2);};
 inline void 	CCR_t::setZ() { *ccrReg |= SETZ;};
 inline void 	CCR_t::clrZ() { *ccrReg &= CLRZ;};
 
-inline uint8_t CCR_t::getN() { return (*ccrReg & SETN) >> 3;};
+inline uint8_t CCR_t::getN() { return ((*ccrReg & SETN) >> 3);};
 inline void 	CCR_t::setN() { *ccrReg |= SETN;};
 inline void 	CCR_t::clrN() { *ccrReg &= CLRN;};
 
-inline uint8_t CCR_t::getI() { return (*ccrReg & SETI) >> 4;};
+inline uint8_t CCR_t::getI() { return ((*ccrReg & SETI) >> 4);};
 inline void 	CCR_t::setI() { *ccrReg |= SETI;};
 inline void 	CCR_t::clrI() { *ccrReg &= CLRI;};
 
-inline uint8_t CCR_t::getH() { return (*ccrReg & SETH) >> 5;};
+inline uint8_t CCR_t::getH() { return ((*ccrReg & SETH) >> 5);};
 inline void 	CCR_t::setH() { *ccrReg |= SETH;};
 inline void 	CCR_t::clrH() { *ccrReg &= CLRH;};
 
-inline uint8_t CCR_t::getX() { return (*ccrReg & SETX) >> 6;};
+inline uint8_t CCR_t::getX() { return ((*ccrReg & SETX) >> 6);};
 inline void	CCR_t::setX() { *ccrReg |= SETX;};
 inline void 	CCR_t::clrX() { *ccrReg &= CLRX;};
 
-inline uint8_t CCR_t::getS() { return (*ccrReg & SETS) >> 7;};
+inline uint8_t CCR_t::getS() { return ((*ccrReg & SETS) >> 7);};
 inline void 	CCR_t::setS() { *ccrReg |= SETS;};
 inline void 	CCR_t::clrS() { *ccrReg &= CLRS;};
 
 // IPL is 3-bits
-inline uint8_t CCR_t::getIPL() { return (*ccrReg & SETIPL) >> 8;};
+inline uint8_t CCR_t::getIPL() { return ((*ccrReg & SETIPL) >> 8);};
 inline void 	CCR_t::setIPL(uint8_t newIPL) { clrIPL(); *ccrReg |= (((uint16_t) newIPL) & 0x00FF) << 8;};
 inline void 	CCR_t::clrIPL() { *ccrReg &= CLRIPL;};
 
 inline uint8_t CCR_t::getCCRLow() {
 	uint8_t val = (uint8_t) (*ccrReg & 0x00FF);
 
-	return val;
+	return (val);
 };
 inline void CCR_t::setCCRLow(uint8_t val) {
 	// before check the X-bit: once cleared it cannot be set by program instructions
@@ -199,7 +199,7 @@ inline void CCR_t::setCCRLow(uint8_t val) {
 inline uint8_t CCR_t::getCCRHigh() {
 	uint8_t val = (uint8_t) ((*ccrReg >> 8) & 0x00FF);
 
-	return val;
+	return (val);
 };
 
 inline void CCR_t::setCCRHigh(uint8_t val) {
@@ -208,7 +208,7 @@ inline void CCR_t::setCCRHigh(uint8_t val) {
 
 
 inline uint16_t CCR_t::getCCR() {
-	return *ccrReg;
+	return (*ccrReg);
 };
 
 inline void CCR_t::setCCR(uint16_t val) {
@@ -254,4 +254,4 @@ private:
 } // end of namespace component
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_CCR_HH__

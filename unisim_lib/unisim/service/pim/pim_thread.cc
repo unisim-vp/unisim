@@ -33,7 +33,7 @@ double PIMThread::GetSimTime() {
 	return Object::GetSimulator()->GetSimTime();
 }
 
-void PIMThread::Run(){
+void PIMThread::run(){
 
 	pim_trace_file.open ("pim_trace.xls");
 

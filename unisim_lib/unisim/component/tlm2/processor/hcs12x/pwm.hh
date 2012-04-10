@@ -35,7 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_PWM_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_HCS12X_PWM_HH__
 
-#include <systemc.h>
+#include <systemc>
 
 #include <inttypes.h>
 #include <iostream>
@@ -68,6 +68,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -207,7 +209,7 @@ public:
 
 protected:
 	void setOutput(uint8_t channel_index, bool value) { assert(channel_index < PWM_SIZE); output[channel_index] = value; };
-	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return output[channel_index]; }
+	bool getOutput(uint8_t channel_index) { assert(channel_index < PWM_SIZE); return (output[channel_index]); }
 
 private:
 	void ComputeInternalTime();

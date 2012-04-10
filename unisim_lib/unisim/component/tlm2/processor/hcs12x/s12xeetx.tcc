@@ -190,6 +190,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 				// set the ACCERR flag in the ESTAT register
 				setACCERR();
 			}
+			break;
 		}
 
 		/**
@@ -689,7 +690,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	Reset();
 
-	return inherited::BeginSetup();
+	return (inherited::BeginSetup());
 }
 
 /**
@@ -704,7 +705,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
-	return inherited::get_direct_mem_ptr(payload, dmi_data);
+	return (inherited::get_direct_mem_ptr(payload, dmi_data));
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -717,13 +718,13 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 	unsigned int data_length = payload.get_data_length();
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		return inherited::transport_dbg(payload);
+		return (inherited::transport_dbg(payload));
 	} else {
 		write_to_eeprom( address, data_ptr, data_length);
 
 		payload.set_response_status(tlm::TLM_OK_RESPONSE);
 
-		return 0;
+		return (0);
 	}
 
 
@@ -739,7 +740,7 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
 
-		return inherited::nb_transport_fw(payload, phase, t);
+		return (inherited::nb_transport_fw(payload, phase, t));
 	} else {
 
 		write_to_eeprom(address, data_ptr, data_length);
@@ -748,7 +749,7 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 			phase = END_REQ; // update the phase
 			payload.acquire();
 
-			return TLM_UPDATED;
+			return (TLM_UPDATED);
 		} else {
 			inherited::logger << DebugError << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << std::endl << EndDebugError;
 			Object::Stop(-1);
@@ -787,9 +788,9 @@ tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		return TLM_COMPLETED;
+		return (TLM_COMPLETED);
 	}
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -906,10 +907,10 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			case EDATALO: *((uint8_t *) buffer) = (uint8_t) (edata_reg & 0x00FF); break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return inherited::ReadMemory(addr, buffer, size);
+	return (inherited::ReadMemory(addr, buffer, size));
 }
 
 //template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -937,7 +938,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	if ((addr >= baseAddress) && (addr <= (baseAddress+EDATALO))) {
 
 		if (size == 0) {
-			return true;
+			return (true);
 		}
 
 		service_address_t offset = addr-baseAddress;
@@ -971,10 +972,10 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return inherited::WriteMemory(addr, buffer, size);
+	return (inherited::WriteMemory(addr, buffer, size));
 }
 
 //=====================================================================
@@ -991,9 +992,9 @@ template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, 
 Register * S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetRegister(const char *name) {
 
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -1031,10 +1032,10 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		break;
 		case EDATALO: *((uint8_t *) buffer) = (uint8_t) (edata_reg & 0x00FF); break;
 
-		default: return false;
+		default: return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -1220,12 +1221,12 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			break;
 			case EDATALO: edata_reg= (edata_reg & 0xFF00) | *((uint8_t *) buffer); break;
 
-			default: return false;
+			default: return (false);
 		}
 
 	}
 
-	return true;
+	return (true);
 }
 
 template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>

@@ -58,9 +58,9 @@ uint8_t MMC::ppage;
 
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
-	Service<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
 	Client<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
+	unisim::kernel::service::Service<Registers>(name, parent),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
 	registers_export("registers_export", this),
@@ -223,30 +223,30 @@ bool MMC::BeginSetup() {
 	extended_registers_registry.push_back(ramshu_var);
 	ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
 
-	return true;
+	return (true);
 }
 
 bool MMC::Setup(ServiceExportBase *srv_export) {
-	return true;
+	return (true);
 }
 
 bool MMC::EndSetup() {
-	return true;
+	return (true);
 }
 
 Register* MMC::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
 void MMC::OnDisconnect() {
 }
 
-void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address)
+void MMC::splitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address)
 {
 	if (address_encoding == ADDRESS::GNUGCC)
 	{
@@ -279,13 +279,13 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	physical_address_t addr;
 
 
-	SplitPagedAddress(paged_addr, page, cpu_address);
+	splitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
 		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
 			if (MMC_REGS_ADDRESSES[i] == addr) {
-				return read(addr, buffer, 1);
+				return (read(addr, buffer, 1));
 			}
 		}
 
@@ -293,13 +293,12 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 
 
 	if (memory_import) {
-		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
+		return (memory_import->ReadMemory(addr, (uint8_t *) buffer, size));
 	}
 
-	return false;
+	return (false);
 }
 
-// TODO: review this methods for dump and disassemble commands
 bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t size) {
 
 	page_t page;
@@ -307,31 +306,31 @@ bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t
 	physical_address_t addr;
 
 	if (size == 0) {
-		return true;
+		return (true);
 	}
 
-	SplitPagedAddress(paged_addr, page, cpu_address);
+	splitPagedAddress(paged_addr, page, cpu_address);
 	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
 		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
 			if (MMC_REGS_ADDRESSES[i] == addr) {
-				return write(addr, buffer, 1);
+				return (write(addr, buffer, 1));
 			}
 		}
 	}
 
 
 	if (memory_import) {
-		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
+		return (memory_import->WriteMemory(addr, (uint8_t *) buffer, size));
 	}
 
-	return false;
+	return (false);
 }
 
-}
-}
-}
-}
-} // end namespace hcs12x
+} // end of namespace hcs12x
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 

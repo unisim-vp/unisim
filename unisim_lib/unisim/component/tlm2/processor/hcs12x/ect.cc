@@ -53,10 +53,10 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, Client<TrapReporting>(name, parent)
-	, Service<Memory<service_address_t> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Client<Memory<service_address_t> >(name, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, unisim::kernel::service::Service<Memory<service_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Client<Memory<service_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -142,11 +142,11 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(ECT);
 
-	SC_THREAD(RunMainTimerCounter);
+	SC_THREAD(runMainTimerCounter);
 
-	SC_THREAD(RunDownCounter);
+	SC_THREAD(runDownCounter);
 
-	SC_THREAD(RunBuildinSignalGenerator);
+	SC_THREAD(runBuildinSignalGenerator);
 
 	pacA = new PulseAccumulatorA("PACA", this, &portt_pin[7], pc8bit[3], pc8bit[2]);
 	portt_pin_reg[7].AddListener(pacA);
@@ -181,7 +181,7 @@ ECT::~ECT() {
 
 }
 
-void ECT::RunBuildinSignalGenerator() {
+void ECT::runBuildinSignalGenerator() {
 
 	/* initialize random seed: */
 	srand (12345);
@@ -249,14 +249,14 @@ void ECT::exitFreezeMode() {
 	main_timer_enable();
 }
 
-void ECT::RunMainTimerCounter() {
+void ECT::runMainTimerCounter() {
 
 	while (true) {
 		while (!main_timer_enabled || ((tscr1_register & 0x80) == 0)) {
 			wait(main_timer_enable_event);
 		}
 
-		ComputeTimerPrescaledClock();
+		computeTimerPrescaledClock();
 		while (main_timer_enabled && ((tscr1_register & 0x80) != 0)) {
 			/**
 			 * If the pulse accumulator is disabled (PACTL::PAEN=0) then
@@ -282,11 +282,11 @@ void ECT::RunMainTimerCounter() {
 			if (tcnt_register == 0xFFFF) {
 				// Timer overflow
 				tcnt_register = 0x0000;
-				ComputeTimerPrescaledClock();
+				computeTimerPrescaledClock();
 
 				for (uint8_t i=0; i<8; i++) {
 					if (!isInputCapture(i) && ((ttov_register & (1 << i)) != 0)) {
-						RunChannelOutputCompareAction(i);
+						runChannelOutputCompareAction(i);
 					}
 				}
 
@@ -303,12 +303,12 @@ void ECT::RunMainTimerCounter() {
 				}
 			}
 
-			RunOutputCompare();
+			runOutputCompare();
 		}
 	}
 }
 
-void ECT::RunDownCounter() {
+void ECT::runDownCounter() {
 
 	/**
 	 * The 16-bit modulus down-counter can control the transfer of the IC registers and the pulse accumulators
@@ -323,7 +323,7 @@ void ECT::RunDownCounter() {
 		}
 
 		mccnt_register = mccnt_load_register;
-		ComputeModulusCounterClock();
+		computeModulusCounterClock();
 
 		while ((down_counter_enabled) && ((mcctl_register & 0x04) != 0)) {
 
@@ -340,7 +340,7 @@ void ECT::RunDownCounter() {
 
 				if ((mcctl_register & 0x40) != 0) {
 					mccnt_register = mccnt_load_register;
-					ComputeModulusCounterClock();
+					computeModulusCounterClock();
 				}
 			}
 		}
@@ -348,10 +348,10 @@ void ECT::RunDownCounter() {
 	}
 }
 
-void ECT::RunOutputCompare() {
+void ECT::runOutputCompare() {
 	for (uint8_t i=0; i<8; i++) {
 		if (!isInputCapture(i)) {
-			ioc_channel[i]->RunOutputCompare();
+			ioc_channel[i]->runOutputCompare();
 		}
 	}
 }
@@ -407,9 +407,9 @@ tlm_sync_enum ECT::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		return TLM_COMPLETED;
+		return (TLM_COMPLETED);
 	}
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 
@@ -659,13 +659,14 @@ bool ECT::read(unsigned int offset, const void *buffer, unsigned int data_length
 				}
 
 			} else {
-				return false;
+				return (false);
 			}
 
 		}
+		break;
 	}
 
-	return true;
+	return (true);
 }
 
 bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_length) {
@@ -679,7 +680,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 
 			for (uint8_t i=0; i<8; i++) {
 				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
-					RunChannelOutputCompareAction(i);
+					runChannelOutputCompareAction(i);
 				}
 			}
 
@@ -770,7 +771,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 		} break;
 		case TSCR2: {
 			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)buffer) & 0x8F);
-			ComputeTimerPrescaledClock();
+			computeTimerPrescaledClock();
 
 		} break;
 		case TFLG1: {
@@ -989,7 +990,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 
 				if (((mcctl_register & 0x44) != 0x44) || ((mcctl_register & 0x08) != 0)) {
 					mccnt_register = mccnt_load_register;
-					ComputeModulusCounterClock();
+					computeModulusCounterClock();
 
 					if ((mcctl_register & 0x40) == 0) {
 						mcctl_register = mcctl_register & 0xFC;
@@ -1044,13 +1045,14 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 				/* don't accept write */;
 			} else {
-				return false;
+				return (false);
 			}
 		}
+		break;
 
 	}
 
-	return true;
+	return (true);
 }
 
 inline void ECT::configureOutputAction() {
@@ -1080,7 +1082,7 @@ inline void ECT::computeDelayCounter() {
 			delay_counter_disable();
 
 		} else {
-			edge_delay_counter = 32 * pow(2, dly10) * 4;
+			edge_delay_counter = 32 * pow((double)2, dly10) * 4;
 			edge_delay_counter_time = bus_cycle_time * edge_delay_counter;
 			delay_counter_enable();
 		}
@@ -1125,7 +1127,7 @@ bool ECT::PulseAccumulator8Bit::countEdge8Bit() {
 		*pacn_register_ptr = *pacn_register_ptr + 1;
 	}
 
-	return overflow;
+	return (overflow);
 }
 
 void ECT::PulseAccumulator8Bit::latchToHoldingRegisters() {
@@ -1151,7 +1153,7 @@ ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, EC
 }
 
 void ECT::PulseAccumulator16Bit::process() {
-	RunPulseAccumulator();
+	runPulseAccumulator();
 }
 
 void ECT::PulseAccumulator16Bit::latchToHoldingRegisters() {
@@ -1167,7 +1169,7 @@ ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *paren
 
 }
 
-void ECT::PulseAccumulatorA::RunPulseAccumulator() {
+void ECT::PulseAccumulatorA::runPulseAccumulator() {
 
 	while (true) {
 
@@ -1257,7 +1259,7 @@ ECT::PulseAccumulatorB::PulseAccumulatorB(const sc_module_name& name, ECT *paren
 
 }
 
-void ECT::PulseAccumulatorB::RunPulseAccumulator() {
+void ECT::PulseAccumulatorB::runPulseAccumulator() {
 	while (true) {
 
 		while (!ectParent->isPulseAccumulatorBEnabled()) {
@@ -1319,7 +1321,7 @@ ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const
 
 	SC_HAS_PROCESS(IOC_Channel_t);
 
-	SC_THREAD(RunInputCapture);
+	SC_THREAD(runInputCapture);
 	sensitive << edge_event;
 
 }
@@ -1336,7 +1338,7 @@ ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const
  * 3: Capture on any edge (rising or falling)
  */
 
-void ECT::IOC_Channel_t::RunInputCapture() {
+void ECT::IOC_Channel_t::runInputCapture() {
 
 	while (true) {
 
@@ -1450,12 +1452,12 @@ void ECT::IOC_Channel_t::latchToHoldingRegisters() {
 	pulseAccumulator->latchToHoldingRegisters();
 }
 
-void ECT::IOC_Channel_t::RunOutputCompare() {
+void ECT::IOC_Channel_t::runOutputCompare() {
 
 	bool result = (*tc_register_ptr == ectParent->getMainTimerValue());
 	ectParent->setOC7Dx(ioc_index, result);
 	if (result) {
-		ectParent->RunChannelOutputCompareAction(ioc_index);
+		ectParent->runChannelOutputCompareAction(ioc_index);
 		// set the TFLG1::CxF to show that output compare is detected
 		ectParent->setTimerInterruptFlag(ioc_index);
 		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
@@ -1471,7 +1473,7 @@ void ECT::IOC_Channel_t::RunOutputCompare() {
 
 }
 
-void ECT::RunChannelOutputCompareAction(uint8_t ioc_index) {
+void ECT::runChannelOutputCompareAction(uint8_t ioc_index) {
 	/**
 	 * This method is called by writing to "CFORC" register or by starting output compare thread or by main timer overflow.
 	 * 1. Run the action which is programmed for output compare "x" to occur immediately.
@@ -1825,17 +1827,17 @@ bool ECT::BeginSetup() {
 	tc3h_var->setCallBack(this, TC3H_HIGH, &CallBackObject::write, NULL);
 
 
-	ComputeInternalTime();
+	computeInternalTime();
 
-	return true;
+	return (true);
 }
 
 bool ECT::Setup(ServiceExportBase *srv_export) {
-	return true;
+	return (true);
 }
 
 bool ECT::EndSetup() {
-	return true;
+	return (true);
 }
 
 /**
@@ -1847,9 +1849,9 @@ bool ECT::EndSetup() {
 Register* ECT::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -1900,7 +1902,7 @@ void ECT::Reset() {
 
 }
 
-void ECT::ComputeInternalTime() {
+void ECT::computeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
@@ -1910,11 +1912,11 @@ void ECT::ComputeInternalTime() {
 
 }
 
-void ECT::ComputeTimerPrescaledClock() {
+void ECT::computeTimerPrescaledClock() {
 
 	// is TSCR1::PRNT=0 ?
 	if ((tscr1_register & 0x08) == 0) {
-		prescaled_clock = pow(2, (tscr2_register & 0x07)) * bus_cycle_time;
+		prescaled_clock = pow((double) 2, (tscr2_register & 0x07)) * bus_cycle_time;
 	} else {
 		prescaled_clock = (ptpsr_register + 1) * bus_cycle_time;
 	}
@@ -1922,7 +1924,7 @@ void ECT::ComputeTimerPrescaledClock() {
 }
 
 
-void ECT::ComputeModulusCounterClock() {
+void ECT::computeModulusCounterClock() {
 
 	mccnt_clock = bus_cycle_time;
 
@@ -1932,7 +1934,7 @@ void ECT::ComputeModulusCounterClock() {
 	} else {
 		uint8_t mccnt_prescaler = mcctl_register & 0x03;
 		if (mccnt_prescaler > 0) {
-			mccnt_clock = bus_cycle_time * pow(2, mccnt_prescaler+1);
+			mccnt_clock = bus_cycle_time * pow((double) 2, mccnt_prescaler+1);
 		}
 	}
 
@@ -1945,7 +1947,7 @@ void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	bus_cycle_time_int = *external_bus_clock;
 
-	ComputeInternalTime();
+	computeInternalTime();
 }
 
 //=====================================================================
@@ -2134,16 +2136,17 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 						*((uint8_t *)buffer) = tcxh_registers[tcxh_offset_index] & 0x00FF;
 					}
 				} else {
-					return false;
+					return (false);
 				}
 			}
+			break;
 		}
 
-		return true;
+		return (true);
 
 	}
 
-	return false;
+	return (false);
 
 }
 
@@ -2168,7 +2171,7 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
 
 		if (size == 0) {
-			return true;
+			return (true);
 		}
 
 		service_address_t offset = addr-baseAddress;
@@ -2338,16 +2341,17 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 					}
 
 				} else {
-					return false;
+					return (false);
 				}
 			}
 
+			break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return false;
+	return (false);
 }
 
 

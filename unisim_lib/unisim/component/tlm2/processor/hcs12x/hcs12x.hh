@@ -36,7 +36,7 @@
 #ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_HCS12X_HH__
 #define __UNISIM_COMPONENT_TLM2_PROCESSOR_HCS12X_HH__
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/simple_initiator_socket.h>
@@ -60,6 +60,9 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
+
+using namespace sc_core;
+using namespace sc_dt;
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
@@ -106,14 +109,14 @@ public:
 	 * Stop All Clocks and puts the device in standby mode.
 	 * Asserting the RESET, XIRQ, or IRQ signals ends standby mode.
 	 */
-	virtual void Sleep();
+	virtual void sleep();
 
 	/* TODO:
 	 * Enter a wait state for an integer number of bus clock cycle
 	 * Only CPU12 clocks are stopped
 	 * Wait for not masked interrupt
 	 */
-	virtual void Wait();
+	virtual void wai();
 
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
@@ -125,8 +128,8 @@ public:
 
 	virtual void Reset();
 
-	virtual void BusWrite(address_t addr, const void *buffer, uint32_t size);
-	virtual void BusRead(address_t addr, void *buffer, uint32_t size);
+	virtual void busWrite(address_t addr, const void *buffer, uint32_t size);
+	virtual void busRead(address_t addr, void *buffer, uint32_t size);
 
 	//================================================================
     //=                    tlm2 Interface                            =
@@ -142,16 +145,16 @@ public:
 	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
 	 * Else return INT_Vector
 	 */
-	virtual address_t GetIntVector(uint8_t &ipl);
+	virtual address_t getIntVector(uint8_t &ipl);
 
 	virtual double  GetSimulatedTime();
 
-	void AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
+	void asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
 	void Synchronize();
-	void ComputeInternalTime();
+	void computeInternalTime();
 
 	sc_event	irq_event,		// I-bit-Maskable Interrupt Requests and X-bit Non-Maskable Interrupt Requests
 				reset_event;	// Hardware and Software Reset

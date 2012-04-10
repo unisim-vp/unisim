@@ -23,7 +23,7 @@ public:
 	SocketServerThread(string host, uint16_t port, bool _blocking, uint8_t connection_req_nb);
 	~SocketServerThread();
 
-	virtual void Run();
+	virtual void run();
 
 	void setProtocolHandler(SocketThread* protocolHandler) { this->protocolHandler = protocolHandler; }
 
