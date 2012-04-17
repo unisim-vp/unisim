@@ -44,10 +44,9 @@ namespace service {
 namespace interfaces {
 
 template <class ADDRESS>
-class MemoryAccessReporting
+class MemoryAccessReporting : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual ~MemoryAccessReporting() {}
 	typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
 	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
 

@@ -44,10 +44,13 @@ namespace dwarf {
 
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
 
 DWARF_RegisterNumberMapping::DWARF_RegisterNumberMapping(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if)
 	: logger(_logger)
 	, regs_if(_regs_if)
+	, sp_reg_num(0)
 {
 }
 
@@ -57,7 +60,7 @@ DWARF_RegisterNumberMapping::~DWARF_RegisterNumberMapping()
 
 bool DWARF_RegisterNumberMapping::Load(const char *filename, const char *architecture)
 {
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 	unisim::util::xml::Node *root_node = parser->Parse(filename);
 
 	delete parser;
@@ -66,7 +69,7 @@ bool DWARF_RegisterNumberMapping::Load(const char *filename, const char *archite
 		
 	if(root_node->Name() != std::string("dw_reg_num_mapping"))
 	{
-		unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! root node is not named 'dw_reg_num_mapping'");
+		logger << DebugError << root_node->Filename() << ":" << root_node->LineNo() << ":root node is not named 'dw_reg_num_mapping'" << EndDebugError;
 		delete root_node;
 		return false;
 	}
@@ -145,10 +148,36 @@ bool DWARF_RegisterNumberMapping::Load(unisim::util::xml::Node *root_node)
 			}
 			else
 			{
-				unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'dw_reg_num' or 'arch_reg' property",(*xml_node)->Name().c_str());
+				logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'dw_reg_num' or 'arch_reg' property" << EndDebugWarning;
 				return false;
 			}
 		}
+		else if((*xml_node)->Name() == std::string("stack_pointer"))
+		{
+			bool has_dw_reg_num = false;
+			const std::list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
+
+			std::list<unisim::util::xml::Property *>::const_iterator xml_node_property;
+			for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
+			{
+				if((*xml_node_property)->Name() == std::string("dw_reg_num"))
+				{
+					dw_reg_num = atoi((*xml_node_property)->Value().c_str());
+					has_dw_reg_num = true;
+				}
+			}
+			
+			if(has_dw_reg_num)
+			{
+				sp_reg_num = dw_reg_num;
+			}
+			else
+			{
+				logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name().c_str() << "' has no 'dw_reg_num' property" << EndDebugWarning;
+				return false;
+			}
+		}
+			
 	}
 	
 	return true;
@@ -182,6 +211,11 @@ void DWARF_RegisterNumberMapping::EnumRegisterNumbers(std::set<unsigned int>& re
 		unsigned int dw_reg_num = (*iter).first;
 		reg_num_set.insert(dw_reg_num);
 	}
+}
+
+unsigned int DWARF_RegisterNumberMapping::GetSPRegNum() const
+{
+	return sp_reg_num;
 }
 
 std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping)

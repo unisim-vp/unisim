@@ -31,51 +31,36 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
+#define __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_UNWIND_CONTEXT_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_UNWIND_CONTEXT_HH__
-
-#include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/kernel/logger/logger.hh>
-#include <unisim/service/interfaces/registers.hh>
-#include <unisim/service/interfaces/memory.hh>
-#include <unisim/util/endian/endian.hh>
-#include <iosfwd>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/util/debug/event.hh>
 
 namespace unisim {
-namespace util {
-namespace debug {
-namespace dwarf {
+namespace service {
+namespace interfaces {
 
-template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_UnwindContext<MEMORY_ADDR>& dw_reg_set);
-
-template <class MEMORY_ADDR>
-class DWARF_UnwindContext
+template <class ADDRESS>
+class DebugEventTrigger : public unisim::kernel::service::ServiceInterface
 {
 public:
-	DWARF_UnwindContext(unisim::util::endian::endian_type endianness, unsigned int address_size, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
-	~DWARF_UnwindContext();
-	
-	bool Load(const DWARF_RegisterNumberMapping *reg_num_mapping);
-	bool Compute(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row);
-	MEMORY_ADDR ReadRegister(unsigned int reg_num) const;
-	void WriteRegister(unsigned int reg_num, const MEMORY_ADDR value);
-	
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_UnwindContext<MEMORY_ADDR>& dw_reg_set);
-private:
-	unisim::util::endian::endian_type endianness;
-	unsigned int address_size;
-	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
-	MEMORY_ADDR cfa;
-	std::map<unsigned int, MEMORY_ADDR> reg_set;
-	
-	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr) const;
+	virtual bool Listen(const unisim::util::debug::Event<ADDRESS>& event) = 0;
+	virtual bool Unlisten(const unisim::util::debug::Event<ADDRESS>& event) = 0;
+	virtual bool IsEventListened(const unisim::util::debug::Event<ADDRESS>& event) const = 0;
+	virtual void EnumerateListenedEvents(std::list<const unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type = unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) const = 0;
 };
 
-} // end of namespace dwarf
-} // end of namespace debug
-} // end of namespace util
+template <class ADDRESS>
+class DebugEventListener : public unisim::kernel::service::ServiceInterface
+{
+public:
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event) = 0;
+};
+
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
 #endif

@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_HH__
 #define __UNISIM_UTIL_DEBUG_BREAKPOINT_HH__
 
+#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 #include <ostream>
 
@@ -48,10 +49,11 @@ template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp);
 
 template <class ADDRESS>
-class Breakpoint
+class Breakpoint : public Event<ADDRESS>
 {
 public:
 	Breakpoint(ADDRESS addr)
+		: Event<ADDRESS>(Event<ADDRESS>::EV_BREAKPOINT)
 	{
 		this->addr = addr;
 	}

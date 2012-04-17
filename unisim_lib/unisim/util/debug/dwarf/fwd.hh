@@ -79,7 +79,7 @@ template <class MEMORY_ADDR> class DWARF_CFIRow;
 template <class MEMORY_ADDR> class DWARF_CFI;
 template <class MEMORY_ADDR> class DWARF_CallFrameVM;
 class DWARF_RegisterNumberMapping;
-template <class MEMORY_ADDR> class DWARF_UnwindContext;
+template <class MEMORY_ADDR> class DWARF_Frame;
 template <class MEMORY_ADDR> class DWARF_RangeListEntry;
 template <class MEMORY_ADDR> class DWARF_MacInfoListEntry;
 template <class MEMORY_ADDR> class DWARF_MacInfoListEntryDefine;

@@ -38,7 +38,7 @@
 #include <unisim/util/debug/dwarf/dwarf.hh>
 #include <unisim/util/debug/dwarf/ml.hh>
 #include <unisim/util/debug/dwarf/register_number_mapping.hh>
-#include <unisim/util/debug/dwarf/unwind_context.hh>
+#include <unisim/util/debug/dwarf/frame.hh>
 
 #include <stdlib.h>
 
@@ -68,17 +68,17 @@ template <class MEMORY_ADDR>
 DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, const char *_reg_num_mapping_filename, unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
 	: endianness(_blob->GetEndian())
 	, address_size(_blob->GetAddressSize())
-	, debug_line_section(_blob->FindSection(".debug_line"))
-	, debug_info_section(_blob->FindSection(".debug_info"))
-	, debug_abbrev_section(_blob->FindSection(".debug_abbrev"))
-	, debug_aranges_section(_blob->FindSection(".debug_aranges"))
-	, debug_pubnames_section(_blob->FindSection(".debug_pubnames"))
-	, debug_pubtypes_section(_blob->FindSection(".debug_pubtypes"))
-	, debug_macinfo_section(_blob->FindSection(".debug_macinfo"))
-	, debug_frame_section(_blob->FindSection(".debug_frame"))
-	, debug_str_section(_blob->FindSection(".debug_str"))
-	, debug_loc_section(_blob->FindSection(".debug_loc"))
-	, debug_ranges_section(_blob->FindSection(".debug_ranges"))
+	, debug_line_section(_blob->FindSection(".debug_line", false))
+	, debug_info_section(_blob->FindSection(".debug_info", false))
+	, debug_abbrev_section(_blob->FindSection(".debug_abbrev", false))
+	, debug_aranges_section(_blob->FindSection(".debug_aranges", false))
+	, debug_pubnames_section(_blob->FindSection(".debug_pubnames", false))
+	, debug_pubtypes_section(_blob->FindSection(".debug_pubtypes", false))
+	, debug_macinfo_section(_blob->FindSection(".debug_macinfo", false))
+	, debug_frame_section(_blob->FindSection(".debug_frame", false))
+	, debug_str_section(_blob->FindSection(".debug_str", false))
+	, debug_loc_section(_blob->FindSection(".debug_loc", false))
+	, debug_ranges_section(_blob->FindSection(".debug_ranges", false))
 	, logger(_logger)
 	, blob(_blob)
 	, reg_num_mapping_filename(_reg_num_mapping_filename)
@@ -100,11 +100,18 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 
 	dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);
 		
-	dw_reg_num_mapping->Load(reg_num_mapping_filename, blob->GetArchitecture());
-
-	std::stringstream sstr;
-	sstr << *dw_reg_num_mapping;
-	logger << DebugInfo << sstr.str() << EndDebugInfo;
+	if(dw_reg_num_mapping->Load(reg_num_mapping_filename, blob->GetArchitecture()))
+	{
+		std::stringstream sstr;
+		sstr << *dw_reg_num_mapping;
+		logger << DebugInfo << sstr.str() << EndDebugInfo;
+	}
+	else
+	{
+		logger << DebugWarning << "Can't load DWARF register number mapping" << EndDebugWarning;
+		delete dw_reg_num_mapping;
+		dw_reg_num_mapping = 0;
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -2165,52 +2172,72 @@ const DWARF_FDE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindFDEByAddr(MEMORY_A
 template <class MEMORY_ADDR>
 std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR pc) const
 {
+	if(!dw_reg_num_mapping) return 0;
 	std::vector<MEMORY_ADDR> *backtrace = 0;
+	unsigned int id = 1;
+	unsigned int sp_reg_num = dw_reg_num_mapping->GetSPRegNum();
+	DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+	frame->Load(dw_reg_num_mapping);
+	
+	MEMORY_ADDR pc_approx = pc;
 
 	do
 	{
-		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(pc);
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr((id == 1) ? pc : pc_approx);
 		
-		if(!dw_fde) break;
+		if(!dw_fde)
+		{
+			//logger << DebugInfo << "No more FDE found" << EndDebugInfo;
+			break;
+		}
 
 		DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
 		const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(dw_fde);
 
 		if(cfi)
 		{
-			logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+			//logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
 			
-			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(pc);
+			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow((id == 1) ? pc : pc_approx);
 			
-			if(cfi_row)
+/*			if(cfi_row)
 			{
 				logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+			}*/
+			
+// 			logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
+			
+			DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+			
+			if(!next_frame->Unwind(cfi_row, frame))
+			{
+// 				logger << DebugInfo << "No more unwinding context" << EndDebugInfo;
+				delete next_frame;
+				break;
 			}
 			
-			DWARF_UnwindContext<MEMORY_ADDR> *reg_set = new DWARF_UnwindContext<MEMORY_ADDR>(endianness, address_size, mem_if);
-			
-			reg_set->Load(dw_reg_num_mapping);
-			
-			logger << DebugInfo << "Register set:" << *reg_set << EndDebugInfo;
-			
-			reg_set->Compute(cfi_row);
-			
-			logger << DebugInfo << "Register set:" << *reg_set << EndDebugInfo;
+			delete frame;
+			frame = next_frame;
+
+// 			logger << DebugInfo << "Register set after unwinding:" << *frame << EndDebugInfo;
 
 			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
 			
 			unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
 			
-			MEMORY_ADDR ret_addr = reg_set->ReadRegister(dw_ret_addr_reg_num);
+			MEMORY_ADDR ret_addr = frame->ReadRegister(dw_ret_addr_reg_num);
+			
+// 			logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
 			
 			if(!backtrace)
 			{
 				backtrace = new std::vector<MEMORY_ADDR>();
+				backtrace->push_back(pc);
 			}
-			
-			backtrace->push_back(ret_addr); // FIXME: decrease return address by the size of preceeding instruction
-			
-			delete reg_set;
+
+			pc_approx = ret_addr - 1; // we take return address - 1 in the hope it is in the same context as the caller
+			backtrace->push_back(ret_addr); 
+
 			delete cfi;
 		}
 		else
@@ -2218,9 +2245,10 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			logger << DebugWarning << "Something goes wrong while interpreting call frame information" << EndDebugWarning;
 			break;
 		}
-		break;
 	}
-	while(1);
+	while(++id < 256);
+	
+	if(frame) delete frame;
 	
 	return backtrace;
 }

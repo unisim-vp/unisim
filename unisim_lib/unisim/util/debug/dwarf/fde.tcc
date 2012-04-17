@@ -32,6 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#include <unisim/kernel/debug/debug.hh>
+
 namespace unisim {
 namespace util {
 namespace debug {

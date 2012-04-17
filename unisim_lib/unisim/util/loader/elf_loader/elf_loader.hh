@@ -76,10 +76,11 @@ class ElfLoaderImpl
 {
 public:
 	
-	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
+	void ParseSymbols();
 	
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
@@ -110,6 +111,7 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *const_blob;
 	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::service::interfaces::Registers *regs_if;

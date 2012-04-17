@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
 #include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -50,11 +51,12 @@ template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp);
 
 template <class ADDRESS>
-class Watchpoint
+class Watchpoint : public Event<ADDRESS>
 {
 public:
 
 	Watchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+		: Event<ADDRESS>(Event<ADDRESS>::EV_WATCHPOINT)
 	{
 		this->mat = mat;
 		this->mt = mt;

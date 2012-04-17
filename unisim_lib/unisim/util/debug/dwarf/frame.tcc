@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_UNWIND_CONTEXT_TCC__
-#define __UNISIM_UTIL_DEBUG_DWARF_UNWIND_CONTEXT_TCC__
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_FRAME_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_FRAME_TCC__
 
 #include <iostream>
 
@@ -43,33 +43,52 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_UnwindContext<MEMORY_ADDR>::DWARF_UnwindContext(unisim::util::endian::endian_type _endianness, unsigned int _address_size, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
-	: endianness(_endianness)
+DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Frame<MEMORY_ADDR>& frame)
+	: sp_reg_num(frame.sp_reg_num)
+	, endianness(frame.endianness)
+	, address_size(frame.address_size)
+	, mem_if(frame.mem_if)
+	, cfa(frame.cfa)
+	, reg_set(frame.reg_set)
+{
+}
+
+template <class MEMORY_ADDR>
+DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(unisim::util::endian::endian_type _endianness, unsigned int _address_size, unsigned int _sp_reg_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
+	: sp_reg_num(_sp_reg_num)
+	, endianness(_endianness)
 	, address_size(_address_size)
 	, mem_if(_mem_if)
 {
 }
 
 template <class MEMORY_ADDR>
-DWARF_UnwindContext<MEMORY_ADDR>::~DWARF_UnwindContext()
+DWARF_Frame<MEMORY_ADDR>::~DWARF_Frame()
 {
 }
-	
+
 template <class MEMORY_ADDR>
-MEMORY_ADDR DWARF_UnwindContext<MEMORY_ADDR>::ReadRegister(unsigned int reg_num) const
+MEMORY_ADDR DWARF_Frame<MEMORY_ADDR>::ReadCFA() const
+{
+	return cfa;
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_Frame<MEMORY_ADDR>::ReadRegister(unsigned int reg_num) const
 {
 	typename std::map<unsigned int, MEMORY_ADDR>::const_iterator iter = reg_set.find(reg_num);
 	return (iter != reg_set.end()) ? (*iter).second : 0;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_UnwindContext<MEMORY_ADDR>::WriteRegister(unsigned int reg_num, MEMORY_ADDR value)
+void DWARF_Frame<MEMORY_ADDR>::WriteRegister(unsigned int reg_num, MEMORY_ADDR value)
 {
+	//std::cerr << "r" << reg_num << "<-0x" << std::hex << value << std::dec << std::endl;
 	reg_set[reg_num] = value;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_UnwindContext<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr) const
+bool DWARF_Frame<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr) const
 {
 	switch(address_size)
 	{
@@ -108,7 +127,7 @@ bool DWARF_UnwindContext<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMO
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_UnwindContext<MEMORY_ADDR>::Load(const DWARF_RegisterNumberMapping *reg_num_mapping)
+bool DWARF_Frame<MEMORY_ADDR>::Load(const DWARF_RegisterNumberMapping *reg_num_mapping)
 {
 	typename std::set<unsigned int> reg_num_set;
 	
@@ -119,7 +138,6 @@ bool DWARF_UnwindContext<MEMORY_ADDR>::Load(const DWARF_RegisterNumberMapping *r
 	for(iter = reg_num_set.begin(); iter != reg_num_set.end(); iter++)
 	{
 		unsigned int dw_reg_num = *iter;
-		
 		const unisim::util::debug::Register *arch_reg = reg_num_mapping->GetArchReg(dw_reg_num);
 		
 		if(!arch_reg)
@@ -173,8 +191,10 @@ bool DWARF_UnwindContext<MEMORY_ADDR>::Load(const DWARF_RegisterNumberMapping *r
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_UnwindContext<MEMORY_ADDR>::Compute(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row)
+bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame)
 {
+	reg_set = prev_frame->reg_set;
+	
 	DWARF_CFARule<MEMORY_ADDR> *cfa_rule = cfi_row->GetCFARule();
 	
 	switch(cfa_rule->GetType())
@@ -184,7 +204,7 @@ bool DWARF_UnwindContext<MEMORY_ADDR>::Compute(const DWARF_CFIRow<MEMORY_ADDR> *
 				DWARF_CFARuleRegisterOffset<MEMORY_ADDR> *cfa_rule_reg_ofs = reinterpret_cast<DWARF_CFARuleRegisterOffset<MEMORY_ADDR> *>(cfa_rule);
 				unsigned int dw_reg_num = cfa_rule_reg_ofs->GetRegisterNumber();
 				int64_t offset = cfa_rule_reg_ofs->GetOffset();
-				cfa = ReadRegister(dw_reg_num) + offset;
+				cfa = prev_frame->ReadRegister(dw_reg_num) + offset;
 			}
 			break;
 		case DW_CFA_RULE_EXPRESSION:
@@ -214,7 +234,7 @@ bool DWARF_UnwindContext<MEMORY_ADDR>::Compute(const DWARF_CFIRow<MEMORY_ADDR> *
 						int64_t offset = reg_rule_offset->GetOffset();
 						MEMORY_ADDR addr = cfa + offset;
 						MEMORY_ADDR prev_reg_value;
-						if(!ReadAddrFromMemory(addr, prev_reg_value)) return false;
+						if(!prev_frame->ReadAddrFromMemory(addr, prev_reg_value)) return false;
 						WriteRegister(dw_reg_num, prev_reg_value);
 					}
 					break;
@@ -230,25 +250,28 @@ bool DWARF_UnwindContext<MEMORY_ADDR>::Compute(const DWARF_CFIRow<MEMORY_ADDR> *
 					{
 						DWARF_RegisterRuleRegister<MEMORY_ADDR> *reg_rule_reg = reinterpret_cast<DWARF_RegisterRuleRegister<MEMORY_ADDR> *>(reg_rule);
 						unsigned int dw_prev_reg_num = reg_rule_reg->GetRegisterNumber();
-						MEMORY_ADDR prev_reg_value = ReadRegister(dw_prev_reg_num);
+						MEMORY_ADDR prev_reg_value = prev_frame->ReadRegister(dw_prev_reg_num);
 						WriteRegister(dw_reg_num, prev_reg_value);
 					}
 					break;
 				case DW_REG_RULE_EXPRESSION:
 					throw std::runtime_error("DWARF expressions are not yet implemented");
-					break;
+					return false;
 				case DW_REG_RULE_VAL_EXPRESSION:
 					throw std::runtime_error("DWARF expressions are not yet implemented");
-					break;
+					return false;
 			}
 		}
 	}
 	
+	// architectural rule: SP = CFA
+	WriteRegister(sp_reg_num, cfa);
+
 	return true;
 }
 
 template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_UnwindContext<MEMORY_ADDR>& dw_reg_set)
+std::ostream& operator << (std::ostream& os, const DWARF_Frame<MEMORY_ADDR>& dw_reg_set)
 {
 	typename std::map<unsigned int, MEMORY_ADDR>::const_iterator iter;
 	

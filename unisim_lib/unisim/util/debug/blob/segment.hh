@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_HH__
 #define __UNISIM_UTIL_DEBUG_BLOB_SEGMENT_HH__
 
+#include <unisim/service/interfaces/memory.hh>
 #include <string>
 
 namespace unisim {
@@ -43,7 +44,7 @@ namespace debug {
 namespace blob {
 
 template <class MEMORY_ADDR>
-class Segment
+class Segment : public unisim::service::interfaces::Memory<MEMORY_ADDR>
 {
 public:
 	typedef enum
@@ -64,10 +65,15 @@ public:
 		SA_RWX = 7
 	} Attribute;
 
+	Segment(Type _type, Attribute _attr, unsigned int _alignment);
 	Segment(Type type, Attribute attr, unsigned int alignment, MEMORY_ADDR addr, MEMORY_ADDR size, MEMORY_ADDR data_size, void *data);
 	Segment(const Segment<MEMORY_ADDR>& segment);
 	virtual ~Segment();
 	
+	virtual void Reset();
+	virtual bool ReadMemory(MEMORY_ADDR addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(MEMORY_ADDR addr, const void *buffer, uint32_t size);
+
 	Type GetType() const;
 	Attribute GetAttr() const;
 	unsigned int GetAlignment() const;

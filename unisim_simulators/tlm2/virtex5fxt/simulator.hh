@@ -62,6 +62,7 @@
 // Class definition of kernel, services and interfaces
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/debug/debug.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
@@ -92,6 +93,7 @@
 using namespace std;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
+using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::power::CachePowerEstimator;
@@ -233,6 +235,8 @@ private:
 	//=========================================================================
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
+	//  - Debugger
+	Debugger<CPU_ADDRESS_TYPE> *debugger;
 	//  - GDB server
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger

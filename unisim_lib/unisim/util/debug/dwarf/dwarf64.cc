@@ -49,7 +49,7 @@
 #include <unisim/util/debug/dwarf/range.hh>
 #include <unisim/util/debug/dwarf/stmt_prog.hh>
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
-#include <unisim/util/debug/dwarf/unwind_context.hh>
+#include <unisim/util/debug/dwarf/frame.hh>
 
 #include <unisim/util/debug/dwarf/addr_range.tcc>
 #include <unisim/util/debug/dwarf/attr.tcc>
@@ -67,7 +67,7 @@
 #include <unisim/util/debug/dwarf/range.tcc>
 #include <unisim/util/debug/dwarf/stmt_prog.tcc>
 #include <unisim/util/debug/dwarf/stmt_vm.tcc>
-#include <unisim/util/debug/dwarf/unwind_context.tcc>
+#include <unisim/util/debug/dwarf/frame.tcc>
 
 namespace unisim {
 namespace util {
@@ -110,7 +110,7 @@ template class DWARF_RegisterRuleValExpression<uint64_t>;
 template class DWARF_CFIRow<uint64_t>;
 template class DWARF_CFI<uint64_t>;
 template class DWARF_CallFrameVM<uint64_t>;
-template class DWARF_UnwindContext<uint64_t>;
+template class DWARF_Frame<uint64_t>;
 template class DWARF_RangeListEntry<uint64_t>;
 template class DWARF_MacInfoListEntry<uint64_t>;
 template class DWARF_MacInfoListEntryDefine<uint64_t>;

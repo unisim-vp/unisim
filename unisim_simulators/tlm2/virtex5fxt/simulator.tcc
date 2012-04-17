@@ -69,6 +69,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
 	, loader(0)
+	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -192,6 +193,8 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//=========================================================================
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
+	//  - debugger
+	debugger = (enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -326,32 +329,43 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	(*mplb->memory_import[CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT]) >> gpio_push_buttons_5bit->memory_export;
 	cpu->loader_import >> loader->loader_export;
 	
+	if(enable_inline_debugger || enable_gdb_server)
+	{
+		// Connect debugger to CPU
+		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+		cpu->trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> cpu->disasm_export;
+		debugger->memory_import >> cpu->memory_export;
+		debugger->registers_import >> cpu->registers_export;
+		debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		debugger->loader_import >> loader->loader_export;
+		debugger->blob_import >> loader->blob_export;
+	}
+	
 	if(enable_inline_debugger)
 	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> loader->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
-		*inline_debugger->backtrace_import[0] >> loader->backtrace_export;
+		// Connect inline-debugger to debugger
+		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
+		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		inline_debugger->disasm_import >> debugger->disasm_export;
+		inline_debugger->memory_import >> debugger->memory_export;
+		inline_debugger->registers_import >> debugger->registers_export;
+		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+		inline_debugger->backtrace_import >> debugger->backtrace_export;
 	}
 	else if(enable_gdb_server)
 	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
+		// Connect gdb-server to debugger
+		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
+		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
+		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		gdb_server->memory_import >> debugger->memory_export;
+		gdb_server->registers_import >> debugger->registers_export;
 	}
 
 	if(estimate_power)
@@ -398,6 +412,7 @@ Simulator<CONFIG>::~Simulator()
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
 	if(ram) delete ram;
 	if(bram) delete bram;
+	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;

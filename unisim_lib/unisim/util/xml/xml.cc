@@ -49,6 +49,8 @@ using std::ostream;
 using std::endl;
 using std::string;
 using std::cerr;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugError;
 
 Property::Property(const string &_name, const string &_value)
 	: name(_name)
@@ -169,7 +171,8 @@ const int GET_TOK = 1;
 const int CONTEXT_INITIAL = 0;
 const int CONTEXT_COMMENT = 1;
 
-Parser::Parser()
+Parser::Parser(unisim::kernel::logger::Logger& _logger)
+	: logger(_logger)
 {
 }
 
@@ -226,19 +229,23 @@ const char *Parser::GetTokenName(int token)
 	return buffer;
 }
 
-void Error(const string& filename, int lineno, const char *format, ...)
+void Parser::Error(const string& filename, int lineno, const char *format, ...)
 {
+	char buffer[2048];
 	char s[1024];
+	char *buf = buffer;
 	va_list args;
 
 	va_start(args, format);
 	vsprintf(s, format, args);
 	if(!filename.empty())
-		fprintf(stderr, "%s:", filename.c_str());
+		buf += sprintf(buf, "%s:", filename.c_str());
 	if(lineno)
-		fprintf(stderr, "%d:", lineno);
+		buf += sprintf(buf, "%d:", lineno);
 
-	fprintf(stderr, "%s\n", s);
+	buf += sprintf(buf, "%s\n", s);
+	
+	logger << DebugError << buffer << EndDebugError;
 	va_end(args);
 }
 
