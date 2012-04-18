@@ -78,13 +78,25 @@ namespace dwarf {
 
 using unisim::util::endian::endian_type;
 
+typedef enum
+{
+	OPT_REG_NUM_MAPPING_FILENAME,
+	OPT_VERBOSE
+} Option;
+
 template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, const char *reg_num_mapping_filename, unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	~DWARF_Handler();
-	
+
+	void SetOption(Option opt, const char *s);
+	void SetOption(Option opt, bool flag);
+
+	void GetOption(Option opt, std::string& s);
+	void GetOption(Option opt, bool& flag);
+
 	void Parse();
 	void to_XML(std::ostream& os);
 	void to_HTML(const char *output_dir);
@@ -148,6 +160,7 @@ private:
 	unisim::kernel::logger::Logger& logger;
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 	const char *reg_num_mapping_filename;
+	bool verbose;
 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 	unisim::service::interfaces::Registers *regs_if;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;

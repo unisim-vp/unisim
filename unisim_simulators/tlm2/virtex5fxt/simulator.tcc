@@ -356,6 +356,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
 		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
+		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -483,6 +484,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
 	double cpu_clock_multiplier = 2.0;
@@ -630,6 +632,10 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	
+	//  - Debugger run-time configuration
+	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	//  - Cache/TLB power estimators run-time configuration
 	simulator->SetVariable("il1-power-estimator.cache-size", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_SIZE);

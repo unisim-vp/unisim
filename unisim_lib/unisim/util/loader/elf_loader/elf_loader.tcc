@@ -561,10 +561,13 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(parse_dwarf)
 	{
-		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob, dwarf_register_number_mapping_filename.c_str(), logger, regs_if, mem_if);
+		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob, logger, regs_if, mem_if);
 
 		if(dw_handler)
 		{
+			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, dwarf_register_number_mapping_filename.c_str());
+			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
+			
 			if(verbose)
 			{
 				logger << DebugInfo << "Parsing DWARF debugging informations" << EndDebugInfo;

@@ -47,6 +47,7 @@
 #include <unisim/service/interfaces/backtrace.hh>
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
+#include <unisim/service/interfaces/debug_info_loading.hh>
 
 #include <unisim/util/debug/profile.hh>
 #include <unisim/util/debug/breakpoint.hh>
@@ -87,6 +88,7 @@ using unisim::service::interfaces::BackTrace;
 using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::Profiling;
+using unisim::service::interfaces::DebugInfoLoading;
 
 using unisim::util::debug::Event;
 using unisim::util::debug::Breakpoint;
@@ -133,19 +135,20 @@ private:
 };
 
 template <class ADDRESS>
-class InlineDebugger :
-	public Service<DebugControl<ADDRESS> >,
-	public Service<DebugEventListener<ADDRESS> >,
-	public Service<TrapReporting>,
-	public Client<DebugEventTrigger<ADDRESS> >,
-	public Client<Disassembly<ADDRESS> >,
-	public Client<Memory<ADDRESS> >,
-	public Client<Registers>,
-	public Client<SymbolTableLookup<ADDRESS> >,
-	public Client<StatementLookup<ADDRESS> >,
-	public Client<BackTrace<ADDRESS> >,
-	public Client<Profiling<ADDRESS> >,
-	public InlineDebuggerBase
+class InlineDebugger
+	: public Service<DebugControl<ADDRESS> >
+	, public Service<DebugEventListener<ADDRESS> >
+	, public Service<TrapReporting>
+	, public Client<DebugEventTrigger<ADDRESS> >
+	, public Client<Disassembly<ADDRESS> >
+	, public Client<Memory<ADDRESS> >
+	, public Client<Registers>
+	, public Client<SymbolTableLookup<ADDRESS> >
+	, public Client<StatementLookup<ADDRESS> >
+	, public Client<BackTrace<ADDRESS> >
+	, public Client<Profiling<ADDRESS> >
+	, public Client<DebugInfoLoading>
+	,public InlineDebuggerBase
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -159,6 +162,7 @@ public:
 	ServiceImport<StatementLookup<ADDRESS> > stmt_lookup_import;
 	ServiceImport<BackTrace<ADDRESS> > backtrace_import;
 	ServiceImport<Profiling<ADDRESS> > profiling_import;
+	ServiceImport<DebugInfoLoading> debug_info_loading_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -265,7 +269,7 @@ private:
 	std::string SearchFile(const char *filename);
 	void LoadSymbolTable(const char *filename);
 	void LoadMacro(const char *filename);
-	bool LocateSource(const char *source_path, std::string& match_source_path);
+	bool LocateFile(const char *file_path, std::string& match_file_path);
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace(ADDRESS cia);
 	const Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr);

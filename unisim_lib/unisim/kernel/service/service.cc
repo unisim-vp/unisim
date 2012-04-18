@@ -686,7 +686,6 @@ template <class TYPE> Variable<TYPE>::operator string () const
 	switch(GetFormat())
 	{
 		case FMT_DEFAULT:
-			sstr << (result? tmp: *storage);
 		case FMT_HEX:
 			sstr << "0x" << hex;
 			sstr.fill('0');
@@ -3393,6 +3392,8 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	return false;
 } */
 
+//#define DEBUG_SEARCH_SHARED_DATA_FILE
+
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {
 	return ResolvePath(bin_dir, string(BIN_TO_SHARED_DATA_PATH), out_share_dir);
@@ -3401,19 +3402,40 @@ bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_
 string Simulator::SearchSharedDataFile(const char *filename) const
 {
 	string s(filename);
-	if(access(s.c_str(), F_OK) == 0)
+	if(!s.empty())
 	{
-		return s;
-	}
+#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
+		std::cerr << "SearchSharedDataFile: Trying \"" << s << "\"";
+#endif
+		if(access(s.c_str(), F_OK) == 0)
+		{
+#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
+			std::cerr << "...found" << std::endl;
+#endif
+			return s;
+		}
+#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
+		std::cerr << "...not found" << std::endl;
+#endif
 
-	stringstream sstr;
-	sstr << shared_data_dir << "/" << filename;
-	s = sstr.str();
-	if(access(s.c_str(), F_OK) == 0)
-	{
-		return s;
+		stringstream sstr;
+		sstr << shared_data_dir << "/" << filename;
+		s = sstr.str();
+#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
+		std::cerr << "SearchSharedDataFile: Trying \"" << s << "\"";
+#endif
+		if(access(s.c_str(), F_OK) == 0)
+		{
+#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
+			std::cerr << "...found" << std::endl;
+#endif
+			return s;
+		}
+		
+#ifdef DEBUG_SEARCH_SHARED_DATA_FILE
+		std::cerr << "...not found" << std::endl;
+#endif
 	}
-	
 	return string(filename);
 }
 

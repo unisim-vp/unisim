@@ -182,7 +182,7 @@ Node *Parser::Parse(const string& filename)
 	
 	if(f.fail())
 	{
-		Error(filename, 0, "No such file exists");
+		Error(filename, 0, "Can't open \"%s\"", filename.c_str());
 		return 0;
 	}
 	

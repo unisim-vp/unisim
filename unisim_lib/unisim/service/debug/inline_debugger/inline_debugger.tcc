@@ -91,6 +91,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, Client<BackTrace<ADDRESS> >(_name, _parent)
 	, Client<Profiling<ADDRESS> >(_name, _parent)
+	, Client<DebugInfoLoading>(_name, _parent)
 	, InlineDebuggerBase()
 	, debug_control_export("debug-control-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
@@ -103,6 +104,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, stmt_lookup_import("stmt-lookup-import", this)
 	, backtrace_import("backtrace-import", this)
 	, profiling_import("profiling-import", this)
+	, debug_info_loading_import("debug-info-loading-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -1628,7 +1630,13 @@ std::string InlineDebugger<ADDRESS>::SearchFile(const char *filename)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 {
-	// TODO
+	if(!debug_info_loading_import) return;
+
+	std::string match_file_path;
+	if(LocateFile(filename, match_file_path))
+	{
+		debug_info_loading_import->LoadDebugInfo(match_file_path.c_str());
+	}
 }
 
 template <class ADDRESS>
@@ -1706,7 +1714,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::LocateSource(const char *source_path, std::string& match_source_path)
+bool InlineDebugger<ADDRESS>::LocateFile(const char *filename, std::string& match_file_path)
 {
 	std::string s;
 	const char *p;
@@ -1728,15 +1736,15 @@ bool InlineDebugger<ADDRESS>::LocateSource(const char *source_path, std::string&
 		}
 	} while(*(p++));
 	
-	std::vector<std::string> hierarchical_source_path;
+	std::vector<std::string> hierarchical_path;
 	
 	s.clear();
-	p = source_path;
+	p = filename;
 	do
 	{
 		if(*p == 0 || *p == '/' || *p == '\\')
 		{
-			hierarchical_source_path.push_back(s);
+			hierarchical_path.push_back(s);
 			s.clear();
 		}
 		else
@@ -1747,9 +1755,9 @@ bool InlineDebugger<ADDRESS>::LocateSource(const char *source_path, std::string&
 	
 	bool match = false;
 	
-	int hierarchical_source_path_depth = hierarchical_source_path.size();
+	int hierarchical_path_depth = hierarchical_path.size();
 	
-	if(hierarchical_source_path_depth > 0)
+	if(hierarchical_path_depth > 0)
 	{
 		int num_search_paths = search_paths.size();
 		int k;
@@ -1758,21 +1766,21 @@ bool InlineDebugger<ADDRESS>::LocateSource(const char *source_path, std::string&
 		{
 			const std::string& search_path = search_paths[k];
 			int i;
-			for(i = 0; (!match) && (i < hierarchical_source_path_depth); i++)
+			for(i = 0; (!match) && (i < hierarchical_path_depth); i++)
 			{
-				std::string try_source_path = search_path;
+				std::string try_file_path = search_path;
 				int j;
-				for(j = i; j < hierarchical_source_path_depth; j++)
+				for(j = i; j < hierarchical_path_depth; j++)
 				{
-					if(!try_source_path.empty()) try_source_path += '/';
-					try_source_path += hierarchical_source_path[j];
+					if(!try_file_path.empty()) try_file_path += '/';
+					try_file_path += hierarchical_path[j];
 				}
-				//std::cerr << "try_source_path=\"" << try_source_path << "\":";
-				if(access(try_source_path.c_str(), R_OK) == 0)
+				//std::cerr << "try_file_path=\"" << try_file_path << "\":";
+				if(access(try_file_path.c_str(), R_OK) == 0)
 				{
 					//std::cerr << "found" << std::endl;
 					match = true;
-					match_source_path = try_source_path;
+					match_file_path = try_file_path;
 				}
 				else
 				{
@@ -1791,7 +1799,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 	bool match;
 	std::string match_source_path;
 	
-	if((match = LocateSource(source_path, match_source_path)))
+	if((match = LocateFile(source_path, match_source_path)))
 	{
 		(*std_output_stream) << match_source_path;
 	}
@@ -1878,7 +1886,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 					source_path += source_filename;
 					(*std_output_stream) << " in ";
 					std::string match_source_path;
-					if(LocateSource(source_path.c_str(), match_source_path))
+					if(LocateFile(source_path.c_str(), match_source_path))
 					{
 						(*std_output_stream) << match_source_path;
 					}

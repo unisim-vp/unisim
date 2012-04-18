@@ -65,7 +65,7 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugInfo;
 	
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, const char *_reg_num_mapping_filename, unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
 	: endianness(_blob->GetEndian())
 	, address_size(_blob->GetAddressSize())
 	, debug_line_section(_blob->FindSection(".debug_line", false))
@@ -81,7 +81,9 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 	, debug_ranges_section(_blob->FindSection(".debug_ranges", false))
 	, logger(_logger)
 	, blob(_blob)
-	, reg_num_mapping_filename(_reg_num_mapping_filename)
+	, reg_num_mapping_filename()
+	, verbose(false)
+	, dw_reg_num_mapping(0)
 	, regs_if(_regs_if)
 	, mem_if(_mem_if)
 {
@@ -97,21 +99,6 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 	if(debug_str_section) debug_str_section->Catch();
 	if(debug_loc_section) debug_loc_section->Catch();
 	if(debug_ranges_section) debug_ranges_section->Catch();
-
-	dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);
-		
-	if(dw_reg_num_mapping->Load(reg_num_mapping_filename, blob->GetArchitecture()))
-	{
-		std::stringstream sstr;
-		sstr << *dw_reg_num_mapping;
-		logger << DebugInfo << sstr.str() << EndDebugInfo;
-	}
-	else
-	{
-		logger << DebugWarning << "Can't load DWARF register number mapping" << EndDebugWarning;
-		delete dw_reg_num_mapping;
-		dw_reg_num_mapping = 0;
-	}
 }
 
 template <class MEMORY_ADDR>
@@ -237,6 +224,58 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, const char *s)
+{
+	switch(opt)
+	{
+		case OPT_REG_NUM_MAPPING_FILENAME:
+			reg_num_mapping_filename = s;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, bool flag)
+{
+	switch(opt)
+	{
+		case OPT_VERBOSE:
+			verbose = flag;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, std::string& s)
+{
+	switch(opt)
+	{
+		case OPT_REG_NUM_MAPPING_FILENAME:
+			s = reg_num_mapping_filename;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, bool& flag)
+{
+	switch(opt)
+	{
+		case OPT_VERBOSE:
+			flag = verbose;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
 const DWARF_Abbrev *DWARF_Handler<MEMORY_ADDR>::FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const
 {
 	std::map<uint64_t, DWARF_Abbrev *>::const_iterator abbrev_iter;
@@ -266,6 +305,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	
 	if(debug_abbrev_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_abbrev" << EndDebugInfo;
+		}
 		uint64_t debug_abbrev_offset = 0;
 		do
 		{
@@ -300,6 +343,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_info_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_info" << EndDebugInfo;
+		}
 		uint64_t debug_info_offset = 0;
 		do
 		{
@@ -327,6 +374,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_frame_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_frame" << EndDebugInfo;
+		}
 		uint64_t debug_frame_offset = 0;
 		int64_t sz;
 		do
@@ -366,6 +417,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_aranges_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_aranges" << EndDebugInfo;
+		}
 		uint64_t debug_aranges_offset = 0;
 		do
 		{
@@ -393,6 +448,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_pubnames_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_pubnames" << EndDebugInfo;
+		}
 		uint64_t debug_pubnames_offset = 0;
 		do
 		{
@@ -420,6 +479,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_pubtypes_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_pubtypes" << EndDebugInfo;
+		}
 		uint64_t debug_pubtypes_offset = 0;
 		do
 		{
@@ -442,6 +505,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 
 	// Fix all pointer cross-references
+	if(verbose)
+	{
+		logger << DebugInfo << "Fixing DWARF cross-references" << EndDebugInfo;
+	}
 	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
 	
 	unsigned int dw_cu_id = 0;
@@ -556,6 +623,19 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	BuildStatementMatrix();
 	//std::ofstream f("out.xml", std::ios::out);
 	//to_XML(f);
+
+	dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);
+		
+	if(verbose)
+	{
+		logger << DebugInfo << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugInfo;
+	}
+	if(!dw_reg_num_mapping->Load(reg_num_mapping_filename, blob->GetArchitecture()))
+	{
+		logger << DebugWarning << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugWarning;
+		delete dw_reg_num_mapping;
+		dw_reg_num_mapping = 0;
+	}
 }
 
 template <class MEMORY_ADDR>

@@ -302,6 +302,7 @@ unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
@@ -502,7 +503,9 @@ m4/get_exec_path.m4 \
 m4/real_path.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml"
+unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
 VIRTEX5FXT_EXTERNAL_HEADERS="\
 assert.h \
