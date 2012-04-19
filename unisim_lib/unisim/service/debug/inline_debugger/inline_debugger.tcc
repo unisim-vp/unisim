@@ -1635,7 +1635,10 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 	std::string match_file_path;
 	if(LocateFile(filename, match_file_path))
 	{
-		debug_info_loading_import->LoadDebugInfo(match_file_path.c_str());
+		if(debug_info_loading_import->LoadDebugInfo(match_file_path.c_str()))
+		{
+			(*std_output_stream) << "Symbols from \"" << filename << "\" loaded" << std::endl;
+		}
 	}
 }
 
