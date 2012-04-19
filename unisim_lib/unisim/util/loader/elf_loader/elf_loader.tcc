@@ -39,7 +39,6 @@
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
-#include <unisim/util/debug/dwarf/dwarf.tcc>
 
 namespace unisim {
 namespace util {

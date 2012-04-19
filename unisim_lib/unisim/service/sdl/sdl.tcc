@@ -435,7 +435,7 @@ bool SDL<ADDRESS>::SetupSDL()
 	unisim::util::xml::Node *xml_node = 0;
 	if(!keymap_filename.empty())
 	{
-		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+		unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 		xml_node = parser->Parse(GetSimulator()->SearchSharedDataFile(keymap_filename.c_str()));
 		delete parser;
 	}
@@ -449,7 +449,7 @@ bool SDL<ADDRESS>::SetupSDL()
 		{
 			if((*xml_child)->Name() != string("key"))
 			{
-				unisim::util::xml::Error((*xml_child)->Filename(), (*xml_child)->LineNo(), "WARNING! expected tag key, ignoring tag %s", (*xml_child)->Name().c_str());
+				logger << DebugWarning << (*xml_child)->Filename() << ":" << (*xml_child)->LineNo() << ":expected tag key, ignoring tag " << (*xml_child)->Name() << EndDebugWarning;
 			}
 			else
 			{
@@ -487,7 +487,7 @@ bool SDL<ADDRESS>::SetupSDL()
 						}
 						else
 						{
-							unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring property %s of tag %s", (*xml_prop)->Name().c_str(), xml_node->Name().c_str());
+							logger << DebugWarning << (*xml_prop)->Filename() << ":" << (*xml_prop)->LineNo() << ":ignoring property " << (*xml_prop)->Name() << " of tag " << xml_node->Name() << EndDebugWarning;
 						}
 					}
 				}
@@ -502,7 +502,7 @@ bool SDL<ADDRESS>::SetupSDL()
 				}
 				else
 				{
-					unisim::util::xml::Error((*xml_child)->Filename(), (*xml_child)->LineNo(), "WARNING! ignoring unrecognized key", (*xml_child)->Name().c_str());
+					logger << DebugWarning << (*xml_child)->Filename() << ":" << (*xml_child)->LineNo() << ":ignoring unrecognized key" << EndDebugWarning;
 				}
 			}
 		}

@@ -507,15 +507,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 
-#if 0
-				if(IsLoadCommand(parm[0].c_str()))
-				{
-					recognized = true;
-					DumpAvailableLoaders();
-					break;
-				}
-#endif
-				
 				if(IsBackTraceCommand(parm[0].c_str()))
 				{
 					recognized = true;
@@ -633,7 +624,19 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						DisableProfiling();
 						break;
 					}
-					else if(strcmp(parm[1].c_str(), "program") == 0)
+					else if(strcmp(parm[1].c_str(), "clear") == 0)
+					{
+						recognized = true;
+						ClearProfile();
+						break;
+					}
+					else if(strcmp(parm[1].c_str(), "status") == 0)
+					{
+						recognized = true;
+						DumpProfilingStatus();
+						break;
+					}
+					else if((strcmp(parm[1].c_str(), "prog") == 0) || (strcmp(parm[1].c_str(), "program") == 0))
 					{
 						recognized = true;
 						DumpProgramProfile();
@@ -648,14 +651,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					}
 				}
 
-#if 0
-				if(IsLoadCommand(parm[0].c_str()))
-				{
-					recognized = true;
-					Load(parm[1].c_str());
-					break;
-				}
-#endif
 				if(IsLoadSymbolTableCommand(parm[0].c_str()))
 				{
 					recognized = true;
@@ -712,21 +707,64 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					if(strcmp(parm[1].c_str(), "data") == 0)
 					{
-						if(strcmp(parm[2].c_str(), "read") == 0)
+						if(strcmp(parm[2].c_str(), "on") == 0)
+						{
+							recognized = true;
+							EnableDataProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "off") == 0)
+						{
+							recognized = true;
+							DisableDataProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "clear") == 0)
+						{
+							recognized = true;
+							ClearDataProfile();
+						}
+						else if(strcmp(parm[2].c_str(), "status") == 0)
+						{
+							recognized = true;
+							DumpDataProfilingStatus();
+							break;
+						}
+						else if(strcmp(parm[2].c_str(), "read") == 0)
 						{
 							recognized = true;
 							DumpDataProfile(false /* read */);
-							break;
 						}
 						else if(strcmp(parm[2].c_str(), "write") == 0)
 						{
 							recognized = true;
 							DumpDataProfile(true /* write */);
+						}
+					}
+					else if((strcmp(parm[1].c_str(), "prog") == 0) || (strcmp(parm[1].c_str(), "program") == 0))
+					{
+						if(strcmp(parm[2].c_str(), "on") == 0)
+						{
+							recognized = true;
+							EnableProgramProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "off") == 0)
+						{
+							recognized = true;
+							DisableProgramProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "clear") == 0)
+						{
+							recognized = true;
+							ClearProgramProfile();
+						}
+						else if(strcmp(parm[2].c_str(), "status") == 0)
+						{
+							recognized = true;
+							DumpProgramProfilingStatus();
 							break;
 						}
 					}
 				}
-				
+
 				if (IsMonitorCommand(parm[0].c_str(), parm[1].c_str()))
 				{
 					recognized = true;
@@ -769,6 +807,63 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 				break;
 
+			case 4:
+				
+				if(IsProfileCommand(parm[0].c_str()))
+				{
+					if(strcmp(parm[1].c_str(), "data") == 0)
+					{
+						if(strcmp(parm[2].c_str(), "read") == 0)
+						{
+							if(strcmp(parm[3].c_str(), "on") == 0)
+							{
+								recognized = true;
+								EnableDataReadProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "off") == 0)
+							{
+								recognized = true;
+								DisableDataReadProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "clear") == 0)
+							{
+								recognized = true;
+								ClearDataReadProfile();
+							}
+							else if(strcmp(parm[3].c_str(), "status") == 0)
+							{
+								recognized = true;
+								DumpDataReadProfilingStatus();
+								break;
+							}
+						}
+						else if(strcmp(parm[2].c_str(), "write") == 0)
+						{
+							if(strcmp(parm[3].c_str(), "on") == 0)
+							{
+								recognized = true;
+								EnableDataWriteProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "off") == 0)
+							{
+								recognized = true;
+								DisableDataWriteProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "clear") == 0)
+							{
+								recognized = true;
+								ClearDataWriteProfile();
+							}
+							else if(strcmp(parm[3].c_str(), "status") == 0)
+							{
+								recognized = true;
+								DumpDataWriteProfilingStatus();
+								break;
+							}
+						}
+					}
+				}
+				break;
 			case EOF:
 				recognized = true;
 				break;
@@ -808,9 +903,7 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::Help()
 {
 	(*std_output_stream) << "HELP:" << endl;
-	(*std_output_stream) << "================================  LOAD =========================================" << endl;
-	(*std_output_stream) << "<l | ld | load> <loader name>" << endl;
-	(*std_output_stream) << "    reload program file of loader <loader name>" << endl;
+	(*std_output_stream) << "================================ LOAD ==========================================" << endl;
 	(*std_output_stream) << "<st | symtab> [<filename>]" << endl;
 	(*std_output_stream) << "    load symbol table from file <filename>" << endl;
 	(*std_output_stream) << "=============================== SCRIPTING ======================================" << endl;
@@ -875,9 +968,34 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "    Display information about symbols having 'symbol name' in their name" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<p | prof | profile> on" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog on" << endl;
+	(*std_output_stream) << "<p | prof | profile> program on" << endl;
+	(*std_output_stream) << "<p | prof | profile> data on" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read on" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write on" << endl;
 	(*std_output_stream) << "<p | prof | profile> off" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog off" << endl;
+	(*std_output_stream) << "<p | prof | profile> program off" << endl;
+	(*std_output_stream) << "<p | prof | profile> data off" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read off" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write off" << endl;
 	(*std_output_stream) << "    enable/disable the program and data profiling" << endl;
+	(*std_output_stream) << "<p | prof | profile> status" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog status" << endl;
+	(*std_output_stream) << "<p | prof | profile> program status" << endl;
+	(*std_output_stream) << "<p | prof | profile> data status" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read status" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write status" << endl;
+	(*std_output_stream) << "    display the program and data profiling status (on/off)" << endl;
+	(*std_output_stream) << "<p | prof | profile> clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> program clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> data clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write clear" << endl;
+	(*std_output_stream) << "    clear the collected program and data profiles" << endl;
 	(*std_output_stream) << "<p | prof | profile>" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog" << endl;
 	(*std_output_stream) << "<p | prof | profile> program" << endl;
 	(*std_output_stream) << "<p | prof | profile> data" << endl;
 	(*std_output_stream) << "<p | prof | profile> data read" << endl;
@@ -1553,6 +1671,7 @@ void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpProgramProfile()
 {
+	if(!profiling_import) return;
 	(*std_output_stream) << "Program profile:" << endl;
 
 	const unisim::util::debug::Profile<ADDRESS>& program_profile = profiling_import->GetProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC);
@@ -1681,6 +1800,7 @@ void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
+	if(!profiling_import) return;
 	(*std_output_stream) << "Data " << (write ? "write" : "read") << " profile:" << endl;
 	const unisim::util::debug::Profile<ADDRESS>& data_profile = profiling_import->GetProfile(write ? unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE : unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ);
 	typename std::map<ADDRESS, uint64_t> map = data_profile;
@@ -2058,22 +2178,153 @@ const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *fil
 }
 
 template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableProgramProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableDataReadProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableDataWriteProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableDataProfiling()
+{
+	EnableDataReadProfiling();
+	EnableDataWriteProfiling();
+}
+
+template <class ADDRESS>
 void InlineDebugger<ADDRESS>::EnableProfiling()
 {
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_FETCH, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+	EnableProgramProfiling();
+	EnableDataProfiling();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableProgramProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableDataReadProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableDataWriteProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableDataProfiling()
+{
+	DisableDataReadProfiling();
+	DisableDataWriteProfiling();
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DisableProfiling()
 {
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_FETCH, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
-	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+	DisableProgramProfiling();
+	DisableDataProfiling();
 }
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearProgramProfile()
+{
+	if(!profiling_import) return;
+	profiling_import->ClearProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearDataReadProfile()
+{
+	if(!profiling_import) return;
+	profiling_import->ClearProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearDataWriteProfile()
+{
+	if(!profiling_import) return;
+	profiling_import->ClearProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearDataProfile()
+{
+	ClearDataReadProfile();
+	ClearDataWriteProfile();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearProfile()
+{
+	ClearProgramProfile();
+	ClearDataProfile();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpProgramProfilingStatus()
+{
+	if(!profiling_import) return;
+	bool status = false;
+	profiling_import->GetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, status);
+	(*std_output_stream) << "Program profiling is " << (status ? "on" : "off") << std::endl;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataReadProfilingStatus()
+{
+	if(!profiling_import) return;
+	bool status = false;
+	profiling_import->GetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, status);
+	(*std_output_stream) << "Data read profiling is " << (status ? "on" : "off") << std::endl;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataWriteProfilingStatus()
+{
+	if(!profiling_import) return;
+	bool status = false;
+	profiling_import->GetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, status);
+	(*std_output_stream) << "Data write profiling is " << (status ? "on" : "off") << std::endl;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataProfilingStatus()
+{
+	DumpDataReadProfilingStatus();
+	DumpDataWriteProfilingStatus();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpProfilingStatus()
+{
+	DumpProgramProfilingStatus();
+	DumpDataProfilingStatus();
+}
+
+
+
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, bool& interactive)
@@ -2296,12 +2547,6 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsProfileCommand(const char *cmd)
 {
 	return strcmp(cmd, "p") == 0 || strcmp(cmd, "prof") == 0 || strcmp(cmd, "profile") == 0;
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsLoadCommand(const char *cmd)
-{
-	return strcmp(cmd, "l") == 0 || strcmp(cmd, "ld") == 0 || strcmp(cmd, "load") == 0;
 }
 
 template <class ADDRESS>

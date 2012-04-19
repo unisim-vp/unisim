@@ -2259,15 +2259,15 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 	DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
 	frame->Load(dw_reg_num_mapping);
 	
-	MEMORY_ADDR pc_approx = pc;
+	MEMORY_ADDR caller_pc = pc;
 
 	do
 	{
-		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr((id == 1) ? pc : pc_approx);
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr((id == 1) ? pc : caller_pc);
 		
 		if(!dw_fde)
 		{
-			//logger << DebugInfo << "No more FDE found" << EndDebugInfo;
+//			logger << DebugInfo << "No more FDE found" << EndDebugInfo;
 			break;
 		}
 
@@ -2276,22 +2276,22 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 
 		if(cfi)
 		{
-			//logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+//			logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
 			
-			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow((id == 1) ? pc : pc_approx);
+			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow((id == 1) ? pc : caller_pc);
 			
-/*			if(cfi_row)
-			{
-				logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
-			}*/
+//			if(cfi_row)
+//			{
+//				logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+//			}
 			
-// 			logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
+//			logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
 			
 			DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
 			
 			if(!next_frame->Unwind(cfi_row, frame))
 			{
-// 				logger << DebugInfo << "No more unwinding context" << EndDebugInfo;
+//				logger << DebugInfo << "No more unwinding context" << EndDebugInfo;
 				delete next_frame;
 				break;
 			}
@@ -2299,7 +2299,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			delete frame;
 			frame = next_frame;
 
-// 			logger << DebugInfo << "Register set after unwinding:" << *frame << EndDebugInfo;
+//			logger << DebugInfo << "Register set after unwinding:" << *frame << EndDebugInfo;
 
 			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
 			
@@ -2307,7 +2307,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			
 			MEMORY_ADDR ret_addr = frame->ReadRegister(dw_ret_addr_reg_num);
 			
-// 			logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
+//			logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
 			
 			if(!backtrace)
 			{
@@ -2315,7 +2315,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 				backtrace->push_back(pc);
 			}
 
-			pc_approx = ret_addr - 1; // we take return address - 1 in the hope it is in the same context as the caller
+			caller_pc = ret_addr - 1; // we take return address - 1 in the hope it is in the same context as the caller
 			backtrace->push_back(ret_addr); 
 
 			delete cfi;

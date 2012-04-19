@@ -124,7 +124,28 @@ template class DWARF_Pub<uint32_t>;
 template class DWARF_Pubs<uint32_t>;
 template class DWARF_LocListEntry<uint32_t>;
 template class DWARF_Handler<uint32_t>;
-	
+
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AddressRangeDescriptor<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AddressRanges<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AttributeValue<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Attribute<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CallFrameProgram<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CFARule<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_RegisterRule<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CFIRow<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CFI<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CIE<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_CompilationUnit<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_DIE<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_FDE<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Frame<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_LocListEntry<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_MacInfoListEntry<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Pub<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_Pubs<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_RangeListEntry<uint32_t>&);
+template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_StatementProgram<uint32_t>&);
+
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util

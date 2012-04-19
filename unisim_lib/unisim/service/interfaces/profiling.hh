@@ -64,6 +64,8 @@ public:
 
 	virtual void SetProfileOption(ProfileType prof_type, Option opt, bool flag) = 0;
 	virtual void SetProfileOption(ProfileType prof_type, Option opt, ADDRESS addr) = 0;
+	virtual void GetProfileOption(ProfileType prof_type, Option opt, bool& flag) const = 0;
+	virtual void GetProfileOption(ProfileType prof_type, Option opt, ADDRESS& addr) const = 0;
 	virtual void ClearProfile(ProfileType prof_type) = 0;
 	virtual const unisim::util::debug::Profile<ADDRESS>& GetProfile(ProfileType prof_type) const = 0;
 };

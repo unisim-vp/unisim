@@ -132,6 +132,7 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -140,15 +141,19 @@ unisim/util/debug/blob/segment32.cc \
 unisim/util/debug/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
+unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
+unisim/service/debug/debugger/debugger32.cc \
+unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/power/cache_dynamic_energy.cc \
@@ -160,6 +165,7 @@ unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.cc \
 unisim/service/loader/pmac_bootx/pmac_bootx.cc \
 unisim/service/sdl/sdl.cc \
+unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.cc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
@@ -249,6 +255,7 @@ unisim/kernel/tlm/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
@@ -282,10 +289,13 @@ unisim/util/debug/dwarf/fwd.hh \
 unisim/util/debug/dwarf/macinfo.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -301,7 +311,11 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
@@ -310,6 +324,7 @@ unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
+unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/os.hh \
@@ -324,6 +339,9 @@ unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/mouse.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/tee/memory_access_reporting/tee.hh \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
@@ -424,19 +442,26 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
 unisim/util/simfloat/host_floating.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/sdl/sdl.tcc \
+unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/exception.tcc \
 unisim/component/cxx/processor/powerpc/mpc7447a/cpu.tcc \
@@ -496,6 +521,8 @@ m4/real_path.m4"
 
 UNISIM_LIB_PPCEMU_SYSTEM_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml \
 unisim/service/loader/pmac_bootx/device_tree_pmac_g4.xml \
 unisim/service/sdl/pc_linux_fr_keymap.xml \
 unisim/service/sdl/pc_linux_us_keymap.xml \
@@ -862,21 +889,21 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${PPCEMU_SYSTEM_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SDL" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_SDL(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION}\"], [path of shared data relative to bin directory])" >> "${PPCEMU_SYSTEM_CONFIGURE_AC}"

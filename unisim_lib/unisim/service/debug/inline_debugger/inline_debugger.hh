@@ -277,8 +277,26 @@ private:
 	const Statement<ADDRESS> *FindStatement(ADDRESS addr);
 	const Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno);
 	const Statement<ADDRESS> *FindNextStatement(ADDRESS addr);
+	void EnableProgramProfiling();
+	void EnableDataReadProfiling();
+	void EnableDataWriteProfiling();
+	void EnableDataProfiling();
 	void EnableProfiling();
+	void DisableProgramProfiling();
+	void DisableDataReadProfiling();
+	void DisableDataWriteProfiling();
+	void DisableDataProfiling();
 	void DisableProfiling();
+	void ClearProgramProfile();
+	void ClearDataReadProfile();
+	void ClearDataWriteProfile();
+	void ClearDataProfile();
+	void ClearProfile();
+	void DumpProgramProfilingStatus();
+	void DumpDataReadProfilingStatus();
+	void DumpDataWriteProfilingStatus();
+	void DumpDataProfilingStatus();
+	void DumpProfilingStatus();
 };
 
 } // end of namespace inline_debugger
