@@ -19,11 +19,9 @@
 #include "config.h"
 #endif
 
-
 #include <unisim/kernel/service/service.hh>
 
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
-#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <unisim/service/interfaces/loader.hh>
 
@@ -37,9 +35,6 @@
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 
-#include <unisim/service/pim/pim.hh>
-#include <unisim/service/pim/pim_server.hh>
-
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
@@ -49,12 +44,18 @@
 #include <unisim/component/tlm2/processor/hcs12x/pwm.hh>
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.hh>
 #include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
+
+#include <unisim/service/pim/pim.hh>
+#include <unisim/service/pim/pim_server.hh>
+
+#include <unisim/service/debug/inline_debugger/inline_debugger.hh>
 
 #include <xml_atd_pwm_stub.hh>
 
@@ -65,18 +66,21 @@
 #ifdef WIN32
 
 #include <windows.h>
-#include <winsock2.h>
+//#include <winsock2.h>
 
 #endif
-
 
 using namespace std;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
+using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
+using unisim::component::cxx::processor::hcs12x::address_t;
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
+using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
@@ -88,13 +92,19 @@ using unisim::service::pim::PIMServer;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
+
+using unisim::kernel::service::CallBackObject;
 
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::garbage_collector::GarbageCollector;
 
 
-class Simulator : public unisim::kernel::service::Simulator
+class Simulator :
+	public unisim::kernel::service::Simulator
+	, public CallBackObject
+
 {
 private:
 	//=========================================================================
@@ -113,6 +123,9 @@ public:
 	void Run();
 
 	virtual double GetSimTime()	{ if (sim_time) { return sim_time->GetTime(); } else { return 0; }	}
+	virtual double GetHostTime()	{ if (host_time) { return host_time->GetTime(); } else { return 0; }	}
+	virtual long   GetStructuredAddress(long logicalAddress) { return mmc->getPagedAddress(logicalAddress); }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return mmc->getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00); }
 
 	void GeneratePim() {
 		PIM *pim = new PIM("pim");
@@ -120,43 +133,39 @@ public:
 		if (pim) { delete pim; pim = NULL; }
 	};
 
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
+
 private:
 
 	//=========================================================================
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+//	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
+	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 
-	class InternalRouterConfig {
+	class GlobalRouterConfig {
 	public:
 		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 7;
-		static const unsigned int MAX_NUM_MAPPINGS = 7; //256;
+		static const unsigned int OUTPUT_SOCKETS = 10;
+		static const unsigned int MAX_NUM_MAPPINGS = 10; //256;
 		static const unsigned int BUSWIDTH = 32;
 		typedef tlm::tlm_base_protocol_types TYPES;
 		static const bool VERBOSE = false;
 	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<InternalRouterConfig> INTERNAL_ROUTER;
-
-	class ExternalRouterConfig {
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 1;
-		static const unsigned int MAX_NUM_MAPPINGS = 1; //256;
-		static const unsigned int BUSWIDTH = 32;
-		typedef tlm::tlm_base_protocol_types TYPES;
-		static const bool VERBOSE = false;
-	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<ExternalRouterConfig> EXTERNAL_ROUTER;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<GlobalRouterConfig> GLOBAL_ROUTER;
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
+
+	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
 
 // ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
@@ -182,12 +191,14 @@ private:
 	PWM *pwm;
 
 	//  - tlm2 router
-	EXTERNAL_ROUTER	*external_router;
-	INTERNAL_ROUTER	*internal_router;
+	GLOBAL_ROUTER	*global_router;
 
 	//  - Memories
-	MEMORY *internal_memory;
-	MEMORY *external_memory;
+//	MEMORY *global_memory;
+	RAM *global_ram;
+	FLASH *global_flash;
+
+	EEPROM *global_eeprom;
 
 	// - Interrupt controller
 	XINT *s12xint;
@@ -230,6 +241,12 @@ private:
 	Parameter<bool> param_enable_pim_server;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
+
+	string endian;
+	Parameter<string> *param_endian;
+	string program_counter_name;
+	Parameter<string> *param_pc_reg_name;
+
 	int exit_status;
 	bool isS19;
 
@@ -239,6 +256,12 @@ private:
 	Parameter<bool> param_dump_parameters;
 	Parameter<bool> param_dump_formulas;
 	Parameter<bool> param_dump_statistics;
+
+	enum {DATA_LOAD_RATIO, DATA_STORE_RATIO} ReadBackOffsets;
+
+	double null_stat_var;
+	Statistic<double> stat_data_load_ratio;
+	Statistic<double> stat_data_store_ratio;
 
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
 };

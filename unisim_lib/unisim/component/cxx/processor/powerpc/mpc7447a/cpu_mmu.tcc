@@ -35,6 +35,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_MMU_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_MPC7447A_CPU_MMU_TCC__
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

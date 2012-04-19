@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_BREAKPOINT_HH__
 #define __UNISIM_UTIL_DEBUG_BREAKPOINT_HH__
 
+#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 #include <ostream>
 
@@ -42,25 +43,35 @@ namespace unisim {
 namespace util {
 namespace debug {
 
+template <class ADDRESS> class Breakpoint;
+
 template <class ADDRESS>
-class Breakpoint
+std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp);
+
+template <class ADDRESS>
+class Breakpoint : public Event<ADDRESS>
 {
 public:
 	Breakpoint(ADDRESS addr)
+		: Event<ADDRESS>(Event<ADDRESS>::EV_BREAKPOINT)
 	{
 		this->addr = addr;
 	}
 
 	inline ADDRESS GetAddress() const { return addr; }
 	
-	friend std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brk)
-	{
-		os << "breakpoint(0x" << std::hex << brk.addr << std::dec << ")";
-		return os;
-	}
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Breakpoint<ADDRESS>& brkp);
 private:
 	ADDRESS addr;
 };
+
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const Breakpoint<ADDRESS>& brkp)
+{
+	os << "breakpoint at 0x" << std::hex << brkp.addr << std::dec;
+	
+	return os;
+}
 
 } // end of namespace debug
 } // end of namespace util

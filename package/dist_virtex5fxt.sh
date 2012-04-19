@@ -112,11 +112,17 @@ unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
+unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
+unisim/util/debug/symbol_64.cc \
 unisim/util/debug/symbol_table_32.cc \
+unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
+unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
+unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/stmt_32.cc \
+unisim/util/debug/stmt_64.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
 unisim/util/debug/dwarf/class.cc \
@@ -126,21 +132,29 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/section64.cc \
 unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
+unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/random/random.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
+unisim/service/debug/debugger/debugger32.cc \
+unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/power/cache_dynamic_energy.cc \
@@ -226,6 +240,7 @@ unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
@@ -259,10 +274,13 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -280,7 +298,11 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
@@ -289,6 +311,7 @@ unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
+unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/cache_power_estimator.hh \
@@ -302,6 +325,8 @@ unisim/service/interfaces/led_board.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
@@ -311,7 +336,6 @@ unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/raw_loader/raw_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
-unisim/service/loader/coff_loader/ti/ti.hh \
 unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
@@ -395,22 +419,27 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
 unisim/util/simfloat/host_floating.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
-unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/translator/memory_address/memory/translator.tcc \
 unisim/service/tee/loader/tee.tcc \
@@ -474,7 +503,9 @@ m4/get_exec_path.m4 \
 m4/real_path.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml"
+unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
 VIRTEX5FXT_EXTERNAL_HEADERS="\
 assert.h \
@@ -887,6 +918,7 @@ chmod +x Makefile.cross
 
 echo "\$(basename \$0): run 'make -f \${HERE}/Makefile.cross' or '\${HERE}/Makefile.cross' to build for \${host} host system type"
 EOF_CONFIGURE_CROSS
+	chmod +x "${CONFIGURE_CROSS}"
 fi  # has_to_build_configure_cross = "yes"
 
 # GENISSLIB
@@ -991,21 +1023,21 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${VIRTEX5FXT_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}\"], [path of shared data relative to bin directory])" >> "${VIRTEX5FXT_CONFIGURE_AC}"

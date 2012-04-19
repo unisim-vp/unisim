@@ -157,6 +157,8 @@ param_verbose_tlm_debug(0),
 verbose_memory_interface(false),
 param_verbose_memory_interface(0)
 {
+	param_port_buffer_size.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	if (VERBOSE)
 	{
 		param_verbose_all = new unisim::kernel::service::Parameter<bool>("verbose_all", this, verbose_all, "Activate all the verbose options");
@@ -1199,7 +1201,7 @@ ApplyMap(uint64_t addr, uint32_t size, unsigned int &applied_mapping) const
 	bool found = false;
 	for(unsigned int i = 0; !found && i < MAX_NUM_MAPPINGS; i++) {
 		if(mapping[i].used) {
-			if(addr >= mapping[i].range_start && (addr + size - 1) <= mapping[i].range_end) {
+			if((addr >= mapping[i].range_start) && ((addr + size - 1) <= mapping[i].range_end)) {
 				found = true;
 				applied_mapping = i;
 			}
@@ -1226,7 +1228,7 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 {
 	sc_dt::uint64 cur_addr = addr;
 	unsigned int cur_size = size;
-	while (cur_addr < addr + size) {
+	while (cur_size) {
 		unsigned int index = 0;
 		bool found = false;
 		for (; !found && index < MAX_NUM_MAPPINGS; index++) {
@@ -1234,12 +1236,20 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 				if (cur_addr >= mapping[index].range_start && cur_addr <= mapping[index].range_end) {
 					found = true;
 					port_mappings.push_back(index);
-// Gilles: I think this code is useless. It makes infinitely loop when range_end is the maximum range
-/*					if (cur_size - 1 <= mapping[index].range_end - cur_addr) {
-						cur_addr = mapping[index].range_end + 1;
-						cur_size = 1 + size - (mapping[index].range_end - addr);
-					} else */
-						cur_addr = addr + size;
+					if(cur_size > (mapping[index].range_end - cur_addr + 1)) // partially covered
+					{
+						sc_dt::uint64 next_addr = mapping[index].range_end + 1;
+						if(cur_addr > next_addr) return; // detect address overflow
+						cur_addr = next_addr;
+						cur_size = cur_size - (mapping[index].range_end - cur_addr + 1);
+					}
+					else // totally covered
+					{
+						sc_dt::uint64 next_addr = cur_addr + cur_size;
+						if(cur_addr > next_addr) return; // detect address overflow
+						cur_addr = next_addr;
+						cur_size = 0;
+					}
 				}
 			}
 		}
@@ -1247,7 +1257,7 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 			sc_dt::uint64 closest_range_start = 0;
 			for (index = 0; index < MAX_NUM_MAPPINGS; index++) {
 				if (mapping[index].used) {
-					if (cur_addr < mapping[index].range_start && cur_addr + cur_size > mapping[index].range_start) {
+					if ((cur_addr < mapping[index].range_start) && ((cur_addr + cur_size) > mapping[index].range_start)) {
 						if (!found)
 							closest_range_start = mapping[index].range_start;
 						else
@@ -1258,7 +1268,7 @@ ApplyMap(uint64_t addr, uint32_t size, std::vector<unsigned int> &port_mappings)
 				}
 			}
 			if (!found) return;
-			cur_size = size - (closest_range_start - cur_addr);
+			cur_size = cur_size - (closest_range_start - cur_addr);
 			cur_addr = closest_range_start;
 		}
 	}

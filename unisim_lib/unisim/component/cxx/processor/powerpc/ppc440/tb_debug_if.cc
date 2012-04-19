@@ -35,6 +35,10 @@
 #include <unisim/component/cxx/processor/powerpc/ppc440/cpu.hh>
 #include <stdlib.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

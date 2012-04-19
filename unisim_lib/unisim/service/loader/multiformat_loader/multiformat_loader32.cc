@@ -67,6 +67,12 @@ const char *Variable<AddressRange32 >::GetDataTypeName() const
 	return "32-bit address range";
 }
 
+template <>
+unsigned int Variable<AddressRange32 >::GetBitSize() const
+{
+	return 4;
+}
+
 template <> Variable<AddressRange32 >::operator bool () const
 {
 	return !storage->IsEmpty();

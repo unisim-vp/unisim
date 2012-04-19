@@ -89,17 +89,17 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 		"Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application "
 		"that runs within the simulator.")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
-	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
+	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, Client<MemoryAccessReportingControl>(_name, _parent)
+	, Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 	, Client<Memory<ADDRESS> >(_name, _parent)
 	, Client<Disassembly<ADDRESS> >(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
 	, debug_control_export("debug-control-export", this)
-	, memory_access_reporting_export("memory-access-reporting-export", this)
+	, debug_event_listener_export("debug-event-listener-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
-	, memory_access_reporting_control_import("memory_access_reporting_control_import", this)
+	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, memory_import("memory-import", this)
 	, registers_import("cpu-registers-import", this)
 	, disasm_import("disasm-import", this)
@@ -113,8 +113,6 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, killed(false)
 	, trap(false)
 	, synched(false)
-	, breakpoint_registry()
-	, watchpoint_registry()
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
 	, extended_mode(false)
 	, counter(0)
@@ -166,18 +164,10 @@ bool GDBServer<ADDRESS>::EndSetup()
 	input_buffer_index = 0;
 	output_buffer_size = 0;
 
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
 
 	delete parser;
-
-	if(memory_access_reporting_control_import)
-	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
-	}
 
 	if(root_node)
 	{
@@ -228,20 +218,20 @@ bool GDBServer<ADDRESS>::EndSetup()
 				}
 				else
 				{
-					unisim::util::xml::Error((*root_node_property)->Filename(), (*root_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*root_node_property)->Name().c_str());
+					logger << DebugWarning << (*root_node_property)->Filename() << ":" << (*root_node_property)->LineNo() << ":ignoring property '" << (*root_node_property)->Name() << "'" << EndDebugWarning;
 				}
 			}
 
 			if(!has_architecture_name)
 			{
-				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no property 'name'");
+				logger << DebugWarning << root_node->Filename() << ":" << root_node->LineNo() << ":architecture has no property 'name'" << EndDebugWarning;
 				delete root_node;
 				return false;
 			}
 
 			if(!has_architecture_endian)
 			{
-				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "WARNING! assuming target architecture endian is big endian");
+				logger << DebugWarning << root_node->Filename() << ":" << root_node->LineNo() << ":assuming target architecture endian is big endian" << EndDebugWarning;
 			}
 
 			const list<unisim::util::xml::Node *> *xml_nodes = root_node->Childs();
@@ -277,7 +267,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 							}
 							else
 							{
-								unisim::util::xml::Error((*xml_node_property)->Filename(), (*xml_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*xml_node_property)->Name().c_str());
+								logger << DebugWarning << (*xml_node_property)->Filename() << ":" << (*xml_node_property)->LineNo() << ":ignoring property '" << (*xml_node_property)->Name() << "'" << EndDebugWarning;
 							}
 						}
 					}
@@ -320,7 +310,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 					}
 					else
 					{
-						unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name' or 'size' property",(*xml_node)->Name().c_str());
+						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name' or 'size' property" << EndDebugWarning;
 					}
 				}
 				else
@@ -344,21 +334,21 @@ bool GDBServer<ADDRESS>::EndSetup()
 
 						if(!has_program_counter_name)
 						{
-							unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name'", (*xml_node)->Name().c_str());
+							logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":node '" << (*xml_node)->Name() << "' has no 'name'" << EndDebugWarning;
 							delete root_node;
 							return false;
 						}
 					}
 					else
 					{
-						unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! ignoring tag '%s'", (*xml_node)->Name().c_str());
+						logger << DebugWarning << (*xml_node)->Filename() << ":" << (*xml_node)->LineNo() << ":ignoring tag '" << (*xml_node)->Name() << "'" << EndDebugWarning;
 					}
 				}
 			}
 
 			if(!has_program_counter)
 			{
-				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no program counter");
+				logger << DebugError << root_node->Filename() << ":" << root_node->LineNo() << ":architecture has no program counter" << EndDebugError;
 				delete root_node;
 				return false;
 			}
@@ -376,14 +366,14 @@ bool GDBServer<ADDRESS>::EndSetup()
 
 			if(!gdb_pc)
 			{
-				unisim::util::xml::Error((*xml_program_counter_node)->Filename(), (*xml_program_counter_node)->LineNo(), "ERROR! program counter does not belong to registers");
+				logger << DebugError << (*xml_program_counter_node)->Filename() << ":" << (*xml_program_counter_node)->LineNo() << ":program counter does not belong to registers" << EndDebugError;
 				delete root_node;
 				return false;
 			}
 		}
 		else
 		{
-			unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! root node is not named 'architecture'");
+			logger << DebugError << root_node->Filename() << ":" << root_node->LineNo() << ":root node is not named 'architecture'" << EndDebugError;
 			delete root_node;
 			return false;
 		}
@@ -392,8 +382,7 @@ bool GDBServer<ADDRESS>::EndSetup()
 	}
 	else
 	{
-		cerr << "ERROR! no root node (" << architecture_description_filename << ")" << endl;
-		unisim::util::xml::Error(architecture_description_filename, 0, "ERROR! no root node");
+		logger << DebugError << architecture_description_filename << ":no root node" << EndDebugError;
 		return false;
 	}
 
@@ -549,23 +538,21 @@ bool GDBServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 }
 
 template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void GDBServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
 {
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
+	switch(event.GetType())
 	{
-		trap = true;
-		synched = false;
+		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
+			break;
+		default:
+			// ignore event
+			return;
 	}
-}
-
-template <class ADDRESS>
-void GDBServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
-{
-	if(breakpoint_registry.HasBreakpoint(next_addr))
-	{
-		trap = true;
-		synched = false;
-	}
+	
+	trap = true;
+	synched = true;
 }
 
 template <class ADDRESS>
@@ -1263,51 +1250,43 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.SetBreakpoint(addr + i)) return PutPacket("E00");
+				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return PutPacket("E00");
 			}
-			if(memory_access_reporting_control_import)
-				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-						breakpoint_registry.HasBreakpoints());
 			return PutPacket("OK");
 		case 2:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
 				return PutPacket("OK");
 			}
 			else
+			{
 				return PutPacket("E00");
+			}
 		case 3:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
 				return PutPacket("OK");
 			}
 			else
+			{
 				return PutPacket("E00");
+			}
 
 		case 4:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-			}
-			else
 				return PutPacket("E00");
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			}
+			
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
 				return PutPacket("OK");
 			}
 			else
+			{
+				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size));
 				return PutPacket("E00");
+			}
 	}
 	return PutPacket("E00");
 }
@@ -1328,51 +1307,42 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return PutPacket("E00");
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return PutPacket("E00");
 			}
-			if(memory_access_reporting_control_import)
-				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-						breakpoint_registry.HasBreakpoints());
 			return PutPacket("OK");
 
 		case 2:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
 				return PutPacket("OK");
 			}
 			else
+			{
 				return PutPacket("E00");
+			}
 		case 3:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
 				return PutPacket("OK");
 			}
 			else
+			{
 				return PutPacket("E00");
+			}
 		case 4:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
+				bool status = true;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
+				if(status)
+				{
+					return PutPacket("OK");
+				}
+				else
+				{
+					return PutPacket("E00");
+				}
 			}
-			else
-				return PutPacket("E00");
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
-			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
-				return PutPacket("OK");
-			}
-			else
-				return PutPacket("E00");
 	}
 	return PutPacket("E00");
 }

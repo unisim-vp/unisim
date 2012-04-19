@@ -37,6 +37,10 @@
 
 #include <unisim/kernel/debug/debug.hh>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {

@@ -69,6 +69,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, dmac3_dcr_stub(0)
 	, external_slave_dcr_stub(0)
 	, loader(0)
+	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
 	, sim_time(0)
@@ -192,6 +193,8 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//=========================================================================
 	//  - Multiformat loader
 	loader = new MultiFormatLoader<CPU_ADDRESS_TYPE>("loader");
+	//  - debugger
+	debugger = (enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -242,15 +245,15 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	splb0_stub->master_sock(crossbar->splb0_slave_sock);  // SPLB0 stub <-> SPLB0<Crossbar
 	splb1_stub->master_sock(crossbar->splb1_slave_sock);  // SPLB1 stub <-> SPLB1<Crossbar
 	
-	(*mplb->init_socket[0])(intc->slave_sock);      // MPLB <-> INTC
-	(*mplb->init_socket[1])(timer->slave_sock);     // MPLB <-> TIMER
-	(*mplb->init_socket[2])(flash->slave_sock);     // MPLB <-> FLASH
-	(*mplb->init_socket[3])(bram->slave_sock);      // MPLB <-> BRAM
-	(*mplb->init_socket[4])(uart_lite->slave_sock); // MPLB <-> UART Lite
-	(*mplb->init_socket[5])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
-	(*mplb->init_socket[6])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
-	(*mplb->init_socket[7])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
-	(*mplb->init_socket[8])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
+	(*mplb->init_socket[CONFIG::INTC_CONFIG::MPLB_PORT])(intc->slave_sock);      // MPLB <-> INTC
+	(*mplb->init_socket[CONFIG::TIMER_CONFIG::MPLB_PORT])(timer->slave_sock);     // MPLB <-> TIMER
+	(*mplb->init_socket[CONFIG::FLASH_MPLB_PORT])(flash->slave_sock);     // MPLB <-> FLASH
+	(*mplb->init_socket[CONFIG::BRAM_MPLB_PORT])(bram->slave_sock);      // MPLB <-> BRAM
+	(*mplb->init_socket[CONFIG::UART_LITE_CONFIG::MPLB_PORT])(uart_lite->slave_sock); // MPLB <-> UART Lite
+	(*mplb->init_socket[CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT])(gpio_dip_switches_8bit->slave_sock);      // MPLB <-> GPIO DIP switches 8 Bit
+	(*mplb->init_socket[CONFIG::GPIO_LEDS_8BIT_CONFIG::MPLB_PORT])(gpio_leds_8bit->slave_sock);              // MPLB <-> GPIO LEDs 8 Bit
+	(*mplb->init_socket[CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT])(gpio_5_leds_positions->slave_sock);       // MPLB <-> GPIO 5 LEDs Positions
+	(*mplb->init_socket[CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT])(gpio_push_buttons_5bit->slave_sock);      // MPLB <-> GPIO Push Buttons 5 bit
 	
 	for(irq = 0; irq < CONFIG::INTC_CONFIG::C_NUM_INTR_INPUTS; irq++)
 	{
@@ -315,43 +318,55 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	crossbar->mci_memory_import >> mci->memory_export;
 	crossbar->mplb_memory_import >> mplb->memory_export;
 	mci->memory_import >> ram->memory_export;
-	(*mplb->memory_import[0]) >> intc->memory_export;
-	(*mplb->memory_import[1]) >> timer->memory_export;
-	(*mplb->memory_import[2]) >> flash->memory_export;
-	(*mplb->memory_import[3]) >> bram->memory_export;
-	(*mplb->memory_import[4]) >> uart_lite->memory_export;
-	(*mplb->memory_import[5]) >> gpio_dip_switches_8bit->memory_export;
-	(*mplb->memory_import[6]) >> gpio_leds_8bit->memory_export;
-	(*mplb->memory_import[7]) >> gpio_5_leds_positions->memory_export;
-	(*mplb->memory_import[8]) >> gpio_push_buttons_5bit->memory_export;
+	(*mplb->memory_import[CONFIG::INTC_CONFIG::MPLB_PORT]) >> intc->memory_export;
+	(*mplb->memory_import[CONFIG::TIMER_CONFIG::MPLB_PORT]) >> timer->memory_export;
+	(*mplb->memory_import[CONFIG::FLASH_MPLB_PORT]) >> flash->memory_export;
+	(*mplb->memory_import[CONFIG::BRAM_MPLB_PORT]) >> bram->memory_export;
+	(*mplb->memory_import[CONFIG::UART_LITE_CONFIG::MPLB_PORT]) >> uart_lite->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT]) >> gpio_dip_switches_8bit->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_LEDS_8BIT_CONFIG::MPLB_PORT]) >> gpio_leds_8bit->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT]) >> gpio_5_leds_positions->memory_export;
+	(*mplb->memory_import[CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT]) >> gpio_push_buttons_5bit->memory_export;
 	cpu->loader_import >> loader->loader_export;
+	
+	if(enable_inline_debugger || enable_gdb_server)
+	{
+		// Connect debugger to CPU
+		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+		cpu->trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> cpu->disasm_export;
+		debugger->memory_import >> cpu->memory_export;
+		debugger->registers_import >> cpu->registers_export;
+		debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		debugger->loader_import >> loader->loader_export;
+		debugger->blob_import >> loader->blob_export;
+	}
 	
 	if(enable_inline_debugger)
 	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
-		*inline_debugger->loader_import[0] >> loader->loader_export;
-		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
-		*inline_debugger->backtrace_import[0] >> loader->backtrace_export;
+		// Connect inline-debugger to debugger
+		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
+		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		inline_debugger->disasm_import >> debugger->disasm_export;
+		inline_debugger->memory_import >> debugger->memory_export;
+		inline_debugger->registers_import >> debugger->registers_export;
+		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+		inline_debugger->backtrace_import >> debugger->backtrace_export;
+		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 	}
 	else if(enable_gdb_server)
 	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-		gdb_server->memory_access_reporting_control_import >>
-			cpu->memory_access_reporting_control_export;
+		// Connect gdb-server to debugger
+		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
+		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
+		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		gdb_server->memory_import >> debugger->memory_export;
+		gdb_server->registers_import >> debugger->registers_export;
 	}
 
 	if(estimate_power)
@@ -381,6 +396,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	*loader->memory_import[0] >> ram_effective_to_physical_address_translator->memory_export;
 	*loader->memory_import[1] >> bram_effective_to_physical_address_translator->memory_export;
 	*loader->memory_import[2] >> flash_effective_to_physical_address_translator->memory_export;
+	loader->registers_import >> cpu->registers_export;
 	cpu->symbol_table_lookup_import >> loader->symbol_table_lookup_export;
 
 	if(enable_telnet)
@@ -397,6 +413,7 @@ Simulator<CONFIG>::~Simulator()
 	if(critical_input_interrupt_stub) delete critical_input_interrupt_stub;
 	if(ram) delete ram;
 	if(bram) delete bram;
+	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
 	if(cpu) delete cpu;
@@ -467,11 +484,12 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
 	double cpu_clock_multiplier = 2.0;
 	double ext_timer_clock_divisor = 2.0;
-	uint32_t tech_node = 130; // in nm
+	uint32_t tech_node = 65; // in nm
 	double cpu_ipc = 1.0; // in instructions per cycle
 	double cpu_cycle_time = (double)(1.0e6 / cpu_frequency); // in picoseconds
 	double fsb_cycle_time = cpu_clock_multiplier * cpu_cycle_time;
@@ -487,7 +505,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("cpu.cpu-cycle-time", sc_time(cpu_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.bus-cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("cpu.ext-timer-cycle-time", sc_time(ext_timer_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("cpu.voltage", 1.3 * 1e3); // mV
+	simulator->SetVariable("cpu.voltage", 1.0 * 1e3); // mV
 	simulator->SetVariable("cpu.max-inst", maxinst);
 	simulator->SetVariable("cpu.nice-time", "200 ns"); // 200 ns (currently geared to the minimum interval between capture trigger samples)
 	simulator->SetVariable("cpu.ipc", cpu_ipc);
@@ -503,32 +521,83 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	//  - MPLB
 	simulator->SetVariable("mplb.cycle_time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
-	simulator->SetVariable("mplb.mapping_0", "range_start=\"0x81800000\" range_end=\"0x8180ffff\" output_port=\"0\" translation=\"0x81800000\""); // XPS IntC
-	simulator->SetVariable("mplb.mapping_1", "range_start=\"0x83c00000\" range_end=\"0x83c0ffff\" output_port=\"1\" translation=\"0x83c00000\""); // XPS Timer/Counter
-	simulator->SetVariable("mplb.mapping_2", "range_start=\"0xfc000000\" range_end=\"0xfdffffff\" output_port=\"2\" translation=\"0xfc000000\""); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
-	simulator->SetVariable("mplb.mapping_3", "range_start=\"0xfffc0000\" range_end=\"0xffffffff\" output_port=\"3\" translation=\"0xfffc0000\""); // 256 KB XPS BRAM
-	simulator->SetVariable("mplb.mapping_4", "range_start=\"0x84000000\" range_end=\"0x8400ffff\" output_port=\"4\" translation=\"0x84000000\""); // XPS UART Lite
-	simulator->SetVariable("mplb.mapping_5", "range_start=\"0x81460000\" range_end=\"0x8146ffff\" output_port=\"5\" translation=\"0x81460000\""); // GPIO DIP SWITCHES 8BIT
-	simulator->SetVariable("mplb.mapping_6", "range_start=\"0x81400000\" range_end=\"0x8140ffff\" output_port=\"6\" translation=\"0x81400000\""); // GPIO LEDS 8BIT
-	simulator->SetVariable("mplb.mapping_7", "range_start=\"0x81420000\" range_end=\"0x8142ffff\" output_port=\"7\" translation=\"0x81420000\""); // GPIO 5 LEDS POSITIONS
-	simulator->SetVariable("mplb.mapping_8", "range_start=\"0x81440000\" range_end=\"0x8144ffff\" output_port=\"8\" translation=\"0x81440000\""); // GPIO PUSH BUTTONS 5BIT
 	
+	unsigned int mapping_num = 0;
+	
+	std::stringstream sstr_intc_mapping_name;
+	sstr_intc_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_intc_mapping;
+	sstr_intc_mapping << "range_start=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::INTC_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::INTC_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_intc_mapping_name.str().c_str(), sstr_intc_mapping.str().c_str()); // XPS IntC
+
+	std::stringstream sstr_timer_mapping_name;
+	sstr_timer_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_timer_mapping;
+	sstr_timer_mapping << "range_start=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::TIMER_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::TIMER_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_timer_mapping_name.str().c_str(), sstr_timer_mapping.str().c_str()); // XPS Timer/Counter
+	
+	std::stringstream sstr_flash_mapping_name;
+	sstr_flash_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_flash_mapping;
+	sstr_flash_mapping << "range_start=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec << "\" output_port=\"" << CONFIG::FLASH_MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_flash_mapping_name.str().c_str(), sstr_flash_mapping.str().c_str()); // 32 MB Flash memory (i.e. 1 * 256 Mbits S29GL256P flash memory chips)
+	
+	std::stringstream sstr_bram_mapping_name;
+	sstr_bram_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_bram_mapping;
+	sstr_bram_mapping << "range_start=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\" range_end=\"0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec << "\" output_port=\"" << CONFIG::BRAM_MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_bram_mapping_name.str().c_str(), sstr_bram_mapping.str().c_str()); // 256 KB XPS BRAM
+
+	std::stringstream sstr_uart_lite_mapping_name;
+	sstr_uart_lite_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_uart_lite_mapping;
+	sstr_uart_lite_mapping << "range_start=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::UART_LITE_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::UART_LITE_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_uart_lite_mapping_name.str().c_str(), sstr_uart_lite_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_dip_switches_8bit_mapping_name;
+	sstr_gpio_dip_switches_8bit_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_gpio_dip_switches_8bit_mapping;
+	sstr_gpio_dip_switches_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_DIP_SWITCHES_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_dip_switches_8bit_mapping_name.str().c_str(), sstr_gpio_dip_switches_8bit_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_leds_8bit_mapping_name;
+	sstr_gpio_leds_8bit_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_gpio_leds_8bit_mapping;
+	sstr_gpio_leds_8bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_LEDS_8BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_LEDS_8BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_leds_8bit_mapping_name.str().c_str(), sstr_gpio_leds_8bit_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_5_leds_positions_mapping_name;
+	sstr_gpio_5_leds_positions_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_gpio_5_leds_positions_mapping;
+	sstr_gpio_5_leds_positions_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_5_LEDS_POSITIONS_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_5_leds_positions_mapping_name.str().c_str(), sstr_gpio_5_leds_positions_mapping.str().c_str()); // XPS Timer/Counter
+
+	std::stringstream sstr_gpio_push_buttons_5bit_mapping_name;
+	sstr_gpio_push_buttons_5bit_mapping_name << "mplb.mapping_" << mapping_num++;
+	std::stringstream sstr_gpio_push_buttons_5bit_mapping;
+	sstr_gpio_push_buttons_5bit_mapping << "range_start=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\" range_end=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_HIGHADDR << std::dec << "\" output_port=\"" << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::MPLB_PORT << "\" translation=\"0x" << std::hex << CONFIG::GPIO_PUSH_BUTTONS_5BIT_CONFIG::C_BASEADDR << std::dec << "\"";
+	simulator->SetVariable(sstr_gpio_push_buttons_5bit_mapping_name.str().c_str(), sstr_gpio_push_buttons_5bit_mapping.str().c_str()); // XPS Timer/Counter
+
 	// - Loader memory router
-	simulator->SetVariable("loader.memory-mapper.mapping", "ram-effective-to-physical-address-translator:0x00000000-0x0fffffff,bram-effective-to-physical-address-translator:0xfffc0000-0xffffffff,flash-effective-to-physical-address-translator:0xfc000000-0xfdffffff"); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
+	std::stringstream sstr_loader_mapping;
+	sstr_loader_mapping << "ram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::RAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::RAM_BASE_ADDR + CONFIG::RAM_BYTE_SIZE - 1) << std::dec;
+	sstr_loader_mapping << ",bram-effective-to-physical-address-translator:0x" << std::hex << CONFIG::BRAM_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::BRAM_BASE_ADDR + CONFIG::BRAM_BYTE_SIZE - 1) << std::dec;
+	sstr_loader_mapping << ",flash-effective-to-physical-address-translator:0x" << std::hex << CONFIG::FLASH_BASE_ADDR << std::dec << "-0x" << std::hex << (CONFIG::FLASH_BASE_ADDR + CONFIG::FLASH_BYTE_SIZE - 1) << std::dec;
+	simulator->SetVariable("loader.memory-mapper.mapping", sstr_loader_mapping.str().c_str()); // 256 MB RAM / 256 KB BRAM / 32 MB Flash memory
 
 	//  - RAM
 	simulator->SetVariable("ram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("ram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("ram.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("ram.org", 0x00000000UL);
-	simulator->SetVariable("ram.bytesize", 256 * 1024 * 1024); // 256 MB
+	simulator->SetVariable("ram.org", CONFIG::RAM_BASE_ADDR);
+	simulator->SetVariable("ram.bytesize", CONFIG::RAM_BYTE_SIZE);
 
 	//  - BRAM
 	simulator->SetVariable("bram.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("bram.read-latency", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	simulator->SetVariable("bram.write-latency", SC_ZERO_TIME.to_string().c_str());
-	simulator->SetVariable("bram.org", 0xfffc0000UL);
-	simulator->SetVariable("bram.bytesize", 256 * 1024); // 256 KB
+	simulator->SetVariable("bram.org", CONFIG::BRAM_BASE_ADDR);
+	simulator->SetVariable("bram.bytesize", CONFIG::BRAM_BYTE_SIZE);
 	
 	//  - Interrupt controller
 	simulator->SetVariable("intc.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
@@ -546,8 +615,8 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("gpio-push-buttons-5bit.cycle-time", sc_time(fsb_cycle_time, SC_PS).to_string().c_str());
 
 	//  - Flash
-	simulator->SetVariable("flash.org", 0xfc000000UL);
-	simulator->SetVariable("flash.bytesize", 32 * 1024 * 1024); // 32 MB
+	simulator->SetVariable("flash.org", CONFIG::FLASH_BASE_ADDR);
+	simulator->SetVariable("flash.bytesize", CONFIG::FLASH_BYTE_SIZE);
 	simulator->SetVariable("flash.cycle-time", sc_time(mem_cycle_time, SC_PS).to_string().c_str());
 	
 	//  - Capture Trigger stubs
@@ -563,11 +632,15 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - GDB Server run-time configuration
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
+	
+	//  - Debugger run-time configuration
+	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	//  - Cache/TLB power estimators run-time configuration
 	simulator->SetVariable("il1-power-estimator.cache-size", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_SIZE);
 	simulator->SetVariable("il1-power-estimator.line-size", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE);
-	simulator->SetVariable("il1-power-estimator.associativity", CONFIG::CPU_CONFIG::DL1_CONFIG::CACHE_ASSOCIATIVITY);
+	simulator->SetVariable("il1-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("il1-power-estimator.rw-ports", 0);
 	simulator->SetVariable("il1-power-estimator.excl-read-ports", 1);
 	simulator->SetVariable("il1-power-estimator.excl-write-ports", 0);
@@ -580,7 +653,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("dl1-power-estimator.cache-size", CONFIG::CPU_CONFIG::IL1_CONFIG::CACHE_SIZE);
 	simulator->SetVariable("dl1-power-estimator.line-size", CONFIG::CPU_CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE);
-	simulator->SetVariable("dl1-power-estimator.associativity", CONFIG::CPU_CONFIG::IL1_CONFIG::CACHE_ASSOCIATIVITY);
+	simulator->SetVariable("dl1-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("dl1-power-estimator.rw-ports", 1);
 	simulator->SetVariable("dl1-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("dl1-power-estimator.excl-write-ports", 0);
@@ -593,7 +666,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("itlb-power-estimator.cache-size", CONFIG::CPU_CONFIG::ITLB_CONFIG::TLB_NUM_ENTRIES * (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
 	simulator->SetVariable("itlb-power-estimator.line-size", (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
-	simulator->SetVariable("itlb-power-estimator.associativity", CONFIG::CPU_CONFIG::ITLB_CONFIG::TLB_ASSOCIATIVITY);
+	simulator->SetVariable("itlb-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("itlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("itlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("itlb-power-estimator.excl-write-ports", 0);
@@ -606,7 +679,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("dtlb-power-estimator.cache-size", CONFIG::CPU_CONFIG::DTLB_CONFIG::TLB_NUM_ENTRIES * (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
 	simulator->SetVariable("dtlb-power-estimator.line-size", (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
-	simulator->SetVariable("dtlb-power-estimator.associativity", CONFIG::CPU_CONFIG::DTLB_CONFIG::TLB_ASSOCIATIVITY);
+	simulator->SetVariable("dtlb-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("dtlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("dtlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("dtlb-power-estimator.excl-write-ports", 0);
@@ -619,7 +692,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 
 	simulator->SetVariable("utlb-power-estimator.cache-size", CONFIG::CPU_CONFIG::UTLB_CONFIG::TLB_NUM_ENTRIES * (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
 	simulator->SetVariable("utlb-power-estimator.line-size", (CONFIG::CPU_CONFIG::TLBE_DATA_BITSIZE + 7 / 8));
-	simulator->SetVariable("utlb-power-estimator.associativity", CONFIG::CPU_CONFIG::UTLB_CONFIG::TLB_ASSOCIATIVITY);
+	simulator->SetVariable("utlb-power-estimator.associativity", 0); // fully associative
 	simulator->SetVariable("utlb-power-estimator.rw-ports", 1);
 	simulator->SetVariable("utlb-power-estimator.excl-read-ports", 0);
 	simulator->SetVariable("utlb-power-estimator.excl-write-ports", 0);

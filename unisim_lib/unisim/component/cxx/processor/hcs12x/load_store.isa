@@ -354,7 +354,7 @@ leay.disasm = {
 
 leay.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+    uint16_t	addr = xb->getEAddr(cpu);
    
 	cpu->setRegY(addr);
 	
@@ -377,7 +377,7 @@ leax.disasm = {
 
 leax.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+    uint16_t	addr = xb->getEAddr(cpu);
     
 	cpu->setRegX(addr);
 	
@@ -400,7 +400,7 @@ leas.disasm = {
 
 leas.execute = {
 
-    address_t	addr = xb->getEAddr(cpu);
+    uint16_t	addr = xb->getEAddr(cpu);
     
 	cpu->setRegSP(addr);
 	

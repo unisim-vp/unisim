@@ -35,6 +35,10 @@
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DEBUGGING_TCC__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_POWERPC_PPC440_CPU_DEBUGGING_TCC__
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -339,7 +343,7 @@ string CPU<CONFIG>::Disasm(typename CONFIG::address_t addr, typename CONFIG::add
 	{
 		EmuTranslateAddress<true>(mmu_access); // debug is enabled
 	}
-	catch(InstructionTLBErrorException<CONFIG>& exc) { string("not mapped"); }
+	catch(InstructionTLBErrorException<CONFIG>& exc) { return string("not mapped ?"); }
 
 	bool hit = false;
 

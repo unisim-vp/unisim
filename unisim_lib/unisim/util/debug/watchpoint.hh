@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
 #include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
 
 namespace unisim {
@@ -44,12 +45,18 @@ namespace debug {
 
 using unisim::service::interfaces::MemoryAccessReporting;
 
+template <class ADDRESS> class Watchpoint;
+
 template <class ADDRESS>
-class Watchpoint
+std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp);
+
+template <class ADDRESS>
+class Watchpoint : public Event<ADDRESS>
 {
 public:
 
 	Watchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+		: Event<ADDRESS>(Event<ADDRESS>::EV_WATCHPOINT)
 	{
 		this->mat = mat;
 		this->mt = mt;
@@ -72,12 +79,44 @@ public:
 		
 		return ovl_lo <= ovl_hi;
 	}
+	
+	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Watchpoint<ADDRESS>& wp);
 private:
 	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat;
 	typename MemoryAccessReporting<ADDRESS>::MemoryType mt;
 	ADDRESS addr;
 	uint32_t size;
 };
+
+template <class ADDRESS>
+inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& wp)
+{
+	switch(wp.mt)
+	{
+		case MemoryAccessReporting<ADDRESS>::MT_DATA:
+			os << "data";
+			break;
+		case MemoryAccessReporting<ADDRESS>::MT_INSN:
+			os << "instruction";
+			break;
+	}
+	os << " ";
+	if(wp.mat & (MemoryAccessReporting<ADDRESS>::MAT_WRITE | MemoryAccessReporting<ADDRESS>::MAT_READ))
+	{
+		os << "read/write";
+	}
+	else if(wp.mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+	{
+		os << "write";
+	}
+	else if(wp.mat & MemoryAccessReporting<ADDRESS>::MAT_READ)
+	{
+		os << "read";
+	}
+	os << " at 0x" << std::hex << wp.addr << std::dec << " (" << wp.size << " bytes) watchpoint";
+	
+	return os;
+}
 
 } // end of namespace debug
 } // end of namespace util

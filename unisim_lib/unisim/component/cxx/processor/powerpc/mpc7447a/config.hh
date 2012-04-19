@@ -38,6 +38,10 @@
 #include <unisim/component/cxx/processor/powerpc/config.hh>
 #include <inttypes.h>
 
+#ifdef powerpc
+#undef powerpc
+#endif
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -442,7 +446,6 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = false; // Debug is disabled by default
-	static const bool DEBUG_SETUP_ENABLE = false;
 	static const bool DEBUG_STEP_ENABLE = false;
 	static const bool DEBUG_DTLB_ENABLE = false;
 	static const bool DEBUG_ITLB_ENABLE = false;
@@ -459,6 +462,7 @@ public:
 	static const bool DEBUG_SET_HID1_ENABLE = false;
 	static const bool DEBUG_SET_HID2_ENABLE = false;
 	static const bool DEBUG_SET_L2CR_ENABLE = false;
+	static const bool DEBUG_PRINTK_ENABLE = false;
 
 	// performance model
 	static const bool PERF_MODEL_ENABLE = false;
@@ -753,7 +757,6 @@ public:
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;
-	static const bool DEBUG_SETUP_ENABLE = true;
 	static const bool DEBUG_STEP_ENABLE = true;
 	static const bool DEBUG_DTLB_ENABLE = true;
 	static const bool DEBUG_ITLB_ENABLE = true;
@@ -770,6 +773,7 @@ public:
 	static const bool DEBUG_SET_HID1_ENABLE = true;
 	static const bool DEBUG_SET_HID2_ENABLE = true;
 	static const bool DEBUG_SET_L2CR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
 };
 
 

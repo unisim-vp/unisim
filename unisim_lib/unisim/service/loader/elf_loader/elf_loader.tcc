@@ -56,12 +56,14 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent)
 	: Object(name, parent, "this service implements an ELF Loader")
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
+	, Client<Registers>(name, parent)
 	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
 	, Service<BackTrace<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
+	, registers_import("registers-import", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
@@ -72,6 +74,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, base_addr(0)
 	, force_base_addr(false)
 	, force_use_virtual_address(true)
+	, initialize_extra_segment_bytes(true)
 	, dump_headers(false)
 	, logger(*this)
 	, verbose(false)
@@ -88,12 +91,14 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_force_use_virtual_address("force-use-virtual-address", this, 
 			force_use_virtual_address, 
 			"force use of virtual addresses instead of physical addresses")
+	, param_initialize_extra_segment_bytes("initialize-extra-segment-bytes", this, initialize_extra_segment_bytes, "whether to initialize extra bytes in segments (p_filesz < p_memsz) to zero (true for standard ELF files)")
 	, param_dump_headers("dump-headers", this, dump_headers, 
 			"dump headers while loading ELF file")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", 
 			this, dwarf_to_html_output_directory, 
 			"DWARF v2/v3 to HTML output directory")
+	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
 	, param_parse_dwarf("parse-dwarf", this, parse_dwarf,
 			"Enable/Disable parsing of DWARF debugging informations")
 {
@@ -131,14 +136,18 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		
 		if(segment->GetType() == unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
 		{
-			if(unlikely(verbose))
-			{
-				logger << DebugInfo << "Writing segment (" << segment->GetSize() << " bytes) at @0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  segment->GetSize() - 1) << std::dec << EndDebugInfo;
-			}
-			if(!memory_import->WriteMemory(segment->GetAddr(), segment->GetData(), segment->GetSize()))
-			{
-				logger << DebugError << "Can't write into memory (@0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  segment->GetSize() - 1) << std::dec << ")" << EndDebugError;
-				success = false;
+			MEMORY_ADDR write_size = initialize_extra_segment_bytes ? segment->GetSize() : segment->GetDataSize();
+			if (write_size) {
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Writing segment (" << write_size << " bytes) at @0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  write_size - 1) << std::dec << EndDebugInfo;
+				}
+
+				if(!memory_import->WriteMemory(segment->GetAddr(), segment->GetData(), write_size))
+				{
+					logger << DebugError << "Can't write into memory (@0x" << std::hex << segment->GetAddr() << " - @0x" << (segment->GetAddr() +  write_size - 1) << std::dec << ")" << EndDebugError;
+					success = false;
+				}
 			}
 		}
 	}
@@ -154,9 +163,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		elf_loader = 0;
 	}
 
-	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger);
+	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger, registers_import, memory_import);
 
-	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename.c_str());
+	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_BASE_ADDR, force_base_addr);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_USE_VIRTUAL_ADDRESS, force_use_virtual_address);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_BASE_ADDR, base_addr);
@@ -164,6 +173,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory.c_str());
+	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 	
 	return elf_loader->Load();
 }
