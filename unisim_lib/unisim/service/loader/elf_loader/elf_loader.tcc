@@ -79,7 +79,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, logger(*this)
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
-	, parse_dwarf(true)
+	, parse_dwarf(false)
 	, param_filename("filename", this, filename,
 			"the ELF filename to load into memory")
 	, param_base_addr("base-addr", this, base_addr, 
