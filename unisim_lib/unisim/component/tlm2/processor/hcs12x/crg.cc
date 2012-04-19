@@ -34,16 +34,12 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
-#include "unisim/util/debug/simple_register.hh"
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
-
-using unisim::util::debug::SimpleRegister;
-using unisim::component::tlm2::processor::hcs12x::XINT;
 
 CRG::CRG(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
@@ -113,6 +109,12 @@ CRG::CRG(const sc_module_name& name, Object *parent) :
 
 {
 
+	param_oscillator_clock_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_self_clock_mode_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_pll_stabilization_delay.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_check_window.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_osc_ok.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
 	var_osc_fail.SetMutable(true);
 	var_osc_fail.SetSerializable(false);
 	var_osc_fail.SetVisible(true);
@@ -145,6 +147,12 @@ CRG::~CRG() {
 
 	registers_registry.clear();
 
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
+
 }
 
 
@@ -153,43 +161,48 @@ void CRG::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
+	unsigned int data_length = trans.get_data_length();
 
 	assert(address >= baseAddress);
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
-		unsigned int data_length = trans.get_data_length();
 		memset(data_ptr, 0, data_length);
-		read(address - baseAddress, *data_ptr);
+		read(address - baseAddress, data_ptr, data_length);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-		write(address - baseAddress, *data_ptr);
+		write(address - baseAddress, data_ptr, data_length);
 	}
 
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-bool CRG::read(uint8_t offset, uint8_t &value) {
+bool CRG::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
-		case SYNR: value = synr_register & 0x3F; break;
-		case REFDV: value = refdv_register & 0x3F; break;
-		case CTFLG: value = 0; break;
-		case CRGFLG: value = crgflg_register; break;
-		case CRGINT: value = crgint_register & 0xD2; break;
-		case CLKSEL: value = clksel_register & 0xCB; break;
-		case PLLCTL: value = pllctl_register; break;
-		case RTICTL: value = rtictl_register; break;
-		case COPCTL: value = copctl_register & 0xC7; break;
-		case FORBYP: value = 0; break;
-		case CTCTL: value = 0; break;
-		case ARMCOP: value = 0; break;
+		case SYNR: *((uint8_t *) buffer) = synr_register & 0x3F; break;
+		case REFDV: *((uint8_t *) buffer) = refdv_register & 0x3F; break;
+		case CTFLG: *((uint8_t *) buffer) = 0; break;
+		case CRGFLG: *((uint8_t *) buffer) = crgflg_register; break;
+		case CRGINT: *((uint8_t *) buffer) = crgint_register & 0xD2; break;
+		case CLKSEL: *((uint8_t *) buffer) = clksel_register & 0xCB; break;
+		case PLLCTL: *((uint8_t *) buffer) = pllctl_register; break;
+		case RTICTL: *((uint8_t *) buffer) = rtictl_register; break;
+		case COPCTL: *((uint8_t *) buffer) = copctl_register & 0xC7; break;
+		case FORBYP: *((uint8_t *) buffer) = 0; break;
+		case CTCTL: *((uint8_t *) buffer) = 0; break;
+		case ARMCOP: *((uint8_t *) buffer) = 0; break;
 		default: return false;
 	}
 
 	return true;
 }
 
-bool CRG::write(uint8_t offset, uint8_t value) {
+//=====================================================================
+//=             registers setters and getters                         =
+//=====================================================================
 
+bool CRG::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+
+	uint8_t value = *((uint8_t *) buffer);
 	switch (offset) {
 		case SYNR: {
 			 // if (PLLSEL == 1) then return;
@@ -430,19 +443,24 @@ void CRG::RunClockMonitor() {
 			wait(osc_ok);
 
 // note: all the prime numbers under 100
-//    2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97
+//  2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97
 
-			if (osc_fail || ((rand() % 97) == 0)) {
-				// check SCME bit
-				if ((pllctl_register & 0x01) != 0) {
-					activateSelfClockMode();
+// 481th prime number to 500th prime number
+// 	3433, 3449, 3457, 3461, 3463, 3467, 3469, 3491, 3499, 3511, 3517, 3527, 3529, 3533, 3539, 3541, 3547, 3557, 3559, 3571
+
+			if (osc_fail) {
+				if ((rand() % 3571) == 0) {
+					// check SCME bit
+					if ((pllctl_register & 0x01) != 0) {
+						activateSelfClockMode();
+					} else {
+						systemReset();
+					}
+
 				} else {
-					systemReset();
-				}
-
-			} else {
-				if ((crgflg_register & 0x01) != 0) {
-					deactivateSelfClockMode();
+					if ((crgflg_register & 0x01) != 0) {
+						deactivateSelfClockMode();
+					}
 				}
 			}
 
@@ -633,6 +651,7 @@ void CRG::RunRTI() {
 	sc_time delay;
 
 	while (true) {
+
 		while (((crgint_register & 0x80) == 0) || ((rtictl_register & 0x70) == 0) || (!rti_enabled)) {
 			wait(rti_enable_event);
 		}
@@ -648,6 +667,7 @@ void CRG::RunRTI() {
 		wait(delay);
 
 		crgflg_register = crgflg_register | 0x80;
+
 		assertInterrupt(interrupt_offset_rti);
 	}
 }
@@ -827,38 +847,86 @@ bool CRG::BeginSetup() {
 	sprintf(buf, "%s.SYNR",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &synr_register);
 
+	unisim::kernel::service::Register<uint8_t> *synr_var = new unisim::kernel::service::Register<uint8_t>("SYNR", this, synr_register, "CRG Synthesizer Register (SYNR)");
+	extended_registers_registry.push_back(synr_var);
+	synr_var->setCallBack(this, SYNR, &CallBackObject::write, NULL);
+
 	sprintf(buf, "%s.REFDV",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &refdv_register);
+
+	unisim::kernel::service::Register<uint8_t> *refdv_var = new unisim::kernel::service::Register<uint8_t>("REFDV", this, refdv_register, "CRG Reference Divider Register (REFDV)");
+	extended_registers_registry.push_back(refdv_var);
+	refdv_var->setCallBack(this, REFDV, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CTFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctflg_register);
 
+	unisim::kernel::service::Register<uint8_t> *ctflg_var = new unisim::kernel::service::Register<uint8_t>("CTFLG", this, ctflg_register, "CRG Test Flags Register (CTFLG)");
+	extended_registers_registry.push_back(ctflg_var);
+	ctflg_var->setCallBack(this, CTFLG, &CallBackObject::write, NULL);
+
 	sprintf(buf, "%s.CRGFLG",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgflg_register);
+
+	unisim::kernel::service::Register<uint8_t> *crgflg_var = new unisim::kernel::service::Register<uint8_t>("CRGFLG", this, crgflg_register, "CRG Flags Register (CRGFLG)");
+	extended_registers_registry.push_back(crgflg_var);
+	crgflg_var->setCallBack(this, CRGFLG, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CRGINT",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &crgint_register);
 
+	unisim::kernel::service::Register<uint8_t> *crgint_var = new unisim::kernel::service::Register<uint8_t>("CRGINT", this, crgint_register, "CRG Interrupt Enable Register (CRGINT)");
+	extended_registers_registry.push_back(crgint_var);
+	crgint_var->setCallBack(this, CRGINT, &CallBackObject::write, NULL);
+
 	sprintf(buf, "%s.CLKSEL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &clksel_register);
+
+	unisim::kernel::service::Register<uint8_t> *clksel_var = new unisim::kernel::service::Register<uint8_t>("CLKSEL", this, clksel_register, "CRG Clock Select Register (CLKSEL)");
+	extended_registers_registry.push_back(clksel_var);
+	clksel_var->setCallBack(this, CLKSEL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PLLCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pllctl_register);
 
+	unisim::kernel::service::Register<uint8_t> *pllctl_var = new unisim::kernel::service::Register<uint8_t>("PLLCTL", this, pllctl_register, "CRG PLL Control Register (PLLCTL)");
+	extended_registers_registry.push_back(pllctl_var);
+	pllctl_var->setCallBack(this, PLLCTL, &CallBackObject::write, NULL);
+
 	sprintf(buf, "%s.RTICTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &rtictl_register);
+
+	unisim::kernel::service::Register<uint8_t> *rtictl_var = new unisim::kernel::service::Register<uint8_t>("RTICTL", this, rtictl_register, "CRG RTI Control Register (RTICTL)");
+	extended_registers_registry.push_back(rtictl_var);
+	rtictl_var->setCallBack(this, RTICTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.COPCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &copctl_register);
 
+	unisim::kernel::service::Register<uint8_t> *copctl_var = new unisim::kernel::service::Register<uint8_t>("COPCTL", this, copctl_register, "CRG COP Control Register (COPCTL)");
+	extended_registers_registry.push_back(copctl_var);
+	copctl_var->setCallBack(this, COPCTL, &CallBackObject::write, NULL);
+
 	sprintf(buf, "%s.FORBYP",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &forbyp_register);
+
+	unisim::kernel::service::Register<uint8_t> *forbyp_var = new unisim::kernel::service::Register<uint8_t>("FORBYP", this, forbyp_register, "CRG Force and Bypass Test Register (FORBYP)");
+	extended_registers_registry.push_back(forbyp_var);
+	forbyp_var->setCallBack(this, FORBYP, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.CTCTL",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ctctl_register);
 
+	unisim::kernel::service::Register<uint8_t> *ctctl_var = new unisim::kernel::service::Register<uint8_t>("CTCTL", this, ctctl_register, "CRG Test Control Register (CTCTL)");
+	extended_registers_registry.push_back(ctctl_var);
+	ctctl_var->setCallBack(this, CTCTL, &CallBackObject::write, NULL);
+
 	sprintf(buf, "%s.ARMCOP",name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &armcop_register);
+
+	unisim::kernel::service::Register<uint8_t> *armcop_var = new unisim::kernel::service::Register<uint8_t>("ARMCOP", this, armcop_register, "CRG COP Arm/Timer Reset (ARMCOP)");
+	extended_registers_registry.push_back(armcop_var);
+	armcop_var->setCallBack(this, ARMCOP, &CallBackObject::write, NULL);
 
 	oscillator_clock = sc_time((double) oscillator_clock_value, SC_PS);
 
@@ -929,9 +997,10 @@ void CRG::Reset() {
 
 bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
 
-	if (offset <= ARMCOP) {
+		service_address_t offset = addr-baseAddress;
+
 		switch (offset) {
 			case SYNR: *(uint8_t *) buffer = synr_register; break;
 			case REFDV: *(uint8_t *) buffer = refdv_register; break;
@@ -949,21 +1018,55 @@ bool CRG::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 		}
 
 		return true;
+
 	}
 
 	return false;
 }
 
+//bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+//
+//	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
+//
+//		if (size == 0) {
+//			return true;
+//		}
+//
+//		service_address_t offset = addr-baseAddress;
+//
+//		return write(offset, *(uint8_t *) buffer);
+//	}
+//
+//	return false;
+//
+//}
+
 bool CRG::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
 
-	service_address_t offset = addr-baseAddress;
+	if ((addr >= baseAddress) && (addr <= (baseAddress+ARMCOP))) {
 
-	if (size == 0) {
+		if (size == 0) {
+			return true;
+		}
+
+		service_address_t offset = addr-baseAddress;
+
+		switch (offset) {
+			case SYNR: synr_register = *((uint8_t *) buffer); break;
+			case REFDV: refdv_register = *((uint8_t *) buffer); break;
+			case CTFLG: ctflg_register = *((uint8_t *) buffer); break;
+			case CRGFLG: crgflg_register = *((uint8_t *) buffer); break;
+			case CRGINT: crgint_register = *((uint8_t *) buffer); break;
+			case CLKSEL: clksel_register = *((uint8_t *) buffer); break;
+			case PLLCTL: pllctl_register = *((uint8_t *) buffer); break;
+			case RTICTL: rtictl_register = *((uint8_t *) buffer); break;
+			case COPCTL: copctl_register = *((uint8_t *) buffer); break;
+			case FORBYP: forbyp_register = *((uint8_t *) buffer); break;
+			case CTCTL: ctctl_register = *((uint8_t *) buffer); break;
+			case ARMCOP: armcop_register = *((uint8_t *) buffer); break;
+		}
+
 		return true;
-	}
-
-	if (offset <= ARMCOP) {
-		return write(offset, *(uint8_t *) buffer);
 	}
 
 	return false;

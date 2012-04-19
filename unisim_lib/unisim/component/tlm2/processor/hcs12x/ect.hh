@@ -92,6 +92,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::RegisterArray;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::VariableBaseListener;
@@ -112,12 +113,13 @@ using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;
 
 class ECT :
-	public sc_module,
-	virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>,
-	public Client<TrapReporting >,
-	public Service<Memory<service_address_t> >,
-	public Service<Registers>,
-	public Client<Memory<service_address_t> >
+	public sc_module
+	, public CallBackObject
+	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, public Client<TrapReporting >
+	, public Service<Memory<service_address_t> >
+	, public Service<Registers>
+	, public Client<Memory<service_address_t> >
 
 {
 public:
@@ -127,7 +129,7 @@ public:
 	//=========================================================
 
 	enum REGS_OFFSETS {TIOS, CFORC, OC7M, OC7D, TCNT_HIGH, TCNT_LOW, TSCR1,
-						TTOF, TCTL1, TCTL2, TCTL3, TCTL4, TIE, TSCR2, TFLG1, TFLG2,
+						TTOV, TCTL1, TCTL2, TCTL3, TCTL4, TIE, TSCR2, TFLG1, TFLG2,
 						TC0_HIGH, TC0_LOW, TC1_HIGH, TC1_LOW, TC2_HIGH, TC2_LOW,
 						TC3_HIGH, TC3_LOW, TC4_HIGH, TC4_LOW, TC5_HIGH, TC5_LOW,
 						TC6_HIGH, TC6_LOW, TC7_HIGH, TC7_LOW, PACTL, PAFLG,
@@ -229,8 +231,8 @@ public:
 	//=====================================================================
 	//=             registers setters and getters                         =
 	//=====================================================================
-    bool read(uint8_t offset, uint8_t* value, uint32_t size);
-    bool write(uint8_t offset, uint8_t* value, uint32_t size);
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 
 protected:
@@ -402,6 +404,8 @@ private:
 
 	// Registers map
 	map<string, Register *> registers_registry;
+
+	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
 	bool prnt_write; // TSCR1::PRNT is write once bit
 	bool icsys_write; // ICSYS register is write once in normal mode

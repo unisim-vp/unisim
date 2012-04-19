@@ -612,16 +612,37 @@ $ powerpc-440fp-linux-gnu-gdb boot.elf
 
 In this section, we present some examples of use for the simulator.
 We provide you with scripts and makefiles to build in an automatic manner all the examples.
+These examples are available for download in source and binary forms on our web site (\url{http://unisim-vp.org}):
+\begin{itemize}
+\item Basic system level unit tests: [\href{http://unisim-vp.org/site/downloads/virtual-platforms/powerpc/virtex5fxt/unisim-virtex5fxt-basic-system-level-unit-tests-bin-v1.tar.gz}{hyperlink to binaries}], [\href{http://unisim-vp.org/site/downloads/virtual-platforms/powerpc/virtex5fxt/unisim-virtex5fxt-basic-system-level-unit-tests-source-v1.tar.gz}{hyperlink to sources}]
+\item MiBench version 1: [\href{http://unisim-vp.org/site/downloads/other/benchmarks/mibench/mibench-v1-bin-powerpc-440fp-linux-gnu-v1.tar.gz}{hyperlink to binaries}], [\href{http://unisim-vp.org/site/downloads/other/benchmarks/mibench/mibench-v1-source-powerpc-440fp-linux-gnu-v1.tar.gz}{hyperlink to sources}]
+\item light weight Linux distribution: [\href{http://unisim-vp.org/site/downloads/other/benchmarks/linux-distro/unisim-virtex5fxt-linux-distro-bin-v1.tar.gz}{hyperlink to binaries}], [\href{http://unisim-vp.org/site/downloads/other/benchmarks/linux-distro/unisim-virtex5fxt-linux-distro-source-v1.tar.gz}{hyperlink to sources}]
+\end{itemize}
 
 \subsection{Building the examples}
 
-The top level \texttt{build.sh} scripts take at least one argument, and an optional second argument.
-The first argument is either \texttt{all} or \texttt{clean}.
-The second optional argument is the path to a crosstool chain for target \texttt{powerpc-440fp-linux-gnu}, that is a GCC cross-compiler and its standard C library.
-If that second argument is ommitted, the \texttt{build.sh} script will build the crosstool chain itself.
-To launch the build of the crosstool chain and every binaries for target \texttt{powerpc-440fp-linux-gnu}, do the following at the command prompt:
+To build the examples you need a functional cross tool-chain for target for target \texttt{powerpc-440fp-linux-gnu}, see Section~\ref{building_crosstool_chain}.
+In later sub-sections, we assume that your cross tool-chain is installed in \texttt{/opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu}
+
+\subsubsection{Building the basic system level unit tests}
+
+From the directory where you uncompressed the archive, do the following at the command prompt:
 \begin{script}
-$ ./build.sh all
+$ make CROSS_COMPILE=/opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu/bin/powerpc-440fp-linux-gnu-
+\end{script}
+
+\subsubsection{Building the MiBench version 1 benchmarks}
+
+From the directory where you uncompressed the archive, do the following at the command prompt:
+\begin{script}
+./build.sh all /opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu
+\end{script}
+
+\subsubsection{Building the light weight Linux distribution}
+
+From the directory where you uncompressed the archive, do the following at the command prompt:
+\begin{script}
+./build.sh all /opt/crosstool/gcc-4.4.6-glibc-2.9/powerpc-440fp-linux-gnu
 \end{script}
 
 \subsection{Basic system level tests}
@@ -1656,7 +1677,7 @@ When such limitations exist, they are explained in the status column of the tabl
 		\hline
 		\texttt{ghostscript} & \texttt{office} & Postscript renderer & Crashes on PowerPC  \\
 		\hline
-		\texttt{ispell} & \texttt{office} & Spell checker & OK \\
+		\texttt{ispell} & \texttt{office} & Spell checker & Fail (input files are endian-sensitive)\\
 		\hline
 		\texttt{stringsearch} & \texttt{office} & Search for words in text & OK \\
 		\hline

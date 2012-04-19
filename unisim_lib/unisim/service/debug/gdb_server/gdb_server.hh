@@ -36,7 +36,7 @@
 #define __UNISIM_SERVICE_DEBUG_GDB_SERVER_GDB_SERVER_HH__
 
 #include <unisim/util/endian/endian.hh>
-#include <unisim/service/interfaces/memory_access_reporting.hh>
+#include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/debug_control.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
@@ -47,8 +47,9 @@
 #include <unisim/kernel/service/service.hh>
 #include <unisim/kernel/logger/logger.hh>
 
-#include <unisim/util/debug/breakpoint_registry.hh>
-#include <unisim/util/debug/watchpoint_registry.hh>
+#include <unisim/util/debug/event.hh>
+#include <unisim/util/debug/breakpoint.hh>
+#include <unisim/util/debug/watchpoint.hh>
 #include <unisim/util/debug/register.hh>
 
 #include <string>
@@ -66,15 +67,16 @@ using std::vector;
 
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::Disassembly;
-using unisim::service::interfaces::MemoryAccessReporting;
-using unisim::service::interfaces::MemoryAccessReportingControl;
+using unisim::service::interfaces::DebugEventListener;
+using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::SymbolTableLookup;
 using unisim::service::interfaces::TrapReporting;
 
-using unisim::util::debug::BreakpointRegistry;
-using unisim::util::debug::WatchpointRegistry;
+using unisim::util::debug::Event;
+using unisim::util::debug::Breakpoint;
+using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 
 using unisim::kernel::service::Parameter;
@@ -138,9 +140,9 @@ private:
 template <class ADDRESS>
 class GDBServer :
 	public Service<DebugControl<ADDRESS> >,
-	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Service<DebugEventListener<ADDRESS> >,
 	public Service<TrapReporting>,
-	public Client<MemoryAccessReportingControl>,
+	public Client<DebugEventTrigger<ADDRESS> >,
 	public Client<Memory<ADDRESS> >,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
@@ -148,10 +150,10 @@ class GDBServer :
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
-	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
+	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
-	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
+	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<Registers> registers_import;
 	ServiceImport<Disassembly<ADDRESS> > disasm_import;
@@ -160,8 +162,7 @@ public:
 	GDBServer(const char *name, Object *parent = 0);
 	virtual ~GDBServer();
 
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS next_addr);
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -210,8 +211,6 @@ private:
 	bool killed;
 	bool trap;
 	bool synched;
-	BreakpointRegistry<ADDRESS> breakpoint_registry;
-	WatchpointRegistry<ADDRESS> watchpoint_registry;
 	GDBServerRunningMode running_mode;
 	bool extended_mode;
 	int32_t counter;

@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
+#include <stdexcept>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -80,45 +81,42 @@ template <class ADDRESS>
 InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	: Object(_name, _parent, "this service implements a built-in debugger in the terminal console")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
-	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
+	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, Client<MemoryAccessReportingControl>(_name, _parent)
+	, Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 	, Client<Disassembly<ADDRESS> >(_name, _parent)
 	, Client<Memory<ADDRESS> >(_name, _parent)
 	, Client<Registers>(_name, _parent)
 	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<Loader>(_name, _parent)
 	, Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, Client<BackTrace<ADDRESS> >(_name, _parent)
+	, Client<Profiling<ADDRESS> >(_name, _parent)
+	, Client<DebugInfoLoading>(_name, _parent)
 	, InlineDebuggerBase()
 	, debug_control_export("debug-control-export", this)
-	, memory_access_reporting_export("memory-access-reporting-export", this)
+	, debug_event_listener_export("debug-event-listener-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
+	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, disasm_import("disasm-import", this)
 	, memory_import("memory-import", this)
-	, memory_access_reporting_control_import("memory-access-reporting-control-import", this)
 	, registers_import("registers-import", this)
-	, symbol_table_lookup_import(0)
-	, loader_import(0)
-	, stmt_lookup_import(0)
-	, backtrace_import(0)
+	, symbol_table_lookup_import("symbol-table-lookup-import", this)
+	, stmt_lookup_import("stmt-lookup-import", this)
+	, backtrace_import("backtrace-import", this)
+	, profiling_import("profiling-import", this)
+	, debug_info_loading_import("debug-info-loading-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
-	, num_loaders(0)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
-	, param_num_loaders("num-loaders", this, num_loaders, "number of loaders")
 	, param_search_path("search-path", this, search_path, "Search path for source (separated by ';')")
 	, param_init_macro("init-macro", this, init_macro, "path to initial macro to run when debugger starts")
 	, param_output("output", this, output, "path to output file where to redirect the debugger outputs")
-	, breakpoint_registry()
-	, watchpoint_registry()
-	, program_profile()
-	, data_read_profile()
-	, data_write_profile()
+	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, running_mode(INLINE_DEBUGGER_MODE_WAITING_USER)
 	, disasm_addr(0)
 	, dump_addr(0)
 	, cont_until_addr(0)
+	, last_stmt(0)
 	, prompt(string(_name) + "> ")
 	, hex_addr_fmt(0)
 	, int_addr_fmt(0)
@@ -126,9 +124,6 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, std_output_stream(&std::cout)
 	, std_error_stream(&std::cerr)
 {
-	param_num_loaders.SetMutable(false);
-	param_num_loaders.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
-	
 	trap = false;
 
 	switch(sizeof(ADDRESS))
@@ -162,57 +157,11 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 			int_addr_fmt = strdup(PRIu64);
 			break;
 	}
-	
-	if(num_loaders)
-	{
-		unsigned int i;
-		typedef ServiceImport<Loader> *PLoaderImport;
-		loader_import = new PLoaderImport[num_loaders];
-		
-		for(i = 0; i < num_loaders; i++)
-		{
-			std::stringstream sstr_name;
-			sstr_name << "loader-import[" << i << "]";
-			loader_import[i] = new ServiceImport<Loader>(sstr_name.str().c_str(), this);
-		}
-
-		typedef ServiceImport<SymbolTableLookup<ADDRESS> > *PSymbolTableLookupImport;
-		symbol_table_lookup_import = new PSymbolTableLookupImport[num_loaders];
-		
-		for(i = 0; i < num_loaders; i++)
-		{
-			std::stringstream sstr_name;
-			sstr_name << "symbol-table-lookup-import[" << i << "]";
-			symbol_table_lookup_import[i] = new ServiceImport<SymbolTableLookup<ADDRESS> >(sstr_name.str().c_str(), this);
-		}
-
-		typedef ServiceImport<StatementLookup<ADDRESS> > *PStatementLookupImport;
-		stmt_lookup_import = new PStatementLookupImport[num_loaders];
-		
-		for(i = 0; i < num_loaders; i++)
-		{
-			std::stringstream sstr_name;
-			sstr_name << "stmt-lookup-import[" << i << "]";
-			stmt_lookup_import[i] = new ServiceImport<StatementLookup<ADDRESS> >(sstr_name.str().c_str(), this);
-		}
-
-		typedef ServiceImport<BackTrace<ADDRESS> > *PBackTraceImport;
-		backtrace_import = new PBackTraceImport[num_loaders];
-		
-		for(i = 0; i < num_loaders; i++)
-		{
-			std::stringstream sstr_name;
-			sstr_name << "backtrace-import[" << i << "]";
-			backtrace_import[i] = new ServiceImport<BackTrace<ADDRESS> >(sstr_name.str().c_str(), this);
-		}
-	}
 }
 
 template <class ADDRESS>
 InlineDebugger<ADDRESS>::~InlineDebugger()
 {
-	unsigned int i;
-	
 	if(output_stream)
 	{
 		delete output_stream;
@@ -220,45 +169,11 @@ InlineDebugger<ADDRESS>::~InlineDebugger()
 	
 	free(hex_addr_fmt);
 	free(int_addr_fmt);
-
-	if(num_loaders)
-	{
-		
-		for(i = 0; i < num_loaders; i++)
-		{
-			delete loader_import[i];
-			delete symbol_table_lookup_import[i];
-			delete stmt_lookup_import[i];
-			delete backtrace_import[i];
-		}
-		delete[] loader_import;
-		delete[] symbol_table_lookup_import;
-		delete[] stmt_lookup_import;
-		delete[] backtrace_import;
-	}
-	
-	for(i = 0; i < elf32_loaders.size(); i++)
-	{
-		unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
-		delete elf32_loader;
-	}
-
-	for(i = 0; i < elf64_loaders.size(); i++)
-	{
-		unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
-		delete elf64_loader;
-	}
 }
 
 template<class ADDRESS>
 bool InlineDebugger<ADDRESS>::EndSetup()
 {
-	if(memory_access_reporting_control_import)
-	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(false);
-	}
-	
 	if(!output.empty())
 	{
 		output_stream = new std::ofstream(output.c_str(), std::ofstream::out);
@@ -303,26 +218,28 @@ void InlineDebugger<ADDRESS>::OnDisconnect()
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void InlineDebugger<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
 {
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size)) trap = true;
-	if(mt == MemoryAccessReporting<ADDRESS>::MT_DATA)
+	switch(event.GetType())
 	{
-		if(mat == MemoryAccessReporting<ADDRESS>::MAT_WRITE)
-		{
-			data_write_profile.Accumulate(addr, 1);
-		}
-		else
-		{
-			data_read_profile.Accumulate(addr, 1);
-		}
+		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
+			{
+				const unisim::util::debug::Breakpoint<ADDRESS> *breakpoint = (const unisim::util::debug::Breakpoint<ADDRESS> *) &event;
+				(*std_output_stream) << "-> Reached " << (*breakpoint) << std::endl;
+			}
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
+			{
+				const unisim::util::debug::Watchpoint<ADDRESS> *watchpoint = (const unisim::util::debug::Watchpoint<ADDRESS> *) &event;
+				(*std_output_stream) << "-> Reached " << (*watchpoint) << std::endl;
+			}
+			break;
+		default:
+			// ignore event
+			return;
 	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
-{
-	if(breakpoint_registry.HasBreakpoint(next_addr)) trap = true;
+	
+	trap = true;
 }
 
 template <class ADDRESS>
@@ -381,7 +298,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{
-		program_profile.Accumulate(cia, 1);
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
 	
@@ -393,11 +309,14 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	if(running_mode == INLINE_DEBUGGER_MODE_RESET)
 	{
 		running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
-		program_profile.Accumulate(cia, 1);
 		return DebugControl<ADDRESS>::DBG_STEP;
 	}
-
-	trap = false;
+	
+	if(running_mode == INLINE_DEBUGGER_MODE_STEP)
+	{
+		const Statement<ADDRESS> *stmt = FindStatement(cia);
+		if(!stmt || (stmt == last_stmt)) return DebugControl<ADDRESS>::DBG_STEP;
+	}
 
 	int nparms = 0;
 
@@ -405,6 +324,7 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 	while(1)
 	{
+		trap = false;
 		bool interactive = false;
 		//(*std_output_stream) << "> ";
 		if(!GetLine(prompt.c_str(), line, interactive))
@@ -427,6 +347,9 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 		switch(nparms)
 		{
+			case 0:
+				if(!interactive) continue;
+				break;
 			case 1:
 				{
 					unisim::util::debug::Register *reg = registers_import->GetRegister(parm[0].c_str());
@@ -467,17 +390,23 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					return DebugControl<ADDRESS>::DBG_KILL;
 				}
 
+				if(IsStepInstructionCommand(parm[0].c_str()))
+				{
+					running_mode = INLINE_DEBUGGER_MODE_STEP_INSTRUCTION;
+					if(interactive) last_line = line;
+					return DebugControl<ADDRESS>::DBG_STEP;
+				}
+
 				if(IsStepCommand(parm[0].c_str()))
 				{
 					running_mode = INLINE_DEBUGGER_MODE_STEP;
 					if(interactive) last_line = line;
-					program_profile.Accumulate(cia, 1);
+					last_stmt = FindStatement(cia);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
-				if(IsNextCommand(parm[0].c_str()))
+				if(IsNextInstructionCommand(parm[0].c_str()))
 				{
-					running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
 					if(interactive) last_line = line;
 					disasm_import->Disasm(cia, cont_addr);
 					if(HasBreakpoint(cont_addr))
@@ -490,7 +419,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						cont_until_addr = cont_addr;
 						SetBreakpoint(cont_until_addr);
 					}
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -498,7 +426,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					running_mode = INLINE_DEBUGGER_MODE_CONTINUE;
 					if(interactive) last_line = line;
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 
@@ -575,18 +502,11 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					recognized = true;
 					DumpProgramProfile();
-					DumpDataProfile(false /* read */);
-					DumpDataProfile(true /* write */);
+					if(!trap) DumpDataProfile(false /* read */);
+					if(!trap) DumpDataProfile(true /* write */);
 					break;
 				}
-				
-				if(IsLoadCommand(parm[0].c_str()))
-				{
-					recognized = true;
-					DumpAvailableLoaders();
-					break;
-				}
-				
+
 				if(IsBackTraceCommand(parm[0].c_str()))
 				{
 					recognized = true;
@@ -659,7 +579,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					if(interactive) last_line = line;
 					cont_until_addr = cont_addr;
 					SetBreakpoint(cont_until_addr);
-					program_profile.Accumulate(cia, 1);
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
 				
@@ -693,7 +612,31 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 				if(IsProfileCommand(parm[0].c_str()))
 				{
-					if(strcmp(parm[1].c_str(), "program") == 0)
+					if(strcmp(parm[1].c_str(), "on") == 0)
+					{
+						recognized = true;
+						EnableProfiling();
+						break;
+					}
+					else if(strcmp(parm[1].c_str(), "off") == 0)
+					{
+						recognized = true;
+						DisableProfiling();
+						break;
+					}
+					else if(strcmp(parm[1].c_str(), "clear") == 0)
+					{
+						recognized = true;
+						ClearProfile();
+						break;
+					}
+					else if(strcmp(parm[1].c_str(), "status") == 0)
+					{
+						recognized = true;
+						DumpProfilingStatus();
+						break;
+					}
+					else if((strcmp(parm[1].c_str(), "prog") == 0) || (strcmp(parm[1].c_str(), "program") == 0))
 					{
 						recognized = true;
 						DumpProgramProfile();
@@ -706,13 +649,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 						DumpDataProfile(true /* write */);
 						break;
 					}
-				}
-				
-				if(IsLoadCommand(parm[0].c_str()))
-				{
-					recognized = true;
-					Load(parm[1].c_str());
-					break;
 				}
 
 				if(IsLoadSymbolTableCommand(parm[0].c_str()))
@@ -771,21 +707,64 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				{
 					if(strcmp(parm[1].c_str(), "data") == 0)
 					{
-						if(strcmp(parm[2].c_str(), "read") == 0)
+						if(strcmp(parm[2].c_str(), "on") == 0)
+						{
+							recognized = true;
+							EnableDataProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "off") == 0)
+						{
+							recognized = true;
+							DisableDataProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "clear") == 0)
+						{
+							recognized = true;
+							ClearDataProfile();
+						}
+						else if(strcmp(parm[2].c_str(), "status") == 0)
+						{
+							recognized = true;
+							DumpDataProfilingStatus();
+							break;
+						}
+						else if(strcmp(parm[2].c_str(), "read") == 0)
 						{
 							recognized = true;
 							DumpDataProfile(false /* read */);
-							break;
 						}
 						else if(strcmp(parm[2].c_str(), "write") == 0)
 						{
 							recognized = true;
 							DumpDataProfile(true /* write */);
+						}
+					}
+					else if((strcmp(parm[1].c_str(), "prog") == 0) || (strcmp(parm[1].c_str(), "program") == 0))
+					{
+						if(strcmp(parm[2].c_str(), "on") == 0)
+						{
+							recognized = true;
+							EnableProgramProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "off") == 0)
+						{
+							recognized = true;
+							DisableProgramProfiling();
+						}
+						else if(strcmp(parm[2].c_str(), "clear") == 0)
+						{
+							recognized = true;
+							ClearProgramProfile();
+						}
+						else if(strcmp(parm[2].c_str(), "status") == 0)
+						{
+							recognized = true;
+							DumpProgramProfilingStatus();
 							break;
 						}
 					}
 				}
-				
+
 				if (IsMonitorCommand(parm[0].c_str(), parm[1].c_str()))
 				{
 					recognized = true;
@@ -828,6 +807,63 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 
 				break;
 
+			case 4:
+				
+				if(IsProfileCommand(parm[0].c_str()))
+				{
+					if(strcmp(parm[1].c_str(), "data") == 0)
+					{
+						if(strcmp(parm[2].c_str(), "read") == 0)
+						{
+							if(strcmp(parm[3].c_str(), "on") == 0)
+							{
+								recognized = true;
+								EnableDataReadProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "off") == 0)
+							{
+								recognized = true;
+								DisableDataReadProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "clear") == 0)
+							{
+								recognized = true;
+								ClearDataReadProfile();
+							}
+							else if(strcmp(parm[3].c_str(), "status") == 0)
+							{
+								recognized = true;
+								DumpDataReadProfilingStatus();
+								break;
+							}
+						}
+						else if(strcmp(parm[2].c_str(), "write") == 0)
+						{
+							if(strcmp(parm[3].c_str(), "on") == 0)
+							{
+								recognized = true;
+								EnableDataWriteProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "off") == 0)
+							{
+								recognized = true;
+								DisableDataWriteProfiling();
+							}
+							else if(strcmp(parm[3].c_str(), "clear") == 0)
+							{
+								recognized = true;
+								ClearDataWriteProfile();
+							}
+							else if(strcmp(parm[3].c_str(), "status") == 0)
+							{
+								recognized = true;
+								DumpDataWriteProfilingStatus();
+								break;
+							}
+						}
+					}
+				}
+				break;
 			case EOF:
 				recognized = true;
 				break;
@@ -867,9 +903,7 @@ template <class ADDRESS>
 void InlineDebugger<ADDRESS>::Help()
 {
 	(*std_output_stream) << "HELP:" << endl;
-	(*std_output_stream) << "================================  LOAD =========================================" << endl;
-	(*std_output_stream) << "<l | ld | load> <loader name>" << endl;
-	(*std_output_stream) << "    reload program file of loader <loader name>" << endl;
+	(*std_output_stream) << "================================ LOAD ==========================================" << endl;
 	(*std_output_stream) << "<st | symtab> [<filename>]" << endl;
 	(*std_output_stream) << "    load symbol table from file <filename>" << endl;
 	(*std_output_stream) << "=============================== SCRIPTING ======================================" << endl;
@@ -880,10 +914,12 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "    continue to execute instructions until program reaches a breakpoint," << endl;
 	(*std_output_stream) << "    a watchpoint, 'symbol' or 'address'" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<s | si | step | stepi>" << endl;
+	(*std_output_stream) << "<si | stepi>" << endl;
 	(*std_output_stream) << "    execute one instruction" << endl;
+	(*std_output_stream) << "<s | step>" << endl;
+	(*std_output_stream) << "    continue executing instructions until control reaches a different source line" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<n | ni | next | nexti>" << endl;
+	(*std_output_stream) << "<ni | nexti>" << endl;
 	(*std_output_stream) << "    continue to execute instructions until the processor reaches" << endl;
 	(*std_output_stream) << "    next contiguous instruction, a breakpoint or a watchpoint" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
@@ -931,7 +967,35 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<sym | symbol> [<symbol name>]" << endl;
 	(*std_output_stream) << "    Display information about symbols having 'symbol name' in their name" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<p | prof | profile> on" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog on" << endl;
+	(*std_output_stream) << "<p | prof | profile> program on" << endl;
+	(*std_output_stream) << "<p | prof | profile> data on" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read on" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write on" << endl;
+	(*std_output_stream) << "<p | prof | profile> off" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog off" << endl;
+	(*std_output_stream) << "<p | prof | profile> program off" << endl;
+	(*std_output_stream) << "<p | prof | profile> data off" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read off" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write off" << endl;
+	(*std_output_stream) << "    enable/disable the program and data profiling" << endl;
+	(*std_output_stream) << "<p | prof | profile> status" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog status" << endl;
+	(*std_output_stream) << "<p | prof | profile> program status" << endl;
+	(*std_output_stream) << "<p | prof | profile> data status" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read status" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write status" << endl;
+	(*std_output_stream) << "    display the program and data profiling status (on/off)" << endl;
+	(*std_output_stream) << "<p | prof | profile> clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> program clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> data clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> data read clear" << endl;
+	(*std_output_stream) << "<p | prof | profile> data write clear" << endl;
+	(*std_output_stream) << "    clear the collected program and data profiles" << endl;
 	(*std_output_stream) << "<p | prof | profile>" << endl;
+	(*std_output_stream) << "<p | prof | profile> prog" << endl;
 	(*std_output_stream) << "<p | prof | profile> program" << endl;
 	(*std_output_stream) << "<p | prof | profile> data" << endl;
 	(*std_output_stream) << "<p | prof | profile> data read" << endl;
@@ -1030,97 +1094,75 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::HasBreakpoint(ADDRESS addr)
 {
-	return breakpoint_registry.HasBreakpoint(addr);
+	return debug_event_trigger_import ? debug_event_trigger_import->IsEventListened(unisim::util::debug::Breakpoint<ADDRESS>(addr)) : false;
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 {
-	if(!breakpoint_registry.SetBreakpoint(addr))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
 	{
 		(*std_output_stream) << "Can't set breakpoint at 0x" << hex << addr << dec << endl;
 	}
-	
-	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				breakpoint_registry.HasBreakpoints());
-	
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
-
-	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
-
-	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 {
-	if(!breakpoint_registry.RemoveBreakpoint(addr))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr)))
 	{
 		(*std_output_stream) << "Can't remove breakpoint at 0x" << hex << addr << dec << endl;
 	}
-
-	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				breakpoint_registry.HasBreakpoints());
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
-
-	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
-
-	if(memory_access_reporting_control_import)
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				watchpoint_registry.HasWatchpoints());
 }
 
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBreakpoints()
 {
-	const list<Breakpoint<ADDRESS> >& breakpoints = breakpoint_registry.GetBreakpoints();
-	typename list<Breakpoint<ADDRESS> >::const_iterator iter;
+	std::list<const Event<ADDRESS> *> events;
+	debug_event_trigger_import->EnumerateListenedEvents(events, unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT);
+	typename list<const Event<ADDRESS> *>::const_iterator iter;
 
-	for(iter = breakpoints.begin(); iter != breakpoints.end(); iter++)
+	for(iter = events.begin(); iter != events.end(); iter++)
 	{
-		ADDRESS addr = iter->GetAddress();
+		const Event<ADDRESS> *event = *iter;
+		const Breakpoint<ADDRESS> *brkp = (const Breakpoint<ADDRESS> *) event;
+		ADDRESS addr = brkp->GetAddress();
 		
 		(*std_output_stream) << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 		
@@ -1165,15 +1207,18 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpWatchpoints()
 {
-	const list<Watchpoint<ADDRESS> >& watchpoints = watchpoint_registry.GetWatchpoints();
-	typename list<Watchpoint<ADDRESS> >::const_iterator iter;
+	std::list<const Event<ADDRESS> *> events;
+	debug_event_trigger_import->EnumerateListenedEvents(events, unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT);
+	typename list<const Event<ADDRESS> *>::const_iterator iter;
 
-	for(iter = watchpoints.begin(); iter != watchpoints.end(); iter++)
+	for(iter = events.begin(); iter != events.end(); iter++)
 	{
-		ADDRESS addr = iter->GetAddress();
-		uint32_t size = iter->GetSize();
-		typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = iter->GetMemoryAccessType();
-		typename MemoryAccessReporting<ADDRESS>::MemoryType mt = iter->GetMemoryType();
+		const Event<ADDRESS> *event = *iter;
+		const Watchpoint<ADDRESS> *wt = (const Watchpoint<ADDRESS> *) event;
+		ADDRESS addr = wt->GetAddress();
+		uint32_t size = wt->GetSize();
+		typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = wt->GetMemoryAccessType();
+		typename MemoryAccessReporting<ADDRESS>::MemoryType mt = wt->GetMemoryType();
 		
 		switch(mt)
 		{
@@ -1584,7 +1629,7 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const typename std::list<const unisim:
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 {
-	unsigned int i, j;
+	unsigned int i;
 	typename unisim::util::debug::Symbol<ADDRESS>::Type types[] = {
 		unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC,
 		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT
@@ -1592,27 +1637,13 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 	
 	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *> symbols;
 	
-	for(j = 0; j < (sizeof(types) / sizeof(types[0])); j++)
+	for(i = 0; i < (sizeof(types) / sizeof(types[0])); i++)
 	{
-		typename unisim::util::debug::Symbol<ADDRESS>::Type type = types[j];
+		typename unisim::util::debug::Symbol<ADDRESS>::Type type = types[i];
 
-		for(i = 0; i < num_loaders; i++)
+		if(symbol_table_lookup_import)
 		{
-			if(*symbol_table_lookup_import[i])
-			{
-				(*symbol_table_lookup_import[i])->GetSymbols(symbols, type);
-			}
-		}
-
-		unsigned int num_elf32_loaders = elf32_loaders.size();
-		for(i = 0; i < num_elf32_loaders; i++)
-		{
-			elf32_loaders[i]->GetSymbols(symbols, type);
-		}
-		unsigned int num_elf64_loaders = elf64_loaders.size();
-		for(i = 0; i < num_elf64_loaders; i++)
-		{
-			elf64_loaders[i]->GetSymbols(symbols, type);
+			symbol_table_lookup_import->GetSymbols(symbols, type);
 		}
 	}
 	
@@ -1640,12 +1671,14 @@ void InlineDebugger<ADDRESS>::SetVariable(const char *name, const char *value)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpProgramProfile()
 {
+	if(!profiling_import) return;
 	(*std_output_stream) << "Program profile:" << endl;
 
+	const unisim::util::debug::Profile<ADDRESS>& program_profile = profiling_import->GetProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC);
 	typename std::map<ADDRESS, uint64_t> map = program_profile;
 	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
 
-	for(iter = map.begin(); iter != map.end(); iter++)
+	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
 		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
@@ -1677,58 +1710,6 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 		(*std_output_stream).width(0);
 		(*std_output_stream) << ":" << (*iter).second << " times:" << s << endl;
 	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpAvailableLoaders()
-{
-	if(num_loaders && loader_import)
-	{
-		unsigned int i;
-		for(i = 0; i < num_loaders; i++)
-		{
-			ServiceImport<Loader> *import = loader_import[i];
-			if(*import)
-			{
-				Object *service = import->GetService();
-				if(service)
-				{
-					(*std_output_stream) << service->GetName() << endl;
-				}
-			}
-		}
-	}
-}
-
-template <class ADDRESS>
-void InlineDebugger<ADDRESS>::Load(const char *loader_name)
-{
-	if(num_loaders && loader_import)
-	{
-		unsigned int i;
-		for(i = 0; i < num_loaders; i++)
-		{
-			ServiceImport<Loader> *import = loader_import[i];
-			if(*import)
-			{
-				Object *service = import->GetService();
-				if(service)
-				{
-					if(strcmp(service->GetName(), loader_name) == 0)
-					{
-						// Found loader
-						if(!(*import)->Load())
-						{
-							(*std_error_stream) << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" was not able to load data/program" << endl;
-						}
-						
-						return;
-					}
-				}
-			}
-		}
-	}
-	(*std_error_stream) << Object::GetName() << ": ERROR! Loader \"" << loader_name << "\" does not exist" << endl;
 }
 
 template <class ADDRESS>
@@ -1768,75 +1749,14 @@ std::string InlineDebugger<ADDRESS>::SearchFile(const char *filename)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 {
-	std::string path(SearchFile(filename));
-	
-	uint8_t magic[8];
-	
-	std::ifstream f(path.c_str(), std::ifstream::in | std::ifstream::binary);
-	
-	if(f.fail())
-	{
-		(*std_error_stream) << "ERROR! Can't open input \"" << path << "\"" << endl;
-	}
+	if(!debug_info_loading_import) return;
 
-	// Note: code below is nearly equivalent to istream::readsome
-	// I no longer use it because it is bugged with i586-mingw32msvc-g++ (version 4.2.1-sjlj on Ubuntu)
-	unsigned int size;
-	for(size = 0; size < sizeof(magic); size++)
+	std::string match_file_path;
+	if(LocateFile(filename, match_file_path))
 	{
-		f.read((char *) &magic[size], 1);
-		if(!f.good()) break;
-	}
-	
-	if(size >= 5)
-	{
-		if((magic[0] == 0x7f) && (magic[1] == 'E') && (magic[2] == 'L') && (magic[3] == 'F'))
+		if(debug_info_loading_import->LoadDebugInfo(match_file_path.c_str()))
 		{
-			// ELF file detected
-			switch(magic[4])
-			{
-				case 1:
-					{
-						unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger);
-						
-						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
-						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
-						
-						if(!elf32_loader->Load())
-						{
-							(*std_error_stream) << "ERROR! Loading input \"" << path << "\" failed" << endl;
-							delete elf32_loader;
-						}
-						else
-						{
-							(*std_output_stream) << "Symbols from \"" << path << "\" loaded" << endl;
-							elf32_loaders.push_back(elf32_loader);
-						}
-					}
-					break;
-				case 2:
-					{
-						unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger);
-						
-						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, path.c_str());
-						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, true);
-
-						if(!elf64_loader->Load())
-						{
-							(*std_error_stream) << "ERROR! Loading input \"" << path << "\" failed" << endl;
-							delete elf64_loader;
-						}
-						else
-						{
-							(*std_error_stream) << "Symbols from \"" << path << "\" loaded" << endl;
-							elf64_loaders.push_back(elf64_loader);
-						}
-					}
-					break;
-				default:
-					(*std_error_stream) << "ERROR! Can't handle symbol table of input \"" << path << "\"" << endl;
-					break;
-			}
+			(*std_output_stream) << "Symbols from \"" << filename << "\" loaded" << std::endl;
 		}
 	}
 }
@@ -1865,6 +1785,7 @@ void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 			(*std_error_stream) << "WARNING! I/O error while reading file \"" << path << "\"" << std::endl;
 			return;
 		}
+		if (f.eof()) break;
 		macro.push(line);
 	} while(!f.eof());
 	
@@ -1879,11 +1800,13 @@ void InlineDebugger<ADDRESS>::LoadMacro(const char *filename)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 {
+	if(!profiling_import) return;
 	(*std_output_stream) << "Data " << (write ? "write" : "read") << " profile:" << endl;
-	typename std::map<ADDRESS, uint64_t> map = write ? data_write_profile : data_read_profile;
+	const unisim::util::debug::Profile<ADDRESS>& data_profile = profiling_import->GetProfile(write ? unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE : unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ);
+	typename std::map<ADDRESS, uint64_t> map = data_profile;
 	typename std::map<ADDRESS, uint64_t>::const_iterator iter;
 
-	for(iter = map.begin(); iter != map.end(); iter++)
+	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
 		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
@@ -1914,7 +1837,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 }
 
 template <class ADDRESS>
-void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int lineno, unsigned int colno, unsigned int count)
+bool InlineDebugger<ADDRESS>::LocateFile(const char *filename, std::string& match_file_path)
 {
 	std::string s;
 	const char *p;
@@ -1936,15 +1859,15 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 		}
 	} while(*(p++));
 	
-	std::vector<std::string> hierarchical_source_path;
+	std::vector<std::string> hierarchical_path;
 	
 	s.clear();
-	p = source_path;
+	p = filename;
 	do
 	{
 		if(*p == 0 || *p == '/' || *p == '\\')
 		{
-			hierarchical_source_path.push_back(s);
+			hierarchical_path.push_back(s);
 			s.clear();
 		}
 		else
@@ -1954,11 +1877,10 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 	} while(*(p++));
 	
 	bool match = false;
-	std::string match_source_path;
 	
-	int hierarchical_source_path_depth = hierarchical_source_path.size();
+	int hierarchical_path_depth = hierarchical_path.size();
 	
-	if(hierarchical_source_path_depth > 0)
+	if(hierarchical_path_depth > 0)
 	{
 		int num_search_paths = search_paths.size();
 		int k;
@@ -1967,21 +1889,21 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 		{
 			const std::string& search_path = search_paths[k];
 			int i;
-			for(i = 0; (!match) && (i < hierarchical_source_path_depth); i++)
+			for(i = 0; (!match) && (i < hierarchical_path_depth); i++)
 			{
-				std::string try_source_path = search_path;
+				std::string try_file_path = search_path;
 				int j;
-				for(j = i; j < hierarchical_source_path_depth; j++)
+				for(j = i; j < hierarchical_path_depth; j++)
 				{
-					if(!try_source_path.empty()) try_source_path += '/';
-					try_source_path += hierarchical_source_path[j];
+					if(!try_file_path.empty()) try_file_path += '/';
+					try_file_path += hierarchical_path[j];
 				}
-				//std::cerr << "try_source_path=\"" << try_source_path << "\":";
-				if(access(try_source_path.c_str(), R_OK) == 0)
+				//std::cerr << "try_file_path=\"" << try_file_path << "\":";
+				if(access(try_file_path.c_str(), R_OK) == 0)
 				{
 					//std::cerr << "found" << std::endl;
 					match = true;
-					match_source_path = try_source_path;
+					match_file_path = try_file_path;
 				}
 				else
 				{
@@ -1990,8 +1912,17 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 			}
 		}
 	}
+	
+	return match;
+}
 
-	if(match)
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int lineno, unsigned int colno, unsigned int count)
+{
+	bool match;
+	std::string match_source_path;
+	
+	if((match = LocateFile(source_path, match_source_path)))
 	{
 		(*std_output_stream) << match_source_path;
 	}
@@ -2036,42 +1967,72 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 {
-	std::vector<ADDRESS> *backtrace = 0;
-	unsigned int i;
-	for(i = 0; (!backtrace) && (i < num_loaders); i++)
-	{
-		if(*backtrace_import[i])
-		{
-			backtrace = (*backtrace_import[i])->GetBackTrace(cia);
-		}
-	}
+	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
 	
 	if(backtrace)
 	{
+		unsigned int i;
 		unsigned int n = backtrace->size();
 		for(i = 0; i < n; i++)
 		{
-			(*std_output_stream) << "#" << i << " from ";
+			(*std_output_stream) << "#" << i << " ";
 			
-			ADDRESS return_addr = (*backtrace)[i];
+			ADDRESS addr = (*backtrace)[i];
 			
-			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(return_addr);
+			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
 			
 			(*std_output_stream) << "0x" << std::hex;
-			(*std_output_stream) << (return_addr / memory_atom_size) << std::dec;
+			(*std_output_stream) << (addr / memory_atom_size) << std::dec;
 			if(symbol)
 			{
 				(*std_output_stream) << " <";
-				(*std_output_stream) << symbol->GetFriendlyName(return_addr);
+				(*std_output_stream) << symbol->GetFriendlyName(addr);
 				(*std_output_stream) << ">";
 			}
+
+			const Statement<ADDRESS> *stmt = FindStatement(addr);
+			
+			if(stmt)
+			{
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					unsigned int lineno = stmt->GetLineNo();
+					unsigned int colno = stmt->GetColNo();
+					std::string source_path;
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
+					{
+						source_path += source_dirname;
+						source_path += '/';
+					}
+					source_path += source_filename;
+					(*std_output_stream) << " in ";
+					std::string match_source_path;
+					if(LocateFile(source_path.c_str(), match_source_path))
+					{
+						(*std_output_stream) << match_source_path;
+					}
+					else
+					{
+						(*std_output_stream) << source_path;
+					}
+	
+					(*std_output_stream) << " at line #" << lineno;
+					if(colno)
+					{
+						(*std_output_stream) << ", column #" << colno;
+					}
+				}
+			}
+			
 			(*std_output_stream) << std::endl;
 		}
 		delete backtrace;
 	}
 	else
 	{
-		(*std_output_stream) << "No bactrace" << std::endl;
+		(*std_output_stream) << "No backtrace" << std::endl;
 	}
 }
 
@@ -2163,117 +2124,207 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 template <class ADDRESS>
 const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByAddr(ADDRESS addr)
 {
-	unsigned int i;
-	const Symbol<ADDRESS> *symbol = 0;
-	
-	for(i = 0; (!symbol) && (i < num_loaders); i++)
-	{
-		if(*symbol_table_lookup_import[i])
-		{
-			symbol = (*symbol_table_lookup_import[i])->FindSymbolByAddr(addr);
-		}
-	}
-	if(!symbol)
-	{
-		unsigned int num_elf32_loaders = elf32_loaders.size();
-		for(i = 0; (!symbol) && (i < num_elf32_loaders); i++)
-		{
-			symbol = elf32_loaders[i]->FindSymbolByAddr(addr);
-		}
-		unsigned int num_elf64_loaders = elf64_loaders.size();
-		for(i = 0; (!symbol) && (i < num_elf64_loaders); i++)
-		{
-			symbol = elf64_loaders[i]->FindSymbolByAddr(addr);
-		}
-	}
-	
-	return symbol;
+	return symbol_table_lookup_import->FindSymbolByAddr(addr);
 }
 
 template <class ADDRESS>
 const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByName(const char *s)
 {
-	unsigned int i;
-	const Symbol<ADDRESS> *symbol = 0;
-	
-	for(i = 0; (!symbol) && (i < num_loaders); i++)
-	{
-		if(*symbol_table_lookup_import[i])
-		{
-			symbol = (*symbol_table_lookup_import[i])->FindSymbolByName(s);
-		}
-	}
-	if(!symbol)
-	{
-		unsigned int num_elf32_loaders = elf32_loaders.size();
-		for(i = 0; (!symbol) && (i < num_elf32_loaders); i++)
-		{
-			symbol = elf32_loaders[i]->FindSymbolByName(s);
-		}
-		unsigned int num_elf64_loaders = elf64_loaders.size();
-		for(i = 0; (!symbol) && (i < num_elf64_loaders); i++)
-		{
-			symbol = elf64_loaders[i]->FindSymbolByName(s);
-		}
-	}
-	return symbol;
+	return symbol_table_lookup_import->FindSymbolByName(s);
 }
 
 template <class ADDRESS>
 const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr)
 {
+	return stmt_lookup_import->FindStatement(addr);
+}
+
+template <class ADDRESS>
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindNextStatement(ADDRESS addr)
+{
+	const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+	ADDRESS top_addr = addr;
+	if(symbol)
+	{
+		ADDRESS symbol_addr = symbol->GetAddress();
+		ADDRESS symbol_size = symbol->GetSize();
+		typename Symbol<ADDRESS>::Type symbol_type = symbol->GetType();
+		if((symbol_size != 0) && (symbol_type == Symbol<ADDRESS>::SYM_FUNC))
+		{
+			top_addr = symbol_addr + symbol_size - 1;
+		}
+	}
+
+	addr++;
 	const Statement<ADDRESS> *stmt = 0;
-	unsigned int i;
-	for(i = 0; (!stmt) && (i < num_loaders); i++)
+	
+	if(addr <= top_addr)
 	{
-		if(*stmt_lookup_import[i])
+		do
 		{
-			stmt = (*stmt_lookup_import[i])->FindStatement(addr);
+			stmt = FindStatement(addr);
+			addr++;
 		}
+		while(!stmt && (addr <= top_addr));
 	}
-	if(!stmt)
-	{
-		unsigned int num_elf32_loaders = elf32_loaders.size();
-		for(i = 0; (!stmt) && (i < num_elf32_loaders); i++)
-		{
-			stmt = elf32_loaders[i]->FindStatement(addr);
-		}
-		unsigned int num_elf64_loaders = elf64_loaders.size();
-		for(i = 0; (!stmt) && (i < num_elf64_loaders); i++)
-		{
-			stmt = elf64_loaders[i]->FindStatement(addr);
-		}
-	}
+	
 	return stmt;
 }
 
 template <class ADDRESS>
 const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
 {
-	unsigned int i;
-	const Statement<ADDRESS> *stmt = 0;
-	for(i = 0; (!stmt) && (i < num_loaders); i++)
-	{
-		if(*stmt_lookup_import[i])
-		{
-			stmt = (*stmt_lookup_import[i])->FindStatement(filename, lineno, 0);
-		}
-	}
-	if(!stmt)
-	{
-		unsigned int num_elf32_loaders = elf32_loaders.size();
-		for(i = 0; (!stmt) && (i < num_elf32_loaders); i++)
-		{
-			stmt = elf32_loaders[i]->FindStatement(filename, lineno, 0);
-		}
-		unsigned int num_elf64_loaders = elf64_loaders.size();
-		for(i = 0; (!stmt) && (i < num_elf64_loaders); i++)
-		{
-			stmt = elf64_loaders[i]->FindStatement(filename, lineno, 0);
-		}
-	}
-	return stmt;
+	return stmt_lookup_import->FindStatement(filename, lineno, colno);
 }
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableProgramProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableDataReadProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableDataWriteProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, true);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableDataProfiling()
+{
+	EnableDataReadProfiling();
+	EnableDataWriteProfiling();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableProfiling()
+{
+	EnableProgramProfiling();
+	EnableDataProfiling();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableProgramProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableDataReadProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableDataWriteProfiling()
+{
+	if(!profiling_import) return;
+	profiling_import->SetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, false);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableDataProfiling()
+{
+	DisableDataReadProfiling();
+	DisableDataWriteProfiling();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DisableProfiling()
+{
+	DisableProgramProfiling();
+	DisableDataProfiling();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearProgramProfile()
+{
+	if(!profiling_import) return;
+	profiling_import->ClearProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearDataReadProfile()
+{
+	if(!profiling_import) return;
+	profiling_import->ClearProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearDataWriteProfile()
+{
+	if(!profiling_import) return;
+	profiling_import->ClearProfile(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearDataProfile()
+{
+	ClearDataReadProfile();
+	ClearDataWriteProfile();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ClearProfile()
+{
+	ClearProgramProfile();
+	ClearDataProfile();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpProgramProfilingStatus()
+{
+	if(!profiling_import) return;
+	bool status = false;
+	profiling_import->GetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_EXEC, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, status);
+	(*std_output_stream) << "Program profiling is " << (status ? "on" : "off") << std::endl;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataReadProfilingStatus()
+{
+	if(!profiling_import) return;
+	bool status = false;
+	profiling_import->GetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, status);
+	(*std_output_stream) << "Data read profiling is " << (status ? "on" : "off") << std::endl;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataWriteProfilingStatus()
+{
+	if(!profiling_import) return;
+	bool status = false;
+	profiling_import->GetProfileOption(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, unisim::service::interfaces::Profiling<ADDRESS>::OPT_ENABLE_PROF, status);
+	(*std_output_stream) << "Data write profiling is " << (status ? "on" : "off") << std::endl;
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataProfilingStatus()
+{
+	DumpDataReadProfilingStatus();
+	DumpDataWriteProfilingStatus();
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpProfilingStatus()
+{
+	DumpProgramProfilingStatus();
+	DumpDataProfilingStatus();
+}
+
+
+
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, bool& interactive)
@@ -2321,7 +2372,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 			std::cout << prompt;
 		}
 		(*std_output_stream) << prompt;
-		getline(line, cin);
+		getline(cin, line);
 		if(cin.fail()) return false;
 		if(std_output_stream != &std::cout)
 		{
@@ -2361,15 +2412,21 @@ bool InlineDebugger<ADDRESS>::IsQuitCommand(const char *cmd)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsStepCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd)
 {
-	return strcmp(cmd, "s") == 0 || strcmp(cmd, "si") == 0 || strcmp(cmd, "step") == 0 || strcmp(cmd, "stepi") == 0;
+	return strcmp(cmd, "si") == 0 || strcmp(cmd, "stepi") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsNextCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsStepCommand(const char *cmd)
 {
-	return strcmp(cmd, "n") == 0 || strcmp(cmd, "ni") == 0 || strcmp(cmd, "next") == 0 || strcmp(cmd, "nexti") == 0;
+	return strcmp(cmd, "s") == 0 || strcmp(cmd, "step") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsNextInstructionCommand(const char *cmd)
+{
+	return strcmp(cmd, "ni") == 0 || strcmp(cmd, "nexti") == 0;
 }
 
 template <class ADDRESS>
@@ -2490,12 +2547,6 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsProfileCommand(const char *cmd)
 {
 	return strcmp(cmd, "p") == 0 || strcmp(cmd, "prof") == 0 || strcmp(cmd, "profile") == 0;
-}
-
-template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsLoadCommand(const char *cmd)
-{
-	return strcmp(cmd, "l") == 0 || strcmp(cmd, "ld") == 0 || strcmp(cmd, "load") == 0;
 }
 
 template <class ADDRESS>

@@ -66,6 +66,12 @@ const char *Variable<AddressRange64 >::GetDataTypeName() const
 	return "64-bit address range";
 }
 
+template <>
+unsigned int Variable<AddressRange64 >::GetBitSize() const
+{
+	return 8;
+}
+
 template <> Variable<AddressRange64 >::operator bool () const
 {
 	return !storage->IsEmpty();

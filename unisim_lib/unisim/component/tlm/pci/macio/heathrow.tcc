@@ -195,6 +195,10 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Run()
 		irq->serial_id = 0;
 		message->req = irq;
 		
+		if(inherited::verbose)
+		{
+			inherited::logger << DebugInfo << "Interrupt output goes " << (level ? "high" : "low") << EndDebugInfo;
+		}
 		while(!cpu_irq_port->Send(message))
 		{
 			wait(bus_cycle_time);

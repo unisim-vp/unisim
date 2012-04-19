@@ -132,6 +132,9 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, enable_linux_syscall_snooping(false)
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, enable_trap_on_exception(false)
+	, enable_halt_on(false)
+	, halt_on_addr(0)
+	, halt_on()
 	, max_inst(0xffffffffffffffffULL)
 	, num_interrupts(0)
 	, registers_registry()
@@ -182,6 +185,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_enable_linux_syscall_snooping("enable-linux-syscall-snooping", this, enable_linux_syscall_snooping, "enable/disable linux syscall snooping")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 	, param_enable_trap_on_exception("enable-trap-on-exception", this, enable_trap_on_exception, "enable/disable trap reporting on exception")
+	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 	, stat_timer_cycle("timer-cycle",  this,  timer_cycle, "number of simulated timer cycles")
@@ -271,7 +275,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	for(i = 0; i < CONFIG::NUM_DACS; i++)
 	{
 		stringstream sstr;
-		sstr << "dac" << i;
+		sstr << "dac" << (i + 1);
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &dac[i]);
 		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, dac[i], "Data Address Compare"));
 	}
@@ -292,7 +296,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	for(i = 0; i < CONFIG::NUM_DVCS; i++)
 	{
 		stringstream sstr;
-		sstr << "dvc" << i;
+		sstr << "dvc" << (i + 1);
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &dvc[i]);
 		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, dvc[i], "Data Value Compare"));
 	}
@@ -300,7 +304,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	for(i = 0; i < CONFIG::NUM_IACS; i++)
 	{
 		stringstream sstr;
-		sstr << "iac" << i;
+		sstr << "iac" << (i + 1);
 		registers_registry[sstr.str()] = new unisim::util::debug::SimpleRegister<uint32_t>(sstr.str().c_str(), &iac[i]);
 		registers_registry2.push_back(new unisim::kernel::service::Register<uint32_t>(sstr.str().c_str(), this, iac[i], "Instruction Address Compare"));
 	}
@@ -429,7 +433,7 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	sstr_description << "FSB/PLB burst size:" << (8 * CONFIG::FSB_BURST_SIZE) << " bits" << std::endl;
 	sstr_description << "FSB/PLB width:" << (8 * CONFIG::FSB_WIDTH) << " bits" << std::endl;
 	sstr_description << "MMU: " << (CONFIG::HAS_MMU ? "yes" : "no") << std::endl;
-	sstr_description << "FPU APU: " << (CONFIG::HAS_FPU ? "yes" : "no") << std::endl;
+	sstr_description << "FPU APU: " << (CONFIG::HAS_FPU ? "yes" : "no");
 	
 	Object::SetDescription(sstr_description.str().c_str());
 }
@@ -526,6 +530,11 @@ bool CPU<CONFIG>::BeginSetup()
 		return false;
 	}
 	
+	if(IsVerboseSetup())
+	{
+		logger << DebugInfo << Object::GetDescription() << EndDebugInfo;
+	}
+	
 	Reset();
 
 	return true;
@@ -586,7 +595,7 @@ bool CPU<CONFIG>::EndSetup()
 				{
 					logger << DebugWarning;
 					logger << "A cycle time of " << cpu_cycle_time << " ps is too low for the simulated hardware !" << endl;
-					logger << "cpu cycle time should be >= " << min_cycle_time << " ps." << endl;
+					logger << "cpu cycle time should be >= " << min_cycle_time << " ps.";
 					logger << EndDebugWarning;
 				}
 			}
@@ -602,7 +611,7 @@ bool CPU<CONFIG>::EndSetup()
 		{
 			// We can't provide a valid configuration automatically
 			logger << DebugError;
-			logger << "user must provide a cpu cycle time > 0" << endl;
+			logger << "user must provide a cpu cycle time > 0";
 			logger << EndDebugError;
 			return false;
 		}
@@ -610,12 +619,12 @@ bool CPU<CONFIG>::EndSetup()
 
 	if(unlikely(IsVerboseSetup()))
 	{
-		logger << DebugInfo << "cpu cycle time of " << cpu_cycle_time << " ps" << endl << EndDebugInfo;
+		logger << DebugInfo << "cpu cycle time of " << cpu_cycle_time << " ps" << EndDebugInfo;
 	}
 
 	if(voltage <= 0)
 	{
-		logger << DebugError << "user must provide a voltage > 0" << endl << EndDebugError;
+		logger << DebugError << "user must provide a voltage > 0" << EndDebugError;
 		return false;
 	}
 
@@ -623,7 +632,7 @@ bool CPU<CONFIG>::EndSetup()
 	{
 		logger << DebugInfo;
 		
-		logger << "voltage of " << ((double) voltage / 1e3) << " V" << endl;
+		logger << "voltage of " << ((double) voltage / 1e3) << " V";
 
 		logger << EndDebugInfo;
 	}
@@ -691,6 +700,38 @@ bool CPU<CONFIG>::EndSetup()
 		}
 	}
 
+	if(!halt_on.empty())
+	{
+		const Symbol<typename CONFIG::address_t> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		
+		if(halt_on_symbol)
+		{
+			halt_on_addr = halt_on_symbol->GetAddress();
+			enable_halt_on = true;
+			if(IsVerboseSetup())
+			{
+				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			std::stringstream sstr(halt_on);
+			sstr >> std::hex;
+			if(sstr >> halt_on_addr)
+			{
+				enable_halt_on = true;
+				if(IsVerboseSetup())
+				{
+					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
+				}
+			}
+			else
+			{
+				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
+				halt_on_addr = 0;
+			}
+		}
+	}
 	return true;
 }
 
@@ -1522,11 +1563,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
-	SetCIA(GetNIA());
-
-	/* update the instruction counter */
-	instruction_counter++;
-
 	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
 	{
 		trap_reporting_import->ReportTrap();
@@ -1536,11 +1572,16 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
+			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
 		}
 	}
 
-	if(unlikely(instruction_counter >= max_inst)) Stop(0);
+	SetCIA(GetNIA());
+
+	/* update the instruction counter */
+	instruction_counter++;
+
+	if(unlikely((instruction_counter >= max_inst) || (enable_halt_on && (GetCIA() == halt_on_addr)))) Stop(0);
 	
 	//DL1SanityCheck();
 	//IL1SanityCheck();

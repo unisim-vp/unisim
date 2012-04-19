@@ -18,10 +18,12 @@ esac
 SDL_VERSION=1.2.14
 LIBXML2_VERSION=2.7.8
 EXPAT_VERSION=2.0.1
-CROSS_GDB_VERSION=7.2
+CROSS_GDB_VERSION=7.2a
 CROSS_GDB_ARCHITECTURES="powerpc-440fp-linux-gnu powerpc-7450-linux-gnu armel-linux-gnu m6811-elf"
 ZLIB_VERSION=1.2.5
 BOOST_VERSION=1_47_0
+TCLTK_VERSION=8.5.11
+GPERF_VERSION=3.0.4
 
 HERE=`pwd`
 MY_DIR=$(cd $(dirname $0); pwd)
@@ -86,14 +88,39 @@ function Compile
 	make -j ${NUM_PROCESSORS} all || exit
 }
 
+function CompileSingleProcess
+{
+	NAME=$1
+	echo "========================================="
+	echo "=              Compiling                ="
+	echo "========================================="
+	cd ${BUILD_DIR}/${NAME}
+	make all || exit
+}
+
 function Install
 {
 	NAME=$1
+	NUM_FIXED_ARGS=1
+	
+	declare -a args
+	i=0
+	j=0
+	for arg in "$@"
+	do
+			if test ${i} -ge ${NUM_FIXED_ARGS}; then
+					args[${j}]=${arg}
+					j=$((${j}+1))
+			fi
+			i=$((${i}+1))
+	done
+
 	echo "========================================="
 	echo "=              Installing               ="
 	echo "========================================="
 	cd ${BUILD_DIR}/${NAME}
-	make install prefix=${INSTALL_DIR}/${NAME} || exit
+	echo "make install-strip prefix=${INSTALL_DIR}/${NAME}" "${args[@]}"
+	make install prefix=${INSTALL_DIR}/${NAME} "${args[@]}" || exit
 }
 
 function Download
@@ -186,8 +213,13 @@ function InstallBinArchive
 function Package
 {
 	NAME=$1
+	if [ -n "$2" ]; then
+		DIRNAME=$2
+	else
+		DIRNAME="${NAME}"
+	fi
 
-	cd ${INSTALL_DIR}/${NAME}
+	cd ${INSTALL_DIR}/${DIRNAME}
 	tar jcvf ${PACKAGES_DIR}/${NAME}-mingw32.tar.bz2 * || exit -1
 }
 
@@ -215,9 +247,12 @@ case ${CMD} in
 		# zlib
 		if [ ! -e ${PACKAGES_DIR}/zlib-${ZLIB_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
-			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+#			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+			Download zlib-${ZLIB_VERSION} zlib-${ZLIB_VERSION}.tar.gz http://prdownloads.sourceforge.net/libpng/zlib-${ZLIB_VERSION}.tar.gz\?download
 			make -C ${BUILD_DIR}/zlib-${ZLIB_VERSION} -f win32/Makefile.gcc PREFIX=${HOST}- BINARY_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/bin INCLUDE_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/include LIBRARY_PATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib SHARED_MODE=1 install
-			mv ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libz.dll.a
+			if [ -e ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ]; then
+				mv ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libzdll.a ${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib/libz.dll.a
+			fi
 			Package zlib-${ZLIB_VERSION}
 			Clean
 		fi
@@ -225,17 +260,18 @@ case ${CMD} in
 		# cross-GDB
 		for CROSS_GDB_ARCH in ${CROSS_GDB_ARCHITECTURES}
 		do
-			if [ ! -e ${PACKAGES_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2 ]; then
+			if [ ! -e ${PACKAGES_DIR}/cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}-mingw32.tar.bz2 ]; then
 				Clean
-				Download gdb-7.2 gdb-7.2.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-7.2.tar.bz2
-				InstallBinArchive expat-2.0.1-mingw32.tar.bz2 '' expat-2.0.1
-				mv ${BUILD_DIR}/gdb-7.2 ${BUILD_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2
-				Configure cross-gdb-${CROSS_GDB_ARCH}-7.2 --host=${HOST} --target=${CROSS_GDB_ARCH} \
+				CROSS_GDB_STRIPPED_VERSION=$(printf "${CROSS_GDB_VERSION}" | sed -e 's/^\(.*\)a$/\1/g')   # remove 'a' at the end of version number
+				Download gdb-${CROSS_GDB_STRIPPED_VERSION} gdb-${CROSS_GDB_VERSION}.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-${CROSS_GDB_VERSION}a.tar.bz2
+				InstallBinArchive expat-${EXPAT_VERSION}-mingw32.tar.bz2 '' expat-${EXPAT_VERSION}
+				mv ${BUILD_DIR}/gdb-${CROSS_GDB_STRIPPED_VERSION} ${BUILD_DIR}/cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
+				Configure cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION} --host=${HOST} --target=${CROSS_GDB_ARCH} \
 							--disable-sim --disable-werror \
-							--with-libexpat-prefix=${INSTALL_DIR}/expat-2.0.1
-				Compile cross-gdb-${CROSS_GDB_ARCH}-7.2
-				Install cross-gdb-${CROSS_GDB_ARCH}-7.2
-				Package cross-gdb-${CROSS_GDB_ARCH}-7.2
+							--with-libexpat-prefix=${INSTALL_DIR}/expat-${EXPAT_VERSION}
+				Compile cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
+				Install cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
+				Package cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
 				Clean
 			fi
 		done
@@ -263,6 +299,7 @@ case ${CMD} in
 			Clean
 		fi
 
+		# boost
 		if [ ! -e ${PACKAGES_DIR}/boost_${BOOST_VERSION}-mingw32.tar.bz2 ]; then
 			Clean
 			Download boost_${BOOST_VERSION} boost_${BOOST_VERSION}.tar.bz2 http://ovh.dl.sourceforge.net/boost/boost_${BOOST_VERSION}.tar.bz2
@@ -281,6 +318,33 @@ case ${CMD} in
 			-sZLIB_INCLUDE=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/include -sZLIB_LIBPATH=${INSTALL_DIR}/zlib-${ZLIB_VERSION}/lib \
 			--layout=tagged install || exit -1
 			Package boost_${BOOST_VERSION}
+			Clean
+		fi
+
+		# TCLTK
+		if [ ! -e ${PACKAGES_DIR}/tcltk-${TCLTK_VERSION}-mingw32.tar.bz2 ]; then
+			Clean
+			Download tcl${TCLTK_VERSION} tcl${TCLTK_VERSION}-src.tar.gz http://prdownloads.sourceforge.net/tcl/tcl${TCLTK_VERSION}-src.tar.gz
+			Download tk${TCLTK_VERSION} tk${TCLTK_VERSION}-src.tar.gz http://prdownloads.sourceforge.net/tcl/tk${TCLTK_VERSION}-src.tar.gz
+			cd ${BUILD_DIR}/tcl${TCLTK_VERSION}/win
+			./configure --host=${HOST} --prefix=/
+			make
+			make install prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} exec_prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} libdir=${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib
+			cd ${BUILD_DIR}/tk${TCLTK_VERSION}/win
+			./configure --host=${HOST} --with-tcl=${BUILD_DIR}/tcl${TCLTK_VERSION}/win --prefix=/
+			make
+			make install prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} exec_prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} libdir=${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib
+			Package tcltk-${TCLTK_VERSION} tcltk${TCLTK_VERSION}
+			Clean
+		fi
+		# gperf
+		if [ ! -e ${PACKAGES_DIR}/gperf-${GPERF_VERSION}-mingw32.tar.bz2 ]; then
+			Clean
+			Download gperf-${GPERF_VERSION} gperf-${GPERF_VERSION}.tar.gz http://ftp.gnu.org/pub/gnu/gperf/gperf-${GPERF_VERSION}.tar.gz
+			Configure gperf-${GPERF_VERSION} --host=${HOST}
+			Compile gperf-${GPERF_VERSION}
+			Install gperf-${GPERF_VERSION}
+			Package gperf-${GPERF_VERSION}
 			Clean
 		fi
 		;;

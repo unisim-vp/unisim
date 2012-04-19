@@ -83,7 +83,6 @@ using unisim::kernel::logger::EndDebugInfo;
 using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
-using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::Statistic;
 
 using unisim::util::debug::Statement;
@@ -116,12 +115,19 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
-	, gdb_registers()
-	, gdb_pc(0)
+//	, gdb_registers()
+//	, gdb_pc(0)
+	, pc_reg(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
 	, trap(false)
 	, synched(false)
+
+	, watchpoint_hit(NULL)
+	, watchpoint_hit_addr(-1)
+	, watchpoint_hit_size(0)
+
+
 	, breakpoint_registry()
 	, watchpoint_registry()
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
@@ -204,213 +210,75 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 
 	socketServer->start();
 
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
-	unisim::util::xml::Node *root_node = parser->Parse(Object::GetSimulator()->SearchSharedDataFile(architecture_description_filename.c_str()));
+	// Load Architecture informations from simulator
+	bool has_architecture_name = false;
+	bool has_architecture_endian = false;
 
-	delete parser;
+	bool has_program_counter = false;
+	string program_counter_name;
 
-	if(root_node)
+	VariableBase* architecture_name = Simulator::simulator->FindParameter("program-name");
+	has_architecture_name = (architecture_name != NULL);
+	if(!has_architecture_name)
 	{
-		if(root_node->Name() == string("architecture"))
-		{
-			list<unisim::util::xml::Node *>::const_iterator xml_program_counter_node;
-
-			bool has_architecture_name = false;
-			bool has_architecture_endian = false;
-
-			const list<unisim::util::xml::Property *> *root_node_properties = root_node->Properties();
-
-			list<unisim::util::xml::Property *>::const_iterator root_node_property;
-			for(root_node_property = root_node_properties->begin(); root_node_property != root_node_properties->end(); root_node_property++)
-			{
-				if((*root_node_property)->Name() == string("name"))
-				{
-					has_architecture_name = true;
-				}
-				else if((*root_node_property)->Name() == string("endian"))
-				{
-					const string& architecture_endian = (*root_node_property)->Value();
-					if(architecture_endian == "little")
-					{
-						endian = GDB_LITTLE_ENDIAN;
-						has_architecture_endian = true;
-					}
-					else if(architecture_endian == "big")
-					{
-						endian = GDB_BIG_ENDIAN;
-						has_architecture_endian = true;
-					}
-				}
-				else
-				{
-					unisim::util::xml::Error((*root_node_property)->Filename(), (*root_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*root_node_property)->Name().c_str());
-				}
-			}
-
-			if(!has_architecture_name)
-			{
-				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no property 'name'");
-				delete root_node;
-				return false;
-			}
-
-			if(!has_architecture_endian)
-			{
-				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "WARNING! assuming target architecture endian is big endian");
-			}
-
-			const list<unisim::util::xml::Node *> *xml_nodes = root_node->Childs();
-			list<unisim::util::xml::Node *>::const_iterator xml_node;
-			bool has_program_counter = false;
-			string program_counter_name;
-
-			for(xml_node = xml_nodes->begin(); xml_node != xml_nodes->end(); xml_node++)
-			{
-				if((*xml_node)->Name() == string("register"))
-				{
-					string reg_name;
-					bool has_reg_name = false;
-					int reg_size = 0;
-					bool has_reg_size = false;
-
-					const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
-
-					list<unisim::util::xml::Property *>::const_iterator xml_node_property;
-					for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
-					{
-						if((*xml_node_property)->Name() == string("name"))
-						{
-							reg_name = (*xml_node_property)->Value();
-							has_reg_name = true;
-						}
-						else
-						{
-							if((*xml_node_property)->Name() == string("size"))
-							{
-								reg_size = atoi((*xml_node_property)->Value().c_str());
-								has_reg_size = true;
-							}
-							else
-							{
-								unisim::util::xml::Error((*xml_node_property)->Filename(), (*xml_node_property)->LineNo(), "WARNING! ignoring property '%s'",(*xml_node_property)->Name().c_str());
-							}
-						}
-					}
-
-					if(has_reg_name && has_reg_size)
-					{
-						bool cpu_has_reg = true;
-						bool cpu_has_right_reg_size = true;
-
-						unisim::util::debug::Register *reg = registers_import->GetRegister(reg_name.c_str());
-
-						if(!reg)
-						{
-							cpu_has_reg = false;
-							if(verbose)
-							{
-								logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
-							}
-						}
-						else
-						{
-							if(reg->GetSize() != reg_size)
-							{
-								cpu_has_right_reg_size = false;
-								if(verbose)
-								{
-									logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
-								}
-							}
-						}
-
-						if(cpu_has_reg && cpu_has_right_reg_size)
-						{
-							gdb_registers.push_back(GDBRegister(reg, endian, gdb_registers.size()));
-						}
-						else
-						{
-							gdb_registers.push_back(GDBRegister(reg_name, reg_size, endian, gdb_registers.size()));
-						}
-					}
-					else
-					{
-						unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name' or 'size' property",(*xml_node)->Name().c_str());
-					}
-				}
-				else
-				{
-					if((*xml_node)->Name() == string("program_counter"))
-					{
-						xml_program_counter_node = xml_node;
-						has_program_counter = true;
-						bool has_program_counter_name = false;
-						const list<unisim::util::xml::Property *> *xml_node_properties = (*xml_node)->Properties();
-
-						list<unisim::util::xml::Property *>::const_iterator xml_node_property;
-						for(xml_node_property = xml_node_properties->begin(); xml_node_property != xml_node_properties->end(); xml_node_property++)
-						{
-							if((*xml_node_property)->Name() == string("name"))
-							{
-								program_counter_name = (*xml_node_property)->Value();
-								has_program_counter_name = true;
-							}
-						}
-
-						if(!has_program_counter_name)
-						{
-							unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! node '%s' has no 'name'", (*xml_node)->Name().c_str());
-							delete root_node;
-							return false;
-						}
-					}
-					else
-					{
-						unisim::util::xml::Error((*xml_node)->Filename(), (*xml_node)->LineNo(), "WARNING! ignoring tag '%s'", (*xml_node)->Name().c_str());
-					}
-				}
-			}
-
-			if(!has_program_counter)
-			{
-				unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! architecture has no program counter");
-				delete root_node;
-				return false;
-			}
-
-			vector<GDBRegister>::iterator reg_iter;
-
-			for(reg_iter = gdb_registers.begin(); reg_iter != gdb_registers.end(); reg_iter++)
-			{
-				if(reg_iter->GetName() == program_counter_name)
-				{
-					gdb_pc = &(*reg_iter);
-					break;
-				}
-			}
-
-			if(!gdb_pc)
-			{
-				unisim::util::xml::Error((*xml_program_counter_node)->Filename(), (*xml_program_counter_node)->LineNo(), "ERROR! program counter does not belong to registers");
-				delete root_node;
-				return false;
-			}
-		}
-		else
-		{
-			unisim::util::xml::Error(root_node->Filename(), root_node->LineNo(), "ERROR! root node is not named 'architecture'");
-			delete root_node;
-			return false;
-		}
-
-		delete root_node;
-	}
-	else
-	{
-		cerr << "ERROR! no root node (" << architecture_description_filename << ")" << endl;
-		unisim::util::xml::Error(architecture_description_filename, 0, "ERROR! no root node");
+		logger << DebugError << "architecture has no property 'name'" << std::endl << EndDebugError;
 		return false;
 	}
+
+	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
+	if (architecture_endian != NULL) {
+		string endianstr = *architecture_endian;
+		if(endianstr == "little")
+		{
+			endian = GDB_LITTLE_ENDIAN;
+			has_architecture_endian = true;
+		}
+		else if(endianstr == "big")
+		{
+			endian = GDB_BIG_ENDIAN;
+			has_architecture_endian = true;
+		}
+	}
+
+	if(!has_architecture_endian)
+	{
+		logger << DebugWarning << "assuming target architecture endian is 'big endian'" << std::endl << EndDebugWarning;
+	}
+
+	VariableBase* param_program_counter_name = Simulator::simulator->FindParameter("program-counter-name");
+
+	if (param_program_counter_name != NULL) {
+		pc_reg = (VariableBase *) Simulator::simulator->FindRegister(((string) *param_program_counter_name).c_str());
+		if (pc_reg != NULL) {
+			has_program_counter = true;
+		} else {
+			logger << DebugWarning << "Simulator has no <program-counter> register named '" << (string) *param_program_counter_name << "'" << std::endl << EndDebugWarning;
+		}
+	} else {
+		logger << DebugWarning << "Simulator has no <program-counter-name> parameter" << std::endl << EndDebugWarning;
+	}
+
+	std::list<VariableBase *> lst;
+
+	Simulator::simulator->GetRegisters(lst);
+
+	uint32_t index = 0;
+	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+		if (!((VariableBase *) *it)->IsVisible()) continue;
+
+		simulator_registers.push_back((VariableBase *) *it);
+
+		if (has_program_counter) {
+			if (((VariableBase *) *it) == pc_reg) {
+				pc_reg_index = index;
+			}
+		}
+
+		index++;
+	}
+
+	lst.clear();
 
 	return true;
 }
@@ -475,15 +343,20 @@ bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 template <class ADDRESS>
 void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
+
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
+		watchpoint_hit = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
+		watchpoint_hit_addr = addr;
+		watchpoint_hit_size = size;
+
 		trap = true;
 		synched = false;
 	}
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS next_addr)
+void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
 {
 	if(breakpoint_registry.HasBreakpoint(next_addr))
 	{
@@ -623,18 +496,22 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case 'G':
 				if(WriteRegisters(packet.substr(1)))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 'P':
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
 				if(WriteRegister(reg_num, packet.substr(pos)))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 'm':
@@ -655,9 +532,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
 				if(WriteMemory(addr, packet.substr(pos), size))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 's':
@@ -667,8 +546,9 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					synched = false;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
-				if(gdb_pc)
-					gdb_pc->SetValue(&addr);
+				if (pc_reg) {
+					*pc_reg = addr;
+				}
 				else
 				{
 					if(verbose)
@@ -687,8 +567,9 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					running_mode = GDBSERVER_MODE_CONTINUE;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
-				if(gdb_pc)
-					gdb_pc->SetValue(&addr);
+				if (pc_reg) {
+					*pc_reg = addr;
+				}
 				else
 				{
 					if(verbose)
@@ -723,7 +604,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case '!':
 				extended_mode = true;
-				PutPacket("OK");
+//				PutPacket("OK");
+				OutputText("OK", 2);
 				break;
 
 			case 'Z':
@@ -733,9 +615,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(SetBreakpointWatchpoint(type, addr, size))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			case 'z':
@@ -745,9 +629,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(RemoveBreakpointWatchpoint(type, addr, size))
-					PutPacket("OK");
+//					PutPacket("OK");
+					OutputText("OK", 2);
 				else
-					PutPacket("E00");
+//					PutPacket("E00");
+					OutputText("E00", 3);
 				break;
 
 			default:
@@ -801,7 +687,6 @@ bool PIMServer<ADDRESS>::FlushOutput()
 {
 	if(output_buffer_size > 0)
 	{
-//		cerr << "begin: output_buffer_size = " << output_buffer_size << endl;
 		unsigned int index = 0;
 		do
 		{
@@ -819,11 +704,10 @@ bool PIMServer<ADDRESS>::FlushOutput()
 
 			index += r;
 			output_buffer_size -= r;
-//			cerr << "output_buffer_size = " << output_buffer_size << endl;
 		}
 		while(output_buffer_size > 0);
 	}
-//	cerr << "end: output_buffer_size = " << output_buffer_size << endl;
+
 	return true;
 }
 
@@ -962,27 +846,38 @@ bool PIMServer<ADDRESS>::OutputText(const char *s, int count)
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReadRegisters()
 {
-	string packet;
-	vector<GDBRegister>::const_iterator gdb_reg;
 
-	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); gdb_reg++)
-	{
+	string packet;
+
+	for (vector<VariableBase *>::iterator it = simulator_registers.begin(); it != simulator_registers.end(); it++) {
+		ADDRESS val = **it;
 		string hex;
-		gdb_reg->GetValue(hex);
+
+		Number2HexString((uint8_t*) &val, ((VariableBase *) *it)->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
 		packet += hex;
 	}
+
 	return PutPacket(packet);
+
 }
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::WriteRegisters(const string& hex)
 {
-	vector<GDBRegister>::iterator gdb_reg;
+
 	unsigned int pos = 0;
 
-	for(gdb_reg = gdb_registers.begin(); gdb_reg != gdb_registers.end(); pos += gdb_reg->GetHexLength(), gdb_reg++)
+	for(vector<VariableBase *>::iterator it = simulator_registers.begin(); it != simulator_registers.end(); pos += 2 * (*it)->GetBitSize()/8, it++)
 	{
-		if(!gdb_reg->SetValue(hex.substr(pos, gdb_reg->GetHexLength()))) return false;
+		ADDRESS val = 0;
+		string subhex = hex.substr(pos, 2 * (*it)->GetBitSize()/8);
+		if (HexString2Number(subhex, &val, (*it)->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
+			*(*it) = val;
+		} else {
+			return false;
+		}
+
 	}
 
 	return true;
@@ -991,19 +886,31 @@ bool PIMServer<ADDRESS>::WriteRegisters(const string& hex)
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReadRegister(unsigned int regnum)
 {
-	if(regnum >= gdb_registers.size()) return false;
-	const GDBRegister& gdb_reg = gdb_registers[regnum];
+
 	string packet;
-	gdb_reg.GetValue(packet);
+	string endianstr;
+	ADDRESS val = *(simulator_registers[regnum]);
+	Number2HexString((uint8_t*) &val, (simulator_registers[regnum])->GetBitSize()/8, packet, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
 	return PutPacket(packet);
+
 }
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 {
-	if(regnum >= gdb_registers.size()) return false;
-	GDBRegister& gdb_reg = gdb_registers[regnum];
-	return gdb_reg.SetValue(hex);
+
+	string packet;
+	ADDRESS val = 0;
+	unsigned int pos = 0;
+
+	if (HexString2Number(hex, &val, (simulator_registers[regnum])->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
+		*(simulator_registers[regnum]) = val;
+	} else {
+		return false;
+	}
+
+	return true;
 }
 
 template <class ADDRESS>
@@ -1062,9 +969,63 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 }
 
 template <class ADDRESS>
-bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hex) {
+bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) {
 
-	return false;
+	list<const Symbol<ADDRESS> *> symbol_registries;
+
+	if (symbol_table_lookup_import) {
+		symbol_table_lookup_import->GetSymbols(symbol_registries, Symbol<ADDRESS>::SYM_OBJECT);
+	}
+	typename list<const Symbol<ADDRESS> *>::const_iterator symbol_iter;
+
+	string packet = "";
+
+	for(symbol_iter = symbol_registries.begin(); symbol_iter != symbol_registries.end(); symbol_iter++)
+	{
+
+		if (name.compare((*symbol_iter)->GetName()) == 0) {
+
+			uint32_t size = (*symbol_iter)->GetSize();
+			uint8_t *value = (uint8_t*) malloc(size);
+			memset(value, 0, size);
+
+			uint32_t value_index;
+			uint8_t val;
+			uint32_t hex_index;
+			if ((hexValue.length() % 2) == 0) {
+				hex_index = 0;
+				value_index = size - (hexValue.length() / 2);
+			} else {
+				hex_index = 1;
+				value_index = size - (hexValue.length() / 2) - 1;
+				value[value_index++] = HexChar2Nibble(hexValue[0]);
+			}
+			for (; (hex_index < hexValue.length()); hex_index = hex_index+2) {
+				val = (HexChar2Nibble(hexValue[hex_index]) << 4) | HexChar2Nibble(hexValue[hex_index+1]);
+				value[value_index++] = val;
+			}
+
+			if (!memory_import->WriteMemory((*symbol_iter)->GetAddress(), value, size)) {
+				if(verbose)
+				{
+					logger << DebugWarning << memory_import.GetName() << "->WriteSymbol has reported an error" << EndDebugWarning;
+				}
+
+//				PutPacket("NOK");
+				OutputText("NOK", 3);
+				return false;
+			} else {
+//				PutPacket("OK");
+				OutputText("OK", 2);
+			}
+
+			break;
+		}
+
+	}
+
+	return true;
+
 }
 
 template <class ADDRESS>
@@ -1257,19 +1218,22 @@ template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReportTracePointTrap()
 {
 	string packet("T05");
-	vector<GDBRegister>::const_iterator gdb_reg;
 
-	if(gdb_pc)
-	{
+	if (watchpoint_hit != NULL) {
+
 		std::stringstream sstr;
-		string hex;
-		unsigned int reg_num = gdb_pc->GetRegNum();
-		gdb_pc->GetValue(hex);
-		sstr << std::hex << reg_num;
+		if (watchpoint_hit->GetMemoryAccessType() == MemoryAccessReporting<ADDRESS>::MAT_READ) {
+			sstr << "rwatch";
+		} else {
+			sstr << "watch";
+		}
+		sstr << ":" << std::hex;
+		sstr << watchpoint_hit_addr;
+
 		packet += sstr.str();
-		packet += ":";
-		packet += hex;
 		packet += ";";
+
+		watchpoint_hit = NULL;
 	}
 
 	return PutPacket(packet);
@@ -1366,13 +1330,16 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 2:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
+
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
 				return true;
 			}
-			else
+			else {
+
 				return false;
+			}
 		case 3:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
@@ -1412,13 +1379,106 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
-	if (separator_index == string::npos) {
+
+	if (separator_index == static_cast<unsigned int>(string::npos)) {
 		cmdPrefix = command;
 	} else {
 		cmdPrefix = command.substr(0, separator_index);
 	}
 
-	if (cmdPrefix.compare("symboles") == 0) {
+	if (cmdPrefix.compare("parameters") == 0) {
+		Simulator *simulator = Object::GetSimulator();
+
+		std::list<VariableBase *> lst;
+		simulator->GetParameters(lst);
+
+		std::stringstream strstm;
+
+		for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+			if (!((VariableBase *) *it)->IsVisible()) continue;
+
+			std::string name = ((VariableBase *) *it)->GetName();
+			std::string dataType = ((VariableBase *) *it)->GetDataTypeName();
+			std::string value = *((VariableBase *) *it);
+			std::string type = ((VariableBase *) *it)->GetTypeName();
+			std::string format = "";
+			switch (((VariableBase *) *it)->GetFormat()) {
+				case VariableBase::FMT_HEX: format = "HEX"; break;
+				case VariableBase::FMT_DEC: format = "DEC"; break;
+				default: format = "Default";
+			}
+
+			const char *description = ((VariableBase *) *it)->GetDescription();
+
+			strstm << type << ":" << name << ":" << dataType << ":" << value << ":" << format << ":" << ((strlen(description) != 0)? std::string(description): "No description available!");
+
+			string str = strstm.str();
+
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+
+		}
+
+		lst.clear();
+
+		PutPacket("T05");
+
+	}
+	else if (cmdPrefix.compare("parameter") == 0) {
+
+		std::string str = command.substr(separator_index+1);
+
+		separator_index = str.find_first_of(':');
+		string name;
+		if (separator_index == static_cast<unsigned int>(string::npos)) {
+			name = str;
+		} else {
+			name = str.substr(0, separator_index);
+		}
+
+		VariableBase* parameter = Simulator::simulator->FindParameter(name.c_str());
+		if (parameter) {
+			if (separator_index == static_cast<unsigned int>(string::npos)) // read parameter request
+			{
+				std::ostringstream os;
+
+				if (strcmp(parameter->GetDataTypeName(), "double precision floating-point") == 0) {
+					double val = *parameter;
+					os << stringify(val);
+				}
+				else if (strcmp(parameter->GetDataTypeName(), "single precision floating-point") == 0) {
+					float val = *parameter;
+					os << stringify(val);
+				}
+				else if (strcmp(parameter->GetDataTypeName(), "boolean") == 0) {
+					bool val = *parameter;
+					os << stringify(val);
+				}
+				else {
+					uint64_t val = *parameter;
+					os << stringify(val);
+				}
+
+				std::string value = os.str();
+				OutputText(value.c_str(), value.size());
+			}
+			else // write parameter request
+			{
+				std::string value = str.substr(separator_index+1);
+
+				*parameter = value.c_str();
+			}
+
+		} else {
+
+		}
+
+		PutPacket("T05");
+
+	}
+	else if (cmdPrefix.compare("symboles") == 0) {
 
 		/**
 		 * command: qRcmd, symboles
@@ -1553,9 +1613,19 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		std::stringstream sstr;
 
-		for (vector<GDBRegister>::iterator it=gdb_registers.begin() ; it < gdb_registers.end(); it++ ) {
-			sstr << (*it).GetName() << ":" << (*it).GetSize() << ";";
+		std::list<VariableBase *> lst;
+
+		Simulator::simulator->GetRegisters(lst);
+
+		for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+			if (!((VariableBase *) *it)->IsVisible()) continue;
+
+			sstr << ((VariableBase *) *it)->GetName() << ":" << ((VariableBase *) *it)->GetBitSize() << ";";
+
 		}
+
+		lst.clear();
 
 		string str = sstr.str();
 		PutPacket(str);
@@ -1565,18 +1635,23 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 		std::stringstream sstr;
 
-		if(gdb_pc)
+		if(pc_reg)
 		{
 			string hex;
-			unsigned int reg_num = gdb_pc->GetRegNum();
 
 			const Statement<ADDRESS> *stmt = 0;
-			ADDRESS addr = 0;
-			gdb_pc->GetValue(&addr);
+			ADDRESS addr = *pc_reg;
+			long mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
+
+			Number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+			sstr << hex << ":";
+
 			unsigned int i;
 			if(stmt_lookup_import)
 			{
-				stmt = stmt_lookup_import->FindStatement(addr);
+//				stmt = stmt_lookup_import->FindStatement(addr);
+				stmt = stmt_lookup_import->FindStatement(mcuAddress);
 			}
 
 			if(stmt)
@@ -1608,8 +1683,84 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		OutputText(packet.c_str(), packet.length());
 
 	}
+	else if (cmdPrefix.compare("physicalAddress") == 0) {
+
+		if (separator_index == string::npos) {
+			PutPacket("E00");
+		} else {
+			separator_index++;
+			long logical_address;
+
+			int start_index = 0;
+			int end_index = command.find(':', start_index);
+			if(end_index == string::npos) {
+				PutPacket("E00");
+			} else {
+
+				string cmd = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+
+				string hex = command.substr(start_index);
+				start_index = end_index+1;
+
+				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+				string packet("T05");
+				std::stringstream sstr;
+
+				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
+
+				Number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+				packet += hex;
+
+				PutPacket(packet);
+
+			}
+
+		}
+
+	}
+	else if (cmdPrefix.compare("structuredAddress") == 0) {
+
+		if (separator_index == string::npos) {
+			PutPacket("E00");
+		} else {
+			separator_index++;
+			long logical_address;
+
+			int start_index = 0;
+			int end_index = command.find(':', start_index);
+			if(end_index == string::npos) {
+				PutPacket("E00");
+			} else {
+
+				string cmd = command.substr(start_index, end_index-start_index);
+				start_index = end_index+1;
+
+				string hex = command.substr(start_index);
+				start_index = end_index+1;
+
+				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+				string packet("T05");
+				std::stringstream sstr;
+
+				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
+
+				Number2HexString((uint8_t*) &mcuAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+
+				packet += hex;
+
+				PutPacket(packet);
+
+			}
+
+		}
+
+	}
 	else if (cmdPrefix.compare("srcaddr") == 0) {
-// ******************************
+
 		// qRcmd,saddr:filename;lineno;colno
 		std::stringstream sstr;
 
@@ -1649,8 +1800,6 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			PutPacket("E00");
 		}
 
-
-// ******************************
 	}
 	else if (cmdPrefix.compare("statistics") == 0) {
 
@@ -1662,6 +1811,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		sstr << "simulated time" << ":" << GetSimTime()*1000 << " ms";
 
 		for (iter = lst.begin(); iter != lst.end(); iter++) {
+
 			sstr << ";" << (*iter)->GetName() << ":" << (string) *(*iter);
 		}
 

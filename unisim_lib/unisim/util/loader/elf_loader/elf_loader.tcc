@@ -53,7 +53,7 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(unisim::kernel::logger::Logger& _logger)
+ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
 	: logger(_logger)
 	, filename()
 	, base_addr(0)
@@ -61,12 +61,20 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, force_use_virtual_address(true)
 	, dump_headers(false)
 	, blob(0)
+	, const_blob(_blob)
 	, symtab_handler(0)
 	, dw_handler(0)
+	, regs_if(_regs_if)
+	, mem_if(_mem_if)
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
-	, parse_dwarf(true)
+	, parse_dwarf(false)
 {
+	if(const_blob)
+	{
+		const_blob->Catch();
+		ParseSymbols();
+	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -80,6 +88,11 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::~E
 	if(blob)
 	{
 		blob->Release();
+	}
+	
+	if(const_blob)
+	{
+		const_blob->Release();
 	}
 	
 	if(symtab_handler)
@@ -111,6 +124,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			dwarf_to_html_output_directory = s;
+			break;
+		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
+			dwarf_register_number_mapping_filename = s;
 			break;
 		default:
 			break;
@@ -167,6 +183,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			s = dwarf_to_html_output_directory;
 			break;
+		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
+			s = dwarf_register_number_mapping_filename;
+			break;
 		default:
 			s.clear();
 			break;
@@ -202,19 +221,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::Load()
 {
-	if(dw_handler)
-	{
-		delete dw_handler;
-	}
-	
 	if(blob)
 	{
 		blob->Release();
-	}
-	
-	if(symtab_handler)
-	{
-		delete symtab_handler;
 	}
 
 	Elf_Ehdr *hdr = 0;
@@ -364,6 +373,10 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	blob->SetArchitecture(architecture_name);
 	blob->SetEndian(endianness);
 	blob->SetAddressSize(GetAddressSize(hdr));
+	if(Elf_Class == ELFCLASS32)
+		blob->SetFileFormat(unisim::util::debug::blob::Blob<MEMORY_ADDR>::FFMT_ELF32);
+	else if(Elf_Class == ELFCLASS64)
+		blob->SetFileFormat(unisim::util::debug::blob::Blob<MEMORY_ADDR>::FFMT_ELF64);
 
 	if(shdr_table && sh_string_table)
 	{
@@ -507,7 +520,34 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	if(phdr_table) free(phdr_table);
 	if(hdr) free(hdr);
 	
-	symtab_handler = new ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>(logger, blob);
+	if(const_blob)
+	{
+		const_blob->Release();
+	}
+	const_blob = blob;
+	if(const_blob)
+	{
+		const_blob->Catch();
+	}
+	ParseSymbols();
+	
+	return success;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ParseSymbols()
+{
+	if(dw_handler)
+	{
+		delete dw_handler;
+	}
+	
+	if(symtab_handler)
+	{
+		delete symtab_handler;
+	}
+
+	symtab_handler = new ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>(logger, const_blob);
 	
 	if(symtab_handler)
 	{
@@ -520,10 +560,13 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	
 	if(parse_dwarf)
 	{
-		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(blob, logger);
+		dw_handler = new unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR>(const_blob, logger, regs_if, mem_if);
 
 		if(dw_handler)
 		{
+			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, dwarf_register_number_mapping_filename.c_str());
+			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
+			
 			if(verbose)
 			{
 				logger << DebugInfo << "Parsing DWARF debugging informations" << EndDebugInfo;
@@ -539,14 +582,12 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			}
 		}
 	}
-	
-	return success;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const typename unisim::util::debug::blob::Blob<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBlob() const
 {
-	return blob;
+	return blob ? blob : const_blob;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

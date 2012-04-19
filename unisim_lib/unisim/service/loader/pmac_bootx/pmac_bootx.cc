@@ -158,7 +158,7 @@ DeviceProperty *DeviceTree::CreateDeviceProperty(const unisim::util::xml::Node *
 				}
 				else
 				{
-					unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring property %s of tag %s", (*xml_prop)->Name().c_str(), xml_node->Name().c_str());
+					logger << DebugWarning << (*xml_prop)->Filename() << ":" << (*xml_prop)->LineNo() << ":ignoring property " << (*xml_prop)->Name() << " of tag " << xml_node->Name() << EndDebugWarning;
 				}
 			}
 		}
@@ -241,7 +241,7 @@ DeviceProperty *DeviceTree::CreateDeviceProperty(const unisim::util::xml::Node *
 					}
 					else
 					{
-						unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring property %s of tag %s", (*xml_prop)->Name().c_str(), xml_node->Name().c_str());
+						logger << DebugWarning << (*xml_prop)->Filename() << ":" << (*xml_prop)->LineNo() << ":ignoring property " << (*xml_prop)->Name() << " of tag " << xml_node->Name() << EndDebugWarning;
 					}
 				}
 			}
@@ -327,7 +327,7 @@ DeviceNode *DeviceTree::CreateDeviceNode(DeviceNode *reloc_parent, const unisim:
 		{
 			if((*xml_child)->Name() != string("devnode") && (*xml_child)->Name() != string("string_property") && (*xml_child)->Name() != string("hex_property"))
 			{
-				unisim::util::xml::Error((*xml_child)->Filename(), (*xml_child)->LineNo(), "WARNING! expected either tag devnode/string_property/hex_property, ignoring tag %s", (*xml_child)->Name().c_str());
+				logger << DebugWarning << (*xml_child)->Filename() << ":" << (*xml_child)->LineNo() << ":expected either tag devnode/string_property/hex_property, ignoring tag " << (*xml_child)->Name() << EndDebugWarning;
 			}
 		}
 
@@ -337,7 +337,7 @@ DeviceNode *DeviceTree::CreateDeviceNode(DeviceNode *reloc_parent, const unisim:
 
 		if(!xml_props->empty())
 		{
-			unisim::util::xml::Error((*xml_prop)->Filename(), (*xml_prop)->LineNo(), "WARNING! ignoring properties of tag %s", xml_node->Name().c_str());
+			logger << DebugWarning << (*xml_prop)->Filename() << ":" << (*xml_prop)->LineNo() << ":ignoring properties of tag " << xml_node->Name() << EndDebugWarning;
 		}
 
 		// Create Device properties and build a full name for the device node
@@ -500,7 +500,7 @@ bool DeviceTree::Load(const string& filename)
 {
 	base = boot_infos->Malloc(4); // first 4 bytes must be set to zero
 
-	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser();
+	unisim::util::xml::Parser *parser = new unisim::util::xml::Parser(logger);
 	unisim::util::xml::Node *xml_node;
 
 	xml_node = parser->Parse(filename);
@@ -516,7 +516,7 @@ bool DeviceTree::Load(const string& filename)
 		}
 		else
 		{
-			unisim::util::xml::Error(xml_node->Filename(), xml_node->LineNo(), "WARNING! expected tag devnode, got %s", xml_node->Name().c_str());
+			logger << DebugWarning << xml_node->Filename() << ":" << xml_node->LineNo() << ":expected tag devnode, got " << xml_node->Name() << EndDebugWarning;
 		}
 		delete xml_node;
 	}

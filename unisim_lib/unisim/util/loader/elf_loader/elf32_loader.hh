@@ -48,12 +48,12 @@ template <class MEMORY_ADDR = uint32_t>
 class Elf32Loader : public ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>
 {
 public:
-	Elf32Loader(unisim::kernel::logger::Logger& logger);
+	Elf32Loader(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
 };
 
 template <class MEMORY_ADDR>
-Elf32Loader<MEMORY_ADDR>::Elf32Loader(unisim::kernel::logger::Logger& _logger)
-	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>(_logger)
+Elf32Loader<MEMORY_ADDR>::Elf32Loader(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob)
+	: ElfLoaderImpl<MEMORY_ADDR, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym>(_logger, _regs_if, _mem_if, _blob)
 {
 }
 

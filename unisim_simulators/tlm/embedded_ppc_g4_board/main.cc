@@ -64,6 +64,8 @@
 #include "unisim/component/tlm/debug/transaction_spy.hh"
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #include "unisim/service/debug/inline_debugger/inline_debugger.hh"
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include "unisim/service/power/cache_power_estimator.hh"
 #include "unisim/service/time/sc_time/time.hh"
@@ -108,6 +110,8 @@ void SigIntHandler(int signum)
 using namespace std;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
+using unisim::service::debug::debugger::Debugger;
+using unisim::service::profiling::addr_profiler::Profiler;
 using unisim::service::power::CachePowerEstimator;
 using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 using unisim::util::garbage_collector::GarbageCollector;
@@ -257,6 +261,10 @@ private:
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	//  - debugger
+	Debugger<CPU_ADDRESS_TYPE> *debugger;
+	//  - profiler
+	Profiler<CPU_ADDRESS_TYPE> *profiler;
 	//  - the optional power estimators
 	CachePowerEstimator *il1_power_estimator;
 	CachePowerEstimator *dl1_power_estimator;
@@ -295,6 +303,8 @@ Simulator::Simulator(int argc, char **argv)
 	, tee_memory_access_reporting(0)
 	, gdb_server(0)
 	, inline_debugger(0)
+	, debugger(0)
+	, profiler(0)
 	, il1_power_estimator(0)
 	, dl1_power_estimator(0)
 	, l2_power_estimator(0)
@@ -398,6 +408,10 @@ Simulator::Simulator(int argc, char **argv)
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	//  - debugger
+	debugger = (enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
+	//  - profiler
+	profiler = enable_inline_debugger ? new Profiler<CPU_ADDRESS_TYPE>("profiler") : 0;
 	//  - the optional power estimators
 	il1_power_estimator = estimate_power ? new CachePowerEstimator("il1-power-estimator") : 0;
 	dl1_power_estimator = estimate_power ? new CachePowerEstimator("dl1-power-estimator") : 0;
@@ -550,7 +564,8 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 
 	cpu->memory_import >> bus->memory_export;
-	
+
+#if 0
 	if(enable_inline_debugger || enable_gdb_server) 
 	{
 		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
@@ -579,6 +594,60 @@ Simulator::Simulator(int argc, char **argv)
 		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
 		gdb_server->memory_import >> cpu->memory_export;
 		gdb_server->registers_import >> cpu->registers_export;
+	}
+
+	if(inline_debugger)
+	{
+		*inline_debugger->loader_import[0] >> loader->loader_export;
+		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
+		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
+	}
+#endif
+
+	if(enable_inline_debugger || enable_gdb_server)
+	{
+		// Connect tee-memory-access-reporting to CPU, debugger and profiler
+		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+		*tee_memory_access_reporting->out[1] >> profiler->memory_access_reporting_export;
+		*tee_memory_access_reporting->out[2] >> debugger->memory_access_reporting_export;
+		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[2];
+
+		// Connect debugger to CPU
+		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> cpu->disasm_export;
+		debugger->memory_import >> cpu->memory_export;
+		debugger->registers_import >> cpu->registers_export;
+		debugger->loader_import >> loader->loader_export;
+		debugger->blob_import >> loader->blob_export;
+	}
+	
+	if(enable_inline_debugger)
+	{
+		// Connect inline-debugger to debugger
+		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
+		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		inline_debugger->disasm_import >> debugger->disasm_export;
+		inline_debugger->memory_import >> debugger->memory_export;
+		inline_debugger->registers_import >> debugger->registers_export;
+		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+		inline_debugger->backtrace_import >> debugger->backtrace_export;
+		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+		inline_debugger->profiling_import >> profiler->profiling_export;
+	}
+	else if(enable_gdb_server)
+	{
+		// Connect gdb-server to debugger
+		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
+		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
+		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		gdb_server->memory_import >> debugger->memory_export;
+		gdb_server->registers_import >> debugger->registers_export;
 	}
 
 	if(estimate_power)
@@ -629,13 +698,6 @@ Simulator::Simulator(int argc, char **argv)
 	pci_stub->memory_import >> cpu->memory_export;
 	pci_stub->registers_import >> cpu->registers_export;
 #endif
-
-	if(inline_debugger)
-	{
-		*inline_debugger->loader_import[0] >> loader->loader_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
-		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
-	}
 }
 
 Simulator::~Simulator()
@@ -648,6 +710,8 @@ Simulator::~Simulator()
 	if(memory) delete memory;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
+	if(debugger) delete debugger;
+	if(profiler) delete profiler;
 	if(loader) delete loader;
 	if(bus) delete bus;
 	if(cpu) delete cpu;
@@ -680,6 +744,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	uint32_t pci_bus_frequency = 33; // in Mhz
 	double cpu_frequency = 300.0; // in Mhz
@@ -796,8 +861,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 
-	// Inline debugger
-	simulator->SetVariable("inline-debugger.num-loaders", 1);
+	//  - Debugger run-time configuration
+	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	// - Loader memory mapper
 	simulator->SetVariable("loader.memory-mapper.mapping", "mpc107:0x00000000-0xffffffff"); // whole linear address space

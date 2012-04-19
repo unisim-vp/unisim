@@ -140,11 +140,55 @@ CPU::CPU(const char *name, Object *parent):
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
-    ccr = new CCR_t();
+    ccr = new CCR_t(&ccrReg);
 
     eblb = new EBLB(this);
 
 	logger = new unisim::kernel::logger::Logger(*this);
+
+	char buf[80];
+
+	sprintf(buf, "A");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regA, "Accumulator register A"));
+
+	sprintf(buf, "B");
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regB, "Accumulator register B"));
+
+	sprintf(buf, "D");
+	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
+	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>(buf, this,  &regA, &regB, "Accumulator register D"));
+
+	sprintf(buf, "X");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regX);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regX, "Index register X"));
+
+	sprintf(buf, "Y");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regY);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regY, "Index register Y"));
+
+	sprintf(buf, "SP");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regSP);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regSP, "Stack Pointer SP"));
+
+	sprintf(buf, "PC");
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regPC);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regPC, "Program counter PC"));
+
+	sprintf(buf, "%s", ccr->GetName());
+	registers_registry[buf] = ccr;
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, ccrReg, "CCR"));
+
+	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
+	sprintf(buf, "%s", ccrl->GetName());
+	registers_registry[buf] = ccrl;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
+
+	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
+	sprintf(buf, "%s", ccrh->GetName());
+	registers_registry[buf] = ccrh;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
 }
 
@@ -163,7 +207,11 @@ CPU::~CPU()
 			delete reg_iter->second;
 	}
 
-	registers_registry.clear();
+	unsigned int i;
+	unsigned int n = extended_registers_registry.size();
+	for (i=0; i<n; i++) {
+		delete extended_registers_registry[i];
+	}
 
 	if (logger) { delete logger; logger = NULL;}
 }
@@ -210,16 +258,14 @@ void CPU::OnBusCycle()
 {
 }
 
+
 uint8_t CPU::Step()
 {
-	address_t 	current_pc;
 
 	uint8_t 	buffer[MAX_INS_SIZE];
 
 	Operation 	*op;
 	uint8_t	opCycles = 0;
-
-	current_pc = getRegPC();
 
 	try
 	{
@@ -227,23 +273,23 @@ uint8_t CPU::Step()
 		VerboseDumpRegsStart();
 
 		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << current_pc << std::dec << std::endl << EndDebugInfo;
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
 			DebugControl<service_address_t>::DebugCommand dbg_cmd;
 
 			do {
 				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << current_pc << std::dec << ")"
+					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(current_pc);
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(getRegPC()));
 
 				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					break;
 				}
@@ -251,7 +297,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Sync();
 					continue;
@@ -261,7 +307,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Stop(0);
 				}
@@ -269,7 +315,7 @@ uint8_t CPU::Step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << current_pc << std::dec << ")"
+							<< std::hex << getRegPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 				}
 			} while(1);
@@ -279,11 +325,11 @@ uint8_t CPU::Step()
 			if(memory_access_reporting_import) {
 				if(debug_enabled && verbose_step)
 					*logger << DebugInfo
-						<< "Reporting memory acces for fetch at address 0x"
-						<< std::hex << current_pc << std::dec
+						<< "Reporting memory access for fetch at address 0x"
+						<< std::hex << getRegPC() << std::dec
 						<< std::endl << EndDebugInfo;
 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, current_pc, MAX_INS_SIZE);
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
 			}
 		}
 
@@ -292,11 +338,11 @@ uint8_t CPU::Step()
 		{
 			*logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << current_pc << std::dec
+				<< std::hex << getRegPC() << std::dec
 				<< std::endl << EndDebugInfo;
 		}
 
-		queueFetch(current_pc, buffer, MAX_INS_SIZE);
+		queueFetch(getRegPC(), buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
 		/* Decode current PC */
@@ -306,16 +352,15 @@ uint8_t CPU::Step()
 			ctstr << insn;
 			*logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< std::hex << current_pc << std::dec
+				<< std::hex << getRegPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
 				<< std::endl << EndDebugInfo;
 		}
 
-		op = this->Decode(current_pc, insn);
-		lastPC = current_pc;
-                unsigned int insn_length = op->GetLength();
-                if (insn_length % 8) throw "InternalError";
-		setRegPC(current_pc + (insn_length/8));
+		op = this->Decode(getRegPC(), insn);
+		lastPC = getRegPC();
+        unsigned int insn_length = op->GetLength();
+        if (insn_length % 8) throw "InternalError";
 
 		queueFlush(insn_length/8);
 
@@ -327,20 +372,17 @@ uint8_t CPU::Step()
 
 			op->disasm(disasm_str);
 
-			std::cerr <<  DebugInfo << GetSimulatedTime() << " ms: "
-					<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
-					<< GetFunctionFriendlyName(current_pc) << " : "
-					<< disasm_str.str()
-					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
-
 			ctstr << op->GetEncoding();
+
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-				<< "PC = 0x" << std::hex << current_pc << std::dec << " : "
-				<< GetFunctionFriendlyName(current_pc) << " : "
+				<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
+				<< GetFunctionFriendlyName(getRegPC()) << " : "
 				<< disasm_str.str()
 				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
-		} else if (debug_enabled && verbose_step) {
+		}
+
+		if (debug_enabled && verbose_step) {
 			stringstream disasm_str;
 			stringstream ctstr;
 
@@ -350,10 +392,12 @@ uint8_t CPU::Step()
 			*logger << DebugInfo << GetSimulatedTime() << "ms: "
 				<< "Executing instruction "
 				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << current_pc << std::dec
+				<< " at PC = 0x" << std::hex << getRegPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
 				<< "  " << EndDebugInfo	<< std::endl;
 		}
+
+		setRegPC(getRegPC() + (insn_length/8));
 
 		op->execute(this);
 
@@ -365,15 +409,15 @@ uint8_t CPU::Step()
 
 		instruction_counter++;
 
-		RegistersInfo();
-
 		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
 			trap_reporting_import->ReportTrap();
 		}
 
 		if(requires_finished_instruction_reporting)
-			if(memory_access_reporting_import)
-				memory_access_reporting_import->ReportFinishedInstruction(getRegPC());
+			if(memory_access_reporting_import) {
+				memory_access_reporting_import->ReportFinishedInstruction(MMC::getPagedAddress(lastPC), MMC::getPagedAddress(getRegPC()));
+
+			}
 
 		if(HasAsynchronousInterrupt())
 		{
@@ -395,6 +439,12 @@ uint8_t CPU::Step()
 	}
 
 	if (instruction_counter >= max_inst) Stop(0);
+//	if ((instruction_counter % max_inst) == 0) {
+//		if (trap_reporting_import) {
+//			trap_reporting_import->ReportTrap();
+//		}
+//
+//	}
 
 	return opCycles;
 }
@@ -498,14 +548,17 @@ void CPU::HandleException(const AsynchronousException& exc)
 
 	asynchronous_interrupt = false;
 
-	if (CONFIG::HAS_RESET && HasReset())
+	if (CONFIG::HAS_RESET && HasReset()) {
 		HandleResetException(asyncVector);
+	}
 
-	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0))
+	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && HasNonMaskableXIRQInterrupt() && (ccr->getX() == 0)) {
 		HandleNonMaskableXIRQException(asyncVector, newIPL);
+	}
 
-	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && /*(ccr->getX() == 0) &&*/ (ccr->getI() == 0))
+	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && HasMaskableIbitInterrup() && /*(ccr->getX() == 0) &&*/ (ccr->getI() == 0)) {
 		HandleMaskableIbitException(asyncVector, newIPL);
+	}
 
 	// It is necessary to call AckAsynchronousInterrupt() if XIRQ and I-bit interrupt are masked
 	AckAsynchronousInterrupt();
@@ -533,7 +586,15 @@ void CPU::HandleResetException(address_t resetVector)
 	this->Reset();
 	// clear U-bit for CPU12XV2
 	ccr->clrIPL();
-	SetEntryPoint(memRead16(resetVector));
+
+	address_t address = memRead16(resetVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) resetVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 }
 
@@ -560,7 +621,13 @@ void CPU::HandleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL)
 	ccr->setIPL(newIPL);
 	ccr->setX();
 
-	SetEntryPoint(memRead16(xirqVector));
+	address_t address = memRead16(xirqVector);
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) xirqVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 }
 
@@ -587,7 +654,14 @@ void CPU::HandleMaskableIbitException(address_t ibitVector, uint8_t newIPL)
 		// clear U-bit for CPU12XV2
 		ccr->setIPL(newIPL);
 
-		SetEntryPoint(memRead16(ibitVector));
+		address_t address = memRead16(ibitVector);
+
+//		std::cerr << "Int vector 0x" << std::hex << (unsigned int) ibitVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//		if (trap_reporting_import) {
+//			trap_reporting_import->ReportTrap();
+//		}
+
+		SetEntryPoint(address);
 	}
 
 }
@@ -618,7 +692,14 @@ void CPU::HandleException(const TrapException& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(trapVector));
+	address_t address = memRead16(trapVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) trapVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckTrapInterrupt();
 }
@@ -647,7 +728,14 @@ void CPU::HandleException(const NonMaskableSWIInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(swiVector));
+	address_t address = memRead16(swiVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) swiVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckSWIInterrupt();
 }
@@ -676,7 +764,14 @@ void CPU::HandleException(const SysCallInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(sysCallVector));
+	address_t address = memRead16(sysCallVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) sysCallVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckSysInterrupt();
 }
@@ -705,7 +800,14 @@ void CPU::HandleException(const SpuriousInterrupt& exc)
 	ccr->setI();
 	// clear U-bit for CPU12XV2
 
-	SetEntryPoint(memRead16(spuriousVector));
+	address_t address = memRead16(spuriousVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) spuriousVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckSpuriousInterrupt();
 }
@@ -729,7 +831,14 @@ void CPU::HandleException(const NonMaskableAccessErrorInterrupt& exc)
 
 	address_t accessErrorVector = GetIntVector(newIPL);
 
-	SetEntryPoint(memRead16(accessErrorVector));
+	address_t address = memRead16(accessErrorVector);
+
+//	std::cerr << "Int vector 0x" << std::hex << (unsigned int) accessErrorVector << "  isrHandle 0x" << std::hex << (unsigned int) address << std::endl;
+//	if (trap_reporting_import) {
+//		trap_reporting_import->ReportTrap();
+//	}
+
+	SetEntryPoint(address);
 
 	AckAccessErrorInterrupt();
 
@@ -908,41 +1017,6 @@ bool CPU::BeginSetup() {
 			<< "Initializing debugging registers"
 			<< std::endl << EndDebugInfo;
 
-	char buf[80];
-
-	sprintf(buf, "A");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
-
-	sprintf(buf, "B");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
-
-	sprintf(buf, "D");
-	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
-
-	sprintf(buf, "X");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regX);
-
-	sprintf(buf, "Y");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regY);
-
-	sprintf(buf, "SP");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regSP);
-
-	sprintf(buf, "PC");
-	registers_registry[buf] = new SimpleRegister<address_t>(buf, &regPC);
-
-	sprintf(buf, "%s", ccr->GetName());
-	registers_registry[buf] = ccr;
-
-	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	sprintf(buf, "%s", ccrl->GetName());
-	registers_registry[buf] = ccrl;
-
-
-	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	sprintf(buf, "%s", ccrh->GetName());
-	registers_registry[buf] = ccrh;
-
 	return true;
 }
 
@@ -1025,16 +1099,6 @@ void CPU::VerboseDumpRegsEnd() {
 			<< "Register dump at the end of instruction execution: " << std::endl;
 		VerboseDumpRegs();
 		*logger << EndDebugInfo;
-	}
-}
-
-inline INLINE
-void CPU::RegistersInfo() {
-
-	if (debug_enabled) {
-		cout << "CPU:: Registers Info " << std::endl;
-		cout << std::hex << "CCR=0x" << ccr->getCCR() << "  PC=0x" << getRegPC() << "  SP=0x" << getRegSP() << "\n";
-		cout << "D  =0x" << getRegD() << "  X =0x" << getRegX() << "  Y =0x" << getRegY() << std::dec << "\n";
 	}
 }
 

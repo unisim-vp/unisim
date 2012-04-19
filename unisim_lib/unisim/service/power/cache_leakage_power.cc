@@ -111,6 +111,12 @@ const char *Variable<unisim::service::power::CacheLeakagePower>::GetDataTypeName
 }
 
 template <>
+unsigned int Variable<unisim::service::power::CacheLeakagePower>::GetBitSize() const
+{
+	return 0;
+}
+
+template <>
 Variable<unisim::service::power::CacheLeakagePower>::operator bool () const
 {
 	if ( storage->GetLeakagePower() == 0.0) return false;

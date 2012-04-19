@@ -72,6 +72,7 @@ public:
 class SimConfig
 {
 public:
+	typedef uint64_t MEMORY_ADDR;
 	static const bool DEBUG_INFORMATION = false;
 	
 	//=========================================================================
@@ -95,6 +96,7 @@ public:
 	public:
 		static const MEMORY_ADDR C_BASEADDR = 0x81800000ULL; // XPS INTC Base Address default value (as ML507 board)
 		static const MEMORY_ADDR C_HIGHADDR = 0x8180ffffULL; // XPS INTC Base Address default value (as ML507 board)
+		static const unsigned int MPLB_PORT = 0;
 	};
 
 	//=========================================================================
@@ -114,6 +116,8 @@ public:
 		static const bool C_TRIG1_ASSERT = true;     // Assertion level for CaptureTrig1
 		static const bool C_GEN0_ASSERT = true;      // Assertion level for GenerateOut0
 		static const bool C_GEN1_ASSERT = true;      // Assertion level for GenerateOut1
+
+		static const unsigned int MPLB_PORT = 1;
 	};
 
 	//=========================================================================
@@ -133,6 +137,8 @@ public:
 		
 		static const unsigned int RX_FIFO_SIZE = 16;
 		static const unsigned int TX_FIFO_SIZE = 16;
+
+		static const unsigned int MPLB_PORT = 4;
 	};
 
 	//=========================================================================
@@ -148,6 +154,8 @@ public:
 		
 		// Optional features
 		static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
+
+		static const unsigned int MPLB_PORT = 5;
 	};
 
 	class GPIO_LEDS_8BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
@@ -156,6 +164,8 @@ public:
 		static const unsigned int C_GPIO_WIDTH = 8;          // The width in bits of GPIO Channel 1
 		static const MEMORY_ADDR C_BASEADDR = 0x81400000ULL; // XPS GPIO Base Address default value
 		static const MEMORY_ADDR C_HIGHADDR = 0x8140ffffULL; // XPS GPIO High Address default value
+
+		static const unsigned int MPLB_PORT = 6;
 	};
 
 	class GPIO_5_LEDS_POSITIONS_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
@@ -164,6 +174,8 @@ public:
 		static const unsigned int C_GPIO_WIDTH = 5;          // The width in bits of GPIO Channel 1
 		static const MEMORY_ADDR C_BASEADDR = 0x81420000ULL; // XPS GPIO Base Address default value
 		static const MEMORY_ADDR C_HIGHADDR = 0x8142ffffULL; // XPS GPIO High Address default value
+
+		static const unsigned int MPLB_PORT = 7;
 	};
 
 	class GPIO_PUSH_BUTTONS_5BIT_CONFIG : public unisim::component::cxx::com::xilinx::xps_gpio::Config
@@ -175,6 +187,8 @@ public:
 		
 		// Optional features
 		static const bool C_INTERRUPT_IS_PRESENT = true; // Whether interrupt is present or not
+
+		static const unsigned int MPLB_PORT = 8;
 	};
 
 	//=========================================================================
@@ -182,6 +196,24 @@ public:
 	//=========================================================================
 
 	typedef unisim::component::cxx::memory::flash::am29::S29GL256PConfig AM29_CONFIG;
+	static const MEMORY_ADDR FLASH_BASE_ADDR = 0xfc000000ULL;
+	static const MEMORY_ADDR FLASH_BYTE_SIZE = 32 * 1024 * 1024; // 32 MB
+	static const unsigned int FLASH_MPLB_PORT = 2;
+
+	//=========================================================================
+	//===                 BRAM compile time configuration                   ===
+	//=========================================================================
+
+	static const MEMORY_ADDR BRAM_BASE_ADDR = 0xfffc0000ULL;
+	static const MEMORY_ADDR BRAM_BYTE_SIZE = 256 * 1024; // 256 KB
+	static const unsigned int BRAM_MPLB_PORT = 3;
+
+	//=========================================================================
+	//===                 RAM compile time configuration                    ===
+	//=========================================================================
+
+	static const MEMORY_ADDR RAM_BASE_ADDR = 0x00000000ULL;
+	static const MEMORY_ADDR RAM_BYTE_SIZE = 256 * 1024 * 1024; // 256 MB
 
 	//=========================================================================
 	//===           DCR controller compile time configuration               ===
