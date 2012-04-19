@@ -18,10 +18,10 @@ clean-local:
 
 install-exec-local: $(top_builddir)/NativeShmidcat.class
 	mkdir -p $(DIST_DIR)$(bindir)
-	cp -f $(top_builddir)/NativeShmidcat.class $(DIST_DIR)$(bindir)
+	cp -fr $(top_builddir)/org $(DIST_DIR)$(bindir)
 
 $(top_builddir)/NativeShmidcat.class: $(top_srcdir)/NativeShmidcat.java
-	$(JDK_PATH)/bin/javac $(top_srcdir)/NativeShmidcat.java
+	$(JDK_PATH)/bin/javac -d ./ $(top_srcdir)/NativeShmidcat.java
 
 uninstall-hook:
 	(rmdir $(includedir) || true)

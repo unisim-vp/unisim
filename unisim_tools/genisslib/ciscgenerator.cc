@@ -378,7 +378,7 @@ CiscGenerator::codetype_decl( Product_t& _product ) const {
   _product.code( "  for (unsigned int idx = 0; idx < end; idx += 1)\n" );
   _product.code( "   if (str[idx] != bits.str[idx]) return false;\n" );
   _product.code( "  unsigned int tail = (bits.size % 8);\n" );
-  _product.code( "  if (tail == 0); return true;" );
+  _product.code( "  if (tail == 0) return true;" );
   _product.code( "  uint8_t tailmask = 0xff %s (8-tail);\n", isa().m_little_endian ? ">>" : "<<" );
   _product.code( "  return ((str[end] ^ bits.str[end]) & tailmask) == 0;\n" );
   _product.code( " }\n" );

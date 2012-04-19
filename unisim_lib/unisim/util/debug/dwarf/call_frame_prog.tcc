@@ -44,6 +44,7 @@ DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY
 	, length(_length)
 	, program(_program)
 	, dw_cie(0)
+	, dw_fde(0)
 {
 }
 
@@ -92,7 +93,20 @@ void DWARF_CallFrameProgram<MEMORY_ADDR>::SetCIE(const DWARF_CIE<MEMORY_ADDR> *_
 template <class MEMORY_ADDR>
 const DWARF_CIE<MEMORY_ADDR> *DWARF_CallFrameProgram<MEMORY_ADDR>::GetCIE() const
 {
-	return dw_cie;
+	return dw_fde ? dw_fde->GetCIE() : dw_cie;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_CallFrameProgram<MEMORY_ADDR>::SetFDE(const DWARF_FDE<MEMORY_ADDR> *_dw_fde)
+{
+	dw_cie = 0;
+	dw_fde = _dw_fde;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_FDE<MEMORY_ADDR> *DWARF_CallFrameProgram<MEMORY_ADDR>::GetFDE() const
+{
+	return dw_fde;
 }
 
 template <class MEMORY_ADDR>

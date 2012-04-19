@@ -61,6 +61,8 @@ public:
 	unsigned int GetType() const;
 	void SetCIE(const DWARF_CIE<MEMORY_ADDR> *dw_cie);
 	const DWARF_CIE<MEMORY_ADDR> *GetCIE() const;
+	void SetFDE(const DWARF_FDE<MEMORY_ADDR> *dw_fde);
+	const DWARF_FDE<MEMORY_ADDR> *GetFDE() const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
 private:
 	friend class DWARF_CallFrameVM<MEMORY_ADDR>;
@@ -70,6 +72,7 @@ private:
 	uint64_t length;
 	const uint8_t *program;
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie;
+	const DWARF_FDE<MEMORY_ADDR> *dw_fde;
 };
 
 } // end of namespace dwarf

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2012,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,66 +32,35 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_UTIL_DEBUG_PROFILE_HH__
-#define __UNISIM_UTIL_DEBUG_PROFILE_HH__
+#ifndef __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
+#define __UNISIM_SERVICE_INTERFACES_DEBUG_EVENT_HH__
 
-#include <unisim/util/hash_table/hash_table.hh>
-#include <inttypes.h>
-#include <iosfwd>
+#include <unisim/kernel/service/service.hh>
+#include <unisim/util/debug/event.hh>
 
 namespace unisim {
-namespace util {
-namespace debug {
+namespace service {
+namespace interfaces {
 
-const uint32_t DEFAULT_PROFILE_PAGE_SIZE = 1024;
-
-template <class ADDRESS, uint32_t PAGE_SIZE>
-class Profile;
-
-template <class ADDRESS, uint32_t PAGE_SIZE>
-class ProfilePage;
-
-template <class ADDRESS, uint32_t PAGE_SIZE>
-std::ostream& operator << (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& prof);
-
-template <class ADDRESS, uint32_t PAGE_SIZE>
-std::ostream& operator << (std::ostream& os, const ProfilePage<ADDRESS, PAGE_SIZE>& page);
-
-template <class ADDRESS, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
-class ProfilePage
+template <class ADDRESS>
+class DebugEventTrigger : public unisim::kernel::service::ServiceInterface
 {
 public:
-	ProfilePage(ADDRESS _key);
-	~ProfilePage();
-
-	friend std::ostream& operator << <ADDRESS, PAGE_SIZE> (std::ostream& os, const ProfilePage<ADDRESS, PAGE_SIZE>& page);
-private:
-	friend class unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> >;
-	friend class Profile<ADDRESS, PAGE_SIZE>;
-
-	ADDRESS key;
-	ProfilePage<ADDRESS> *next;
-	uint64_t *weights;
+	virtual bool Listen(const unisim::util::debug::Event<ADDRESS>& event) = 0;
+	virtual bool Unlisten(const unisim::util::debug::Event<ADDRESS>& event) = 0;
+	virtual bool IsEventListened(const unisim::util::debug::Event<ADDRESS>& event) const = 0;
+	virtual void EnumerateListenedEvents(std::list<const unisim::util::debug::Event<ADDRESS> *>& lst, typename unisim::util::debug::Event<ADDRESS>::Type ev_type = unisim::util::debug::Event<ADDRESS>::EV_UNKNOWN) const = 0;
 };
 
-template <class ADDRESS, uint32_t PAGE_SIZE = DEFAULT_PROFILE_PAGE_SIZE>
-class Profile
+template <class ADDRESS>
+class DebugEventListener : public unisim::kernel::service::ServiceInterface
 {
 public:
-	Profile();
-	~Profile();
-	
-	void Clear();
-	void Accumulate(ADDRESS addr, uint64_t weight);
-	friend std::ostream& operator << <ADDRESS, PAGE_SIZE> (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& prof);
-	operator std::map<ADDRESS, uint64_t>() const;
-
-private:
-	unisim::util::hash_table::HashTable<ADDRESS, ProfilePage<ADDRESS, PAGE_SIZE> > hash_table;
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event) = 0;
 };
 
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
 #endif

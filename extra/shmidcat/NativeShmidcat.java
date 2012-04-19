@@ -1,3 +1,4 @@
+package org.unisim.workbench.simulation.services.instruments.gtkwave.model;
 /*
  *  Copyright (c) 2011,
  *  Commissariat a l'Energie Atomique (CEA)

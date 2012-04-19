@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2012,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,75 +32,48 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_BLOB_SECTION_HH__
-#define __UNISIM_UTIL_DEBUG_BLOB_SECTION_HH__
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_REGISTER_NUMBER_MAPPING_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_REGISTER_NUMBER_MAPPING_HH__
 
-#include <string>
+#include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/kernel/logger/logger.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/util/xml/xml.hh>
+#include <iosfwd>
+#include <set>
 
 namespace unisim {
 namespace util {
 namespace debug {
-namespace blob {
+namespace dwarf {
 
-template <class MEMORY_ADDR>
-class Section
+std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
+
+class DWARF_RegisterNumberMapping
 {
 public:
-	typedef enum
-	{
-		TY_UNKNOWN,  // unknown section type
-		TY_NULL,
-		TY_PROGBITS, // there's data in data
-		TY_NOBITS,   // all zero's
-		TY_ELF_SYMTAB,   // ELF symtab symbol table (should have a link to a string table)
-		TY_COFF_SYMTAB,  // COFF symbol table (should have a link to a string table)
-		TY_STRTAB    // string table
-	} Type;
+	DWARF_RegisterNumberMapping(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if);
+	~DWARF_RegisterNumberMapping();
 	
-	typedef enum
-	{
-		SA_NULL = 0,
-		SA_A = 1, // Alloc
-		SA_W = 2, // Write
-		SA_AW = 3,
-		SA_X = 4, // Execute
-		SA_AX = 5,
-		SA_WX = 6,
-		SA_AWX = 7
-	} Attribute;
-
-	Section(Type type, Attribute attr, const char *name, unsigned int alignment, unsigned int link, MEMORY_ADDR addr, MEMORY_ADDR size, void *data);
-	Section(const Section<MEMORY_ADDR>& section);
-	virtual ~Section();
-	
-	Type GetType() const;
-	Attribute GetAttr() const;
-	const char *GetName() const;
-	unsigned int GetAlignment() const;
-	MEMORY_ADDR GetAddr() const;
-	MEMORY_ADDR GetSize() const;
-	unsigned int GetLink() const;
-	const void *GetData() const;
-	void GetAddrRange(MEMORY_ADDR& min_addr, MEMORY_ADDR& max_addr) const;
-	
-	void Catch() const;
-	void Release() const;
+	bool Load(const char *filename, const char *architecture);
+	void Map(unsigned int dw_reg_num, unisim::util::debug::Register *arch_reg);
+	unisim::util::debug::Register *GetArchReg(unsigned int dw_reg_num);
+	const unisim::util::debug::Register *GetArchReg(unsigned int dw_reg_num) const;
+	void EnumRegisterNumbers(std::set<unsigned int>& reg_num_set) const;
+	unsigned int GetSPRegNum() const;
+	friend std::ostream& operator << (std::ostream& os, const DWARF_RegisterNumberMapping& dw_reg_num_mapping);
 private:
-	Type type;               // section type
-	Attribute attr;          // section attribute
-	std::string name;        // section name (empty=unavailable)
-	unsigned int alignment;  // alignment (0=unavailable)
-	unsigned int link;       // link to another section
-	MEMORY_ADDR addr;        // location in memory
-	MEMORY_ADDR size;        // size in bytes of data
-	void *data;
-	unsigned int *refcount;
+	unisim::kernel::logger::Logger& logger;
+	unisim::service::interfaces::Registers *regs_if;
+	std::map<unsigned int, unisim::util::debug::Register *> reg_num_mapping;
+	unsigned int sp_reg_num;
+	
+	bool Load(unisim::util::xml::Node *xml_node);
 };
 
-} // end of namespace blob
+} // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 
 #endif
-

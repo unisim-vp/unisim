@@ -1024,6 +1024,7 @@ private:
 	bool enable_linux_syscall_snooping;
 	uint64_t trap_on_instruction_counter;
 	bool enable_trap_on_exception;
+	bool enable_halt_on;
 	typename CONFIG::address_t halt_on_addr;
 	std::string halt_on;
 	uint64_t max_inst;                                         //!< Maximum number of instructions to execute

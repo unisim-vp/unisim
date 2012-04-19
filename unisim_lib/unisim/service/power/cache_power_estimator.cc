@@ -433,7 +433,12 @@ bool CachePowerEstimator::SetupCacti()
 	{
 		logger << DebugInfo << ((double) p_cache_size / 1024.0) << " KB cache" << EndDebugInfo;
 		logger << DebugInfo << p_line_size << " bytes per line" << EndDebugInfo;
-		logger << DebugInfo << p_associativity << " way/set associative" << EndDebugInfo;
+		logger << DebugInfo;
+		if(p_associativity)
+			logger << p_associativity << " way/set associative";
+		else
+			logger << "fully associative";
+		logger << EndDebugInfo;
 		logger << DebugInfo << p_rw_ports << " read/write ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_read_ports << " read-only ports" << EndDebugInfo;
 		logger << DebugInfo << p_excl_write_ports << " write-only ports" << EndDebugInfo;

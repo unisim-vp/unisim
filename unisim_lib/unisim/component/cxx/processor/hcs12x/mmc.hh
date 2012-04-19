@@ -64,6 +64,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::CallBackObject;
 
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
@@ -71,9 +72,11 @@ using unisim::service::interfaces::Registers;
 using unisim::util::debug::Register;
 
 
-class MMC : public Service<Memory<service_address_t> >,
-	public Client<Memory<service_address_t> >,
-	public Service<Registers>
+class MMC :
+	public CallBackObject
+	, public Service<Memory<service_address_t> >
+	, public Client<Memory<service_address_t> >
+	, public Service<Registers>
 {
 public:
 
@@ -263,8 +266,11 @@ public:
     static inline physical_address_t getFlashAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page);
     static inline physical_address_t getPagedFlashAddress(address_t cpu_address);
 
-    inline uint8_t read(address_t address);
-    inline void write(address_t address, uint8_t val);
+	//=====================================================================
+	//=             registers setters and getters                         =
+	//=====================================================================
+	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length);
+	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length);
 
 protected:
 	bool	debug_enabled;
@@ -421,49 +427,57 @@ inline physical_address_t MMC::getPhysicalAddress(address_t logicalAddress, ADDR
 	return address;
 }
 
-inline uint8_t MMC::read(address_t address)
+
+//=====================================================================
+//=             registers setters and getters                         =
+//=====================================================================
+
+inline bool MMC::read(unsigned int address, const void *buffer, unsigned int data_length)
 {
 
-	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) return mmcctl0;
-	if (address == MMC_REGS_ADDRESSES[MODE]) return mode;
-	if (address == MMC_REGS_ADDRESSES[GPAGE]) return gpage;
-	if (address == MMC_REGS_ADDRESSES[DIRECT]) return direct;
-	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) return mmcctl1;
-	if (address == MMC_REGS_ADDRESSES[RPAGE]) return rpage;
-	if (address == MMC_REGS_ADDRESSES[EPAGE]) return epage;
-	if (address == MMC_REGS_ADDRESSES[PPAGE]) return ppage;
-	if (address == MMC_REGS_ADDRESSES[RAMWPC]) return ramwpc;
-	if (address == MMC_REGS_ADDRESSES[RAMXGU]) return ramxgu;
-	if (address == MMC_REGS_ADDRESSES[RAMSHL]) return ramshl;
-	if (address == MMC_REGS_ADDRESSES[RAMSHU]) return ramshu;
+	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { *((uint8_t *) buffer) = mmcctl0; return true; }
+	if (address == MMC_REGS_ADDRESSES[MODE]) { *((uint8_t *) buffer) = mode; return true; }
+	if (address == MMC_REGS_ADDRESSES[GPAGE]) { *((uint8_t *) buffer) = gpage; return true; }
+	if (address == MMC_REGS_ADDRESSES[DIRECT]) { *((uint8_t *) buffer) = direct; return true; }
+	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { *((uint8_t *) buffer) = mmcctl1; return true; }
+	if (address == MMC_REGS_ADDRESSES[RPAGE]) { *((uint8_t *) buffer) = rpage; return true; }
+	if (address == MMC_REGS_ADDRESSES[EPAGE]) { *((uint8_t *) buffer) = epage; return true; }
+	if (address == MMC_REGS_ADDRESSES[PPAGE]) { *((uint8_t *) buffer) = ppage; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { *((uint8_t *) buffer) = ramwpc; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { *((uint8_t *) buffer) = ramxgu; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { *((uint8_t *) buffer) = ramshl; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { *((uint8_t *) buffer) = ramshu; return true; }
 
 	std::stringstream sstr;
 	sstr << "MMC::read: unhandled address 0x" << std::hex << address << std::dec;
-	throw std::runtime_error(sstr.str());
+	return false;
 }
 
-inline void MMC::write(address_t address, uint8_t val)
+inline bool MMC::write(unsigned int address, const void *buffer, unsigned int data_length)
 {
 
-	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { mmcctl0 = val; return; }
-	if (address == MMC_REGS_ADDRESSES[MODE]) { mode = val; return; }
-	if (address == MMC_REGS_ADDRESSES[GPAGE]) { gpage = val; return; }
+	uint8_t val = *((uint8_t *) buffer);
+
+	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { mmcctl0 = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[MODE]) { mode = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[GPAGE]) { gpage = val; return true; }
 	if (address == MMC_REGS_ADDRESSES[DIRECT]) {
 		if (!directSet) {
 			direct = val;
 			directSet = true;
 		}
-		return;
+		return true;
 	}
-	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { mmcctl1 = val; return; }
-	if (address == MMC_REGS_ADDRESSES[RPAGE]) { rpage = val; return; }
-	if (address == MMC_REGS_ADDRESSES[EPAGE]) { epage = val; return; }
-	if (address == MMC_REGS_ADDRESSES[PPAGE]) { ppage = val; return; }
-	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { ramwpc = val; return; }
-	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { ramxgu = val; return; }
-	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { ramshl = val; return; }
-	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { ramshu = val; return; }
+	if (address == MMC_REGS_ADDRESSES[MMCCTL1]) { mmcctl1 = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[RPAGE]) { rpage = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[EPAGE]) { epage = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[PPAGE]) { ppage = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMWPC]) { ramwpc = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMXGU]) { ramxgu = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMSHL]) { ramshl = val; return true; }
+	if (address == MMC_REGS_ADDRESSES[RAMSHU]) { ramshu = val; return true; }
 
+	return false;
 }
 
 

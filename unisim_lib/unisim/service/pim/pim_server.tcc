@@ -122,6 +122,12 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, killed(false)
 	, trap(false)
 	, synched(false)
+
+	, watchpoint_hit(NULL)
+	, watchpoint_hit_addr(-1)
+	, watchpoint_hit_size(0)
+
+
 	, breakpoint_registry()
 	, watchpoint_registry()
 	, running_mode(GDBSERVER_MODE_WAITING_GDB_CLIENT)
@@ -340,6 +346,9 @@ void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRE
 
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
+		watchpoint_hit = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
+		watchpoint_hit_addr = addr;
+		watchpoint_hit_size = size;
 
 		trap = true;
 		synched = false;
@@ -1210,18 +1219,21 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 {
 	string packet("T05");
 
-	if(pc_reg)
-	{
-		std::stringstream sstr;
-		string hex;
-		ADDRESS val = (ADDRESS) *pc_reg;
-		Number2HexString((uint8_t*) &val, pc_reg->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+	if (watchpoint_hit != NULL) {
 
-		sstr << std::hex << pc_reg_index;
+		std::stringstream sstr;
+		if (watchpoint_hit->GetMemoryAccessType() == MemoryAccessReporting<ADDRESS>::MAT_READ) {
+			sstr << "rwatch";
+		} else {
+			sstr << "watch";
+		}
+		sstr << ":" << std::hex;
+		sstr << watchpoint_hit_addr;
+
 		packet += sstr.str();
-		packet += ":";
-		packet += hex;
 		packet += ";";
+
+		watchpoint_hit = NULL;
 	}
 
 	return PutPacket(packet);
@@ -1318,13 +1330,16 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 2:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
+
 				if(memory_access_reporting_control_import)
 					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
 							breakpoint_registry.HasBreakpoints());
 				return true;
 			}
-			else
+			else {
+
 				return false;
+			}
 		case 3:
 			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
@@ -1364,13 +1379,106 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
-	if (separator_index == string::npos) {
+
+	if (separator_index == static_cast<unsigned int>(string::npos)) {
 		cmdPrefix = command;
 	} else {
 		cmdPrefix = command.substr(0, separator_index);
 	}
 
-	if (cmdPrefix.compare("symboles") == 0) {
+	if (cmdPrefix.compare("parameters") == 0) {
+		Simulator *simulator = Object::GetSimulator();
+
+		std::list<VariableBase *> lst;
+		simulator->GetParameters(lst);
+
+		std::stringstream strstm;
+
+		for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+
+			if (!((VariableBase *) *it)->IsVisible()) continue;
+
+			std::string name = ((VariableBase *) *it)->GetName();
+			std::string dataType = ((VariableBase *) *it)->GetDataTypeName();
+			std::string value = *((VariableBase *) *it);
+			std::string type = ((VariableBase *) *it)->GetTypeName();
+			std::string format = "";
+			switch (((VariableBase *) *it)->GetFormat()) {
+				case VariableBase::FMT_HEX: format = "HEX"; break;
+				case VariableBase::FMT_DEC: format = "DEC"; break;
+				default: format = "Default";
+			}
+
+			const char *description = ((VariableBase *) *it)->GetDescription();
+
+			strstm << type << ":" << name << ":" << dataType << ":" << value << ":" << format << ":" << ((strlen(description) != 0)? std::string(description): "No description available!");
+
+			string str = strstm.str();
+
+			OutputText(str.c_str(), str.size());
+
+			strstm.str(std::string());
+
+		}
+
+		lst.clear();
+
+		PutPacket("T05");
+
+	}
+	else if (cmdPrefix.compare("parameter") == 0) {
+
+		std::string str = command.substr(separator_index+1);
+
+		separator_index = str.find_first_of(':');
+		string name;
+		if (separator_index == static_cast<unsigned int>(string::npos)) {
+			name = str;
+		} else {
+			name = str.substr(0, separator_index);
+		}
+
+		VariableBase* parameter = Simulator::simulator->FindParameter(name.c_str());
+		if (parameter) {
+			if (separator_index == static_cast<unsigned int>(string::npos)) // read parameter request
+			{
+				std::ostringstream os;
+
+				if (strcmp(parameter->GetDataTypeName(), "double precision floating-point") == 0) {
+					double val = *parameter;
+					os << stringify(val);
+				}
+				else if (strcmp(parameter->GetDataTypeName(), "single precision floating-point") == 0) {
+					float val = *parameter;
+					os << stringify(val);
+				}
+				else if (strcmp(parameter->GetDataTypeName(), "boolean") == 0) {
+					bool val = *parameter;
+					os << stringify(val);
+				}
+				else {
+					uint64_t val = *parameter;
+					os << stringify(val);
+				}
+
+				std::string value = os.str();
+				OutputText(value.c_str(), value.size());
+			}
+			else // write parameter request
+			{
+				std::string value = str.substr(separator_index+1);
+
+				*parameter = value.c_str();
+			}
+
+		} else {
+
+		}
+
+		PutPacket("T05");
+
+	}
+	else if (cmdPrefix.compare("symboles") == 0) {
 
 		/**
 		 * command: qRcmd, symboles
@@ -1652,7 +1760,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 	}
 	else if (cmdPrefix.compare("srcaddr") == 0) {
-// ******************************
+
 		// qRcmd,saddr:filename;lineno;colno
 		std::stringstream sstr;
 
@@ -1692,8 +1800,6 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			PutPacket("E00");
 		}
 
-
-// ******************************
 	}
 	else if (cmdPrefix.compare("statistics") == 0) {
 
@@ -1705,6 +1811,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 		sstr << "simulated time" << ":" << GetSimTime()*1000 << " ms";
 
 		for (iter = lst.begin(); iter != lst.end(); iter++) {
+
 			sstr << ";" << (*iter)->GetName() << ":" << (string) *(*iter);
 		}
 

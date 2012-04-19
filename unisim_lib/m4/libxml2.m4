@@ -1,6 +1,6 @@
 ## UNISIM_CHECK_LIBXML2
 ## Checks if the libxml2 library is installed
-## Does not take parameters
+## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     # Check if libxml2 path has been overloaded
@@ -55,14 +55,14 @@ AC_DEFUN([UNISIM_CHECK_LIBXML2], [
     fi
 
     # Check for libxml2 functions
-    AC_CHECK_LIB(xml2, xmlNewTextWriterFilename,
-    AC_CHECK_LIB(xml2, xmlTextWriterSetIndent,
-    AC_CHECK_LIB(xml2, xmlTextWriterStartDocument,
-    AC_CHECK_LIB(xml2, xmlTextWriterStartElement, 
-    AC_CHECK_LIB(xml2, xmlTextWriterEndElement, 
-    AC_CHECK_LIB(xml2, xmlFreeTextWriter, 
-    AC_CHECK_LIB(xml2, xmlTextWriterWriteAttribute, 
-    AC_CHECK_LIB(xml2, xmlTextWriterWriteFormatString, broken_libxml2=no,
+    UNISIM_CHECK_LIB(xml2, xmlNewTextWriterFilename, $1,
+    UNISIM_CHECK_LIB(xml2, xmlTextWriterSetIndent, $1,
+    UNISIM_CHECK_LIB(xml2, xmlTextWriterStartDocument, $1,
+    UNISIM_CHECK_LIB(xml2, xmlTextWriterStartElement, $1,
+    UNISIM_CHECK_LIB(xml2, xmlTextWriterEndElement, $1,
+    UNISIM_CHECK_LIB(xml2, xmlFreeTextWriter, $1,
+    UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteAttribute, $1,
+    UNISIM_CHECK_LIB(xml2, xmlTextWriterWriteFormatString, $1, broken_libxml2=no,
     broken_libxml2=yes),
     broken_libxml2=yes),
     broken_libxml2=yes),

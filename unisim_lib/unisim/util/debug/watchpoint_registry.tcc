@@ -78,7 +78,7 @@ void WatchpointMapPage<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReporting
 }
 
 template <class ADDRESS>
-bool WatchpointMapPage<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size)
+bool WatchpointMapPage<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, uint32_t offset, uint32_t size) const
 {
 	uint32_t offset_mod_16 = offset % 16;
 	uint32_t offset_div_16 = offset / 16;
@@ -236,25 +236,26 @@ bool WatchpointRegistry<ADDRESS>::SetWatchpoint(typename MemoryAccessReporting<A
 }
 
 template <class ADDRESS>
+bool WatchpointRegistry<ADDRESS>::SetWatchpoint(const Watchpoint<ADDRESS>& wp)
+{
+	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = wp.GetMemoryAccessType();
+	typename MemoryAccessReporting<ADDRESS>::MemoryType mt = wp.GetMemoryType();
+	ADDRESS addr = wp.GetAddress();
+	uint32_t size = wp.GetSize();
+	
+	return SetWatchpoint(mat, mt, addr, size);
+}
+
+template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
 {
+
+	bool status = false;
+
 	if(size > 0)
 	{
-		do
-		{
-			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
-			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
-
-			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
-			if(!page) return false;
-		
-			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz);
-			size -= sz;
-			addr += sz;
-		} while(size > 0);
-
 		typename list<Watchpoint<ADDRESS> >::iterator watchpoint;
-	
+
 		for(watchpoint = watchpoints.begin(); watchpoint != watchpoints.end(); watchpoint++)
 		{
 			if(watchpoint->GetAddress() == addr && watchpoint->GetSize() == size && watchpoint->GetMemoryType() == mt && watchpoint->GetMemoryAccessType() == mat)
@@ -262,15 +263,43 @@ bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(typename MemoryAccessReportin
 				watchpoints.erase(watchpoint);
 				if(watchpoints.empty())
 					has_watchpoints = false;
-				return true;
+				status = true;
+				break;
 			}
 		}
+
+		do
+		{
+			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
+			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
+
+			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+			if(!page) return false;
+
+			page->RemoveWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz);
+			size -= sz;
+			addr += sz;
+		} while(size > 0);
+
 	}
-	return false;
+
+   return status;
+
 }
 
 template <class ADDRESS>
-const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+bool WatchpointRegistry<ADDRESS>::RemoveWatchpoint(const Watchpoint<ADDRESS>& wp)
+{
+	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = wp.GetMemoryAccessType();
+	typename MemoryAccessReporting<ADDRESS>::MemoryType mt = wp.GetMemoryType();
+	ADDRESS addr = wp.GetAddress();
+	uint32_t size = wp.GetSize();
+	
+	return RemoveWatchpoint(mat, mt, addr, size);
+}
+
+template <class ADDRESS>
+const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size) const
 {
 //   cout << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << ":"
 //        << "addr = 0x" << hex << addr << dec << " size = " << size 
@@ -288,7 +317,7 @@ const Watchpoint<ADDRESS> *WatchpointRegistry<ADDRESS>::FindWatchpoint(typename 
 }
 
 template <class ADDRESS>
-bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size) const
 {
 	if(!has_watchpoints) return false;
 	if(size > 0)
@@ -298,7 +327,7 @@ bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<A
 			uint32_t size_to_page_boundary = WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - (addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1));
 			uint32_t sz = size > size_to_page_boundary ? size_to_page_boundary : size;
 
-			WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
+			const WatchpointMapPage<ADDRESS> *page = GetPage(mt, addr);
 			if(!page) return false;
 			if(page->HasWatchpoint(mat, addr & (WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1), sz)) return true;
 
@@ -310,12 +339,23 @@ bool WatchpointRegistry<ADDRESS>::HasWatchpoint(typename MemoryAccessReporting<A
 }
 
 template <class ADDRESS>
+bool WatchpointRegistry<ADDRESS>::HasWatchpoint(const Watchpoint<ADDRESS>& wp) const
+{
+	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = wp.GetMemoryAccessType();
+	typename MemoryAccessReporting<ADDRESS>::MemoryType mt = wp.GetMemoryType();
+	ADDRESS addr = wp.GetAddress();
+	uint32_t size = wp.GetSize();
+	
+	return HasWatchpoint(mat, mt, addr, size);
+}
+
+template <class ADDRESS>
 bool WatchpointRegistry<ADDRESS>::HasWatchpoints() const {
 	return has_watchpoints;
 }
 
 template <class ADDRESS>
-const list<Watchpoint<ADDRESS> >& WatchpointRegistry<ADDRESS>::GetWatchpoints()
+const list<Watchpoint<ADDRESS> >& WatchpointRegistry<ADDRESS>::GetWatchpoints() const
 {
 	return watchpoints;
 }
@@ -347,6 +387,33 @@ void WatchpointRegistry<ADDRESS>::AllocatePage(typename MemoryAccessReporting<AD
 
 
 template <class ADDRESS>
+const WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr) const
+{
+	WatchpointMapPage<ADDRESS> *prev, *page;
+	ADDRESS base_addr = addr & ~(WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1);
+	uint32_t index = (base_addr / WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE) & (NUM_HASH_TABLE_ENTRIES - 1);
+	page = hash_table[mt][index];
+	if(page)
+	{
+		if(page->base_addr == base_addr) return page;
+		prev = page;
+		page = page->next;
+		if(page)
+		{
+			do
+			{
+				if(page->base_addr == base_addr)
+				{
+					return page;
+				}
+				prev = page;
+			} while((page = page->next) != 0);
+		}
+	}
+	return page;
+}
+
+template <class ADDRESS>
 WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr)
 {
 	WatchpointMapPage<ADDRESS> *prev, *page;
@@ -360,17 +427,17 @@ WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(typename Memory
 		page = page->next;
 		if(page)
 		{
-		do
-		{
-			if(page->base_addr == base_addr)
+			do
 			{
-				prev->next = page->next;
-				page->next= hash_table[mt][index];
-				hash_table[mt][index] = page;
-				return page;
-			}
-			prev = page;
-		} while((page = page->next) != 0);
+				if(page->base_addr == base_addr)
+				{
+					prev->next = page->next;
+					page->next= hash_table[mt][index];
+					hash_table[mt][index] = page;
+					return page;
+				}
+				prev = page;
+			} while((page = page->next) != 0);
 		}
 	}
 	return page;

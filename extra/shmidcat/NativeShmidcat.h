@@ -12,7 +12,7 @@ extern "C" {
  * Method:    shmidcat_init
  * Signature: (Ljava/lang/String;)I
  */
-JNIEXPORT jint JNICALL Java_NativeShmidcat_shmidcat_1init
+JNIEXPORT jint JNICALL Java_org_unisim_workbench_simulation_services_instruments_gtkwave_model_NativeShmidcat_shmidcat_1init
   (JNIEnv *, jobject, jstring);
 
 /*
@@ -20,7 +20,7 @@ JNIEXPORT jint JNICALL Java_NativeShmidcat_shmidcat_1init
  * Method:    shmidcat_emit_string
  * Signature: (Ljava/lang/String;)V
  */
-JNIEXPORT void JNICALL Java_NativeShmidcat_shmidcat_1emit_1string
+JNIEXPORT void JNICALL Java_org_unisim_workbench_simulation_services_instruments_gtkwave_model_NativeShmidcat_shmidcat_1emit_1string
   (JNIEnv *, jobject, jstring);
 
 /*
@@ -28,7 +28,7 @@ JNIEXPORT void JNICALL Java_NativeShmidcat_shmidcat_1emit_1string
  * Method:    shmidcat_exit
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_NativeShmidcat_shmidcat_1exit
+JNIEXPORT void JNICALL Java_org_unisim_workbench_simulation_services_instruments_gtkwave_model_NativeShmidcat_shmidcat_1exit
   (JNIEnv *, jobject);
 
 #ifdef __cplusplus

@@ -480,6 +480,12 @@
 			<value>4096</value>
 			<description>memory size in bytes</description>
 		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xff</value>
+			<description></description>
+		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>
 			<data_type>sc_time</data_type>
@@ -551,6 +557,12 @@
 			<data_type>unsigned 64-bit integer</data_type>
 			<value>524288</value>
 			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xff</value>
+			<description></description>
 		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>
@@ -653,6 +665,12 @@
 			<data_type>unsigned 64-bit integer</data_type>
 			<value>32768</value>
 			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
 		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>

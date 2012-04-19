@@ -80,6 +80,7 @@ using unisim::service::interfaces::BackTrace;
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 class ElfLoaderImpl :
 	public Client<Memory<MEMORY_ADDR> >,
+	public Client<Registers>,
 	public Service<Loader>,
 	public Service<Blob<MEMORY_ADDR> >,
 	public Service<SymbolTableLookup<MEMORY_ADDR> >,
@@ -88,6 +89,7 @@ class ElfLoaderImpl :
 {
 public:
 	ServiceImport<Memory<MEMORY_ADDR> > memory_import;
+	ServiceImport<Registers> registers_import;
 	ServiceExport<SymbolTableLookup<MEMORY_ADDR> > symbol_table_lookup_export;
 	ServiceExport<Loader> loader_export;
 	ServiceExport<Blob<MEMORY_ADDR> > blob_export;
@@ -131,6 +133,7 @@ private:
 	bool initialize_extra_segment_bytes;
 	bool dump_headers;
 	string dwarf_to_html_output_directory;
+	string dwarf_register_number_mapping_filename;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
@@ -144,6 +147,7 @@ private:
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;
+	Parameter<string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
 };
 

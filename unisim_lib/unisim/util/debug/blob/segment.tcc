@@ -37,12 +37,28 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <inttypes.h>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace blob {
 
+template <class MEMORY_ADDR>
+Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment)
+	: type(_type)
+	, attr(_attr)
+	, alignment(_alignment)
+	, addr(0)
+	, size(0)
+	, data_size(0)
+	, data(0)
+	, refcount(0)
+{
+	refcount = new unsigned int();
+	*refcount = 0;
+}
+	
 template <class MEMORY_ADDR>
 Segment<MEMORY_ADDR>::Segment(Type _type, Attribute _attr, unsigned int _alignment, MEMORY_ADDR _addr, MEMORY_ADDR _size, MEMORY_ADDR _data_size, void *_data)
 	: type(_type)
@@ -87,6 +103,53 @@ Segment<MEMORY_ADDR>::~Segment()
 		free(data);
 	}
 	delete refcount;
+}
+
+template <class MEMORY_ADDR>
+void Segment<MEMORY_ADDR>::Reset()
+{
+}
+
+template <class MEMORY_ADDR>
+bool Segment<MEMORY_ADDR>::ReadMemory(MEMORY_ADDR _addr, void *_buffer, uint32_t _size)
+{
+	if(data)
+	{
+		MEMORY_ADDR begin_addr = (_addr < addr) ? addr : _addr;
+		MEMORY_ADDR end_addr = ((_addr + _size) > (addr + size)) ? (addr + size) : (_addr + _size);
+		
+		memcpy(_buffer + (begin_addr - _addr), data + (begin_addr - addr), end_addr - begin_addr);
+	}
+	return true;
+}
+
+template <class MEMORY_ADDR>
+bool Segment<MEMORY_ADDR>::WriteMemory(MEMORY_ADDR _addr, const void *_buffer, uint32_t _size)
+{
+	if(data)
+	{
+		MEMORY_ADDR lo_addr = (_addr < addr) ? _addr : addr;
+		MEMORY_ADDR hi_addr = ((_addr + _size) > (addr + size)) ? (_addr + _size) : (addr + size);
+		
+		if((addr != lo_addr) || ((addr + size) != hi_addr))
+		{
+			void *new_data = calloc(hi_addr - lo_addr, 1);
+			memcpy((uint8_t *) new_data + (lo_addr - addr), (uint8_t *) data, size);
+			free(data);
+			data = new_data;
+			addr = lo_addr;
+			size = hi_addr - lo_addr;
+		}
+	}
+	else
+	{
+		data = calloc(_size, 1);
+		addr = _addr;
+		size = _size;
+	}
+	
+	memcpy(data + (_addr - addr), _buffer, _size);
+	return true;
 }
 
 template <class MEMORY_ADDR>
