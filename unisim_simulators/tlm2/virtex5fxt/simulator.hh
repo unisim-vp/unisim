@@ -65,13 +65,13 @@
 #include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
 #include <unisim/service/debug/inline_debugger/inline_debugger.hh>
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
 #include <unisim/service/loader/multiformat_loader/multiformat_loader.hh>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/service/time/sc_time/time.hh>
 #include <unisim/service/time/host_time/time.hh>
 #include <unisim/service/translator/memory_address/memory/translator.hh>
-#include <unisim/service/tee/loader/tee.hh>
-#include <unisim/service/tee/symbol_table_lookup/tee.hh>
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
@@ -96,6 +96,7 @@ using unisim::service::loader::multiformat_loader::MultiFormatLoader;
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
+using unisim::service::profiling::addr_profiler::Profiler;
 using unisim::service::power::CachePowerEstimator;
 using unisim::service::telnet::Telnet;
 using unisim::kernel::service::Parameter;
@@ -241,6 +242,8 @@ private:
 	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 	//  - Inline debugger
 	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+	//  - profiler
+	Profiler<CPU_ADDRESS_TYPE> *profiler;
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time
@@ -257,6 +260,8 @@ private:
 	unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE> *bram_effective_to_physical_address_translator;
 	// - telnet
 	unisim::service::telnet::Telnet *telnet;
+	//  - Tee Memory Access Reporting
+	unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> *tee_memory_access_reporting;
 
 	bool enable_gdb_server;
 	bool enable_inline_debugger;

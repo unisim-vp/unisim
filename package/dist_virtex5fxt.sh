@@ -175,6 +175,7 @@ unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/blob/tee_32.cc \
 unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
+unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
@@ -350,6 +351,7 @@ unisim/service/tee/symbol_table_lookup/tee.hh \
 unisim/service/tee/blob/tee.hh \
 unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
+unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
@@ -447,6 +449,7 @@ unisim/service/tee/symbol_table_lookup/tee.tcc \
 unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
+unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \

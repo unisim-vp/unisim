@@ -72,6 +72,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, debugger(0)
 	, gdb_server(0)
 	, inline_debugger(0)
+	, profiler(0)
 	, sim_time(0)
 	, host_time(0)
 	, il1_power_estimator(0)
@@ -83,6 +84,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	, flash_effective_to_physical_address_translator(0)
 	, bram_effective_to_physical_address_translator(0)
 	, telnet(0)
+	, tee_memory_access_reporting(0)
 	, enable_gdb_server(false)
 	, enable_inline_debugger(false)
 	, estimate_power(false)
@@ -199,6 +201,8 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
 	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
+	//  - profiler
+	profiler = enable_inline_debugger ? new Profiler<CPU_ADDRESS_TYPE>("profiler") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -215,6 +219,8 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	bram_effective_to_physical_address_translator = new unisim::service::translator::memory_address::memory::Translator<CPU_ADDRESS_TYPE, FSB_ADDRESS_TYPE>("bram-effective-to-physical-address-translator");
 	// - telnet
 	telnet = enable_telnet ? new unisim::service::telnet::Telnet("telnet") : 0;
+	//  - Tee Memory Access Reporting
+	tee_memory_access_reporting = enable_inline_debugger ? new unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE>("tee-memory-access-reporting") : 0;
 	
 	//=========================================================================
 	//===                        Components connection                      ===
@@ -331,14 +337,19 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	
 	if(enable_inline_debugger || enable_gdb_server)
 	{
+		// Connect tee-memory-access-reporting to CPU, debugger and profiler
+		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+		*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+		*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+
 		// Connect debugger to CPU
 		cpu->debug_control_import >> debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
 		cpu->trap_reporting_import >> debugger->trap_reporting_export;
 		debugger->disasm_import >> cpu->disasm_export;
 		debugger->memory_import >> cpu->memory_export;
 		debugger->registers_import >> cpu->registers_export;
-		debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 		debugger->loader_import >> loader->loader_export;
 		debugger->blob_import >> loader->blob_export;
 	}
@@ -416,6 +427,7 @@ Simulator<CONFIG>::~Simulator()
 	if(debugger) delete debugger;
 	if(gdb_server) delete gdb_server;
 	if(inline_debugger) delete inline_debugger;
+	if(profiler) delete profiler;
 	if(cpu) delete cpu;
 	if(mplb) delete mplb;
 	if(splb0_stub) delete splb0_stub;
