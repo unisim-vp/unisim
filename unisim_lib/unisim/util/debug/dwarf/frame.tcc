@@ -208,7 +208,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 			}
 			break;
 		case DW_CFA_RULE_EXPRESSION:
-			throw std::runtime_error("DWARF expressions are not yet implemented");
+			// DWARF expressions are not yet implemented
 			return false;
 	}
 	
@@ -255,10 +255,10 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 					}
 					break;
 				case DW_REG_RULE_EXPRESSION:
-					throw std::runtime_error("DWARF expressions are not yet implemented");
+					// DWARF expressions are not yet implemented
 					return false;
 				case DW_REG_RULE_VAL_EXPRESSION:
-					throw std::runtime_error("DWARF expressions are not yet implemented");
+					// DWARF expressions are not yet implemented
 					return false;
 			}
 		}

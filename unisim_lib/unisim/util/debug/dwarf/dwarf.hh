@@ -159,7 +159,7 @@ private:
 
 	unisim::kernel::logger::Logger& logger;
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
-	const char *reg_num_mapping_filename;
+	std::string reg_num_mapping_filename;
 	bool verbose;
 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 	unisim::service::interfaces::Registers *regs_if;

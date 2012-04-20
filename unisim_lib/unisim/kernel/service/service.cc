@@ -3361,38 +3361,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	return false;
 }
 
-/* bool Simulator::ResolvePath(const std::string& prefix_dir,
-		const std::string& suffix_dir,
-		std::string& out_dir) const
-{
-	std::string unresolved_dir = prefix_dir;
-	unresolved_dir += '/';
-	unresolved_dir += suffix_dir;
-	char resolved_dir_buf[PATH_MAX + 1];
-
-#if defined(linux) || defined(__APPLE_CC__)
-	if ( realpath(unresolved_dir.c_str(), 
-				resolved_dir_buf) )
-	{
-		out_dir = resolved_dir_buf;
-		return true;
-	}
-#elif defined(WIN32)
-	DWORD length = GetFullPathName(unresolved_dir.c_str(), 
-			PATH_MAX + 1, 
-			resolved_dir_buf, 
-			0);
-	if(length > 0)
-	{
-		resolved_dir_buf[length] = 0;
-		out_dir = resolved_dir_buf;
-		return true;
-	}
-#endif
-	return false;
-} */
-
-#define DEBUG_SEARCH_SHARED_DATA_FILE
+//#define DEBUG_SEARCH_SHARED_DATA_FILE
 
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {

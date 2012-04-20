@@ -624,17 +624,20 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	//std::ofstream f("out.xml", std::ios::out);
 	//to_XML(f);
 
-	dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);
-		
-	if(verbose)
+	if(!reg_num_mapping_filename.empty())
 	{
-		logger << DebugInfo << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugInfo;
-	}
-	if(!dw_reg_num_mapping->Load(reg_num_mapping_filename, blob->GetArchitecture()))
-	{
-		logger << DebugWarning << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugWarning;
-		delete dw_reg_num_mapping;
-		dw_reg_num_mapping = 0;
+		dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);
+			
+		if(verbose)
+		{
+			logger << DebugInfo << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugInfo;
+		}
+		if(!dw_reg_num_mapping->Load(reg_num_mapping_filename.c_str(), blob->GetArchitecture()))
+		{
+			logger << DebugWarning << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugWarning;
+			delete dw_reg_num_mapping;
+			dw_reg_num_mapping = 0;
+		}
 	}
 }
 

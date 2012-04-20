@@ -1931,11 +1931,7 @@ void InlineDebugger<ADDRESS>::DumpSource(const char *source_path, unsigned int l
 		(*std_output_stream) << source_path << " (not found)";
 	}
 	
-	(*std_output_stream) << " at line #" << lineno;
-	if(colno)
-	{
-		(*std_output_stream) << ", column #" << colno;
-	}
+	(*std_output_stream) << ":" << lineno;
 	(*std_output_stream) << ": ";
 
 	if(match)
@@ -1985,7 +1981,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 			(*std_output_stream) << (addr / memory_atom_size) << std::dec;
 			if(symbol)
 			{
-				(*std_output_stream) << " <";
+				(*std_output_stream) << " in <";
 				(*std_output_stream) << symbol->GetFriendlyName(addr);
 				(*std_output_stream) << ">";
 			}
@@ -1998,7 +1994,6 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 				if(source_filename)
 				{
 					unsigned int lineno = stmt->GetLineNo();
-					unsigned int colno = stmt->GetColNo();
 					std::string source_path;
 					const char *source_dirname = stmt->GetSourceDirname();
 					if(source_dirname)
@@ -2007,7 +2002,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 						source_path += '/';
 					}
 					source_path += source_filename;
-					(*std_output_stream) << " in ";
+					(*std_output_stream) << " from ";
 					std::string match_source_path;
 					if(LocateFile(source_path.c_str(), match_source_path))
 					{
@@ -2018,11 +2013,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 						(*std_output_stream) << source_path;
 					}
 	
-					(*std_output_stream) << " at line #" << lineno;
-					if(colno)
-					{
-						(*std_output_stream) << ", column #" << colno;
-					}
+					(*std_output_stream) << ":" << lineno;
 				}
 			}
 			

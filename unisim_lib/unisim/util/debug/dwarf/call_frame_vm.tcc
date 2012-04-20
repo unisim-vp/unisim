@@ -737,7 +737,6 @@ template <class MEMORY_ADDR>
 bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, std::ostream *os, MEMORY_ADDR *_cur_location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_call_frame_prog.GetCIE();
-	const DWARF_FDE<MEMORY_ADDR> *dw_fde = dw_call_frame_prog.GetFDE();
 	if(!dw_cie) return false;
 	
 	unsigned int dw_cfp_type = dw_call_frame_prog.GetType();
@@ -1794,9 +1793,7 @@ template <class MEMORY_ADDR>
 const DWARF_CFI<MEMORY_ADDR> *DWARF_CallFrameVM<MEMORY_ADDR>::ComputeCFI(const DWARF_FDE<MEMORY_ADDR> *dw_fde)
 {
 	MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
-	MEMORY_ADDR address_range = dw_fde->GetAddressRange();
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
-	MEMORY_ADDR code_alignment_factor = (MEMORY_ADDR) dw_cie->GetCodeAlignmentFactor();
 		
 	DWARF_CFI<MEMORY_ADDR> *cfi = new DWARF_CFI<MEMORY_ADDR>();
 			
