@@ -118,7 +118,7 @@ bool Segment<MEMORY_ADDR>::ReadMemory(MEMORY_ADDR _addr, void *_buffer, uint32_t
 		MEMORY_ADDR begin_addr = (_addr < addr) ? addr : _addr;
 		MEMORY_ADDR end_addr = ((_addr + _size) > (addr + size)) ? (addr + size) : (_addr + _size);
 		
-		memcpy(_buffer + (begin_addr - _addr), data + (begin_addr - addr), end_addr - begin_addr);
+		memcpy((uint8_t *) _buffer + (begin_addr - _addr), (uint8_t *) data + (begin_addr - addr), end_addr - begin_addr);
 	}
 	return true;
 }
@@ -129,26 +129,28 @@ bool Segment<MEMORY_ADDR>::WriteMemory(MEMORY_ADDR _addr, const void *_buffer, u
 	if(data)
 	{
 		MEMORY_ADDR lo_addr = (_addr < addr) ? _addr : addr;
-		MEMORY_ADDR hi_addr = ((_addr + _size) > (addr + size)) ? (_addr + _size) : (addr + size);
+		MEMORY_ADDR hi_addr = ((_addr + _size) > (addr + data_size)) ? (_addr + _size) : (addr + data_size);
 		
-		if((addr != lo_addr) || ((addr + size) != hi_addr))
+		if((addr != lo_addr) || ((addr + data_size) != hi_addr))
 		{
 			void *new_data = calloc(hi_addr - lo_addr, 1);
-			memcpy((uint8_t *) new_data + (lo_addr - addr), (uint8_t *) data, size);
+			memcpy((uint8_t *) new_data + (addr - lo_addr), (uint8_t *) data, data_size);
 			free(data);
 			data = new_data;
 			addr = lo_addr;
-			size = hi_addr - lo_addr;
+			data_size = hi_addr - lo_addr;
+			if(data_size > size) size = data_size;
 		}
 	}
 	else
 	{
 		data = calloc(_size, 1);
 		addr = _addr;
-		size = _size;
+		data_size = _size;
+		if(data_size > size) size = data_size;
 	}
 	
-	memcpy(data + (_addr - addr), _buffer, _size);
+	memcpy((uint8_t *) data + (_addr - addr), _buffer, _size);
 	return true;
 }
 

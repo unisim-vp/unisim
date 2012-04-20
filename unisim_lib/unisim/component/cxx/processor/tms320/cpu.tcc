@@ -1459,6 +1459,14 @@ StepInstruction()
 			}
 		}
 
+		if(unlikely(requires_finished_instruction_reporting))
+		{
+			if(unlikely(memory_access_reporting_import != 0))
+			{
+				memory_access_reporting_import->ReportFinishedInstruction(4 * GetPC23_0(), 4 * GetNPC23_0());
+			}
+		}
+		
 		/* go to the next instruction */
 		SetPC(GetNPC());
 
@@ -1468,14 +1476,6 @@ StepInstruction()
 		if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
 		{
 			trap_reporting_import->ReportTrap();
-		}
-
-		if(unlikely(requires_finished_instruction_reporting))
-		{
-			if(unlikely(memory_access_reporting_import != 0))
-			{
-				memory_access_reporting_import->ReportFinishedInstruction(4 * GetPC23_0());
-			}
 		}
 	}
 	catch(Exception& exc)

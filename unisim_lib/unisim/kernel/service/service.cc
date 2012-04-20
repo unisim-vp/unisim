@@ -3392,7 +3392,7 @@ bool Simulator::GetBinPath(const char *argv0, std::string& out_bin_dir, std::str
 	return false;
 } */
 
-//#define DEBUG_SEARCH_SHARED_DATA_FILE
+#define DEBUG_SEARCH_SHARED_DATA_FILE
 
 bool Simulator::GetSharePath(const std::string& bin_dir, std::string& out_share_dir) const
 {

@@ -84,6 +84,13 @@ Tee<ADDRESS, MAX_IMPORTS>::Tee(const char *name, Object *parent) :
 template <class ADDRESS, unsigned int MAX_IMPORTS>
 Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 {
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		delete control_selector[i];
+		delete out[i];
+		delete in_control[i];
+	}
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>

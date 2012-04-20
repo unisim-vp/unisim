@@ -85,7 +85,7 @@ public:
 	void SetArchitecture(const char *architecture);
 	void SetStackBase(MEMORY_ADDR stack_base);
 	void SetEndian(endian_type endian);
-	void SetFileEndian(endian_type endian);
+	void SetFileEndian(endian_type file_endian);
 	void SetAddressSize(unsigned int address_size);
 	void SetMemoryAtomSize(unsigned int memory_atom_size);
 	

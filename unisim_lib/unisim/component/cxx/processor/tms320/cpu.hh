@@ -885,6 +885,11 @@ public:
 	*/
 	inline address_t GetNPC() const { return reg_npc; }
 
+	/** Get the address of the next instruction
+	    @return bits 23-0 of the next program counter
+	*/
+	inline address_t GetNPC23_0() const { return reg_npc & ADDRESS_MASK; }
+
 	/** Set the address of the next instruction
 	    @param addr the next instruction word address
 	*/

@@ -179,9 +179,9 @@ void Blob<MEMORY_ADDR>::SetEndian(endian_type _endian)
 }
 
 template <class MEMORY_ADDR>
-void Blob<MEMORY_ADDR>::SetFileEndian(endian_type _endian)
+void Blob<MEMORY_ADDR>::SetFileEndian(endian_type _file_endian)
 {
-	endian = _endian;
+	file_endian = _file_endian;
 	capability = (Capability)(capability | CAP_FILE_ENDIAN);
 }
 
@@ -300,7 +300,7 @@ endian_type Blob<MEMORY_ADDR>::GetEndian() const
 template <class MEMORY_ADDR>
 endian_type Blob<MEMORY_ADDR>::GetFileEndian() const
 {
-	if(capability & CAP_ENDIAN) return endian;
+	if(capability & CAP_FILE_ENDIAN) return file_endian;
 	return unisim::util::endian::E_BIG_ENDIAN;
 }
 
@@ -322,7 +322,7 @@ unsigned int Blob<MEMORY_ADDR>::GetAddressSize() const
 template <class MEMORY_ADDR>
 unsigned int Blob<MEMORY_ADDR>::GetMemoryAtomSize() const
 {
-	if(capability & CAP_ADDRESS_SIZE) return memory_atom_size;
+	if(capability & CAP_MEMORY_ATOM_SIZE) return memory_atom_size;
 	return 1;
 }
 

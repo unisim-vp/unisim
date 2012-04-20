@@ -78,6 +78,7 @@ CoffLoader<MEMORY_ADDR>::~CoffLoader()
 	if(coff_loader)
 	{
 		delete coff_loader;
+		coff_loader = 0;
 	}
 }
 
@@ -97,7 +98,7 @@ bool CoffLoader<MEMORY_ADDR>::BeginSetup()
 
 	coff_loader = new unisim::util::loader::coff_loader::CoffLoader<MEMORY_ADDR>(logger);
 
-	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, filename.c_str());
+	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	coff_loader->SetOption(unisim::util::loader::coff_loader::OPT_DUMP_HEADERS, dump_headers);
 	
 	return coff_loader->Load();
@@ -142,7 +143,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 		if(segment->GetType() == unisim::util::debug::blob::Segment<MEMORY_ADDR>::TY_LOADABLE)
 		{
 			MEMORY_ADDR write_size = segment->GetSize();
-			if (write_size)
+			if(write_size)
 			{
 				if(unlikely(verbose))
 				{

@@ -135,6 +135,7 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -143,9 +144,13 @@ unisim/util/debug/blob/segment32.cc \
 unisim/util/debug/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
+unisim/util/debug/coff_symtab/coff_symtab32.cc \
+unisim/util/debug/coff_symtab/coff_symtab64.cc \
 unisim/util/endian/endian.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/util/loader/coff_loader/coff_loader32.cc \
+unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/service/loader/coff_loader/coff_loader32.cc \
 unisim/service/loader/coff_loader/coff_loader64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -154,9 +159,15 @@ unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
+unisim/service/debug/debugger/debugger32.cc \
+unisim/service/debug/debugger/debugger64.cc \
+unisim/service/profiling/addr_profiler/profiler32.cc \
+unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/os/ti_c_io/ti_c_io_32.cc \
 unisim/service/os/ti_c_io/ti_c_io_64.cc \
 unisim/service/time/host_time/time.cc \
+unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/component/cxx/processor/tms320/cpu_tms320vc33.cc \
 unisim/component/cxx/processor/tms320/cpu_tms320vc33_debug.cc \
 unisim/component/cxx/processor/tms320/register.cc \
@@ -182,6 +193,7 @@ unisim/kernel/logger/logger_server.hh \
 unisim/kernel/debug/debug.hh \
 unisim/util/xml/xml.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/event.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
 unisim/util/debug/stmt.hh \
@@ -215,10 +227,13 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -228,7 +243,11 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
 unisim/service/interfaces/disassembly.hh \
@@ -238,16 +257,19 @@ unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
+unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
-unisim/service/loader/coff_loader/ti/ti.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
+unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/component/cxx/processor/tms320/config.hh \
 unisim/component/cxx/processor/tms320/cpu.hh \
 unisim/component/cxx/processor/tms320/exception.hh \
@@ -278,16 +300,22 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
-unisim/service/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/ti_c_io/ti_c_io.tcc \
+unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/tms320/cpu.tcc \
 unisim/component/cxx/processor/tms320/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
@@ -815,18 +843,18 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${TMS320C3X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${TMS320C3X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-tms320c3x-${TMS320C3X_VERSION}\"], [path of shared data relative to bin directory])" >> "${TMS320C3X_CONFIGURE_AC}"
