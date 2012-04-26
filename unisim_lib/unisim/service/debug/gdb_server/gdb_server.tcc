@@ -128,6 +128,8 @@ GDBServer<ADDRESS>::GDBServer(const char *_name, Object *_parent)
 	, param_architecture_description_filename("architecture-description-filename", this, architecture_description_filename, "filename of a XML description of the connected processor")
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
+	param_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	
 	counter = period;
 }
 

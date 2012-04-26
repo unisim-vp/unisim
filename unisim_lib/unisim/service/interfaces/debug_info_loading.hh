@@ -45,6 +45,9 @@ class DebugInfoLoading : public unisim::kernel::service::ServiceInterface
 {
 public:
 	virtual bool LoadDebugInfo(const char *filename) = 0;
+	virtual bool EnableBinary(const char *filename, bool enable) = 0;
+	virtual void EnumerateBinaries(std::list<std::string>& lst) const = 0;
+	virtual bool IsBinaryEnabled(const char *filename) const = 0;
 };
 
 } // end of namespace interfaces

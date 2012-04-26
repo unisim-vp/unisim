@@ -119,6 +119,7 @@ public:
 	virtual const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	
 	// unisim::service::interfaces::StatementLookup
+	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	

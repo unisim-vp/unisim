@@ -102,16 +102,20 @@ template <> VariableBase& Variable<AddressRange32 >::operator = (bool value)
 {
 	if(IsMutable())
 	{
+		AddressRange32 tmp;
+		
 		if(value)
 		{
-			storage->low = std::numeric_limits<uint32_t>::min();
-			storage->high = std::numeric_limits<uint32_t>::max();
+			tmp.low = std::numeric_limits<uint32_t>::min();
+			tmp.high = std::numeric_limits<uint32_t>::max();
 		}
 		else
 		{
-			storage->low = std::numeric_limits<uint32_t>::max();
-			storage->high = std::numeric_limits<uint32_t>::min();
+			tmp.low = std::numeric_limits<uint32_t>::max();
+			tmp.high = std::numeric_limits<uint32_t>::min();
 		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
 	}
 	return *this;
 }
@@ -120,16 +124,19 @@ template <> VariableBase& Variable<AddressRange32 >::operator = (long long value
 {
 	if(IsMutable())
 	{
+		AddressRange32 tmp;
 		if(value > 0)
 		{
-			storage->low = 0;
-			storage->high = value - 1;
+			tmp.low = 0;
+			tmp.high = value - 1;
 		}
 		else
 		{
-			storage->low = std::numeric_limits<uint32_t>::max();
-			storage->high = std::numeric_limits<uint32_t>::min();
+			tmp.low = std::numeric_limits<uint32_t>::max();
+			tmp.high = std::numeric_limits<uint32_t>::min();
 		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
 	}
 	return *this;
 }
@@ -138,16 +145,19 @@ template <> VariableBase& Variable<AddressRange32 >::operator = (unsigned long l
 {
 	if(IsMutable())
 	{
+		AddressRange32 tmp;
 		if(value > 0)
 		{
-			storage->low = 0;
-			storage->high = value - 1;
+			tmp.low = 0;
+			tmp.high = value - 1;
 		}
 		else
 		{
-			storage->low = std::numeric_limits<uint32_t>::max();
-			storage->high = std::numeric_limits<uint32_t>::min();
+			tmp.low = std::numeric_limits<uint32_t>::max();
+			tmp.high = std::numeric_limits<uint32_t>::min();
 		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
 	}
 	return *this;
 }
@@ -156,16 +166,19 @@ template <> VariableBase& Variable<AddressRange32 >::operator = (double value)
 {
 	if(IsMutable())
 	{
+		AddressRange32 tmp;
 		if(value > 0.0)
 		{
-			storage->low = 0;
-			storage->high = value - 1;
+			tmp.low = 0;
+			tmp.high = value - 1;
 		}
 		else
 		{
-			storage->low = std::numeric_limits<uint32_t>::max();
-			storage->high = std::numeric_limits<uint32_t>::min();
+			tmp.low = std::numeric_limits<uint32_t>::max();
+			tmp.high = std::numeric_limits<uint32_t>::min();
 		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
 	}
 	return *this;
 }
@@ -174,8 +187,9 @@ template <> VariableBase& Variable<AddressRange32 >::operator = (const char *val
 {
 	if(IsMutable())
 	{
-		storage->low = std::numeric_limits<uint32_t>::max();
-		storage->high = std::numeric_limits<uint32_t>::min();
+		AddressRange32 tmp;
+		tmp.low = std::numeric_limits<uint32_t>::max();
+		tmp.high = std::numeric_limits<uint32_t>::min();
 
 		if(strlen(value) > 0)
 		{
@@ -188,12 +202,14 @@ template <> VariableBase& Variable<AddressRange32 >::operator = (const char *val
 			
 			stringstream range_low_str;
 			range_low_str << str;
-			range_low_str >> std::hex >> storage->low >> std::dec;
+			range_low_str >> std::hex >> tmp.low >> std::dec;
 			
 			stringstream range_high_str;
 			range_high_str << str_rest;
-			range_high_str >> std::hex >> storage->high >> std::dec;
+			range_high_str >> std::hex >> tmp.high >> std::dec;
 		}
+		SetModified(*storage != tmp);
+		*storage = tmp;
 	}
 	return *this;
 }

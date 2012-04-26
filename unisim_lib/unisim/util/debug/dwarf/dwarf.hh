@@ -120,6 +120,7 @@ public:
 	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
 	const char *GetString(uint64_t debug_str_offset) const;
 
+	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
@@ -144,7 +145,7 @@ private:
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
-	std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
+	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
 	std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *> dw_cus;           // compilation units contributions to section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *> dw_dies;                      // debug info entries in section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_Abbrev *> dw_abbrevs;                             // from section .debug_abbrev indexed by .debug_abbrev section offset

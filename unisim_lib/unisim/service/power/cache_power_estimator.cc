@@ -103,13 +103,16 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 		switch(value)
 		{
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
+				SetModified(*storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
+				SetModified(*storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
 			default:
+				SetModified(*storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
 				break;
 		}
@@ -136,9 +139,24 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 {
 	if(IsMutable())
 	{
-		if(strcmp(value, "normal") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL; else
-		if(strcmp(value, "sequential") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL; else
-		if(strcmp(value, "fast") == 0) *storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
+		if(strcmp(value, "normal") == 0)
+		{
+			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if(strcmp(value, "sequential") == 0)
+		{
+			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if(strcmp(value, "fast") == 0)
+		{
+			unisim::service::power::CachePowerEstimator::AccessMode tmp = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
 	}
 	return *this;
 }

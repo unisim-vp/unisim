@@ -247,6 +247,18 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_AD
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const
+{
+	if(!elf_loader) return;
+	const typename std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& elf_loader_stmts = elf_loader->GetStatements();
+	typename std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>::const_iterator iter;
+	for(iter = elf_loader_stmts.begin(); iter != elf_loader_stmts.end(); iter++)
+	{
+		stmts.insert(std::pair<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>((*iter).first, (*iter).second));
+	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr) const
 {
 	return elf_loader ? elf_loader->FindStatement(addr) : 0;

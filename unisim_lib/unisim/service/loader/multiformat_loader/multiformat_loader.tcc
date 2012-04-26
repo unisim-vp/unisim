@@ -235,18 +235,18 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 			else
 			{
 				// Try to magically guess file format
-				if(verbose)
+				if(IsVerbose())
 				{
 					logger << DebugInfo << "Guessing file format of \"" << filename_to_load << "\"" << EndDebugInfo;
 				}
 				file_fmt = GuessFileFormat(filename_to_load);
-				if(verbose)
+				if(IsVerbose())
 				{
 					logger << DebugInfo << "File format of File \"" << filename_to_load << "\" seems " << GetFileFormatName(file_fmt) << EndDebugInfo;
 				}
 			}
 			
-			if(verbose)
+			if(IsVerbose())
 			{
 				logger << DebugInfo << "Assuming " << GetFileFormatName(file_fmt) << " file format for File \"" << filename_to_load << "\"" << EndDebugInfo;
 			}
@@ -268,6 +268,11 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 				case FFMT_RAW:
 					{
 						RawLoader<MEMORY_ADDR> *raw_loader = new RawLoader<MEMORY_ADDR>(loader_name.c_str(), this);
+						if(IsVerbose())
+						{
+							(*raw_loader)["verbose"] = 1;
+							(*raw_loader)["verbose"].SetModified(false);
+						}
 						raw_loaders.push_back(raw_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> raw_loader->loader_export;
@@ -277,6 +282,11 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 				case FFMT_ELF32:
 					{
 						Elf32Loader<MEMORY_ADDR> *elf32_loader = new Elf32Loader<MEMORY_ADDR>(loader_name.c_str(), this);
+						if(IsVerbose())
+						{
+							(*elf32_loader)["verbose"] = true;
+							(*elf32_loader)["verbose"].SetModified(false);
+						}
 						elf32_loaders.push_back(elf32_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> elf32_loader->loader_export;
@@ -291,6 +301,11 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 				case FFMT_ELF64:
 					{
 						Elf64Loader<MEMORY_ADDR> *elf64_loader = new Elf64Loader<MEMORY_ADDR>(loader_name.c_str(), this);
+						if(IsVerbose())
+						{
+							(*elf64_loader)["verbose"] = true;
+							(*elf64_loader)["verbose"].SetModified(false);
+						}
 						elf64_loaders.push_back(elf64_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> elf64_loader->loader_export;
@@ -304,6 +319,11 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 				case FFMT_S19:
 					{
 						S19_Loader<MEMORY_ADDR> *s19_loader = new S19_Loader<MEMORY_ADDR>(loader_name.c_str(), this);
+						if(IsVerbose())
+						{
+							(*s19_loader)["verbose"] = true;
+							(*s19_loader)["verbose"].SetModified(false);
+						}
 						s19_loaders.push_back(s19_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> s19_loader->loader_export;
@@ -313,6 +333,11 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 				case FFMT_COFF:
 					{
 						CoffLoader<MEMORY_ADDR> *coff_loader = new CoffLoader<MEMORY_ADDR>(loader_name.c_str(), this);
+						if(IsVerbose())
+						{
+							(*coff_loader)["verbose"] = true;
+							(*coff_loader)["verbose"].SetModified(false);
+						}
 						coff_loaders.push_back(coff_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> coff_loader->loader_export;
@@ -649,7 +674,7 @@ typename MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::FileFormat MultiFormatLoa
 		if(!f.good()) break;
 	}
 	
-	if(verbose)
+	if(IsVerbose())
 	{
 		logger << DebugInfo << "Magic: ";
 		std::streamoff i;
@@ -740,6 +765,57 @@ AddressRange<MEMORY_ADDR>::AddressRange()
 	: low(std::numeric_limits<MEMORY_ADDR>::max())
 	, high(std::numeric_limits<MEMORY_ADDR>::min())
 {
+}
+
+template <class MEMORY_ADDR>
+AddressRange<MEMORY_ADDR>::AddressRange(const AddressRange<MEMORY_ADDR>& ar)
+	: low(ar.low)
+	, high(ar.high)
+{
+}
+
+template <class MEMORY_ADDR>
+bool AddressRange<MEMORY_ADDR>::IsEmpty() const
+{
+	return high < low;
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR AddressRange<MEMORY_ADDR>::GetAmplitude() const
+{
+	return (high >= low) ? high - low + 1 : 0; // There's a problem is low = min, high = max
+}
+
+template <class MEMORY_ADDR>
+std::string AddressRange<MEMORY_ADDR>::ToString() const
+{
+	if(high >= low)
+	{
+		std::stringstream sstr;
+		sstr << "0x" << std::hex << low << "-0x" << high << std::dec;
+		return std::string(sstr.str());
+	}
+	return std::string();
+}
+
+template <class MEMORY_ADDR>
+AddressRange<MEMORY_ADDR>& AddressRange<MEMORY_ADDR>::operator = (const AddressRange<MEMORY_ADDR>& ar)
+{
+	low = ar.low;
+	high = ar.high;
+	return *this;
+}
+
+template <class MEMORY_ADDR>
+int AddressRange<MEMORY_ADDR>::operator == (const AddressRange<MEMORY_ADDR>& ar) const
+{
+	return (low == ar.low) && (high == ar.high);
+}
+
+template <class MEMORY_ADDR>
+int AddressRange<MEMORY_ADDR>::operator != (const AddressRange<MEMORY_ADDR>& ar) const
+{
+	return (low != ar.low) || (high != ar.high);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -1252,6 +1328,8 @@ bool MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::ParseAddressRange(const std::strin
 		return false;
 	}
 	
+	pos += n;
+	
 	MEMORY_ADDR high = tok_addr_value;
 	
 	addr_range.low = low;
@@ -1288,6 +1366,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 						{
 							case OPT_MEMORY:
 								mapping_stmt_opt = new MappingStatementOption(OPT_MEMORY, pos, tok_value);
+								pos += n;
 								break;
 							case OPT_RANGE:
 								{
@@ -1298,6 +1377,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 										PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
 										return 0;
 									}
+									// Note: no need to increment pos because ParseAddressRange already did it
 									mapping_stmt_opt = new MappingStatementOption(OPT_RANGE, pos, addr_range);
 								}
 								break;
@@ -1313,6 +1393,10 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 						return 0;
 					}
 				}
+				else
+				{
+					pos += n;
+				}
 				state = 1;
 				break;
 				
@@ -1323,6 +1407,7 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 					PrettyPrintSyntaxErrorLocation(mapping.c_str(), pos);
 					return 0;
 				}
+				pos += n;
 				state = 2;
 				break;
 			case 2:
@@ -1334,9 +1419,10 @@ typename MemoryMapper<MEMORY_ADDR, MAX_MEMORIES>::MappingStatementOption *Memory
 				}
 				
 				mapping_stmt_opt = new MappingStatementOption(opt_type, pos, tok_value);
+				pos += n;
+				state = 0;
+				break;
 		}
-		
-		pos += n;
 	}
 	while(!mapping_stmt_opt);
 	

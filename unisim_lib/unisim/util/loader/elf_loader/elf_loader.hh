@@ -99,6 +99,7 @@ public:
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	
+	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
@@ -121,6 +122,7 @@ private:
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
 	
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);

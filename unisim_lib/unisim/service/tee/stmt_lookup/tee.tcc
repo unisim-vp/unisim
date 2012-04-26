@@ -75,6 +75,22 @@ Tee<ADDRESS, MAX_IMPORTS>::~Tee()
 }
 
 template <class ADDRESS, unsigned int MAX_IMPORTS>
+void Tee<ADDRESS, MAX_IMPORTS>::GetStatements(std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const
+{
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(stmt_lookup_import[i])
+		{
+			if(*stmt_lookup_import[i])
+			{
+				(*stmt_lookup_import[i])->GetStatements(stmts);
+			}
+		}
+	}
+}
+
+template <class ADDRESS, unsigned int MAX_IMPORTS>
 const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatement(ADDRESS addr) const
 {
 	unsigned int i;

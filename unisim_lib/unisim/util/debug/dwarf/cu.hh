@@ -70,7 +70,7 @@ public:
 	std::ostream& to_XML(std::ostream& os);
 	std::ostream& to_HTML(std::ostream& os);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CompilationUnit& dw_cu);
-	void BuildStatementMatrix(std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix);
+	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;

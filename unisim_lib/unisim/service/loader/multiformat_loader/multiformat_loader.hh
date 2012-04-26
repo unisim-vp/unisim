@@ -190,31 +190,17 @@ template <class MEMORY_ADDR>
 class AddressRange
 {
 public:
-	AddressRange();
-	
 	MEMORY_ADDR low;
 	MEMORY_ADDR high;
 	
-	bool IsEmpty() const
-	{
-		return high < low;
-	}
-	
-	MEMORY_ADDR GetAmplitude() const
-	{
-		return (high >= low) ? high - low + 1 : 0; // There's a problem is low = min, high = max
-	}
-
-	std::string ToString() const
-	{
-		if(high >= low)
-		{
-			std::stringstream sstr;
-			sstr << "0x" << std::hex << low << "-0x" << high << std::dec;
-			return std::string(sstr.str());
-		}
-		return std::string();
-	}
+	AddressRange();
+	AddressRange(const AddressRange<MEMORY_ADDR>& ar);
+	bool IsEmpty() const;
+	MEMORY_ADDR GetAmplitude() const;
+	std::string ToString() const;
+	AddressRange<MEMORY_ADDR>& operator = (const AddressRange<MEMORY_ADDR>& ar);
+	int operator == (const AddressRange<MEMORY_ADDR>& ar) const;
+	int operator != (const AddressRange<MEMORY_ADDR>& ar) const;
 };
 
 template <class MEMORY_ADDR>

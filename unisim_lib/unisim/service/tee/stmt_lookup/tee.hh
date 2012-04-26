@@ -64,6 +64,7 @@ public:
 	Tee(const char *name, Object *parent = 0);
 	virtual ~Tee();
 
+	virtual void GetStatements(std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 };

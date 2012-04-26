@@ -300,7 +300,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_CompilationUnit<MEMORY_
 }
 
 template <class MEMORY_ADDR>
-void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix)
+void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
 	unsigned int num_debug_info_entries = debug_info_entries.size();
 	unsigned int i;

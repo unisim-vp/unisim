@@ -40,6 +40,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <list>
+#include <set>
 #include <stdexcept>
 
 #if defined(HAVE_CONFIG_H)
@@ -514,14 +515,68 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 					break;
 				}
 				
+				if(IsFinishCommand(parm[0].c_str()))
+				{
+					ADDRESS ret_addr;
+					if(GetReturnAddress(cia, ret_addr))
+					{
+						if(interactive) last_line = line;
+						running_mode = INLINE_DEBUGGER_MODE_CONTINUE_UNTIL;
+						cont_until_addr = ret_addr;
+						SetBreakpoint(cont_until_addr);
+						return DebugControl<ADDRESS>::DBG_STEP;
+					}
+					else
+					{
+						recognized = true;
+						(*std_output_stream) << "Don't know how to return" << std::endl;
+					}
+					break;
+				}
+				
 				if(IsListSymbolsCommand(parm[0].c_str()))
 				{
 					recognized = true;
 					DumpSymbols();
 					break;
 				}
+				
+				if(IsListSourcesCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					ListSourceFiles();
+					break;
+				}
+
+				if(IsListBinariesCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					ListBinaryFiles();
+					break;
+				}
 				break;
 			case 2:
+				if(IsLoadConfigCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					Object::GetSimulator()->LoadXmlParameters(parm[1].c_str());
+					break;
+				}
+				
+				if(IsEnableBinaryCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					EnableBinary(parm[1].c_str(), true);
+					break;
+				}
+
+				if(IsDisableBinaryCommand(parm[0].c_str()))
+				{
+					recognized = true;
+					EnableBinary(parm[1].c_str(), false);
+					break;
+				}
+
 				if(IsDisasmCommand(parm[0].c_str()) && ParseAddr(parm[1].c_str(), disasm_addr))
 				{
 					recognized = true;
@@ -904,7 +959,7 @@ void InlineDebugger<ADDRESS>::Help()
 {
 	(*std_output_stream) << "HELP:" << endl;
 	(*std_output_stream) << "================================ LOAD ==========================================" << endl;
-	(*std_output_stream) << "<st | symtab> [<filename>]" << endl;
+	(*std_output_stream) << "<st | symtab> <filename>" << endl;
 	(*std_output_stream) << "    load symbol table from file <filename>" << endl;
 	(*std_output_stream) << "=============================== SCRIPTING ======================================" << endl;
 	(*std_output_stream) << "<mac | macro> <filename>" << endl;
@@ -932,6 +987,9 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<d | dump> [<symbol | *address>]" << endl;
 	(*std_output_stream) << "    dump memory starting from 'symbol', 'address', or after the previous dump" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<bt | backtrace>" << endl;
+	(*std_output_stream) << "    display backtrace" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<e | ed | edit> <symbol | *address>" << endl;
 	(*std_output_stream) << "    edit data memory starting from 'symbol' or 'address'" << endl;
@@ -1018,6 +1076,15 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << endl;
 	(*std_output_stream) << "    delete the watchpoint at 'symbol' or 'address'" << endl;
 	(*std_output_stream) << "============================== MISCELLANEOUS ===================================" << endl;
+	(*std_output_stream) << "<sources>" << endl;
+	(*std_output_stream) << "    Locate source files" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<enable | disable> <filename>" << endl;
+	(*std_output_stream) << "    enable/disable symbolic debugging of binary file <filename>" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<files>" << endl;
+	(*std_output_stream) << "    list binary files and whether symbolic debugging is enabled or disabled" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<h | ? | help>" << endl;
 	(*std_output_stream) << "    display the help" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
@@ -1758,6 +1825,14 @@ void InlineDebugger<ADDRESS>::LoadSymbolTable(const char *filename)
 		{
 			(*std_output_stream) << "Symbols from \"" << filename << "\" loaded" << std::endl;
 		}
+		else
+		{
+			(*std_output_stream) << "No symbols loaded" << std::endl;
+		}
+	}
+	else
+	{
+		(*std_output_stream) << "Can't locate \"" << filename << "\"" << std::endl;
 	}
 }
 
@@ -1839,6 +1914,12 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::LocateFile(const char *filename, std::string& match_file_path)
 {
+	if(access(filename, R_OK) == 0)
+	{
+		match_file_path = filename;
+		return true;
+	}
+	
 	std::string s;
 	const char *p;
 
@@ -2028,6 +2109,25 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 }
 
 template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) const
+{
+	bool status = false;
+	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
+	
+	if(backtrace)
+	{
+		unsigned int n = backtrace->size();
+		if(n >= 1)
+		{
+			ret_addr = (*backtrace)[1];
+			status = true;
+		}
+		delete backtrace;
+	}
+	return status;
+}
+
+template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size)
 {
 	char fmt1[16];
@@ -2166,6 +2266,87 @@ template <class ADDRESS>
 const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
 {
 	return stmt_lookup_import->FindStatement(filename, lineno, colno);
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ListSourceFiles()
+{
+	std::set<std::string> source_filenames;
+	std::map<ADDRESS, const Statement<ADDRESS> *> stmts;
+	stmt_lookup_import->GetStatements(stmts);
+	typename std::map<ADDRESS, const Statement<ADDRESS> *>::const_iterator stmt_iter;
+	for(stmt_iter = stmts.begin(); stmt_iter != stmts.end(); stmt_iter++)
+	{
+		const Statement<ADDRESS> *stmt = (*stmt_iter).second;
+		
+		const char *source_filename = stmt->GetSourceFilename();
+		if(source_filename)
+		{
+			std::string source_path;
+			const char *source_dirname = stmt->GetSourceDirname();
+			if(source_dirname)
+			{
+				source_path += source_dirname;
+				source_path += '/';
+			}
+			source_path += source_filename;
+			
+			source_filenames.insert(source_path);
+		}
+	}
+	
+	std::set<std::string>::const_iterator source_filename_iter;
+	for(source_filename_iter = source_filenames.begin(); source_filename_iter != source_filenames.end(); source_filename_iter++)
+	{
+		const std::string& source_path = (*source_filename_iter);
+		std::string match_source_path;
+		if(LocateFile(source_path.c_str(), match_source_path))
+		{
+			(*std_output_stream) << "[OK] " << match_source_path << std::endl;
+		}
+		else
+		{
+			(*std_output_stream) << "[EE] " << source_path << " (not found)" << std::endl;
+		}
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
+{
+	std::string match_file_path;
+	const char *file_path;
+	if(LocateFile(filename, match_file_path))
+	{
+		file_path = match_file_path.c_str();
+	}
+	else
+	{
+		file_path = filename;
+	}
+	
+	if(debug_info_loading_import->EnableBinary(file_path, enable))
+	{
+		(*std_output_stream) << "Binary File \"" << file_path << "\" " << (enable ? "enabled" : "disabled") << std::endl;
+	}
+	else
+	{
+		(*std_error_stream) << "Can't " << (enable ? "enable" : "disable") << " binary File \"" << file_path << "\"" << std::endl;
+	}
+}
+
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::ListBinaryFiles()
+{
+	std::list<std::string> lst;
+	debug_info_loading_import->EnumerateBinaries(lst);
+	std::list<std::string>::const_iterator iter;
+	for(iter = lst.begin(); iter != lst.end(); iter++)
+	{
+		const std::string& filename = *iter;
+		bool enabled = debug_info_loading_import->IsBinaryEnabled(filename.c_str());
+		(*std_output_stream) << filename << ": " << (enabled ? "enabled" : "disabled") << std::endl;
+	}
 }
 
 template <class ADDRESS>
@@ -2384,7 +2565,7 @@ bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, boo
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line)
+bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line) const
 {
 	unsigned int n = line.length();
 	unsigned int i;
@@ -2397,91 +2578,91 @@ bool InlineDebugger<ADDRESS>::IsBlankLine(const std::string& line)
 
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsQuitCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsQuitCommand(const char *cmd) const
 {
 	return strcmp(cmd, "q") == 0 || strcmp(cmd, "quit") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsStepInstructionCommand(const char *cmd) const
 {
 	return strcmp(cmd, "si") == 0 || strcmp(cmd, "stepi") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsStepCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsStepCommand(const char *cmd) const
 {
 	return strcmp(cmd, "s") == 0 || strcmp(cmd, "step") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsNextInstructionCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsNextInstructionCommand(const char *cmd) const
 {
 	return strcmp(cmd, "ni") == 0 || strcmp(cmd, "nexti") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsContinueCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsContinueCommand(const char *cmd) const
 {
 	return strcmp(cmd, "c") == 0 || strcmp(cmd, "cont") == 0 || strcmp(cmd, "continue") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsDisasmCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsDisasmCommand(const char *cmd) const
 {
 	return strcmp(cmd, "dis") == 0 || strcmp(cmd, "disasm") == 0 || strcmp(cmd, "disassemble") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsBreakCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsBreakCommand(const char *cmd) const
 {
 	return strcmp(cmd, "b") == 0 || strcmp(cmd, "break") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsWatchCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsWatchCommand(const char *cmd) const
 {
 	return strcmp(cmd, "w") == 0 || strcmp(cmd, "watch") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsDeleteCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsDeleteCommand(const char *cmd) const
 {
 	return strcmp(cmd, "del") == 0 || strcmp(cmd, "delete") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsDeleteWatchCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsDeleteWatchCommand(const char *cmd) const
 {
 	return strcmp(cmd, "delw") == 0 || strcmp(cmd, "delwatch") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsDumpCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsDumpCommand(const char *cmd) const
 {
 	return strcmp(cmd, "d") == 0 || strcmp(cmd, "dump") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsEditCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsEditCommand(const char *cmd) const
 {
 	return strcmp(cmd, "e") == 0 || strcmp(cmd, "ed") == 0 || strcmp(cmd, "edit") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsHelpCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsHelpCommand(const char *cmd) const
 {
 	return strcmp(cmd, "h") == 0 || strcmp(cmd, "?") == 0 || strcmp(cmd, "help") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsResetCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsResetCommand(const char *cmd) const
 {
 	return strcmp(cmd, "r") == 0 || strcmp(cmd, "run") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd, const char *format)
+bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd, const char *format) const
 {
 	if (format)
 	{
@@ -2493,7 +2674,7 @@ bool InlineDebugger<ADDRESS>::IsMonitorCommand(const char *cmd, const char *form
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsRegisterCommand(const char *cmd, const char *format)
+bool InlineDebugger<ADDRESS>::IsRegisterCommand(const char *cmd, const char *format) const
 {
 	if (format)
 	{
@@ -2505,7 +2686,7 @@ bool InlineDebugger<ADDRESS>::IsRegisterCommand(const char *cmd, const char *for
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsStatisticCommand(const char *cmd, const char *format)
+bool InlineDebugger<ADDRESS>::IsStatisticCommand(const char *cmd, const char *format) const
 {
 	if (format)
 	{
@@ -2517,7 +2698,7 @@ bool InlineDebugger<ADDRESS>::IsStatisticCommand(const char *cmd, const char *fo
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsParameterCommand(const char *cmd, const char *format)
+bool InlineDebugger<ADDRESS>::IsParameterCommand(const char *cmd, const char *format) const
 {
 	if (format)
 	{
@@ -2529,39 +2710,75 @@ bool InlineDebugger<ADDRESS>::IsParameterCommand(const char *cmd, const char *fo
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsMonitorSetCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsMonitorSetCommand(const char *cmd) const
 {
 	return strcmp(cmd, "set") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsProfileCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsProfileCommand(const char *cmd) const
 {
 	return strcmp(cmd, "p") == 0 || strcmp(cmd, "prof") == 0 || strcmp(cmd, "profile") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsBackTraceCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsBackTraceCommand(const char *cmd) const
 {
 	return strcmp(cmd, "bt") == 0 || strcmp(cmd, "backtrace") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsLoadSymbolTableCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsFinishCommand(const char *cmd) const
+{
+	return strcmp(cmd, "fin") == 0 || strcmp(cmd, "finish") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsLoadSymbolTableCommand(const char *cmd) const
 {
 	return strcmp(cmd, "st") == 0 || strcmp(cmd, "symtab") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsListSymbolsCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsListSymbolsCommand(const char *cmd) const
 {
 	return strcmp(cmd, "sym") == 0 || strcmp(cmd, "symbol") == 0;
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::IsMacroCommand(const char *cmd)
+bool InlineDebugger<ADDRESS>::IsMacroCommand(const char *cmd) const
 {
 	return strcmp(cmd, "mac") == 0 || strcmp(cmd, "macro") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsLoadConfigCommand(const char *cmd) const
+{
+	return strcmp(cmd, "conf") == 0 || strcmp(cmd, "config") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsListSourcesCommand(const char *cmd) const
+{
+	return strcmp(cmd, "sources") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsEnableBinaryCommand(const char *cmd) const
+{
+	return strcmp(cmd, "enable") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsDisableBinaryCommand(const char *cmd) const
+{
+	return strcmp(cmd, "disable") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsListBinariesCommand(const char *cmd) const
+{
+	return strcmp(cmd, "files") == 0;
 }
 
 } // end of namespace inline_debugger

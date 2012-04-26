@@ -111,7 +111,7 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 
 	unsigned int i;
 
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
@@ -1904,7 +1904,7 @@ void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_lo
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 {
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
@@ -1916,9 +1916,15 @@ void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 }
 
 template <class MEMORY_ADDR>
+const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& DWARF_Handler<MEMORY_ADDR>::GetStatements() const
+{
+	return stmt_matrix;
+}
+
+template <class MEMORY_ADDR>
 const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr) const
 {
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter = stmt_matrix.find(addr);
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter = stmt_matrix.find(addr);
 	
 	return (stmt_iter != stmt_matrix.end()) ? (*stmt_iter).second : 0;
 }
@@ -1945,11 +1951,11 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 	} while(*(p++));
 	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
 
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 	
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
-		Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+		const Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
 		
 		if(stmt)
 		{
