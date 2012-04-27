@@ -337,12 +337,22 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	
 	if(enable_inline_debugger || enable_gdb_server)
 	{
-		// Connect tee-memory-access-reporting to CPU, debugger and profiler
-		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-		*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-		*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+		if(enable_inline_debugger)
+		{
+			// Connect tee-memory-access-reporting to CPU, debugger and profiler
+			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+		}
+		else
+		{
+			// Connect CPU to debugger
+			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		}
 
 		// Connect debugger to CPU
 		cpu->debug_control_import >> debugger->debug_control_export;

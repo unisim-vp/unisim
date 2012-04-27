@@ -47,6 +47,7 @@ class BackTrace : public unisim::kernel::service::ServiceInterface
 {
 public:
 	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const = 0;
+	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const = 0;
 };
 
 } // end of namespace interfaces

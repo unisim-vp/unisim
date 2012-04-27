@@ -1922,10 +1922,37 @@ const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& DWARF_Handler<MEMOR
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr) const
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
 {
-	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter = stmt_matrix.find(addr);
+	if(stmt_matrix.empty()) return 0;
 	
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	switch(opt)
+	{
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+			stmt_iter = stmt_matrix.begin();
+			if(stmt_iter != stmt_matrix.end())
+			{
+				if((*stmt_iter).first > addr) break;
+			}
+			
+			stmt_iter = stmt_matrix.lower_bound(addr);
+			if((*stmt_iter).first > addr)
+			{
+				stmt_iter--;
+			}
+			break;
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_EXACT_STMT:
+			stmt_iter = stmt_matrix.find(addr);
+			break;
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEXT_STMT:
+			stmt_iter = stmt_matrix.lower_bound(addr);
+			if((*stmt_iter).first <= addr)
+			{
+				stmt_iter++;
+			}
+			break;
+	}
 	return (stmt_iter != stmt_matrix.end()) ? (*stmt_iter).second : 0;
 }
 
@@ -2272,7 +2299,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 
 	do
 	{
-		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr((id == 1) ? pc : caller_pc);
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(caller_pc);
 		
 		if(!dw_fde)
 		{
@@ -2287,12 +2314,9 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 		{
 //			logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
 			
-			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow((id == 1) ? pc : caller_pc);
+			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(caller_pc);
 			
-//			if(cfi_row)
-//			{
-//				logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
-//			}
+//			logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
 			
 //			logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
 			
@@ -2340,6 +2364,68 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 	if(frame) delete frame;
 	
 	return backtrace;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
+{
+	bool found = false;
+	
+	if(dw_reg_num_mapping)
+	{
+		unsigned int sp_reg_num = dw_reg_num_mapping->GetSPRegNum();
+		DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+		frame->Load(dw_reg_num_mapping);
+		
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(pc);
+			
+		if(dw_fde)
+		{
+			DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+			const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(dw_fde);
+
+			if(cfi)
+			{
+//				logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+				
+				typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(pc);
+				
+//				logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+			
+//				logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
+				
+				DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+				
+				if(next_frame->Unwind(cfi_row, frame))
+				{
+//					logger << DebugInfo << "Register set after unwinding:" << *next_frame << EndDebugInfo;
+
+					const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
+					
+					unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
+					
+					ret_addr = next_frame->ReadRegister(dw_ret_addr_reg_num);
+					found = true;
+				
+//					logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
+				}
+				
+				delete next_frame;
+				delete cfi;
+			}
+			else
+			{
+				logger << DebugWarning << "Something goes wrong while interpreting call frame information" << EndDebugWarning;
+			}
+		}
+		else
+		{
+//			logger << DebugInfo << "No FDE found" << EndDebugInfo;
+		}
+		delete frame;
+	}
+	
+	return found;
 }
 
 } // end of namespace dwarf

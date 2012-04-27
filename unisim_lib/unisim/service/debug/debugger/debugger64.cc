@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2012,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -31,36 +31,21 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#ifndef __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
-#define __UNISIM_SERVICE_INTERFACES_STMT_LOOKUP_HH__
 
-#include <unisim/kernel/service/service.hh>
-#include <unisim/util/debug/stmt.hh>
+#include <unisim/service/debug/debugger/debugger.hh>
+#include <unisim/service/debug/debugger/debugger.tcc>
+#include <unisim/util/loader/elf_loader/elf32.h>
+#include <unisim/util/loader/elf_loader/elf64.h>
+#include <inttypes.h>
 
 namespace unisim {
 namespace service {
-namespace interfaces {
+namespace debug {
+namespace debugger {
 
-template <class MEMORY_ADDR>
-class StatementLookup : public unisim::kernel::service::ServiceInterface
-{
-public:
-	typedef enum
-	{
-		OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT,
-		OPT_FIND_EXACT_STMT,
-		OPT_FIND_NEXT_STMT
-	}
-	FindStatementOption;
-	
-	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const = 0;
-};
+template class Debugger<uint64_t>;
 
-} // end of namespace interfaces
+} // end of namespace debugger
+} // end of namespace debug
 } // end of namespace service
 } // end of namespace unisim
-
-#endif

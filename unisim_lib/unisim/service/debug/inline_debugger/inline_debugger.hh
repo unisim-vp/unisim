@@ -279,11 +279,7 @@ private:
 	void DumpSource(const char *filename, unsigned int lineno, unsigned int colno, unsigned int count);
 	void DumpBackTrace(ADDRESS cia);
 	bool GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) const;
-	const Symbol<ADDRESS> *FindSymbolByAddr(ADDRESS addr);
-	const Symbol<ADDRESS> *FindSymbolByName(const char *s);
-	const Statement<ADDRESS> *FindStatement(ADDRESS addr);
-	const Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno);
-	const Statement<ADDRESS> *FindNextStatement(ADDRESS addr);
+	const Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt = unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT) const;
 	void EnableProgramProfiling();
 	void EnableDataReadProfiling();
 	void EnableDataWriteProfiling();

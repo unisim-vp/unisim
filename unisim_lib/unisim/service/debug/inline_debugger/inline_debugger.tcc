@@ -1060,18 +1060,18 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<p | prof | profile> data write" << endl;
 	(*std_output_stream) << "    display the program/data profile" << endl;
 	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
-	(*std_output_stream) << "<b | break> [<symbol | *address | filename#lineno>]" << endl;
-	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename#lineno'. If 'symbol', 'address'," << endl;
-	(*std_output_stream) << "    or 'filename#lineno' are not specified, display the breakpoint list" << endl;
+	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << endl;
+	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << endl;
+	(*std_output_stream) << "    or 'filename:lineno' are not specified, display the breakpoint list" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<w | watch> [<symbol | *address[:<size>]>] [<read | write>]" << endl;
+	(*std_output_stream) << "<w | watch> [<symbol | *address[#<size>]>] [<read | write>]" << endl;
 	(*std_output_stream) << "    set a watchpoint at 'symbol' or 'address'." << endl;
 	(*std_output_stream) << "    When using 'continue' and 'next' commands, the debugger will spy CPU loads" << endl;
 	(*std_output_stream) << "    and stores. The debugger will return to command line prompt once a load," << endl;
 	(*std_output_stream) << "    or a store will access to 'symbol' or 'address'." << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
-	(*std_output_stream) << "<del | delete> <symbol | *address | filename#lineno>" << endl;
-	(*std_output_stream) << "    delete the breakpoint at 'symbol', 'address', or 'filename#lineno'" << endl << endl;
+	(*std_output_stream) << "<del | delete> <symbol | *address | filename:lineno>" << endl;
+	(*std_output_stream) << "    delete the breakpoint at 'symbol', 'address', or 'filename:lineno'" << endl << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<delw | delwatch> <symbol | *address> [<read | write>] [<size>]" << endl;
 	(*std_output_stream) << "    delete the watchpoint at 'symbol' or 'address'" << endl;
@@ -1095,14 +1095,15 @@ void InlineDebugger<ADDRESS>::Help()
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 {
-
 	if(count > 0)
 	{
+		bool first = true;
 		const Symbol<ADDRESS> *last_symbol = 0;
 		ADDRESS next_addr;
 		do
 		{
-			const Statement<ADDRESS> *stmt = FindStatement(addr);
+			const Statement<ADDRESS> *stmt = FindStatement(addr, first ? unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT : unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT);
+			first = false;
 			
 			if(stmt)
 			{
@@ -1124,7 +1125,7 @@ void InlineDebugger<ADDRESS>::Disasm(ADDRESS addr, int count)
 			}
 			
 			(*std_output_stream).fill('0');
-			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 			string s = disasm_import->Disasm(addr, next_addr);
 			
 			if(symbol)
@@ -1233,7 +1234,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		
 		(*std_output_stream) << "*0x" << hex << (addr / memory_atom_size) << dec << " (";
 		
-		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1245,7 +1246,7 @@ void InlineDebugger<ADDRESS>::DumpBreakpoints()
 		}
 		(*std_output_stream) << ")";
 		
-		const Statement<ADDRESS> *stmt = FindStatement(addr);
+		const Statement<ADDRESS> *stmt = FindStatement(addr, unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
 		
 		if(stmt)
 		{
@@ -1313,7 +1314,7 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		
 		(*std_output_stream) << "*0x" << hex << (addr / memory_atom_size) << dec << ":" << (size / memory_atom_size) << " (";
 		
-		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		if(symbol)
 		{
@@ -1748,7 +1749,7 @@ void InlineDebugger<ADDRESS>::DumpProgramProfile()
 	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		ADDRESS next_addr;
 
@@ -1884,7 +1885,7 @@ void InlineDebugger<ADDRESS>::DumpDataProfile(bool write)
 	for(iter = map.begin(); !trap && iter != map.end(); iter++)
 	{
 		ADDRESS addr = (*iter).first;
-		const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+		const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
 		
 		(*std_output_stream) << "0x" << hex;
 		(*std_output_stream).fill('0');
@@ -2056,7 +2057,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 			
 			ADDRESS addr = (*backtrace)[i];
 			
-			const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
+			const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(i == 0 ? addr : (addr - 1));
 			
 			(*std_output_stream) << "0x" << std::hex;
 			(*std_output_stream) << (addr / memory_atom_size) << std::dec;
@@ -2067,7 +2068,7 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 				(*std_output_stream) << ">";
 			}
 
-			const Statement<ADDRESS> *stmt = FindStatement(addr);
+			const Statement<ADDRESS> *stmt = FindStatement(i == 0 ? addr : (addr - 1), unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT);
 			
 			if(stmt)
 			{
@@ -2111,6 +2112,9 @@ void InlineDebugger<ADDRESS>::DumpBackTrace(ADDRESS cia)
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) const
 {
+	return backtrace_import->GetReturnAddress(cia, ret_addr);
+	
+#if 0
 	bool status = false;
 	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
 	
@@ -2125,6 +2129,7 @@ bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) c
 		delete backtrace;
 	}
 	return status;
+#endif
 }
 
 template <class ADDRESS>
@@ -2132,8 +2137,8 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 {
 	char fmt1[16];
 	char fmt2[16];
-	snprintf(fmt1, sizeof(fmt1), "*%%%s:%%%s", hex_addr_fmt, int_addr_fmt);
-	snprintf(fmt2, sizeof(fmt2), "*%%%s:%%%s", int_addr_fmt, int_addr_fmt);
+	snprintf(fmt1, sizeof(fmt1), "*%%%s#%%%s", hex_addr_fmt, int_addr_fmt);
+	snprintf(fmt2, sizeof(fmt2), "*%%%s#%%%s", int_addr_fmt, int_addr_fmt);
 
 	if(sscanf(s, fmt1, &addr, &size) == 2 ||
 	   sscanf(s, fmt2, &addr, &size) == 2)
@@ -2154,7 +2159,7 @@ bool InlineDebugger<ADDRESS>::ParseAddrRange(const char *s, ADDRESS& addr, unsig
 		return true;
 	}
 
-	const Symbol<ADDRESS> *symbol = FindSymbolByName(s);
+	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
 	{
@@ -2183,7 +2188,7 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 		return true;
 	}
 	
-	const Symbol<ADDRESS> *symbol = FindSymbolByName(s);
+	const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByName(s);
 	
 	if(symbol)
 	{
@@ -2193,15 +2198,15 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 	
 	std::string filename;
 	unsigned int lineno;
-	while(*s && *s != '#')
+	while(*s && *s != ':')
 	{
 		filename += *s;
 		s++;
 	}
-	if(*s == '#') s++;
+	if(*s == ':') s++;
 	if(sscanf(s, "%u", &lineno) != 1) return false;
 	
-	const Statement<ADDRESS> *stmt = FindStatement(filename.c_str(), lineno, 0);
+	const Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(filename.c_str(), lineno, 0);
 	
 	if(stmt)
 	{
@@ -2213,59 +2218,40 @@ bool InlineDebugger<ADDRESS>::ParseAddr(const char *s, ADDRESS& addr)
 }
 
 template <class ADDRESS>
-const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByAddr(ADDRESS addr)
+const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const
 {
-	return symbol_table_lookup_import->FindSymbolByAddr(addr);
-}
-
-template <class ADDRESS>
-const Symbol<ADDRESS> *InlineDebugger<ADDRESS>::FindSymbolByName(const char *s)
-{
-	return symbol_table_lookup_import->FindSymbolByName(s);
-}
-
-template <class ADDRESS>
-const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(ADDRESS addr)
-{
-	return stmt_lookup_import->FindStatement(addr);
-}
-
-template <class ADDRESS>
-const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindNextStatement(ADDRESS addr)
-{
-	const Symbol<ADDRESS> *symbol = FindSymbolByAddr(addr);
-	ADDRESS top_addr = addr;
-	if(symbol)
+	switch(opt)
 	{
-		ADDRESS symbol_addr = symbol->GetAddress();
-		ADDRESS symbol_size = symbol->GetSize();
-		typename Symbol<ADDRESS>::Type symbol_type = symbol->GetType();
-		if((symbol_size != 0) && (symbol_type == Symbol<ADDRESS>::SYM_FUNC))
-		{
-			top_addr = symbol_addr + symbol_size - 1;
-		}
-	}
+		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_EXACT_STMT:
+			return stmt_lookup_import->FindStatement(addr, opt);
+		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+		case unisim::service::interfaces::StatementLookup<ADDRESS>::OPT_FIND_NEXT_STMT:
+			{
+				const Symbol<ADDRESS> *symbol = symbol_table_lookup_import->FindSymbolByAddr(addr);
+				ADDRESS func_start_addr = addr;
+				ADDRESS func_end_addr = addr;
+				if(symbol)
+				{
+					ADDRESS symbol_addr = symbol->GetAddress();
+					ADDRESS symbol_size = symbol->GetSize();
+					typename Symbol<ADDRESS>::Type symbol_type = symbol->GetType();
+					if((symbol_size != 0) && (symbol_type == Symbol<ADDRESS>::SYM_FUNC))
+					{
+						func_start_addr = symbol_addr;
+						func_end_addr = symbol_addr + symbol_size - 1;
+					}
+				}
 
-	addr++;
-	const Statement<ADDRESS> *stmt = 0;
-	
-	if(addr <= top_addr)
-	{
-		do
-		{
-			stmt = FindStatement(addr);
-			addr++;
-		}
-		while(!stmt && (addr <= top_addr));
+				const Statement<ADDRESS> *stmt = stmt_lookup_import->FindStatement(addr, opt);
+				
+				if(stmt && (stmt->GetAddress() >= func_start_addr) && (stmt->GetAddress() <= func_end_addr))
+				{
+					return stmt;
+				}
+			}
+			break;
 	}
-	
-	return stmt;
-}
-
-template <class ADDRESS>
-const Statement<ADDRESS> *InlineDebugger<ADDRESS>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno)
-{
-	return stmt_lookup_import->FindStatement(filename, lineno, colno);
+	return 0;
 }
 
 template <class ADDRESS>
