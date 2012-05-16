@@ -603,7 +603,6 @@ DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetLowestRow(MEMORY_ADDR loc)
 {
 	typename std::map<MEMORY_ADDR, DWARF_CFIRow<MEMORY_ADDR> *>::const_iterator iter;
 	
-	MEMORY_ADDR prev_loc = 0;
 	DWARF_CFIRow<MEMORY_ADDR> *prev_row = 0;
 	for(iter = cfi_rows.begin(); iter != cfi_rows.end(); iter++)
 	{
@@ -611,7 +610,6 @@ DWARF_CFIRow<MEMORY_ADDR> *DWARF_CFI<MEMORY_ADDR>::GetLowestRow(MEMORY_ADDR loc)
 		DWARF_CFIRow<MEMORY_ADDR> *cur_row = (*iter).second;
 		
 		if(loc < cur_loc) break;
-		prev_loc = cur_loc;
 		prev_row = cur_row;
 	}
 	return prev_row;

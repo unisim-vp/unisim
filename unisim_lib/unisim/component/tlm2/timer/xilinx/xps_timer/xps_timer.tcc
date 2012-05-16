@@ -726,7 +726,7 @@ void XPS_Timer<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 	
 }
@@ -797,7 +797,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				tlm::tlm_phase phase = tlm::BEGIN_REQ;
 				sc_time t(SC_ZERO_TIME);
-				tlm::tlm_sync_enum sync = (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
+				/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
 				
 				generate_out_payload->release();
 				
@@ -830,7 +830,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 					
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
 					sc_time t(SC_ZERO_TIME);
-					tlm::tlm_sync_enum sync = (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
+					/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[0])->nb_transport_fw(*generate_out_payload, phase, t);
 					
 					generate_out_payload->release();
 
@@ -851,7 +851,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 				
 				tlm::tlm_phase phase = tlm::BEGIN_REQ;
 				sc_time t(SC_ZERO_TIME);
-				tlm::tlm_sync_enum sync = (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
+				/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
 				
 				generate_out_payload->release();
 				
@@ -877,7 +877,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 					
 					tlm::tlm_phase phase = tlm::BEGIN_REQ;
 					sc_time t(SC_ZERO_TIME);
-					tlm::tlm_sync_enum sync = (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
+					/* tlm::tlm_sync_enum sync = */ (*generate_out_master_sock[1])->nb_transport_fw(*generate_out_payload, phase, t);
 					
 					generate_out_payload->release();
 
@@ -901,7 +901,7 @@ void XPS_Timer<CONFIG>::GenerateOutput()
 		
 		sc_time t(SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

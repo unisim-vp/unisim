@@ -485,7 +485,7 @@ void XPS_IntC<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 }
 
@@ -586,7 +586,7 @@ void XPS_IntC<CONFIG>::SetOutputLevel(bool level)
 	intr_payload->SetValue(level);
 	
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
-	tlm::tlm_sync_enum sync = irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
+	/* tlm::tlm_sync_enum sync = */ irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
 	
 	intr_payload->release();
 	
@@ -611,7 +611,7 @@ void XPS_IntC<CONFIG>::SetOutputEdge(bool final_level)
 		
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
 		
-		tlm::tlm_sync_enum sync = irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
 		
 		intr_payload->release();
 	}
@@ -629,7 +629,7 @@ void XPS_IntC<CONFIG>::SetOutputEdge(bool final_level)
 	
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 
-	tlm::tlm_sync_enum sync = irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
+	/* tlm::tlm_sync_enum sync = */ irq_master_sock->nb_transport_fw(*intr_payload, phase, t);
 	
 	intr_payload->release();
 	

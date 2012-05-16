@@ -458,7 +458,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 	
 }
@@ -480,7 +480,7 @@ void XPS_UARTLite<CONFIG>::GenerateOutput()
 		
 		sc_time t(SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

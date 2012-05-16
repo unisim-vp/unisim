@@ -53,7 +53,6 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 
 	do
 	{
-		typename CONFIG::STORAGE_ATTR storage_attr;
 		typename CONFIG::physical_address_t physical_addr;
 		typename CONFIG::address_t protection_boundary;
 		if(translate_addr)
@@ -77,13 +76,11 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
 			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
 
-			storage_attr = mmu_access.storage_attr;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
 		}
 		else
 		{
-			storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}
@@ -185,7 +182,6 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 
 	do
 	{
-		typename CONFIG::STORAGE_ATTR storage_attr;
 		typename CONFIG::physical_address_t physical_addr;
 		typename CONFIG::address_t protection_boundary;
 		if(translate_addr)
@@ -209,13 +205,11 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 			catch(DataTLBErrorException<CONFIG>& exc) { return false; }
 			catch(InstructionTLBErrorException<CONFIG>& exc) { return false; }
 	
-			storage_attr = mmu_access.storage_attr;
 			physical_addr = mmu_access.physical_addr;
 			protection_boundary = mmu_access.protection_boundary;
 		}
 		else
 		{
-			storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
 			physical_addr = addr;
 			protection_boundary = addr + size;
 		}

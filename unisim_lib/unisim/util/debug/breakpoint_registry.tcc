@@ -241,14 +241,13 @@ void BreakpointRegistry<ADDRESS>::AllocatePage(ADDRESS addr)
 template <class ADDRESS>
 const BreakpointMapPage<ADDRESS> *BreakpointRegistry<ADDRESS>::GetPage(ADDRESS addr) const
 {
-	BreakpointMapPage<ADDRESS> *prev, *page;
+	BreakpointMapPage<ADDRESS> *page;
 	ADDRESS base_addr = addr & ~(BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE - 1);
 	uint32_t index = (base_addr / BreakpointMapPage<ADDRESS>::NUM_BREAKPOINTS_PER_PAGE) & (NUM_HASH_TABLE_ENTRIES - 1);
 	page = hash_table[index];
 	if(page)
 	{
 		if(page->base_addr == base_addr) return page;
-		prev = page;
 		page = page->next;
 		if(page)
 		{
@@ -258,7 +257,6 @@ const BreakpointMapPage<ADDRESS> *BreakpointRegistry<ADDRESS>::GetPage(ADDRESS a
 				{
 					return page;
 				}
-				prev = page;
 			} while((page = page->next) != 0);
 		}
 	}

@@ -389,14 +389,13 @@ void WatchpointRegistry<ADDRESS>::AllocatePage(typename MemoryAccessReporting<AD
 template <class ADDRESS>
 const WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr) const
 {
-	WatchpointMapPage<ADDRESS> *prev, *page;
+	WatchpointMapPage<ADDRESS> *page;
 	ADDRESS base_addr = addr & ~(WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE - 1);
 	uint32_t index = (base_addr / WatchpointMapPage<ADDRESS>::NUM_WATCHPOINTS_PER_PAGE) & (NUM_HASH_TABLE_ENTRIES - 1);
 	page = hash_table[mt][index];
 	if(page)
 	{
 		if(page->base_addr == base_addr) return page;
-		prev = page;
 		page = page->next;
 		if(page)
 		{
@@ -406,7 +405,6 @@ const WatchpointMapPage<ADDRESS> *WatchpointRegistry<ADDRESS>::GetPage(typename 
 				{
 					return page;
 				}
-				prev = page;
 			} while((page = page->next) != 0);
 		}
 	}

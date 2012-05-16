@@ -115,7 +115,7 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 	const syment *symtab = (const syment *) symtab_section->GetData();
 	unsigned long nsyms = symtab_section->GetSize() / sizeof(syment);
 	const char *strtab = (const char *) strtab_section->GetData();
-	uint32_t strtab_size = strtab_section->GetSize();
+//	uint32_t strtab_size = strtab_section->GetSize();
 	unsigned int memory_atom_size = blob->GetMemoryAtomSize();
 	unsigned long i;
 	int numaux = 0;

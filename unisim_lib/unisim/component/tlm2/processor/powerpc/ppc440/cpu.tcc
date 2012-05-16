@@ -580,7 +580,7 @@ void CPU<CONFIG>::DCRRead(unsigned int dcrn, uint32_t& value)
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 
-	tlm::tlm_response_status status = payload->get_response_status();
+	/* tlm::tlm_response_status status = */ payload->get_response_status();
 	
 	payload->release();
 
@@ -606,7 +606,7 @@ void CPU<CONFIG>::DCRWrite(unsigned int dcrn, uint32_t value)
 	run_time = sc_time_stamp();
 	run_time += cpu_time;
 
-	tlm::tlm_response_status status = payload->get_response_status();
+	/* tlm::tlm_response_status status = */ payload->get_response_status();
 
 	payload->release();
 

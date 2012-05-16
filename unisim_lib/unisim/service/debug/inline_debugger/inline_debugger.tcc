@@ -2113,23 +2113,6 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetReturnAddress(ADDRESS cia, ADDRESS& ret_addr) const
 {
 	return backtrace_import->GetReturnAddress(cia, ret_addr);
-	
-#if 0
-	bool status = false;
-	std::vector<ADDRESS> *backtrace = backtrace_import->GetBackTrace(cia);
-	
-	if(backtrace)
-	{
-		unsigned int n = backtrace->size();
-		if(n >= 1)
-		{
-			ret_addr = (*backtrace)[1];
-			status = true;
-		}
-		delete backtrace;
-	}
-	return status;
-#endif
 }
 
 template <class ADDRESS>
