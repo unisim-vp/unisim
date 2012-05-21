@@ -42,6 +42,7 @@
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/elf_symtab/elf_symtab.hh>
+#include <unisim/service/interfaces/registers.hh>
 
 #include <iosfwd>
 
@@ -66,7 +67,8 @@ typedef enum
 	OPT_DUMP_HEADERS,
 	OPT_VERBOSE,
 	OPT_PARSE_DWARF,
-	OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY
+	OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY,
+	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME
 } Option;
 	
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -74,10 +76,11 @@ class ElfLoaderImpl
 {
 public:
 	
-	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger);
+	ElfLoaderImpl(unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob = 0);
 	virtual ~ElfLoaderImpl();
 	
 	bool Load();
+	void ParseSymbols();
 	
 	void SetOption(Option opt, MEMORY_ADDR addr);
 	void SetOption(Option opt, const char *s);
@@ -96,10 +99,12 @@ public:
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByName(const char *name, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
+	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
+	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 private:
 	unisim::kernel::logger::Logger& logger;
 	string filename;
@@ -108,12 +113,17 @@ private:
 	bool force_use_virtual_address;
 	bool dump_headers;
 	unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *const_blob;
 	ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym> *symtab_handler;
 	unisim::util::debug::dwarf::DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	unisim::service::interfaces::Registers *regs_if;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	string dwarf_to_html_output_directory;
+	string dwarf_register_number_mapping_filename;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
 	
 	void SwapElfHeader(Elf_Ehdr *hdr);
 	void SwapProgramHeader(Elf_Phdr *phdr);

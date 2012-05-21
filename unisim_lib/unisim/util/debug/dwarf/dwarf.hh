@@ -35,15 +35,42 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_DWARF_HH__
 #define __UNISIM_UTIL_DEBUG_DWARF_DWARF_HH__
 
+#include <inttypes.h>
+#include <map>
+#include <vector>
+#include <iosfwd>
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
-#include <inttypes.h>
-#include <map>
-#include <vector>
-#include <iosfwd>
+
+#include <unisim/util/debug/dwarf/fmt.hh>
+#include <unisim/util/debug/dwarf/abbrev.hh>
+#include <unisim/util/debug/dwarf/attr.hh>
+#include <unisim/util/debug/dwarf/call_frame_vm.hh>
+#include <unisim/util/debug/dwarf/class.hh>
+#include <unisim/util/debug/dwarf/die.hh>
+#include <unisim/util/debug/dwarf/encoding.hh>
+#include <unisim/util/debug/dwarf/fde.hh>
+#include <unisim/util/debug/dwarf/leb128.hh>
+#include <unisim/util/debug/dwarf/macinfo.hh>
+#include <unisim/util/debug/dwarf/pub.hh>
+#include <unisim/util/debug/dwarf/stmt_prog.hh>
+#include <unisim/util/debug/dwarf/addr_range.hh>
+#include <unisim/util/debug/dwarf/call_frame_prog.hh>
+#include <unisim/util/debug/dwarf/cie.hh>
+#include <unisim/util/debug/dwarf/cu.hh>
+#include <unisim/util/debug/dwarf/expr_vm.hh>
+#include <unisim/util/debug/dwarf/filename.hh>
+#include <unisim/util/debug/dwarf/loc.hh>
+#include <unisim/util/debug/dwarf/ml.hh>
+#include <unisim/util/debug/dwarf/range.hh>
+#include <unisim/util/debug/dwarf/stmt_vm.hh>
+
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/memory.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
 
 namespace unisim {
 namespace util {
@@ -52,12 +79,25 @@ namespace dwarf {
 
 using unisim::util::endian::endian_type;
 
+typedef enum
+{
+	OPT_REG_NUM_MAPPING_FILENAME,
+	OPT_VERBOSE
+} Option;
+
 template <class MEMORY_ADDR>
 class DWARF_Handler
 {
 public:
-	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& logger);
+	DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob, unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
 	~DWARF_Handler();
+
+	void SetOption(Option opt, const char *s);
+	void SetOption(Option opt, bool flag);
+
+	void GetOption(Option opt, std::string& s);
+	void GetOption(Option opt, bool& flag);
+
 	void Parse();
 	void to_XML(std::ostream& os);
 	void to_HTML(const char *output_dir);
@@ -81,10 +121,13 @@ public:
 	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
 	const char *GetString(uint64_t debug_str_offset) const;
 
-	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const;
+	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
+	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
+	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 
 private:
 	endian_type endianness;
@@ -104,7 +147,7 @@ private:
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
 	
 	std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *> dw_stmt_progs;   // statement programs from section .debug_line indexed by .debug_line section offset
-	std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
+	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> stmt_matrix;               // Result of running dw_stmt_progs on dw_stmt_vms
 	std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *> dw_cus;           // compilation units contributions to section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *> dw_dies;                      // debug info entries in section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_Abbrev *> dw_abbrevs;                             // from section .debug_abbrev indexed by .debug_abbrev section offset
@@ -119,6 +162,12 @@ private:
 
 	unisim::kernel::logger::Logger& logger;
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
+	std::string reg_num_mapping_filename;
+	bool verbose;
+	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
+	unisim::service::interfaces::Registers *regs_if;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+	
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
 	void BuildStatementMatrix();

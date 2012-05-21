@@ -526,8 +526,10 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 //			cerr << "      name = " << cur_var->name.str() << endl;
 //			cerr << "      value = " << cur_var->value.str() << endl;
 			// cerr << "    description = " << cur_var->description.str() << endl;
+			
 			bool modify = 
 				(type == VariableBase::VAR_VOID) ||
+				(cur_var->type.str().empty()) ||
 				(type == VariableBase::VAR_PARAMETER && cur_var->type.str().compare("parameter") == 0) ||
 				(type == VariableBase::VAR_REGISTER && cur_var->type.str().compare("register") == 0) ||
 				(type == VariableBase::VAR_STATISTIC && cur_var->type.str().compare("statistic") == 0);

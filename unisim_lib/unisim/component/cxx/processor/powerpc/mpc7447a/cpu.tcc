@@ -102,6 +102,8 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, l2_power_mode_import("l2-power-mode-import",  this)
 	, dtlb_power_mode_import("dtlb-power-mode-import",  this)
 	, itlb_power_mode_import("itlb-power-mode-import",  this)
+    , linux_printk_buf_addr(0)
+    , linux_printk_buf_size(0)
 	, logger(*this)
 	, requires_memory_access_reporting(true)
 	, requires_finished_instruction_reporting(true)
@@ -129,6 +131,10 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, verbose_set_hid1(false)
 	, verbose_set_hid2(false)
 	, verbose_set_l2cr(false)
+	, enable_linux_printk_snooping(false)
+	, enable_linux_syscall_snooping(false)
+	, halt_on_addr(0)
+	, halt_on()
 	, trap_on_instruction_counter(0xffffffffffffffffULL)
 	, max_inst(0xffffffffffffffffULL)
 	, registers_registry()
@@ -186,8 +192,11 @@ CPU<CONFIG>::CPU(const char *name, Object *parent)
 	, param_verbose_set_hid1("verbose-set-hid1",  this,  verbose_set_hid1, "enable/disable verbosity when setting HID1")
 	, param_verbose_set_hid2("verbose-set-hid2",  this,  verbose_set_hid2, "enable/disable verbosity when setting HID2")
 	, param_verbose_set_l2cr("verbose-set-l2cr",  this,  verbose_set_l2cr, "enable/disable verbosity when setting L2CR")
+	, param_enable_linux_printk_snooping("enable-linux-printk-snooping", this, enable_linux_printk_snooping, "enable/disable linux printk buffer snooping")
+	, param_enable_linux_syscall_snooping("enable-linux-syscall-snooping", this, enable_linux_syscall_snooping, "enable/disable linux syscall snooping")
 	, param_trap_on_instruction_counter("trap-on-instruction-counter",  this,  trap_on_instruction_counter, "number of simulated instruction before traping")
 //	, param_bus_cycle_time("bus-cycle-time",  this,  bus_cycle_time, "bus cycle time in picoseconds")
+	, param_halt_on("halt-on", this, halt_on, "Symbol or address where to stop simulation")
 	, stat_instruction_counter("instruction-counter",  this,  instruction_counter, "number of simulated instructions")
 #if 0
 	, stat_cpu_cycle("cpu-cycle",  this,  cpu_cycle, "number of simulated CPU cycles")
@@ -415,15 +424,6 @@ CPU<CONFIG>::~CPU()
 	{
 		delete registers_registry2[i];
 	}
-/*	cerr << "num_il1_accesses = " << num_il1_accesses << endl;
-	cerr << "num_il1_misses = " << num_il1_misses << endl;
-	cerr << "il1 miss rate = " << (double) num_il1_misses / num_il1_accesses << endl;
-	cerr << "num_dl1_accesses = " << num_dl1_accesses << endl;
-	cerr << "num_dl1_misses = " << num_dl1_misses << endl;
-	cerr << "dl1 miss rate = " << (double) num_dl1_misses / num_dl1_accesses << endl;
-	cerr << "num_l2_accesses = " << num_l2_accesses << endl;
-	cerr << "num_l2_misses = " << num_l2_misses << endl;
-	cerr << "l2 miss rate = " << (double) num_l2_misses / num_l2_accesses << endl;*/
 }
 
 template <class CONFIG>
@@ -539,7 +539,7 @@ bool CPU<CONFIG>::EndSetup()
 				{
 					logger << DebugWarning;
 					logger << "A cycle time of " << cpu_cycle_time << " ps is too low for the simulated hardware !" << endl;
-					logger << "cpu cycle time should be >= " << min_cycle_time << " ps." << endl;
+					logger << "cpu cycle time should be >= " << min_cycle_time << " ps.";
 					logger << EndDebugWarning;
 				}
 			}
@@ -555,7 +555,7 @@ bool CPU<CONFIG>::EndSetup()
 		{
 			// We can't provide a valid configuration automatically
 			logger << DebugError;
-			logger << "user must provide a cpu cycle time > 0" << endl;
+			logger << "user must provide a cpu cycle time > 0";
 			logger << EndDebugError;
 			return false;
 		}
@@ -563,12 +563,12 @@ bool CPU<CONFIG>::EndSetup()
 
 	if(unlikely(IsVerboseSetup()))
 	{
-		logger << DebugInfo << "cpu cycle time of " << cpu_cycle_time << " ps" << endl << EndDebugInfo;
+		logger << DebugInfo << "cpu cycle time of " << cpu_cycle_time << " ps" << EndDebugInfo;
 	}
 
 	if(voltage <= 0)
 	{
-		logger << DebugError << "user must provide a voltage > 0" << endl << EndDebugError;
+		logger << DebugError << "user must provide a voltage > 0" << EndDebugError;
 		return false;
 	}
 
@@ -576,20 +576,9 @@ bool CPU<CONFIG>::EndSetup()
 	{
 		logger << DebugInfo;
 		
-		logger << "voltage of " << ((double) voltage / 1e3) << " V" << endl;
+		logger << "voltage of " << ((double) voltage / 1e3) << " V";
 
-/*		if(bus_cycle_time > 0)
-			logger << "bus cycle time of " << bus_cycle_time << " ps" << endl;*/
-		
 		logger << EndDebugInfo;
-		
-/*		if(bus_cycle_time <= 0)
-		{
-			logger << DebugError;
-			logger << "bus cycle time must be > 0" << endl;
-			logger << EndDebugError;
-			return false;
-		}*/
 	}
 
 	if(il1_power_mode_import)
@@ -627,6 +616,67 @@ bool CPU<CONFIG>::EndSetup()
 	num_l2_accesses = 0;
 	num_l2_misses = 0;
 	
+	if(unlikely(CONFIG::DEBUG_ENABLE && CONFIG::DEBUG_PRINTK_ENABLE && enable_linux_printk_snooping))
+	{
+		if(IsVerboseSetup())
+		{
+			logger << DebugInfo << "Linux printk snooping enabled" << EndDebugInfo;
+		}
+		if(!linux_printk_buf_addr)
+		{
+			if(symbol_table_lookup_import)
+			{
+				const Symbol<typename CONFIG::address_t> *symbol;
+
+				symbol = symbol_table_lookup_import->FindSymbolByName("printk_buf", Symbol<typename CONFIG::address_t>::SYM_OBJECT);
+				
+				if(symbol)
+				{
+					linux_printk_buf_addr = symbol->GetAddress();
+					linux_printk_buf_size = symbol->GetSize();
+					if(IsVerboseSetup())
+					{
+						logger << DebugInfo << "Found Linux printk buffer at 0x" << std::hex << linux_printk_buf_addr << std::dec << "(" << linux_printk_buf_size << " bytes)" << EndDebugInfo;
+					}
+				}
+			}
+		}
+		else
+		{
+			logger << DebugWarning << "Linux printk buffer not found. Linux printk snooping will not work properly." << EndDebugWarning;
+		}
+	}
+
+	if(!halt_on.empty())
+	{
+		const Symbol<typename CONFIG::address_t> *halt_on_symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByName(halt_on.c_str(), Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
+		
+		if(halt_on_symbol)
+		{
+			halt_on_addr = halt_on_symbol->GetAddress();
+			if(IsVerboseSetup())
+			{
+				logger << DebugInfo << "Simulation will halt at '" << halt_on_symbol->GetName() << "' (0x" << std::hex << halt_on_addr << std::dec << ")" << EndDebugInfo;
+			}
+		}
+		else
+		{
+			std::stringstream sstr(halt_on);
+			sstr >> std::hex;
+			if(sstr >> halt_on_addr)
+			{
+				if(IsVerboseSetup())
+				{
+					logger << DebugInfo <<  "Simulation will halt at 0x" << std::hex << halt_on_addr << std::dec << EndDebugInfo;
+				}
+			}
+			else
+			{
+				logger << DebugWarning << "Invalid address (" << halt_on << ") in Parameter " << param_halt_on.GetName() << EndDebugWarning;
+				halt_on_addr = 0;
+			}
+		}
+	}
 	return true;
 }
 
@@ -1418,11 +1468,11 @@ void CPU<CONFIG>::StepOneInstruction()
 	{
 		if(unlikely(memory_access_reporting_import != 0))
 		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetNIA());
+			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
 		}
 	}
 
-	if(unlikely(instruction_counter >= max_inst)) Stop(0);
+	if(unlikely((instruction_counter >= max_inst) || (halt_on_addr && (GetCIA() == halt_on_addr)))) Stop(0);
 }
 
 template <class CONFIG>

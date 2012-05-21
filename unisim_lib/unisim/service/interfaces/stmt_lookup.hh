@@ -46,7 +46,16 @@ template <class MEMORY_ADDR>
 class StatementLookup : public unisim::kernel::service::ServiceInterface
 {
 public:
-	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr) const = 0;
+	typedef enum
+	{
+		OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT,
+		OPT_FIND_EXACT_STMT,
+		OPT_FIND_NEXT_STMT
+	}
+	FindStatementOption;
+	
+	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const = 0;
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, FindStatementOption opt = OPT_FIND_EXACT_STMT) const = 0;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const = 0;
 };
 

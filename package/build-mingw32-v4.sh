@@ -32,9 +32,9 @@ function Package {
 	echo "AppName=${PACKAGE_NAME}" >> ${ISS_FILENAME}
 	echo "AppVerName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "AppPublisher=CEA" >> ${ISS_FILENAME}
-	echo "AppPublisherURL=http://www.unisim-vp.com" >> ${ISS_FILENAME}
-	echo "AppSupportURL=http://www.unisim-vp.com/support.html" >> ${ISS_FILENAME}
-	echo "AppUpdatesURL=http://www.unisim-vp.com/mingw.html" >> ${ISS_FILENAME}
+	echo "AppPublisherURL=http://www.unisim-vp.org" >> ${ISS_FILENAME}
+	echo "AppSupportURL=http://www.unisim-vp.org" >> ${ISS_FILENAME}
+	echo "AppUpdatesURL=http://www.unisim-vp.org" >> ${ISS_FILENAME}
 	echo "DefaultDirName={sd}\\${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "DefaultGroupName=${PACKAGE_NAME}-${VERSION}" >> ${ISS_FILENAME}
 	echo "AllowNoIcons=yes" >> ${ISS_FILENAME}
@@ -517,19 +517,48 @@ do
 done
 
 # Install cross-compiled packages
-InstallBinArchive expat-2.0.1-mingw32.tar.bz2 '.' mingw
-InstallBinArchive zlib-1.2.5-mingw32.tar.bz2 '.' mingw
-InstallBinArchive libxml2-2.7.8-mingw32.tar.bz2 '.' mingw
+SDL_VERSION=1.2.14
+LIBXML2_VERSION=2.7.8
+EXPAT_VERSION=2.0.1
+CROSS_GDB_VERSION=7.2a
+ZLIB_VERSION=1.2.5
+BOOST_VERSION=1_47_0
+TCLTK_VERSION=8.5.11
+GPERF_VERSION=3.0.4
+InstallBinArchive expat-${EXPAT_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive zlib-${ZLIB_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive libxml2-${LIBXML2_VERSION}-mingw32.tar.bz2 '.' mingw
 sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/xml2-config
-InstallBinArchive boost_1_47_0-mingw32.tar.bz2 '.' mingw
-InstallBinArchive SDL-1.2.14-mingw32.tar.bz2 '.' mingw
-sed -i "s#^\(prefix=\).*\$#\1/mingw#" ${INSTALL_DIR}/mingw/bin/sdl-config
-InstallBinArchive cross-gdb-powerpc-440fp-linux-gnu-7.2-mingw32.tar.bz2 '.' mingw
-InstallBinArchive cross-gdb-powerpc-7450-linux-gnu-7.2-mingw32.tar.bz2 '.' mingw
-InstallBinArchive cross-gdb-armel-linux-gnu-7.2-mingw32.tar.bz2 '.' mingw
-InstallBinArchive cross-gdb-m6811-elf-7.2-mingw32.tar.bz2 '.' mingw
-InstallBinArchive tcltk-8.5.11-mingw32.tar.bz2 '.' mingw
-InstallBinArchive gperf-3.0.4-mingw32.tar.bz2 '.' mingw
+sed -i "s# -L/.* -lz# -L/mingw/lib -lz#g" ${INSTALL_DIR}/mingw/bin/xml2-config
+sed -i "s# -L/.* -lz# -L/mingw/lib -lz#g" ${INSTALL_DIR}/mingw/lib/libxml2.la
+printf "#!/lib/sh\n" | cat - ${INSTALL_DIR}/mingw/lib/xml2Conf.sh > ${INSTALL_DIR}/mingw/lib/tmp.out && mv -f ${INSTALL_DIR}/mingw/lib/tmp.out ${INSTALL_DIR}/mingw/lib/xml2Conf.sh
+sed -i "s#^\(XML2_LIBDIR=\).*\$#\1\"-L/mingw/lib\"#" ${INSTALL_DIR}/mingw/lib/xml2Conf.sh
+sed -i "s#^\(XML2_LIBS=\).*\$#\1\"-lxml2 -L/mingw/lib -lz\"#" ${INSTALL_DIR}/mingw/lib/xml2Conf.sh
+sed -i "s#^\(XML2_INCLUDEDIR=\).*\$#\1\"-I/mingw/include/libxml2\"#" ${INSTALL_DIR}/mingw/lib/xml2Conf.sh
+chmod +x ${INSTALL_DIR}/mingw/lib/xml2Conf.sh
+sed -i "s#^\(Libs\.private:\).*\$#\1 -L/mingw/lib -lz -lws2_32#" ${INSTALL_DIR}/mingw/lib/pkgconfig/libxml-2.0.pc
+InstallBinArchive boost_${BOOST_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive SDL-${SDL_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-powerpc-440fp-linux-gnu-${CROSS_GDB_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-powerpc-7450-linux-gnu-${CROSS_GDB_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-armel-linux-gnu-${CROSS_GDB_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive cross-gdb-m6811-elf-${CROSS_GDB_VERSION}-mingw32.tar.bz2 '.' mingw
+InstallBinArchive tcltk-${TCLTK_VERSION}-mingw32.tar.bz2 '.'
+printf "#!/bin/sh\n" | cat - ${INSTALL_DIR}/lib/tclConfig.sh > ${INSTALL_DIR}/lib/tmp.out && mv ${INSTALL_DIR}/lib/tmp.out ${INSTALL_DIR}/lib/tclConfig.sh
+sed -i "s#^\(TCL_BUILD_LIB_SPEC=\).*\$#\1'-L/lib -ltcl85'#" ${INSTALL_DIR}/lib/tclConfig.sh
+sed -i "s#^\(TCL_BUILD_STUB_LIB_SPEC=\).*\$#\1'-L/lib -ltclstub85'#" ${INSTALL_DIR}/lib/tclConfig.sh
+sed -i "s#^\(TCL_BUILD_STUB_LIB_PATH=\).*\$#\1'/lib/libtclstub85.a'#" ${INSTALL_DIR}/lib/tclConfig.sh
+sed -i "s#^\(TCL_SRC_DIR=\).*\$#\1'/include'#" ${INSTALL_DIR}/lib/tclConfig.sh
+printf "#!/bin/sh\n" | cat - ${INSTALL_DIR}/lib/tkConfig.sh > ${INSTALL_DIR}/lib/tmp.out && mv ${INSTALL_DIR}/lib/tmp.out ${INSTALL_DIR}/lib/tkConfig.sh
+sed -i "s#^\(TK_BUILD_LIB_SPEC=\).*\$#\1'-L/lib -ltk85'#" ${INSTALL_DIR}/lib/tkConfig.sh
+sed -i "s#^\(TK_BUILD_STUB_LIB_SPEC=\).*\$#\1'-L/lib -ltkstub85'#" ${INSTALL_DIR}/lib/tkConfig.sh
+sed -i "s#^\(TK_BUILD_STUB_LIB_PATH=\).*\$#\1'/lib/libtkstub85.a'#" ${INSTALL_DIR}/lib/tkConfig.sh
+sed -i "s#^\(TK_SRC_DIR=\).*\$#\1'/include'#" ${INSTALL_DIR}/lib/tkConfig.sh
+chmod +x ${INSTALL_DIR}/lib/tclConfig.sh
+chmod +x ${INSTALL_DIR}/lib/tkConfig.sh
+cp -f ${INSTALL_DIR}/lib/tclConfig.sh ${INSTALL_DIR}/bin
+cp -f ${INSTALL_DIR}/lib/tkConfig.sh ${INSTALL_DIR}/bin
+InstallBinArchive gperf-${GPERF_VERSION}-mingw32.tar.bz2 '.' mingw
 
 
 # cp -rf ${INSTALL_DIR}/usr/local ${INSTALL_DIR}/.

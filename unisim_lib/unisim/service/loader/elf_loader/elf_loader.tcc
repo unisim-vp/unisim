@@ -56,12 +56,14 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::ElfLoaderImpl(const char *name, Object *parent)
 	: Object(name, parent, "this service implements an ELF Loader")
 	, Client<Memory<MEMORY_ADDR> >(name, parent)
+	, Client<Registers>(name, parent)
 	, Service<Loader>(name, parent)
 	, Service<Blob<MEMORY_ADDR> >(name, parent)
 	, Service<SymbolTableLookup<MEMORY_ADDR> >(name, parent)
 	, Service<StatementLookup<MEMORY_ADDR> >(name, parent)
 	, Service<BackTrace<MEMORY_ADDR> >(name, parent)
 	, memory_import("memory-import", this)
+	, registers_import("registers-import", this)
 	, symbol_table_lookup_export("symbol-table-lookup-export", this)
 	, loader_export("loader-export", this)
 	, blob_export("blob-export", this)
@@ -77,7 +79,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, logger(*this)
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
-	, parse_dwarf(true)
+	, parse_dwarf(false)
 	, param_filename("filename", this, filename,
 			"the ELF filename to load into memory")
 	, param_base_addr("base-addr", this, base_addr, 
@@ -96,6 +98,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", 
 			this, dwarf_to_html_output_directory, 
 			"DWARF v2/v3 to HTML output directory")
+	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
 	, param_parse_dwarf("parse-dwarf", this, parse_dwarf,
 			"Enable/Disable parsing of DWARF debugging informations")
 {
@@ -160,9 +163,9 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		elf_loader = 0;
 	}
 
-	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger);
+	elf_loader = new unisim::util::loader::elf_loader::ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>(logger, registers_import, memory_import);
 
-	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename.c_str());
+	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, Object::GetSimulator()->SearchSharedDataFile(filename.c_str()).c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_BASE_ADDR, force_base_addr);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_FORCE_USE_VIRTUAL_ADDRESS, force_use_virtual_address);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_BASE_ADDR, base_addr);
@@ -170,6 +173,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory.c_str());
+	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 	
 	return elf_loader->Load();
 }
@@ -243,9 +247,21 @@ const typename unisim::util::debug::Symbol<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_AD
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr) const
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const
 {
-	return elf_loader ? elf_loader->FindStatement(addr) : 0;
+	if(!elf_loader) return;
+	const typename std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& elf_loader_stmts = elf_loader->GetStatements();
+	typename std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>::const_iterator iter;
+	for(iter = elf_loader_stmts.begin(); iter != elf_loader_stmts.end(); iter++)
+	{
+		stmts.insert(std::pair<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>((*iter).first, (*iter).second));
+	}
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+{
+	return elf_loader ? elf_loader->FindStatement(addr, opt) : 0;
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -258,6 +274,12 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
 {
 	return elf_loader ? elf_loader->GetBackTrace(pc) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
+{
+	return elf_loader ? elf_loader->GetReturnAddress(pc, ret_addr) : false;
 }
 
 } // end of namespace elf_loader

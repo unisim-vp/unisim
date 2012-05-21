@@ -1,6 +1,6 @@
 ## UNISIM_CHECK_TERMCAP
 ## Checks if the termcap library is installed
-## Does not take parameters
+## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_TERMCAP], [
     # Check if termcap path has been overloaded
@@ -16,12 +16,12 @@ AC_DEFUN([UNISIM_CHECK_TERMCAP], [
     AC_CHECK_HEADER(termcap.h, broken_termcap=no, broken_termcap=yes)
 
     # Check for functions in termcap
-    AC_CHECK_LIB(termcap, tgoto,
-    AC_CHECK_LIB(termcap, tputs,
-    AC_CHECK_LIB(termcap, tgetstr,
-    AC_CHECK_LIB(termcap, tgetent,
-    AC_CHECK_LIB(termcap, tgetflag,
-    AC_CHECK_LIB(termcap, tgetnum, broken_termcap=no,
+    UNISIM_CHECK_LIB(termcap, tgoto, $1,
+    UNISIM_CHECK_LIB(termcap, tputs, $1,
+    UNISIM_CHECK_LIB(termcap, tgetstr, $1,
+    UNISIM_CHECK_LIB(termcap, tgetent, $1,
+    UNISIM_CHECK_LIB(termcap, tgetflag, $1,
+    UNISIM_CHECK_LIB(termcap, tgetnum, $1, broken_termcap=no,
     broken_termcap=yes),
     broken_termcap=yes),
     broken_termcap=yes),

@@ -53,7 +53,9 @@ Blob<MEMORY_ADDR>::Blob()
 	, entry_point(0)
 	, stack_base(0)
 	, endian(E_BIG_ENDIAN)
+	, file_endian(E_BIG_ENDIAN)
 	, address_size(0)
+	, memory_atom_size(1)
 	, blobs()
 	, sections()
 	, segments()
@@ -71,7 +73,9 @@ Blob<MEMORY_ADDR>::Blob(const Blob<MEMORY_ADDR>& _blob)
 	, entry_point(_blob.entry_point)
 	, stack_base(_blob.stack_base)
 	, endian(_blob.endian)
+	, file_endian(_blob.file_endian)
 	, address_size(_blob.address_size)
+	, memory_atom_size(_blob.memory_atom_size)
 	, blobs()
 	, sections()
 	, segments()
@@ -140,6 +144,13 @@ void Blob<MEMORY_ADDR>::SetFilename(const char *_filename)
 }
 
 template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::SetFileFormat(FileFormat _ffmt)
+{
+	ffmt = _ffmt;
+	capability = (Capability)(capability | CAP_FILE_FORMAT);
+}
+
+template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetEntryPoint(MEMORY_ADDR _entry_point)
 {
 	entry_point = _entry_point;
@@ -168,10 +179,24 @@ void Blob<MEMORY_ADDR>::SetEndian(endian_type _endian)
 }
 
 template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::SetFileEndian(endian_type _file_endian)
+{
+	file_endian = _file_endian;
+	capability = (Capability)(capability | CAP_FILE_ENDIAN);
+}
+
+template <class MEMORY_ADDR>
 void Blob<MEMORY_ADDR>::SetAddressSize(unsigned int _address_size)
 {
 	address_size = _address_size;
 	capability = (Capability)(capability | CAP_ADDRESS_SIZE);
+}
+
+template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::SetMemoryAtomSize(unsigned int _memory_atom_size)
+{
+	memory_atom_size = _memory_atom_size;
+	capability = (Capability)(capability | CAP_MEMORY_ATOM_SIZE);
 }
 
 template <class MEMORY_ADDR>
@@ -203,6 +228,13 @@ const char *Blob<MEMORY_ADDR>::GetFilename() const
 		if(blob->GetCapability() & CAP_FILENAME) return blob->GetFilename();
 	}
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+typename Blob<MEMORY_ADDR>::FileFormat Blob<MEMORY_ADDR>::GetFileFormat() const
+{
+	if(capability & CAP_FILE_FORMAT) return ffmt;
+	return FFMT_UNKNOWN;
 }
 
 template <class MEMORY_ADDR>
@@ -266,6 +298,13 @@ endian_type Blob<MEMORY_ADDR>::GetEndian() const
 }
 
 template <class MEMORY_ADDR>
+endian_type Blob<MEMORY_ADDR>::GetFileEndian() const
+{
+	if(capability & CAP_FILE_ENDIAN) return file_endian;
+	return unisim::util::endian::E_BIG_ENDIAN;
+}
+
+template <class MEMORY_ADDR>
 unsigned int Blob<MEMORY_ADDR>::GetAddressSize() const
 {
 	if(capability & CAP_ADDRESS_SIZE) return address_size;
@@ -278,6 +317,13 @@ unsigned int Blob<MEMORY_ADDR>::GetAddressSize() const
 		if(blob->GetCapability() & CAP_ADDRESS_SIZE) return blob->GetAddressSize();
 	}
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+unsigned int Blob<MEMORY_ADDR>::GetMemoryAtomSize() const
+{
+	if(capability & CAP_MEMORY_ATOM_SIZE) return memory_atom_size;
+	return 1;
 }
 
 template <class MEMORY_ADDR>
@@ -381,7 +427,7 @@ void Blob<MEMORY_ADDR>::AddSegment(const Segment<MEMORY_ADDR> *segment)
 }
 
 template <class MEMORY_ADDR>
-const Section<MEMORY_ADDR> *Blob<MEMORY_ADDR>::FindSection(const char *name) const
+const Section<MEMORY_ADDR> *Blob<MEMORY_ADDR>::FindSection(const char *name, bool recursive) const
 {
 	typename std::vector<const Section<MEMORY_ADDR> *>::const_iterator section_iter;
 	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
@@ -393,12 +439,30 @@ const Section<MEMORY_ADDR> *Blob<MEMORY_ADDR>::FindSection(const char *name) con
 		}
 	}
 
-	typename std::vector<const Blob<MEMORY_ADDR> *>::const_iterator blob_iter;
-	for(blob_iter = blobs.begin(); blob_iter != blobs.end(); blob_iter++)
+	if(recursive)
 	{
-		const Blob<MEMORY_ADDR> *blob = *blob_iter;
-		const Section<MEMORY_ADDR> *section = blob->FindSection(name);
-		if(section) return section;
+		typename std::vector<const Blob<MEMORY_ADDR> *>::const_iterator blob_iter;
+		for(blob_iter = blobs.begin(); blob_iter != blobs.end(); blob_iter++)
+		{
+			const Blob<MEMORY_ADDR> *blob = *blob_iter;
+			const Section<MEMORY_ADDR> *section = blob->FindSection(name);
+			if(section) return section;
+		}
+	}
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+const Section<MEMORY_ADDR> *Blob<MEMORY_ADDR>::FindSection(typename Section<MEMORY_ADDR>::Type section_type) const
+{
+	typename std::vector<const Section<MEMORY_ADDR> *>::const_iterator section_iter;
+	for(section_iter = sections.begin(); section_iter != sections.end(); section_iter++)
+	{
+		const Section<MEMORY_ADDR> *section = *section_iter;
+		if(section->GetType() == section_type)
+		{
+			return section;
+		}
 	}
 	return 0;
 }

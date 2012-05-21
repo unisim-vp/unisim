@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
-#define __UNISIM_COMPONENT_TLM2_TIMER_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
+#ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
+#define __UNISIM_COMPONENT_TLM2_INTERCONNECT_XILINX_XPS_UART_LITE_XPS_UART_LITE_TCC__
 
 #include <systemc.h>
 #include <unisim/component/cxx/com/xilinx/xps_uart_lite/xps_uart_lite.hh>
@@ -458,7 +458,7 @@ void XPS_UARTLite<CONFIG>::ProcessCPUEvent(Event *event)
 	{
 		sc_time t(cycle_time);
 		tlm::tlm_phase phase = tlm::BEGIN_RESP;
-		tlm::tlm_sync_enum sync = slave_sock->nb_transport_bw(*payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ slave_sock->nb_transport_bw(*payload, phase, t);
 	}
 	
 }
@@ -480,7 +480,7 @@ void XPS_UARTLite<CONFIG>::GenerateOutput()
 		
 		sc_time t(SC_ZERO_TIME);
 		tlm::tlm_phase phase = tlm::BEGIN_REQ;
-		tlm::tlm_sync_enum sync = interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
+		/* tlm::tlm_sync_enum sync = */ interrupt_master_sock->nb_transport_fw(*interrupt_payload, phase, t);
 		
 		interrupt_payload->release();
 		

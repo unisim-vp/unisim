@@ -6,11 +6,11 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	# Mimics the behavior of SystemC configure to guess where libsystemc.a is installed (e.g. lib-linux)
 	CXX_COMP=`basename $CXX`
 	case "$host" in
-		*powerpc*macosx* | *powerpc*darwin*)
-			SYSTEMC_TARGET_ARCH="macosx"
+		x386-apple-* | i386-apple-*)
+			SYSTEMC_TARGET_ARCH="macosx386"
 			;;
-		*86*macosx* | *86*darwin*)
-			SYSTEMC_TARGET_ARCH="macosx-x86"
+		powerpc-apple-macosx*)
+			SYSTEMC_TARGET_ARCH="macosx"
 			;;
 		sparc-sun-solaris*)
 			case "$CXX_COMP" in
@@ -28,11 +28,20 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		*linux*)
 			SYSTEMC_TARGET_ARCH="linux"
 			;;
-		*powerpc*linux)
-			SYSTEMC_TARGET_ARCH="linux-powerpc"
+		amd64*freebsd* | x86_64*freebsd*)
+			SYSTEMC_TARGET_ARCH="freebsd64"
+			;;
+		*freebsd*)
+			SYSTEMC_TARGET_ARCH="freebsd"
 			;;
 		*cygwin*)
 			SYSTEMC_TARGET_ARCH="cygwin"
+			;;
+		amd64*mingw* | x86_64*mingw*)
+			SYSTEMC_TARGET_ARCH="mingw64"
+			;;
+		*mingw*)
+			SYSTEMC_TARGET_ARCH="mingw"
 			;;
 		*hpux11*)
 			case "$CXX_COMP" in
@@ -44,9 +53,6 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 				;;
 			esac
 			;;
-		*mingw32*)
-			SYSTEMC_TARGET_ARCH="mingw32"
-			;;
 	esac
 
     # Check if SystemC path has been overloaded
@@ -57,7 +63,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
 	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
     fi
-	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
+	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES -DSC_DISABLE_VIRTUAL_BIND"
 
     # Check for systemc.h
     AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default search path.]))

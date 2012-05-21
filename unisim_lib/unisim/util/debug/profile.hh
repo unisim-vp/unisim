@@ -81,6 +81,7 @@ public:
 	Profile();
 	~Profile();
 	
+	void Clear();
 	void Accumulate(ADDRESS addr, uint64_t weight);
 	friend std::ostream& operator << <ADDRESS, PAGE_SIZE> (std::ostream& os, const Profile<ADDRESS, PAGE_SIZE>& prof);
 	operator std::map<ADDRESS, uint64_t>() const;

@@ -58,6 +58,12 @@ const char *Variable<PCISpace>::GetDataTypeName() const
 	return "pci space";
 }
 
+template <>
+unsigned int Variable<PCISpace>::GetBitSize() const
+{
+	return 2;
+}
+
 template <> Variable<PCISpace>::operator bool () const {
 	//this should't be implemented 
 	return false; 
@@ -118,15 +124,22 @@ template <> VariableBase& Variable<PCISpace>::operator = (bool value) { return *
 template <> VariableBase& Variable<PCISpace>::operator = (long long value) { 
 	if(IsMutable())
 	{
+		PCISpace tmp;
 		switch(value) {
 		case 1:
-			*storage = SP_MEM;
+			tmp = SP_MEM;
+			SetModified(*storage != tmp);
+			*storage = tmp;
 			break;
 		case 2:
-			*storage = SP_IO; 
+			tmp = SP_IO;
+			SetModified(*storage != tmp);
+			*storage = tmp;
 			break;
 		case 3:
-			*storage = SP_CONFIG;
+			tmp = SP_CONFIG;
+			SetModified(*storage != tmp);
+			*storage = tmp;
 			break;
 		} 
 	}
@@ -136,15 +149,22 @@ template <> VariableBase& Variable<PCISpace>::operator = (long long value) {
 template <> VariableBase& Variable<PCISpace>::operator = (unsigned long long value) {   	
 	if(IsMutable())
 	{
+		PCISpace tmp;
 		switch(value) {
 		case 1:
-			*storage = SP_MEM;
+			tmp = SP_MEM;
+			SetModified(*storage != tmp);
+			*storage = tmp;
 			break;
 		case 2:
-			*storage = SP_IO; 
+			tmp = SP_IO;
+			SetModified(*storage != tmp);
+			*storage = tmp;
 			break;
 		case 3:
-			*storage = SP_CONFIG;
+			tmp = SP_CONFIG;
+			SetModified(*storage != tmp);
+			*storage = tmp;
 			break;
 		} 
 	}
@@ -154,12 +174,25 @@ template <> VariableBase& Variable<PCISpace>::operator = (unsigned long long val
 template <> VariableBase& Variable<PCISpace>::operator = (double value) {   	
 	if(IsMutable())
 	{
-		if (value==1) 
-			*storage = SP_MEM;
-		if (value==2) 
-			*storage = SP_IO; 
-		if (value==3) 
-			*storage = SP_CONFIG;
+		PCISpace tmp;
+		if(value == 1)
+		{
+			tmp = SP_MEM;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if(value == 2)
+		{
+			tmp = SP_IO;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if(value == 3) 
+		{
+			tmp = SP_CONFIG;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
 	}
  	return *this;
 }
@@ -167,12 +200,25 @@ template <> VariableBase& Variable<PCISpace>::operator = (double value) {
 template <> VariableBase& Variable<PCISpace>::operator = (const char *value) { 
 	if(IsMutable())
 	{
+		PCISpace tmp;
 		if (string(value) == string("mem"))
-			*storage = SP_MEM;
-		if (string(value) == string("i/o"))
-			*storage = SP_IO; 
-		if (string(value) == string("cfg"))
-			*storage = SP_CONFIG;
+		{
+			tmp = SP_MEM;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if (string(value) == string("i/o"))
+		{
+			tmp = SP_IO;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
+		else if (string(value) == string("cfg"))
+		{
+			tmp = SP_CONFIG;
+			SetModified(*storage != tmp);
+			*storage = tmp;
+		}
 	}
  	return *this;
 }

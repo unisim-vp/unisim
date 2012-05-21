@@ -70,6 +70,39 @@ public:
 		output_port = 0;
 		translation = 0;
 	}
+	
+	Mapping(const Mapping& mapping)
+		: used(mapping.used)
+		, range_start(mapping.range_start)
+		, range_end(mapping.range_end)
+		, output_port(mapping.output_port)
+		, translation(mapping.translation) {
+	}
+	
+	int operator != (const Mapping& mapping) const {
+		return (used != mapping.used) ||
+		       (range_start != mapping.range_start) ||
+		       (range_end != mapping.range_end) ||
+		       (output_port != mapping.output_port) ||
+		       (translation != mapping.translation);
+	}
+
+	int operator == (const Mapping& mapping) const {
+		return (used == mapping.used) &&
+		       (range_start == mapping.range_start) &&
+		       (range_end == mapping.range_end) &&
+		       (output_port == mapping.output_port) &&
+		       (translation == mapping.translation);
+	}
+
+	Mapping& operator = (const Mapping& mapping) {
+		used = mapping.used;
+		range_start = mapping.range_start;
+		range_end = mapping.range_end;
+		output_port = mapping.output_port;
+		translation = mapping.translation;
+		return *this;
+	}
 };
 
 class RouterPayloadExtension :

@@ -60,11 +60,58 @@ template <> Variable<MODE>::operator unsigned long long () const { return (*stor
 template <> Variable<MODE>::operator double () const { return (double)(*storage == MODE_X8) ? 1 : 0; }
 template <> Variable<MODE>::operator string () const { return (*storage == MODE_X8)?(string("x8")):(string("x16"));}
 
-template <> VariableBase& Variable<MODE>::operator = (bool value) { if(IsMutable()) *storage = (value ? MODE_X8 : MODE_X16); return *this;}
-template <> VariableBase& Variable<MODE>::operator = (long long value) { if(IsMutable()) *storage = value? MODE_X8 : MODE_X16; return *this;}
-template <> VariableBase& Variable<MODE>::operator = (unsigned long long value) { if(IsMutable()) *storage = value? MODE_X8 : MODE_X16; return *this;}
-template <> VariableBase& Variable<MODE>::operator = (double value) { if(IsMutable()) *storage = value? MODE_X8 : MODE_X16; return *this;}
-template <> VariableBase& Variable<MODE>::operator = (const char *value) { if(IsMutable()) *storage = (string(value) == string("x8")) ? MODE_X8 : MODE_X16; return *this; }
+template <> VariableBase& Variable<MODE>::operator = (bool value)
+{
+	if(IsMutable())
+	{
+		MODE tmp = value ? MODE_X8 : MODE_X16;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+template <> VariableBase& Variable<MODE>::operator = (long long value)
+{
+	if(IsMutable())
+	{
+		MODE tmp = value ? MODE_X8 : MODE_X16;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<MODE>::operator = (unsigned long long value)
+{
+	if(IsMutable())
+	{
+		MODE tmp = value ? MODE_X8 : MODE_X16;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+
+template <> VariableBase& Variable<MODE>::operator = (double value)
+{
+	if(IsMutable())
+	{
+		MODE tmp = value ? MODE_X8 : MODE_X16;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
+template <> VariableBase& Variable<MODE>::operator = (const char *value)
+{
+	if(IsMutable())
+	{
+		MODE tmp = (string(value) == string("x8")) ? MODE_X8 : MODE_X16;
+		SetModified(*storage != tmp);
+		*storage = tmp;
+	}
+	return *this;
+}
 
 template class Variable<MODE>;
 

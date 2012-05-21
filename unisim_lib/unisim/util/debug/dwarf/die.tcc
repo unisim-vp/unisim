@@ -944,7 +944,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 }
 
 template <class MEMORY_ADDR>
-void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix)
+void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
 	unsigned int i;
 	unsigned int num_attributes = attributes.size();

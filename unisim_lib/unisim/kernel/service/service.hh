@@ -203,9 +203,11 @@ public:
 	bool IsMutable() const;
 	bool IsVisible() const;
 	bool IsSerializable() const;
+	bool IsModified() const;
 	virtual void SetMutable(bool is_mutable);
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
+	virtual void SetModified(bool is_modified);
 
 	void AddListener(VariableBaseListener *listener);
 	void RemoveListener(VariableBaseListener *listener);
@@ -223,6 +225,7 @@ private:
 	bool is_mutable;
 	bool is_visible;
 	bool is_serializable;
+	bool is_modified;
 	list<VariableBaseListener *> listener_list;
 };
 
@@ -352,7 +355,9 @@ private:
 	bool XmlfyRegisters(const char *filename);
 	bool XmlfyFormulas(const char *filename);
 
+public:
 	bool LoadXmlParameters(const char *filename);
+private:
 	bool LoadXmlStatistics(const char *filename);
 	bool LoadXmlRegisters(const char *filename);
 	bool LoadXmlFormulas(const char *filename);
@@ -543,7 +548,6 @@ class Register : public Variable<TYPE>
 public:
 
 	Register(const char *name, Object *owner, TYPE& storage, const char *description = NULL) : Variable<TYPE>(name, owner, storage, VariableBase::VAR_REGISTER, description) {}
-
 };
 
 template <class TYPE>
@@ -625,6 +629,7 @@ public:
 	virtual void SetMutable(bool is_mutable);
 	virtual void SetVisible(bool is_visible);
 	virtual void SetSerializable(bool is_serializable);
+	virtual void SetModified(bool is_modified);
 
 private:
 	vector<VariableBase *> variables;
@@ -751,6 +756,12 @@ void VariableArray<TYPE>::SetSerializable(bool _is_serializable)
 }
 
 template <class TYPE>
+void VariableArray<TYPE>::SetModified(bool _is_modified)
+{
+	// Arrays can't be modified, only there elements
+}
+
+template <class TYPE>
 class ParameterArray : public VariableArray<TYPE>
 {
 public:
@@ -789,6 +800,7 @@ public:
 	                         // By contract, it is called after Setup(ServiceExportBase&)
 
 	const char *GetName() const;
+	const char *GetObjectName() const;
 
 	void Add(ServiceImportBase& srv_import);
 	void Remove(ServiceImportBase& srv_import);
@@ -811,6 +823,7 @@ public:
 	virtual void Stop(int exit_status);
 	void SetDescription(const char *description);
 private:
+	string name;
 	string object_name;
 	string description;
 	Object *parent;

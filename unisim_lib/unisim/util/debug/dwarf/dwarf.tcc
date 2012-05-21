@@ -37,6 +37,8 @@
 
 #include <unisim/util/debug/dwarf/dwarf.hh>
 #include <unisim/util/debug/dwarf/ml.hh>
+#include <unisim/util/debug/dwarf/register_number_mapping.hh>
+#include <unisim/util/debug/dwarf/frame.hh>
 
 #include <stdlib.h>
 
@@ -63,22 +65,27 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugInfo;
 	
 template <class MEMORY_ADDR>
-DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, unisim::kernel::logger::Logger& _logger)
+DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
 	: endianness(_blob->GetEndian())
 	, address_size(_blob->GetAddressSize())
-	, debug_line_section(_blob->FindSection(".debug_line"))
-	, debug_info_section(_blob->FindSection(".debug_info"))
-	, debug_abbrev_section(_blob->FindSection(".debug_abbrev"))
-	, debug_aranges_section(_blob->FindSection(".debug_aranges"))
-	, debug_pubnames_section(_blob->FindSection(".debug_pubnames"))
-	, debug_pubtypes_section(_blob->FindSection(".debug_pubtypes"))
-	, debug_macinfo_section(_blob->FindSection(".debug_macinfo"))
-	, debug_frame_section(_blob->FindSection(".debug_frame"))
-	, debug_str_section(_blob->FindSection(".debug_str"))
-	, debug_loc_section(_blob->FindSection(".debug_loc"))
-	, debug_ranges_section(_blob->FindSection(".debug_ranges"))
+	, debug_line_section(_blob->FindSection(".debug_line", false))
+	, debug_info_section(_blob->FindSection(".debug_info", false))
+	, debug_abbrev_section(_blob->FindSection(".debug_abbrev", false))
+	, debug_aranges_section(_blob->FindSection(".debug_aranges", false))
+	, debug_pubnames_section(_blob->FindSection(".debug_pubnames", false))
+	, debug_pubtypes_section(_blob->FindSection(".debug_pubtypes", false))
+	, debug_macinfo_section(_blob->FindSection(".debug_macinfo", false))
+	, debug_frame_section(_blob->FindSection(".debug_frame", false))
+	, debug_str_section(_blob->FindSection(".debug_str", false))
+	, debug_loc_section(_blob->FindSection(".debug_loc", false))
+	, debug_ranges_section(_blob->FindSection(".debug_ranges", false))
 	, logger(_logger)
 	, blob(_blob)
+	, reg_num_mapping_filename()
+	, verbose(false)
+	, dw_reg_num_mapping(0)
+	, regs_if(_regs_if)
+	, mem_if(_mem_if)
 {
 	if(blob) blob->Catch();
 	if(debug_line_section) debug_line_section->Catch();
@@ -97,9 +104,14 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 template <class MEMORY_ADDR>
 DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 {
+	if(dw_reg_num_mapping)
+	{
+		delete dw_reg_num_mapping;
+	}
+
 	unsigned int i;
 
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
@@ -212,6 +224,58 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, const char *s)
+{
+	switch(opt)
+	{
+		case OPT_REG_NUM_MAPPING_FILENAME:
+			reg_num_mapping_filename = s;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::SetOption(Option opt, bool flag)
+{
+	switch(opt)
+	{
+		case OPT_VERBOSE:
+			verbose = flag;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, std::string& s)
+{
+	switch(opt)
+	{
+		case OPT_REG_NUM_MAPPING_FILENAME:
+			s = reg_num_mapping_filename;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::GetOption(Option opt, bool& flag)
+{
+	switch(opt)
+	{
+		case OPT_VERBOSE:
+			flag = verbose;
+			break;
+		default:
+			break;
+	}
+}
+
+template <class MEMORY_ADDR>
 const DWARF_Abbrev *DWARF_Handler<MEMORY_ADDR>::FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const
 {
 	std::map<uint64_t, DWARF_Abbrev *>::const_iterator abbrev_iter;
@@ -241,6 +305,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	
 	if(debug_abbrev_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_abbrev" << EndDebugInfo;
+		}
 		uint64_t debug_abbrev_offset = 0;
 		do
 		{
@@ -275,6 +343,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_info_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_info" << EndDebugInfo;
+		}
 		uint64_t debug_info_offset = 0;
 		do
 		{
@@ -302,6 +374,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_frame_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_frame" << EndDebugInfo;
+		}
 		uint64_t debug_frame_offset = 0;
 		int64_t sz;
 		do
@@ -341,6 +417,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_aranges_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_aranges" << EndDebugInfo;
+		}
 		uint64_t debug_aranges_offset = 0;
 		do
 		{
@@ -368,6 +448,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_pubnames_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_pubnames" << EndDebugInfo;
+		}
 		uint64_t debug_pubnames_offset = 0;
 		do
 		{
@@ -395,6 +479,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 
 	if(debug_pubtypes_section)
 	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .debug_pubtypes" << EndDebugInfo;
+		}
 		uint64_t debug_pubtypes_offset = 0;
 		do
 		{
@@ -417,6 +505,10 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 
 	// Fix all pointer cross-references
+	if(verbose)
+	{
+		logger << DebugInfo << "Fixing DWARF cross-references" << EndDebugInfo;
+	}
 	typename std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *>::const_iterator dw_cu_iter;
 	
 	unsigned int dw_cu_id = 0;
@@ -531,6 +623,22 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	BuildStatementMatrix();
 	//std::ofstream f("out.xml", std::ios::out);
 	//to_XML(f);
+
+	if(!reg_num_mapping_filename.empty())
+	{
+		dw_reg_num_mapping = new DWARF_RegisterNumberMapping(logger, regs_if);
+			
+		if(verbose)
+		{
+			logger << DebugInfo << "Loading DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugInfo;
+		}
+		if(!dw_reg_num_mapping->Load(reg_num_mapping_filename.c_str(), blob->GetArchitecture()))
+		{
+			logger << DebugWarning << "Can't load DWARF register number mapping from \"" << reg_num_mapping_filename << "\"" << EndDebugWarning;
+			delete dw_reg_num_mapping;
+			dw_reg_num_mapping = 0;
+		}
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -1541,7 +1649,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 		debug_frame_fdes << "<th>CIE</th>" << std::endl;
 		debug_frame_fdes << "<th>Initial location</th>" << std::endl;
 		debug_frame_fdes << "<th>Address range</th>" << std::endl;
-		debug_frame_fdes << "<th>Call frame program</th>" << std::endl;
+		debug_frame_fdes << "<th>Call frame program/Computed call frame information</th>" << std::endl;
 		debug_frame_fdes << "</tr>" << std::endl;
 		unsigned int count = 0;
 		while(count < fdes_per_file && dw_fde_iter != dw_fdes.end())
@@ -1796,7 +1904,7 @@ void DWARF_Handler<MEMORY_ADDR>::Register(DWARF_LocListEntry<MEMORY_ADDR> *dw_lo
 template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 {
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
@@ -1808,10 +1916,43 @@ void DWARF_Handler<MEMORY_ADDR>::DumpStatementMatrix()
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr) const
+const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& DWARF_Handler<MEMORY_ADDR>::GetStatements() const
 {
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter = stmt_matrix.find(addr);
+	return stmt_matrix;
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const
+{
+	if(stmt_matrix.empty()) return 0;
 	
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	switch(opt)
+	{
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEAREST_LOWER_OR_EQUAL_STMT:
+			stmt_iter = stmt_matrix.begin();
+			if(stmt_iter != stmt_matrix.end())
+			{
+				if((*stmt_iter).first > addr) break;
+			}
+			
+			stmt_iter = stmt_matrix.lower_bound(addr);
+			if((*stmt_iter).first > addr)
+			{
+				stmt_iter--;
+			}
+			break;
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_EXACT_STMT:
+			stmt_iter = stmt_matrix.find(addr);
+			break;
+		case unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::OPT_FIND_NEXT_STMT:
+			stmt_iter = stmt_matrix.lower_bound(addr);
+			if((*stmt_iter).first <= addr)
+			{
+				stmt_iter++;
+			}
+			break;
+	}
 	return (stmt_iter != stmt_matrix.end()) ? (*stmt_iter).second : 0;
 }
 
@@ -1837,11 +1978,11 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 	} while(*(p++));
 	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
 
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 	
 	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
 	{
-		Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+		const Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
 		
 		if(stmt)
 		{
@@ -2123,9 +2264,8 @@ void DWARF_Handler<MEMORY_ADDR>::BuildStatementMatrix()
 	}
 }
 
-/*
 template <class MEMORY_ADDR>
-bool DWARF_Handler<MEMORY_ADDR>::GetCFI(MEMORY_ADDR pc, DWARF_UnwindContext<MEMORY_ADDR>& unwind_context, std::vector<DWARF_RuleMatrixRow<MEMORY_ADDR> *>& backtrace) const
+const DWARF_FDE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindFDEByAddr(MEMORY_ADDR pc) const
 {
 	unsigned int i;
 	unsigned int num_fdes = dw_fdes.size();
@@ -2138,51 +2278,154 @@ bool DWARF_Handler<MEMORY_ADDR>::GetCFI(MEMORY_ADDR pc, DWARF_UnwindContext<MEMO
 		if((pc >= initial_location) && (pc < (initial_location + address_range)))
 		{
 			// found FDE
-			
-			DWARF_RuleMatrix<MEMORY_ADDR> rule_matrix;
-			
-			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
-			
-			const DWARF_CallFrameProgram<MEMORY_ADDR> *initial_instructions = dw_cie->GetInitialInstructions();
-			
-			MEMORY_ADDR location = initial_location;
-			
-			DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
-			if(!dw_call_frame_vm.Execute(*initial_instructions, location, rule_matrix))
-			{
-				return false;
-			}
-			
-			const DWARF_CallFrameProgram<MEMORY_ADDR> *instructions = dw_fde->GetInstructions();
-			if(!dw_call_frame_vm.Execute(*instructions, location, rule_matrix))
-			{
-				return false;
-			}
-			
-			DWARF_RuleMatrixRow<MEMORY_ADDR> *rule_matrix_row = rule_matrix->GetRow(pc);
-			
-			if(!rule_matrix_row) return false;
-			
-			unsigned int return_address_register = dw_cie->GetReturnAddressRegister();
-			
-			DWARF_RegisterRule<MEMORY_ADDR> *return_address_register_rule = rule_matrix_row->GetRegisterRule(return_address_register);
-			
-			if(!return_address_register_rule) return false;
-			
-			
+			return dw_fde;
 		}
 	}
-	return false;
+	
+	return 0;
 }
-*/
+
 template <class MEMORY_ADDR>
 std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR pc) const
 {
-	std::vector<MEMORY_ADDR> *backtrace = new std::vector<MEMORY_ADDR>();
+	if(!dw_reg_num_mapping) return 0;
+	std::vector<MEMORY_ADDR> *backtrace = 0;
+	unsigned int id = 1;
+	unsigned int sp_reg_num = dw_reg_num_mapping->GetSPRegNum();
+	DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+	frame->Load(dw_reg_num_mapping);
 	
-	//GetBackTrace(pc, *back_trace);
+	MEMORY_ADDR caller_pc = pc;
 
+	do
+	{
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(caller_pc);
+		
+		if(!dw_fde)
+		{
+//			logger << DebugInfo << "No more FDE found" << EndDebugInfo;
+			break;
+		}
+
+		DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+		const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(dw_fde);
+
+		if(cfi)
+		{
+//			logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+			
+			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(caller_pc);
+			
+//			logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+			
+//			logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
+			
+			DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+			
+			if(!next_frame->Unwind(cfi_row, frame))
+			{
+//				logger << DebugInfo << "No more unwinding context" << EndDebugInfo;
+				delete next_frame;
+				break;
+			}
+			
+			delete frame;
+			frame = next_frame;
+
+//			logger << DebugInfo << "Register set after unwinding:" << *frame << EndDebugInfo;
+
+			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
+			
+			unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
+			
+			MEMORY_ADDR ret_addr = frame->ReadRegister(dw_ret_addr_reg_num);
+			
+//			logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
+			
+			if(!backtrace)
+			{
+				backtrace = new std::vector<MEMORY_ADDR>();
+				backtrace->push_back(pc);
+			}
+
+			caller_pc = ret_addr - 1; // we take return address - 1 in the hope it is in the same context as the caller
+			backtrace->push_back(ret_addr); 
+
+			delete cfi;
+		}
+		else
+		{
+			logger << DebugWarning << "Something goes wrong while interpreting call frame information" << EndDebugWarning;
+			break;
+		}
+	}
+	while(++id < 256);
+	
+	if(frame) delete frame;
+	
 	return backtrace;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
+{
+	bool found = false;
+	
+	if(dw_reg_num_mapping)
+	{
+		unsigned int sp_reg_num = dw_reg_num_mapping->GetSPRegNum();
+		DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+		frame->Load(dw_reg_num_mapping);
+		
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(pc);
+			
+		if(dw_fde)
+		{
+			DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+			const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(dw_fde);
+
+			if(cfi)
+			{
+//				logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+				
+				typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(pc);
+				
+//				logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+			
+//				logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
+				
+				DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
+				
+				if(next_frame->Unwind(cfi_row, frame))
+				{
+//					logger << DebugInfo << "Register set after unwinding:" << *next_frame << EndDebugInfo;
+
+					const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
+					
+					unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
+					
+					ret_addr = next_frame->ReadRegister(dw_ret_addr_reg_num);
+					found = true;
+				
+//					logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
+				}
+				
+				delete next_frame;
+				delete cfi;
+			}
+			else
+			{
+				logger << DebugWarning << "Something goes wrong while interpreting call frame information" << EndDebugWarning;
+			}
+		}
+		else
+		{
+//			logger << DebugInfo << "No FDE found" << EndDebugInfo;
+		}
+		delete frame;
+	}
+	
+	return found;
 }
 
 } // end of namespace dwarf

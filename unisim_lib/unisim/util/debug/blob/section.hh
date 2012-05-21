@@ -53,6 +53,7 @@ public:
 		TY_PROGBITS, // there's data in data
 		TY_NOBITS,   // all zero's
 		TY_ELF_SYMTAB,   // ELF symtab symbol table (should have a link to a string table)
+		TY_COFF_SYMTAB,  // COFF symbol table (should have a link to a string table)
 		TY_STRTAB    // string table
 	} Type;
 	

@@ -112,11 +112,17 @@ unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
+unisim/util/debug/profile_64.cc \
 unisim/util/debug/symbol_32.cc \
+unisim/util/debug/symbol_64.cc \
 unisim/util/debug/symbol_table_32.cc \
+unisim/util/debug/symbol_table_64.cc \
 unisim/util/debug/watchpoint_registry_32.cc \
+unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
+unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/stmt_32.cc \
+unisim/util/debug/stmt_64.cc \
 unisim/util/debug/netstub.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
@@ -127,20 +133,28 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/blob/blob32.cc \
+unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
+unisim/util/debug/blob/section64.cc \
 unisim/util/debug/blob/segment32.cc \
+unisim/util/debug/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
+unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/endian/endian.cc \
 unisim/util/queue/queue.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
+unisim/service/debug/debugger/debugger32.cc \
+unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/power/cache_dynamic_energy.cc \
@@ -238,6 +252,7 @@ unisim/kernel/tlm/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/util/arithmetic/arithmetic.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/symbol.hh \
@@ -272,10 +287,13 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
@@ -291,7 +309,11 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/disassembly.hh \
 unisim/service/interfaces/loader.hh \
@@ -300,6 +322,7 @@ unisim/service/interfaces/symbol_table_lookup.hh \
 unisim/service/interfaces/stmt_lookup.hh \
 unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
+unisim/service/interfaces/profiling.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/linux_os.hh \
 unisim/service/interfaces/os.hh \
@@ -317,6 +340,8 @@ unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
@@ -402,17 +427,23 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/queue/queue.tcc \
 unisim/util/simfloat/floating.tcc \
 unisim/util/simfloat/integer.tcc \
 unisim/util/simfloat/host_floating.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/raw_loader/raw_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
@@ -472,7 +503,9 @@ m4/get_exec_path.m4 \
 m4/real_path.m4"
 
 UNISIM_LIB_EMBEDDED_PPC_G4_BOARD_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml"
+unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
+unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
 EMBEDDED_PPC_G4_BOARD_EXTERNAL_HEADERS="\
 assert.h \
@@ -648,34 +681,44 @@ done
 
 # Top level
 
-echo "This package contains:" > "${DEST_DIR}/README"
-echo "  - UNISIM GenISSLib: an instruction set simulator generator" >> "${DEST_DIR}/README"
-echo "  - UNISIM embedded-ppc-g4-board: a MPC7447A/MPC107 board SystemC TLM simulator." >> "${DEST_DIR}/README"
-echo "See INSTALL for installation instructions." >> "${DEST_DIR}/README"
+cat << EOF > "${DEST_DIR}/AUTHORS"
+Gilles Mouchard <gilles.mouchard@cea.fr>
+Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>
+EOF
 
-echo "INSTALLATION" > "${DEST_DIR}/INSTALL"
-echo "------------" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Requirements:" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bash" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU make" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU autoconf" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU automake" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU flex" >> "${DEST_DIR}/INSTALL"
-echo "  - GNU bison" >> "${DEST_DIR}/INSTALL"
-echo "  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)" >> "${DEST_DIR}/INSTALL"
-echo "  - Core SystemC Language >= 2.1 (http://www.systemc.org)" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Building instructions:" >> "${DEST_DIR}/INSTALL"
-echo "  $ ./configure --with-systemc=<path-to-systemc-install-dir>" >> "${DEST_DIR}/INSTALL"
-echo "  $ make" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
-echo "Installing (optional):" >> "${DEST_DIR}/INSTALL"
-echo "  $ make install" >> "${DEST_DIR}/INSTALL"
-echo "" >> "${DEST_DIR}/INSTALL"
+cat << EOF > "${DEST_DIR}/README"
+This package contains:
+  - UNISIM GenISSLib: an instruction set simulator generator
+  - UNISIM embedded-ppc-g4-board Simulator: A full system simulator of an MPC7447A/MPC107 board with support of ELF32 binaries.
+See INSTALL for installation instructions.
+EOF
+
+cat << EOF > "${DEST_DIR}/INSTALL"
+INSTALLATION
+------------
+
+Requirements:
+  - GNU C++ compiler
+  - GNU C++ standard library
+  - GNU bash
+  - GNU make
+  - GNU autoconf
+  - GNU automake
+  - GNU flex
+  - GNU bison
+  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
+  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
+  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
+  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
+  - Core SystemC Language >= 2.1 (http://www.systemc.org)
+
+Building instructions:
+  $ ./configure --with-systemc=<path-to-systemc-install-dir>
+  $ make
+
+Installing (optional):
+  $ make install
+EOF
 
 CONFIGURE_AC="${DEST_DIR}/configure.ac"
 MAKEFILE_AM="${DEST_DIR}/Makefile.am"
@@ -699,7 +742,7 @@ fi
 
 if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "Generating configure.ac"
-	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-embedded-ppc-g4-board])" > "${DEST_DIR}/configure.ac"
+	echo "AC_INIT([UNISIM PowerMAC G4 PCI Standalone simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-embedded-ppc-g4-board])" > "${DEST_DIR}/configure.ac"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
@@ -806,7 +849,7 @@ fi
 
 if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "Generating embedded_ppc_g4_board configure.ac"
-	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>, Reda Nouacer <reda.nouacer@cea.fr>], [unisim-embedded-ppc-g4-board-core])" > "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "AC_INIT([UNISIM PowerMac G4 PCI C++ simulator], [${EMBEDDED_PPC_G4_BOARD_VERSION}], [Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Perez <daniel.gracia-perez@cea.fr>], [unisim-embedded-ppc-g4-board-core])" > "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_MACRO_DIR([m4])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_AUX_DIR(config)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CONFIG_HEADERS([config.h])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
@@ -822,20 +865,20 @@ if [ "${has_to_build_embedded_ppc_g4_board_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${EMBEDDED_PPC_G4_BOARD_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TIMES" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ENDIAN" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_TIMES(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ENDIAN(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CACTI(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_WITH_BOOST(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_WITH_BOOST" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BOOST_GRAPH" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CACTI" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-embedded-ppc-g4-board-${EMBEDDED_PPC_G4_BOARD_VERSION}\"], [path of shared data relative to bin directory])" >> "${EMBEDDED_PPC_G4_BOARD_CONFIGURE_AC}"

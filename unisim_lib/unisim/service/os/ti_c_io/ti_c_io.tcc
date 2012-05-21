@@ -143,7 +143,7 @@ void TI_C_IO<MEMORY_ADDR>::OnDisconnect()
 template <class MEMORY_ADDR>
 bool TI_C_IO<MEMORY_ADDR>::EndSetup()
 {
-	return LoadMemoryAndRegisters();
+	return true;
 }
 
 template <class MEMORY_ADDR>

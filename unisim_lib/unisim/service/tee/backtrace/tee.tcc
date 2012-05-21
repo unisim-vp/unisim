@@ -94,6 +94,24 @@ std::vector<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::GetBackTrace(ADDRESS pc) const
 	return 0;
 }
 
+template <class ADDRESS, unsigned int MAX_IMPORTS>
+bool Tee<ADDRESS, MAX_IMPORTS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
+{
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(backtrace_import[i])
+		{
+			if(*backtrace_import[i])
+			{
+				if((*backtrace_import[i])->GetReturnAddress(pc, ret_addr)) return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 } // end of namespace backrace
 } // end of namespace tee
 } // end of namespace service

@@ -1,6 +1,6 @@
 ## UNISIM_CHECK_CURSES
 ## Checks if the curses library is installed
-## Does not take parameters
+## Takes one parameter: the main function name
 #####################################################
 AC_DEFUN([UNISIM_CHECK_CURSES], [
     # Check if curses path has been overloaded
@@ -16,7 +16,7 @@ AC_DEFUN([UNISIM_CHECK_CURSES], [
     AC_CHECK_HEADER(ncurses.h, broken_ncurses=no, broken_ncurses=yes)
 
     # Check for functions wgetch in libncurses.a
-    AC_CHECK_LIB(ncurses, wgetch, broken_ncurses=no, broken_ncurses=yes)
+    UNISIM_CHECK_LIB(ncurses, wgetch, $1, broken_ncurses=no, broken_ncurses=yes)
 
     if test "$broken_ncurses" == "yes"; then
 		AC_MSG_NOTICE([ncurses not found. No line edition capabilities will be available.])

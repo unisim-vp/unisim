@@ -89,7 +89,7 @@ void ELF_SymtabHandler<MEMORY_ADDR, Elf_Sym>::Parse()
 			
 			if(!string_table_section || (string_table_section->GetType() != unisim::util::debug::blob::Section<MEMORY_ADDR>::TY_STRTAB))
 			{
-				logger << DebugWarning << " Found a symbol table section but no string table section. Cannot build symbol table." << EndDebugWarning;
+				logger << DebugWarning << "Found a symbol table section but no string table section. Cannot build symbol table." << EndDebugWarning;
 				break;
 			}
 			const char *string_table = (const char *) string_table_section->GetData();

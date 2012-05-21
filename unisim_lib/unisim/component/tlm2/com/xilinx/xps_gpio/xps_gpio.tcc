@@ -66,12 +66,14 @@ XPS_GPIO<CONFIG>::XPS_GPIO(const sc_module_name& name, Object *parent)
 	, interrupt_payload_fabric()
 	, schedule()
 {
-	gpio_output_data[0] = 0;
-	gpio_output_data[1] = 0;
+	unsigned int i;
+	for(i = 0; i < inherited::NUM_GPIO_CHANNELS; i++)
+	{
+		gpio_output_data[i] = 0;
+	}
 
 	slave_sock(*this); // Bind socket to implementer of interface
 	
-	unsigned int i;
 	for(i = 0; i < CONFIG::C_GPIO_WIDTH; i++)
 	{
 		std::stringstream gpio_slave_sock_name_sstr;

@@ -73,7 +73,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::IsAbsolutePath(const char *filename) const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>& stmt_matrix)
+void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
 	const DWARF_Filename *dw_filename = (file >= 1 && file <= filenames.size()) ? &filenames[file - 1] : 0;
 	const char *filename = dw_filename ? dw_filename->GetFilename() : 0;
@@ -98,7 +98,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 	// At this point, if dirname is null we know that source filename is an absolute path or it is relative to the current directory of the compilation
 	
 	// Check that there's no duplicated entry in the statement matrix
-	typename std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::iterator stmt_matrix_iter = stmt_matrix.find(address);
 	
 	// If there's already a row, I suppose that overwritting it is the correct behavior
 	if(stmt_matrix_iter != stmt_matrix.end())
@@ -108,11 +108,11 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 	}
 	
 	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
-	stmt_matrix.insert(std::pair<MEMORY_ADDR, Statement<MEMORY_ADDR> *>(address, stmt));
+	stmt_matrix.insert(std::pair<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>(address, stmt));
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, Statement<MEMORY_ADDR> *> *matrix)
+bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog, std::ostream *os, std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> *matrix)
 {
 	// Initialize machine state
 	address = 0;

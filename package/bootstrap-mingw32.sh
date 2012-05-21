@@ -18,7 +18,7 @@ esac
 SDL_VERSION=1.2.14
 LIBXML2_VERSION=2.7.8
 EXPAT_VERSION=2.0.1
-CROSS_GDB_VERSION=7.2
+CROSS_GDB_VERSION=7.2a
 CROSS_GDB_ARCHITECTURES="powerpc-440fp-linux-gnu powerpc-7450-linux-gnu armel-linux-gnu m6811-elf"
 ZLIB_VERSION=1.2.5
 BOOST_VERSION=1_47_0
@@ -119,7 +119,7 @@ function Install
 	echo "=              Installing               ="
 	echo "========================================="
 	cd ${BUILD_DIR}/${NAME}
-	echo "make install prefix=${INSTALL_DIR}/${NAME}" "${args[@]}"
+	echo "make install-strip prefix=${INSTALL_DIR}/${NAME}" "${args[@]}"
 	make install prefix=${INSTALL_DIR}/${NAME} "${args[@]}" || exit
 }
 
@@ -260,17 +260,18 @@ case ${CMD} in
 		# cross-GDB
 		for CROSS_GDB_ARCH in ${CROSS_GDB_ARCHITECTURES}
 		do
-			if [ ! -e ${PACKAGES_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2-mingw32.tar.bz2 ]; then
+			if [ ! -e ${PACKAGES_DIR}/cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}-mingw32.tar.bz2 ]; then
 				Clean
-				Download gdb-7.2 gdb-7.2.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-7.2.tar.bz2
-				InstallBinArchive expat-2.0.1-mingw32.tar.bz2 '' expat-2.0.1
-				mv ${BUILD_DIR}/gdb-7.2 ${BUILD_DIR}/cross-gdb-${CROSS_GDB_ARCH}-7.2
-				Configure cross-gdb-${CROSS_GDB_ARCH}-7.2 --host=${HOST} --target=${CROSS_GDB_ARCH} \
+				CROSS_GDB_STRIPPED_VERSION=$(printf "${CROSS_GDB_VERSION}" | sed -e 's/^\(.*\)a$/\1/g')   # remove 'a' at the end of version number
+				Download gdb-${CROSS_GDB_STRIPPED_VERSION} gdb-${CROSS_GDB_VERSION}.tar.bz2 ftp://ftp.gnu.org/pub/gnu/gdb/gdb-${CROSS_GDB_VERSION}a.tar.bz2
+				InstallBinArchive expat-${EXPAT_VERSION}-mingw32.tar.bz2 '' expat-${EXPAT_VERSION}
+				mv ${BUILD_DIR}/gdb-${CROSS_GDB_STRIPPED_VERSION} ${BUILD_DIR}/cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
+				Configure cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION} --host=${HOST} --target=${CROSS_GDB_ARCH} \
 							--disable-sim --disable-werror \
-							--with-libexpat-prefix=${INSTALL_DIR}/expat-2.0.1
-				Compile cross-gdb-${CROSS_GDB_ARCH}-7.2
-				Install cross-gdb-${CROSS_GDB_ARCH}-7.2
-				Package cross-gdb-${CROSS_GDB_ARCH}-7.2
+							--with-libexpat-prefix=${INSTALL_DIR}/expat-${EXPAT_VERSION}
+				Compile cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
+				Install cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
+				Package cross-gdb-${CROSS_GDB_ARCH}-${CROSS_GDB_VERSION}
 				Clean
 			fi
 		done
@@ -326,21 +327,13 @@ case ${CMD} in
 			Download tcl${TCLTK_VERSION} tcl${TCLTK_VERSION}-src.tar.gz http://prdownloads.sourceforge.net/tcl/tcl${TCLTK_VERSION}-src.tar.gz
 			Download tk${TCLTK_VERSION} tk${TCLTK_VERSION}-src.tar.gz http://prdownloads.sourceforge.net/tcl/tk${TCLTK_VERSION}-src.tar.gz
 			cd ${BUILD_DIR}/tcl${TCLTK_VERSION}/win
-			./configure --host=${HOST} --prefix=/mingw
+			./configure --host=${HOST} --prefix=/
 			make
 			make install prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} exec_prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} libdir=${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib
-			sed -i "s#^\(TCL_BUILD_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltcl85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
-			sed -i "s#^\(TCL_BUILD_STUB_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltclstub85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
-			sed -i "s#^\(TCL_BUILD_STUB_LIB_PATH=\).*\$#\1'/mingw/lib/libtclstub85.a'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
-			sed -i "s#^\(TCL_SRC_DIR=\).*\$#\1'/mingw/include'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tclConfig.sh
 			cd ${BUILD_DIR}/tk${TCLTK_VERSION}/win
-			./configure --host=${HOST} --with-tcl=${BUILD_DIR}/tcl${TCLTK_VERSION}/win --prefix=/mingw
+			./configure --host=${HOST} --with-tcl=${BUILD_DIR}/tcl${TCLTK_VERSION}/win --prefix=/
 			make
 			make install prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} exec_prefix=${INSTALL_DIR}/tcltk${TCLTK_VERSION} libdir=${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib
-			sed -i "s#^\(TK_BUILD_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltk85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
-			sed -i "s#^\(TK_BUILD_STUB_LIB_SPEC=\).*\$#\1'-L/mingw/lib -ltkstub85'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
-			sed -i "s#^\(TK_BUILD_STUB_LIB_PATH=\).*\$#\1'/mingw/lib/libtkstub85.a'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
-			sed -i "s#^\(TK_SRC_DIR=\).*\$#\1'/mingw/include'#" ${INSTALL_DIR}/tcltk${TCLTK_VERSION}/lib/tkConfig.sh
 			Package tcltk-${TCLTK_VERSION} tcltk${TCLTK_VERSION}
 			Clean
 		fi
