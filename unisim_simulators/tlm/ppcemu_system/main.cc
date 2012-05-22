@@ -443,146 +443,146 @@ Simulator::Simulator(int argc, char **argv)
 		unsigned irq_msg_spy_index = 0;
 
 		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = cpu->bus_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->name();
 		bus_msg_spy_index++;
 
 		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = cpu->snoop_port.name();
 		bus_msg_spy_index++;
 
 		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(mpc107->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = mpc107->slave_port.name();
 		bus_msg_spy_index++;
 
 		mpc107->master_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = mpc107->master_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->chipset_inport);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->chipset_inport->name();
 		bus_msg_spy_index++;
 
 		mpc107->ram_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->ram_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = memory->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->rom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->rom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(flash->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = flash->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->erom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->erom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(erom->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = erom->slave_port.name();
 		mem_msg_spy_index++;
 		
 		mpc107->pci_master_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = mpc107->pci_master_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_MPC107_MASTER_PORT]->name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_MPC107_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_MPC107_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(mpc107->pci_slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = mpc107->pci_slave_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_HEATHROW_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(heathrow->bus_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = heathrow->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = heathrow->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = heathrow->bus_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_IDE_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_IDE_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_ide->input_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_ide->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_ide->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_ide->input_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_DISPLAY_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_display->bus_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_display->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_display->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_display->bus_port.name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_ISA_BRIDGE_SLAVE_PORT]->name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_isa_bridge->pci_slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_isa_bridge->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_isa_bridge->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_isa_bridge->pci_slave_port.name();
 		pci_msg_spy_index++;
 
 		pci_ide->output_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_ide->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_ide->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_ide->output_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_IDE_MASTER_PORT]);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_IDE_MASTER_PORT]->name();
 		pci_msg_spy_index++;
 		
 		pci_ide->irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_ide->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_ide->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = pci_ide->irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*heathrow->irq_port[PCI_IDE_IRQ]);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = heathrow->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = heathrow->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = heathrow->irq_port[PCI_IDE_IRQ]->name();
 		irq_msg_spy_index++;
 
 		heathrow->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = heathrow->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = heathrow->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = heathrow->cpu_irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[0]);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[0]->name();
 		irq_msg_spy_index++;
 
 		mpc107->irq_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->irq_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->external_interrupt_port);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->external_interrupt_port.name();
 		irq_msg_spy_index++;
 
 		mpc107->soft_reset_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->soft_reset_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->soft_reset_port);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->soft_reset_port.name();
 		irq_msg_spy_index++;
 	}
@@ -623,13 +623,23 @@ Simulator::Simulator(int argc, char **argv)
 	
 	if(enable_inline_debugger || enable_gdb_server)
 	{
-		// Connect tee-memory-access-reporting to CPU, debugger and profiler
-		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-		*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-		*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-
+		if(enable_inline_debugger)
+		{
+			// Connect tee-memory-access-reporting to CPU, debugger and profiler
+			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+		}
+		else
+		{
+			// Connect CPU to debugger
+			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		}
+		
 		// Connect debugger to CPU
 		cpu->debug_control_import >> debugger->debug_control_export;
 		cpu->trap_reporting_import >> debugger->trap_reporting_export;

@@ -112,7 +112,6 @@ ConfigurationRegisters::Reset(bool pci_host,
 	bool rom0_8bit_data_bus_size,
 	bool rom1_8bit_data_bus_size) {
 	typedef ConfigurationRegister CR;
-	uint32_t val;
 	
 	vendor_id.Set("vendor_id", "Vendor ID", 0x00, 2, 
 		CR::ReadAccess,
@@ -306,10 +305,6 @@ ConfigurationRegisters::Reset(bool pci_host,
 		CR::ReadAccess + CR::WriteAccess,
 		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
 		0x00);
-	if(a_address_map)
-		val = 0xff050010;
-	else
-		val = 0xff040010;
 	picr1.Set("picr1", "Processor interface configuration 1", 0xa8, 4,
 		CR::ReadAccess + CR::WriteAccess,
 		CR::ByteAccess + CR::HalfWordAccess + CR::WordAccess,
