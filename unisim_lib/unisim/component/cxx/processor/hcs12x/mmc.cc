@@ -58,8 +58,8 @@ uint8_t MMC::ppage;
 
 MMC::MMC(const char *name, Object *parent):
 	Object(name, parent),
-	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
-	Client<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
+	Client<Memory<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<Registers>(name, parent),
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),
@@ -272,7 +272,7 @@ void MMC::splitPagedAddress(physical_address_t paged_addr, page_t &page, address
 }
 
 // TODO: review this methods for dump and disassemble commands
-bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) {
+bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size) {
 
 	page_t page;
 	address_t cpu_address;
@@ -299,7 +299,7 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 	return (false);
 }
 
-bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t size) {
+bool MMC::WriteMemory(physical_address_t paged_addr, const void *buffer, uint32_t size) {
 
 	page_t page;
 	address_t cpu_address;

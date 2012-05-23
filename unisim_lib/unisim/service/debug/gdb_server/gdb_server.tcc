@@ -1355,7 +1355,6 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 template <class ADDRESS>
 void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
-//	size_t separator_index = command.find_first_of(':');
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {

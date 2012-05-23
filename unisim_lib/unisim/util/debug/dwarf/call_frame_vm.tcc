@@ -200,13 +200,13 @@ std::ostream& operator << (std::ostream& os, const DWARF_RegisterRule<MEMORY_ADD
 
 template <class MEMORY_ADDR>
 DWARF_RegisterRuleUndefined<MEMORY_ADDR>::DWARF_RegisterRuleUndefined(const DWARF_RegisterRuleUndefined<MEMORY_ADDR>& rule)
-	: DWARF_RegisterRule<MEMORY_ADDR>(DW_REG_RULE_REGISTER)
+	: DWARF_RegisterRule<MEMORY_ADDR>(DW_REG_RULE_UNDEFINED)
 {
 }
 
 template <class MEMORY_ADDR>
 DWARF_RegisterRuleUndefined<MEMORY_ADDR>::DWARF_RegisterRuleUndefined()
-	: DWARF_RegisterRule<MEMORY_ADDR>(DW_REG_RULE_REGISTER)
+	: DWARF_RegisterRule<MEMORY_ADDR>(DW_REG_RULE_UNDEFINED)
 {
 }
 
@@ -694,7 +694,8 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Disasm(std::ostream& os, const DWARF_CallFr
 template <class MEMORY_ADDR>
 bool DWARF_CallFrameVM<MEMORY_ADDR>::Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
-	return Run(dw_call_frame_prog, 0, &location, cfi);
+//	return Run(dw_call_frame_prog, 0, &location, cfi);
+	return Run(dw_call_frame_prog, &std::cerr, &location, cfi);
 }
 
 template <class MEMORY_ADDR>
@@ -1336,12 +1337,18 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									
 									DWARF_CFARule<MEMORY_ADDR> *cur_cfa_rule = cur_row->GetCFARule();
 									
-									if(!cur_cfa_rule || (cur_cfa_rule->GetType() != DW_CFA_RULE_REGISTER_OFFSET))
+									if(!cur_cfa_rule)
+									{
+										cur_cfa_rule = new DWARF_CFARuleRegisterOffset<MEMORY_ADDR>(reg_num, 0);
+										cur_row->SetCFARule(cur_cfa_rule);
+									}
+									
+									if(cur_cfa_rule->GetType() != DW_CFA_RULE_REGISTER_OFFSET)
 									{
 										status = false;
 										break;
 									}
-									
+
 									reinterpret_cast<DWARF_CFARuleRegisterOffset<MEMORY_ADDR> *>(cur_cfa_rule)->SetRegisterNumber(reg_num);
 								}
 							}

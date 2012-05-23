@@ -74,8 +74,8 @@ using unisim::util::debug::Register;
 
 class MMC :
 	public CallBackObject
-	, public Service<Memory<service_address_t> >
-	, public Client<Memory<service_address_t> >
+	, public Service<Memory<physical_address_t> >
+	, public Client<Memory<physical_address_t> >
 	, public Service<Registers>
 {
 public:
@@ -191,8 +191,8 @@ public:
 
 	// ***************************************
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 
 	ServiceExport<Registers> registers_export;
 
@@ -220,8 +220,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 	void splitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address);
 
 	//=====================================================================

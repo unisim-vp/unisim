@@ -284,7 +284,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
 	if (protection_enabled && ((inherited::org + ((eaddr_reg & 0xFFFE) + WORD_SIZE - 1)) >= protected_area_start_address)) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to word program at protected area @ 0x" << std::hex << eaddr_reg
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Try to word program at protected area @ 0x" << std::hex << eaddr_reg
 			<< std::endl << EndDebugWarning;
 
 		// Set ESTAT::PVIOL flag
@@ -320,7 +320,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
 	if (protection_enabled && ((inherited::org + ((eaddr_reg & 0xFFFC) + SECTOR_SIZE - 1)) >= protected_area_start_address)) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to erase sector at protected area.@ 0x" << std::hex << eaddr_reg
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Try to erase sector at protected area.@ 0x" << std::hex << eaddr_reg
 			<< std::endl << EndDebugWarning;
 
 		// Set ESTAT::PVIOL flag
@@ -378,7 +378,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
 	if (protection_enabled) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to mass erase while EEPROM protection enabled." << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Try to mass erase while EEPROM protection enabled." << std::endl << EndDebugWarning;
 
 		// Set ESTAT::PVIOL flag
 		estat_reg = estat_reg | 0x20;
@@ -422,7 +422,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	bool protection_enabled = ((eprot_reg & 0x04) == 0);
 
 	if (protection_enabled && ((inherited::org + ((eaddr_reg & 0xFFFC) + SECTOR_SIZE - 1)) >= protected_area_start_address)) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Try to modify sector at protected area @ 0x" << std::hex << (unsigned int) inherited::org + (eaddr_reg & 0xFFFE)
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Try to modify sector at protected area @ 0x" << std::hex << (unsigned int) inherited::org + (eaddr_reg & 0xFFFE)
 			<< std::endl << EndDebugWarning;
 
 		// Set ESTAT::PVIOL flag
@@ -475,7 +475,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	// Illegal operation: Writing to an EEPROM address before initializing the ECLKDIV register
 	if ((eclkdiv_reg & 0x80) == 0) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing to an EEPROM address before initializing the ECLKDIV register is an illegal operation. " << std::endl << EndDebugWarning;
 
 		setACCERR();
 		return;
@@ -483,7 +483,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	// Illegal operation: Writing a byte or misaligned word to a valid EEPROM address
 	if ((data_length == 1) || ((address & 0x1) != 0)) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a byte or misaligned word to a valid EEPROM address is an illegal operation " << data_length << " bytes @ 0x" << std::hex << address
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing a byte or misaligned word to a valid EEPROM address is an illegal operation " << data_length << " bytes @ 0x" << std::hex << address
 			<< std::endl << EndDebugWarning;
 
 		setACCERR();
@@ -492,7 +492,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 
 	// Illegal operation: Starting a command write sequence while a sector erase abort operation is active.
 	if (sector_erase_abort_active) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Starting a command write sequence while a sector erase abort operation is active is an illegal operation " << std::endl << EndDebugWarning;
 
 		setACCERR();
 		return;
@@ -507,7 +507,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 		}
 	} else {
 		if ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite() && ((estat_reg & 0x80) != 0)) {
-			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl << EndDebugWarning;
+			inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing to an EEPROM address after writing to the ECMD register and before launching the command is an illegal operation " << std::endl << EndDebugWarning;
 
 			setACCERR();
 			return;
@@ -532,7 +532,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 			}
 			cmd_queue_back->invalidateCmdWrite();
 
-			inherited::logger << DebugWarning << " : " << inherited::name() << ":: Command Write Sequence Lost/overwritten! " << std::endl << EndDebugWarning;
+			inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Command Write Sequence Lost/overwritten! " << std::endl << EndDebugWarning;
 
 		}
 	}
@@ -570,14 +570,14 @@ template <unsigned int CMD_PIPELINE_SIZE, unsigned int BUSWIDTH, class ADDRESS, 
 void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::writeCmd(uint8_t _cmd) {
 	if (cmd_queue.empty()) {
 
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing to the ECMD register before writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
 
 		setACCERR();
 
 		return;
 	}
 	else if ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite()) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing a second command to the ECMD register in the same command write sequence is an illegal operation. " << std::endl << EndDebugWarning;
 
 		setACCERR();
 		abort_write_sequence();
@@ -616,70 +616,70 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 {
 	char buf[80];
 
-	sprintf(buf, "%s.ECLKDIV",inherited::name());
+	sprintf(buf, "%s.ECLKDIV",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eclkdiv_reg);
 
 	unisim::kernel::service::Register<uint8_t> *eclkdiv_var = new unisim::kernel::service::Register<uint8_t>("ECLKDIV", this, eclkdiv_reg, "EEPROM Clock Divider Register (ECLKDIV)");
 	extended_registers_registry.push_back(eclkdiv_var);
 	eclkdiv_var->setCallBack(this, ECLKDIV, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED1",inherited::name());
+	sprintf(buf, "%s.RESERVED1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved1_reg);
 
 	unisim::kernel::service::Register<uint8_t> *reserved1_var = new unisim::kernel::service::Register<uint8_t>("RESERVED1", this, reserved1_reg, "RESERVED1");
 	extended_registers_registry.push_back(reserved1_var);
 	reserved1_var->setCallBack(this, RESERVED1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED2",inherited::name());
+	sprintf(buf, "%s.RESERVED2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved2_reg);
 
 	unisim::kernel::service::Register<uint8_t> *reserved2_var = new unisim::kernel::service::Register<uint8_t>("RESERVED2", this, reserved2_reg, "RESERVED2");
 	extended_registers_registry.push_back(reserved2_var);
 	reserved2_var->setCallBack(this, RESERVED2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ECNFG",inherited::name());
+	sprintf(buf, "%s.ECNFG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecnfg_reg);
 
 	unisim::kernel::service::Register<uint8_t> *ecnfg_var = new unisim::kernel::service::Register<uint8_t>("ECNFG", this, ecnfg_reg, "EEPROM Configuration Register (ECNFG)");
 	extended_registers_registry.push_back(ecnfg_var);
 	ecnfg_var->setCallBack(this, ECNFG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EPROT",inherited::name());
+	sprintf(buf, "%s.EPROT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &eprot_reg);
 
 	unisim::kernel::service::Register<uint8_t> *eprot_var = new unisim::kernel::service::Register<uint8_t>("EPROT", this, eprot_reg, "EEPROM Protection Register (EPROT)");
 	extended_registers_registry.push_back(eprot_var);
 	eprot_var->setCallBack(this, EPROT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ESTAT",inherited::name());
+	sprintf(buf, "%s.ESTAT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &estat_reg);
 
 	unisim::kernel::service::Register<uint8_t> *estat_var = new unisim::kernel::service::Register<uint8_t>("ESTAT", this, estat_reg, "EEPROM Status Register (ESTAT)");
 	extended_registers_registry.push_back(estat_var);
 	estat_var->setCallBack(this, ESTAT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ECMD",inherited::name());
+	sprintf(buf, "%s.ECMD",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ecmd_reg);
 
 	unisim::kernel::service::Register<uint8_t> *ecmd_var = new unisim::kernel::service::Register<uint8_t>("ECMD", this, ecmd_reg, "EEPROM Command Register (ECMD)");
 	extended_registers_registry.push_back(ecmd_var);
 	ecmd_var->setCallBack(this, ECMD, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RESERVED3",inherited::name());
+	sprintf(buf, "%s.RESERVED3",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &reserved3_reg);
 
 	unisim::kernel::service::Register<uint8_t> *reserved3_var = new unisim::kernel::service::Register<uint8_t>("RESERVED3", this, reserved3_reg, "RESERVED3");
 	extended_registers_registry.push_back(reserved3_var);
 	reserved3_var->setCallBack(this, RESERVED3, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EADDR",inherited::name());
+	sprintf(buf, "%s.EADDR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &eaddr_reg);
 
 	unisim::kernel::service::Register<uint16_t> *eaddr_var = new unisim::kernel::service::Register<uint16_t>("EADDR", this, eaddr_reg, "EEPROM Address Register");
 	extended_registers_registry.push_back(eaddr_var);
 	eaddr_var->setCallBack(this, EADDRHI, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.EDATA",inherited::name());
+	sprintf(buf, "%s.EDATA",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &edata_reg);
 
 	unisim::kernel::service::Register<uint16_t> *edata_var = new unisim::kernel::service::Register<uint16_t>("EDATA", this, edata_reg, "EEPROM Data Register");
@@ -751,7 +751,7 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 
 			return (TLM_UPDATED);
 		} else {
-			inherited::logger << DebugError << sc_time_stamp() << ":" << inherited::name() << ": received an unexpected phase" << std::endl << EndDebugError;
+			inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
 			Object::Stop(-1);
 		}
 
@@ -864,7 +864,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	eeclk_time = oscillator_cycle_time * ((eclkdiv_reg & 0x3F) + 1) * (((eclkdiv_reg & 0x40) != 0)? 8: 1);
 
 	if (eeclk_time < min_eeclk_time) {
-		inherited::logger << DebugWarning << inherited::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << sc_object::name() << ":: Setting EECLK to " << 1/eeclk_time.to_seconds() << " Hz can destroy the EEPROM. (EECLK < 150 kHz should be avoided)" << std::endl << EndDebugWarning;
 	}
 }
 
@@ -1043,14 +1043,14 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 {
 
 	if ((offset != ECMD) && ((cmd_queue_back != NULL) && !cmd_queue_back->isCmdWrite())) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing to any EEPROM register other than ECMD after writing to an EEPROM address is an illegal operation. " << std::endl << EndDebugWarning;
 
 		setACCERR();
 		abort_write_sequence();
 
 	}
 	else if ((offset != ESTAT) && ((cmd_queue_back != NULL) && cmd_queue_back->isCmdWrite())) {
-		inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing to any EEPROM register other than ESTAT (to clear CBEIF) after writing to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
+		inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing to any EEPROM register other than ESTAT (to clear CBEIF) after writing to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
 
 		setACCERR();
 		abort_write_sequence();
@@ -1086,20 +1086,20 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 				value = value | 0x70;
 
 				if (((eprot_reg & 0x80) == 0) && ((value & 0x80) != 0)) {
-					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
+					inherited::logger << DebugWarning << LOCATION << " : " << sc_object::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
 
 					value = value & 0x7F;
 				}
 
 				if (((eprot_reg & 0x08) == 0) && ((value & 0x08) != 0)) {
-					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
+					inherited::logger << DebugWarning << LOCATION << " : " << sc_object::name() << ":: Try writing to EPOPEN. EERPOM is in protected mode." << std::endl << EndDebugWarning;
 
 					value = value & 0xF7;
 				}
 
 				// the EPS[2:0] bits can be written anytime until bit EPDIS is cleared
 				if ((eprot_reg & 0x04) == 0) {
-					inherited::logger << DebugWarning << LOCATION << " : " << inherited::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl << EndDebugWarning;
+					inherited::logger << DebugWarning << LOCATION << " : " << sc_object::name() << ":: Try writing to EPS[2:0] bits. EPDIS is cleared." << std::endl << EndDebugWarning;
 
 					value = (value & 0xF8) | (eprot_reg & 0x07);
 				}
@@ -1167,7 +1167,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 					 * but before CBEIF is cleared will abort a command write sequence and cause the ACCERR flag to be set.
 					 */
 					if ((cmd_queue_back != NULL) && ((estat_reg & 0x80) != 0)) {
-						inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl << EndDebugWarning;
+						inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing a 0 to CBEIF after writing to the EEPROM address space but before CBEIF is cleared is an illegal operation " << std::endl << EndDebugWarning;
 
 						value = value | 0x10;
 
@@ -1189,7 +1189,7 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 				{
 					/* unknown command */
 					// set the ACCERR flag in the ESTAT register
-					inherited::logger << DebugWarning << " : " << inherited::name() << ":: Writing an invalid command to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
+					inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Writing an invalid command to the ECMD register is an illegal operation. " << std::endl << EndDebugWarning;
 
 					setACCERR();
 					abort_write_sequence();

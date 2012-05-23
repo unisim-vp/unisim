@@ -63,14 +63,14 @@ template void EBLB::exchange<uint16_t>(uint8_t rrSrc, uint8_t rrDst);
 
 CPU::CPU(const char *name, Object *parent):
 	Object(name, parent),
-	unisim::kernel::service::Client<DebugControl<service_address_t> >(name, parent),
-	unisim::kernel::service::Client<MemoryAccessReporting<service_address_t> >(name, parent),
+	unisim::kernel::service::Client<DebugControl<physical_address_t> >(name, parent),
+	unisim::kernel::service::Client<MemoryAccessReporting<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<MemoryAccessReportingControl>(name, parent),
-	unisim::kernel::service::Service<Disassembly<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Disassembly<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<Registers>(name, parent),
-	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
-	unisim::kernel::service::Client<Memory<service_address_t> >(name, parent),
-	unisim::kernel::service::Client<SymbolTableLookup<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
+	unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent),
+	unisim::kernel::service::Client<SymbolTableLookup<physical_address_t> >(name, parent),
 	unisim::kernel::service::Client<TrapReporting>(name, parent),
 	state(CPU::RUNNING),
 	queueCurrentAddress(0xFFFE),
@@ -277,7 +277,7 @@ uint8_t CPU::step()
 			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
-			DebugControl<service_address_t>::DebugCommand dbg_cmd;
+			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
 
 			do {
 				if(debug_enabled && verbose_step)
@@ -286,7 +286,7 @@ uint8_t CPU::step()
 
 				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getPagedAddress(getRegPC()));
 
-				if(dbg_cmd == DebugControl<service_address_t>::DBG_STEP) {
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_STEP command (PC = 0x"
@@ -294,7 +294,7 @@ uint8_t CPU::step()
 							<< std::endl << EndDebugInfo;
 					break;
 				}
-				if(dbg_cmd == DebugControl<service_address_t>::DBG_SYNC) {
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_SYNC) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_SYNC command (PC = 0x"
@@ -304,7 +304,7 @@ uint8_t CPU::step()
 					continue;
 				}
 
-				if(dbg_cmd == DebugControl<service_address_t>::DBG_KILL) {
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_KILL) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_KILL command (PC = 0x"
@@ -312,7 +312,7 @@ uint8_t CPU::step()
 							<< std::endl << EndDebugInfo;
 					Stop(0);
 				}
-				if(dbg_cmd == DebugControl<service_address_t>::DBG_RESET) {
+				if(dbg_cmd == DebugControl<physical_address_t>::DBG_RESET) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
@@ -331,7 +331,7 @@ uint8_t CPU::step()
 							<< std::hex << getRegPC() << std::dec
 							<< std::endl << EndDebugInfo;
 
-					memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
+					memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
 				}
 			}
 
@@ -1092,7 +1092,7 @@ void CPU::VerboseDumpRegsEnd() {
 //=             memory interface methods                              =
 //=====================================================================
 
-bool CPU::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
+bool CPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size)
 {
 	if (memory_import) {
 		return (memory_import->ReadMemory(addr, (uint8_t *) buffer, size));
@@ -1101,7 +1101,7 @@ bool CPU::ReadMemory(service_address_t addr, void *buffer, uint32_t size)
 	return (false);
 }
 
-bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
+bool CPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size)
 {
 	if (size == 0) {
 		return (true);
@@ -1118,14 +1118,14 @@ bool CPU::WriteMemory(service_address_t addr, const void *buffer, uint32_t size)
 //=             CPURegistersInterface interface methods               =
 //=====================================================================
 
-string CPU::getObjectFriendlyName(service_address_t addr)
+string CPU::getObjectFriendlyName(physical_address_t addr)
 {
 	stringstream sstr;
 
-	const Symbol<service_address_t> *symbol = NULL;
+	const Symbol<physical_address_t> *symbol = NULL;
 
 	if (symbol_table_lookup_import) {
-		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_OBJECT);
+		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<physical_address_t>::SYM_OBJECT);
 	}
 
 	if(symbol)
@@ -1136,14 +1136,14 @@ string CPU::getObjectFriendlyName(service_address_t addr)
 	return (sstr.str());
 }
 
-string CPU::getFunctionFriendlyName(service_address_t addr)
+string CPU::getFunctionFriendlyName(physical_address_t addr)
 {
 	stringstream sstr;
 
-	const Symbol<service_address_t> *symbol = NULL;
+	const Symbol<physical_address_t> *symbol = NULL;
 
 	if (symbol_table_lookup_import) {
-		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<service_address_t>::SYM_FUNC);
+		symbol = symbol_table_lookup_import->FindSymbolByAddr(addr, Symbol<physical_address_t>::SYM_FUNC);
 	}
 
 	if(symbol)
@@ -1181,7 +1181,7 @@ Register* CPU::GetRegister(const char *name)
  * @param next_addr The address following the requested instruction.
  * @return The disassembling of the requested instruction address.
  */
-string CPU::Disasm(service_address_t service_addr, service_address_t &next_addr)
+string CPU::Disasm(physical_address_t service_addr, physical_address_t &next_addr)
 {
 	Operation *op = NULL;
 

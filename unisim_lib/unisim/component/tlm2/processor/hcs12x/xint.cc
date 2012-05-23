@@ -51,9 +51,9 @@ address_t XINT::XINT_REGS_ADDRESSES[XINT::XINT_MEMMAP_SIZE];
 XINT::XINT(const sc_module_name& name, Object *parent) :
 	Object(name, parent),
 	sc_module(name),
-	unisim::kernel::service::Service<Memory<service_address_t> >(name, parent),
+	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
 	unisim::kernel::service::Service<Registers>(name, parent),
-	Client<Memory<service_address_t> >(name, parent),
+	Client<Memory<physical_address_t> >(name, parent),
 
 	interrupt_request("interrupt_request"),
 
@@ -160,22 +160,22 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 
 			return (TLM_UPDATED);
 		case END_REQ:
-			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_REQ" << endl;
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_REQ" << endl;
 
 			Object::Stop(-1);
 			break;
 		case BEGIN_RESP:
-			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase BEGIN_RESP" << endl;
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase BEGIN_RESP" << endl;
 
 			Object::Stop(-1);
 			break;
 		case END_RESP:
-			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase END_RESP" << endl;
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase END_RESP" << endl;
 
 			Object::Stop(-1);
 			break;
 		default:
-			cout << sc_time_stamp() << ":" << name() << ": received an unexpected phase" << endl;
+			cout << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << endl;
 
 			Object::Stop(-1);
 			break;
@@ -334,21 +334,21 @@ bool XINT::BeginSetup() {
 
 	char buf[80];
 
-	sprintf(buf, "%s.IVBR",name());
+	sprintf(buf, "%s.IVBR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ivbr);
 
 	unisim::kernel::service::Register<uint8_t> *ivbr_var = new unisim::kernel::service::Register<uint8_t>("IVBR", this, ivbr, "Interrupt Vector base register (IVBR)");
 	extended_registers_registry.push_back(ivbr_var);
 	ivbr_var->setCallBack(this, IVBR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.INT_XGPRIO",name());
+	sprintf(buf, "%s.INT_XGPRIO",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_xgprio);
 
 	unisim::kernel::service::Register<uint8_t> *int_xgprio_var = new unisim::kernel::service::Register<uint8_t>("INT_XGPRIO", this, int_xgprio, "XGate Interrupt Priority Configuration Register (INT_XGPRIO)");
 	extended_registers_registry.push_back(int_xgprio_var);
 	int_xgprio_var->setCallBack(this, INT_XGPRIO, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.INT_CFADDR",name());
+	sprintf(buf, "%s.INT_CFADDR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfaddr);
 
 	unisim::kernel::service::Register<uint8_t> *int_cfaddr_var = new unisim::kernel::service::Register<uint8_t>("INT_CFADDR", this, int_cfaddr, "Interrupt Request Configuration Address Register (INT_CFADDR)");
@@ -356,7 +356,7 @@ bool XINT::BeginSetup() {
 	int_cfaddr_var->setCallBack(this, INT_CFADDR, &CallBackObject::write, NULL);
 
 	for (uint8_t i=0; i<XINT_SIZE; i++) {
-		sprintf(buf, "%s.INT_CFDATA%d", name(), i);
+		sprintf(buf, "%s.INT_CFDATA%d", sc_object::name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &int_cfwdata[i]);
 
 		sprintf(buf, "INT_CFDATA%d", i);
@@ -535,7 +535,7 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 //=             memory interface methods                              =
 //=====================================================================
 
-bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
+bool XINT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 	if ((address_t) addr == XINT_REGS_ADDRESSES[IVBR]) { *(uint8_t *) buffer = getIVBR(); return (true); }
 	else if ((address_t) addr == XINT_REGS_ADDRESSES[INT_XGPRIO]) { *(uint8_t *) buffer = getINT_XGPRIO(); return (true); }
@@ -552,7 +552,7 @@ bool XINT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 	return (false);
 }
 
-bool XINT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+bool XINT::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
 	for (uint8_t i=0; i<XINT_MEMMAP_SIZE; i++) {
 		if (XINT_REGS_ADDRESSES[i] == addr) {

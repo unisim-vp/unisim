@@ -95,16 +95,18 @@ template <class ADDRESS>
 PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
-	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, unisim::kernel::service::Client<MemoryAccessReportingControl>(_name, _parent)
+	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
 	, unisim::kernel::service::Client<Registers>(_name, _parent)
+	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 	, SocketThread()
 	, debug_control_export("debug-control-export", this)
+	, debug_event_listener_export("debug-event-listener-export", this)
+	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
 	, memory_access_reporting_control_import("memory_access_reporting_control_import", this)
@@ -126,8 +128,8 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, synched(false)
 
 	, watchpoint_hit(NULL)
-	, watchpoint_hit_addr(-1)
-	, watchpoint_hit_size(0)
+//	, watchpoint_hit_addr(-1)
+//	, watchpoint_hit_size(0)
 
 
 	, breakpoint_registry()
@@ -191,6 +193,115 @@ double PIMServer<ADDRESS>::GetHostTime() {
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::BeginSetup() {
+
+//	if(memory_atom_size != 1 &&
+//	   memory_atom_size != 2 &&
+//	   memory_atom_size != 4 &&
+//	   memory_atom_size != 8 &&
+//	   memory_atom_size != 16)
+//	{
+//		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
+//		return (false);
+//	}
+//
+//	// Open Socket Stream
+//	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
+//	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
+//
+//	socketServer->setProtocolHandler(this);
+//
+//	socketServer->start();
+//
+//	// Load Architecture informations from simulator
+//	bool has_architecture_name = false;
+//	bool has_architecture_endian = false;
+//
+//	bool has_program_counter = false;
+//	string program_counter_name;
+//
+//	VariableBase* architecture_name = Simulator::simulator->FindParameter("program-name");
+//	has_architecture_name = (architecture_name != NULL);
+//	if(!has_architecture_name)
+//	{
+//		logger << DebugError << "architecture has no property 'name'" << std::endl << EndDebugError;
+//		return (false);
+//	}
+//
+//	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
+//	if (architecture_endian != NULL) {
+//		string endianstr = *architecture_endian;
+//		if(endianstr == "little")
+//		{
+//			endian = GDB_LITTLE_ENDIAN;
+//			has_architecture_endian = true;
+//		}
+//		else if(endianstr == "big")
+//		{
+//			endian = GDB_BIG_ENDIAN;
+//			has_architecture_endian = true;
+//		}
+//	}
+//
+//	if(!has_architecture_endian)
+//	{
+//		logger << DebugWarning << "assuming target architecture endian is 'big endian'" << std::endl << EndDebugWarning;
+//	}
+//
+//	VariableBase* param_program_counter_name = Simulator::simulator->FindParameter("program-counter-name");
+//
+//	if (param_program_counter_name != NULL) {
+//		pc_reg = (VariableBase *) Simulator::simulator->FindRegister(((string) *param_program_counter_name).c_str());
+//		if (pc_reg != NULL) {
+//			has_program_counter = true;
+//		} else {
+//			logger << DebugWarning << "Simulator has no <program-counter> register named '" << (string) *param_program_counter_name << "'" << std::endl << EndDebugWarning;
+//		}
+//	} else {
+//		logger << DebugWarning << "Simulator has no <program-counter-name> parameter" << std::endl << EndDebugWarning;
+//	}
+//
+//	std::list<VariableBase *> lst;
+//
+//	Simulator::simulator->GetRegisters(lst);
+//
+//	uint32_t index = 0;
+//	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
+//
+//		if (!((VariableBase *) *it)->IsVisible()) continue;
+//
+//		simulator_registers.push_back((VariableBase *) *it);
+//
+//		if (has_program_counter) {
+//			if (((VariableBase *) *it) == pc_reg) {
+//				pc_reg_index = index;
+//			}
+//		}
+//
+//		index++;
+//	}
+//
+//	lst.clear();
+
+	return (true);
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
+
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+
+
+	return (true);
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::EndSetup() {
 
 	if(memory_atom_size != 1 &&
 	   memory_atom_size != 2 &&
@@ -284,27 +395,6 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 }
 
 template <class ADDRESS>
-bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
-
-	if(memory_access_reporting_control_import)
-	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
-	}
-
-
-	return (true);
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::EndSetup() {
-
-	return (true);
-}
-
-template <class ADDRESS>
 void PIMServer<ADDRESS>::Stop(int exit_status) {
 
 	if (socketServer) { socketServer->stop();}
@@ -339,28 +429,22 @@ bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
 {
-
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
+	switch(event.GetType())
 	{
-		watchpoint_hit = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
-		watchpoint_hit_addr = addr;
-		watchpoint_hit_size = size;
-
-		trap = true;
-		synched = false;
+		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
+			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (&event);
+			break;
+		default:
+			// ignore event
+			return;
 	}
-}
 
-template <class ADDRESS>
-void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
-{
-	if(breakpoint_registry.HasBreakpoint(next_addr))
-	{
-		trap = true;
-		synched = false;
-	}
+	trap = true;
+	synched = true;
 }
 
 template <class ADDRESS>
@@ -1210,8 +1294,9 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		} else {
 			sstr << "watch";
 		}
+
 		sstr << ":" << std::hex;
-		sstr << watchpoint_hit_addr;
+		sstr << watchpoint_hit->GetAddress();
 
 		packet += sstr.str();
 		packet += ";";
@@ -1238,51 +1323,47 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.SetBreakpoint(addr + i)) return (false);
+				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
 			}
-			if(memory_access_reporting_control_import)
-				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-						breakpoint_registry.HasBreakpoints());
 			return (true);
+
 		case 2:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
 				return (true);
 			}
 			else
+			{
 				return (false);
+			}
+
 		case 3:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
 				return (true);
 			}
 			else
+			{
 				return (false);
+			}
+
 
 		case 4:
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-			}
-			else
 				return (false);
-			if(watchpoint_registry.SetWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			}
+
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
 				return (true);
 			}
 			else
+			{
+				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size));
 				return (false);
+			}
+
 	}
 	return (false);
 }
@@ -1303,54 +1384,38 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return (false);
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
 			}
-			if(memory_access_reporting_control_import)
-				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-						breakpoint_registry.HasBreakpoints());
 			return (true);
 
 		case 2:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
 				return (true);
 			}
-			else {
-
+			else
+			{
 				return (false);
 			}
+
 		case 3:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
 				return (true);
 			}
 			else
+			{
 				return (false);
+			}
+
 		case 4:
-			if(watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
+				bool status = true;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
+				return (status);
 			}
-			else
-				return (false);
-			if(!watchpoint_registry.RemoveWatchpoint(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))
-			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
-				return (true);
-			}
-			else
-				return (false);
+
 	}
 	return (false);
 }

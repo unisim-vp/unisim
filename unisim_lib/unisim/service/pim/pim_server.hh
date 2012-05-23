@@ -39,6 +39,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -74,6 +75,8 @@ using std::string;
 using std::vector;
 
 using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugEventListener;
+using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -112,9 +115,9 @@ typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 template <class ADDRESS>
 class PIMServer :
 	public Service<DebugControl<ADDRESS> >,
-	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Service<DebugEventListener<ADDRESS> >,
 	public Service<TrapReporting>,
-	public Client<MemoryAccessReportingControl>,
+	public Client<DebugEventTrigger<ADDRESS> >,
 	public Client<Memory<ADDRESS> >,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
@@ -127,6 +130,9 @@ public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
+	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
+	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
+
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<Registers> registers_import;
@@ -137,8 +143,6 @@ public:
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
 
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -146,6 +150,9 @@ public:
 							const std::string &str);
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
 							const char *c_str);
+
+	// DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
 
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
@@ -219,8 +226,6 @@ private:
 	bool trap;
 	bool synched;
 	const Watchpoint<ADDRESS> *watchpoint_hit;
-	ADDRESS watchpoint_hit_addr;
-	uint32_t watchpoint_hit_size;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;

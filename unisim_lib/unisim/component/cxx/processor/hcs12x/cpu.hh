@@ -209,14 +209,14 @@ private:
 
 
 class CPU : public Decoder,
-public Client<DebugControl<service_address_t> >,
-public Client<MemoryAccessReporting<service_address_t> >,
+public Client<DebugControl<physical_address_t> >,
+public Client<MemoryAccessReporting<physical_address_t> >,
 public Service<MemoryAccessReportingControl>,
-public Service<Disassembly<service_address_t> >,
+public Service<Disassembly<physical_address_t> >,
 public Service<Registers>,
-public Service<Memory<service_address_t> >,
-public Client<Memory<service_address_t> >,
-public Client<SymbolTableLookup<service_address_t> >,
+public Service<Memory<physical_address_t> >,
+public Client<Memory<physical_address_t> >,
+public Client<SymbolTableLookup<physical_address_t> >,
 public Client<TrapReporting >
 
 {
@@ -239,15 +239,15 @@ public:
 	//=                  public service imports/exports                   =
 	//=====================================================================
 
-	ServiceExport<Disassembly<service_address_t> > disasm_export;
+	ServiceExport<Disassembly<physical_address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
-	ServiceExport<Memory<service_address_t> > memory_export;
+	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 
-	ServiceImport<DebugControl<service_address_t> > debug_control_import;
-	ServiceImport<MemoryAccessReporting<service_address_t> > memory_access_reporting_import;
-	ServiceImport<Memory<service_address_t> > memory_import;
-	ServiceImport<SymbolTableLookup<service_address_t> > symbol_table_lookup_import;
+	ServiceImport<DebugControl<physical_address_t> > debug_control_import;
+	ServiceImport<MemoryAccessReporting<physical_address_t> > memory_access_reporting_import;
+	ServiceImport<Memory<physical_address_t> > memory_import;
+	ServiceImport<SymbolTableLookup<physical_address_t> > symbol_table_lookup_import;
 
 	// the kernel logger
 	unisim::kernel::logger::Logger *logger;
@@ -478,8 +478,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             bus interface methods                              =
@@ -511,14 +511,14 @@ public:
 	 * @param next_addr The address following the requested instruction.
 	 * @return The disassembling of the requested instruction address.
 	 */
-	virtual string Disasm(service_address_t addr, service_address_t &next_addr);
+	virtual string Disasm(physical_address_t addr, physical_address_t &next_addr);
 
 	//=====================================================================
 	//=                   Debugging methods                               =
 	//=====================================================================
 
-	string getObjectFriendlyName(service_address_t addr);
-	string getFunctionFriendlyName(service_address_t addr);
+	string getObjectFriendlyName(physical_address_t addr);
+	string getFunctionFriendlyName(physical_address_t addr);
 	inline uint64_t getInstructionCounter() const { return (instruction_counter); }
 	inline bool isVerboseException() const { return (debug_enabled && CONFIG::DEBUG_EXCEPTION_ENABLE && (verbose_all || verbose_exception)); }
 
@@ -635,7 +635,7 @@ inline void CPU::monitorLoad(physical_address_t pea, uint32_t size)
 	// Memory access reporting
 	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_READ, MemoryAccessReporting<service_address_t>::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_DATA, pea, size);
 	}
 }
 
@@ -646,7 +646,7 @@ inline void CPU::monitorStore(physical_address_t pea, uint32_t size)
 	// Memory access reporting
 	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<service_address_t>::MAT_WRITE, MemoryAccessReporting<service_address_t>::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_WRITE, MemoryAccessReporting<physical_address_t>::MT_DATA, pea, size);
 	}
 }
 

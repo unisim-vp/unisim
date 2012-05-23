@@ -21,13 +21,18 @@
 
 #include <unisim/kernel/service/service.hh>
 
+#include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
+
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
 
 #include <unisim/service/interfaces/loader.hh>
 
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
+
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
 
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
@@ -80,12 +85,16 @@ using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 
+using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
+
 using unisim::service::interfaces::Loader;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
+
+using unisim::service::profiling::addr_profiler::Profiler;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -140,8 +149,12 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
+//	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  RAM;
+//	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
+//	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
+	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 
@@ -151,13 +164,13 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
 
-	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
 
 // ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
-	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
 	typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
-	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
+	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t> MemoryImportExportTee;
+	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -190,6 +203,9 @@ private:
 
 	MemoryImportExportTee* memoryImportExportTee;
 
+	//  - Tee Memory Access Reporting
+	MemoryAccessReportingTee *tee_memory_access_reporting;
+
 #ifdef HAVE_RTBCOB
 	RTBStub *rtbStub;
 #else
@@ -200,18 +216,24 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	Service<Loader > *loaderS19;
-	Service<Loader > *loaderELF;
+	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
+	Elf32Loader *loaderELF;
 
+	//  - profiler
+	Profiler<CPU_ADDRESS_TYPE> *profiler;
+
+	//  - Debugger
+	Debugger<CPU_ADDRESS_TYPE> *debugger;
 
 	//  - GDB server
-	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 
 	// PIM server
-	PIMServer<SERVICE_ADDRESS_TYPE> *pim_server;
+	PIMServer<CPU_ADDRESS_TYPE> *pim_server;
 
 	//  - Inline debugger
-	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger;
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time

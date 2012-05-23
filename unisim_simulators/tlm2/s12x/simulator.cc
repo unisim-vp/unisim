@@ -48,9 +48,11 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 	, loaderS19(0)
 	, loaderELF(0)
+	, debugger(0)
 	, pim_server(0)
 	, gdb_server(0)
 	, inline_debugger(0)
+	, profiler(0)
 	, sim_time(0)
 	, host_time(0)
 	, isS19(false)
@@ -130,6 +132,15 @@ Simulator::Simulator(int argc, char **argv)
 
 	memoryImportExportTee = new MemoryImportExportTee("memoryImportExportTee");
 
+	//  - Tee Memory Access Reporting
+	tee_memory_access_reporting = enable_inline_debugger ? new MemoryAccessReportingTee("tee-memory-access-reporting") : 0;
+
+	//  - profiler
+	profiler = enable_inline_debugger ? new Profiler<CPU_ADDRESS_TYPE>("profiler") : 0;
+
+	//  - debugger
+	debugger = (enable_inline_debugger || enable_gdb_server || enable_pim_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
+
 #ifdef HAVE_RTBCOB
 	rtbStub = new RTBStub("atd-pwm-stub"/*, fsb_cycle_time*/);
 #else
@@ -144,19 +155,19 @@ Simulator::Simulator(int argc, char **argv)
 		 (filename.find(".S19") != std::string::npos);
 
 	if (isS19) {
-		loaderS19 = new S19_Loader<SERVICE_ADDRESS_TYPE>("S19_Loader");
+		loaderS19 = new S19_Loader<CPU_ADDRESS_TYPE>("S19_Loader");
 		loaderELF = new Elf32Loader("elf32-loader");
 	} else {
 		loaderELF = new Elf32Loader("elf32-loader");
 	}
 
 	//  - PIM server
-	pim_server = enable_pim_server ? new PIMServer<SERVICE_ADDRESS_TYPE>("pim-server") : 0;
+	pim_server = enable_pim_server ? new PIMServer<CPU_ADDRESS_TYPE>("pim-server") : 0;
 
 	//  - GDB server
-	gdb_server = enable_gdb_server ? new GDBServer<SERVICE_ADDRESS_TYPE>("gdb-server") : 0;
+	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
-	inline_debugger = enable_inline_debugger ? new InlineDebugger<SERVICE_ADDRESS_TYPE>("inline-debugger") : 0;
+	inline_debugger = enable_inline_debugger ? new InlineDebugger<CPU_ADDRESS_TYPE>("inline-debugger") : 0;
 	//  - SystemC Time
 	sim_time = new unisim::service::time::sc_time::ScTime("time");
 	//  - Host Time
@@ -233,7 +244,6 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[4]) >> pwm->memory_export;
 	*(memoryImportExportTee->memory_import[5]) >> ect->memory_export;
 
-//	*(memoryImportExportTee->memory_import[6]) >> global_memory->memory_export;
 	*(memoryImportExportTee->memory_import[6]) >> global_ram->memory_export;
 	*(memoryImportExportTee->memory_import[7]) >> global_eeprom->memory_export;
 	*(memoryImportExportTee->memory_import[8]) >> global_flash->memory_export;
@@ -250,88 +260,98 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[6]) >> pwm->registers_export;
 	*(registersTee->registers_import[7]) >> ect->registers_export;
 
+// ***********************************************************
+	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
+	{
+		if(enable_inline_debugger)
+		{
+			// Connect tee-memory-access-reporting to CPU, debugger and profiler
+			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+
+		}
+		else
+		{
+			// Connect CPU to debugger
+			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		}
+
+		// Connect debugger to CPU
+		cpu->debug_control_import >> debugger->debug_control_export;
+		cpu->trap_reporting_import >> debugger->trap_reporting_export;
+		debugger->disasm_import >> cpu->disasm_export;
+		debugger->memory_import >> cpu->memory_export;
+
+		debugger->registers_import >> registersTee->registers_export;
+
+		pwm->trap_reporting_import >> debugger->trap_reporting_export;
+		atd0->trap_reporting_import >> debugger->trap_reporting_export;
+		atd1->trap_reporting_import >> debugger->trap_reporting_export;
+
+		mmc->trap_reporting_import >> debugger->trap_reporting_export;
+
+
+	}
+
 	if(enable_inline_debugger)
 	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		cpu->memory_access_reporting_import >> inline_debugger->memory_access_reporting_export;
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		// Connect inline-debugger to debugger
+		debugger->debug_event_listener_import >> inline_debugger->debug_event_listener_export;
+		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
+		debugger->debug_control_import >> inline_debugger->debug_control_export;
+		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		inline_debugger->disasm_import >> debugger->disasm_export;
+		inline_debugger->memory_import >> debugger->memory_export;
+		inline_debugger->registers_import >> debugger->registers_export;
+		inline_debugger->stmt_lookup_import >> debugger->stmt_lookup_export;
+		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 
-		pwm->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		atd0->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		atd1->trap_reporting_import >> inline_debugger->trap_reporting_export;
-
-		mmc->trap_reporting_import >> inline_debugger->trap_reporting_export;
-
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-
-		inline_debugger->registers_import >> registersTee->registers_export;
-
-		inline_debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		inline_debugger->backtrace_import >> debugger->backtrace_export;
+		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
 	}
 	else if(enable_gdb_server)
 	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		cpu->memory_access_reporting_import >> gdb_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-
-		pwm->trap_reporting_import >> gdb_server->trap_reporting_export;
-		atd0->trap_reporting_import >> gdb_server->trap_reporting_export;
-		atd1->trap_reporting_import >> gdb_server->trap_reporting_export;
-
-		mmc->trap_reporting_import >> gdb_server->trap_reporting_export;
-
-		gdb_server->disasm_import >> cpu->disasm_export;
-		gdb_server->memory_import >> cpu->memory_export;
-
-		gdb_server->registers_import >> registersTee->registers_export;
-		gdb_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		// Connect gdb-server to debugger
+		debugger->debug_control_import >> gdb_server->debug_control_export;
+		debugger->debug_event_listener_import >> gdb_server->debug_event_listener_export;
+		debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
+		gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		gdb_server->memory_import >> debugger->memory_export;
+		gdb_server->registers_import >> debugger->registers_export;
+		gdb_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 	}
 	else if (enable_pim_server)
 	{
-		// Connect pim-server to CPU
-		cpu->debug_control_import >> pim_server->debug_control_export;
-		cpu->memory_access_reporting_import >> pim_server->memory_access_reporting_export;
-		cpu->trap_reporting_import >> pim_server->trap_reporting_export;
+		// Connect pim-server to debugger
+		debugger->debug_event_listener_import >> pim_server->debug_event_listener_export;
+		debugger->trap_reporting_import >> pim_server->trap_reporting_export;
+		debugger->debug_control_import >> pim_server->debug_control_export;
+		pim_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		pim_server->disasm_import >> debugger->disasm_export;
+		pim_server->memory_import >> debugger->memory_export;
+		pim_server->registers_import >> debugger->registers_export;
+		pim_server->stmt_lookup_import >> debugger->stmt_lookup_export;
+		pim_server->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 
-		pwm->trap_reporting_import >> pim_server->trap_reporting_export;
-		atd0->trap_reporting_import >> pim_server->trap_reporting_export;
-		atd1->trap_reporting_import >> pim_server->trap_reporting_export;
-
-		mmc->trap_reporting_import >> pim_server->trap_reporting_export;
-
-		pim_server->disasm_import >> cpu->disasm_export;
-		pim_server->memory_import >> cpu->memory_export;
-
-		pim_server->registers_import >> registersTee->registers_export;
-		pim_server->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
 	}
 
 	if (isS19) {
-		((S19_Loader<SERVICE_ADDRESS_TYPE> *) loaderS19)->memory_import >> mmc->memory_export;
-
-	} else {
-		((Elf32Loader *) loaderELF)->memory_import >> mmc->memory_export;
+		loaderS19->memory_import >> mmc->memory_export;
 	}
 
 	if (loaderELF) {
-		cpu->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
-		if(inline_debugger)
-		{
-			*inline_debugger->symbol_table_lookup_import[0] >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
-			*inline_debugger->stmt_lookup_import[0] >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
-		}
-		else if (gdb_server)
-		{
-			gdb_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
-		}
-		else if (pim_server)
-		{
-			pim_server->symbol_table_lookup_import >> ((Elf32Loader *) loaderELF)->symbol_table_lookup_export;
-			pim_server->stmt_lookup_import >> ((Elf32Loader *) loaderELF)->stmt_lookup_export;
-		}
+		loaderELF->memory_import >> mmc->memory_export;
+
+		debugger->loader_import >> loaderELF->loader_export;
+		debugger->blob_import >> loaderELF->blob_export;
+
+		cpu->symbol_table_lookup_import >> loaderELF->symbol_table_lookup_export;
+
 	}
 
 }
@@ -428,6 +448,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("gdb-server.tcp-port", gdb_server_tcp_port);
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 	simulator->SetVariable("gdb-server.host", "127.0.0.1");	// 127.0.0.1 is the default localhost-name
+
+	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", "68hc12_dwarf_register_number_mapping.xml");
 
 	simulator->SetVariable("S19_Loader.filename", filename);
 	simulator->SetVariable("elf32-loader.filename", symbol_filename);
@@ -606,7 +629,7 @@ void Simulator::Run() {
 	physical_address_t entry_point;
 
 
-	const unisim::util::debug::blob::Blob<uint64_t>* blob = ((Elf32Loader*) loaderELF)->GetBlob();
+	const unisim::util::debug::blob::Blob<physical_address_t>* blob = loaderELF->GetBlob();
 	entry_point = blob->GetEntryPoint();
 
 	address_t cpu_address;

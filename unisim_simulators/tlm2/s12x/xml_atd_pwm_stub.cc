@@ -135,7 +135,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	xmlXPathObjectPtr xmlobject;
 	int result = 0;
 
-	cout << name() << " Parsing " << filename << endl;
+	cout << sc_object::name() << " Parsing " << filename << endl;
 
 	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename).c_str());
 	if (!doc)
@@ -184,7 +184,7 @@ void XML_ATD_PWM_STUB::processATD0()
 		atd0_data_size = atd0_vect.size();
 
 		if (atd0_data_size == 0) {
-			cerr << name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
+			cerr << sc_object::name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
 		}
 
 		/**
@@ -251,7 +251,7 @@ void XML_ATD_PWM_STUB::processATD1()
 		atd1_data_size = atd1_vect.size();
 
 		if (atd1_data_size == 0) {
-			cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
+			cerr << sc_object::name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
 		}
 
 		/**

@@ -2,19 +2,26 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory> <unisim repository>"
+	echo "  $0 <destination directory>"
 }
 
-if [ -z "$1" ] || [ -z "$2" ]; then
+if [ -z "$1" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
+MY_DIR=`dirname $0`
+if test ${MY_DIR} = "."; then
+	MY_DIR=${HERE}
+elif test ${MY_DIR} = ".."; then
+	MY_DIR=${HERE}/..
+fi
+
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=$2/unisim_tools
-UNISIM_LIB_DIR=$2/unisim_lib
-UNISIM_SIMULATORS_DIR=$2/unisim_simulators/tlm2/s12x
+UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/s12x
 
 STAR12X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-star12x-${STAR12X_VERSION}
@@ -126,6 +133,7 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -134,8 +142,12 @@ unisim/util/debug/blob/segment32.cc \
 unisim/util/debug/blob/segment64.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
+unisim/util/debug/coff_symtab/coff_symtab32.cc \
+unisim/util/debug/coff_symtab/coff_symtab64.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/util/loader/coff_loader/coff_loader32.cc \
+unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/endian/endian.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
@@ -143,13 +155,19 @@ unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
+unisim/service/debug/debugger/debugger32.cc \
+unisim/service/debug/debugger/debugger64.cc \
 unisim/service/loader/elf_loader/elf32_loader.cc \
 unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/profiling/addr_profiler/profiler32.cc \
+unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/tee/registers/registers_tee.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
+unisim/service/tee/memory_access_reporting/tee_64.cc \
+unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
 unisim/component/cxx/processor/hcs12x/exception.cc \
@@ -219,6 +237,7 @@ unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
 unisim/util/debug/stmt.hh \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -243,6 +262,9 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
+unisim/util/debug/dwarf/frame.hh \
+unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/event.hh \
 unisim/util/endian/endian.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
@@ -257,6 +279,8 @@ unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/xml/xml.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/debug_control.hh \
@@ -275,9 +299,14 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
-unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
+unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
+unisim/service/interfaces/profiling.hh \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32.h \
@@ -342,17 +371,23 @@ unisim/util/debug/dwarf/fde.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
+unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/loader/elf_loader/elf32_loader.cc \
-unisim/util/loader/elf_loader/elf64_loader.cc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
@@ -383,6 +418,7 @@ m4/pthread.m4"
 
 UNISIM_LIB_STAR12X_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_hcs12x.xml \
+unisim/util/debug/dwarf/68hc12_dwarf_register_number_mapping.xml \
 "
 
 STAR12X_EXTERNAL_HEADERS="\
@@ -734,18 +770,18 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "AC_LANG([C++])" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${STAR12X_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CURSES" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBEDIT" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_BSD_SOCKETS" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_ZLIB" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_LIBXML2" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_CXXABI" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_PTHREAD" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CURSES(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBEDIT(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_BSD_SOCKETS(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_ZLIB(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_LIBXML2(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_CXXABI(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_PTHREAD(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_RTBCOB(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
+	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${STAR12X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_RTBCOB" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH" >> "${STAR12X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_REAL_PATH" >> "${STAR12X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${STAR12X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-star12x-${STAR12X_VERSION}\"], [path of shared data relative to bin directory])" >> "${STAR12X_CONFIGURE_AC}"

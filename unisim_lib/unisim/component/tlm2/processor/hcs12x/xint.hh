@@ -75,7 +75,7 @@ using namespace tlm;
 using namespace tlm_utils;
 
 using unisim::component::cxx::processor::hcs12x::address_t;
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
@@ -100,9 +100,9 @@ using unisim::kernel::tlm2::PayloadFabric;
 class XINT :
 	public sc_module
 	, public CallBackObject
-	, public Service<Memory<service_address_t> >
+	, public Service<Memory<physical_address_t> >
 	, public Service<Registers>
-	, public Client<Memory<service_address_t> >
+	, public Client<Memory<physical_address_t> >
 	, virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
 
 {
@@ -159,8 +159,8 @@ public:
 	// interface with bus
 	tlm_utils::simple_target_socket<XINT> slave_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
 	XINT(const sc_module_name& name, Object *parent = 0);
@@ -176,8 +176,8 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
     //================================================================
     //=                    tlm2 Interface                            =
