@@ -31,10 +31,9 @@ public:
 	virtual void run() { };
 
 	bool GetChar(char& c, bool blocking);
-	virtual bool GetPacket(string& s, bool blocking);
-
+	bool GetPacket(string& s, bool blocking);
 	bool PutChar(char c);
-	virtual bool PutPacket(const string& data, bool blocking);
+	bool PutPacket(const string& data);
 	bool OutputText(const char *s, int count);
 	bool FlushOutput();
 

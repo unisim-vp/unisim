@@ -109,11 +109,6 @@ void PIMThread::run(){
 
 							os << simulator_variables[i]->GetName() << ":";
 
-//							double val = *(simulator_variables[i]);
-//							os << stringify(val);
-
-// **********************
-
 							if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
 								double val = *(simulator_variables[i]);
 								os << stringify(val);
@@ -131,9 +126,6 @@ void PIMThread::run(){
 								os << stringify(val);
 							}
 
-// ***********************
-
-
 							os << ";";
 
 							break;
@@ -148,23 +140,7 @@ void PIMThread::run(){
 
 				std::string str = os.str();
 
-				while (true) {
-					PutPacket(str, blocking);
-					if (!FlushOutput()) {
-						if (blocking) {
-							cerr << "PIM-Target unable to send !" << endl;
-						} else {
-#ifdef WIN32
-							Sleep(1);
-#else
-							usleep(1000);
-#endif
-							continue;
-						}
-
-					}
-					break;
-				}
+				PutPacket(str);
 
 				os.str(std::string());
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007, 2010
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -183,12 +183,6 @@ private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
 	bool ParseHex(const string& s, unsigned int& pos, ADDRESS& value);
 
-	bool PutChar(char c);
-	bool GetPacket(string& s, bool blocking);
-	bool PutPacket(const string& s);
-	bool FlushOutput();
-	bool OutputText(const char *s, int count);
-
 	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
 
 	bool ReadRegisters();
@@ -235,13 +229,6 @@ private:
 	int32_t period;
 
 	ADDRESS disasm_addr;
-
-	unsigned int input_buffer_size;
-	unsigned int input_buffer_index;
-	char input_buffer[MAX_BUFFER_SIZE];
-
-	unsigned int output_buffer_size;
-	char output_buffer[MAX_BUFFER_SIZE];
 
 	unsigned int memory_atom_size;
 	bool verbose;

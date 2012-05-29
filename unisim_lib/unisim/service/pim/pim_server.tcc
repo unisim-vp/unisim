@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007, 2010
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -119,8 +119,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
-//	, gdb_registers()
-//	, gdb_pc(0)
 	, pc_reg(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
@@ -128,9 +126,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, synched(false)
 
 	, watchpoint_hit(NULL)
-//	, watchpoint_hit_addr(-1)
-//	, watchpoint_hit_size(0)
-
 
 	, breakpoint_registry()
 	, watchpoint_registry()
@@ -139,9 +134,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, counter(0)
 	, period(50)
 	, disasm_addr(0)
-	, input_buffer_size(0)
-	, input_buffer_index(0)
-	, output_buffer_size(0)
 	, memory_atom_size(1)
 	, verbose(false)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -193,94 +185,6 @@ double PIMServer<ADDRESS>::GetHostTime() {
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::BeginSetup() {
-
-//	if(memory_atom_size != 1 &&
-//	   memory_atom_size != 2 &&
-//	   memory_atom_size != 4 &&
-//	   memory_atom_size != 8 &&
-//	   memory_atom_size != 16)
-//	{
-//		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
-//		return (false);
-//	}
-//
-//	// Open Socket Stream
-//	// connection_req_nbre parameter has to be set to two "2" connections. once is for GDB requests and the second is for PIM requests
-//	socketServer = new SocketServerThread(GetHost(), GetTCPPort(), true, 2);
-//
-//	socketServer->setProtocolHandler(this);
-//
-//	socketServer->start();
-//
-//	// Load Architecture informations from simulator
-//	bool has_architecture_name = false;
-//	bool has_architecture_endian = false;
-//
-//	bool has_program_counter = false;
-//	string program_counter_name;
-//
-//	VariableBase* architecture_name = Simulator::simulator->FindParameter("program-name");
-//	has_architecture_name = (architecture_name != NULL);
-//	if(!has_architecture_name)
-//	{
-//		logger << DebugError << "architecture has no property 'name'" << std::endl << EndDebugError;
-//		return (false);
-//	}
-//
-//	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
-//	if (architecture_endian != NULL) {
-//		string endianstr = *architecture_endian;
-//		if(endianstr == "little")
-//		{
-//			endian = GDB_LITTLE_ENDIAN;
-//			has_architecture_endian = true;
-//		}
-//		else if(endianstr == "big")
-//		{
-//			endian = GDB_BIG_ENDIAN;
-//			has_architecture_endian = true;
-//		}
-//	}
-//
-//	if(!has_architecture_endian)
-//	{
-//		logger << DebugWarning << "assuming target architecture endian is 'big endian'" << std::endl << EndDebugWarning;
-//	}
-//
-//	VariableBase* param_program_counter_name = Simulator::simulator->FindParameter("program-counter-name");
-//
-//	if (param_program_counter_name != NULL) {
-//		pc_reg = (VariableBase *) Simulator::simulator->FindRegister(((string) *param_program_counter_name).c_str());
-//		if (pc_reg != NULL) {
-//			has_program_counter = true;
-//		} else {
-//			logger << DebugWarning << "Simulator has no <program-counter> register named '" << (string) *param_program_counter_name << "'" << std::endl << EndDebugWarning;
-//		}
-//	} else {
-//		logger << DebugWarning << "Simulator has no <program-counter-name> parameter" << std::endl << EndDebugWarning;
-//	}
-//
-//	std::list<VariableBase *> lst;
-//
-//	Simulator::simulator->GetRegisters(lst);
-//
-//	uint32_t index = 0;
-//	for (std::list<VariableBase *>::iterator it = lst.begin(); it != lst.end(); it++) {
-//
-//		if (!((VariableBase *) *it)->IsVisible()) continue;
-//
-//		simulator_registers.push_back((VariableBase *) *it);
-//
-//		if (has_program_counter) {
-//			if (((VariableBase *) *it) == pc_reg) {
-//				pc_reg_index = index;
-//			}
-//		}
-//
-//		index++;
-//	}
-//
-//	lst.clear();
 
 	return (true);
 }
@@ -560,10 +464,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case 'G':
 				if(WriteRegisters(packet.substr(1)))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -571,10 +473,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
 				if(WriteRegister(reg_num, packet.substr(pos)))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -596,10 +496,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
 				if(WriteMemory(addr, packet.substr(pos), size))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -668,7 +566,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case '!':
 				extended_mode = true;
-//				PutPacket("OK");
 				OutputText("OK", 2);
 				break;
 
@@ -679,10 +576,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(SetBreakpointWatchpoint(type, addr, size))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -693,10 +588,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(RemoveBreakpointWatchpoint(type, addr, size))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -748,167 +641,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	return (DebugControl<ADDRESS>::DBG_KILL);
 }
 
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::FlushOutput()
-{
-	if(output_buffer_size > 0)
-	{
-		unsigned int index = 0;
-		do
-		{
-#ifdef WIN32
-			int r = send(sockfd, output_buffer + index, output_buffer_size, 0);
-			if(r == 0 || r == SOCKET_ERROR)
-#else
-			ssize_t r = write(sockfd, output_buffer + index, output_buffer_size);
-			if(r <= 0)
-#endif
-			{
-				logger << DebugError << "can't write into socket" << EndDebugError;
-				return (false);
-			}
-
-			index += r;
-			output_buffer_size -= r;
-		}
-		while(output_buffer_size > 0);
-	}
-
-	return (true);
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::PutChar(char c)
-{
-	if(output_buffer_size >= sizeof(output_buffer))
-	{
-		if(!FlushOutput()) return (false);
-	}
-
-	output_buffer[output_buffer_size++] = c;
-	return (true);
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
-{
-	uint8_t checksum;
-	uint8_t received_checksum;
-	char c;
-	char ch[2];
-	ch[1] = 0;
-	s.erase();
-
-	while(1)
-	{
-		while(1)
-		{
-			if(!GetChar(c, blocking)) return (false);
-			if(c == '$') break;
-		}
-
-		checksum = 0;
-
-		while(1)
-		{
-			if(!GetChar(c, true)) return (false);
-			if(c == '$')
-			{
-				checksum = 0;
-				s.erase();
-				continue;
-			}
-
-			if(c == '#') break;
-			checksum = checksum + (uint8_t ) c;
-			ch[0] = c;
-			s += ch;
-		}
-
-		if(c == '#')
-		{
-			if(!GetChar(c, true)) break;
-			received_checksum = hexChar2Nibble(c) << 4;
-			if(!GetChar(c, true)) break;
-			received_checksum += hexChar2Nibble(c);
-
-			if(verbose)
-			{
-				logger << DebugInfo << "receiving $" << s << "#" << nibble2HexChar((received_checksum >> 4) & 0xf) << nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
-			}
-			if(checksum != received_checksum)
-			{
-				if(!PutChar('-')) return (false);
-				if(!FlushOutput()) return (false);
-			}
-			else
-			{
-				if(!PutChar('+')) return (false);
-				if(!FlushOutput()) return (false);
-
-				if(s.length() >= 3 && s[2] == ':')
-				{
-					if(!PutChar(s[0])) return (false);
-					if(!PutChar(s[1])) return (false);
-					if(!FlushOutput()) return (false);
-					s.erase(0, 3);
-				}
-				return (true);
-			}
-		}
-	}
-	return (false);
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::PutPacket(const string& s)
-{
-	uint8_t checksum;
-	unsigned int pos;
-	unsigned int len;
-	char c;
-
-	do
-	{
-		if(!PutChar('$')) return (false);
-		checksum = 0;
-		pos = 0;
-		len = s.length();
-
-		while(pos < len)
-		{
-			c = s[pos];
-			if(!PutChar(c)) return (false);
-			checksum += (uint8_t) c;
-			pos++;
-		}
-		if(!PutChar('#')) return (false);
-		if(!PutChar(nibble2HexChar(checksum >> 4))) return (false);
-		if(!PutChar(nibble2HexChar(checksum & 0xf))) return (false);
-		if(verbose)
-		{
-			logger << DebugInfo << "sending $" << s << "#" << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf) << EndDebugInfo;
-		}
-		if(!FlushOutput()) return (false);
-	} while(GetChar(c, true) && c != '+');
-	return (true);
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::OutputText(const char *s, int count)
-{
-	string packet = "";
-	string tmpPacket;
-
-	textToHex(s, count, tmpPacket);
-
-	packet.append("O");
-
-	packet.append(tmpPacket);
-
-	return (PutPacket(packet));
-}
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReadRegisters()
@@ -1078,11 +810,9 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 					logger << DebugWarning << memory_import.GetName() << "->WriteSymbol has reported an error" << EndDebugWarning;
 				}
 
-//				PutPacket("NOK");
 				OutputText("NOK", 3);
 				return (false);
 			} else {
-//				PutPacket("OK");
 				OutputText("OK", 2);
 			}
 
@@ -1698,7 +1428,6 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			unsigned int i;
 			if(stmt_lookup_import)
 			{
-//				stmt = stmt_lookup_import->FindStatement(addr);
 				stmt = stmt_lookup_import->FindStatement(mcuAddress);
 			}
 

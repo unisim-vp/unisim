@@ -129,7 +129,6 @@ void SocketThread::setSockfd(int sockfd) {
 
 	this->sockfd = sockfd;
 
-//    pthread_cond_signal( &sockfd_condition_cond );
     pthread_cond_broadcast( &sockfd_condition_cond );
 
     pthread_mutex_unlock( &sockfd_mutex );
@@ -158,7 +157,9 @@ bool SocketThread::PutChar(char c) {
 	return (true);
 }
 
-bool SocketThread::PutPacket(const string& data, bool blocking) {
+bool SocketThread::PutPacket(const string& data) {
+
+	char c;
 
 	int data_size = data.size();
 
@@ -172,6 +173,24 @@ bool SocketThread::PutPacket(const string& data, bool blocking) {
 	}
 
 	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
+
+	do
+	{
+		if (!FlushOutput()) {
+			if (blocking) {
+				cerr << "SocketThread unable to send !" << endl;
+				return (false);
+			} else {
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
+				continue;
+			}
+		}
+
+	} while(GetChar(c, true) && c != '+');
 
 	return (true);
 
@@ -191,7 +210,7 @@ bool SocketThread::OutputText(const char *s, int count)
 		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
 	}
 	*p = 0;
-	return (PutPacket((const char *) packet, blocking));
+	return (PutPacket((const char *) packet));
 }
 
 bool SocketThread::FlushOutput() {
@@ -321,11 +340,23 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
     			GetChar(c, blocking);
     			pchk = pchk + hexChar2Nibble(c);
 
-    			if (checkSum != pchk) {
-    				cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
-    				return (false);
-    			} else {
+				if (checkSum != pchk) {
+					cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+    				if(!PutChar('-')) return (false);
+    				if(!FlushOutput()) return (false);
+    			}
+    			else
+    			{
+    				if(!PutChar('+')) return (false);
+    				if(!FlushOutput()) return (false);
 
+    				if(str.length() >= 3 && str[2] == ':')
+    				{
+    					if(!PutChar(str[0])) return (false);
+    					if(!PutChar(str[1])) return (false);
+    					if(!FlushOutput()) return (false);
+    					str.erase(0, 3);
+    				}
     				return (true);
     			}
 
