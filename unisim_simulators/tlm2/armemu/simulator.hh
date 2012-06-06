@@ -59,7 +59,10 @@
 // #include "unisim/service/os/linux_os/linux_os_32/linux_os_32.hh"
 #include "unisim/service/os/os_linux/linux_os.hh"
 #include "unisim/service/trap_handler/trap_handler.hh"
-#include "config.hh"
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+//#include "config.hh"
 #ifdef SIM_GDB_SERVER_SUPPORT
 #include "unisim/service/debug/gdb_server/gdb_server.hh"
 #endif // SIM_GDB_SERVER_SUPPORT
