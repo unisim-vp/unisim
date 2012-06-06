@@ -1254,7 +1254,7 @@ void I8042::WriteControl(uint8_t value)
 {
 	if(verbose)
 	{
-		logger << DebugInfo << "Writing control (0x" << hex << (unsigned int) value << dec << ")" << EndDebugInfo;
+		logger << DebugInfo << "Writing control (0x" << hex << (unsigned int) value << dec << "):" << EndDebugInfo;
 	}
 	control = value;
 	if(!enable_aux)
@@ -1264,13 +1264,13 @@ void I8042::WriteControl(uint8_t value)
 	}
 	if(verbose)
 	{
-		logger << DebugInfo << "Keyboard interrupt " << ((control & I8042_CTR_KBDINT) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Aux interrupt " << ((control & I8042_CTR_AUXINT) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Self test " << ((control & I8042_CTR_SYSFLAG) ? "passed" : "failed") << EndDebugInfo;
-		logger << DebugInfo << "PC/AT inhibit override/ignore keylock " << ((control & I8042_CTR_IGNKEYLOCK) ? "enabled" : "disabled") << EndDebugInfo;
-		logger << DebugInfo << "Keyboard " << ((control & I8042_CTR_KBDDIS) ? "disabled" : "enabled") << EndDebugInfo;
-		logger << DebugInfo << "Aux " << ((control & I8042_CTR_AUXDIS) ? "disabled" : "enabled") << EndDebugInfo;
-		logger << DebugInfo << "IBM PC Compatibility Mode " << ((control & I8042_CTR_XLATE) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Keyboard interrupt " << ((control & I8042_CTR_KBDINT) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Aux interrupt " << ((control & I8042_CTR_AUXINT) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Self test " << ((control & I8042_CTR_SYSFLAG) ? "passed" : "failed") << EndDebugInfo;
+		logger << DebugInfo << "  - PC/AT inhibit override/ignore keylock " << ((control & I8042_CTR_IGNKEYLOCK) ? "enabled" : "disabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Keyboard " << ((control & I8042_CTR_KBDDIS) ? "disabled" : "enabled") << EndDebugInfo;
+		logger << DebugInfo << "  - Aux " << ((control & I8042_CTR_AUXDIS) ? "disabled" : "enabled") << EndDebugInfo;
+		logger << DebugInfo << "  - IBM PC Compatibility Mode " << ((control & I8042_CTR_XLATE) ? "enabled" : "disabled") << EndDebugInfo;
 	}
 	UpdateStatus();
 	UpdateIRQ();

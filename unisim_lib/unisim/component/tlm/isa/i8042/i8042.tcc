@@ -157,7 +157,7 @@ void I8042<MAX_DATA_SIZE>::KbdIrqMaster()
 		irq->serial_id = 0;
 		if(inherited::verbose)
 		{
-			inherited::logger << DebugInfo << "KBD interrupt level " << irq->level << EndDebugInfo;
+			inherited::logger << DebugInfo << "KBD Interrupt output goes " << (kbd_irq_level ? "high" : "low") << EndDebugInfo;
 		}
 		while(!kbd_irq_port->Send(message))
 		{
@@ -182,7 +182,7 @@ void I8042<MAX_DATA_SIZE>::AuxIrqMaster()
 		irq->serial_id = 0;
 		if(inherited::verbose)
 		{
-			inherited::logger << DebugInfo << "AUX interrupt level " << irq->level << EndDebugInfo;
+			inherited::logger << DebugInfo << "AUX Interrupt output goes " << (aux_irq_level ? "high" : "low") << EndDebugInfo;
 		}
 		while(!aux_irq_port->Send(message))
 		{
