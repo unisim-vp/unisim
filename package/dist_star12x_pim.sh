@@ -168,6 +168,7 @@ unisim/service/tee/registers/registers_tee.cc \
 unisim/service/tee/memory_import_export/memory_import_export_tee.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
+unisim/component/cxx/processor/hcs12x/xgate.cc \
 unisim/component/cxx/processor/hcs12x/ccr.cc \
 unisim/component/cxx/processor/hcs12x/cpu.cc \
 unisim/component/cxx/processor/hcs12x/exception.cc \
@@ -181,6 +182,7 @@ unisim/component/tlm2/processor/hcs12x/crg.cc \
 unisim/component/tlm2/processor/hcs12x/ect.cc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.cc \
 unisim/component/tlm2/processor/hcs12x/tlm_types.cc \
+unisim/component/tlm2/processor/hcs12x/s12xgate.cc \
 unisim/component/tlm2/interconnect/generic_router/router.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -217,8 +219,11 @@ unisim/component/cxx/processor/hcs12x/transfer_exchange.isa"
 UNISIM_LIB_XB_ISA_FILES="\
 unisim/component/cxx/processor/hcs12x/xb.isa"
 
+UNISIM_LIB_S12XGATE_ISA_FILES="\
+unisim/component/cxx/processor/hcs12x/s12xgate.isa \
+"
 
-UNISIM_LIB_STAR12X_HEADER_FILES="${UNISIM_LIB_STAR12X_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} \
+UNISIM_LIB_STAR12X_HEADER_FILES="${UNISIM_LIB_STAR12X_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
@@ -324,6 +329,8 @@ unisim/component/cxx/processor/hcs12x/exception.hh \
 unisim/component/cxx/processor/hcs12x/types.hh \
 unisim/component/cxx/processor/hcs12x/concatenated_register.hh \
 unisim/component/cxx/processor/hcs12x/config.hh \
+unisim/component/cxx/processor/hcs12x/xgate.hh \
+unisim/component/tlm2/processor/hcs12x/s12xgate.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/tlm2/interconnect/generic_router/config.hh \
 unisim/component/tlm2/interconnect/generic_router/router.hh \
@@ -793,7 +800,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${STAR12X_MAKEFILE_AM}"
 	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${STAR12X_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libstar12x-${STAR12X_VERSION}.a" >> "${STAR12X_MAKEFILE_AM}"
-	echo "nodist_libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"
+	echo "nodist_libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc unisim/component/cxx/processor/hcs12x/s12xgate.cc" >> "${STAR12X_MAKEFILE_AM}"
 	echo "libstar12x_${AM_STAR12X_VERSION}_a_SOURCES = ${UNISIM_LIB_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}" # unisim/component/cxx/processor/hcs12x/xb.cc unisim/component/cxx/processor/hcs12x/hcs12x.cc" >> "${STAR12X_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-star12x-${STAR12X_VERSION}" >> "${STAR12X_MAKEFILE_AM}"
 	echo "unisim_star12x_${AM_STAR12X_VERSION}_SOURCES = ${UNISIM_SIMULATORS_STAR12X_SOURCE_FILES}" >> "${STAR12X_MAKEFILE_AM}"
@@ -803,8 +810,8 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-star12x-${STAR12X_VERSION}" >> "${STAR12X_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_DATA_FILES} ${UNISIM_SIMULATORS_STAR12X_CONFIG_FILES}" >> "${STAR12X_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh" >> "${STAR12X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh" >> "${STAR12X_MAKEFILE_AM}"
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb.hh: \${UNISIM_LIB_XB_ISA_FILES}" >> "${STAR12X_MAKEFILE_AM}"
@@ -814,6 +821,10 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/hcs12x.hh: ${UNISIM_LIB_STAR12X_ISA_FILES} \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/xb_sub.isa" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t" >> "${STAR12X_MAKEFILE_AM}"
 	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o hcs12x -w 32 -I . hcs12x.isa" >> "${STAR12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.cc: \$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh" >> "${STAR12X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/hcs12x/s12xgate.hh: \${UNISIM_LIB_S12XGATE_ISA_FILES}" >> "${STAR12X_MAKEFILE_AM}"
+	printf "\t" >> "${STAR12X_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/hcs12x; \$(GENISSLIB_PATH) -o s12xgate -w 32 -I . s12xgate.isa" >> "${STAR12X_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${STAR12X_MAKEFILE_AM}"

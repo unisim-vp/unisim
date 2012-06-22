@@ -347,8 +347,10 @@ Simulator::Simulator(int argc, char **argv)
 	if (loaderELF) {
 		loaderELF->memory_import >> mmc->memory_export;
 
-		debugger->loader_import >> loaderELF->loader_export;
-		debugger->blob_import >> loaderELF->blob_export;
+		if(enable_inline_debugger || enable_gdb_server || enable_pim_server) {
+			debugger->loader_import >> loaderELF->loader_export;
+			debugger->blob_import >> loaderELF->blob_export;
+		}
 
 		cpu->symbol_table_lookup_import >> loaderELF->symbol_table_lookup_export;
 

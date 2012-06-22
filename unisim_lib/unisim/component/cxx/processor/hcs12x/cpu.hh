@@ -52,7 +52,7 @@
 #include <vector>
 #include <map>
 
-#include "unisim/kernel/service/service.hh"
+#include <stdlib.h>
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include "unisim/service/interfaces/debug_control.hh"
@@ -62,17 +62,19 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/kernel/service/service.hh"
 
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/util/endian/endian.hh"
 
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/ccr.hh>
+#include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
-
 
 namespace unisim {
 namespace component {
@@ -277,7 +279,6 @@ public:
 	//=                    execution handling methods                     =
 	//=====================================================================
 
-	void OnBusCycle();
 	uint8_t step();	// Return the number of cpu cycles consumed by the operation
 	virtual void Stop(int ret);
 	virtual void Sync();
@@ -469,8 +470,8 @@ public:
 	virtual void RequiresMemoryAccessReporting(bool report);
 	virtual void RequiresFinishedInstructionReporting(bool report) ;
 
-	inline void monitorStore(physical_address_t pea, uint32_t size);
-	inline void monitorLoad(physical_address_t pea, uint32_t size);
+	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
+	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
 
 	inline void reportTrap();
 
@@ -533,9 +534,9 @@ protected:
 	//=              CPU Cycle Time/Voltage/Bus Cycle Time                =
 	//=====================================================================
 
-	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
+//	uint64_t cpu_cycle_time; //!< CPU cycle time in ps
 	uint64_t voltage;        //!< CPU voltage in mV
-	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
+//	uint64_t bus_cycle_time; //!< Front side bus cycle time in ps
 	uint64_t cpu_cycle;      //!< Number of cpu cycles
 	uint64_t bus_cycle;      //!< Number of front side bus cycles
 
@@ -628,8 +629,10 @@ private:
 // =          MEMORY ACCESS ROUTINES            =
 // ==============================================
 
-inline void CPU::monitorLoad(physical_address_t pea, uint32_t size)
+inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
+	physical_address_t pea = MMC::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+
 	data_load_counter++;
 
 	// Memory access reporting
@@ -639,8 +642,10 @@ inline void CPU::monitorLoad(physical_address_t pea, uint32_t size)
 	}
 }
 
-inline void CPU::monitorStore(physical_address_t pea, uint32_t size)
+inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
+	physical_address_t pea = MMC::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+
 	data_store_counter++;
 
 	// Memory access reporting
@@ -669,10 +674,7 @@ inline uint8_t CPU::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool 
 
 	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	//	MonitorLoad(logicalAddress, sizeof(data));
-
-	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
-	monitorLoad(pea, sizeof(data));
+	monitorLoad(logicalAddress, sizeof(data), isGlobal);
 
 	return (data);
 }
@@ -691,10 +693,7 @@ inline uint16_t CPU::memRead16(address_t logicalAddress, ADDRESS::MODE type, boo
 
 	data = BigEndian2Host(data);
 
-	//	MonitorLoad(logicalAddress, sizeof(data));
-
-	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
-	monitorLoad(pea, sizeof(data));
+	monitorLoad(logicalAddress, sizeof(data), isGlobal);
 
 	return (data);
 }
@@ -710,10 +709,7 @@ inline void CPU::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE 
 
 	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	//	MonitorStore(logicalAddress, sizeof(val));
-
-	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
-	monitorStore(pea, sizeof(data));
+	monitorStore(logicalAddress, sizeof(data), isGlobal);
 
 }
 
@@ -730,10 +726,7 @@ inline void CPU::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MOD
 
 	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	//	MonitorStore(logicalAddress, sizeof(val));
-
-	physical_address_t pea = MMC::getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
-	monitorStore(pea, sizeof(data));
+	monitorStore(logicalAddress, sizeof(data), isGlobal);
 
 }
 

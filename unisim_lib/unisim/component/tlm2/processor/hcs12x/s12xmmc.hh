@@ -44,6 +44,7 @@
 #include <cmath>
 
 #include <systemc>
+#include <tlm.h>
 
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
@@ -65,6 +66,7 @@ namespace hcs12x {
 
 using namespace sc_core;
 using namespace sc_dt;
+using tlm_utils::simple_initiator_socket;
 
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Client;

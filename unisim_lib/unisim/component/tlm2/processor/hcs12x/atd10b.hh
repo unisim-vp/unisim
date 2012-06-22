@@ -147,7 +147,7 @@ public:
 	void Process();
 	void RunScanMode();
 	void RunTriggerMode();
-	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
+
 
 	//================================================================
 	//=                    tlm2 Interface                            =
@@ -162,6 +162,7 @@ public:
 	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
 	void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
+	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =

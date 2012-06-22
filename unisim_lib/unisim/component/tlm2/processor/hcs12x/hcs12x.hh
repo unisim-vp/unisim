@@ -122,7 +122,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
-	void BusSynchronize();
+//	void BusSynchronize();
 
 	void Run();
 
@@ -169,7 +169,7 @@ private:
 	sc_time next_nice_time;
 
 	sc_time tlm2_btrans_time;
-	sc_time opCyclesArray[32]; // replace with the Max Inst Cycles
+	sc_time opCyclesArray[32];
 
 	uint64_t core_clock_int;
 

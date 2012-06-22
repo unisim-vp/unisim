@@ -32,8 +32,6 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#include "unisim/util/debug/simple_register.hh"
-
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 
 #include <stdio.h>
@@ -44,8 +42,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace hcs12x {
-
-using unisim::util::debug::SimpleRegister;
 
 address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_MEMMAP_SIZE];
 
@@ -271,7 +267,6 @@ void MMC::splitPagedAddress(physical_address_t paged_addr, page_t &page, address
 
 }
 
-// TODO: review this methods for dump and disassemble commands
 bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size) {
 
 	page_t page;
@@ -280,7 +275,7 @@ bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size)
 
 
 	splitPagedAddress(paged_addr, page, cpu_address);
-	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
+	addr = getCPU12XPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
 		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
@@ -310,7 +305,7 @@ bool MMC::WriteMemory(physical_address_t paged_addr, const void *buffer, uint32_
 	}
 
 	splitPagedAddress(paged_addr, page, cpu_address);
-	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
+	addr = getCPU12XPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
 		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {

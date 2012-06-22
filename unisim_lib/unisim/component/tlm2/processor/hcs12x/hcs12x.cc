@@ -91,8 +91,6 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Run);
 
-	this->Reset();
-
 }
 
 
@@ -103,8 +101,8 @@ HCS12X ::
 void
 HCS12X ::
 Stop(int ret) {
-	// Call BusSynchronize to account for the remaining time spent in the cpu core
-	BusSynchronize();
+//	// Call BusSynchronize to account for the remaining time spent in the cpu core
+//	BusSynchronize();
 	Object::Stop(-1);
 }
 
@@ -275,6 +273,8 @@ HCS12X ::BeginSetup() {
 			<< EndDebugInfo;
 	}
 
+	this->Reset();
+
 	return (true);
 
 }
@@ -309,67 +309,67 @@ void HCS12X::computeInternalTime() {
 }
 
 
-void
- HCS12X ::
-BusSynchronize() {
-
-	sc_time time_spent = cpu_time - last_cpu_time;
-	last_cpu_time = cpu_time;
-
-	while(cpu_time >= bus_time) {
-		bus_time += bus_cycle_time;
-	}
-
-	sc_time sleep_time = bus_time - sc_time_stamp();
-	wait(sleep_time);
-
-	cpu_time = sc_time_stamp();
-	last_cpu_time = sc_time_stamp();
-	bus_time = sc_time_stamp();
-
-	return;
-
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "Bus synchro START"
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
-	sc_dt::uint64 time_spent_tu = time_spent.value();
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "time_spent_tu = " << time_spent_tu
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "next_time_tu = " << next_time_tu
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "bus_cycle_time_tu = " << bus_cycle_time_tu
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "bus_time_phase_tu = " << bus_time_phase_tu
-			<< std::endl << EndDebugInfo;
-	if(time_spent_tu || bus_time_phase_tu) {
-		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
-		if(debug_enabled && verbose_tlm_bus_synchronize)
-			*inherited::logger << DebugInfo
-				<< "delay_tu = " << delay_tu
-				<< std::endl << EndDebugInfo;
-		wait(sc_time(delay_tu, false));
-		cpu_time = sc_time_stamp();
-		bus_time = cpu_time + bus_cycle_time;
-	}
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "Bus synchro END"
-			<< std::endl << EndDebugInfo;
-
-}
+//void
+// HCS12X ::
+//BusSynchronize() {
+//
+//	sc_time time_spent = cpu_time - last_cpu_time;
+//	last_cpu_time = cpu_time;
+//
+//	while(cpu_time >= bus_time) {
+//		bus_time += bus_cycle_time;
+//	}
+//
+//	sc_time sleep_time = bus_time - sc_time_stamp();
+//	wait(sleep_time);
+//
+//	cpu_time = sc_time_stamp();
+//	last_cpu_time = sc_time_stamp();
+//	bus_time = sc_time_stamp();
+//
+//	return;
+//
+//	if(debug_enabled && verbose_tlm_bus_synchronize)
+//		*inherited::logger << DebugInfo
+//			<< "Bus synchro START"
+//			<< std::endl << EndDebugInfo;
+//	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
+//	sc_dt::uint64 time_spent_tu = time_spent.value();
+//	if(debug_enabled && verbose_tlm_bus_synchronize)
+//		*inherited::logger << DebugInfo
+//			<< "time_spent_tu = " << time_spent_tu
+//			<< std::endl << EndDebugInfo;
+//	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
+//	if(debug_enabled && verbose_tlm_bus_synchronize)
+//		*inherited::logger << DebugInfo
+//			<< "next_time_tu = " << next_time_tu
+//			<< std::endl << EndDebugInfo;
+//	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
+//	if(debug_enabled && verbose_tlm_bus_synchronize)
+//		*inherited::logger << DebugInfo
+//			<< "bus_cycle_time_tu = " << bus_cycle_time_tu
+//			<< std::endl << EndDebugInfo;
+//	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
+//	if(debug_enabled && verbose_tlm_bus_synchronize)
+//		*inherited::logger << DebugInfo
+//			<< "bus_time_phase_tu = " << bus_time_phase_tu
+//			<< std::endl << EndDebugInfo;
+//	if(time_spent_tu || bus_time_phase_tu) {
+//		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
+//		if(debug_enabled && verbose_tlm_bus_synchronize)
+//			*inherited::logger << DebugInfo
+//				<< "delay_tu = " << delay_tu
+//				<< std::endl << EndDebugInfo;
+//		wait(sc_time(delay_tu, false));
+//		cpu_time = sc_time_stamp();
+//		bus_time = cpu_time + bus_cycle_time;
+//	}
+//	if(debug_enabled && verbose_tlm_bus_synchronize)
+//		*inherited::logger << DebugInfo
+//			<< "Bus synchro END"
+//			<< std::endl << EndDebugInfo;
+//
+//}
 
 
 void

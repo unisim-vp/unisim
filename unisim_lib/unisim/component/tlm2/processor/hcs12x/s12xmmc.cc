@@ -182,7 +182,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
 			}
 
-			physical_address_t addr = inherited::getPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
+			physical_address_t addr = inherited::getCPU12XPhysicalAddress((address_t) logicalAddress, buffer->type, buffer->isGlobal);
 
 			mmc_trans->set_address( addr & 0x7FFFFF);
 

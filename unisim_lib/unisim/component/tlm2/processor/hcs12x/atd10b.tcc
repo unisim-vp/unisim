@@ -56,6 +56,7 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 
 	anx_socket("anx_socket"),
 	slave_socket("slave_socket"),
+	bus_clock_socket("bus_clock_socket"),
 
 	memory_export("memory_export", this),
 	memory_import("memory_import", this),

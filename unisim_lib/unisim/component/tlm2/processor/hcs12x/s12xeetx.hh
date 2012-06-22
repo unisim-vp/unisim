@@ -44,7 +44,8 @@ using namespace std;
 using namespace sc_core;
 using namespace sc_dt;
 using namespace tlm;
-using namespace tlm_utils;
+
+using tlm_utils::tlm_quantumkeeper;
 
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
