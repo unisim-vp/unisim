@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>

@@ -29,8 +29,8 @@ set ( sim_debugger_subdirs
 	unisim/service/interfaces/disassembly
 	unisim/service/interfaces/symbol_table_lookup
 	unisim/util/debug
-	unisim/util/debug/debugger_handler
 	unisim/util/endian
+	unisim/api/debug
 	unisim/kernel
 	)
 foreach ( dir ${sim_debugger_subdirs} )
@@ -48,8 +48,8 @@ add_library ( unisim__service__debug__sim_debugger
 
 target_link_libraries ( unisim__service__debug__sim_debugger 
 	unisim__util__debug
-	unisim__util__debug__debugger_handler 
 	unisim__util__endian
+	unisim__api__debug
 	unisim__kernel
 	)
 

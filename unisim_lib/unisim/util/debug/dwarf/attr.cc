@@ -42,27 +42,27 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
-const char *DWARF_GetCLASSName(unsigned int dw_class)
-{
-	switch(dw_class)
-	{
-		case DW_CLASS_ADDRESS: return "address";
-		case DW_CLASS_BLOCK: return "block";
-		case DW_CLASS_EXPRESSION: return "expression";
-		case DW_CLASS_UNSIGNED_CONSTANT:
-		case DW_CLASS_UNSIGNED_LEB128_CONSTANT: return "unsigned constant";
-		case DW_CLASS_SIGNED_CONSTANT:
-		case DW_CLASS_SIGNED_LEB128_CONSTANT:  return "signed constant";
-		case DW_CLASS_FLAG: return "flag";
-		case DW_CLASS_LINEPTR: return "lineptr";
-		case DW_CLASS_LOCLISTPTR: return "loclistptr";
-		case DW_CLASS_MACPTR: return "macptr";
-		case DW_CLASS_RANGELISTPTR: return "rangelistptr";
-		case DW_CLASS_REFERENCE: return "reference";
-		case DW_CLASS_STRING: return "string";
-	}
-	return "";
-}
+//const char *DWARF_GetCLASSName(unsigned int dw_class)
+//{
+	//switch(dw_class)
+	//{
+		//case DW_CLASS_ADDRESS: return "address";
+		//case DW_CLASS_BLOCK: return "block";
+		//case DW_CLASS_EXPRESSION: return "expression";
+		//case DW_CLASS_UNSIGNED_CONSTANT:
+		//case DW_CLASS_UNSIGNED_LEB128_CONSTANT: return "unsigned constant";
+		//case DW_CLASS_SIGNED_CONSTANT:
+		//case DW_CLASS_SIGNED_LEB128_CONSTANT:  return "signed constant";
+		//case DW_CLASS_FLAG: return "flag";
+		//case DW_CLASS_LINEPTR: return "lineptr";
+		//case DW_CLASS_LOCLISTPTR: return "loclistptr";
+		//case DW_CLASS_MACPTR: return "macptr";
+		//case DW_CLASS_RANGELISTPTR: return "rangelistptr";
+		//case DW_CLASS_REFERENCE: return "reference";
+		//case DW_CLASS_STRING: return "string";
+	//}
+	//return "";
+//}
 
 } // end of namespace dwarf
 } // end of namespace debug

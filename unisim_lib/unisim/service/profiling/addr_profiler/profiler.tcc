@@ -127,17 +127,17 @@ void Profiler<ADDRESS>::ProfileMemoryAccess(typename unisim::service::interfaces
 }
 
 template <class ADDRESS>
-void Profiler<ADDRESS>::ReportMemoryAccess(typename unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	switch(mt)
 	{
-		case MemoryAccessReporting<ADDRESS>::MT_DATA:
+		case unisim::util::debug::MT_DATA:
 			switch(mat)
 			{
-				case MemoryAccessReporting<ADDRESS>::MAT_READ:
+				case unisim::util::debug::MAT_READ:
 					ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, addr, size);
 					break;
-				case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+				case unisim::util::debug::MAT_WRITE:
 					ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, addr, size);
 					break;
 				default:
@@ -145,7 +145,7 @@ void Profiler<ADDRESS>::ReportMemoryAccess(typename unisim::service::interfaces:
 					break;
 			}
 			break;
-		case MemoryAccessReporting<ADDRESS>::MT_INSN:
+		case unisim::util::debug::MT_INSN:
 			ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_FETCH, addr, size);
 			break;
 	}

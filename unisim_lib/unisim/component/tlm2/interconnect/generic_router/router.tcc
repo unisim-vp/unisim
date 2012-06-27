@@ -230,7 +230,7 @@ param_verbose_memory_interface(0)
 	/* create memory_imports */
 	for (unsigned int i = 0; i < OUTPUT_SOCKETS; i++)
 	{
-		stringstream str;
+		std::stringstream str;
 		str << "memory-import[" << i << "]";
 		memory_import[i] = new unisim::kernel::service::ServiceImport<unisim::service::interfaces::Memory<uint64_t> >(str.str().c_str(), this);
 		memory_export.SetupDependsOn(*memory_import[i]);

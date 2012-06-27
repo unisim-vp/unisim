@@ -40,6 +40,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 
 #include <unisim/util/loader/coff_loader/ti/ti.hh>
 #include <unisim/util/loader/coff_loader/ti/ti.tcc>

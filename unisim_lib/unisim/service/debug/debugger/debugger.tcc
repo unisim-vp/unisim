@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_TCC__
 
 #include <stdexcept>
+#include <fstream>
 
 namespace unisim {
 namespace service {
@@ -338,7 +339,7 @@ unisim::util::debug::Register *Debugger<ADDRESS>::GetRegister(const char *name)
 }
 
 template <class ADDRESS>
-void Debugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void Debugger<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{

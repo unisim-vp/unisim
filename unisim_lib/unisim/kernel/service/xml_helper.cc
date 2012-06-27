@@ -509,14 +509,10 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				return false;
 			}
 			cur_var = new CurVariable();
-			if(cur_object.size())
-			{
+			if ( cur_object.size() != 0 )
 				cur_var->name << cur_object.back() << "." << name_attr;
-			}
-			else
-			{
+			else 
 				cur_var->name << name_attr;
-			}
 			free(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == 15)

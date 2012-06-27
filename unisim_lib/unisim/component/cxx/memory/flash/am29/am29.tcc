@@ -37,7 +37,8 @@
 #include <set>
 #include <sstream>
 #include <fstream>
-#include "unisim/util/endian/endian.hh"
+#include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 
 #ifndef __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__
 #define __UNISIM_COMPONENT_CXX_MEMORY_FLASH_AM29_AM29_TCC__

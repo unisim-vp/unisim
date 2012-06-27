@@ -16,6 +16,7 @@
 			<dep>unisim::service::interfaces::linux_os</dep>
 			<dep>unisim::service::interfaces::debug_control</dep>
 			<dep>unisim::service::interfaces::disassembly</dep>
+			<dep>unisim::util::likely</dep>
 		</depends>
 	</unit>
 </package>

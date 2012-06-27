@@ -35,15 +35,16 @@
 #ifndef __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 #define __UNISIM_UTIL_DEBUG_WATCHPOINT_HH__
 
-#include <unisim/service/interfaces/memory_access_reporting.hh>
-#include <unisim/util/debug/event.hh>
 #include <inttypes.h>
+#include <iostream>
+
+#include <unisim/util/debug/event.hh>
+#include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
 namespace util {
 namespace debug {
 
-using unisim::service::interfaces::MemoryAccessReporting;
 
 template <class ADDRESS> class Watchpoint;
 
@@ -55,7 +56,7 @@ class Watchpoint : public Event<ADDRESS>
 {
 public:
 
-	Watchpoint(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+	Watchpoint(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 		: Event<ADDRESS>(Event<ADDRESS>::EV_WATCHPOINT)
 	{
 		this->mat = mat;
@@ -64,8 +65,8 @@ public:
 		this->size = size;
 	}
 
-	inline typename MemoryAccessReporting<ADDRESS>::MemoryAccessType GetMemoryAccessType() const { return mat; }
-	inline typename MemoryAccessReporting<ADDRESS>::MemoryType GetMemoryType() const { return mt; }
+	inline typename unisim::util::debug::MemoryAccessType GetMemoryAccessType() const { return mat; }
+	inline typename unisim::util::debug::MemoryType GetMemoryType() const { return mt; }
 	inline ADDRESS GetAddress() const { return addr; }
 	inline uint32_t GetSize() const { return size; }
 	inline bool HasOverlap(ADDRESS addr, uint32_t size) const
@@ -82,8 +83,8 @@ public:
 	
 	friend std::ostream& operator << <ADDRESS>(std::ostream& os, const Watchpoint<ADDRESS>& wp);
 private:
-	typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat;
-	typename MemoryAccessReporting<ADDRESS>::MemoryType mt;
+	typename unisim::util::debug::MemoryAccessType mat;
+	typename unisim::util::debug::MemoryType mt;
 	ADDRESS addr;
 	uint32_t size;
 };
@@ -93,23 +94,23 @@ inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& w
 {
 	switch(wp.mt)
 	{
-		case MemoryAccessReporting<ADDRESS>::MT_DATA:
+		case unisim::util::debug::MT_DATA:
 			os << "data";
 			break;
-		case MemoryAccessReporting<ADDRESS>::MT_INSN:
+		case unisim::util::debug::MT_INSN:
 			os << "instruction";
 			break;
 	}
 	os << " ";
-	if(wp.mat & (MemoryAccessReporting<ADDRESS>::MAT_WRITE | MemoryAccessReporting<ADDRESS>::MAT_READ))
+	if(wp.mat & (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ))
 	{
 		os << "read/write";
 	}
-	else if(wp.mat & MemoryAccessReporting<ADDRESS>::MAT_WRITE)
+	else if(wp.mat & unisim::util::debug::MAT_WRITE)
 	{
 		os << "write";
 	}
-	else if(wp.mat & MemoryAccessReporting<ADDRESS>::MAT_READ)
+	else if(wp.mat & unisim::util::debug::MAT_READ)
 	{
 		os << "read";
 	}

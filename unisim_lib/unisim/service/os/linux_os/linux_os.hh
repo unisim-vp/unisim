@@ -126,7 +126,7 @@ public:
     /* Service interface methods */
     virtual void ExecuteSystemCall(int id);
 	virtual bool Load();
-	virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
+	virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob();
 
 private:
 	bool LoadARM();
@@ -265,6 +265,7 @@ private:
 	void LSC_unlink();
 	void LSC_rename();
 	void LSC_time();
+	void LSC_gettimeofday();
 	void LSC_socketcall();
 	void LSC_rt_sigprocmask();
 	void LSC_kill();
@@ -312,7 +313,31 @@ private:
     	uint32_t tv_sec;		/* Seconds.  */
     	uint32_t tv_nsec;		/* Nanoseconds.  */
     };
+
+    struct arm_timeval_t {
+	int32_t tv_sec;
+	int32_t tv_usec;
+    };
     
+    struct  arm_rusage_t {
+	struct arm_timeval_t ru_utime;        /* user time used */
+        struct arm_timeval_t ru_stime;        /* system time used */
+        int32_t ru_maxrss;                 /* maximum resident set size */
+        int32_t ru_ixrss;                  /* integral shared memory size */
+        int32_t ru_idrss;                  /* integral unshared data size */
+        int32_t ru_isrss;                  /* integral unshared stack size */
+        int32_t ru_minflt;                 /* page reclaims */
+        int32_t ru_majflt;                 /* page faults */
+        int32_t ru_nswap;                  /* swaps */
+        int32_t ru_inblock;                /* block input operations */
+        int32_t ru_oublock;                /* block output operations */
+        int32_t ru_msgsnd;                 /* messages sent */
+        int32_t ru_msgrcv;                 /* messages received */
+        int32_t ru_nsignals;               /* signals received */
+        int32_t ru_nvcsw;                  /* voluntary context switches */
+        int32_t ru_nivcsw;                 /* involuntary " */
+    };
+
     // this structure supposes that the arm file was compiled with
     //   the __USE_LARGEFILE64 and __USE_MISC
     // original structure
@@ -413,6 +438,30 @@ private:
         int32_t tv_nsec;       /* Nanoseconds.  */
     };
     
+    struct powerpc_timeval_t {
+	int32_t tv_sec;
+	int32_t tv_usec;
+    };
+    
+    struct powerpc_rusage_t {
+	struct powerpc_timeval_t ru_utime;        /* user time used */
+        struct powerpc_timeval_t ru_stime;        /* system time used */
+        int32_t ru_maxrss;                 /* maximum resident set size */
+        int32_t ru_ixrss;                  /* integral shared memory size */
+        int32_t ru_idrss;                  /* integral unshared data size */
+        int32_t ru_isrss;                  /* integral unshared stack size */
+        int32_t ru_minflt;                 /* page reclaims */
+        int32_t ru_majflt;                 /* page faults */
+        int32_t ru_nswap;                  /* swaps */
+        int32_t ru_inblock;                /* block input operations */
+        int32_t ru_oublock;                /* block output operations */
+        int32_t ru_msgsnd;                 /* messages sent */
+        int32_t ru_msgrcv;                 /* messages received */
+        int32_t ru_nsignals;               /* signals received */
+        int32_t ru_nvcsw;                  /* voluntary context switches */
+        int32_t ru_nivcsw;                 /* involuntary " */
+    };
+
     // this structure supposes that the powerpc file was compiled with
     //   the __USE_LARGEFILE64 and __USE_MISC
     // original structure
@@ -527,6 +576,10 @@ private:
 	int Stat64(int fd, struct arm_stat64_t *target_stat);
 	int Times(struct powerpc_tms_t *target_tms);
 	int Times(struct arm_tms_t *target_tms);
+	int GetTimeOfDay(struct powerpc_timeval_t *target_tv);
+	int GetTimeOfDay(struct arm_timeval_t *target_tv);
+	int GetRUsage(PARAMETER_TYPE who, struct powerpc_rusage_t *target_ru);
+	int GetRUsage(PARAMETER_TYPE who, struct arm_rusage_t *target_ru);
 
 	static const int LINUX_O_ACCMODE = 00000003;
 	static const int LINUX_O_RDONLY = 00000000;

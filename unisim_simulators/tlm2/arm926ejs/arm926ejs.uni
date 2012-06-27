@@ -5,6 +5,7 @@
 		<path>tlm2/arm926ejs</path>
 		<files>
 			<file>main.cc</file>
+			<file>api_test.cc</file>
 			<file>simulator.hh</file>
 			<file>simulator.cc</file>
 			<file>config.hh.in</file>
@@ -27,6 +28,7 @@
 			<file>share/linux/sim.desktop.in</file>
 			<file>share/linux/find_deb_dependencies.sh</file>
 			<file>share/python/demo.py.in</file>
+			<file>python/UnisimPython.cmake</file>
 			<file>python/py_simulator.hh</file>
 			<file>python/py_simulator.cc</file>
 			<file>python/py_variable.hh</file>
@@ -45,6 +47,7 @@
 		<depends>
 			<dep>unisim</dep>
 			<dep>osci_systemc</dep>
+			<dep>unisim::uapi</dep>
 			<dep>unisim::kernel::service</dep>
 			<dep>unisim::component::tlm2::processor::arm::arm926ejs</dep>
 			<dep>unisim::component::tlm2::chipset::arm926ejs_pxp</dep>

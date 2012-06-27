@@ -81,21 +81,21 @@ class CPU
 	, public unisim::kernel::service::Client<
 	  	unisim::service::interfaces::LinuxOS>
 	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::MemoryInjection<uint64_t> >
+	  	unisim::service::interfaces::MemoryInjection<uint32_t> >
 	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::DebugControl<uint64_t> >
+	  	unisim::service::interfaces::DebugControl<uint32_t> >
 	, public unisim::kernel::service::Client<
-	  	unisim::service::interfaces::MemoryAccessReporting<uint64_t> >
+	  	unisim::service::interfaces::MemoryAccessReporting<uint32_t> >
 	, public unisim::kernel::service::Client<
 	  	unisim::service::interfaces::TrapReporting>
 	, public unisim::kernel::service::Service<
 	  	unisim::service::interfaces::MemoryAccessReportingControl>
 	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Disassembly<uint64_t> >
+	  	unisim::service::interfaces::Disassembly<uint32_t> >
 	, public unisim::kernel::service::Service<
 	  	unisim::service::interfaces::Registers >
 	, public unisim::kernel::service::Service<
-	  	unisim::service::interfaces::Memory<uint64_t> >
+	  	unisim::service::interfaces::Memory<uint32_t> >
 {
 public:
 	static const uint32_t MODEL = 
@@ -107,7 +107,7 @@ public:
 		
 	/** Disassembly service export. */
 	unisim::kernel::service::ServiceExport<
-		unisim::service::interfaces::Disassembly<uint64_t> >
+		unisim::service::interfaces::Disassembly<uint32_t> >
 		disasm_export;
 	/** Registers service export. */
 	unisim::kernel::service::ServiceExport<
@@ -115,11 +115,11 @@ public:
 		registers_export;
 	/** Memory injection service export. */
 	unisim::kernel::service::ServiceExport<
-		unisim::service::interfaces::MemoryInjection<uint64_t> > 
+		unisim::service::interfaces::MemoryInjection<uint32_t> > 
 		memory_injection_export;
 	/** Memory service export. */
 	unisim::kernel::service::ServiceExport<
-		unisim::service::interfaces::Memory<uint64_t> > 
+		unisim::service::interfaces::Memory<uint32_t> > 
 		memory_export;
 	/** Memory access reporting control service export. */
 	unisim::kernel::service::ServiceExport<
@@ -128,15 +128,15 @@ public:
 
 	/** Debug control service import. */
 	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::DebugControl<uint64_t> >
+		unisim::service::interfaces::DebugControl<uint32_t> >
 		debug_control_import;
 	/** Memory access reporting service import. */
 	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::MemoryAccessReporting<uint64_t> > 
+		unisim::service::interfaces::MemoryAccessReporting<uint32_t> > 
 		memory_access_reporting_import;
 	/** Symbol table lookup service import. */
 	unisim::kernel::service::ServiceImport<
-		unisim::service::interfaces::SymbolTableLookup<uint64_t> > 
+		unisim::service::interfaces::SymbolTableLookup<uint32_t> > 
 		symbol_table_lookup_import;
 	/** Linux OS service import. */
 	unisim::kernel::service::ServiceImport<
@@ -234,7 +234,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool InjectReadMemory(uint64_t addr, 
+	virtual bool InjectReadMemory(uint32_t addr, 
 			void *buffer,
 			uint32_t size);
 	/** Inject an intrusive write memory operation
@@ -245,7 +245,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool InjectWriteMemory(uint64_t addr, 
+	virtual bool InjectWriteMemory(uint32_t addr, 
 			const void *buffer, 
 			uint32_t size);
 
@@ -281,7 +281,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ReadMemory(uint64_t addr, 
+	virtual bool ReadMemory(uint32_t addr, 
 			void *buffer, 
 			uint32_t size);
 	/** Perform a non intrusive write access.
@@ -295,7 +295,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool WriteMemory(uint64_t addr, 
+	virtual bool WriteMemory(uint32_t addr, 
 			const void *buffer, 
 			uint32_t size);
 	/** Perform a non intrusive external read access.
@@ -309,7 +309,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ExternalReadMemory(uint64_t addr, 
+	virtual bool ExternalReadMemory(uint32_t addr, 
 			void *buffer, 
 			uint32_t size) = 0;
 	/** Perform a non intrusive external write access.
@@ -321,7 +321,7 @@ public:
 	 *
 	 * @return true on success, false otherwise
 	 */
-	virtual bool ExternalWriteMemory(uint64_t addr, 
+	virtual bool ExternalWriteMemory(uint32_t addr, 
 			const void *buffer, 
 			uint32_t size) = 0;
 
@@ -351,7 +351,7 @@ public:
 	 *
 	 * @return the disassembling of the requested instruction address
 	 */
-	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
+	virtual std::string Disasm(uint32_t addr, uint32_t &next_addr);
 		
 	//=====================================================================
 	//=                   LinuxOSInterface methods                        =

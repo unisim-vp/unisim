@@ -44,6 +44,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <fstream>
@@ -67,6 +69,7 @@
 #include "unisim/service/os/linux_os/linux_os_exception.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/debug/register.hh"
+#include "unisim/util/likely/likely.hh"
 
 #define LOCATION 	" - location = " << __FUNCTION__ << ":unisim/service/os/linux_os/linux_os.tcc:" << __LINE__
 
@@ -370,6 +373,9 @@ SetupLinuxOS()
 	mmap_brk_point = mmap_base;
 
 	ADDRESS_TYPE top_addr = blob->GetStackBase() + 1;
+	logger << DebugInfo
+		<< "top_addr = 0x" << std::hex << top_addr << std::dec
+		<< EndDebugInfo;
 	
 	brk_point = top_addr +
     	(memory_page_size - (top_addr % memory_page_size));
@@ -780,8 +786,9 @@ SetupLinuxOSARM()
 	SetSyscallId(string("ioctl"), 54);
 	SetSyscallId(string("setrlimit"), 75);
 	SetSyscallId(string("getrusage"), 77);
+	SetSyscallId(string("gettimeofday"), 78);
 	SetSyscallId(string("munmap"), 91);
-    SetSyscallId(string("ftruncate"), 93);
+    	SetSyscallId(string("ftruncate"), 93);
 	SetSyscallId(string("socketcall"), 102);
 	SetSyscallId(string("stat"), 106);
 	SetSyscallId(string("fstat"), 108);
@@ -838,6 +845,7 @@ SetupLinuxOSPPC()
     SetSyscallId(string("setrlimit"), 75);
     SetSyscallId(string("getrlimit"), 76);
     SetSyscallId(string("getrusage"), 77);
+    SetSyscallId(string("gettimeofday"), 78);
     SetSyscallId(string("mmap"), 90);
     SetSyscallId(string("munmap"), 91);
     SetSyscallId(string("ftruncate"), 93);
@@ -1017,7 +1025,13 @@ LoadARM()
 			<< LOCATION
 			<< EndDebugInfo;
 	arm_regs[13]->SetValue(&st);
-	
+
+	PARAMETER_TYPE envp4;
+	PARAMETER_TYPE envp8;
+	memory_import->ReadMemory(st + 4, &envp4, sizeof(envp4));
+	memory_import->ReadMemory(st + 8, &envp8, sizeof(envp4));	
+	arm_regs[1]->SetValue(&envp4);
+	arm_regs[2]->SetValue(&envp8);
 	return status;
 }
 
@@ -1070,7 +1084,7 @@ Load()
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 const typename unisim::util::debug::blob::Blob<ADDRESS_TYPE> *
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
-GetBlob() const
+GetBlob()
 {
 	return blob;
 }
@@ -2110,6 +2124,106 @@ Times(struct arm_tms_t *target_tms)
 	return ret;
 }
 
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetTimeOfDay(struct arm_timeval_t *target_tv)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct timeval host_tv;
+
+	ret = (int)gettimeofday(&host_tv, NULL);
+	target_tv->tv_sec = Host2Target(endianess, (int32_t) host_tv.tv_sec);
+	target_tv->tv_usec = Host2Target(endianess, (int32_t) host_tv.tv_usec);
+#endif
+	return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetTimeOfDay(struct powerpc_timeval_t *target_tv)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct timeval host_tv;
+
+	ret = (int) gettimeofday(&host_tv, NULL);
+	target_tv->tv_sec = Host2Target(endianess, (int32_t) host_tv.tv_sec);
+	target_tv->tv_usec = Host2Target(endianess, (int32_t) host_tv.tv_usec);
+#endif
+	return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetRUsage(PARAMETER_TYPE who, struct arm_rusage_t *target_ru)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct rusage host_ru;
+
+	ret = (int)getrusage((int)who, &host_ru);
+	target_ru->ru_utime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_sec);
+	target_ru->ru_utime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_usec);
+	target_ru->ru_stime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_sec);
+	target_ru->ru_stime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_usec);
+	target_ru->ru_maxrss = Host2Target(endianess, (int32_t) host_ru.ru_maxrss);
+	target_ru->ru_ixrss = Host2Target(endianess, (int32_t) host_ru.ru_ixrss);
+	target_ru->ru_idrss = Host2Target(endianess, (int32_t) host_ru.ru_idrss);
+	target_ru->ru_isrss = Host2Target(endianess, (int32_t) host_ru.ru_isrss);
+	target_ru->ru_minflt = Host2Target(endianess, (int32_t) host_ru.ru_minflt);
+	target_ru->ru_majflt = Host2Target(endianess, (int32_t) host_ru.ru_majflt);
+	target_ru->ru_nswap = Host2Target(endianess, (int32_t) host_ru.ru_nswap);
+	target_ru->ru_inblock = Host2Target(endianess, (int32_t) host_ru.ru_inblock);
+	target_ru->ru_oublock = Host2Target(endianess, (int32_t) host_ru.ru_oublock);
+	target_ru->ru_msgsnd = Host2Target(endianess, (int32_t) host_ru.ru_msgsnd);
+	target_ru->ru_msgrcv = Host2Target(endianess, (int32_t) host_ru.ru_msgrcv);
+	target_ru->ru_nsignals = Host2Target(endianess, (int32_t) host_ru.ru_nsignals);
+	target_ru->ru_nvcsw = Host2Target(endianess, (int32_t) host_ru.ru_nvcsw);
+	target_ru->ru_nivcsw = Host2Target(endianess, (int32_t) host_ru.ru_nivcsw);
+#endif
+	return ret;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+int
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+GetRUsage(PARAMETER_TYPE who, struct powerpc_rusage_t *target_ru)
+{
+	int ret = -1;
+
+#if defined(linux) || defined(__APPLE_CC__)
+	struct rusage host_ru;
+
+	ret = (int)getrusage((int)who, &host_ru);
+	target_ru->ru_utime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_sec);
+	target_ru->ru_utime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_utime.tv_usec);
+	target_ru->ru_stime.tv_sec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_sec);
+	target_ru->ru_stime.tv_usec = Host2Target(endianess, (int32_t) host_ru.ru_stime.tv_usec);
+	target_ru->ru_maxrss = Host2Target(endianess, (int32_t) host_ru.ru_maxrss);
+	target_ru->ru_ixrss = Host2Target(endianess, (int32_t) host_ru.ru_ixrss);
+	target_ru->ru_idrss = Host2Target(endianess, (int32_t) host_ru.ru_idrss);
+	target_ru->ru_isrss = Host2Target(endianess, (int32_t) host_ru.ru_isrss);
+	target_ru->ru_minflt = Host2Target(endianess, (int32_t) host_ru.ru_minflt);
+	target_ru->ru_majflt = Host2Target(endianess, (int32_t) host_ru.ru_majflt);
+	target_ru->ru_nswap = Host2Target(endianess, (int32_t) host_ru.ru_nswap);
+	target_ru->ru_inblock = Host2Target(endianess, (int32_t) host_ru.ru_inblock);
+	target_ru->ru_oublock = Host2Target(endianess, (int32_t) host_ru.ru_oublock);
+	target_ru->ru_msgsnd = Host2Target(endianess, (int32_t) host_ru.ru_msgsnd);
+	target_ru->ru_msgrcv = Host2Target(endianess, (int32_t) host_ru.ru_msgrcv);
+	target_ru->ru_nsignals = Host2Target(endianess, (int32_t) host_ru.ru_nsignals);
+	target_ru->ru_nvcsw = Host2Target(endianess, (int32_t) host_ru.ru_nvcsw);
+	target_ru->ru_nivcsw = Host2Target(endianess, (int32_t) host_ru.ru_nivcsw);
+#endif
+	return ret;
+}
+
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
@@ -2581,11 +2695,39 @@ void
 LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
 LSC_getrusage() 
 {
+	int ret;
+	ADDRESS_TYPE buf_addr;
+	PARAMETER_TYPE who;
+	who = GetSystemCallParam(0);
+	buf_addr = GetSystemCallParam(1);
+
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		struct arm_rusage_t target_ru;
+		ret = GetRUsage(who, &target_ru);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_ru, sizeof(target_ru));
+		}
+	}
+	else if (system == "powerpc")
+	{
+		struct powerpc_rusage_t target_ru;
+		ret = GetRUsage(who, &target_ru);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_ru, sizeof(target_ru));
+		}
+	}
+	else ret = -1;
+
 	if(unlikely(verbose))
 		logger << DebugInfo
-			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
-			<< endl << LOCATION << EndDebugInfo;
-	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL),true);
+			<< "GetRUsage(who=" << who << ", buf=0x" << hex << buf_addr << dec << ") return " << ret 
+			<< endl 
+			<< LOCATION
+			<< EndDebugInfo;
+	SetSystemCallStatus(ret, ret != -1);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2622,6 +2764,44 @@ LSC_time()
 			<< "ret = 0x" << hex << ((PARAMETER_TYPE)(-EINVAL)) << dec 
 			<< endl << LOCATION << EndDebugInfo;
 	SetSystemCallStatus((PARAMETER_TYPE)(-EINVAL), true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::
+LSC_gettimeofday()
+{
+	int ret;
+	ADDRESS_TYPE buf_addr;
+	buf_addr = GetSystemCallParam(0);
+
+	if ( (system == "arm") || (system == "arm-eabi") )
+	{
+		struct arm_timeval_t target_tv;
+		ret = GetTimeOfDay(&target_tv);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_tv, sizeof(target_tv));
+		}
+	}
+	else if (system == "powerpc")
+	{
+		struct powerpc_timeval_t target_tv;
+		ret = GetTimeOfDay(&target_tv);
+		if ( ret >= 0 )
+		{
+			WriteMem(buf_addr, &target_tv, sizeof(target_tv));
+		}
+	}
+	else ret = -1;
+
+	if(unlikely(verbose))
+		logger << DebugInfo
+			<< "GetTimeOfDay(buf=0x" << hex << buf_addr << dec << ") return " << ret 
+			<< endl 
+			<< LOCATION
+			<< EndDebugInfo;
+	SetSystemCallStatus(ret, ret != -1);
 }
 	
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -2788,6 +2968,7 @@ SetSyscallNameMap()
 	syscall_name_map[string("unlink")] = &thistype::LSC_unlink;
 	syscall_name_map[string("rename")] = &thistype::LSC_rename;
 	syscall_name_map[string("time")] = &thistype::LSC_time;
+	syscall_name_map[string("gettimeofday")] = &thistype::LSC_gettimeofday;
 	syscall_name_map[string("socketcall")] = &thistype::LSC_socketcall;
 	syscall_name_map[string("rt_sigprocmask")] = &thistype::LSC_rt_sigprocmask;
 	syscall_name_map[string("kill")] = &thistype::LSC_kill;
