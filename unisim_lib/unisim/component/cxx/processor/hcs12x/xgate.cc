@@ -76,6 +76,10 @@ XGATE::XGATE(const char *name, Object *parent):
 	, bus_cycle_time()
 	, cpu_cycle()
 	, bus_cycle()
+	, xgate_enabled(false)
+	, stop_current_thread(false)
+	, state(STOP)
+	, mode(NORMAL)
 
 	, verbose_all(false)
 	, param_verbose_all("verbose-all", this, verbose_all)
@@ -186,7 +190,7 @@ void XGATE::VerboseDumpRegs() {
 	*logger << "\t- XGIF_1F_10" << " = 0x" << std::hex << xgif_register[6] << std::dec; // 2-bytes
 	*logger << "\t- XGIF_0F_00" << " = 0x" << std::hex << xgif_register[7] << std::dec; // 2-bytes
 	*logger << "\t- XGSWT" << " = 0x" << std::hex << xgswt_register << std::dec; // 2-bytes
-	*logger << "\t- XGSEMM" << " = 0x" << std::hex << xgsemm_register << std::dec; // 2-bytes
+	*logger << "\t- XGSEMM" << " = 0x" << std::hex << xgsem_register << std::dec; // 2-bytes
 	*logger << "\t- XGCCR" << " = 0x" << std::hex << (unsigned int) xgccr_register << std::dec; // 1-byte
 	*logger << "\t- XGPC" << " = 0x" << std::hex << xgpc_register << std::dec; // 2-bytes
 	*logger << "\t- XGR1" << " = 0x" << std::hex << xgr_register[1] << std::dec; // 2-bytes
@@ -309,11 +313,11 @@ bool XGATE::BeginSetup() {
 	xgvbr_var->setCallBack(this, XGSWT, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.XGSEMM", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgsemm_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgsem_register);
 
-	unisim::kernel::service::Register<uint16_t> *xgsemm_var = new unisim::kernel::service::Register<uint16_t>("XGSEMM", this, xgsemm_register, "XGATE Semaphore Register (XGSEMM)");
+	unisim::kernel::service::Register<uint16_t> *xgsemm_var = new unisim::kernel::service::Register<uint16_t>("XGSEMM", this, xgsem_register, "XGATE Semaphore Register (XGSEMM)");
 	extended_registers_registry.push_back(xgsemm_var);
-	xgvbr_var->setCallBack(this, XGSEMM, &CallBackObject::write, NULL);
+	xgvbr_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.XGCCR", GetName());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgccr_register);
@@ -420,7 +424,7 @@ void XGATE::Reset() {
 	xgif_register[6] = 0x0000;
 	xgif_register[7] = 0x0000;
 	xgswt_register = 0x0000;
-	xgsemm_register = 0x0000;
+	xgsem_register = 0x0000;
 	reserverd_register[3] = 0x00;
 	xgccr_register = 0x0000;
 	xgpc_register = 0x0000;
@@ -696,7 +700,6 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 		}
 
 		physical_address_t offset = addr-baseAddress;
-
 		switch (offset) {
 			case XGMCTL: *((uint16_t *) buffer) = xgmctl_register; break;
 			case XGCHID: *((uint8_t *) buffer) = xgchid_register; break;
@@ -705,7 +708,7 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 			case RESERVED3: *((uint16_t *) buffer) = 0; break;
 			case XGVBR: *((uint16_t *) buffer) = xgvbr_register; break;
 			case XGSWT: *((uint16_t *) buffer) = xgswt_register; break;
-			case XGSEMM: *((uint16_t *) buffer) = xgsemm_register; break;
+			case XGSEM: *((uint16_t *) buffer) = xgsem_register; break;
 			case RESERVED4: *((uint16_t *) buffer) = 0; break;
 			case XGCCR: *((uint8_t *) buffer) = xgccr_register; break;
 			case XGPC: *((uint16_t *) buffer) = xgpc_register; break;
@@ -723,11 +726,11 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 				if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
 					*((uint16_t *) buffer) = xgif_register[(offset - XGIF_7F_70)/2];
 
+				} else {
+					return (false);
 				}
-
 				break;
 			}
-
 		}
 
 		return (true);
@@ -766,9 +769,9 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 				uint16_t val = *((uint16_t *) buffer);
 				xgswt_register = val;
 			} break;
-			case XGSEMM: {
+			case XGSEM: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgsemm_register = val;
+				xgsem_register = val;
 			} break;
 			case RESERVED4: break;
 			case XGCCR: {
@@ -836,17 +839,21 @@ Register *XGATE::GetRegister(const char *name)
 
 bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_length)
 {
+
 	switch (offset) {
-		case XGMCTL: *((uint16_t *) buffer) = xgmctl_register; break;
-		case XGCHID: *((uint8_t *) buffer) = xgchid_register; break;
+		case XGMCTL: *((uint16_t *) buffer) = xgmctl_register & 0x00FB; break;
+		case XGCHID: {
+			// The XGCHID register read 0x00 if the XGATE module is idle
+			*((uint8_t *) buffer) = (state == RUNNING)? 0 : xgchid_register & 0x7F;
+		} break;
 		case RESERVED1: *((uint16_t *) buffer) = 0; break;
 		case RESERVED2: *((uint16_t *) buffer) = 0; break;
 		case RESERVED3: *((uint16_t *) buffer) = 0; break;
-		case XGVBR: *((uint16_t *) buffer) = xgvbr_register; break;
-		case XGSWT: *((uint16_t *) buffer) = xgswt_register; break;
-		case XGSEMM: *((uint16_t *) buffer) = xgsemm_register; break;
+		case XGVBR: *((uint16_t *) buffer) = xgvbr_register & 0xFFFE; break;
+		case XGSWT: *((uint16_t *) buffer) = xgswt_register & 0x00FF; break;
+		case XGSEM: *((uint16_t *) buffer) = xgsem_register & 0x00FF; break;
 		case RESERVED4: *((uint16_t *) buffer) = 0; break;
-		case XGCCR: *((uint8_t *) buffer) = xgccr_register; break;
+		case XGCCR: *((uint8_t *) buffer) = xgccr_register & 0x0F; break;
 		case XGPC: *((uint16_t *) buffer) = xgpc_register; break;
 		case RESERVED5: *((uint16_t *) buffer) = 0; break;
 		case RESERVED6: *((uint16_t *) buffer) = 0; break;
@@ -860,13 +867,21 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-				*((uint16_t *) buffer) = xgif_register[(offset - XGIF_7F_70)/2];
-
-			} else {
-				return (false);
+				uint8_t index = (offset - XGIF_7F_70)/2;
+				if (index < 2) {
+					*((uint16_t *) buffer) = xgif_register[index] & 0x01FF;
+				}
+				else if (index >= XGIF_0F_00) {
+					*((uint16_t *) buffer) = xgif_register[index] & 0xFE00;
+				}
+				else {
+					*((uint16_t *) buffer) = xgif_register[index];
+				}
 			}
+
 			break;
 		}
+
 	}
 
 	return (true);
@@ -877,72 +892,174 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 {
 	switch (offset) {
 		case XGMCTL: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgmctl_register = val;
+			uint16_t val = *((uint16_t *) buffer) & 0xFBFB;
+			// control bits can only be set or cleared if a "1" is written to its mask bit in the same register access.
+			uint16_t mask = val >> 8;
+
+			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+				if ((mask & j) != 0) {
+					if ((val & j) != 0) {
+						xgmctl_register = xgmctl_register | j;
+					} else {
+						xgmctl_register = xgmctl_register & ~j;
+					}
+				}
+			}
+			// Freeze and debug modes aren't emulated, hence we don't take care about XGFRZ and XGDBG bits
+			if ((xgmctl_register & 0x0080) == 0x0080) {
+				enbale_xgate();
+			} else {
+				disable_xgate();
+			}
+
+			// check clearing of XGSWEIF bit
+			if (((val & mask) & 0x02) != 0) {
+				/**
+				 * XGMCTL::XGSWEIF
+				 *  XGATE Software Error Interrupt Flag — This bit signals a pending Software Error Interrupt.
+				 *  It is set if the RISC core detects an error condition (see Section 6.4.5, “Software Error Detection”).
+				 *  The RISC core is stopped while this bit is set.
+				 *  Clearing this bit will terminate the current thread and cause the XGATE to become idle.
+				 */
+
+				xgmctl_register = xgmctl_register & 0xFFFD;
+				terminateCurrentThread();
+			}
+
+			if ((xgmctl_register & 0x04) != 0) {
+				fakeXGATEActivity();
+			}
 		} break;
 		case XGCHID: {
-			uint8_t val = *((uint8_t *) buffer);
-			xgchid_register = val;
+			// The XGCHID register shows the identifier of the currently active channel. It is only writable in debug mode.
+			if (mode == DEBUG) {
+				uint8_t val = *((uint8_t *) buffer);
+				xgchid_register = val & 0x7F;
+			}
+
 		} break;
 		case RESERVED1: break;
 		case RESERVED2: break;
 		case RESERVED3: break;
 		case XGVBR: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgvbr_register = val;
+			// Writable if the module is disabled (XGMCTL::XGE = 0) and idle (XGCHID = 0x00)
+			// I use "RUNNING state and not IDLE because it includes "IDLE" and "STOP" modes
+			if ((xgmctl_register & 0x0080 != 0) && (state != RUNNING)) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgvbr_register = val & 0xFFFE;
+			}
 		} break;
 		case XGSWT: {
+			/**
+			 * NOTE:
+			 * The XGATE channel IDs that are associated with the eight software triggers
+			 * are determined on chip integration level. (see Section “Interrupts” of the Soc Guide)
+			 * XGATE software triggers work like any peripheral interrupt.
+			 * They can be used as XGATE requests as well as S12X_CPU interrupts.
+			 * The target of the software trigger must be selected in the S12X_INT module
+			 */
 			uint16_t val = *((uint16_t *) buffer);
-			xgswt_register = val;
+			uint16_t mask = val >> 8;
+			uint16_t old_xgswt_register = xgswt_register;
+
+			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+				if ((mask & j) != 0) {
+					if ((val & j) != 0) {
+						xgswt_register = xgswt_register | j;
+
+						// Software trigger pending if XGIE bit is set
+
+						// TODO: Trigger the channel thread
+
+					} else {
+						xgswt_register = xgswt_register & ~j;
+					}
+				}
+			}
+
 		} break;
-		case XGSEMM: {
+		case XGSEM: {
+
 			uint16_t val = *((uint16_t *) buffer);
-			xgsemm_register = val;
+			uint16_t mask = val >> 8;
+
+			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+				if ((mask & j) != 0) {
+					if ((val & j) != 0) {
+						if (semphore[i].lock(TSemaphore::CPU12X)) {
+							xgsem_register = xgsem_register | j;
+						}
+					} else {
+						if (semphore[i].unlock(TSemaphore::CPU12X)) {
+							xgsem_register = xgsem_register & ~j;
+						}
+					}
+				}
+			}
+
 		} break;
 		case RESERVED4: break;
 		case XGCCR: {
-			uint8_t val = *((uint8_t *) buffer);
-			xgccr_register = val;
+			if (mode == DEBUG) {
+				uint8_t val = *((uint8_t *) buffer);
+				xgccr_register = val & 0x0F;
+			}
 		} break;
 		case XGPC: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgpc_register = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgpc_register = val;
+			}
 		} break;
 		case RESERVED5: break;
 		case RESERVED6: break;
 		case XGR1: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[1] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[1] = val;
+			}
 		} break;
 		case XGR2: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[2] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[2] = val;
+			}
 		} break;
 		case XGR3: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[3] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[3] = val;
+			}
 		} break;
 		case XGR4: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[4] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[4] = val;
+			}
 		} break;
 		case XGR5: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[5] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[5] = val;
+			}
 		} break;
 		case XGR6: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[6] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[6] = val;
+			}
 		} break;
 		case XGR7: {
-			uint16_t val = *((uint16_t *) buffer);
-			xgr_register[7] = val;
+			if (mode == DEBUG) {
+				uint16_t val = *((uint16_t *) buffer);
+				xgr_register[7] = val;
+			}
 		} break;
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
 				uint16_t val = *((uint16_t *) buffer);
-				xgif_register[(offset - XGIF_7F_70)/2] = val;
+				xgif_register[(offset - XGIF_7F_70)/2] = (xgif_register[(offset - XGIF_7F_70)/2] & ~val);
 			} else {
 				return (false);
 			}

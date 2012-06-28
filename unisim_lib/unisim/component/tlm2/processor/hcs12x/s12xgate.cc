@@ -65,6 +65,10 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 	, enable_fine_timing(false)
 	, param_enable_fine_timing("enable-fine-timing", this, enable_fine_timing)
 
+	, xgate_enable_event()
+	, xgate_idle_event()
+	, xgate_newthread_event()
+
 	, verbose_tlm_bus_synchronize(false)
 	, param_verbose_tlm_bus_synchronize("verbose-tlm-bus-synchronize", this, verbose_tlm_bus_synchronize)
 	, verbose_tlm_run_thread(false)
@@ -167,14 +171,60 @@ Sync() {
 	wait(time_spent);
 }
 
+void S12XGATE::
+enbale_xgate() {
+	xgate_enabled = true;
+	xgate_enable_event.notify();
+}
 
+void S12XGATE::
+disable_xgate() {
+	xgate_enabled = false;
+}
+
+void S12XGATE::
+terminateCurrentThread() {
+
+	state = IDLE;
+	xgate_idle_event.notify();
+}
 
 void S12XGATE::
 Run() {
+
+/**
+ *
+ * 4.7.4 Thread Execution
+		When the RISC core is triggered by an interrupt request (see Figure 1-1) it first executes a vector fetch
+		sequence which performs three bus accesses:
+		1. A V-cycle to fetch the initial content of the program counter.
+		2. A V-cycle to fetch the initial content of the data segment pointer (R1).
+		3. A P-cycle to load the initial opcode.
+		Afterwards a sequence of instructions (thread) is executed which is terminated by an "RTS" instruction. If
+		further interrupt requests are pending after a thread has been terminated, a new vector fetch will be
+		performed. Otherwise the RISC core will idle until a new interrupt request is received. A thread can not
+		be interrupted by an interrupt request.
+ *
+ */
+
 	uint8_t opCycles = 0;
 
 	while(1) {
 
+		if (!xgate_enabled) {
+			wait(xgate_enable_event);
+			continue;
+		}
+
+		if (state == STOP) {
+			wait(xgate_idle_event);
+			continue;
+		}
+
+		if (state == IDLE) {
+			wait(xgate_newthread_event);
+			continue;
+		}
 
 		if(debug_enabled && verbose_tlm_run_thread)
 			*inherited::logger << DebugInfo

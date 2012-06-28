@@ -128,6 +128,12 @@ public:
 
 	void assertInterrupt(uint8_t offset);
 
+	virtual void enbale_xgate();
+	virtual void disable_xgate();
+	void terminateCurrentThread();
+	void riseErrorCondition();
+
+
 	//================================================================
 	//=                    tlm2 Interface                            =
 	//================================================================
@@ -169,6 +175,10 @@ private:
 	sc_time cpu_time;
 	sc_time bus_time;
 	sc_time last_cpu_time;
+
+	sc_event xgate_enable_event;
+	sc_event xgate_idle_event;
+	sc_event xgate_newthread_event;
 
 	sc_time nice_time;
 	sc_time next_nice_time;
