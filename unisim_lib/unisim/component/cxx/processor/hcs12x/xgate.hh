@@ -76,6 +76,7 @@ using std::vector;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
@@ -119,8 +120,6 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::Exception;
 using unisim::component::cxx::processor::hcs12x::AsynchronousException;
 
-#define MAX_INS_SIZE 2
-
 class XGATE :
 	public CallBackObject,
 	public Client<DebugControl<physical_address_t> >,
@@ -134,6 +133,8 @@ class XGATE :
 
 {
 public:
+	static const uint8_t MAX_INS_SIZE = 2;
+
 
 	class TSemaphore {
 	public:
@@ -235,10 +236,10 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 
-	virtual address_t getIntVector(uint8_t &ipl) = 0;
+	virtual address_t getIntVector() = 0;
 	virtual double  GetSimulatedTime() = 0;
 
-	virtual void busWrite(address_t addr, const void *buffer, uint32_t size) = 0;
+	virtual void busWrite(address_t addr, void *buffer, uint32_t size) = 0;
 	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
 
 	inline void reportTrap();
@@ -364,11 +365,17 @@ protected:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
+	static const uint8_t XGATE_SIZE = 8;
+
+	uint8_t sofwtare_channel_id[XGATE_SIZE];
+	ParameterArray<uint8_t> param_software_channel_id;
+
 	bool xgate_enabled;
 	bool stop_current_thread;
 
 	STATES state;
 	MODES mode;
+	bool currentThreadTerminated;
 
 	// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;
@@ -378,24 +385,16 @@ protected:
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
 
 	void reqAsynchronousInterrupt();
+	inline bool hasAsynchronousInterrupt() const { return (asynchronous_interrupt); }
+	void ackAsynchronousInterrupt();
 
 	virtual void enbale_xgate() = 0;
 	virtual void disable_xgate() = 0;
 
+	virtual void triggerChannelThread() = 0;
 	virtual void terminateCurrentThread() = 0;
 
-	virtual void riseErrorCondition() {
-		/**
-		 * XGMCTL::XGSWEIF
-		 *  XGATE Software Error Interrupt Flag — This bit signals a pending Software Error Interrupt.
-		 *  It is set if the RISC core detects an error condition (see Section 6.4.5, “Software Error Detection”).
-		 *  The RISC core is stopped while this bit is set.
-		 *  Clearing this bit will terminate the current thread and cause the XGATE to become idle.
-		 */
-
-		xgmctl_register = xgmctl_register | 0x0002;
-		state = STOP;
-	}
+	virtual void riseErrorCondition();
 
 	void fakeXGATEActivity() {
 		/**
@@ -455,8 +454,6 @@ private:
 
 	void fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte);
 
-	inline bool hasAsynchronousInterrupt() const { return (asynchronous_interrupt); }
-
 	// Asynchronous Interrupts (including Resets, I-bit, XIRQ, IRQ)
 	void handleException(const AsynchronousException& exc);
 
@@ -467,10 +464,19 @@ public:
 	//=                REGISTERS ACCESSORS                    =
 	//=========================================================
 
-	inline void setRegPC(address_t val) { xgpc_register = val; }
-	inline address_t getRegPC() { return (xgpc_register); }
-	inline address_t getLastPC() {return (lastPC); }
+	inline void setXGPC(address_t val) { xgpc_register = val; }
+	inline address_t getXGPC() { return (xgpc_register); }
+	inline address_t getLastXGPC() {return (lastPC); }
 
+	inline uint16_t getXGVBR() { return (xgvbr_register); }
+	inline uint16_t getXGSWT() { return (xgswt_register); }
+	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
+	inline void setXGRx(uint16_t val, uint8_t index) { xgr_register[index] = val; }
+	inline void setXGCHID(uint8_t val) { xgchid_register = val; }
+
+	inline static void getXGRxName(char* name, uint8_t index) {
+		sprintf(name, "R%d", index);
+	}
 };
 
 inline uint8_t XGATE::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {

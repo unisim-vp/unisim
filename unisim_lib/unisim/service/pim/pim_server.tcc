@@ -1399,7 +1399,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 			if (!((VariableBase *) *it)->IsVisible()) continue;
 
-			sstr << ((VariableBase *) *it)->GetName() << ":" << ((VariableBase *) *it)->GetBitSize() << ";";
+			sstr << ((VariableBase *) *it)->GetName() << ":" << ((VariableBase *) *it)->GetBitSize()/8 << ";";
 
 		}
 

@@ -44,14 +44,16 @@ namespace processor {
 namespace hcs12x {
 
 S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
-	sc_module(name),
-	MMC(name, parent),
-	unisim::kernel::service::Client<TrapReporting>(name, parent),
-	trap_reporting_import("trap_reporting_import", this)
+	Object(name, parent)
+	, sc_module(name)
+	, MMC(name, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, cpu_socket("cpu_to_mmc")
+	, trap_reporting_import("trap_reporting_import", this)
 {
 
-	cpu_socket.register_b_transport(this, &S12XMMC::b_transport);
+	cpu_socket.register_b_transport(this, &S12XMMC::cpu_b_transport);
+	xgate_socket.register_b_transport(this, &S12XMMC::xgate_b_transport);
 
 	/* create initiator sockets */
 	for (unsigned int i = 0; i < MEMORY_MAP_SIZE; i++)
@@ -85,6 +87,9 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	deviceMap[6].start_address = 0x0300;  // PWM
 	deviceMap[6].end_address = 0x0327;
 
+	deviceMap[7].start_address = 0x0380;  // XGATE
+	deviceMap[7].end_address = 0x03BF;
+
 	// ********** Physical memory Map ***
 
 	memory_map[0].start_addr = 0x34;
@@ -108,14 +113,17 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	memory_map[6].start_addr = 0x300;
 	memory_map[6].end_addr = 0x327;
 
-	memory_map[7].start_addr = 0x0f8000;
-	memory_map[7].end_addr = 0x0fffff;
+	memory_map[7].start_addr = 0x380;
+	memory_map[7].end_addr = 0x3BF;
 
-	memory_map[8].start_addr = 0x13f000;
-	memory_map[8].end_addr = 0x13ffff;
+	memory_map[8].start_addr = 0x0f8000;
+	memory_map[8].end_addr = 0x0fffff;
 
-	memory_map[9].start_addr = 0x780000;
-	memory_map[9].end_addr = 0x7fffff;
+	memory_map[9].start_addr = 0x13f000;
+	memory_map[9].end_addr = 0x13ffff;
+
+	memory_map[10].start_addr = 0x780000;
+	memory_map[10].end_addr = 0x7fffff;
 
 }
 
@@ -123,7 +131,95 @@ S12XMMC::~S12XMMC() {
 
 }
 
-void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
+void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
+
+	sc_dt::uint64 logicalAddress = trans.get_address();
+	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
+	tlm::tlm_command cmd = trans.get_command();
+
+
+	bool find = false;
+	for (int i=0; (i<MMC_MEMMAP_SIZE) && !find; i++) {
+		find = (MMC_REGS_ADDRESSES[i] == logicalAddress);
+	}
+
+	if (find) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			memset(buffer->buffer, 0, buffer->data_size);
+			inherited::read(logicalAddress, buffer->buffer, buffer->data_size);
+		} else {
+			inherited::write(logicalAddress, buffer->buffer, buffer->data_size);
+		}
+
+	} else {
+
+		find = true;
+		if (logicalAddress <= REG_HIGH_OFFSET) {
+
+			find = false;
+			for (int i=0; (i<DEVICE_MAP_SIZE) && !find; i++) {
+				find = ((deviceMap[i].start_address <= logicalAddress) && (logicalAddress <= deviceMap[i].end_address));
+			}
+
+			if (!find) {
+
+				if (debug_enabled) {
+					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+				}
+				memset(buffer->buffer, 0, buffer->data_size);
+			}
+
+		}
+
+		if (find) {
+
+			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+
+			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
+
+			mmc_trans->set_data_length( buffer->data_size );
+			mmc_trans->set_streaming_width( buffer->data_size );
+
+			mmc_trans->set_byte_enable_ptr( 0 );
+			mmc_trans->set_dmi_allowed( false );
+			mmc_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+			if (cmd == tlm::TLM_READ_COMMAND) {
+				mmc_trans->set_command( tlm::TLM_READ_COMMAND );
+			} else {
+				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
+			}
+
+			physical_address_t addr = inherited::getXGATEPhysicalAddress((address_t) logicalAddress);
+
+			cout << "XGATE::MMC cpu_addr=0x" << std::hex << (unsigned int) logicalAddress << "  phy_addr=0x" << std::hex << addr << endl;
+
+			mmc_trans->set_address( addr & 0x7FFFFF);
+
+			for (int i=0; i <MEMORY_MAP_SIZE; i++) {
+				if ((memory_map[i].start_addr <= addr) && (memory_map[i].end_addr >= addr)) {
+					(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
+					break;
+				}
+			}
+
+			if (mmc_trans->is_response_error() ) {
+				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << " size = " << mmc_trans->get_data_length() << std::dec << endl;
+				SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
+			}
+
+
+			mmc_trans->release();
+
+		}
+
+	}
+
+	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+}
+
+void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 
 	sc_dt::uint64 logicalAddress = trans.get_address();
 	MMC_DATA *buffer = (MMC_DATA *) trans.get_data_ptr();
@@ -194,7 +290,7 @@ void S12XMMC::b_transport( tlm::tlm_generic_payload& trans, sc_time& delay ) {
 			}
 
 			if (mmc_trans->is_response_error() ) {
-				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << std::dec << endl;
+				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << " size = " << mmc_trans->get_data_length() << std::dec << endl;
 				SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
 			}
 

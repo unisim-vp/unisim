@@ -559,7 +559,6 @@ void CPU::saveCPUContext() {
 void CPU::handleException(const AsynchronousException& exc)
 {
 
-
 	uint8_t newIPL = ccr->getIPL();
 	address_t asyncVector = getIntVector(newIPL);
 
@@ -690,6 +689,7 @@ void CPU::handleException(const TrapException& exc)
 	reqTrapInterrupt();
 
 	uint8_t newIPL = ccr->getIPL();
+
 	address_t trapVector = getIntVector(newIPL);
 
 	saveCPUContext();

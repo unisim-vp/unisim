@@ -63,13 +63,15 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	input_payload_queue("input_payload_queue"),
 
-	isHardwareInterrupt(false),
 	debug_enabled(false),
 	param_debug_enabled("debug-enabled", this, debug_enabled)
 {
 
 	interrupt_request(*this);
-	fromCPU_Target.register_b_transport(this, &XINT::getVectorAddress);
+
+	toCPU12X_request(*this);
+	toXGATE_request(*this);
+
 	slave_socket.register_b_transport(this, &XINT::read_write);
 
 	SC_HAS_PROCESS(XINT);
@@ -140,7 +142,7 @@ unsigned int XINT::transport_dbg(XINT_Payload& payload)
 
 void XINT::b_transport(XINT_Payload& payload, sc_core::sc_time& t) {
 	payload.acquire();
-	input_payload_queue.notify(payload, t);
+	input_payload_queue.notify(payload);
 }
 
 bool XINT::get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data) {
@@ -156,7 +158,7 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 			phase = END_REQ; // update the phase
 
 			payload.acquire();
-			input_payload_queue.notify(payload, t); // queue the payload and the associative time
+			input_payload_queue.notify(payload); // queue the payload and the associative time
 
 			return (TLM_UPDATED);
 		case END_REQ:
@@ -184,79 +186,72 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 	return (TLM_ACCEPTED);
 }
 
-/*
- *    This method is called to compute the interrupt vector based on currentIPL
- */
-void XINT::getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay )
-{
+bool XINT::selectInterrupt(INT_TRANS_T &buffer) {
 
-	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
+	if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2].getState()) {
 
-	uint8_t newIPL = 0;
-	address_t vectorAddress = 0;
+		buffer.setVectorAddress(get_ClockMonitorReset_Vector());
+		buffer.setID(XINT::INT_CLK_MONITOR_RESET_OFFSET/2);
+		buffer.setPriority(0x7);
 
-	if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2]) {
-		vectorAddress = get_ClockMonitorReset_Vector();
-		interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2] = false;
 	}
-	else if (interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2]) {
-		vectorAddress = get_COPWatchdogReset_Vector();
-		interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2] = false;
+	else if (interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2].getState()) {
+
+		buffer.setVectorAddress(get_COPWatchdogReset_Vector());
+		buffer.setID(XINT::INT_COP_WATCHDOG_RESET_OFFSET/2);
+		buffer.setPriority(0x7);
+
 	}
-	else if (interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2]) {
-		vectorAddress = get_IllegalAccessReset_Vector();
-		interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2] = false;
+	else if (interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2].getState()) {
+
+		buffer.setVectorAddress(get_IllegalAccessReset_Vector());
+		buffer.setID(XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2);
+		buffer.setPriority(0x7);
+
 	}
-	else if (interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2]) {
-		vectorAddress = get_SysReset_Vector();
-		interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2] = false;
+	else if (interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2].getState()) {
+
+		buffer.setVectorAddress(get_SysReset_Vector());
+		buffer.setID(XINT::INT_SYS_RESET_OFFSET/2);
+		buffer.setPriority(0x7);
+
 	}
-	else if (interrupt_flags[XINT::INT_XIRQ_OFFSET/2]) {
-		vectorAddress = get_XIRQ_Vector();
-		interrupt_flags[XINT::INT_XIRQ_OFFSET/2] = false;
+	else if (interrupt_flags[XINT::INT_XIRQ_OFFSET/2].getState()) {
+
+		buffer.setVectorAddress(get_XIRQ_Vector());
+		buffer.setID(XINT::INT_XIRQ_OFFSET/2);
+		buffer.setPriority(0x7);
 	}
 	else {
-		uint8_t selectedInterrupt = 0;
-
-		for (int index=0; index < XINT_SIZE; index++) { // Check only the selected interrupts
-			if (interrupt_flags[index]) {
+//		for (int index=0; index < XINT_SIZE; index++) {
+		for (int index=0x30; index < 0x79; index++) {
+			if (interrupt_flags[index].getState()) {
 				uint8_t dataPriority = int_cfwdata[index] & 0x07;
 
-				// if 7-bit=0 then cpu else xgate
-				if ((int_cfwdata[index] & 0x80) == 0)
-				{
-					if (dataPriority >= newIPL) {  // priority of maskable interrupts is from high offset to low
-						newIPL = dataPriority;
-						selectedInterrupt = index;
-					}
+				if (dataPriority >= buffer.getPriority()) {  // priority of maskable interrupts is from high offset to low
+					buffer.setPriority(dataPriority);
+					buffer.setID(index);
+					buffer.setVectorAddress(((address_t) getIVBR() << 8) + index * 2);
 				}
-				else ;
 
 			}
 		}
 
-
-		vectorAddress = ((address_t) getIVBR() << 8) + selectedInterrupt * 2;
-
-//		std::cerr << "Vector Addr 0x" << std::hex << (unsigned int) vectorAddress << std::endl;
-		interrupt_flags[selectedInterrupt] = false;
 	}
 
-	if (vectorAddress == 0) {
-		if (isHardwareInterrupt) {
-			vectorAddress = get_Spurious_Vector();
-			newIPL = 0x7;
-		} else {
-			vectorAddress = getIVBR() << 8 ;
-		}
+//	if (buffer.getVectorAddress() == 0) {
+//		buffer.setVectorAddress(((address_t) getIVBR() << 8));
+//		return (false);
+//	}
+
+	if (buffer.getVectorAddress() == 0) {
+		buffer.setVectorAddress(get_Spurious_Vector());
+		buffer.setPriority(0x7);
+		buffer.setID(get_Spurious_Vector()/2);
+		return (false);
 	}
 
-	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
-	buffer->ipl = newIPL;
-	buffer->vectorAddress = vectorAddress;
-
-	isHardwareInterrupt = false;
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
+	return (true);
 
 }
 
@@ -266,9 +261,13 @@ void XINT::run()
 
 	// This thread is waked-up by any not CPU interrupt
 
+	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
+	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
+
 	while (true) {
 
-		wait(input_payload_queue.get_event());
+		wait(input_payload_queue.get_event() | retry_event);
 
 		do
 		{
@@ -276,34 +275,60 @@ void XINT::run()
 			payload = input_payload_queue.get_next_transaction();
 			if (payload) {
 
-				interrupt_flags[payload->interrupt_offset/2] = true;
+				uint8_t id = payload->interrupt_offset/2;
 
-				payload->release();
+				interrupt_flags[id].setState(true);
+				interrupt_flags[id].setPayload(payload);
+
+				trans->set_command( tlm::TLM_WRITE_COMMAND );
+				trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+//				cout << "XINT rise " << std::hex << (unsigned int) payload->interrupt_offset << "  @ " << sc_time_stamp().to_seconds() << endl;
+
+				// if 7-bit=0 then cpu else xgate
+				if ((int_cfwdata[id] & 0x80) == 0)
+				{
+					tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+				}
+				else {
+					tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
+				}
+
 			}
 
 		} while(payload);
 
 		payload = NULL;
 
-		isHardwareInterrupt = true;
-
-		// Rise interrupt
-
-		tlm::tlm_generic_payload* trans = payloadFabric.allocate();
-
-		trans->set_command( tlm::TLM_WRITE_COMMAND );
-		trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-		toCPU_Initiator->b_transport( *trans, zeroTime );
-
-		if (trans->is_response_error() )
-			SC_REPORT_ERROR("XINT : ", " interrupt notification failed.");
-
-
-		trans->release();
 	}
 
+	delete phase;
+	trans->release();
+
 }
+
+// Master methods
+tlm_sync_enum XINT::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& phase, sc_core::sc_time& t)
+{
+
+	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
+
+	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
+	uint8_t cpuIPL = buffer->getPriority();
+	if (selectInterrupt(*buffer)) {
+		if (buffer->getPriority() > cpuIPL) {
+			interrupt_flags[buffer->getID()].setState(false);
+			interrupt_flags[buffer->getID()].releasePayload();
+
+		}
+
+		retry_event.notify();
+	}
+
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+	return (TLM_ACCEPTED);
+}
+
 
 
 void XINT::Reset() {
@@ -318,12 +343,19 @@ void XINT::Reset() {
 	int_xgprio = 0x01;
 	int_cfaddr = 0x10;
 
-	for (uint8_t i=0; i<XINT_SIZE; i++) {
+	for (uint8_t i=0; i< XINT::INT_RAM_ACCESS_VIOLATION_OFFSET/2; i++) {
+		int_cfwdata[i] = 0x00;
+	}
+	for (uint8_t i=XINT::INT_RAM_ACCESS_VIOLATION_OFFSET/2; i<XINT::INT_XIRQ_OFFSET/2; i++) {
 		int_cfwdata[i] = 0x01;
+	}
+	for (uint8_t i=XINT::INT_XIRQ_OFFSET/2; i<XINT_SIZE; i++) {
+		int_cfwdata[i] = 0x00;
 	}
 
 	for (int i=0; i<XINT_SIZE; i++) {
-		interrupt_flags[i] = false;
+		interrupt_flags[i].setState(false);
+		interrupt_flags[i].releasePayload();
 	}
 
 }
@@ -526,6 +558,8 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
 	if ((getINT_CFADDR() + index*2) == XINT::INT_SPURIOUS_OFFSET) return;
+
+	cout << "XINT write to => " << (unsigned int) (getINT_CFADDR()/2 + index) << "  = 0x" << std::hex << (unsigned int) value << endl;
 
 	int_cfwdata[getINT_CFADDR()/2 + index] = value;
 }

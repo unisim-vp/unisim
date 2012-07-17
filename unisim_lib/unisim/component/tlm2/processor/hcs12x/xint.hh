@@ -104,6 +104,8 @@ class XINT :
 	, public Service<Registers>
 	, public Client<Memory<physical_address_t> >
 	, virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
+	, virtual public tlm_bw_transport_if< >
+
 
 {
 public:
@@ -151,10 +153,8 @@ public:
 
 
 	// to connect to CPU
-	tlm_utils::simple_initiator_socket<XINT> toCPU_Initiator;
-
-	// from CPU
-	tlm_utils::simple_target_socket<XINT> fromCPU_Target;
+	tlm_initiator_socket< > toCPU12X_request;
+	tlm_initiator_socket< > toXGATE_request;
 
 	// interface with bus
 	tlm_utils::simple_target_socket<XINT> slave_socket;
@@ -168,8 +168,6 @@ public:
 
 	void run(); // Priority Decoder and Interrupt selection
 
-	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
-
 	virtual void Reset();
 
 	virtual bool BeginSetup();
@@ -182,11 +180,17 @@ public:
     //================================================================
     //=                    tlm2 Interface                            =
     //================================================================
+
+	// interrupt request from peripherals
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	virtual unsigned int transport_dbg(XINT_Payload& payload);
 	virtual tlm_sync_enum nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(XINT_Payload& payload, sc_core::sc_time& t);
 	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
+
+	// backward method for interrupts handling by CPU and XGATE
+	virtual tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -228,21 +232,33 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	bool	interrupt_flags[XINT_SIZE];
+	class PendingInterrupt {
+	public:
+		PendingInterrupt() : state(false), payload(0) {}
+		~PendingInterrupt() { /*releasePayload();*/ }
+
+		void setState(bool _state) { state = _state; }
+		bool getState() { return (state); }
+		void setPayload(XINT_Payload* _payload) { payload = _payload; }
+		XINT_Payload getPayload() { return (*payload); }
+		void releasePayload() { if (payload) {payload->release(); payload = NULL; } }
+
+	private:
+		bool state;
+		XINT_Payload* payload;
+
+	} interrupt_flags[XINT_SIZE];
 
 	sc_time zeroTime;
 
 	peq_with_get<XINT_Payload> input_payload_queue;
 
-//	sc_event interrupt_request_event;
-
 	uint8_t ivbr;
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
-//	uint8_t	int_cfwdata[XINT_SIZE];
 	uint8_t	*int_cfwdata;
 
-	bool isHardwareInterrupt;
+	sc_event retry_event;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
@@ -251,6 +267,8 @@ private:
 	map<string, Register *> registers_registry;
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
+	bool selectInterrupt(INT_TRANS_T &buffer);
 
 public:
 

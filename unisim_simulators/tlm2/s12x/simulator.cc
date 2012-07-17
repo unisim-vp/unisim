@@ -109,6 +109,7 @@ Simulator::Simulator(int argc, char **argv)
 	//  - 68HCS12X processor
 
 	cpu =new CPU("CPU");
+	xgate =new XGATE("XGATE");
 
 	mmc = 	new MMC("MMC");
 
@@ -190,15 +191,17 @@ Simulator::Simulator(int argc, char **argv)
 	//=========================================================================
 
 	cpu->socket(mmc->cpu_socket);
-	cpu->toXINT(s12xint->fromCPU_Target);
+	xgate->initiator_socket(mmc->xgate_socket);
 
-	s12xint->toCPU_Initiator(cpu->interrupt_request);
+	s12xint->toCPU12X_request(cpu->xint_interrupt_request);
+	s12xint->toXGATE_request(xgate->xint_interrupt_request);
 
 	crg->interrupt_request(s12xint->interrupt_request);
 	ect->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
+	xgate->interrupt_request(s12xint->interrupt_request);
 	global_eeprom->interrupt_request(s12xint->interrupt_request);
 
 #ifdef HAVE_RTBCOB
@@ -219,10 +222,11 @@ Simulator::Simulator(int argc, char **argv)
 	(*mmc->init_socket[4])(s12xint->slave_socket);
 	(*mmc->init_socket[5])(atd0->slave_socket);
 	(*mmc->init_socket[6])(pwm->slave_socket);
+	(*mmc->init_socket[7])(xgate->target_socket);
 
-	(*mmc->init_socket[7])(global_ram->slave_sock);
-	(*mmc->init_socket[8])(global_eeprom->slave_sock);
-	(*mmc->init_socket[9])(global_flash->slave_sock);
+	(*mmc->init_socket[8])(global_ram->slave_sock);
+	(*mmc->init_socket[9])(global_eeprom->slave_sock);
+	(*mmc->init_socket[10])(global_flash->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
@@ -230,6 +234,7 @@ Simulator::Simulator(int argc, char **argv)
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
 	crg->bus_clock_socket(atd0->bus_clock_socket);
+	crg->bus_clock_socket(xgate->bus_clock_socket);
 
 	//=========================================================================
 	//===                        Clients/Services connection                ===
@@ -385,6 +390,7 @@ Simulator::~Simulator()
 	if(global_flash) { delete global_eeprom; global_eeprom = NULL; }
 	if (global_eeprom) { delete global_eeprom; global_eeprom = NULL; }
 
+	if (xgate) { delete xgate; xgate = NULL; }
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
 	if (pwm) { delete pwm; pwm = NULL; }
@@ -496,6 +502,15 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
+
+	simulator->SetVariable("XGATE.software_channel_id[0]", 0x39);
+	simulator->SetVariable("XGATE.software_channel_id[1]", 0x38);
+	simulator->SetVariable("XGATE.software_channel_id[2]", 0x37);
+	simulator->SetVariable("XGATE.software_channel_id[3]", 0x36);
+	simulator->SetVariable("XGATE.software_channel_id[4]", 0x35);
+	simulator->SetVariable("XGATE.software_channel_id[5]", 0x34);
+	simulator->SetVariable("XGATE.software_channel_id[6]", 0x33);
+	simulator->SetVariable("XGATE.software_channel_id[7]", 0x32);
 
 	simulator->SetVariable("CPU.trace-enable", false);
 	simulator->SetVariable("CPU.verbose-all", false);

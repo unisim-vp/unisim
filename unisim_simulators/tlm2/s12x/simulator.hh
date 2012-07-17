@@ -43,6 +43,7 @@
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xgate.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 #include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
@@ -157,6 +158,7 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
+	typedef unisim::component::tlm2::processor::s12xgate::S12XGATE XGATE;
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
@@ -178,6 +180,7 @@ private:
 	//  - 68HCS12X processor
 
 	CPU *cpu;
+	XGATE *xgate;
 
 	MMC *mmc;
 
@@ -190,10 +193,8 @@ private:
 	PWM *pwm;
 
 	//  - Memories
-//	MEMORY *global_memory;
 	RAM *global_ram;
 	FLASH *global_flash;
-
 	EEPROM *global_eeprom;
 
 	// - Interrupt controller

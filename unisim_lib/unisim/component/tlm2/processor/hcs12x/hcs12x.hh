@@ -83,8 +83,11 @@ using unisim::kernel::tlm2::PayloadFabric;
 using std::string;
 
 class HCS12X :
-	public sc_module,
-	public CPU {
+	public sc_module
+	, public CPU
+	, virtual public tlm_fw_transport_if< >
+
+{
 public:
 	typedef CPU inherited;
 
@@ -92,10 +95,13 @@ public:
 	tlm_utils::simple_initiator_socket<HCS12X> socket;
 
 	// wake-up request from XINT
-	tlm_utils::simple_target_socket<HCS12X> interrupt_request;
+	tlm_target_socket< > xint_interrupt_request;
+	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
-	// Initiator
-	tlm_utils::simple_initiator_socket<HCS12X> toXINT;
+	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t) { }
+	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data) { return (false);}
+	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload) { return (0); }
+	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload,	tlm_phase& phase, sc_core::sc_time& t) { return (TLM_ACCEPTED); }
 
 	tlm_utils::simple_target_socket<HCS12X> bus_clock_socket;
 
@@ -122,8 +128,6 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
-//	void BusSynchronize();
-
 	void Run();
 
 	virtual void Reset();
@@ -149,7 +153,6 @@ public:
 
 	virtual double  GetSimulatedTime();
 
-	void asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:
@@ -190,6 +193,7 @@ private:
 	uint64_t last_instruction_counter;
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
 };
 
 } // end of namespace hcs12x

@@ -45,7 +45,8 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 	, sc_module(name)
 	, XGATE(name, parent)
 
-	, bus_target_socket("slave_socket")
+	, target_socket("slave_socket")
+	, xint_interrupt_request("interrupt_request")
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -83,10 +84,18 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
-	throw_interrupt_request(*this);
+	xint_interrupt_request(*this);
 
-	interrupt_request.register_b_transport(this, &S12XGATE::asyncIntThread);
-	bus_target_socket.register_b_transport(this, &S12XGATE::read_write);
+	interrupt_request(*this);
+
+	/**
+	 * TODO: I have to:
+	 *  - I have merge asyncIntThread() and getIntVect() because in the case of XGATE the S12X_INT hasn't need IPL
+	 *  - Because XGATE thread aren't interruptible, I have to migrate "asyncintThread" to non-blocking request to do not block the S12X_INT.
+	 */
+
+//	interrupt_request.register_b_transport(this, &S12XGATE::asyncIntThread);
+	target_socket.register_b_transport(this, &S12XGATE::read_write);
 	bus_clock_socket.register_b_transport(this, &S12XGATE::updateBusClock);
 
 	SC_HAS_PROCESS(S12XGATE);
@@ -180,13 +189,23 @@ enbale_xgate() {
 void S12XGATE::
 disable_xgate() {
 	xgate_enabled = false;
+	state = IDLE;
+
+	// cancel pending request
+	setXGSWT(0x0000);
+}
+
+void S12XGATE::
+triggerChannelThread() {
+
+	xgate_newthread_event.notify();
+
 }
 
 void S12XGATE::
 terminateCurrentThread() {
 
-	state = IDLE;
-	xgate_idle_event.notify();
+	currentThreadTerminated = true;
 }
 
 void S12XGATE::
@@ -211,95 +230,159 @@ Run() {
 
 	while(1) {
 
-		if (!xgate_enabled) {
-			wait(xgate_enable_event);
-			continue;
-		}
+		cout << "XGATE::Run (1)" << endl;
 
 		if (state == STOP) {
 			wait(xgate_idle_event);
 			continue;
 		}
 
-		if (state == IDLE) {
-			wait(xgate_newthread_event);
+		cout << "XGATE::Run (2)" << endl;
+		if (!xgate_enabled) {
+			wait(xgate_enable_event);
 			continue;
 		}
 
-		if(debug_enabled && verbose_tlm_run_thread)
-			*inherited::logger << DebugInfo
-				<< "Executing step"
-				<< std::endl << EndDebugInfo;
+		cout << "XGATE::Run (3)" << endl;
+		if (state == IDLE) {
+			wait(xgate_newthread_event);
+		}
 
-		opCycles = inherited::step();
+		bool found = false;
+		address_t channelID = 0;
 
-		if(debug_enabled && verbose_tlm_run_thread)
-			*inherited::logger << DebugInfo
-				<< "Finished executing step"
-				<< std::endl << EndDebugInfo;
+		if (hasAsynchronousInterrupt()) {
+			found = true;
+			channelID = getIntVector();
+			ackAsynchronousInterrupt();
 
-		sc_time & time_per_instruction = opCyclesArray[opCycles];
-
-		if (enable_fine_timing) {
-			if (debug_enabled) {
-				std::cerr << "XGATE: time_per_instruction=" << time_per_instruction << std::endl;
-			}
-
-			wait(time_per_instruction);
+			cout << "XGATE::Run (4)" << endl;
 		} else {
-			cpu_time += time_per_instruction;
-			if(cpu_time >= next_nice_time) {
-				next_nice_time = cpu_time + nice_time;
-				Synchronize();
+			cout << "XGATE::Run (5)" << endl;
+
+			// is there an S12X SW Trigger pending request ?
+			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
+				// is a pending SW Trigger request on that channel ?
+				if ((getXGSWT() & j) != 0) {
+
+					cout << "XGATE::Run (6)" << endl;
+
+					channelID = sofwtare_channel_id[i];
+
+					found = true;
+
+					break;
+				}
+			}
+		}
+
+		/**
+		 * Get Initial Thread Context
+		 *  - Initial program counter = XGVBR + ChannelID*4
+		 *  - Initial variable pointer = XGVBR + ChannelID*4 + 2
+		 *
+		 *  Note1: register R1 is preloaded with the initial variable pointer of the channel’s service request vector
+		 *  Note2: software_channel_id array is set by means of parameters during simulator setup phase.
+		 */
+
+		if (!found) {
+			state = IDLE;
+			continue;
+		} else {
+			state = RUNNING;
+			address_t newPC;
+
+			cout << "XGATE::Run  getVec of channelID " << (unsigned int) channelID << " : vector= " << std::hex << (unsigned int) (getXGVBR() + channelID * 4) << endl;
+
+			busRead(getXGVBR() + channelID * 4, &newPC, 2);
+			setXGPC(newPC);
+
+			uint16_t variablePtr;
+			busRead(getXGVBR() + channelID * 4 + 2, &variablePtr, 2);
+			setXGRx(variablePtr, 1);
+
+			setXGCHID(channelID);
+		}
+
+		currentThreadTerminated = false;
+		while (!currentThreadTerminated) {
+
+			cout << "XGATE::Run (7)" << endl;
+
+			if(debug_enabled && verbose_tlm_run_thread)
+				*inherited::logger << DebugInfo
+					<< "Executing step"
+					<< std::endl << EndDebugInfo;
+
+			opCycles = inherited::step();
+
+			if(debug_enabled && verbose_tlm_run_thread)
+				*inherited::logger << DebugInfo
+					<< "Finished executing step"
+					<< std::endl << EndDebugInfo;
+
+			sc_time & time_per_instruction = opCyclesArray[opCycles];
+
+			if (enable_fine_timing) {
+				if (debug_enabled) {
+					std::cerr << "XGATE: time_per_instruction=" << time_per_instruction << std::endl;
+				}
+
+				wait(time_per_instruction);
+			} else {
+				cpu_time += time_per_instruction;
+				if(cpu_time >= next_nice_time) {
+					next_nice_time = cpu_time + nice_time;
+					Synchronize();
+				}
 			}
 		}
 
 	}
 }
 
-
-void S12XGATE::asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
-{
-	// The XINT wake-up the CPU to handle asynchronous interrupt
-
-	irq_event.notify();
-
-	reqAsynchronousInterrupt();
-
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
-
+void S12XGATE::riseErrorCondition() {
+	inherited::riseErrorCondition();
 }
 
-// Master methods
-tlm_sync_enum S12XGATE::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
-{
-	if(phase == BEGIN_RESP)
-	{
-		payload.release();
-		return (TLM_COMPLETED);
-	}
+tlm_sync_enum S12XGATE::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t) {
+
 	return (TLM_ACCEPTED);
 }
 
-address_t S12XGATE::getIntVector(uint8_t &ipl)
+tlm_sync_enum S12XGATE::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t) {
+
+	triggerChannelThread();
+
+	reqAsynchronousInterrupt();
+
+	payload.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	return (TLM_ACCEPTED);
+}
+
+address_t S12XGATE ::getIntVector()
+	/*
+	 * The CPU issues a signal that tells the interrupt module to drive
+	 * the vector address of the highest priority pending exception onto the system address bus
+	 * (the CPU12 does not provide this address)
+	 *
+	 * Priority is as follow: reset => sw-interrupt => hw-interrupt => spurious interrupt
+	 *
+	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
+	 * Else return INT_Vector
+	 */
 {
 
 	address_t address; // get INT_VECTOR from XINT
 
-	// The XINT module need the current IPL as input
-	// The XINT return a newIPL and the interrupt vector (IVBR if there is no Hardware interrupts)
-
-	INT_TRANS_T buffer;
-
-	buffer.ipl = ipl;
-	buffer.vectorAddress = 0;
+	INT_TRANS_T *buffer = new INT_TRANS_T();
 
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
-
 	trans->set_command( tlm::TLM_READ_COMMAND );
 	trans->set_address( 0 );
-	trans->set_data_ptr( (unsigned char *) &buffer );
+	trans->set_data_ptr( (unsigned char *) buffer );
 
 	trans->set_data_length( sizeof(INT_TRANS_T) );
 	trans->set_streaming_width( sizeof(INT_TRANS_T) );
@@ -308,21 +391,18 @@ address_t S12XGATE::getIntVector(uint8_t &ipl)
 	trans->set_dmi_allowed( false );
 	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	toXINT->b_transport( *trans, tlm2_btrans_time );
+	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
+	xint_interrupt_request->nb_transport_bw(*trans, *phase, tlm2_btrans_time);
 
 	if (trans->is_response_error() )
-		SC_REPORT_ERROR("HCS12X : ", "Unable to compute interrupt vector");
+		SC_REPORT_ERROR("S12XGATE : ", "Unable to compute channel ID");
 
-	ipl = buffer.ipl;
-	address = buffer.vectorAddress;
-
+	delete phase;
 	trans->release();
 
-	switch (address & 0x00FF)
-	{
-	case 0: break;
-	default: break;
-	}
+	address = buffer->getVectorAddress();
+
+	delete buffer;
 
 	return (address);
 
@@ -338,7 +418,7 @@ void S12XGATE::assertInterrupt(uint8_t interruptOffset) {
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
-	tlm_sync_enum ret = throw_interrupt_request->nb_transport_fw(*payload, phase, local_time);
+	tlm_sync_enum ret = interrupt_request->nb_transport_fw(*payload, phase, local_time);
 
 	payload->release();
 
@@ -435,22 +515,30 @@ void S12XGATE::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 }
 
 
-void S12XGATE::busWrite(address_t addr, const void *buffer, uint32_t size)
+void S12XGATE::busWrite(address_t addr, void *buffer, uint32_t size)
 {
+	MMC_DATA mmc_data;
+
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
+	mmc_data.buffer = buffer;
+	mmc_data.data_size = size;
+
+
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
 	trans->set_command( tlm::TLM_WRITE_COMMAND );
 	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *)buffer );
+	trans->set_data_ptr( (unsigned char *) &mmc_data );
 
-	trans->set_data_length( size );
-	trans->set_streaming_width( size );
+	trans->set_data_length( sizeof(MMC_DATA) );
+	trans->set_streaming_width( sizeof(MMC_DATA) );
 
 	trans->set_byte_enable_ptr( 0 );
 	trans->set_dmi_allowed( false );
 	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	bus_initiator_socket->b_transport( *trans, tlm2_btrans_time );
+	initiator_socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
@@ -460,20 +548,28 @@ void S12XGATE::busWrite(address_t addr, const void *buffer, uint32_t size)
 
 void S12XGATE::busRead(address_t addr, void *buffer, uint32_t size)
 {
+
+	MMC_DATA mmc_data;
+
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
+	mmc_data.buffer = buffer;
+	mmc_data.data_size = size;
+
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
 	trans->set_command( tlm::TLM_READ_COMMAND );
 	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *)buffer );
+	trans->set_data_ptr( (unsigned char *) &mmc_data );
 
-	trans->set_data_length( size );
-	trans->set_streaming_width( size );
+	trans->set_data_length( sizeof(MMC_DATA) );
+	trans->set_streaming_width( sizeof(MMC_DATA) );
 
 	trans->set_byte_enable_ptr( 0 );
 	trans->set_dmi_allowed( false );
 	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
-	bus_initiator_socket->b_transport( *trans, tlm2_btrans_time );
+	initiator_socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
 		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");

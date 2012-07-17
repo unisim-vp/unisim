@@ -83,6 +83,9 @@ using unisim::kernel::tlm2::PayloadFabric;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::s12xgate::XGATE;
+using unisim::component::cxx::processor::hcs12x::MMC_DATA;
+using unisim::component::cxx::processor::hcs12x::ADDRESS;
+
 using unisim::component::tlm2::processor::hcs12x::XINT_REQ_ProtocolTypes;
 using unisim::component::tlm2::processor::hcs12x::XINT_Payload;
 using unisim::component::tlm2::processor::hcs12x::INT_TRANS_T;
@@ -91,23 +94,34 @@ class S12XGATE :
 	public sc_module
 	,public XGATE
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
+	, virtual public tlm_fw_transport_if< >
+
 
 {
 public:
 	typedef XGATE inherited;
 
-	tlm_utils::simple_initiator_socket<S12XGATE> bus_initiator_socket;
+	tlm_utils::simple_initiator_socket<S12XGATE> initiator_socket;
+	tlm_utils::simple_target_socket<S12XGATE> target_socket;
+	tlm_utils::simple_target_socket<S12XGATE> bus_clock_socket;
+
+//	// wake-up request from XINT
+//	tlm_utils::simple_target_socket<S12XGATE> interrupt_request;
+
 
 	// wake-up request from XINT
-	tlm_utils::simple_target_socket<S12XGATE> interrupt_request;
+	tlm_target_socket< > xint_interrupt_request;
+	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t) { }
+	virtual bool get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm_dmi&  dmi_data) { return (false);}
+	virtual unsigned int transport_dbg(tlm::tlm_generic_payload& payload) { return (0); }
+	virtual tlm_sync_enum nb_transport_bw(tlm::tlm_generic_payload& payload,	tlm_phase& phase, sc_core::sc_time& t) { return (TLM_ACCEPTED); }
 
-	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> throw_interrupt_request;
 
-	// Initiator
-	tlm_utils::simple_initiator_socket<S12XGATE> toXINT;
+	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
+	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range) { }
 
-	tlm_utils::simple_target_socket<S12XGATE> bus_target_socket;
-	tlm_utils::simple_target_socket<S12XGATE> bus_clock_socket;
 
 	S12XGATE(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12XGATE();
@@ -123,28 +137,28 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 
-	virtual address_t getIntVector(uint8_t &ipl);
+	virtual address_t getIntVector();
 	virtual double  GetSimulatedTime();
 
 	void assertInterrupt(uint8_t offset);
 
 	virtual void enbale_xgate();
 	virtual void disable_xgate();
-	void terminateCurrentThread();
-	void riseErrorCondition();
+	virtual void triggerChannelThread();
+	virtual void terminateCurrentThread();
+	virtual void riseErrorCondition();
 
 
 	//================================================================
 	//=                    tlm2 Interface                            =
 	//================================================================
 
-	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
-
 	void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
-	void asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
 
-	virtual void busWrite(address_t addr, const void *buffer, uint32_t size);
+//	void asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
+
+	virtual void busWrite(address_t addr, void *buffer, uint32_t size);
 	virtual void busRead(address_t addr, void *buffer, uint32_t size);
 
 protected:
@@ -189,7 +203,6 @@ private:
 
 	uint64_t last_instruction_counter;
 
-	sc_event	irq_event;
 	sc_time tlm2_btrans_time;
 	sc_time opCyclesArray[32];
 

@@ -78,8 +78,9 @@ XGATE::XGATE(const char *name, Object *parent):
 	, bus_cycle()
 	, xgate_enabled(false)
 	, stop_current_thread(false)
-	, state(STOP)
+	, state(IDLE)
 	, mode(NORMAL)
+	, currentThreadTerminated(true)
 
 	, verbose_all(false)
 	, param_verbose_all("verbose-all", this, verbose_all)
@@ -99,7 +100,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	, requires_finished_instruction_reporting(true)
 	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
 
-	, trace_enable(false)
+	, trace_enable(true)
 	, param_trace_enable("trace-enable", this, trace_enable)
 
 	, debug_enabled(false)
@@ -112,6 +113,8 @@ XGATE::XGATE(const char *name, Object *parent):
 	, param_interrupt_software_trigger_base("software-trigger-interrupt-base-offset", this, interrupt_software_trigger_base, "XGATE Software Trigger Interrupt base offset")
 	, interrupt_software_error(0x62)
 	, param_interrupt_software_error("software-error-interrupt", this, interrupt_software_error, "XGATE Software error interrupt")
+
+	, param_software_channel_id("software_channel_id", this, sofwtare_channel_id, XGATE_SIZE, "XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.")
 
 	, max_inst((uint64_t) -1)
 	, param_max_inst("max-inst", this, max_inst)
@@ -135,6 +138,11 @@ XGATE::XGATE(const char *name, Object *parent):
 	stat_cycles_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+
+	for (uint8_t i=0; i<XGATE_SIZE; i++) {
+		param_software_channel_id.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);
+		param_software_channel_id.SetMutable(true);
+	}
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
@@ -466,23 +474,23 @@ uint8_t XGATE::step()
 		VerboseDumpRegsStart();
 
 		if(debug_enabled && verbose_step)
-			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getRegPC() << std::dec << std::endl << EndDebugInfo;
+			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getXGPC() << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
 			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
 
 			do {
 				if(debug_enabled && verbose_step)
-					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
+					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getXGPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getCPU12XPagedAddress(getRegPC()));
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getCPU12XPagedAddress(getXGPC()));
 
 				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_STEP command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
+							<< std::hex << getXGPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					break;
 				}
@@ -490,7 +498,7 @@ uint8_t XGATE::step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_SYNC command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
+							<< std::hex << getXGPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Sync();
 					continue;
@@ -500,7 +508,7 @@ uint8_t XGATE::step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_KILL command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
+							<< std::hex << getXGPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 					Stop(0);
 				}
@@ -508,7 +516,7 @@ uint8_t XGATE::step()
 					if(debug_enabled && verbose_step)
 						*logger << DebugInfo
 							<< "Received debug DBG_RESET command (PC = 0x"
-							<< std::hex << getRegPC() << std::dec << ")"
+							<< std::hex << getXGPC() << std::dec << ")"
 							<< std::endl << EndDebugInfo;
 				}
 			} while(1);
@@ -519,10 +527,10 @@ uint8_t XGATE::step()
 				if(debug_enabled && verbose_step)
 					*logger << DebugInfo
 						<< "Reporting memory access for fetch at address 0x"
-						<< std::hex << getRegPC() << std::dec
+						<< std::hex << getXGPC() << std::dec
 						<< std::endl << EndDebugInfo;
 
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
+				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_INSN, getXGPC(), MAX_INS_SIZE);
 			}
 		}
 
@@ -531,11 +539,11 @@ uint8_t XGATE::step()
 		{
 			*logger << DebugInfo
 				<< "Fetching (reading) instruction at address 0x"
-				<< std::hex << getRegPC() << std::dec
+				<< std::hex << getXGPC() << std::dec
 				<< std::endl << EndDebugInfo;
 		}
 
-		fetchInstruction(getRegPC(), buffer, MAX_INS_SIZE);
+		fetchInstruction(getXGPC(), buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
 		/* Decode current PC */
@@ -545,13 +553,13 @@ uint8_t XGATE::step()
 			ctstr << insn;
 			*logger << DebugInfo
 				<< "Decoding instruction at 0x"
-				<< std::hex << getRegPC() << std::dec
+				<< std::hex << getXGPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ")"
 				<< std::endl << EndDebugInfo;
 		}
 
 //		op = this->Decode(getRegPC(), insn);
-		op = decoder.Decode(getRegPC(), insn);
+		op = decoder.Decode(getXGPC(), insn);
 
 		/* Execute instruction */
 
@@ -564,8 +572,8 @@ uint8_t XGATE::step()
 			ctstr << op->GetEncoding();
 
 			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-				<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
-				<< getFunctionFriendlyName(getRegPC()) << " : "
+				<< "PC = 0x" << std::hex << getXGPC() << std::dec << " : "
+				<< getFunctionFriendlyName(getXGPC()) << " : "
 				<< disasm_str.str()
 				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
 
@@ -581,16 +589,16 @@ uint8_t XGATE::step()
 			*logger << DebugInfo << GetSimulatedTime() << "ms: "
 				<< "Executing instruction "
 				<< disasm_str.str()
-				<< " at PC = 0x" << std::hex << getRegPC() << std::dec
+				<< " at PC = 0x" << std::hex << getXGPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
 				<< "  " << EndDebugInfo	<< std::endl;
 		}
 
-		lastPC = getRegPC();
+		lastPC = getXGPC();
         unsigned int insn_length = op->GetLength();
         if (insn_length % 8) throw "InternalError";
 
-		setRegPC(getRegPC() + (insn_length/8));
+		setXGPC(getXGPC() + (insn_length/8));
 
 		op->execute(this);
 
@@ -608,7 +616,7 @@ uint8_t XGATE::step()
 
 		if(requires_finished_instruction_reporting) {
 			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportFinishedInstruction(MMC::getCPU12XPagedAddress(lastPC), MMC::getCPU12XPagedAddress(getRegPC()));
+				memory_access_reporting_import->ReportFinishedInstruction(MMC::getCPU12XPagedAddress(lastPC), MMC::getCPU12XPagedAddress(getXGPC()));
 
 			}
 		}
@@ -674,6 +682,19 @@ void XGATE::handleException(const AsynchronousException& exc)
 //		handleMaskableIbitException(asyncVector, newIPL);
 //	}
 
+}
+
+void XGATE::riseErrorCondition() {
+	/**
+	 * XGMCTL::XGSWEIF
+	 *  XGATE Software Error Interrupt Flag — This bit signals a pending Software Error Interrupt.
+	 *  It is set if the RISC core detects an error condition (see Section 6.4.5, “Software Error Detection”).
+	 *  The RISC core is stopped while this bit is set.
+	 *  Clearing this bit will terminate the current thread and cause the XGATE to become idle.
+	 */
+
+	xgmctl_register = xgmctl_register | 0x0002;
+	state = STOP;
 }
 
 //=====================================================================
@@ -909,6 +930,10 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			if ((xgmctl_register & 0x0080) == 0x0080) {
 				enbale_xgate();
 			} else {
+				/**
+				 *  All XGATE interrupts (pending requests) can be disabled by the XGIE bit in the XGATE module control register (XGMCTL)
+				 *  The pending request are canceled by clearing XGSWT register
+				 */
 				disable_xgate();
 			}
 
@@ -942,9 +967,15 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case RESERVED2: break;
 		case RESERVED3: break;
 		case XGVBR: {
+			std::cout << "XGATE::Write::XGVBR " << std::hex << (unsigned int) *((uint16_t *) buffer) << std::endl;
 			// Writable if the module is disabled (XGMCTL::XGE = 0) and idle (XGCHID = 0x00)
 			// I use "RUNNING state and not IDLE because it includes "IDLE" and "STOP" modes
-			if ((xgmctl_register & 0x0080 != 0) && (state != RUNNING)) {
+
+			std::cout << "xgmctl_register =0x" << std::hex << (unsigned int) xgmctl_register << std::endl;
+			std::cout << "xgchid_register =0x" << std::hex << (unsigned int) xgchid_register << std::endl;
+
+			if (((xgmctl_register & 0x0080) == 0) && (xgchid_register == 0x00)) {
+				std::cout << "XGATE::Write::XGVBR enter test" << std::endl;
 				uint16_t val = *((uint16_t *) buffer);
 				xgvbr_register = val & 0xFFFE;
 			}
@@ -968,8 +999,9 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 						xgswt_register = xgswt_register | j;
 
 						// Software trigger pending if XGIE bit is set
-
-						// TODO: Trigger the channel thread
+						if ((xgmctl_register & 0x0080) == 0x0080) {
+							triggerChannelThread();
+						}
 
 					} else {
 						xgswt_register = xgswt_register & ~j;
@@ -1075,6 +1107,12 @@ void XGATE::reqAsynchronousInterrupt()
 {
 	asynchronous_interrupt = true;
 }
+
+void XGATE::ackAsynchronousInterrupt()
+{
+	asynchronous_interrupt = false;
+}
+
 
 //=====================================================================
 //=                   Debugging methods                               =

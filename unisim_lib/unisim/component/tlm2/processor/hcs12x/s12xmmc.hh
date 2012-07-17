@@ -90,8 +90,8 @@ class S12XMMC :
 
 {
 public:
-	static const uint8_t MEMORY_MAP_SIZE = 10;
-	static const uint8_t DEVICE_MAP_SIZE = 7;
+	static const uint8_t MEMORY_MAP_SIZE = 11;
+	static const uint8_t DEVICE_MAP_SIZE = 8;
 
 	typedef MMC inherited;
 	typedef tlm_utils::simple_initiator_socket<S12XMMC> InitSocket;
@@ -99,12 +99,14 @@ public:
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
+	tlm_utils::simple_target_socket<S12XMMC> xgate_socket;
 	InitSocket *init_socket[MEMORY_MAP_SIZE];
 
 	S12XMMC(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12XMMC();
 
-	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	virtual void cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	virtual void xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 private:
 

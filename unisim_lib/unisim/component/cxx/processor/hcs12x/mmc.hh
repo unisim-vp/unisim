@@ -123,6 +123,9 @@ public:
 	static const address_t CPU12X_FLASH_LOW_OFFSET	= 0x4000;
 	static const address_t CPU12X_FLASH_HIGH_OFFSET=0xFFFF;
 
+	static const physical_address_t XGATE_RAM_BASE_ADDRESS = 0x0F0000;
+	static const physical_address_t XGATE_FLASH_BASE_ADDRESS = 0x780000;
+
 	static const address_t XGATE_FLASH_LOW_OFFSET	= 0x0800;
 	static const address_t XGATE_FLASH_HIGH_OFFSET=0x7FFF;
 	static const address_t XGATE_RAM_LOW_OFFSET	= 0x8000;
@@ -215,6 +218,7 @@ public:
     ~MMC();
 
     static inline physical_address_t getCPU12XPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload = false, uint8_t debug_page = 0xFF);
+    static inline physical_address_t getXGATEPhysicalAddress(address_t logicalAddress);
     static inline physical_address_t getCPU12XPagedAddress(address_t logicalAddress);
 	static inline bool isPaged(address_t addr, page_t page, bool isGlobal, bool debugload);
 
@@ -442,6 +446,24 @@ inline physical_address_t MMC::getCPU12XPhysicalAddress(address_t logicalAddress
 	return (address);
 }
 
+inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
+{
+	/**
+	 * The XGATE memory map is linear and static. There are no mapping or page registers.
+	 */
+
+	physical_address_t address = cpu_address;
+
+	if ((cpu_address >= XGATE_RAM_LOW_OFFSET) && (cpu_address <= XGATE_RAM_HIGH_OFFSET)) { // Access to RAM
+		address = XGATE_RAM_BASE_ADDRESS + cpu_address;
+	}
+
+	if ((cpu_address >= XGATE_FLASH_LOW_OFFSET) && (cpu_address <= XGATE_FLASH_HIGH_OFFSET)) { // Access to Flash
+		address = XGATE_FLASH_BASE_ADDRESS + cpu_address;
+	}
+
+	return (address);
+}
 
 //=====================================================================
 //=             registers setters and getters                         =

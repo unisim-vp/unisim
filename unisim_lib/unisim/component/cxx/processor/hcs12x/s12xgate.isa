@@ -89,4 +89,519 @@ action {void} execute({XGATE *} {cpu}) {
 	exit(-1);
 }
 
-//include "load_store.isa"
+// Return to Scheduler and others
+op return_scheduler(0b000000[6]:b[2]:0b00000000[8])
+
+return_scheduler.getCycles = { return 0;}
+
+return_scheduler.disasm = {
+
+	switch (b) {
+	case 0: /* BRK */ break;
+	case 1: /* NOP */ break;
+	case 2: /* RTS */ break;
+	case 3: /* SIF */ break;
+	}
+
+	return "";
+}
+
+return_scheduler.execute = {
+
+	switch (b) {
+	case 0: /* BRK */ break;
+	case 1: /* NOP */ break;
+	case 2: /* RTS */ break;
+	case 3: /* SIF */ break;
+	}
+
+}
+
+// Semaphore Instructions
+
+op semaphore(0b00000[5]:b1[3]:0b111100[6]:b2[2])
+
+semaphore.getCycles = { return 0;}
+
+semaphore.disasm = {
+
+	switch (b2) {
+	case 0: /* CSEM IMM3 */ break;
+	case 1: /* CSEM RS */ break;
+	case 2: /* SSEM IMM3 */ break;
+	case 3: /* SSEM RS */ break;
+	}
+
+	return "";
+}
+
+semaphore.execute = {
+
+	switch (b2) {
+	case 0: /* CSEM IMM3 */ break;
+	case 1: /* CSEM RS */ break;
+	case 2: /* SSEM IMM3 */ break;
+	case 3: /* SSEM RS */ break;
+	}
+
+}
+
+// Single Register Instructions
+
+op single_register(0b00000[5]:reg1[3]:0b111101[6]:b[2])
+
+single_register.getCycles = { return 0;}
+
+single_register.disasm = {
+
+	switch (b) {
+	case 0: /* SEX RD */ break;
+	case 1: /* PAR RD */ break;
+	case 2: /* JAL RD */ break;
+	case 3: /* SIF RS */ break;
+	}
+
+	return "";
+}
+
+single_register.execute = {
+
+	switch (b) {
+	case 0: /* SEX RD */ break;
+	case 1: /* PAR RD */ break;
+	case 2: /* JAL RD */ break;
+	case 3: /* SIF RS */ break;
+	}
+
+}
+
+// Special Move instructions
+
+op special_move(0b00000[5]:reg1[3]:0b111110[6]:b[2])
+
+special_move.getCycles = { return 0;}
+
+special_move.disasm = {
+
+	switch (b) {
+	case 0: /* TFR RD, CCR */ break;
+	case 1: /* TFR CCR, RS */ break;
+	case 2: /* TFR RD, PC */ break;
+	case 3: /* not used */ break;
+	}
+
+	return "";
+}
+
+special_move.execute = {
+
+	switch (b) {
+	case 0: /* TFR RD, CCR */ break;
+	case 1: /* TFR CCR, RS */ break;
+	case 2: /* TFR RD, PC */ break;
+	case 3: /* not used */ break;
+	}
+
+}
+
+// Shift instructions Dyadic
+op shift_dyadic(0b00001[5]:reg1[3]:reg2[3]:0b10[2]:b[3])
+
+shift_dyadic.getCycles = { return 0;}
+
+shift_dyadic.disasm = {
+
+	switch (b) {
+	case 0: /* BFFO RD, RS */ break;
+	case 1: /* ASR RD, RS */ break;
+	case 2: /* CSL RD, RS */ break;
+	case 3: /* CSR RD, RS */ break;
+	case 4: /* LSL RD, RS */ break;
+	case 5: /* LSR RD, RS */ break;
+	case 6: /* ROL RD, RS */ break;
+	case 7: /* ROR RD, RS */ break;
+	}
+
+	return "";
+}
+
+shift_dyadic.execute = {
+
+		switch (b) {
+		case 0: /* BFFO RD, RS */ break;
+		case 1: /* ASR RD, RS */ break;
+		case 2: /* CSL RD, RS */ break;
+		case 3: /* CSR RD, RS */ break;
+		case 4: /* LSL RD, RS */ break;
+		case 5: /* LSR RD, RS */ break;
+		case 6: /* ROL RD, RS */ break;
+		case 7: /* ROR RD, RS */ break;
+		}
+
+}
+
+// Shift instructions immediate
+op shift_imm4(0b00001[5]:reg1[3]:imm4[4]:0b1[1]:b[3])
+
+shift_imm4.getCycles = { return 0;}
+
+shift_imm4.disasm = {
+
+	switch (b) {
+	case 0: /* not used */ break;
+	case 1: /* ASR RD, #IMM4 */ break;
+	case 2: /* CSL RD, #IMM4 */ break;
+	case 3: /* CSR RD, #IMM4 */ break;
+	case 4: /* LSL RD, #IMM4 */ break;
+	case 5: /* LSR RD, #IMM4 */ break;
+	case 6: /* ROL RD, #IMM4 */ break;
+	case 7: /* ROR RD, #IMM4 */ break;
+	}
+
+	return "";
+}
+
+shift_imm4.execute = {
+
+		switch (b) {
+		case 0: /* not used */ break;
+		case 1: /* ASR RD, #IMM4 */ break;
+		case 2: /* CSL RD, #IMM4 */ break;
+		case 3: /* CSR RD, #IMM4 */ break;
+		case 4: /* LSL RD, #IMM4 */ break;
+		case 5: /* LSR RD, #IMM4 */ break;
+		case 6: /* ROL RD, #IMM4 */ break;
+		case 7: /* ROR RD, #IMM4 */ break;
+		}
+
+}
+
+// Logical Triadic
+op logical_triadic(0b00010[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
+
+logical_triadic.getCycles = { return 0;}
+
+logical_triadic.disasm = {
+
+	switch (b) {
+	case 0: /* AND RD, RS1, RS2 */ break;
+	case 1: /* not used */ break;
+	case 2: /* OR Rd, RS1, RS2 */ break;
+	case 3: /* XNOR RD, RS1, RS2 */ break;
+	}
+
+	return "";
+}
+
+logical_triadic.execute = {
+
+		switch (b) {
+		case 0: /* AND RD, RS1, RS2 */ break;
+		case 1: /* not used */ break;
+		case 2: /* OR Rd, RS1, RS2 */ break;
+		case 3: /* XNOR RD, RS1, RS2 */ break;
+		}
+
+}
+
+// Arithmetic Triadic
+op arithmetic_triadic(0b00011[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
+
+arithmetic_triadic.getCycles = { return 0;}
+
+arithmetic_triadic.disasm = {
+
+	switch (b) {
+	case 0: /* SUB RD, RS1, RS2 */ break;
+	case 1: /* SBC RD, RS1, RS2 */ break;
+	case 2: /* ADD RD, RS1, RS2 */ break;
+	case 3: /* ADC RD, RS1, RS2 */ break;
+	}
+
+	return "";
+}
+
+arithmetic_triadic.execute = {
+
+	switch (b) {
+	case 0: /* SUB RD, RS1, RS2 */ break;
+	case 1: /* SBC RD, RS1, RS2 */ break;
+	case 2: /* ADD RD, RS1, RS2 */ break;
+	case 3: /* ADC RD, RS1, RS2 */ break;
+	}
+
+}
+
+// Branches
+op branches(0b001[3]:b[4]:rel[9])
+
+branches.getCycles = { return 0;}
+
+branches.disasm = {
+
+	switch (b) {
+	case 0: /* BCC REL9 */ break;
+	case 1: /* BCS REL9 */ break;
+	case 2: /* BNE REL9 */ break;
+	case 3: /* BEQ REL9 */ break;
+	case 4: /* BPL REL9 */ break;
+	case 5: /* BMI REL9 */ break;
+	case 6: /* BVC REL9 */ break;
+	case 7: /* BVS REL9 */ break;
+	case 8: /* BHI REL9 */ break;
+	case 9: /* BLS REL9 */ break;
+	case 10: /* BGE REL9 */ break;
+	case 11: /* BLT REL9 */ break;
+	case 12: /* BGT REL9 */ break;
+	case 13: /* BLE REL9 */ break;
+	default: /* BRA REL10 */ break;
+	}
+
+	return "";
+}
+
+branches.execute = {
+
+	switch (b) {
+	case 0: /* BCC REL9 */ break;
+	case 1: /* BCS REL9 */ break;
+	case 2: /* BNE REL9 */ break;
+	case 3: /* BEQ REL9 */ break;
+	case 4: /* BPL REL9 */ break;
+	case 5: /* BMI REL9 */ break;
+	case 6: /* BVC REL9 */ break;
+	case 7: /* BVS REL9 */ break;
+	case 8: /* BHI REL9 */ break;
+	case 9: /* BLS REL9 */ break;
+	case 10: /* BGE REL9 */ break;
+	case 11: /* BLT REL9 */ break;
+	case 12: /* BGT REL9 */ break;
+	case 13: /* BLE REL9 */ break;
+	default: /* BRA REL10 */ break;
+	}
+
+}
+
+// load and store using offset 5-bits
+op ld_st_offs5(0b010[3]:b[2]:reg1[3]:reg2[3]:offs5[5])
+
+ld_st_offs5.getCycles = { return 0;}
+
+ld_st_offs5.disasm = { 
+
+	switch (b) {
+	case 0: /* LDB RD, (RB, #OFFS5) */ break;
+	case 1: /* LDW RD, (RB, #OFFS5) */ break;
+	case 2: /* STB RD, (RB, #OFFS5) */ break;
+	case 3: /* STB RD, (RB, #OFFS5) */ break;
+	}
+
+	return "";
+}
+
+ld_st_offs5.execute = {
+
+	switch (b) {
+	case 0: /* LDB RD, (RB, #OFFS5) */ break;
+	case 1: /* LDW RD, (RB, #OFFS5) */ break;
+	case 2: /* STB RD, (RB, #OFFS5) */ break;
+	case 3: /* STB RD, (RB, #OFFS5) */ break;
+	}
+
+}
+
+op ldb(0b01100[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
+
+ldb.getCycles = { return 0;}
+
+ldb.disasm = {
+
+	switch (b) {
+	case 0: /* LDB RD, (RD, RI) */ break;
+	case 1: /* LDB RD, (RD, RI+) */ break;
+	case 2: /* LDB RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFEXT RD, RS1, RS2
+	} /*  */ break;
+	}
+
+	return "";
+}
+
+ldb.execute = {
+
+	switch (b) {
+	case 0: /* LDB RD, (RD, RI) */ break;
+	case 1: /* LDB RD, (RD, RI+) */ break;
+	case 2: /* LDB RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFEXT RD, RS1, RS2
+	} /*  */ break;
+	}
+
+}
+
+op ldw(0b01101[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
+
+ldw.getCycles = { return 0;}
+
+ldw.disasm = {
+
+	switch (b) {
+	case 0: /* LDW RD, (RD, RI) */ break;
+	case 1: /* LDW RD, (RD, RI+) */ break;
+	case 2: /* LDW RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFINS RD, RS1, RS2
+	} /*  */ break;
+	}
+
+	return "";
+}
+
+ldw.execute = {
+
+	switch (b) {
+	case 0: /* LDW RD, (RD, RI) */ break;
+	case 1: /* LDW RD, (RD, RI+) */ break;
+	case 2: /* LDW RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFINS RD, RS1, RS2
+	} /*  */ break;
+	}
+
+}
+
+op stb(0b01110[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
+
+stb.getCycles = { return 0;}
+
+stb.disasm = {
+
+	switch (b) {
+	case 0: /* STB RD, (RD, RI) */ break;
+	case 1: /* STB RD, (RD, RI+) */ break;
+	case 2: /* STB RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFINSI RD, RS1, RS2
+	} /*  */ break;
+	}
+
+	return "";
+}
+
+stb.execute = {
+
+	switch (b) {
+	case 0: /* STB RD, (RD, RI) */ break;
+	case 1: /* STB RD, (RD, RI+) */ break;
+	case 2: /* STB RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFINSI RD, RS1, RS2
+	} /*  */ break;
+	}
+
+}
+
+op stw(0b01111[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
+
+stw.getCycles = { return 0;}
+
+stw.disasm = {
+
+	switch (b) {
+	case 0: /* STW RD, (RD, RI) */ break;
+	case 1: /* STW RD, (RD, RI+) */ break;
+	case 2: /* STW RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFINSX RD, RS1, RS2
+	} /*  */ break;
+	}
+
+	return "";
+}
+
+stw.execute = {
+
+	switch (b) {
+	case 0: /* STW RD, (RD, RI) */ break;
+	case 1: /* STW RD, (RD, RI+) */ break;
+	case 2: /* STW RD, (RD, -RI) */ break;
+	case 3: {
+		// Bit Field instruction: BFINSX RD, RS1, RS2
+	} /*  */ break;
+	}
+
+}
+
+// Logic Immediate
+op logic_imm8(0b10[2]:b[3]:reg1[3]:imm8[8])
+
+logic_imm8.getCycles = { return 0;}
+
+logic_imm8.disasm = {
+
+	switch (b) {
+	case 0: /* ANDL RD, #IMM8 */ break;
+	case 1: /* ANDH RD, #IMM8 */ break;
+	case 2: /* BITL RD, #IMM8 */ break;
+	case 3: /* BITH RD, #IMM8 */ break;
+	case 4: /* ORL RD, #IMM8 */ break;
+	case 5: /* ORH RD, #IMM8 */ break;
+	case 6: /* XNORL RD, #IMM8 */ break;
+	case 7: /* XNORH RD, #IMM8 */ break;
+	}
+
+	return "";
+}
+
+logic_imm8.execute = {
+
+	switch (b) {
+	case 0: /* ANDL RD, #IMM8 */ break;
+	case 1: /* ANDH RD, #IMM8 */ break;
+	case 2: /* BITL RD, #IMM8 */ break;
+	case 3: /* BITH RD, #IMM8 */ break;
+	case 4: /* ORL RD, #IMM8 */ break;
+	case 5: /* ORH RD, #IMM8 */ break;
+	case 6: /* XNORL RD, #IMM8 */ break;
+	case 7: /* XNORH RD, #IMM8 */ break;
+	}
+
+}
+
+// Arithmetic Immediate
+op arithmetic_imm8(0b11[2]:b[3]:reg1[3]:imm8[8])
+
+arithmetic_imm8.getCycles = { return 0;}
+
+arithmetic_imm8.disasm = {
+
+	switch (b) {
+	case 0: /* SUBL RD, #IMM8 */ break;
+	case 1: /* SUBH RD, #IMM8 */ break;
+	case 2: /* CMPL RS, #IMM8 */ break;
+	case 3: /* CPCH RS, #IMM8 */ break;
+	case 4: /* ADDL RD, #IMM8 */ break;
+	case 5: /* ADDH RD, #IMM8 */ break;
+	case 6: /* LDL RD, #IMM8 */ break;
+	case 7: /* LDH RD, #IMM8 */ break;
+	}
+
+	return "";
+}
+
+arithmetic_imm8.execute = {
+
+	switch (b) {
+	case 0: /* SUBL RD, #IMM8 */ break;
+	case 1: /* SUBH RD, #IMM8 */ break;
+	case 2: /* CMPL RS, #IMM8 */ break;
+	case 3: /* CPCH RS, #IMM8 */ break;
+	case 4: /* ADDL RD, #IMM8 */ break;
+	case 5: /* ADDH RD, #IMM8 */ break;
+	case 6: /* LDL RD, #IMM8 */ break;
+	case 7: /* LDH RD, #IMM8 */ break;
+	}
+
+}

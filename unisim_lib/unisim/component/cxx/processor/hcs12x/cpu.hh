@@ -129,10 +129,6 @@ using std::map;
 using std::ostream;
 using std::vector;
 
-//#define MAX_INS_SIZE	CodeType::maxsize;
-#define MAX_INS_SIZE	8
-#define QUEUE_SIZE		MAX_INS_SIZE
-
 class CPU;
 
 /* *******************************************************************
@@ -223,6 +219,10 @@ public Client<TrapReporting >
 
 {
 public:
+	//#define MAX_INS_SIZE	CodeType::maxsize;
+	static const uint8_t MAX_INS_SIZE = 8;
+	static const uint8_t QUEUE_SIZE = MAX_INS_SIZE;
+
 
 	void queueFlush(uint8_t nByte); // flush is called after prefetch() to advance the queue cursor (first pointer)
 	uint8_t* queueFetch(address_t addr, uint8_t* ins, uint8_t nByte);
