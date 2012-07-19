@@ -111,10 +111,10 @@ namespace powerpc {
       bool isInftyAvoided() const { return true; }
       bool doesAvoidInfty(bool fNegative) const {  return fNegative ? (rmRound >= RMHighest) : (rmRound & RMLowest); }
       bool keepNaNSign() const { return true; }
-      bool produceMultNaNPositive() const { return true; } // Gilles
+      bool produceMultNaNPositive() const { return true; }
       bool produceDivNaNPositive() const { return true; }
-      bool produceAddNaNPositive() const { return true; } // Gilles
-      bool produceSubNaNPositive() const { return true; } // Gilles
+      bool produceAddNaNPositive() const { return true; }
+      bool produceSubNaNPositive() const { return true; }
       bool upApproximateInfty() const { return fUpApproximateInfty; }
       bool upApproximateInversionForNear() const { return true; }
       bool chooseNaNAddBeforeMult() const { return true; }

@@ -543,13 +543,8 @@ TBuiltDouble<TypeTraits>::setFloat(const FloatConversion& fcValue, StatusAndCont
                   biExponent.inc();
                   fcmMantissa.setFalseBitArray(bitSizeMantissa());
                };
-#if 1
                if (biExponent.isZero())
                   scfFlags.setUnderflow();
-#else
-               if (!biExponent.isZero())
-                  scfFlags.setUnderflow();
-#endif
             }
             else
                scfFlags.setUnderflow();
@@ -1558,17 +1553,9 @@ TBuiltDouble<TypeTraits>::plusAssign(const thisType& bdSource, StatusAndControlF
             else if (bdSource.fNegative != fNegative) {
                scfFlags.setInftyMinusInfty();
                biMantissa = 0U;
-#if 1
-               // Modifs franck
                biMantissa.setTrueBitArray(bitSizeMantissa()-1);
-               // biMantissa.neg();
-               // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
                if (scfFlags.produceAddNaNPositive())
                   fNegative = false;
-#else
-               biMantissa.neg();
-               biMantissa.setFalseBitArray(bitSizeMantissa()-1);
-#endif
             };
          };
       }
@@ -1676,14 +1663,9 @@ TBuiltDouble<TypeTraits>::minusAssign(const thisType& bdSource, StatusAndControl
             else if (bdSource.fNegative == fNegative) {
                scfFlags.setInftyMinusInfty();
                biMantissa = 0U;
-#if 1
                biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                if(scfFlags.produceSubNaNPositive())
                    fNegative=false;
-#else
-               biMantissa.neg();
-               biMantissa.setFalseBitArray(bitSizeMantissa()-1);
-#endif
             };
          };
       }
@@ -2447,10 +2429,8 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
                   scfFlags.setSNaNOperand();
                   biMantissa.setTrueBitArray(bitSizeMantissa()-1);
                };
-#if 1
                if (scfFlags.keepNaNSign())
                   fNegative = bdSource.fNegative;
-#endif
             };
             if (!bdSource.biMantissa.isZero() && scfFlags.keepNaNSign())
                fNegative = bdSource.fNegative;
@@ -2550,21 +2530,11 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
       else if (bdSource.biMantissa.isZero() && bdSource.biExponent.isZero()) {
          scfFlags.setInftyMultZero();
          biMantissa = 0;
-#if 1
-         // Modifs franck
          biMantissa.setTrueBitArray(bitSizeMantissa()-1);
-         // biMantissa.neg();
-         // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
          if (scfFlags.keepNaNSign())
             fNegative = fOldNegative;
          if (scfFlags.produceMultNaNPositive())
             fNegative = false;
-#else
-         biMantissa.neg();
-         biMantissa.setFalseBitArray(bitSizeMantissa()-1);
-         if (scfFlags.keepNaNSign())
-            fNegative = fOldNegative;
-#endif
       };
       if (mpFlags.hasAdd()) {
          if (!fThisNaN && scfFlags.chooseNaNAddBeforeMult() && mpFlags.queryAddSource().isNaN()) {
@@ -2628,17 +2598,9 @@ TBuiltDouble<TypeTraits>::multAssign(const thisType& bdSource, const MultParamet
          if (bdSource.biMantissa.isZero()) {
             scfFlags.setInftyMultZero();
             biMantissa = 0U;
-#if 1
-            // Modifs franck
             biMantissa.setTrueBitArray(bitSizeMantissa()-1);
-            // biMantissa.neg();
-            // biMantissa.setFalseBitArray(bitSizeMantissa()-1);
             if (scfFlags.produceMultNaNPositive())
                fNegative = false;
-#else
-            biMantissa.neg();
-            biMantissa.setFalseBitArray(bitSizeMantissa()-1);
-#endif
          }
          else {
             biMantissa = bdSource.biMantissa;
