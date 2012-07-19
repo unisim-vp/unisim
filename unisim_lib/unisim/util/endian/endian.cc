@@ -42,6 +42,7 @@ namespace service {
 using unisim::util::endian::endian_type;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::E_BIG_ENDIAN;
+using unisim::util::endian::E_UNKNOWN_ENDIAN;
 
 //   template <> Variable<endian_type>::Variable(const char *_name, Configurable *_configurable, endian_type& _storage) :
 //     VariableBase(_name, _configurable), storage(&_storage)
@@ -122,7 +123,7 @@ template <> VariableBase& Variable<endian_type>::operator = (const char *value)
 {
 	if(IsMutable())
 	{
-		endian_type tmp = (string(value) == string("little-endian")) ? E_LITTLE_ENDIAN : E_BIG_ENDIAN;
+		endian_type tmp = (string(value) == string("little-endian")) ? E_LITTLE_ENDIAN : (string(value) == string("big-endian")) ? E_BIG_ENDIAN : E_UNKNOWN_ENDIAN;
 		SetModified(*storage != tmp);
 		*storage = tmp;
 	}

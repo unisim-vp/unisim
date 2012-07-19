@@ -1,4 +1,4 @@
-// TODO Fix register handling, should be done with methods.
+// // TODO Fix register handling, should be done with methods.
 
 /*
  *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
@@ -43,15 +43,12 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <string.h>
 #include <stdlib.h>
-
-#ifdef WIN32
-#include <process.h>
-#else
-#include <sys/times.h>
-#endif
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include "unisim/util/likely/likely.hh"
 #include "unisim/util/debug/blob/blob.hh"
@@ -68,10 +65,17 @@ namespace util {
 namespace os {
 namespace linux_os {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::kNumSupportedSystemTypes = 3;
 
-const char * tmp_supported_system_types[] = {"arm", "arm-eabi", "powerpc"};
+const char * tmp_supported_system_types[] = {"arm", "arm-eabi", "ppc"};
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 const std::vector<std::string> Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
 supported_system_types_(tmp_supported_system_types, 
@@ -80,7 +84,9 @@ supported_system_types_(tmp_supported_system_types,
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::
-Linux(std::ostringstream * const logger)
+Linux(unisim::kernel::logger::Logger& logger,
+  unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if,
+  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if)
     : is_load_(false)
     , system_type_("arm-eabi")
     , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
@@ -114,24 +120,23 @@ Linux(std::ostringstream * const logger)
     , utsname_version_()
     , utsname_machine_()
     , utsname_domainname_()
-    , num_aux_table_entries_(13) // TODO Set the number of aux table entries
+    , num_aux_table_entries_(14) // TODO Set the number of aux table entries
                                  //      depending on the architecture
     , aux_table_entry_size_(2 * sizeof(ADDRESS_TYPE))
     , blob_(NULL)
-    , register_interface_(NULL)
-    , memory_interface_(NULL)
-    , control_interface_(NULL)
+	, regs_if_(regs_if)
+	, mem_if_(mem_if)
+	, mem_inject_if_(mem_inject_if)
     , syscall_name_map_()
     , syscall_name_assoc_map_()
     , syscall_impl_assoc_map_()
     , current_syscall_id_(0)
     , current_syscall_name_("(NONE)")
-    , kOsreleaseFilename("/proc/sys/kernel/osrelease")
-    , kFakeOsreleaseFilename("osrelease")
     // , registers_(NULL) // TODO Remove
     , verbose_(false)
     , logger_(logger)
-    , loader_logger_(std::ostringstream::out) {
+    , terminated_(false)
+    , return_status_(0) {
   //for (int i = 0; i < kArmNumRegs; ++i)
     //arm_regs_[i] = NULL;
   //for (int i = 0; i < kPpcNumRegs; ++i)
@@ -140,6 +145,18 @@ Linux(std::ostringstream * const logger)
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
+  typename std::map<std::string, unisim::util::debug::blob::Blob<ADDRESS_TYPE> const *>::const_iterator it;
+  for(it = load_files_.begin(); it != load_files_.end(); it++)
+  {
+     const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob = (*it).second;
+     blob->Release();
+  }
+  load_files_.clear();
+  if(blob_)
+  {
+     blob_->Release();
+     blob_ = 0;
+  }
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -195,22 +212,20 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
 
   // check that filename points to something
   if (filename == NULL) {
-    std::cerr << "WARNING(unisim::util::os::linux): calling AddLoadFile "
-        << "without handling file." << std::endl;
+    logger_ << DebugWarning << "calling AddLoadFile "
+        << "without handling file." << EndDebugWarning;
     return false;
   }
 
-  ResetLoaderLogger();
   // check that the file exists and that the elf loader can create a blob from it
   unisim::util::loader::elf_loader::Elf32Loader<ADDRESS_TYPE> *loader =
       new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS_TYPE>(
-          loader_logger_);
+          logger_, regs_if_, mem_if_);
 
   if (loader == NULL) {
-    std::cerr
-        << "ERROR(unisim::util::os::linux): Could not create an elf loader."
-        << std::endl;
-    PrintLoaderLogger();
+    logger_ << DebugError
+        << "Could not create an elf loader."
+        << EndDebugError;
     return false;
   }
 
@@ -218,25 +233,25 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
   loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
 
   if (!loader->Load()) {
-    std::cerr
-        << "ERROR(unisim::util::os::linux): Could not load the given file "
-        << "\"" << filename << "\"" << std::endl;
-    PrintLoaderLogger();
+    logger_ << DebugError
+        << "Could not load the given file "
+        << "\"" << filename << "\"" << EndDebugError;
+    delete loader;
     return false;
   }
 
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const blob =
       loader->GetBlob();
   if (blob == NULL) {
-    std::cerr << "ERROR(unisim::util::os::linux): Could not create blob from"
-        << " requested file (" << filename << ")." << std::endl;
-    PrintLoaderLogger();
+    logger_ << DebugError << "Could not create blob from"
+        << " requested file (" << filename << ")." << EndDebugError;
     delete loader;
     return false;
   }
 
   blob->Catch();
   std::string filename_str(filename);
+  if(load_files_.find(filename_str) != load_files_.end()) load_files_[filename_str]->Release();
   load_files_[filename_str] = blob;
   delete loader;
   return true;
@@ -257,7 +272,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemType(
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetEndianness(
     unisim::util::endian::endian_type endianness) {
-  endianness = endianness_;
+  endianness_ = endianness;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -294,29 +309,93 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
   utsname_domainname_ = utsname_domainname;
 }
 
-// TODO Remove
-//template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-//void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegisters(
-    //std::vector<unisim::util::debug::Register *> &registers) {
-  //registers_ = &registers;
-//}
-// END TODO
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+unisim::util::debug::Register * Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegisterFromId(uint32_t id) {
+  if (!regs_if_) return NULL;
+  char const * reg_name = 0;
+  if ((system_type_.compare("arm") == 0) || (system_type_.compare("arm-eabi") == 0)) {
+    switch(id) {
+      case unisim::util::os::linux_os::kARM_r0: reg_name = "r0"; break;
+      case unisim::util::os::linux_os::kARM_r1: reg_name = "r1"; break;
+      case unisim::util::os::linux_os::kARM_r2: reg_name = "r2"; break;
+      case unisim::util::os::linux_os::kARM_r3: reg_name = "r3"; break;
+      case unisim::util::os::linux_os::kARM_r4: reg_name = "r4"; break;
+      case unisim::util::os::linux_os::kARM_r5: reg_name = "r5"; break;
+      case unisim::util::os::linux_os::kARM_r6: reg_name = "r6"; break;
+      case unisim::util::os::linux_os::kARM_r7: reg_name = "r7"; break;
+      case unisim::util::os::linux_os::kARM_r8: reg_name = "r8"; break;
+      case unisim::util::os::linux_os::kARM_r9: reg_name = "r9"; break;
+      case unisim::util::os::linux_os::kARM_r10: reg_name = "r10"; break;
+      case unisim::util::os::linux_os::kARM_r11: reg_name = "r11"; break;
+      case unisim::util::os::linux_os::kARM_r12: reg_name = "r12"; break;
+      case unisim::util::os::linux_os::kARM_sp: reg_name = "sp"; break;
+      case unisim::util::os::linux_os::kARM_lr: reg_name = "lr"; break;
+      case unisim::util::os::linux_os::kARM_pc: reg_name = "pc"; break;
+      default: return NULL;
+    }
+  } else if (system_type_.compare("ppc") == 0) {
+    switch(id) {
+      case unisim::util::os::linux_os::kPPC_r0: reg_name = "r0"; break;
+      case unisim::util::os::linux_os::kPPC_r1: reg_name = "r1"; break;
+      case unisim::util::os::linux_os::kPPC_r2: reg_name = "r2"; break;
+      case unisim::util::os::linux_os::kPPC_r3: reg_name = "r3"; break;
+      case unisim::util::os::linux_os::kPPC_r4: reg_name = "r4"; break;
+      case unisim::util::os::linux_os::kPPC_r5: reg_name = "r5"; break;
+      case unisim::util::os::linux_os::kPPC_r6: reg_name = "r6"; break;
+      case unisim::util::os::linux_os::kPPC_r7: reg_name = "r7"; break;
+      case unisim::util::os::linux_os::kPPC_r8: reg_name = "r8"; break;
+      case unisim::util::os::linux_os::kPPC_r9: reg_name = "r9"; break;
+      case unisim::util::os::linux_os::kPPC_r10: reg_name = "r10"; break;
+      case unisim::util::os::linux_os::kPPC_r11: reg_name = "r11"; break;
+      case unisim::util::os::linux_os::kPPC_r12: reg_name = "r12"; break;
+      case unisim::util::os::linux_os::kPPC_r13: reg_name = "r13"; break;
+      case unisim::util::os::linux_os::kPPC_r14: reg_name = "r14"; break;
+      case unisim::util::os::linux_os::kPPC_r15: reg_name = "r15"; break;
+      case unisim::util::os::linux_os::kPPC_r16: reg_name = "r16"; break;
+      case unisim::util::os::linux_os::kPPC_r17: reg_name = "r17"; break;
+      case unisim::util::os::linux_os::kPPC_r18: reg_name = "r18"; break;
+      case unisim::util::os::linux_os::kPPC_r19: reg_name = "r19"; break;
+      case unisim::util::os::linux_os::kPPC_r20: reg_name = "r20"; break;
+      case unisim::util::os::linux_os::kPPC_r21: reg_name = "r21"; break;
+      case unisim::util::os::linux_os::kPPC_r22: reg_name = "r22"; break;
+      case unisim::util::os::linux_os::kPPC_r23: reg_name = "r23"; break;
+      case unisim::util::os::linux_os::kPPC_r24: reg_name = "r24"; break;
+      case unisim::util::os::linux_os::kPPC_r25: reg_name = "r25"; break;
+      case unisim::util::os::linux_os::kPPC_r26: reg_name = "r26"; break;
+      case unisim::util::os::linux_os::kPPC_r27: reg_name = "r27"; break;
+      case unisim::util::os::linux_os::kPPC_r28: reg_name = "r28"; break;
+      case unisim::util::os::linux_os::kPPC_r29: reg_name = "r29"; break;
+      case unisim::util::os::linux_os::kPPC_r30: reg_name = "r30"; break;
+      case unisim::util::os::linux_os::kPPC_r31: reg_name = "r31"; break;
+      case unisim::util::os::linux_os::kPPC_cr: reg_name = "cr"; break;
+      case unisim::util::os::linux_os::kPPC_cia: reg_name = "cia"; break;
+      default: return NULL;
+    }
+  }
+  return regs_if_->GetRegister(reg_name);
+}
+
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegisterInterface(
-    LinuxRegisterInterface<PARAMETER_TYPE> &iface) {
-  register_interface_ = &iface;
-}
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryInterface(
-    LinuxMemoryInterface<ADDRESS_TYPE> &iface) {
-  memory_interface_ = &iface;
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id,
+    PARAMETER_TYPE * const value) {
+  unisim::util::debug::Register *reg = 0;
+  reg = GetRegisterFromId(id);
+  if (reg == NULL) return false;
+  if (reg->GetSize() != sizeof(PARAMETER_TYPE)) return false;
+  reg->GetValue(value);
+  return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetControlInterface(
-    LinuxControlInterface &iface) {
-  control_interface_ = &iface;
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
+    PARAMETER_TYPE value) {
+  unisim::util::debug::Register *reg = 0;
+  reg = GetRegisterFromId(id);
+  if (reg == NULL) return false;
+  if (reg->GetSize() != sizeof(PARAMETER_TYPE)) return false;
+  reg->SetValue(&value);
+  return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -340,25 +419,24 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
 
   // load and add files to the blob
   if (verbose_)
-    std::cout << "(unisim::util::os::linux_os::Linux.Load): "
-        << "Loading elf files." << std::endl;
+    logger_ << DebugInfo
+        << "Loading elf files." << EndDebugInfo;
   if (!LoadFiles(blob)) {
-    PrintLoaderLogger();
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
-        << "Could not load elf files." << std::endl;
+    logger_ << DebugError
+        << "Could not load elf files." << EndDebugError;
     blob->Release();
     return false;
   }
 
   // create the stack footprint and add it to the blob
   if (verbose_)
-    std::cout << "(unisim::util::os::linux_os::Linux.Load): "
-        << "Creating the Linux software stack." << std::endl;
+    logger_ << DebugInfo
+        << "Creating the Linux software stack." << EndDebugInfo;
   if (!CreateStack(blob)) {
     // TODO
     // Remove non finished state (i.e., unfinished blob, reset values, ...)
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
-        << "Could not create the Linux software stack." << std::endl;
+    logger_ << DebugError
+        << "Could not create the Linux software stack." << EndDebugError;
     blob->Release();
     return false;
   }
@@ -366,13 +444,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   // finish the state of the memory image depending on the system we are running
   // on
   if (verbose_)
-    std::cout << "(unisim::util::os::linux_os::Linux.Load): "
-        << "Setting the system blob." << std::endl;
+    logger_ << DebugInfo
+        << "Setting the system blob." << EndDebugInfo;
   if (!SetSystemBlob(blob)) {
     // TODO
     // Remove non finished state (i.e., unfinished blob, reset values, ...)
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
-        << "Could not set the system blob." << std::endl;
+    logger_ << DebugError
+        << "Could not set the system blob." << EndDebugError;
     blob->Release();
     return false;
   }
@@ -383,18 +461,18 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   if ((system_type_.compare("arm") == 0) ||
       (system_type_.compare("arm-eabi") == 0)) {
     if (!SetupLinuxOSARM()) {
-      std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
+      logger_ << DebugError
           << "Error while trying to setup the linux os arm"
-          << std::endl;
+          << EndDebugError;
       blob->Release();
       return false;
     }
   }
-  if (system_type_.compare("powerpc") == 0) {
+  if (system_type_.compare("ppc") == 0) {
     if (!SetupLinuxOSPPC()) {
-      std::cerr << "ERROR(unisim::util::os::linux_os::Linux.Load): "
-          << "Error while trying to setup the linux os powerpc"
-          << std::endl;
+      logger_ << DebugError
+          << "Error while trying to setup the linux os ppc"
+          << EndDebugError;
       blob->Release();
       return false;
     }
@@ -404,23 +482,24 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   mmap_brk_point_ = mmap_base_;
 
   ADDRESS_TYPE top_addr = /*blob->GetStackBase()*/ stack_base_ + stack_size_ - 1;
-  std::cerr << "=== top_addr = 0x" << std::hex << top_addr << std::dec
-      << std::endl;
-  //logger << DebugInfo
-      //<< "top_addr = 0x" << std::hex << top_addr << std::dec
-      //<< EndDebugInfo;
+  if(verbose_) {
+    logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
+      << EndDebugInfo;
+  }
 
   brk_point_ = top_addr +
       (memory_page_size_ - (top_addr % memory_page_size_));
 
-  std::cerr
-      << "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
-      << "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
-      << "=== mmap_base_ = 0x" << mmap_base_ << std::endl
-      << "=== memory_page_size_ = 0x" << memory_page_size_ << "("
-      << std::dec << memory_page_size_ << ")" << std::endl;
+  if(verbose_) {
+    logger_ << DebugInfo
+        << "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
+        << "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
+        << "=== mmap_base_ = 0x" << mmap_base_ << std::endl
+        << "=== memory_page_size_ = 0x" << memory_page_size_ << "("
+        << std::dec << memory_page_size_ << ")" << EndDebugInfo;
+  }
 
-
+  if(blob_) blob_->Release();
   blob_ = blob;
   is_load_ = true;
 
@@ -434,29 +513,29 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::IsLoad() {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupTarget() {
-  if (memory_interface_ == NULL
-      || register_interface_ == NULL
-      || control_interface_ == NULL) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
-        << "The linux system interfaces (memory/register/control) were not"
-        << " assigned" << std::endl;
+  if (mem_if_ == NULL
+      || mem_inject_if_ == NULL
+      || regs_if_ == NULL) {
+    logger_ << DebugError
+        << "The linux system interfaces (memory/register) were not"
+        << " assigned" << EndDebugError;
     return false;
   }
 
   if (blob_ == NULL) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
-        << "The linux system was not loaded." << std::endl;
+    logger_ << DebugError
+        << "The linux system was not loaded." << EndDebugError;
     return false;
   }
 
   if ((system_type_.compare("arm") == 0) || 
       (system_type_.compare("arm-eabi") == 0))
     return SetupARMTarget();
-  else if (system_type_.compare("powerpc") == 0)
+  else if (system_type_.compare("ppc") == 0)
     return SetupPPCTarget();
 
-  std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupTarget): "
-      << "Unknown system to setup (" << system_type_ << ")." << std::endl;
+  logger_ << DebugError
+      << "Unknown system to setup (" << system_type_ << ")." << EndDebugError;
   return false;
 }
 
@@ -475,50 +554,53 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
       ADDRESS_TYPE start, end;
       (*it)->GetAddrRange(start, end);
 
-      std::cerr << "--> writing memory segment start = 0x"
-          << std::hex << start << " end = 0x" << end << std::dec
-          << std::endl;
+      if(verbose_) {
+        logger_ << DebugInfo << "--> writing memory segment start = 0x"
+            << std::hex << start << " end = 0x" << end << std::dec
+            << EndDebugInfo;
+      }
 
-      success = memory_interface_->WriteMemory(start, data, end - start + 1);
+      success = mem_if_->WriteMemory(start, data, end - start + 1);
     }
   }
 
   if (!success) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
+    logger_ << DebugError
         << "Error while writing the segments into the target memory."
-        << std::endl;
+        << EndDebugError;
     return false;
   }
 
   // Reset all the target registers
   unsigned int reg_id = 0;
+  PARAMETER_TYPE null_param = 0;
   for (reg_id = 0; success && (reg_id < kARMNumRegs); reg_id++) {
-    success = register_interface_->SetRegister(reg_id, 0);
+    success = SetRegister(reg_id, null_param);
   }
   if (!success) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
-        << "Error while setting register '" << (reg_id - 1) << "'" << std::endl;
+    logger_ << DebugError
+        << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
     return false;
   }
   // Set PC to the program entry point
-  success = register_interface_->SetRegister(kARM_pc, entry_point_);
+  success = SetRegister(kARM_pc, entry_point_);
   if (!success) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
-        << "Error while setting pc register (" << kARM_pc << ")" << std::endl;
+    logger_ << DebugError
+        << "Error while setting pc register (" << kARM_pc << ")" << EndDebugError;
     return false;
   }
   // Set SP to the base of the created stack
   unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
       blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
   if (sp_section == NULL) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
-        << "Could not find the stack pointer section." << std::endl;
+    logger_ << DebugError
+        << "Could not find the stack pointer section." << EndDebugError;
     return false;
   }
-  success = register_interface_->SetRegister(kARM_sp, sp_section->GetAddr());
+  success = SetRegister(kARM_sp, sp_section->GetAddr());
   if (!success) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetupARMTarget): "
-        << "Error while setting sp register (" << kARM_sp << ")" << std::endl;
+    logger_ << DebugError
+        << "Error while setting sp register (" << kARM_sp << ")" << EndDebugError;
     return false;
   }
   ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
@@ -526,10 +608,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
   PARAMETER_TYPE par1 = 0;
   PARAMETER_TYPE par2 = 0;
   // TODO check endianness conversions
-  success = memory_interface_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
-  success = memory_interface_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-  register_interface_->SetRegister(kARM_r1, par1);
-  register_interface_->SetRegister(kARM_r2, par2);
+  success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+  success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+  SetRegister(kARM_r1, par1);
+  SetRegister(kARM_r2, par2);
 
 
   return true;
@@ -537,7 +619,79 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupPPCTarget() {
-  return false;
+  typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
+  typedef std::vector<const Segment*> SegmentVector;
+  typedef typename SegmentVector::const_iterator SegmentVectorIterator;
+
+  bool success = true;
+  SegmentVector segments = blob_->GetSegments();
+  for (SegmentVectorIterator it = segments.begin();
+       success && (it != segments.end()); it++) {
+    if ((*it)->GetType() == Segment::TY_LOADABLE) {
+      uint8_t const * data = (uint8_t const *)(*it)->GetData();
+      ADDRESS_TYPE start, end;
+      (*it)->GetAddrRange(start, end);
+
+      if(verbose_) {
+         logger_ << DebugInfo << "--> writing memory segment start = 0x"
+            << std::hex << start << " end = 0x" << end << std::dec
+            << EndDebugInfo;
+      }
+
+      success = mem_if_->WriteMemory(start, data, end - start + 1);
+    }
+  }
+
+  if (!success) {
+    logger_ << DebugError
+        << "Error while writing the segments into the target memory."
+        << EndDebugError;
+    return false;
+  }
+
+  // Reset all the target registers
+  unsigned int reg_id = 0;
+  PARAMETER_TYPE null_param = 0;
+  for (reg_id = 0; success && (reg_id < kPPCNumRegs); reg_id++) {
+    success = SetRegister(reg_id, null_param);
+  }
+  if (!success) {
+    logger_ << DebugError
+        << "Error while setting register '" << (reg_id - 1) << "'" << EndDebugError;
+    return false;
+  }
+  // Set PC to the program entry point
+  success = SetRegister(kPPC_cia, entry_point_);
+  if (!success) {
+    logger_ << DebugError
+        << "Error while setting cia register (" << kPPC_cia << ")" << EndDebugError;
+    return false;
+  }
+  // Set SP to the base of the created stack
+  unisim::util::debug::blob::Section<ADDRESS_TYPE> const * sp_section =
+      blob_->FindSection(".unisim.linux_os.stack.stack_pointer");
+  if (sp_section == NULL) {
+    logger_ << DebugError
+        << "Could not find the stack pointer section." << EndDebugError;
+    return false;
+  }
+  success = SetRegister(kPPC_sp, sp_section->GetAddr());
+  if (!success) {
+    logger_ << DebugError
+        << "Error while setting sp register (" << kPPC_sp << ")" << DebugError;
+    return false;
+  }
+  ADDRESS_TYPE par1_addr = sp_section->GetAddr() + 4;
+  ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
+  PARAMETER_TYPE par1 = 0;
+  PARAMETER_TYPE par2 = 0;
+  // TODO check endianness conversions
+  success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
+  success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
+  SetRegister(kPPC_r3, par1);
+  SetRegister(kPPC_r4, par2);
+
+  return true;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -545,11 +699,14 @@ unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
     PARAMETER_TYPE>::GetBlob() const { return blob_; }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status) {
   if (!is_load_) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.ExecuteSystemCall): "
+    logger_
+        << DebugError
+        << "unisim::util::os::linux_os::Linux.ExecuteSystemCall: "
         << "Trying to execute system call with id " << id << " while the linux "
-        << "emulation has not been correctly loaded." << std::endl;
+        << "emulation has not been correctly loaded."
+        << EndDebugError;
     return;
   }
 
@@ -559,17 +716,26 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
     current_syscall_id_ = translated_id;
     current_syscall_name_ = syscall_name_assoc_map_[translated_id];
     if (unlikely(verbose_))
-      (*logger_)
+      logger_
+          << DebugInfo
           << "Executing syscall(name = " << current_syscall_name_ << ";"
           << " id = " << translated_id << ";"
-          << " unstranslated id = " << id << ")" << std::endl;
+          << " unstranslated id = " << id << ")"
+          << EndDebugInfo;
     syscall_t y = syscall_impl_assoc_map_[translated_id];
     (this->*y)();
   } else {
-    (*logger_)
+    logger_
+        << DebugInfo
         << "Could not find system call id " << id << " (translated id = "
         << translated_id << "), aborting system call "
-        << "execution." << std::endl;
+        << "execution."
+        << EndDebugInfo;
+  }
+  if(terminated_)
+  {
+    terminated = true;
+    return_status = return_status_;
   }
 }
 
@@ -800,47 +966,50 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob) const {
   typedef std::vector<ADDRESS_TYPE> AddressVector;
   typedef typename AddressVector::iterator AddressVectorIterator;
+  typedef typename AddressVector::reverse_iterator AddressVectorReverseIterator;
   typedef unisim::util::debug::blob::Section<ADDRESS_TYPE> Section;
   typedef unisim::util::debug::blob::Segment<ADDRESS_TYPE> Segment;
 
   // make sure a blob is being handled
   if (blob == NULL) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
-        << "no blob handled to method." << std::endl;
+    logger_ << DebugError
+        << "no blob handled to method." << EndDebugError;
     return false;
   }
   // make sure argv has been defined, at least for the application to execute
   if ((argc_ == 0) || (argv_.size() == 0)) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
-        << "argc and/or size(argv) is/are 0." << std::endl;
+    logger_ << DebugError
+        << "argc and/or size(argv) is/are 0." << EndDebugError;
     return false;
   }
   // Create the stack
   // TODO: maybe we should check for a bigger stack
   if (stack_size_ == 0) {
-    std::cerr << "ERROR(unisim::util::os::linux_os::Linux.CreateStack): "
-        << "defined stack size is 0." << std::endl;
+    logger_ << DebugError
+        << "defined stack size is 0." << EndDebugError;
         return false;
   }
 
   uint8_t *stack_data = (uint8_t *)calloc(stack_size_, 1);
   ADDRESS_TYPE sp = stack_size_;
   // Fill the stack
-  // - copy the filename
-  sp = sp - sizeof(ADDRESS_TYPE);
-  ADDRESS_TYPE argv0_top = sp;
-  ADDRESS_TYPE cur_length = argv_[0].length() + 1;
-  sp = sp - cur_length;
-  // TODO Remove this line? What was this being used for?
-  // ADDRESS_TYPE sp_argc = sp;
-  memcpy(stack_data + sp, argv_[0].c_str(), cur_length);
-  ADDRESS_TYPE argv0_bottom = sp;
-  Section* argv0_section = new Section(Section::TY_PROGBITS, Section::SA_AW,
-                                       ".unisim.linux_os.stack.argv0", 1, 0,
-                                       stack_base_ + argv0_bottom,
-                                       argv0_top - argv0_bottom,
-                                       stack_data + argv0_bottom);
-  argv0_section->Catch();
+//   // - copy the filename
+//   sp = sp - sizeof(ADDRESS_TYPE);
+//   ADDRESS_TYPE argv0_top = sp;
+//   ADDRESS_TYPE cur_length = argv_[0].length() + 1;
+//   sp = sp - cur_length;
+//   // TODO Remove this line? What was this being used for?
+//   // ADDRESS_TYPE sp_argc = sp;
+//   memcpy(stack_data + sp, argv_[0].c_str(), cur_length);
+//   ADDRESS_TYPE argv0_bottom = sp;
+//   uint8_t *argv0_section_data = (uint8_t *)malloc(argv0_top - argv0_bottom);
+//   memcpy(argv0_section_data, stack_data + argv0_bottom, argv0_top - argv0_bottom);
+//   Section* argv0_section = new Section(Section::TY_PROGBITS, Section::SA_AW,
+//                                        ".unisim.linux_os.stack.argv0", 1, 0,
+//                                        stack_base_ + argv0_bottom,
+//                                        argv0_top - argv0_bottom,
+//                                        argv0_section_data);
+  ADDRESS_TYPE cur_length;
   // - copy envp
   // variable to keep the stack environment entries addresses
   std::vector<ADDRESS_TYPE> sp_envp;
@@ -853,11 +1022,12 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
     memcpy(stack_data + sp, (*it).c_str(), cur_length);
   }
   ADDRESS_TYPE env_bottom = sp;
+  uint8_t *env_section_data = (uint8_t *)malloc(env_top - env_bottom);
+  memcpy(env_section_data, stack_data + env_bottom, env_top - env_bottom);
   Section* env_section =
       new Section(Section::TY_PROGBITS, Section::SA_AW,
                   ".unisim.linux_os.stack.env", 1, 0, stack_base_ + env_bottom,
-                  env_top - env_bottom,stack_data + env_bottom);
-  env_section->Catch();
+                  env_top - env_bottom,env_section_data);
 
   // - copy argv
   // variable to keep the stack argument entries addresses
@@ -871,12 +1041,13 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
     memcpy(stack_data + sp, (*it).c_str(), cur_length);
   }
   ADDRESS_TYPE argv_bottom = sp;
+  uint8_t *argv_section_data = (uint8_t *)malloc(argv_top - argv_bottom);
+  memcpy(argv_section_data, stack_data + argv_bottom, argv_top - argv_bottom);
   Section* argv_section =
       new Section(Section::TY_PROGBITS, Section::SA_AW,
                   ".unisim.linux_os.stack.argv", 1, 0,
                   stack_base_ + argv_bottom, argv_top - argv_bottom,
-                  stack_data + argv_bottom);
-  argv_section->Catch();
+                  argv_section_data);
 
   // force 16 byte alignment
   sp = sp & ~(ADDRESS_TYPE)0x0f;
@@ -886,7 +1057,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   // number of aux table entries
   sp_content_size += num_aux_table_entries_ * 2 * sizeof(ADDRESS_TYPE);
   //   and their values
-  sp_content_size += num_aux_table_entries_ * sizeof(ADDRESS_TYPE);
+  //Gilles: sp_content_size += num_aux_table_entries_ * sizeof(ADDRESS_TYPE);
   // number of environment entries
   sp_content_size += target_envp_.size() * sizeof(ADDRESS_TYPE);
   //   and its termination
@@ -903,14 +1074,14 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   ADDRESS_TYPE aux_table_top = sp;
   SetAuxTable(stack_data, sp);
   ADDRESS_TYPE aux_table_bottom = sp;
+  uint8_t *aux_table_section_data = (uint8_t *)malloc(aux_table_top - aux_table_bottom);
+  memcpy(aux_table_section_data, stack_data + aux_table_bottom, aux_table_top - aux_table_bottom);
   Section* aux_table_section =
       new Section(Section::TY_PROGBITS, Section::SA_AW,
                   ".unisim.linux_os.stack.aux_table", 1, 0,
                   stack_base_ + aux_table_bottom,
                   aux_table_top - aux_table_bottom,
-                  stack_data + aux_table_bottom);
-  aux_table_section->Catch();
-
+                  aux_table_section_data);
   // Now we have to put the pointers to the different argv and envp
   ADDRESS_TYPE envp_top = sp;
   ADDRESS_TYPE envp_value = 0;
@@ -920,51 +1091,54 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
        it != sp_envp.end();
        ++it) {
     sp -= sizeof(envp_value);
-    envp_value = (*it) + stack_base_;
+    envp_value = Host2Target(endianness_, (*it) + stack_base_);
     memcpy(stack_data + sp, &envp_value, sizeof(envp_value));
   }
   ADDRESS_TYPE envp_bottom = sp;
+  uint8_t *envp_section_data = (uint8_t *)malloc(envp_top - envp_bottom);
+  memcpy(envp_section_data, stack_data + envp_bottom, envp_top - envp_bottom);
   Section* envp_section =
       new Section(Section::TY_PROGBITS, Section::SA_AW,
                   ".unisim.linux_os.stack.environment_pointers",
                   1, 0, stack_base_ + envp_bottom,
                   envp_top - envp_bottom,
-                  stack_data + envp_bottom);
-  envp_section->Catch();
+                  envp_section_data);
 
   ADDRESS_TYPE argvp_top = sp;
   ADDRESS_TYPE argvp_value = 0;
   sp -= sizeof(argvp_value);
   memcpy(stack_data + sp, &argvp_value, sizeof(argvp_value));
-  for (AddressVectorIterator it = sp_argv.begin();
-       it != sp_argv.end();
+  for (AddressVectorReverseIterator it = sp_argv.rbegin();
+       it != sp_argv.rend();
        ++it) {
     sp -= sizeof(argvp_value);
-    argvp_value = (*it) + stack_base_;
+    argvp_value = Host2Target(endianness_, (*it) + stack_base_);
     memcpy(stack_data + sp, &argvp_value, sizeof(argvp_value));
   }
   ADDRESS_TYPE argvp_bottom = sp;
+  uint8_t *argvp_section_data = (uint8_t *)malloc(argvp_top - argvp_bottom);
+  memcpy(argvp_section_data, stack_data + argvp_bottom, argvp_top - argvp_bottom);
   Section* argvp_section =
       new Section(Section::TY_PROGBITS, Section::SA_AW,
                   ".unisim.linux_os.stack.argument_pointers",
                   1, 0, stack_base_ + argvp_bottom,
                   argvp_top - argvp_bottom,
-                  stack_data + argvp_bottom);
-  argvp_section->Catch();
+                  argvp_section_data);
 
   // and finally we put argc into the stack
   ADDRESS_TYPE argc_top = sp;
-  ADDRESS_TYPE argc_value = argc_;
+  ADDRESS_TYPE argc_value = Host2Target(endianness_, argc_);
   sp -= sizeof(argc_value);
   memcpy(stack_data + sp, &argc_value, sizeof(argc_value));
   ADDRESS_TYPE argc_bottom = sp;
+  uint8_t *argc_section_data = (uint8_t *)malloc(argc_top - argc_bottom);
+  memcpy(argc_section_data, stack_data + argc_bottom, argc_top - argc_bottom);
   Section* argc_section =
       new Section(Section::TY_PROGBITS, Section::SA_AW,
                   ".unisim.linux_os.stack.argument_counter",
                   1, 0, stack_base_ + argc_bottom,
                   argc_top - argc_bottom,
-                  stack_data + argc_bottom);
-  argc_section->Catch();
+                  argc_section_data);
 
   // create an empty section to keep the stack pointer
   Section* stack_pointer_section =
@@ -972,17 +1146,15 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
                   ".unisim.linux_os.stack.stack_pointer",
                   0, 0, stack_base_ + sp,
                   0, NULL);
-  stack_pointer_section->Catch();
 
   // create a segment for the stack
   Segment* stack_segment =
       new Segment(Segment::TY_LOADABLE, Segment::SA_RW,
                   4, stack_base_, stack_size_, stack_size_, stack_data);
-  stack_segment->Catch();
 
   // add the stack segment and the different sections to the blob
   blob->AddSegment(stack_segment);
-  blob->AddSection(argv0_section);
+//   blob->AddSection(argv0_section);
   blob->AddSection(env_section);
   blob->AddSection(argv_section);
   blob->AddSection(aux_table_section);
@@ -990,16 +1162,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
   blob->AddSection(argvp_section);
   blob->AddSection(argc_section);
   blob->AddSection(stack_pointer_section);
-
-  stack_pointer_section->Release();
-  argc_section->Release();
-  argvp_section->Release();
-  envp_section->Release();
-  aux_table_section->Release();
-  argv_section->Release();
-  env_section->Release();
-  argv0_section->Release();
-  stack_segment->Release();
 
   return true;
 }
@@ -1009,6 +1171,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
     uint8_t* stack_data, ADDRESS_TYPE &sp) const {
   ADDRESS_TYPE aux_table_symbol;
   ADDRESS_TYPE aux_table_value;
+  unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const main_blob =
+      GetMainBlob();
 
   aux_table_symbol = AT_NULL;
   aux_table_value = 0;
@@ -1021,7 +1185,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
    * (see previous warning).
    * The elf library should provide information on the size of the elf header.
    */
-  aux_table_value = load_addr_ + sizeof(Elf32_Ehdr); // size of the elf32 header
+  
+  aux_table_value = load_addr_ + main_blob->GetELF_PHOFF(); // start address of ELF program headers
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHENT;
@@ -1030,7 +1195,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
    * The elf library should provide information on the size of the program
    * header.
    */
-  aux_table_value = sizeof(Elf32_Phdr); // 32 = size of the program header
+  aux_table_value = main_blob->GetELF_PHENT(); // size of the program header
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_PHNUM;
@@ -1057,19 +1222,35 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_UID;
+#ifdef WIN32
+  aux_table_value = (ADDRESS_TYPE) 1000;
+#else
   aux_table_value = (ADDRESS_TYPE)getuid();
+#endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EUID;
+#ifdef WIN32
+  aux_table_value = (ADDRESS_TYPE) 1000;
+#else
   aux_table_value = (ADDRESS_TYPE)geteuid();
+#endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_GID;
+#ifdef WIN32
+  aux_table_value = (ADDRESS_TYPE) 1000;
+#else
   aux_table_value = (ADDRESS_TYPE)getgid();
+#endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_EGID;
+#ifdef WIN32
+  aux_table_value = (ADDRESS_TYPE) 1000;
+#else
   aux_table_value = (ADDRESS_TYPE)getegid();
+#endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   /* TODO
@@ -1080,9 +1261,17 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
   aux_table_symbol = AT_CLKTCK;
+#ifdef WIN32
+  aux_table_value = (ADDRESS_TYPE) 250;
+#else
   aux_table_value = (ADDRESS_TYPE)sysconf(_SC_CLK_TCK);
+#endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
+  // Gilles
+//  aux_table_symbol = AT_SECURE;
+//  aux_table_value = 1;
+//  sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
   /* TODO
    * Enforce required alignment necessary in some architectures (i.e., PowerPC).
    */
@@ -1094,12 +1283,14 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
     uint8_t * stack_data, ADDRESS_TYPE sp,
     ADDRESS_TYPE entry, ADDRESS_TYPE value) const {
+  ADDRESS_TYPE target_entry = Host2Target(endianness_, entry);
+  ADDRESS_TYPE target_value = Host2Target(endianness_, value);
   sp = sp - sizeof(sp);
   uint8_t *addr = stack_data + sp;
-  memcpy(addr, &value, sizeof(sp));
+  memcpy(addr, &target_value, sizeof(sp));
   sp = sp - sizeof(sp);
   addr = stack_data + sp;
-  memcpy(addr, &entry, sizeof(sp));
+  memcpy(addr, &target_entry, sizeof(sp));
   return sp;
 }
 
@@ -1112,8 +1303,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSystemBlob(
   else if (system_type_.compare("ppc") == 0)
     return SetPPCBlob(blob);
 
-  std::cerr << "ERROR(unisim::util::os::linux_os::Linux.SetSystemBlob): "
-      << "Unknown system type (" << system_type_ << ")" << std::endl;
+  logger_ << DebugError
+      << "Unknown system type (" << system_type_ << ")" << EndDebugError;
   return false;
 }
 
@@ -1157,8 +1348,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     Segment *tls_if_segment =
         new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
                     sizeof(tls_buf), sizeof(tls_buf), blob_tls_buf);
-    tls_if_section->Catch();
-    tls_if_segment->Catch();
 
     // Set the cmpxchg (atomic compare and exchange) interface, the
     //   following instructions need to be added to memory:
@@ -1197,18 +1386,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
         new Segment(Segment::TY_LOADABLE, Segment::SA_X,
                     4, cmpxchg_base_addr,
                     sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), blob_cmpxchg_buf);
-    cmpxchg_if_section->Catch();
-    cmpxchg_if_segment->Catch();
 
     blob->AddSegment(tls_if_segment);
     blob->AddSegment(cmpxchg_if_segment);
     blob->AddSection(tls_if_section);
     blob->AddSection(cmpxchg_if_section);
-
-    tls_if_section->Release();
-    tls_if_segment->Release();
-    cmpxchg_if_section->Release();
-    cmpxchg_if_segment->Release();
   }
 
   return true;
@@ -1218,7 +1400,7 @@ template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
   // TODO
-  return false;
+  return true;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1295,12 +1477,15 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC() {
   SetSyscallId(std::string("geteuid"), 49);
   SetSyscallId(std::string("getegid"), 50);
   SetSyscallId(std::string("ioctl"), 54);
+  SetSyscallId(std::string("umask"), 60);
   SetSyscallId(std::string("setrlimit"), 75);
   SetSyscallId(std::string("getrlimit"), 76);
   SetSyscallId(std::string("getrusage"), 77);
+  SetSyscallId(std::string("gettimeofday"), 78);
   SetSyscallId(std::string("mmap"), 90);
   SetSyscallId(std::string("munmap"), 91);
   SetSyscallId(std::string("ftruncate"), 93);
+  SetSyscallId(std::string("statfs"), 99);
   SetSyscallId(std::string("socketcall"), 102);
   SetSyscallId(std::string("stat"), 106);
   SetSyscallId(std::string("fstat"), 108);
@@ -1314,8 +1499,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC() {
   SetSyscallId(std::string("stat64"), 195);
   SetSyscallId(std::string("fstat64"), 197);
   SetSyscallId(std::string("fcntl64"), 204);
+  SetSyscallId(std::string("getpid"), 207); // in a mono-thread environment pid=tid
+  SetSyscallId(std::string("tkill"), 208);
   SetSyscallId(std::string("flistxattr"), 217);
   SetSyscallId(std::string("exit_group"), 234);
+  SetSyscallId(std::string("tgkill"), 250);
 
   return true;
 }
@@ -1324,9 +1512,11 @@ template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
     const std::string &syscall_name, int syscall_id) {
   if(unlikely(verbose_))
-    *logger_ << "Associating syscall_name \"" << syscall_name << "\""
-        << "to syscall_id number " << syscall_id << std::endl
-        << std::endl;
+    logger_
+        << DebugInfo
+        << "Associating syscall_name \"" << syscall_name << "\""
+        << "to syscall_id number " << syscall_id
+        << EndDebugInfo;
   if (HasSyscall(syscall_name)) {
     if (HasSyscall(syscall_id)) {
       std::stringstream s;
@@ -1395,7 +1585,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
   syscall_name_map_[std::string("rt_sigprocmask")] =
       &thistype::LSC_rt_sigprocmask;
   syscall_name_map_[std::string("kill")] = &thistype::LSC_kill;
+  syscall_name_map_[std::string("tkill")] = &thistype::LSC_tkill;
+  syscall_name_map_[std::string("tgkill")] = &thistype::LSC_tgkill;
   syscall_name_map_[std::string("ftruncate")] = &thistype::LSC_ftruncate;
+  syscall_name_map_[std::string("umask")] = &thistype::LSC_umask;
+  syscall_name_map_[std::string("gettimeofday")] = &thistype::LSC_gettimeofday;
+  syscall_name_map_[std::string("statfs")] = &thistype::LSC_statfs;
   // the following are arm private system calls
   if (utsname_machine_.compare("armv5") == 0) {
     syscall_name_map_[std::string("breakpoint")] =
@@ -1426,13 +1621,13 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
     return ARMGetSyscallNumber(id);
   else if ( system_type_.compare("arm-eabi") == 0 )
     return ARMEABIGetSyscallNumber(id);
-  else if ( system_type_.compare("powerpc") == 0 )
+  else if ( system_type_.compare("ppc") == 0 )
     return PPCGetSyscallNumber(id);
-  std::cerr
-      << "ERROR(unisim::util::os::linux): Could not translate syscall number "
+  logger_ << DebugError
+      << "Could not translate syscall number "
       << id << " (" << std::hex << id << std::dec << ") for system \""
       << system_type_ << "\". Returning untranslated id."
-      << std::endl;
+      << EndDebugError;
   return id;
 }
 
@@ -1447,14 +1642,14 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
   // the arm eabi ignores the given id and uses register 7
   //   as the id and translated id
   PARAMETER_TYPE translated_id = 0;
-  if (register_interface_ == NULL) {
-    std::cerr << "ERROR(unisim::util::os::linux::ARMEABIGetSyscallNumber): "
-        << "no register interface available." << std::endl;
+  if (regs_if_ == NULL) {
+    logger_ << DebugError
+        << "no register interface available." << EndDebugError;
     return 0;
   }
 
-  if (register_interface_->GetRegister(kARMEABISyscallNumberReg,
-                                       &translated_id))
+  if (GetRegister(kARMEABISyscallNumberReg,
+                               &translated_id))
     return (int)translated_id;
   return 0;
   //arm_regs[7]->GetValue(&translated_id);
@@ -1469,22 +1664,28 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
     ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size) {
-  if (memory_interface_ == NULL) return false;
-  if (memory_interface_->InjectReadMemory(addr, buffer, size)) {
+  if (mem_inject_if_ == NULL) return false;
+  if (mem_inject_if_->InjectReadMemory(addr, buffer, size)) {
     if (unlikely(verbose_)) {
-      *logger_ << "linux-os: OS read memory:" << std::endl
+      logger_
+          << DebugInfo
+          << "OS read memory:" << std::endl
           << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
           << "\tsize = " << size << std::endl
           << "\tdata =" << std::hex;
       for (unsigned int i = 0; i < size; i++)
-        *logger_ << " " << (unsigned int)buffer[i];
-      *logger_ << std::dec << std::endl;
+        logger_ << " " << (unsigned int)buffer[i];
+      logger_ << std::dec
+              << EndDebugInfo;
     }
     return true;
   } else {
-    *logger_ << "linux-os: failed OS read memory:" << std::endl
+    logger_
+        << DebugWarning
+        << "failed OS read memory:" << std::endl
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size << std::endl;
+        << "\tsize = " << size
+        << EndDebugWarning;
     return false;
   }
 }
@@ -1492,23 +1693,19 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
     ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) {
-  if (memory_interface_ == NULL) return false;
+  if (mem_inject_if_ == NULL) return false;
   if (unlikely(verbose_)) {
-    *logger_ << "linux-os: OS write memory:" << std::endl
+    logger_ << DebugInfo
+        << "OS write memory:" << std::endl
         << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
         << "\tsize = " << size << std::endl
         << "\tdata =" << std::hex;
     for (unsigned int i = 0; i < size; i++)
-      *logger_ << " " << (unsigned int)buffer[i];
-    *logger_ << std::dec << std::endl;
+      logger_ << " " << (unsigned int)buffer[i];
+    logger_ << std::dec
+            << EndDebugInfo;
   }
-  return memory_interface_->InjectWriteMemory(addr, buffer, size);
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExitSysCall(int ret) {
-  if (control_interface_ == NULL) return false;
-  return control_interface_->ExitSysCall(ret);
+  return mem_inject_if_->InjectWriteMemory(addr, buffer, size);
 }
 
 } // end of namespace linux

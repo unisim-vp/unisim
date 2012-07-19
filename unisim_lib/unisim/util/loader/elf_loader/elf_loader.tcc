@@ -378,6 +378,8 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		blob->SetFileFormat(unisim::util::debug::blob::Blob<MEMORY_ADDR>::FFMT_ELF32);
 	else if(Elf_Class == ELFCLASS64)
 		blob->SetFileFormat(unisim::util::debug::blob::Blob<MEMORY_ADDR>::FFMT_ELF64);
+	blob->SetELF_PHOFF(hdr->e_phoff);
+	blob->SetELF_PHENT(sizeof(Elf_Phdr));
 
 	if(shdr_table && sh_string_table)
 	{
@@ -461,7 +463,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 
 	for(i = 0, phdr = phdr_table; i < hdr->e_phnum; i++, phdr++)
 	{
-		if(GetSegmentType(phdr) == PT_LOAD) /* Loadable Program Segment */
+		//if((GetSegmentType(phdr) == PT_LOAD) || (GetSegmentType(phdr) == PT_TLS)) /* Loadable Program Segment */
 		{
 			MEMORY_ADDR ph_type = GetSegmentType(phdr);
 			MEMORY_ADDR segment_addr = force_base_addr ? base_addr : GetSegmentAddr(phdr);

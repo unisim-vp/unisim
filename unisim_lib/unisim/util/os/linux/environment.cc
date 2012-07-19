@@ -38,6 +38,11 @@
 #include <crt_externs.h>
 #define environ (*_NSGetEnviron())
 #endif
+#ifdef WIN32
+#include <stdlib.h>
+#else
+#include <unistd.h>
+#endif
 
 #include <string>
 

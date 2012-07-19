@@ -59,6 +59,10 @@ static const unsigned int AT_PLATFORM = 15;  /* string identifying CPU for optim
 static const unsigned int AT_HWCAP = 16;    /* arch dependent hints at CPU capabilities */
 static const unsigned int AT_CLKTCK = 17;    /* frequency at which times() increments */
 
+static const unsigned int AT_IGNOREPPC = 22; /* Entry should be ignored.  */
+static const unsigned int AT_SECURE = 23; /* Boolean, was exec setuid-like?  */
+static const unsigned int AT_EXECFN = 31; /* Filename of executable.  */
+
 static const unsigned int ARM_HWCAP_ARM_SWP       = 1 << 0;
 static const unsigned int ARM_HWCAP_ARM_HALF      = 1 << 1;
 static const unsigned int ARM_HWCAP_ARM_THUMB     = 1 << 2;

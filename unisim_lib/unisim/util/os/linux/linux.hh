@@ -41,54 +41,21 @@
 #include <sstream>
 
 #include "unisim/util/endian/endian.hh"
-
-namespace unisim {
-namespace util {
-namespace debug {
-class Register;
-namespace blob {
-template<class MEMORY_ADDR>
-class Blob;
-} // end of namespace blob
-} // end of namespace debug
-} // end of namespace util
-} // end of namespace unisim
+#include "unisim/kernel/logger/logger.hh"
+#include "unisim/service/interfaces/memory.hh"
+#include "unisim/service/interfaces/registers.hh"
+#include "unisim/service/interfaces/memory_injection.hh"
+#include "unisim/util/debug/blob/blob.hh"
 
 namespace unisim {
 namespace util {
 namespace os {
 namespace linux_os {
 
-template <class ADDRESS_TYPE>
-class LinuxMemoryInterface {
- public:
-  virtual bool ReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
-                          ADDRESS_TYPE size) = 0;
-  virtual bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
-                           ADDRESS_TYPE size) = 0;
-  virtual bool InjectReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
-                          ADDRESS_TYPE size) = 0;
-  virtual bool InjectWriteMemory(ADDRESS_TYPE addr,
-                                 uint8_t const * const buffer,
-                                 ADDRESS_TYPE size) = 0;
-};
-
-template <class PARAMETER_TYPE>
-class LinuxRegisterInterface {
- public:
-  virtual bool GetRegister(uint32_t id, PARAMETER_TYPE * const value) = 0;
-  virtual bool SetRegister(uint32_t id, PARAMETER_TYPE value) = 0;
-};
-
-class LinuxControlInterface {
- public:
-  virtual bool ExitSysCall(int ret) = 0;
-};
-
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 class Linux {
  public:
-  Linux(std::ostringstream * const logger);
+  Linux(unisim::kernel::logger::Logger& logger, unisim::service::interfaces::Registers *regs_if, unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if, unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if);
   ~Linux();
 
   void  SetVerbose(bool verbose);
@@ -140,15 +107,6 @@ class Linux {
   // void SetRegisters(std::vector<unisim::util::debug::Register *> &registers);
   // END TODO
 
-  // Set the register interface to be used
-  void SetRegisterInterface(LinuxRegisterInterface<PARAMETER_TYPE> &iface);
-
-  // Set the memory interface to be used
-  void SetMemoryInterface(LinuxMemoryInterface<ADDRESS_TYPE> &iface);
-
-  // Set the control interface to be used
-  void SetControlInterface(LinuxControlInterface &iface);
-
   // Loads all the defined files using the user settings.
   // Basic usage:
   //   linux_os = new Linux<X,Y>(false);
@@ -186,7 +144,7 @@ class Linux {
 
   // Executes the given system call id depending on the architecture the linux
   // emulation is working on.
-  void ExecuteSystemCall(int id);
+  void ExecuteSystemCall(int id, bool& terminated, int& return_status);
 
  private:
   bool is_load_; // true if a program has been successfully loaded, false
@@ -255,14 +213,9 @@ class Linux {
   // std::vector<unisim::util::debug::Register *> *registers_;
   // END TODO
 
-  // pointer to the interface for the registers to use
-  LinuxRegisterInterface<PARAMETER_TYPE> *register_interface_;
-
-  // pointer to the interface for memory to use
-  LinuxMemoryInterface<ADDRESS_TYPE> *memory_interface_;
-
-  // pointer to the interface for control to use
-  LinuxControlInterface *control_interface_;
+  unisim::service::interfaces::Registers *regs_if_;
+  unisim::service::interfaces::Memory<ADDRESS_TYPE> *mem_if_;
+  unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> *mem_inject_if_;
 
   // syscall type shortener
   typedef Linux<ADDRESS_TYPE,PARAMETER_TYPE> thistype;
@@ -277,21 +230,22 @@ class Linux {
   int current_syscall_id_;
   std::string current_syscall_name_;
 
-  // stubs for reading the osrelease file (see calls.tcc LSC_open)
-  const char *kOsreleaseFilename;
-  const char *kFakeOsreleaseFilename;
-
   // activate the verbose
   bool verbose_;
   // logger stream
-  std::ostringstream * logger_;
-  // loader logger stream
-  std::ostringstream loader_logger_;
+  unisim::kernel::logger::Logger& logger_;
+
+  // program termination and return status
+  bool terminated_;
+  int return_status_;
 
   // Maps the registers depending on the system
   // Returns true on success
   bool MapRegisters();
-
+  unisim::util::debug::Register *GetRegisterFromId(uint32_t id);
+  bool GetRegister(uint32_t id, PARAMETER_TYPE * const value);
+  bool SetRegister(uint32_t id, PARAMETER_TYPE value);
+  
   // Load the files set by the user into the given blob. Returns true on sucess,
   // false otherwise.
   bool LoadFiles(unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
@@ -358,29 +312,6 @@ class Linux {
   bool ReadMem(ADDRESS_TYPE addr, uint8_t * const buffer, uint32_t size);
   bool WriteMem(ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size);
 
-  // helper methods to control the simulator from the system calls
-  bool ExitSysCall(int ret);
-
-  // Cleans the contents of the loader logger_ and clean error flags
-  void ResetLoaderLogger() {
-    std::string clean_string("");
-    loader_logger_.str(clean_string);
-    loader_logger_.clear();
-  }
-
-  // Prints to the output console the contents of loader logger_
-  void PrintLoaderLogger() {
-    if (logger_ != NULL) {
-      if (loader_logger_.str().size() != 0) {
-        *logger_ << "Message from the elf loader:" << std::endl;
-        *logger_ << "BEGIN ======================================" << std::endl;
-        *logger_ << loader_logger_.str();
-        *logger_ << "END ========================================" << std::endl;
-        ResetLoaderLogger();
-      }
-    }
-  }
-
   // The list of linux system calls
   void LSC_unknown();
   void LSC_exit();
@@ -428,7 +359,12 @@ class Linux {
   void LSC_socketcall();
   void LSC_rt_sigprocmask();
   void LSC_kill();
+  void LSC_tkill();
+  void LSC_tgkill();
   void LSC_ftruncate();
+  void LSC_umask();
+  void LSC_gettimeofday();
+  void LSC_statfs();
   void LSC_arm_breakpoint();
   void LSC_arm_cacheflush();
   void LSC_arm_usr26();
@@ -442,6 +378,8 @@ class Linux {
   // system call 'times' helper methods
   int Times(struct powerpc_tms *target_tms);
   int Times(struct arm_tms *target_tms);
+  // system call 'gettimeofday' helper methods
+  int GetTimeOfDay(struct powerpc_timeval *target_timeval, struct powerpc_timezone *target_timezone);
   // handling the mmap base address
   ADDRESS_TYPE GetMmapBase() const;
   void SetMmapBase(ADDRESS_TYPE base);

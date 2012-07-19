@@ -102,7 +102,7 @@ inline std::ostream& operator << (std::ostream& os, const Watchpoint<ADDRESS>& w
 			break;
 	}
 	os << " ";
-	if(wp.mat & (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ))
+	if((wp.mat & (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ)) == (unisim::util::debug::MAT_WRITE | unisim::util::debug::MAT_READ))
 	{
 		os << "read/write";
 	}

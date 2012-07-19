@@ -42,6 +42,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
+#include "unisim/service/interfaces/blob.hh"
 #include "unisim/util/os/linux/linux.hh"
 
 namespace unisim {
@@ -55,21 +56,22 @@ class LinuxOS :
       //unisim::service::interfaces::Loader>,
     public unisim::kernel::service::Service<
       unisim::service::interfaces::LinuxOS>,
-    public unisim::kernel::service::Client<
+    public unisim::kernel::service::Service<
+      unisim::service::interfaces::Blob<ADDRESS_TYPE> >,
+	public unisim::kernel::service::Client<
       unisim::service::interfaces::Memory<ADDRESS_TYPE> >,
     public unisim::kernel::service::Client<
       unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >,
     public unisim::kernel::service::Client<
-      unisim::service::interfaces::Registers>,
-    public unisim::util::os::linux_os::LinuxMemoryInterface<ADDRESS_TYPE>,
-    public unisim::util::os::linux_os::LinuxRegisterInterface<PARAMETER_TYPE>,
-    public unisim::util::os::linux_os::LinuxControlInterface {
+      unisim::service::interfaces::Registers> {
  public:
   /* Exported services */
   //unisim::kernel::service::ServiceExport<unisim::service::interfaces::Loader>
       //loader_export_;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::LinuxOS>
       linux_os_export_;
+  unisim::kernel::service::ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
+      blob_export_;
 
   /* Imported services */
   unisim::kernel::service::ServiceImport<
@@ -94,17 +96,22 @@ class LinuxOS :
   virtual void ExecuteSystemCall(int id);
   //virtual bool Load();
 
+  virtual const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *GetBlob() const;
+
+  
  private:
-  /* debug stream for the linux library */
-  std::ostringstream linuxlib_stream_;
+  /* the logger and its verbose option */
+  unisim::kernel::logger::Logger logger_;
+  bool verbose_;
+  unisim::kernel::service::Parameter<bool> param_verbose_;
+  
   /* the linux library */
-  unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> linuxlib_;
+  unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> *linuxlib_;
 
   std::string system_;
   unisim::kernel::service::Parameter<std::string> param_system_;
   unisim::util::endian::endian_type endianness_;
-  std::string endianness_string_;
-  unisim::kernel::service::Parameter<std::string> param_endian_;
+  unisim::kernel::service::Parameter<unisim::util::endian::endian_type> param_endianness_;
   ADDRESS_TYPE memory_page_size_;
   unisim::kernel::service::Parameter<ADDRESS_TYPE> param_memory_page_size_;
   ADDRESS_TYPE stack_base_;
@@ -137,29 +144,6 @@ class LinuxOS :
   unisim::kernel::service::Parameter<std::string> param_utsname_machine_;
   std::string utsname_domainname_;
   unisim::kernel::service::Parameter<std::string> param_utsname_domainname_;
-
-  /* the logger and its verbose option */
-  unisim::kernel::logger::Logger logger_;
-  bool verbose_;
-  unisim::kernel::service::Parameter<bool> param_verbose_;
-
-  /* Memory methods required by the linux library */
-  bool ReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
-                          ADDRESS_TYPE size);
-  bool WriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
-                           ADDRESS_TYPE size);
-  bool InjectReadMemory(ADDRESS_TYPE addr, uint8_t * const buffer,
-                          ADDRESS_TYPE size);
-  bool InjectWriteMemory(ADDRESS_TYPE addr, uint8_t const * const buffer,
-                           ADDRESS_TYPE size);
-
-  /* Register methods required by the linux library */
-  bool GetRegister(uint32_t id, PARAMETER_TYPE * const value);
-  bool SetRegister(uint32_t id, PARAMETER_TYPE value);
-
-  /* Control methods required by the linux library */
-  bool ExitSysCall(int ret);
-
 };
 
 } // end of os_linux namespace

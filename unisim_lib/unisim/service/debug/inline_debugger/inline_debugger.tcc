@@ -1699,8 +1699,18 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 {
 	unsigned int i;
 	typename unisim::util::debug::Symbol<ADDRESS>::Type types[] = {
+		unisim::util::debug::Symbol<ADDRESS>::SYM_NOTYPE,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT,
 		unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT
+		unisim::util::debug::Symbol<ADDRESS>::SYM_SECTION,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_FILE,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_COMMON,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_TLS,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_NUM,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_LOOS,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_HIOS,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_LOPROC,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_HIPROC
 	};
 	
 	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *> symbols;

@@ -41,8 +41,8 @@ namespace util {
 namespace os {
 namespace linux_os {
 
-static const int kPPCNumRegs = 31;
-static const int kPPCNumSysRegs = 2;
+static const uint32_t kPPCNumRegs = 31;
+static const uint32_t kPPCNumSysRegs = 2;
 // registers indexes
 static const uint32_t kPPC_r0  = 0;
 static const uint32_t kPPC_r1  = 1;
@@ -76,6 +76,7 @@ static const uint32_t kPPC_r28 = 28;
 static const uint32_t kPPC_r29 = 29;
 static const uint32_t kPPC_r30 = 30;
 static const uint32_t kPPC_r31 = 31;
+static const uint32_t kPPC_sp  = 1;
 static const uint32_t kPPC_cr  = 32;
 static const uint32_t kPPC_cia = 33;
 
@@ -142,9 +143,10 @@ struct powerpc_stat64 {
   uint32_t st_uid;			/* User ID of the file's owner.	*/
   uint32_t st_gid;			/* Group ID of the file's group.*/
   uint64_t st_rdev;			/* Device number, if device.  */
-  uint32_t __pad2;
+  uint64_t __pad2;
   int64_t st_size;			/* Size of file, in bytes.  */
   int32_t st_blksize;		/* Optimal block size for I/O.  */
+  uint32_t __pad3;
   int64_t st_blocks;		/* Number 512-byte blocks allocated. */
   /* Nanosecond resolution timestamps are stored in a format
      equivalent to 'struct timespec'.  This is the type used
@@ -155,8 +157,6 @@ struct powerpc_stat64 {
   struct powerpc_timespec st_atim;		/* Time of last access.  */
   struct powerpc_timespec st_mtim;		/* Time of last modification.  */
   struct powerpc_timespec st_ctim;		/* Time of last status change.  */
-  uint32_t __unused4;
-  uint32_t __unused5;
 };
 
 struct powerpc_stat
@@ -201,6 +201,29 @@ struct ppc_utsname {
   char release[65];
   char version[65];
   char machine[65];
+  char domainname[65];
+};
+
+// 	original structure
+//struct timeval {
+//        __kernel_time_t         tv_sec;         /* seconds */
+//        __kernel_suseconds_t    tv_usec;        /* microseconds */
+//};
+
+struct powerpc_timeval {
+  int32_t tv_sec;         /* seconds */
+  int32_t tv_usec;        /* microseconds */
+};
+
+// 	original structure
+//struct timezone {
+//        int     tz_minuteswest; /* minutes west of Greenwich */
+//        int     tz_dsttime;     /* type of dst correction */
+//};
+
+struct powerpc_timezone {
+  int32_t tz_minuteswest; /* minutes west of Greenwich */
+  int32_t tz_dsttime;     /* type of dst correction */
 };
 
 } // end of namespace linux_os

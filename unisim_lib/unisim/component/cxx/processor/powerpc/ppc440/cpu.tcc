@@ -459,6 +459,112 @@ CPU<CONFIG>::~CPU()
 template <class CONFIG>
 bool CPU<CONFIG>::FloatingPointSelfTest()
 {
+// 	 input op2   = 0xff800000UL; (-inf)
+//  input op3   = 0x80000000UL; (-0.000000000e+00)
+//  input op4   = 0xffbc80fcUL; (nan)
+// -output op0   = 0xfffc80fcUL; (nan)
+#if 0
+	Flags flags;
+	flags.setRoundingMode(3);
+	SoftFloat result(0xff800000UL); //-6.203278129e+37
+	SoftFloat b(0x80000000UL); //-inf
+	SoftFloat c(0xffbc80fcUL); //-1.528462581e+36
+	
+	// Compute the result
+	result.multAndAddAssign(b, c, flags);
+	// result=+inf
+	std::cerr << "result=0x" << std::hex << result.queryValue() << std::dec << std::endl;
+	return false;
+#endif
+
+	
+	
+// 	 input op2   = 0x7f800000UL; (inf)
+//  input op3   = 0x00000000UL; (0.000000000e+00)
+//  input op4   = 0xff847433UL; (nan)
+// -output op0   = 0xffc47433UL; (nan)
+
+#if 0
+	Flags flags;
+	flags.setRoundingMode(3);
+	SoftFloat result(0x7f800000UL); //-6.203278129e+37
+	SoftFloat b(0x00000000UL); //-inf
+	SoftFloat c(0xff847433UL); //-1.528462581e+36
+	
+	// Compute the result
+	result.multAndAddAssign(b, c, flags);
+	// result=+inf
+	std::cerr << "result=0x" << std::hex << result.queryValue() << std::dec << std::endl;
+	return false;
+#endif
+
+#if 0
+	Flags flags;
+	flags.setRoundingMode(3);
+	SoftFloat result(0xfe3aac51UL); //-6.203278129e+37
+	SoftFloat b(0xff800000UL); //-inf
+	SoftFloat c(0xfb932f83UL); //-1.528462581e+36
+	
+	// Compute the result
+	result.multAndAddAssign(b, c, flags);
+	// result=+inf
+	std::cerr << "result=0x" << std::hex << result.queryValue() << std::dec << std::endl;
+	return false;
+#endif
+	
+#if 0
+	
+//  input op2   = 0x39d5ab4bUL; (4.075414909e-04)
+//  input op3   = 0x800000ccUL; (-2.858648867e-43)
+//  output op0   = 0xff800000UL; (-inf)
+// -output op1    = 0xfff8000092029000ULL; (nan)
+// +output op1    = 0xfff8000000009000ULL; (nan)
+
+	Flags flags;
+	
+	flags.setRoundingMode(0);
+	SoftFloat result(0x39d5ab4bUL); // 4.075414909e-04
+	SoftFloat b(0x800000ccUL); // -2.858648867e-43
+	
+	result.divAssign(b, flags);
+	// result=-inf
+	std::cerr << "result=0x" << std::hex << result.queryValue() << std::dec << std::endl;
+	std::cerr << "hasIncrementFraction(" << result.isNegative() << ")=" << flags.hasIncrementFraction(result.isNegative()) << " should be 0" << std::endl;
+	std::cerr << "isApproximate=" << flags.isApproximate() << std::endl;
+	std::cerr << "isDownApproximate=" << flags.isDownApproximate() << std::endl;
+	std::cerr << "isUpApproximate=" << flags.isUpApproximate() << std::endl;
+	return false;
+#endif
+	
+#if 0
+	Flags flags;
+	flags.setRoundingMode(3);
+	SoftFloat result(0x7f800000UL);
+	SoftFloat b(0xff847433UL);
+	SoftFloat c(0x00000000UL);
+	
+	// Compute the result
+	result.multAndAddAssign(c, b, flags);
+	
+	std::cerr << "result=0x" << std::hex << result.queryValue() << std::dec << std::endl;
+	return false;
+#endif
+	
+#if 0
+	SoftFloat snan(0xff847433UL /*0xffc47433UL*/);
+	Flags snan_conv_flags;
+	SoftDouble converted_snan(snan, snan_conv_flags);
+	uint64_t converted_snan_raw = converted_snan.queryValue();
+	std::cerr << "converted_snan_raw=0x" << std::hex << converted_snan_raw << std::dec << std::endl;
+	Flags snan_reconv_flags;
+	SoftFloat reconverted_snan(converted_snan, snan_reconv_flags);
+	uint32_t reconverted_snan_raw = reconverted_snan.queryValue();
+	std::cerr << "reconverted_snan_raw=0x" << std::hex << reconverted_snan_raw << std::dec << std::endl;
+	
+	return false;
+#endif
+	
+#if 1
 	// Compute 1.0/sqrt(3.0)
 	SoftDouble b(0x4008000000000000ULL); // 3.0
 	
@@ -491,6 +597,7 @@ bool CPU<CONFIG>::FloatingPointSelfTest()
 	const uint64_t reciprocal_sqrt_3 = 0x3fe279a74590331cULL;
 	
 	return u.queryValue() == reciprocal_sqrt_3;
+#endif
 }
 
 template <class CONFIG>
@@ -1563,11 +1670,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
-	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
-	{
-		trap_reporting_import->ReportTrap();
-	}
-	
 	if(unlikely(requires_finished_instruction_reporting))
 	{
 		if(unlikely(memory_access_reporting_import != 0))
@@ -1581,6 +1683,11 @@ void CPU<CONFIG>::StepOneInstruction()
 	/* update the instruction counter */
 	instruction_counter++;
 
+	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+	{
+		trap_reporting_import->ReportTrap();
+	}
+	
 	if(unlikely((instruction_counter >= max_inst) || (enable_halt_on && (GetCIA() == halt_on_addr)))) Stop(0);
 	
 	//DL1SanityCheck();

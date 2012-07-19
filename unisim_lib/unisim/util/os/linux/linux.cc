@@ -31,6 +31,10 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+
 #include <inttypes.h>
 
 #include "unisim/util/os/linux/linux.hh"

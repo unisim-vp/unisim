@@ -150,6 +150,8 @@ unisim/util/random/random.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
+unisim/util/os/linux/environment.cc \
+unisim/util/os/linux/linux.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -178,10 +180,15 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
+unisim/service/os/os_linux/linux_os.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wommu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wfpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu_wfpu.cc \
+unisim/component/cxx/processor/powerpc/ppc440/cpu_debug_wommu_wfpu.cc \
 unisim/component/cxx/processor/powerpc/floating.cc \
 unisim/component/cxx/processor/powerpc/config.cc \
 unisim/component/cxx/processor/powerpc/ppc440/config.cc \
@@ -197,8 +204,12 @@ unisim/component/cxx/com/xilinx/xps_gpio/config.cc \
 unisim/component/tlm2/timer/xilinx/xps_timer/capture_trigger_stub.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_wommu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wommu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_wfpu.cc \
 unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wfpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_wommu_wfpu.cc \
+unisim/component/tlm2/processor/powerpc/ppc440/cpu_debug_wommu_wfpu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
@@ -305,6 +316,12 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
+unisim/util/os/linux/arm.hh \
+unisim/util/os/linux/aux_table.hh \
+unisim/util/os/linux/environment.hh \
+unisim/util/os/linux/files_flags.hh \
+unisim/util/os/linux/linux.hh \
+unisim/util/os/linux/ppc.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -355,6 +372,7 @@ unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
+unisim/service/os/os_linux/linux_os.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
@@ -436,6 +454,8 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/os/linux/calls.tcc \
+unisim/util/os/linux/linux.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -454,6 +474,7 @@ unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
+unisim/service/os/os_linux/linux_os.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \
@@ -574,6 +595,8 @@ dip_switches_8bit.cc \
 leds_8bit.cc \
 5_leds_positions.cc \
 push_buttons_5bit.cc \
+memory_router.cc \
+memory_router_debug.cc \
 "
 UNISIM_SIMULATORS_VIRTEX5FXT_HEADER_FILES="\
 simulator.hh \
@@ -1029,6 +1052,7 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AC_PROG_LN_S" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_LANG([C++])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AM_PROG_CC_C_O" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "CPPFLAGS=\"${CPPFLAGS} -D_LARGEFILE64_SOURCE\"" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CHECK_HEADERS([${VIRTEX5FXT_EXTERNAL_HEADERS}],, AC_MSG_ERROR([Some external headers are missing.]))" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TIMES(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_ENDIAN(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"

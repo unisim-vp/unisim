@@ -77,6 +77,8 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     : unisim::kernel::service::Object(name, parent)
     , unisim::kernel::service::Service<unisim::service::interfaces::LinuxOS>(
         name, parent)
+    , unisim::kernel::service::Service<unisim::service::interfaces::Blob<ADDRESS_TYPE> >(
+        name, parent)
     //, unisim::kernel::service::Service<unisim::service::interfaces::Loader>(
     //    name, parent)
     , unisim::kernel::service::Client<
@@ -85,21 +87,21 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
       unisim::service::interfaces::MemoryInjection<ADDRESS_TYPE> >(name, parent)
     , unisim::kernel::service::Client<unisim::service::interfaces::Registers>(
         name, parent)
-    , unisim::util::os::linux_os::LinuxMemoryInterface<ADDRESS_TYPE>()
-    , unisim::util::os::linux_os::LinuxRegisterInterface<PARAMETER_TYPE>()
     // , loader_export_("loader-export", this)
     , linux_os_export_("linux-os-export", this)
+    , blob_export_("blob-export", this)
     , memory_import_("memory-import", this)
     , memory_injection_import_("memory-injection-import", this)
     , registers_import_("registers-import", this)
-    , linuxlib_stream_()
-    , linuxlib_(&linuxlib_stream_)
+    , logger_(*this)
+    , verbose_(false)
+    , param_verbose_("verbose", this, verbose_)
+	, linuxlib_(0)
     , system_("")
     , param_system_("system", this, system_, "Emulated system architecture "
                    "available values are \"arm\", \"arm-eabi\" and \"powerpc\"")
     , endianness_(unisim::util::endian::E_LITTLE_ENDIAN)
-    , endianness_string_("little-endian")
-    , param_endian_("endianness", this, endianness_string_,
+    , param_endianness_("endianness", this, endianness_,
                    "The endianness of the binary loaded. Available values are:"
                    " little-endian and big-endian.")
     , memory_page_size_(4096)
@@ -172,13 +174,47 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     , utsname_domainname_("localhost")
     , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
                                "The domain name information that the uname"
-                               " system call should return.")
-    , logger_(*this)
-    , verbose_(false)
-    , param_verbose_("verbose", this, verbose_) {
+                               " system call should return.") {
   param_max_environ_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+}
+
+/** Destructor. */
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::~LinuxOS() {
+  if(linuxlib_)
+  {
+    delete linuxlib_;
+    linuxlib_ = 0;
+  }
+
+  typename std::vector<std::string *>::iterator argv_it;
+  for(argv_it = argv_.begin(); argv_it != argv_.end(); argv_it++) {
+    delete *argv_it;
+  }
+  typename std::vector<unisim::kernel::service::Parameter<std::string> *>::iterator param_argv_it;
+  for(param_argv_it = param_argv_.begin(); param_argv_it != param_argv_.end(); param_argv_it++) {
+    delete *param_argv_it;
+  }
+  typename std::vector<std::string *>::iterator envp_it;
+  for(envp_it = envp_.begin(); envp_it != envp_.end(); envp_it++) {
+    delete *envp_it;
+  }
+  typename std::vector<unisim::kernel::service::Parameter<std::string> *>::iterator param_envp_it;
+  for(param_envp_it = param_envp_.begin(); param_envp_it != param_envp_.end(); param_envp_it++) {
+    delete *param_envp_it;
+  }
+}
+
+/** Method to execute when the LinuxOS is disconnected from its client. */
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect() {
+  // NOTHING ?
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   for (unsigned int i = 0; i < ((argc_ == 0)?1:argc_); i++) {
     std::stringstream argv_name, argv_desc, argv_val;
     argv_name << "argv[" << i << "]";
@@ -208,42 +244,21 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
   //param_envc.AddListener(this);
   //param_envc.NotifyListeners();
 
-
-}
-
-/** Destructor. */
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::~LinuxOS() {
-}
-
-/** Method to execute when the LinuxOS is disconnected from its client. */
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::OnDisconnect() {
-  // NOTHING ?
-}
-
-template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   // check the endianness parameter
-  if ((endianness_string_.compare("little-endian") != 0) &&
-      (endianness_string_.compare("big-endian") != 0)) {
+  if(endianness_ == unisim::util::endian::E_UNKNOWN_ENDIAN)
+  {
     logger_ << DebugError
         << "Unknown endian value. Correct values are:"
         << " little-endian and big-endian"
         << EndDebugError;
     return false;
-  } else {
-    if (endianness_string_.compare("little-endian") == 0)
-      endianness_ = unisim::util::endian::E_LITTLE_ENDIAN;
-    else
-      endianness_ = unisim::util::endian::E_BIG_ENDIAN;
   }
 
   // check that the given system is supported
   // NOTE: This should not be done because the linux library is already doing it
   if ((system_.compare("arm") != 0) &&
       (system_.compare("arm-eabi") != 0) &&
-      (system_.compare("powerpc") != 0)) {
+      (system_.compare("ppc") != 0)) {
     logger_ << DebugError
         << "Unsupported system (" << system_ << "), this service only supports"
         << " arm and ppc systems" << std::endl
@@ -252,15 +267,17 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
     return false;
   }
 
+  linuxlib_ = new unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE>(logger_, registers_import_, memory_import_, memory_injection_import_);
+  
   // set up the different linuxlib parameters
-  linuxlib_.SetVerbose(true);
+  linuxlib_->SetVerbose(verbose_);
 
   // set the linuxlib command line
   if (argc_ != 0) {
     std::vector<std::string> cmdline;
     for (unsigned int i = 0; i < argc_; i++)
       cmdline.push_back(*argv_[i]);
-    bool success = linuxlib_.SetCommandLine(cmdline);
+    bool success = linuxlib_->SetCommandLine(cmdline);
     if (!success) {
       logger_ << DebugError
           << "Could not set the command line."
@@ -279,7 +296,7 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
     std::vector<std::string> envparms;
     for (unsigned int i = 0; i < envc_; i++)
       envparms.push_back(*envp_[i]);
-    bool success = linuxlib_.SetEnvironment(envparms);
+    bool success = linuxlib_->SetEnvironment(envparms);
     if (!success) {
       logger_ << DebugError
           << "Could not set the application environment."
@@ -290,11 +307,11 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
 
   // set the linuxlib option to set the target environment with the host
   // environment
-  linuxlib_.SetApplyHostEnvironment(apply_host_environment_);
+  linuxlib_->SetApplyHostEnvironment(apply_host_environment_);
 
   // set the binary that will be simulated in the target simulator
   {
-    bool success = linuxlib_.AddLoadFile(binary_.c_str());
+    bool success = linuxlib_->AddLoadFile(binary_.c_str());
     if (!success) {
       logger_ << DebugError
           << "Could not set the binary file to simulate on the target"
@@ -306,7 +323,7 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   // set the system type of the target simulator (should be the same than the
   // binary)
   {
-    bool success = linuxlib_.SetSystemType(system_.c_str());
+    bool success = linuxlib_->SetSystemType(system_.c_str());
     if (!success) {
       logger_ << DebugError
           << "System type not supported (\"" << system_ << "\")."
@@ -316,21 +333,21 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   }
 
   // set the endianness of the target simulator
-  linuxlib_.SetEndianness(endianness_);
+  linuxlib_->SetEndianness(endianness_);
   // .. the stack base address
-  linuxlib_.SetStackBase(stack_base_);
+  linuxlib_->SetStackBase(stack_base_);
   // .. the stack size
-  linuxlib_.SetStackSize(stack_size_);
+  linuxlib_->SetStackSize(stack_size_);
   // .. and memory page size
-  linuxlib_.SetMemoryPageSize(memory_page_size_);
+  linuxlib_->SetMemoryPageSize(memory_page_size_);
   // .. and the uname information
-  linuxlib_.SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
+  linuxlib_->SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
                      utsname_release_.c_str(), utsname_version_.c_str(),
                      utsname_machine_.c_str(), utsname_domainname_.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
   {
-    bool success = linuxlib_.Load();
+    bool success = linuxlib_->Load();
     if (!success) {
       logger_ << DebugError
           << "Could not initialize the linux support with the given parameters"
@@ -339,10 +356,6 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
       return false;
     }
   }
-
-  linuxlib_.SetRegisterInterface(*this);
-  linuxlib_.SetMemoryInterface(*this);
-  linuxlib_.SetControlInterface(*this);
 
   return true;
 }
@@ -355,11 +368,16 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::Setup(
   //}
 
   if ( srv_export == &linux_os_export_ ) {
-    if (!linuxlib_.SetupTarget()) {
+    if (!linuxlib_->SetupTarget()) {
       logger_ << DebugError << "Could not setup the linux system"
           << EndDebugError;
       return false;
     }
+    return true;
+  }
+
+  if ( srv_export == &blob_export_ ) {
+    // already setup in BeginSetup
     return true;
   }
 
@@ -403,137 +421,15 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::EndSetup() {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id) {
-  linuxlib_stream_.str("");
-  linuxlib_.ExecuteSystemCall(id);
-  if (unlikely(verbose_)) {
-    if (!linuxlib_stream_.str().empty()) {
-      logger_ << DebugInfo
-          << linuxlib_stream_.str()
-          << EndDebugInfo;
-    }
-  }
+  bool terminated = false;
+  int return_status = 0;
+  linuxlib_->ExecuteSystemCall(id, terminated, return_status);
+  if(terminated) Object::Stop(return_status);
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMemory(ADDRESS_TYPE addr, 
-    uint8_t * const buffer, ADDRESS_TYPE size) {
-  if (!memory_import_) return false;
-  return memory_import_->ReadMemory(addr, buffer, size);
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMemory(ADDRESS_TYPE addr,
-    uint8_t const * const buffer, ADDRESS_TYPE size) {
-  if (!memory_import_) return false;
-  return memory_import_->WriteMemory(addr, buffer, size);
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::InjectReadMemory(ADDRESS_TYPE addr, 
-    uint8_t * const buffer, ADDRESS_TYPE size) {
-  if (!memory_injection_import_) return false;
-  return memory_injection_import_->InjectReadMemory(addr, buffer, size);
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::InjectWriteMemory(ADDRESS_TYPE addr,
-    uint8_t const * const buffer, ADDRESS_TYPE size) {
-  if (!memory_injection_import_) return false;
-  return memory_injection_import_->InjectWriteMemory(addr, buffer, size);
-}
-
-unisim::util::debug::Register * GetRegisterFromId(
-    unisim::kernel::service::ServiceImport<unisim::service::interfaces::Registers> &import,
-    std::string &system,
-    uint32_t id) {
-  if (!import) return NULL;
-  char const * reg_name = 0;
-  if ((system.compare("arm") == 0) || (system.compare("arm-eabi") == 0)) {
-    switch(id) {
-      case unisim::util::os::linux_os::kARM_r0: reg_name = "r0"; break;
-      case unisim::util::os::linux_os::kARM_r1: reg_name = "r1"; break;
-      case unisim::util::os::linux_os::kARM_r2: reg_name = "r2"; break;
-      case unisim::util::os::linux_os::kARM_r3: reg_name = "r3"; break;
-      case unisim::util::os::linux_os::kARM_r4: reg_name = "r4"; break;
-      case unisim::util::os::linux_os::kARM_r5: reg_name = "r5"; break;
-      case unisim::util::os::linux_os::kARM_r6: reg_name = "r6"; break;
-      case unisim::util::os::linux_os::kARM_r7: reg_name = "r7"; break;
-      case unisim::util::os::linux_os::kARM_r8: reg_name = "r8"; break;
-      case unisim::util::os::linux_os::kARM_r9: reg_name = "r9"; break;
-      case unisim::util::os::linux_os::kARM_r10: reg_name = "r10"; break;
-      case unisim::util::os::linux_os::kARM_r11: reg_name = "r11"; break;
-      case unisim::util::os::linux_os::kARM_r12: reg_name = "r12"; break;
-      case unisim::util::os::linux_os::kARM_sp: reg_name = "sp"; break;
-      case unisim::util::os::linux_os::kARM_lr: reg_name = "lr"; break;
-      case unisim::util::os::linux_os::kARM_pc: reg_name = "pc"; break;
-      default: return NULL;
-    }
-  } else if (system.compare("powerpc") == 0) {
-    switch(id) {
-      case unisim::util::os::linux_os::kPPC_r0: reg_name = "r0"; break;
-      case unisim::util::os::linux_os::kPPC_r1: reg_name = "r1"; break;
-      case unisim::util::os::linux_os::kPPC_r2: reg_name = "r2"; break;
-      case unisim::util::os::linux_os::kPPC_r3: reg_name = "r3"; break;
-      case unisim::util::os::linux_os::kPPC_r4: reg_name = "r4"; break;
-      case unisim::util::os::linux_os::kPPC_r5: reg_name = "r5"; break;
-      case unisim::util::os::linux_os::kPPC_r6: reg_name = "r6"; break;
-      case unisim::util::os::linux_os::kPPC_r7: reg_name = "r7"; break;
-      case unisim::util::os::linux_os::kPPC_r8: reg_name = "r8"; break;
-      case unisim::util::os::linux_os::kPPC_r9: reg_name = "r9"; break;
-      case unisim::util::os::linux_os::kPPC_r10: reg_name = "r10"; break;
-      case unisim::util::os::linux_os::kPPC_r11: reg_name = "r11"; break;
-      case unisim::util::os::linux_os::kPPC_r12: reg_name = "r12"; break;
-      case unisim::util::os::linux_os::kPPC_r13: reg_name = "r13"; break;
-      case unisim::util::os::linux_os::kPPC_r14: reg_name = "r14"; break;
-      case unisim::util::os::linux_os::kPPC_r15: reg_name = "r15"; break;
-      case unisim::util::os::linux_os::kPPC_r16: reg_name = "r16"; break;
-      case unisim::util::os::linux_os::kPPC_r17: reg_name = "r17"; break;
-      case unisim::util::os::linux_os::kPPC_r18: reg_name = "r18"; break;
-      case unisim::util::os::linux_os::kPPC_r19: reg_name = "r19"; break;
-      case unisim::util::os::linux_os::kPPC_r20: reg_name = "r20"; break;
-      case unisim::util::os::linux_os::kPPC_r21: reg_name = "r21"; break;
-      case unisim::util::os::linux_os::kPPC_r22: reg_name = "r22"; break;
-      case unisim::util::os::linux_os::kPPC_r23: reg_name = "r23"; break;
-      case unisim::util::os::linux_os::kPPC_r24: reg_name = "r24"; break;
-      case unisim::util::os::linux_os::kPPC_r25: reg_name = "r25"; break;
-      case unisim::util::os::linux_os::kPPC_r26: reg_name = "r26"; break;
-      case unisim::util::os::linux_os::kPPC_r27: reg_name = "r27"; break;
-      case unisim::util::os::linux_os::kPPC_r28: reg_name = "r28"; break;
-      case unisim::util::os::linux_os::kPPC_r29: reg_name = "r29"; break;
-      case unisim::util::os::linux_os::kPPC_r30: reg_name = "r30"; break;
-      case unisim::util::os::linux_os::kPPC_r31: reg_name = "r31"; break;
-      case unisim::util::os::linux_os::kPPC_cr: reg_name = "cr"; break;
-      case unisim::util::os::linux_os::kPPC_cia: reg_name = "cia"; break;
-      default: return NULL;
-    }
-  }
-  return import->GetRegister(reg_name);
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetRegister(uint32_t id,
-    PARAMETER_TYPE * const value) {
-  unisim::util::debug::Register *reg = 0;
-  reg = GetRegisterFromId(registers_import_, system_, id);
-  if (reg == NULL) return false;
-  reg->GetValue(value);
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
-    PARAMETER_TYPE value) {
-  unisim::util::debug::Register *reg = 0;
-  reg = GetRegisterFromId(registers_import_, system_, id);
-  if (reg == NULL) return false;
-  reg->SetValue(&value);
-  return true;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::ExitSysCall(int ret) {
-  Object::Stop(ret);
-  return true;
+const unisim::util::debug::blob::Blob<ADDRESS_TYPE> *LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::GetBlob() const {
+  return linuxlib_->GetBlob();
 }
 
 #if 0

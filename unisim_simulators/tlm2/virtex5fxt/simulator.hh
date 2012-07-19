@@ -73,6 +73,7 @@
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
+#include <unisim/service/os/os_linux/linux_os.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -99,6 +100,7 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::profiling::addr_profiler::Profiler;
 using unisim::service::power::CachePowerEstimator;
 using unisim::service::telnet::Telnet;
+using unisim::service::os::os_linux::LinuxOS;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
@@ -136,6 +138,7 @@ private:
 	typedef unisim::component::tlm2::memory::ram::Memory<CONFIG::CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CONFIG::CPU_CONFIG::FSB_BURST_SIZE / CONFIG::CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, CONFIG::DEBUG_INFORMATION> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<CONFIG::CPU_CONFIG::FSB_WIDTH * 8, FSB_ADDRESS_TYPE, CONFIG::CPU_CONFIG::FSB_BURST_SIZE / CONFIG::CPU_CONFIG::FSB_WIDTH, unisim::component::tlm2::memory::ram::DEFAULT_PAGE_SIZE, CONFIG::DEBUG_INFORMATION> BRAM;
 	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<typename CONFIG::CPU_CONFIG> CPU;
+	typedef unisim::component::tlm2::processor::powerpc::ppc440::CPU<typename CONFIG::LINUX_OS_CPU_CONFIG> LINUX_OS_CPU;
 	typedef unisim::component::tlm2::interconnect::generic_router::Router<typename CONFIG::MPLB_CONFIG> MPLB;
 	typedef unisim::component::tlm2::interrupt::xilinx::xps_intc::XPS_IntC<typename CONFIG::INTC_CONFIG> INTC;
 	typedef unisim::component::tlm2::timer::xilinx::xps_timer::XPS_Timer<typename CONFIG::TIMER_CONFIG> TIMER;
@@ -168,11 +171,15 @@ private:
 	typedef unisim::kernel::tlm2::TargetStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_OUTPUT_STUB;
 	typedef unisim::kernel::tlm2::InitiatorStub<0, unisim::component::tlm2::com::xilinx::xps_gpio::GPIOProtocolTypes> GPIO_INPUT_STUB;
 
+	typedef unisim::kernel::tlm2::TargetStub<4> DCR_SLAVE_STUB;
+	typedef unisim::component::tlm2::interconnect::generic_router::Router<typename CONFIG::MEMORY_ROUTER_CONFIG> MEMORY_ROUTER;
+
 	//=========================================================================
 	//===                           Components                              ===
 	//=========================================================================
 	//  - PowerPC processor
 	CPU *cpu;
+	LINUX_OS_CPU *linux_os_cpu;
 	//  - RAM
 	RAM *ram;
 	//  - BRAM
@@ -180,6 +187,7 @@ private:
 	// - IRQ stubs
 	IRQ_STUB *input_interrupt_stub[CONFIG::INTC_CONFIG::C_NUM_INTR_INPUTS];
 	IRQ_STUB *critical_input_interrupt_stub;
+	IRQ_STUB *external_input_interrupt_stub;
 	// - MPLB
 	MPLB *mplb;
 	// - SPLB0
@@ -230,12 +238,17 @@ private:
 	DMAC2_DCR_STUB *dmac2_dcr_stub;
 	DMAC3_DCR_STUB *dmac3_dcr_stub;
 	EXTERNAL_SLAVE_DCR_STUB *external_slave_dcr_stub;
+	DCR_SLAVE_STUB *dcr_slave_stub; // used in combination with LinuxOS
+	// - Memory router (used in combination with LinuxOS)
+	MEMORY_ROUTER *memory_router;
 	
 	//=========================================================================
 	//===                            Services                               ===
 	//=========================================================================
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
+	//  - Linux loader and Linux ABI translator
+	LinuxOS<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> *linux_os;
 	//  - Debugger
 	Debugger<CPU_ADDRESS_TYPE> *debugger;
 	//  - GDB server
@@ -267,10 +280,12 @@ private:
 	bool enable_inline_debugger;
 	bool estimate_power;
 	bool enable_telnet;
+	bool enable_linux_os;
 	Parameter<bool> param_enable_gdb_server;
 	Parameter<bool> param_enable_inline_debugger;
 	Parameter<bool> param_estimate_power;
 	Parameter<bool> param_enable_telnet;
+	Parameter<bool> param_enable_linux_os;
 
 	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
