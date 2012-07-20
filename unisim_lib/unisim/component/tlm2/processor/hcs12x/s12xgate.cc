@@ -202,11 +202,6 @@ triggerChannelThread() {
 
 }
 
-void S12XGATE::
-terminateCurrentThread() {
-
-	currentThreadTerminated = true;
-}
 
 void S12XGATE::
 Run() {
@@ -408,13 +403,15 @@ address_t S12XGATE ::getIntVector()
 
 }
 
-void S12XGATE::assertInterrupt(uint8_t interruptOffset) {
-	// assert ATD_SequenceComplete_Interrupt
+void S12XGATE::assertInterrupt(uint8_t offset, bool isXGATE_flag) {
+
+	if (!inherited::isInterruptEnabled()) return;
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->interrupt_offset = interruptOffset;
+	payload->setInterruptOffset(offset);
+	payload->setXGATE_shared_channel(isXGATE_flag);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 

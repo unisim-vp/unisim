@@ -84,8 +84,16 @@ private:
 class XINT_Payload : public ManagedPayload
 {
 public:
-	uint8_t	interrupt_offset;
+	XINT_Payload(): interrupt_offset(0), xgate_shared_channel(false) { }
 
+	void setInterruptOffset(uint8_t	offset) { interrupt_offset = offset; }
+	void setXGATE_shared_channel(bool isXGate = false) { xgate_shared_channel = isXGate; }
+	uint8_t	getInterruptOffset() { return (interrupt_offset); }
+	bool    isXGATE_shared_channel() { return (xgate_shared_channel); }
+
+private:
+	uint8_t	interrupt_offset;
+	bool    xgate_shared_channel;
 };
 
 class XINT_REQ_ProtocolTypes

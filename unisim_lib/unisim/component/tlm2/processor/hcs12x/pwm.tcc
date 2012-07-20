@@ -200,7 +200,7 @@ void PWM<PWM_SIZE>::assertInterrupt() {
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->interrupt_offset = interruptOffset;
+	payload->setInterruptOffset(interruptOffset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 

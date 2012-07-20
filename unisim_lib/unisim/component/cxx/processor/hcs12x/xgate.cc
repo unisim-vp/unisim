@@ -146,6 +146,7 @@ XGATE::XGATE(const char *name, Object *parent):
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
+	ccr = new XGCCR_t(&xgccr_register);
 }
 
 XGATE::~XGATE()
@@ -166,6 +167,8 @@ XGATE::~XGATE()
 	}
 
 	if (logger) { delete logger; logger = NULL;}
+
+	if (ccr) { delete ccr; ccr = NULL; }
 
 }
 
@@ -543,6 +546,8 @@ uint8_t XGATE::step()
 				<< std::endl << EndDebugInfo;
 		}
 
+		std::cout << "XGATE:: before fetchInstruction PC=0x" << std::hex << (unsigned int) getXGPC() << std::endl;
+
 		fetchInstruction(getXGPC(), buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
@@ -560,6 +565,10 @@ uint8_t XGATE::step()
 
 //		op = this->Decode(getRegPC(), insn);
 		op = decoder.Decode(getXGPC(), insn);
+
+		lastPC = getXGPC();
+        unsigned int insn_length = op->GetLength();
+        if (insn_length % 8) throw "InternalError";
 
 		/* Execute instruction */
 
@@ -594,10 +603,6 @@ uint8_t XGATE::step()
 				<< "  " << EndDebugInfo	<< std::endl;
 		}
 
-		lastPC = getXGPC();
-        unsigned int insn_length = op->GetLength();
-        if (insn_length % 8) throw "InternalError";
-
 		setXGPC(getXGPC() + (insn_length/8));
 
 		op->execute(this);
@@ -621,13 +626,7 @@ uint8_t XGATE::step()
 			}
 		}
 
-		if(hasAsynchronousInterrupt())
-		{
-			throw AsynchronousException();
-		}
-
 	}
-	catch (AsynchronousException& exc) { handleException(exc); }
 	catch(Exception& e)
 	{
 		if(debug_enabled && verbose_step)
@@ -652,8 +651,6 @@ void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
 
 	MMC_DATA mmc_data;
 
-	mmc_data.type = ADDRESS::EXTENDED;
-	mmc_data.isGlobal = false;
 	mmc_data.buffer = ins;
 	mmc_data.data_size = nByte;
 
@@ -661,27 +658,10 @@ void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
 
 }
 
-// AsynchronousException
-void XGATE::handleException(const AsynchronousException& exc)
-{
+void XGATE::
+terminateCurrentThread() {
 
-//	uint8_t newIPL = ccr->getIPL();
-//	address_t asyncVector = getIntVector(newIPL);
-//
-//	asynchronous_interrupt = false;
-//
-//	if (CONFIG::HAS_RESET && hasReset()) {
-//		handleResetException(asyncVector);
-//	}
-//
-//	if (CONFIG::HAS_NON_MASKABLE_XIRQ_INTERRUPT && hasNonMaskableXIRQInterrupt()) {
-//		handleNonMaskableXIRQException(asyncVector, newIPL);
-//	}
-//
-//	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && hasMaskableIbitInterrup()) {
-//		handleMaskableIbitException(asyncVector, newIPL);
-//	}
-
+	currentThreadTerminated = true;
 }
 
 void XGATE::riseErrorCondition() {
@@ -862,7 +842,7 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 {
 
 	switch (offset) {
-		case XGMCTL: *((uint16_t *) buffer) = xgmctl_register & 0x00FB; break;
+		case XGMCTL: *((uint16_t *) buffer) = Host2BigEndian(xgmctl_register & 0x00FB); break;
 		case XGCHID: {
 			// The XGCHID register read 0x00 if the XGATE module is idle
 			*((uint8_t *) buffer) = (state == RUNNING)? 0 : xgchid_register & 0x7F;
@@ -870,33 +850,33 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 		case RESERVED1: *((uint16_t *) buffer) = 0; break;
 		case RESERVED2: *((uint16_t *) buffer) = 0; break;
 		case RESERVED3: *((uint16_t *) buffer) = 0; break;
-		case XGVBR: *((uint16_t *) buffer) = xgvbr_register & 0xFFFE; break;
-		case XGSWT: *((uint16_t *) buffer) = xgswt_register & 0x00FF; break;
-		case XGSEM: *((uint16_t *) buffer) = xgsem_register & 0x00FF; break;
+		case XGVBR: *((uint16_t *) buffer) = Host2BigEndian(xgvbr_register & 0xFFFE); break;
+		case XGSWT: *((uint16_t *) buffer) = Host2BigEndian(xgswt_register & 0x00FF); break;
+		case XGSEM: *((uint16_t *) buffer) = Host2BigEndian(xgsem_register & 0x00FF); break;
 		case RESERVED4: *((uint16_t *) buffer) = 0; break;
 		case XGCCR: *((uint8_t *) buffer) = xgccr_register & 0x0F; break;
-		case XGPC: *((uint16_t *) buffer) = xgpc_register; break;
+		case XGPC: *((uint16_t *) buffer) = Host2BigEndian(xgpc_register); break;
 		case RESERVED5: *((uint16_t *) buffer) = 0; break;
 		case RESERVED6: *((uint16_t *) buffer) = 0; break;
-		case XGR1: *((uint16_t *) buffer) = xgr_register[1]; break;
-		case XGR2: *((uint16_t *) buffer) = xgr_register[2]; break;
-		case XGR3: *((uint16_t *) buffer) = xgr_register[3]; break;
-		case XGR4: *((uint16_t *) buffer) = xgr_register[4]; break;
-		case XGR5: *((uint16_t *) buffer) = xgr_register[5]; break;
-		case XGR6: *((uint16_t *) buffer) = xgr_register[6]; break;
-		case XGR7: *((uint16_t *) buffer) = xgr_register[7]; break;
+		case XGR1: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[1]); break;
+		case XGR2: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[2]); break;
+		case XGR3: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[3]); break;
+		case XGR4: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[4]); break;
+		case XGR5: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[5]); break;
+		case XGR6: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[6]); break;
+		case XGR7: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[7]); break;
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
 				uint8_t index = (offset - XGIF_7F_70)/2;
 				if (index < 2) {
-					*((uint16_t *) buffer) = xgif_register[index] & 0x01FF;
+					*((uint16_t *) buffer) = Host2BigEndian(xgif_register[index] & 0x01FF);
 				}
 				else if (index >= XGIF_0F_00) {
-					*((uint16_t *) buffer) = xgif_register[index] & 0xFE00;
+					*((uint16_t *) buffer) = Host2BigEndian(xgif_register[index] & 0xFE00);
 				}
 				else {
-					*((uint16_t *) buffer) = xgif_register[index];
+					*((uint16_t *) buffer) = Host2BigEndian(xgif_register[index]);
 				}
 			}
 
@@ -913,7 +893,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 {
 	switch (offset) {
 		case XGMCTL: {
-			uint16_t val = *((uint16_t *) buffer) & 0xFBFB;
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer)) & 0xFBFB;
 			// control bits can only be set or cleared if a "1" is written to its mask bit in the same register access.
 			uint16_t mask = val >> 8;
 
@@ -967,16 +947,11 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case RESERVED2: break;
 		case RESERVED3: break;
 		case XGVBR: {
-			std::cout << "XGATE::Write::XGVBR " << std::hex << (unsigned int) *((uint16_t *) buffer) << std::endl;
 			// Writable if the module is disabled (XGMCTL::XGE = 0) and idle (XGCHID = 0x00)
 			// I use "RUNNING state and not IDLE because it includes "IDLE" and "STOP" modes
 
-			std::cout << "xgmctl_register =0x" << std::hex << (unsigned int) xgmctl_register << std::endl;
-			std::cout << "xgchid_register =0x" << std::hex << (unsigned int) xgchid_register << std::endl;
-
 			if (((xgmctl_register & 0x0080) == 0) && (xgchid_register == 0x00)) {
-				std::cout << "XGATE::Write::XGVBR enter test" << std::endl;
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgvbr_register = val & 0xFFFE;
 			}
 		} break;
@@ -989,7 +964,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			 * They can be used as XGATE requests as well as S12X_CPU interrupts.
 			 * The target of the software trigger must be selected in the S12X_INT module
 			 */
-			uint16_t val = *((uint16_t *) buffer);
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 			uint16_t old_xgswt_register = xgswt_register;
 
@@ -1012,7 +987,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		} break;
 		case XGSEM: {
 
-			uint16_t val = *((uint16_t *) buffer);
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 			uint16_t mask = val >> 8;
 
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
@@ -1033,13 +1008,13 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case RESERVED4: break;
 		case XGCCR: {
 			if (mode == DEBUG) {
-				uint8_t val = *((uint8_t *) buffer);
+				uint8_t val = BigEndian2Host(*((uint8_t *) buffer));
 				xgccr_register = val & 0x0F;
 			}
 		} break;
 		case XGPC: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgpc_register = val;
 			}
 		} break;
@@ -1047,50 +1022,50 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case RESERVED6: break;
 		case XGR1: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[1] = val;
 			}
 		} break;
 		case XGR2: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[2] = val;
 			}
 		} break;
 		case XGR3: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[3] = val;
 			}
 		} break;
 		case XGR4: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[4] = val;
 			}
 		} break;
 		case XGR5: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[5] = val;
 			}
 		} break;
 		case XGR6: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[6] = val;
 			}
 		} break;
 		case XGR7: {
 			if (mode == DEBUG) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgr_register[7] = val;
 			}
 		} break;
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
-				uint16_t val = *((uint16_t *) buffer);
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 				xgif_register[(offset - XGIF_7F_70)/2] = (xgif_register[(offset - XGIF_7F_70)/2] & ~val);
 			} else {
 				return (false);
@@ -1101,16 +1076,6 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 
 	return (true);
 
-}
-
-void XGATE::reqAsynchronousInterrupt()
-{
-	asynchronous_interrupt = true;
-}
-
-void XGATE::ackAsynchronousInterrupt()
-{
-	asynchronous_interrupt = false;
 }
 
 

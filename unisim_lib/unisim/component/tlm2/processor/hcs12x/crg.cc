@@ -678,7 +678,7 @@ void CRG::assertInterrupt(uint8_t interrupt_offset) {
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->interrupt_offset = interrupt_offset;
+	payload->setInterruptOffset(interrupt_offset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 

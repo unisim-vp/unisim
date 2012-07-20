@@ -804,7 +804,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->interrupt_offset = cmd_interruptOffset;
+	payload->setInterruptOffset(cmd_interruptOffset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 

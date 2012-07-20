@@ -111,6 +111,11 @@ using unisim::util::endian::Host2BigEndian;
 using unisim::util::endian::Host2LittleEndian;
 using unisim::util::endian::LittleEndian2Host;
 
+using unisim::util::arithmetic::Add8;
+using unisim::util::arithmetic::Add16;
+using unisim::util::arithmetic::Sub8;
+using unisim::util::arithmetic::Sub16;
+
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
@@ -119,6 +124,81 @@ using unisim::component::cxx::processor::hcs12x::MMC_DATA;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::Exception;
 using unisim::component::cxx::processor::hcs12x::AsynchronousException;
+
+class XGCCR_t
+{
+public:
+	static const uint8_t SETC	=0x01;
+	static const uint8_t CLRC=0xFE;
+
+	static const uint8_t SETV=0x02;
+	static const uint8_t CLRV=0xFD;
+
+	static const uint8_t SETZ=0x04;
+	static const uint8_t CLRZ=0xFB;
+
+	static const uint8_t SETN=0x08;
+	static const uint8_t CLRN=0xF7;
+
+	XGCCR_t(uint8_t* _ccrReg) : ccrReg(_ccrReg) { };
+	~XGCCR_t() { };
+
+	inline uint8_t getC();
+	inline void 	setC();
+	inline void 	clrC();
+
+	inline uint8_t getV();
+	inline void 	setV();
+	inline void 	clrV();
+
+	inline uint8_t getZ();
+	inline void 	setZ();
+	inline void 	clrZ();
+
+	inline uint8_t getN();
+	inline void 	setN();
+	inline void 	clrN();
+
+	inline uint8_t getCCR();
+	inline void setCCR(uint8_t val);
+
+	void reset() { *ccrReg = 0x00; }
+
+private:
+
+	uint8_t* ccrReg; // ---- NZVC
+
+}; // end class XGCCR_t
+
+
+inline uint8_t XGCCR_t::getC() { return (*ccrReg & SETC);};
+inline void 	XGCCR_t::setC() { *ccrReg |= SETC;};
+inline void 	XGCCR_t::clrC() { *ccrReg &= CLRC;};
+
+inline uint8_t XGCCR_t::getV() { return ((*ccrReg & SETV) >> 1);};
+inline void 	XGCCR_t::setV() { *ccrReg |= SETV;};
+inline void 	XGCCR_t::clrV() { *ccrReg &= CLRV;};
+
+inline uint8_t XGCCR_t::getZ() { return ((*ccrReg & SETZ) >> 2);};
+inline void 	XGCCR_t::setZ() { *ccrReg |= SETZ;};
+inline void 	XGCCR_t::clrZ() { *ccrReg &= CLRZ;};
+
+inline uint8_t XGCCR_t::getN() { return ((*ccrReg & SETN) >> 3);};
+inline void 	XGCCR_t::setN() { *ccrReg |= SETN;};
+inline void 	XGCCR_t::clrN() { *ccrReg &= CLRN;};
+
+inline uint8_t XGCCR_t::getCCR() {
+	return (*ccrReg);
+};
+
+inline void XGCCR_t::setCCR(uint8_t val) {
+
+	*ccrReg = val;
+};
+
+
+// *****************************************************************************************
+
 
 class XGATE :
 	public CallBackObject,
@@ -138,15 +218,15 @@ public:
 
 	class TSemaphore {
 	public:
-		enum LOCKER { UNKNOWN, CPU12X, S12XGATE };
+		enum OWNER { UNKNOWN, CPU12X, XGATE };
 
 		TSemaphore() : locked(false), who(UNKNOWN) {}
 		~TSemaphore() { }
 
 		bool isLocked() { return (locked); }
-		LOCKER getLocker() { return (who); }
+		OWNER getLocker() { return (who); }
 
-		bool lock(LOCKER who) {
+		bool lock(OWNER who) {
 			if (!locked) {
 				locked = true;
 				this->who = who;
@@ -156,7 +236,7 @@ public:
 			return (false);
  		}
 
-		bool unlock(LOCKER who)  {
+		bool unlock(OWNER who)  {
 			if (locked && (this->who == who)) {
 				locked = false;
 				this->who = UNKNOWN;
@@ -168,7 +248,7 @@ public:
 
 	private:
 		bool  locked;
-		LOCKER who;
+		OWNER who;
 	};
 
 	//=========================================================
@@ -239,6 +319,43 @@ public:
 	virtual address_t getIntVector() = 0;
 	virtual double  GetSimulatedTime() = 0;
 
+	virtual void enbale_xgate() = 0;
+	virtual void disable_xgate() = 0;
+
+	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag = false) = 0;
+
+	virtual void assertChannelInterrupt(uint8_t offset) {
+		uint8_t reg_index = offset / 8;
+		uint8_t flag_index = offset % 8;
+		xgif_register[reg_index] = xgif_register[reg_index] | (1 << flag_index);
+
+		assertInterrupt(offset, true);
+	}
+
+	virtual void riseErrorCondition();
+
+	virtual void triggerChannelThread() = 0;
+	void terminateCurrentThread();
+
+	void fakeXGATEActivity() {
+		/**
+		 * TODO: take into account XGMCTL::XGFACT bit
+		 * Fake XGATE Activity—This bit forces the XGATE to flag activity to the MCU even when it is idle.
+		 * When it is set the MCU will never enter system stop mode which assures that peripheral modules
+		 * will be clocked during XGATE idle periods
+		 * Read:
+		 *   0 XGATE will only flag activity if it is not idle or in debug mode.
+		 *   1 XGATE will always signal activity to the MCU.
+		 * Write:
+		 *   0 Only flag activity if not idle or in debug mode.
+		 *   1 Always signal XGATE activity.
+		 */
+
+		/**
+		 * To implement this functionality, I have to link the CRG and The XGATE or to have a variable at simulator (MCU) level
+		 */
+	}
+
 	virtual void busWrite(address_t addr, void *buffer, uint32_t size) = 0;
 	virtual void busRead(address_t addr, void *buffer, uint32_t size) = 0;
 
@@ -248,14 +365,14 @@ public:
 	//=     ISA - MEMORY ACCESS ROUTINES       =
 	//==========================================
 
-	inline uint8_t memRead8(address_t logicalAddress, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
-	inline void memWrite8(address_t logicalAddress,uint8_t val, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
+	inline uint8_t memRead8(address_t logicalAddress);
+	inline void memWrite8(address_t logicalAddress,uint8_t val);
 
-	inline uint16_t memRead16(address_t logicalAddress, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
-	inline void memWrite16(address_t logicalAddress,uint16_t val, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false);
+	inline uint16_t memRead16(address_t logicalAddress);
+	inline void memWrite16(address_t logicalAddress,uint16_t val);
 
-	inline void monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal);
-	inline void monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal);
+	inline void monitorStore(address_t logicalAddress, uint32_t size);
+	inline void monitorLoad(address_t logicalAddress, uint32_t size);
 
 	//=====================================================================
 	//=                  Memory Access Reportings methods                 =
@@ -384,44 +501,11 @@ protected:
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
 
-	void reqAsynchronousInterrupt();
-	inline bool hasAsynchronousInterrupt() const { return (asynchronous_interrupt); }
-	void ackAsynchronousInterrupt();
-
-	virtual void enbale_xgate() = 0;
-	virtual void disable_xgate() = 0;
-
-	virtual void triggerChannelThread() = 0;
-	virtual void terminateCurrentThread() = 0;
-
-	virtual void riseErrorCondition();
-
-	void fakeXGATEActivity() {
-		/**
-		 * TODO: take into account XGMCTL::XGFACT bit
-		 * Fake XGATE Activity—This bit forces the XGATE to flag activity to the MCU even when it is idle.
-		 * When it is set the MCU will never enter system stop mode which assures that peripheral modules
-		 * will be clocked during XGATE idle periods
-		 * Read:
-		 *   0 XGATE will only flag activity if it is not idle or in debug mode.
-		 *   1 XGATE will always signal activity to the MCU.
-		 * Write:
-		 *   0 Only flag activity if not idle or in debug mode.
-		 *   1 Always signal XGATE activity.
-		 */
-
-		/**
-		 * To implement this functionality, I have to link the CRG and The XGATE or to have a variable at simulator (MCU) level
-		 */
-	}
-
 private:
 
 	// Registers map
 	std::map<std::string, Register *> registers_registry;
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
-
-	bool asynchronous_interrupt;
 
 	uint8_t				interrupt_software_trigger_base;
 	Parameter<uint8_t>	param_interrupt_software_trigger_base;
@@ -454,15 +538,17 @@ private:
 
 	void fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte);
 
-	// Asynchronous Interrupts (including Resets, I-bit, XIRQ, IRQ)
-	void handleException(const AsynchronousException& exc);
-
 public:
+	XGCCR_t* ccr;
+
 	void setState(STATES st) { state = st; }
 
 	//=========================================================
 	//=                REGISTERS ACCESSORS                    =
 	//=========================================================
+
+	bool lockSemaphore(TSemaphore::OWNER owner, uint8_t index) { return (semphore[index].lock(owner)); }
+	bool unlockSemaphore(TSemaphore::OWNER owner, uint8_t index) { return (semphore[index].unlock(owner)); }
 
 	inline void setXGPC(address_t val) { xgpc_register = val; }
 	inline address_t getXGPC() { return (xgpc_register); }
@@ -472,37 +558,41 @@ public:
 	inline uint16_t getXGSWT() { return (xgswt_register); }
 	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
 	inline void setXGRx(uint16_t val, uint8_t index) { xgr_register[index] = val; }
+	inline uint16_t getXGRx(uint8_t index) { return (xgr_register[index]); }
 	inline void setXGCHID(uint8_t val) { xgchid_register = val; }
+	inline uint8_t getXGCHID() { return (xgchid_register); }
 
-	inline static void getXGRxName(char* name, uint8_t index) {
-		sprintf(name, "R%d", index);
+	inline static std::string getXGRxName(uint8_t index) {
+		stringstream name;
+
+		name << "R" << (unsigned int) index;
+
+		return (name.str());
 	}
+
+	inline bool isInterruptEnabled() { return (xgmctl_register & 0x0001); }
 };
 
-inline uint8_t XGATE::memRead8(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
+inline uint8_t XGATE::memRead8(address_t logicalAddress) {
 
 	uint8_t data;
 	MMC_DATA mmc_data;
 
-	mmc_data.type = type;
-	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
 	busRead(logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	monitorLoad(logicalAddress, sizeof(data), isGlobal);
+	monitorLoad(logicalAddress, sizeof(data));
 
 	return (data);
 }
 
-inline uint16_t XGATE::memRead16(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal) {
+inline uint16_t XGATE::memRead16(address_t logicalAddress) {
 
 	uint16_t data;
 	MMC_DATA mmc_data;
 
-	mmc_data.type = type;
-	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
@@ -510,40 +600,36 @@ inline uint16_t XGATE::memRead16(address_t logicalAddress, ADDRESS::MODE type, b
 
 	data = BigEndian2Host(data);
 
-	monitorLoad(logicalAddress, sizeof(data), isGlobal);
+	monitorLoad(logicalAddress, sizeof(data));
 
 	return (data);
 }
 
-inline void XGATE::memWrite8(address_t logicalAddress,uint8_t data, ADDRESS::MODE type, bool isGlobal) {
+inline void XGATE::memWrite8(address_t logicalAddress,uint8_t data) {
 
 	MMC_DATA mmc_data;
 
-	mmc_data.type = type;
-	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
 	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	monitorStore(logicalAddress, sizeof(data), isGlobal);
+	monitorStore(logicalAddress, sizeof(data));
 
 }
 
-inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::MODE type, bool isGlobal) {
+inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data) {
 
 	MMC_DATA mmc_data;
 
 	data = Host2BigEndian(data);
 
-	mmc_data.type = type;
-	mmc_data.isGlobal = isGlobal;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
 	busWrite( logicalAddress, &mmc_data, sizeof(MMC_DATA));
 
-	monitorStore(logicalAddress, sizeof(data), isGlobal);
+	monitorStore(logicalAddress, sizeof(data));
 
 }
 
@@ -551,9 +637,9 @@ inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data, ADDRESS::M
 // =          MEMORY ACCESS ROUTINES            =
 // ==============================================
 
-inline void XGATE::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
+inline void XGATE::monitorLoad(address_t logicalAddress, uint32_t size)
 {
-	physical_address_t pea = MMC::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	physical_address_t pea = MMC::getXGATEPhysicalAddress(logicalAddress);
 
 	data_load_counter++;
 
@@ -564,9 +650,9 @@ inline void XGATE::monitorLoad(address_t logicalAddress, uint32_t size, bool isG
 	}
 }
 
-inline void XGATE::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
+inline void XGATE::monitorStore(address_t logicalAddress, uint32_t size)
 {
-	physical_address_t pea = MMC::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	physical_address_t pea = MMC::getXGATEPhysicalAddress(logicalAddress);
 
 	data_store_counter++;
 

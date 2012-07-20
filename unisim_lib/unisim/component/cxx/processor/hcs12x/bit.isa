@@ -285,7 +285,7 @@ com_ext.execute = {
 	uint8_t val = ~cpu->memRead8(addr);
 	cpu->memWrite8(addr, val);
 	
-	cpu->ccr->setC();
+	cpu->ccr->setC();// C-flag is set (for M6800 compatibility)
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
@@ -323,7 +323,7 @@ com_idx.execute = {
 	uint8_t val = ~cpu->memRead8(addr);
 	cpu->memWrite8(addr, val);
 	
-	cpu->ccr->setC();
+	cpu->ccr->setC(); // C-flag is set (for M6800 compatibility)
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
@@ -364,7 +364,7 @@ com_ab.execute = {
 		cpu->setRegB(val);
 	}
 
-	cpu->ccr->setC();
+	cpu->ccr->setC(); // C-flag is set (for M6800 compatibility)
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x80) == 0x80) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
@@ -387,7 +387,7 @@ comw_ext.execute = {
 	uint16_t val = ~cpu->memRead16(addr);
 	cpu->memWrite16(addr, val);
 	
-	cpu->ccr->setC();
+	cpu->ccr->setC(); // C-flag is set (for M6800 compatibility)
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
@@ -424,7 +424,7 @@ comw_idx.execute = {
 	uint16_t val = ~cpu->memRead16(addr);
 	cpu->memWrite16(addr, val);
 	
-	cpu->ccr->setC();
+	cpu->ccr->setC(); // C-flag is set (for M6800 compatibility)
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
@@ -465,7 +465,7 @@ com_xy.execute = {
 		cpu->setRegY(val);
 	}
 
-	cpu->ccr->setC();
+	cpu->ccr->setC(); // C-flag is set (for M6800 compatibility)
 	cpu->ccr->clrV();
 	if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
 	if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else {cpu->ccr->clrN();}
@@ -1185,7 +1185,7 @@ lsl_ext.disasm = {
 }
 
 lsl_ext.execute = {
-	physical_address_t addr = opr16a;	
+	physical_address_t addr = opr16a;
 	uint8_t val = cpu->memRead8(addr);
 
 	if ((val & 0x80) == 0x80) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }

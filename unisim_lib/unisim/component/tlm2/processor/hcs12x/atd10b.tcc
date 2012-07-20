@@ -35,6 +35,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include "unisim/util/debug/simple_register.hh"
+#include "unisim/util/endian/endian.hh"
 
 namespace unisim {
 namespace component {
@@ -44,6 +45,8 @@ namespace hcs12x {
 
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::util::debug::SimpleRegister;
+using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
 
 template <uint8_t ATD_SIZE>
 ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
@@ -614,7 +617,7 @@ void ATD10B<ATD_SIZE>::assertInterrupt() {
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->interrupt_offset = interruptOffset;
+	payload->setInterruptOffset(interruptOffset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -861,7 +864,7 @@ bool ATD10B<ATD_SIZE>::read(unsigned int offset, const void *buffer, unsigned in
 
 		default:
 			if ((offset >= ATDDR0H) && (offset <= (ATDDR0H + 2*ATD_SIZE - 1))) {
-				*((uint16_t *) buffer) = atddrhl_register[(offset-ATDDR0H)/2] & 0xFFC0;
+				*((uint16_t *) buffer) = Host2BigEndian(atddrhl_register[(offset-ATDDR0H)/2] & 0xFFC0);
 				uint8_t index = (offset - ATDDR0H)/2;
 				uint8_t clearMask = 0xFF;
 

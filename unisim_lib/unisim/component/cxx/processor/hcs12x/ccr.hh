@@ -48,38 +48,38 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-#define SETC	0x0001
-#define CLRC	0xFFFE
-
-#define SETV	0x0002
-#define CLRV	0xFFFD
-
-#define SETZ	0x0004
-#define CLRZ	0xFFFB
-
-#define SETN	0x0008
-#define CLRN	0xFFF7
-
-#define SETI	0x0010
-#define CLRI	0xFFEF
-
-#define SETH	0x0020
-#define CLRH	0xFFDF
-
-#define SETX	0x0040
-#define CLRX	0xFFBF
-
-#define SETS	0x0080
-#define CLRS	0xFF7F
-
-#define SETIPL	0x0700
-#define CLRIPL	0xF8FF
-
 /* I think it's better to declare the CCR as uint16_t and then use mask to set/get each bit */
 
 class CCR_t : public unisim::util::debug::Register
 {
 public:
+	static const uint16_t SETC	=0x0001;
+	static const uint16_t CLRC=0xFFFE;
+
+	static const uint16_t SETV=0x0002;
+	static const uint16_t CLRV=0xFFFD;
+
+	static const uint16_t SETZ=0x0004;
+	static const uint16_t CLRZ=0xFFFB;
+
+	static const uint16_t SETN=0x0008;
+	static const uint16_t CLRN=0xFFF7;
+
+	static const uint16_t SETI=0x0010;
+	static const uint16_t CLRI=0xFFEF;
+
+	static const uint16_t SETH=0x0020;
+	static const uint16_t CLRH=0xFFDF;
+
+	static const uint16_t SETX=0x0040;
+	static const uint16_t CLRX=0xFFBF;
+
+	static const uint16_t SETS=0x0080;
+	static const uint16_t CLRS=0xFF7F;
+
+	static const uint16_t SETIPL=0x0700;
+	static const uint16_t CLRIPL=0xF8FF;
+
 
 	CCR_t(uint16_t* _ccrReg) : ccrReg(_ccrReg) { };
 	~CCR_t() { };

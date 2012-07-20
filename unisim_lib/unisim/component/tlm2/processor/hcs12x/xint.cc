@@ -223,10 +223,15 @@ bool XINT::selectInterrupt(INT_TRANS_T &buffer) {
 		buffer.setPriority(0x7);
 	}
 	else {
-//		for (int index=0; index < XINT_SIZE; index++) {
+
 		for (int index=0x30; index < 0x79; index++) {
 			if (interrupt_flags[index].getState()) {
-				uint8_t dataPriority = int_cfwdata[index] & 0x07;
+				uint8_t dataPriority = 0;
+				if (interrupt_flags[index].getPayload().isXGATE_shared_channel()) {
+					dataPriority = int_xgprio;
+				} else {
+					dataPriority = int_cfwdata[index] & 0x07;
+				}
 
 				if (dataPriority >= buffer.getPriority()) {  // priority of maskable interrupts is from high offset to low
 					buffer.setPriority(dataPriority);
@@ -238,11 +243,6 @@ bool XINT::selectInterrupt(INT_TRANS_T &buffer) {
 		}
 
 	}
-
-//	if (buffer.getVectorAddress() == 0) {
-//		buffer.setVectorAddress(((address_t) getIVBR() << 8));
-//		return (false);
-//	}
 
 	if (buffer.getVectorAddress() == 0) {
 		buffer.setVectorAddress(get_Spurious_Vector());
@@ -269,36 +269,57 @@ void XINT::run()
 
 		wait(input_payload_queue.get_event() | retry_event);
 
+		bool found_cpu = false;
+		bool found_xgate = false;
 		do
 		{
 
 			payload = input_payload_queue.get_next_transaction();
+
 			if (payload) {
 
-				uint8_t id = payload->interrupt_offset/2;
+				if (payload->isXGATE_shared_channel()) {
 
-				interrupt_flags[id].setState(true);
-				interrupt_flags[id].setPayload(payload);
+					uint8_t id = payload->getInterruptOffset();
 
-				trans->set_command( tlm::TLM_WRITE_COMMAND );
-				trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+					interrupt_flags[id].setState(true);
+					interrupt_flags[id].setPayload(payload);
 
-//				cout << "XINT rise " << std::hex << (unsigned int) payload->interrupt_offset << "  @ " << sc_time_stamp().to_seconds() << endl;
+					found_cpu = true;
 
-				// if 7-bit=0 then cpu else xgate
-				if ((int_cfwdata[id] & 0x80) == 0)
-				{
-					tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+				} else {
+
+					uint8_t id = payload->getInterruptOffset()/2;
+
+					interrupt_flags[id].setState(true);
+					interrupt_flags[id].setPayload(payload);
+
+					// if 7-bit=0 then cpu else xgate
+					if ((int_cfwdata[id] & 0x80) == 0)
+					{
+						found_cpu = true;
+					}
+					else {
+						found_xgate = true;
+					}
 				}
-				else {
-					tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
-				}
-
 			}
 
 		} while(payload);
 
-		payload = NULL;
+		if (found_cpu) {
+			trans->set_command( tlm::TLM_WRITE_COMMAND );
+			trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+			tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
+		}
+
+		if (found_xgate) {
+			trans->set_command( tlm::TLM_WRITE_COMMAND );
+			trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+			tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
+		}
 
 	}
 
@@ -321,6 +342,8 @@ tlm_sync_enum XINT::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& 
 			interrupt_flags[buffer->getID()].releasePayload();
 
 		}
+
+//		std::cout << "XINT::handled_interrupt 0x" << std::hex << (unsigned int) (buffer->getID() * 2) << std::endl;
 
 		retry_event.notify();
 	}
@@ -558,8 +581,6 @@ void XINT::write_INT_CFDATA(uint8_t index, uint8_t value)
 	 * - Read access to CFDATA of the spurious interrupt will always return 0x7
 	 */
 	if ((getINT_CFADDR() + index*2) == XINT::INT_SPURIOUS_OFFSET) return;
-
-	cout << "XINT write to => " << (unsigned int) (getINT_CFADDR()/2 + index) << "  = 0x" << std::hex << (unsigned int) value << endl;
 
 	int_cfwdata[getINT_CFADDR()/2 + index] = value;
 }

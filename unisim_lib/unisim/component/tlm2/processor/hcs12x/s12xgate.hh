@@ -140,12 +140,11 @@ public:
 	virtual address_t getIntVector();
 	virtual double  GetSimulatedTime();
 
-	void assertInterrupt(uint8_t offset);
+	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag);
 
 	virtual void enbale_xgate();
 	virtual void disable_xgate();
 	virtual void triggerChannelThread();
-	virtual void terminateCurrentThread();
 	virtual void riseErrorCondition();
 
 
@@ -208,6 +207,13 @@ private:
 
 	void Synchronize();
 	void computeInternalTime();
+
+	bool asynchronous_interrupt;
+
+	void reqAsynchronousInterrupt()	{ asynchronous_interrupt = true; }
+	inline bool hasAsynchronousInterrupt() const { return (asynchronous_interrupt); }
+	void ackAsynchronousInterrupt() { asynchronous_interrupt = false; }
+
 
 };
 

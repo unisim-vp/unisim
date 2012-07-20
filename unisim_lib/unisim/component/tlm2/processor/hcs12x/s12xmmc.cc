@@ -192,7 +192,7 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 			physical_address_t addr = inherited::getXGATEPhysicalAddress((address_t) logicalAddress);
 
-			cout << "XGATE::MMC cpu_addr=0x" << std::hex << (unsigned int) logicalAddress << "  phy_addr=0x" << std::hex << addr << endl;
+//			cout << "XGATE::MMC cpu_addr=0x" << std::hex << (unsigned int) logicalAddress << "  phy_addr=0x" << std::hex << addr << endl;
 
 			mmc_trans->set_address( addr & 0x7FFFFF);
 
