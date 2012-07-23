@@ -50,6 +50,10 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	, unisim::kernel::service::Client<TrapReporting>(name, parent)
 	, cpu_socket("cpu_to_mmc")
 	, trap_reporting_import("trap_reporting_import", this)
+
+	, busSemaphore()
+	, busSemaphore_event()
+
 {
 
 	cpu_socket.register_b_transport(this, &S12XMMC::cpu_b_transport);
@@ -173,6 +177,10 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 		if (find) {
 
+			if (!busSemaphore.lock(TSemaphore::XGATE)) {
+				wait(busSemaphore_event);
+			}
+
 			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
 
 			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
@@ -192,13 +200,12 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 			physical_address_t addr = inherited::getXGATEPhysicalAddress((address_t) logicalAddress);
 
-//			cout << "XGATE::MMC cpu_addr=0x" << std::hex << (unsigned int) logicalAddress << "  phy_addr=0x" << std::hex << addr << endl;
-
 			mmc_trans->set_address( addr & 0x7FFFFF);
 
 			for (int i=0; i <MEMORY_MAP_SIZE; i++) {
 				if ((memory_map[i].start_addr <= addr) && (memory_map[i].end_addr >= addr)) {
 					(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
+
 					break;
 				}
 			}
@@ -210,6 +217,10 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 
 			mmc_trans->release();
+
+			if (!busSemaphore.unlock(TSemaphore::XGATE)) {
+				busSemaphore_event.notify();
+			}
 
 		}
 
@@ -261,6 +272,11 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 		if (find) {
 
+
+			if (!busSemaphore.lock(TSemaphore::CPU12X)) {
+				wait(busSemaphore_event);
+			}
+
 			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
 
 			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
@@ -296,6 +312,11 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 
 			mmc_trans->release();
+
+
+			if (!busSemaphore.unlock(TSemaphore::CPU12X)) {
+				busSemaphore_event.notify();
+			}
 
 		}
 

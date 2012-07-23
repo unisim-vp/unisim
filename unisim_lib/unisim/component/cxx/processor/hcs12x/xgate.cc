@@ -651,6 +651,8 @@ void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
 
 	MMC_DATA mmc_data;
 
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
 	mmc_data.buffer = ins;
 	mmc_data.data_size = nByte;
 

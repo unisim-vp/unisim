@@ -46,6 +46,7 @@ set addressclass {uint16_t}
 decl {
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 #include <unisim/component/cxx/processor/hcs12x/xgate.hh>
+#include <unisim/component/cxx/processor/hcs12x/types.hh>
 
 #include <iostream>
 #include <iosfwd>
@@ -190,16 +191,16 @@ semaphore.execute = {
 
 	switch (b2) {
 	case 0: /* CSEM IMM3 */ {
-		cpu->unlockSemaphore(XGATE::TSemaphore::XGATE, b1);
+		cpu->unlockSemaphore(TSemaphore::XGATE, b1);
 	} break;
 	case 1: /* CSEM RS */ {
-		cpu->unlockSemaphore(XGATE::TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007);
+		cpu->unlockSemaphore(TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007);
 	} break;
 	case 2: /* SSEM IMM3 */ {
-		cpu->lockSemaphore(XGATE::TSemaphore::XGATE, b1);
+		cpu->lockSemaphore(TSemaphore::XGATE, b1);
 	} break;
 	case 3: /* SSEM RS */ {
-		cpu->lockSemaphore(XGATE::TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007);
+		cpu->lockSemaphore(TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007);
 	} break;
 	}
 

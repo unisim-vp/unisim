@@ -285,15 +285,13 @@ Run() {
 			continue;
 		} else {
 			state = RUNNING;
-			address_t newPC;
 
-			cout << "XGATE::Run  getVec of channelID " << (unsigned int) channelID << " : vector= " << std::hex << (unsigned int) (getXGVBR() + channelID * 4) << endl;
+			cout << "XGATE::Run  getVec of channelID " << std::hex << (unsigned int) channelID << " : vector= " << std::hex << (unsigned int) (getXGVBR() + channelID * 4) << endl;
 
-			busRead(getXGVBR() + channelID * 4, &newPC, 2);
+			address_t newPC = memRead16(getXGVBR() + channelID * 4);
 			setXGPC(newPC);
 
-			uint16_t variablePtr;
-			busRead(getXGVBR() + channelID * 4 + 2, &variablePtr, 2);
+			uint16_t variablePtr = memRead16(getXGVBR() + channelID * 4 + 2);
 			setXGRx(variablePtr, 1);
 
 			setXGCHID(channelID);
@@ -514,22 +512,15 @@ void S12XGATE::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 void S12XGATE::busWrite(address_t addr, void *buffer, uint32_t size)
 {
-	MMC_DATA mmc_data;
-
-	mmc_data.type = ADDRESS::EXTENDED;
-	mmc_data.isGlobal = false;
-	mmc_data.buffer = buffer;
-	mmc_data.data_size = size;
-
 
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
 	trans->set_command( tlm::TLM_WRITE_COMMAND );
 	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *) &mmc_data );
+	trans->set_data_ptr( (unsigned char *) buffer );
 
-	trans->set_data_length( sizeof(MMC_DATA) );
-	trans->set_streaming_width( sizeof(MMC_DATA) );
+	trans->set_data_length( size );
+	trans->set_streaming_width( size );
 
 	trans->set_byte_enable_ptr( 0 );
 	trans->set_dmi_allowed( false );
@@ -546,21 +537,14 @@ void S12XGATE::busWrite(address_t addr, void *buffer, uint32_t size)
 void S12XGATE::busRead(address_t addr, void *buffer, uint32_t size)
 {
 
-	MMC_DATA mmc_data;
-
-	mmc_data.type = ADDRESS::EXTENDED;
-	mmc_data.isGlobal = false;
-	mmc_data.buffer = buffer;
-	mmc_data.data_size = size;
-
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
 	trans->set_command( tlm::TLM_READ_COMMAND );
 	trans->set_address( addr );
-	trans->set_data_ptr( (unsigned char *) &mmc_data );
+	trans->set_data_ptr( (unsigned char *) buffer );
 
-	trans->set_data_length( sizeof(MMC_DATA) );
-	trans->set_streaming_width( sizeof(MMC_DATA) );
+	trans->set_data_length( size );
+	trans->set_streaming_width( size );
 
 	trans->set_byte_enable_ptr( 0 );
 	trans->set_dmi_allowed( false );

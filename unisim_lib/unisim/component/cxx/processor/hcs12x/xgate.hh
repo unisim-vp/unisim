@@ -124,6 +124,7 @@ using unisim::component::cxx::processor::hcs12x::MMC_DATA;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::Exception;
 using unisim::component::cxx::processor::hcs12x::AsynchronousException;
+using unisim::component::cxx::processor::hcs12x::TSemaphore;
 
 class XGCCR_t
 {
@@ -215,41 +216,6 @@ class XGATE :
 public:
 	static const uint8_t MAX_INS_SIZE = 2;
 
-
-	class TSemaphore {
-	public:
-		enum OWNER { UNKNOWN, CPU12X, XGATE };
-
-		TSemaphore() : locked(false), who(UNKNOWN) {}
-		~TSemaphore() { }
-
-		bool isLocked() { return (locked); }
-		OWNER getLocker() { return (who); }
-
-		bool lock(OWNER who) {
-			if (!locked) {
-				locked = true;
-				this->who = who;
-				return (true);
-			}
-
-			return (false);
- 		}
-
-		bool unlock(OWNER who)  {
-			if (locked && (this->who == who)) {
-				locked = false;
-				this->who = UNKNOWN;
-				return (true);
-			}
-
-			return (false);
-		}
-
-	private:
-		bool  locked;
-		OWNER who;
-	};
 
 	//=========================================================
 	//=                XGATE MODES                            =
@@ -578,6 +544,8 @@ inline uint8_t XGATE::memRead8(address_t logicalAddress) {
 	uint8_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
@@ -593,6 +561,8 @@ inline uint16_t XGATE::memRead16(address_t logicalAddress) {
 	uint16_t data;
 	MMC_DATA mmc_data;
 
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 
@@ -609,6 +579,8 @@ inline void XGATE::memWrite8(address_t logicalAddress,uint8_t data) {
 
 	MMC_DATA mmc_data;
 
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 1;
 
@@ -624,6 +596,8 @@ inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data) {
 
 	data = Host2BigEndian(data);
 
+	mmc_data.type = ADDRESS::EXTENDED;
+	mmc_data.isGlobal = false;
 	mmc_data.buffer = &data;
 	mmc_data.data_size = 2;
 

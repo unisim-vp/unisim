@@ -456,10 +456,12 @@ inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
 
 	if ((cpu_address >= XGATE_RAM_LOW_OFFSET) && (cpu_address <= XGATE_RAM_HIGH_OFFSET)) { // Access to RAM
 		address = XGATE_RAM_BASE_ADDRESS + cpu_address;
+		std::cout << "MMC::XGATE::RAM physical addr=0x" << std::hex << address << std::endl;
 	}
 
 	if ((cpu_address >= XGATE_FLASH_LOW_OFFSET) && (cpu_address <= XGATE_FLASH_HIGH_OFFSET)) { // Access to Flash
 		address = XGATE_FLASH_BASE_ADDRESS + cpu_address;
+		std::cout << "MMC::XGATE::FLASH physical addr=0x" << std::hex << address << std::endl;
 	}
 
 	return (address);

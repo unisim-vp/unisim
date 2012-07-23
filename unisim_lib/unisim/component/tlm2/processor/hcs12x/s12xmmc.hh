@@ -79,6 +79,7 @@ using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
+using unisim::component::cxx::processor::hcs12x::TSemaphore;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;
@@ -112,6 +113,9 @@ private:
 
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
+
+	TSemaphore busSemaphore;
+	sc_event   busSemaphore_event;
 
 	struct {
 		address_t	start_address;

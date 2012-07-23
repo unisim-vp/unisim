@@ -66,6 +66,42 @@ public:
 	uint32_t data_size;
 };
 
+
+class TSemaphore {
+public:
+	enum OWNER { UNKNOWN, CPU12X, XGATE };
+
+	TSemaphore() : locked(false), who(UNKNOWN) {}
+	~TSemaphore() { }
+
+	bool isLocked() { return (locked); }
+	OWNER getLocker() { return (who); }
+
+	bool lock(OWNER who) {
+		if (!locked) {
+			locked = true;
+			this->who = who;
+			return (true);
+		}
+
+		return (false);
+		}
+
+	bool unlock(OWNER who)  {
+		if (locked && (this->who == who)) {
+			locked = false;
+			this->who = UNKNOWN;
+			return (true);
+		}
+
+		return (false);
+	}
+
+private:
+	bool  locked;
+	OWNER who;
+};
+
 } // end hcs12x namespace
 } // end processor namespace
 } // end cxx namespace
