@@ -182,6 +182,9 @@ public:
 	static const uint8_t UPPAGE_1			= 0xFD;		// unpaged FLASH page 0xFD -> 0x4000-0x7FFF
 	static const uint8_t UPPAGE_2			= 0xFF;		// unpaged FLASH page 0xFF -> 0xC000-0xFFFF
 
+	static const uint8_t XGATE_RAM_PAGE	= 0xF8;
+	static const uint8_t XGATE_FLASH_PAGE	= 0xE0;
+
 	static const uint8_t MMCCTL0_RESET		= 0x00;
 	// MODC=1, MODB=0, MODA=0 => Normal single-chip
 	static const uint8_t MMC_MODE_RESET		= 0x80;
@@ -455,13 +458,13 @@ inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
 	physical_address_t address = cpu_address;
 
 	if ((cpu_address >= XGATE_RAM_LOW_OFFSET) && (cpu_address <= XGATE_RAM_HIGH_OFFSET)) { // Access to RAM
-		address = XGATE_RAM_BASE_ADDRESS + cpu_address;
-		std::cout << "MMC::XGATE::RAM physical addr=0x" << std::hex << address << std::endl;
+		address = ((physical_address_t) XGATE_RAM_PAGE << RAM_ADDRESS_SIZE) | ((address_t) RAM_ADDRESS_BITS & cpu_address);
 	}
 
 	if ((cpu_address >= XGATE_FLASH_LOW_OFFSET) && (cpu_address <= XGATE_FLASH_HIGH_OFFSET)) { // Access to Flash
-		address = XGATE_FLASH_BASE_ADDRESS + cpu_address;
-		std::cout << "MMC::XGATE::FLASH physical addr=0x" << std::hex << address << std::endl;
+		static const physical_address_t shifted_gpage = 0x1 << (FLASH_ADDRESS_SIZE + 8); // 1 PPAGE CPUAddr
+
+		address = (shifted_gpage | ((physical_address_t) XGATE_FLASH_PAGE << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_ADDRESS_BITS & cpu_address));
 	}
 
 	return (address);

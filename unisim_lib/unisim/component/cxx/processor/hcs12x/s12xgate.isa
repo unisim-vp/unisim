@@ -212,10 +212,10 @@ op single_register(0b00000[5]:reg1[3]:0b111101[6]:b[2])
 
 single_register.getCycles = {
 	switch (b) {
-	case 0: /* SEX RD */ break;
-	case 1: /* PAR RD */ break;
+	case 0: /* SEX RD */ return 1;
+	case 1: /* PAR RD */ return 1;
 	case 2: /* JAL RD */ return 2;
-	case 3: /* SIF RS */ break;
+	case 3: /* SIF RS */ return 2;
 	}
 
 }
@@ -247,8 +247,40 @@ single_register.disasm = {
 single_register.execute = {
 
 	switch (b) {
-	case 0: /* SEX RD */ break;
-	case 1: /* PAR RD */ break;
+	case 0: /* SEX RD */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1) & 0x00FF;
+		uint16_t mask = cpu->getXGRx(reg1) & 0x0080;
+		if (mask != 0) {
+			for (uint8_t i=0; i<8; i++) {
+				mask = mask << 1;
+				reg1_val = reg1_val | mask;
+			}
+		}
+
+		cpu->setXGRx(reg1_val, reg1);
+
+		cpu->ccr->clrV();
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+	} break;
+	case 1: /* PAR RD */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t mask = 1;
+		uint8_t count = 0;
+		for (uint8_t i=0; i<16; i++) {
+			if ((reg1_val & mask) != 0) {
+				count = count + 1;
+			}
+			mask = mask << 1;
+		}
+
+		cpu->ccr->clrN();
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		cpu->ccr->clrV();
+		if ((count % 2) != 0) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+	} break;
 	case 2: /* JAL RD */ {
 		uint16_t oldPC = cpu->getXGPC();
 		cpu->setXGPC(cpu->getXGRx(reg1));
@@ -265,7 +297,15 @@ single_register.execute = {
 
 op special_move(0b00000[5]:reg1[3]:0b111110[6]:b[2])
 
-special_move.getCycles = { return 0;}
+special_move.getCycles = {
+	switch (b) {
+	case 0: /* TFR RD, CCR */ return 1;
+	case 1: /* TFR CCR, RS */ return 1;
+	case 2: /* TFR RD, PC */ return 1;
+	case 3: /* not used */ break;
+	}
+
+}
 
 special_move.disasm = {
 
@@ -292,9 +332,16 @@ special_move.disasm = {
 special_move.execute = {
 
 	switch (b) {
-	case 0: /* TFR RD, CCR */ break;
-	case 1: /* TFR CCR, RS */ break;
-	case 2: /* TFR RD, PC */ break;
+	case 0: /* TFR RD, CCR */ {
+		cpu->setXGRx(0x000F & cpu->ccr->getCCR(), reg1);
+	} break;
+	case 1: /* TFR CCR, RS */ {
+
+		cpu->ccr->setCCR(cpu->getXGRx(reg1) & 0x000F);
+	} break;
+	case 2: /* TFR RD, PC */ {
+		cpu->setXGRx(cpu->getXGPC() + 2, reg1);
+	} break;
 	case 3: /* not used */ break;
 	}
 
@@ -358,7 +405,29 @@ shift_dyadic.disasm = {
 shift_dyadic.execute = {
 
 	switch (b) {
-	case 0: /* BFFO RD, RS */ break;
+	case 0: /* BFFO RD, RS */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		cpu->setXGRx(0, reg1);
+		cpu->ccr->clrC();
+
+		if (reg2_val == 0) {
+			cpu->ccr->setC();
+		} else {
+			uint16_t mask = 0x8000;
+			for (uint8_t i=16; i > 0; i--) {
+				if ((reg2_val & mask) != 0) {
+					cpu->setXGRx(i-1, reg1);
+					break;
+				}
+				mask = mask >> 1;
+			}
+		}
+
+		cpu->ccr->clrN();
+		cpu->ccr->clrV();
+		if (cpu->getXGRx(reg1) == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+	} break;
 	case 1: /* ASR RD, RS */ {
 		uint16_t val = cpu->getXGRx(reg1);
 
@@ -415,10 +484,77 @@ shift_dyadic.execute = {
 		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 
 	} break;
-	case 4: /* LSL RD, RS */ break;
-	case 5: /* LSR RD, RS */ break;
-	case 6: /* ROL RD, RS */ break;
-	case 7: /* ROR RD, RS */ break;
+	case 4: /* LSL RD, RS */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+
+		uint8_t n = (reg2_val > 15)? 16: reg2_val;
+
+		if (n != 0) {
+			uint16_t mask = 1 << (16 - n);
+
+			if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+			reg1_val = reg1_val << n;
+			cpu->setXGRx(reg1_val, reg1);
+		}
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	} break;
+	case 5: /* LSR RD, RS */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+
+		uint8_t n = (reg2_val > 15)? 16: reg2_val;
+
+		if (n != 0) {
+			uint16_t mask = 1 << (n - 1);
+
+			if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+			reg1_val = reg1_val >> n;
+			cpu->setXGRx(reg1_val, reg1);
+		}
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		cpu->ccr->clrN();
+
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	} break;
+	case 6: /* ROL RD, RS */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2) & 0x000F;
+
+		uint16_t mask = 0xffff << reg2_val;
+		uint16_t upper_bits = (reg1_val & mask) >> reg2_val;
+
+		reg1_val = (reg1_val << reg2_val) | upper_bits;
+		cpu->setXGRx(reg1_val, reg1);
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		cpu->ccr->clrV();
+
+	} break;
+	case 7: /* ROR RD, RS */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2) & 0x000F;
+
+		uint16_t mask = 0xffff >> reg2_val;
+		uint16_t lower_bits = (reg1_val & mask) << reg2_val;
+
+		reg1_val = (reg1_val >> reg2_val) | lower_bits;
+		cpu->setXGRx(reg1_val, reg1);
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		cpu->ccr->clrV();
+	} break;
 	}
 
 }
@@ -426,7 +562,19 @@ shift_dyadic.execute = {
 // Shift instructions immediate
 op shift_imm4(0b00001[5]:reg1[3]:imm4[4]:0b1[1]:b[3])
 
-shift_imm4.getCycles = { return 0;}
+shift_imm4.getCycles = {
+	switch (b) {
+	case 0: /* not used */ return 0;
+	case 1: /* ASR RD, #IMM4 */ return 1;
+	case 2: /* CSL RD, #IMM4 */ return 1;
+	case 3: /* CSR RD, #IMM4 */ return 1;
+	case 4: /* LSL RD, #IMM4 */ return 1;
+	case 5: /* LSR RD, #IMM4 */ return 1;
+	case 6: /* ROL RD, #IMM4 */ return 1;
+	case 7: /* ROR RD, #IMM4 */ return 1;
+	}
+
+}
 
 shift_imm4.disasm = {
 
@@ -491,12 +639,108 @@ shift_imm4.execute = {
 				if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 
 		} break;
-		case 2: /* CSL RD, #IMM4 */ break;
-		case 3: /* CSR RD, #IMM4 */ break;
-		case 4: /* LSL RD, #IMM4 */ break;
-		case 5: /* LSR RD, #IMM4 */ break;
-		case 6: /* ROL RD, #IMM4 */ break;
-		case 7: /* ROR RD, #IMM4 */ break;
+		case 2: /* CSL RD, #IMM4 */ {
+			uint16_t val = cpu->getXGRx(reg1);
+
+			uint8_t shift = (imm4 == 0)? 16: imm4;
+			uint16_t carry_mask = 0x8000 >> (16 - shift);
+			if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+			val = (val << shift) | (val >> (16 - shift));
+
+			cpu->setXGRx(val, reg1);
+
+			if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+		} break;
+		case 3: /* CSR RD, #IMM4 */ {
+			uint16_t val = cpu->getXGRx(reg1);
+
+			uint8_t shift = (imm4 == 0)? 16: imm4;
+			uint16_t carry_mask = 0x0001 << (shift - 1);
+			if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+
+			val = (val >> shift) | (val << (16 - shift));
+
+			cpu->setXGRx(val, reg1);
+
+			if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+		} break;
+		case 4: /* LSL RD, #IMM4 */ {
+			uint16_t reg1_val = cpu->getXGRx(reg1);
+
+			uint8_t n = (imm4 == 0)? 16: imm4;
+
+			if (n != 0) {
+				uint16_t mask = 1 << (16 - n);
+
+				if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+				reg1_val = reg1_val << n;
+				cpu->setXGRx(reg1_val, reg1);
+			}
+
+			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+		} break;
+		case 5: /* LSR RD, #IMM4 */ {
+			uint16_t reg1_val = cpu->getXGRx(reg1);
+
+			uint8_t n = (imm4 > 15)? 16: imm4;
+
+			if (n != 0) {
+				uint16_t mask = 1 << (n - 1);
+
+				if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+				reg1_val = reg1_val >> n;
+				cpu->setXGRx(reg1_val, reg1);
+			}
+
+			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			cpu->ccr->clrN();
+
+			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+		} break;
+		case 6: /* ROL RD, #IMM4 */ {
+			uint16_t reg1_val = cpu->getXGRx(reg1);
+
+			uint16_t mask = 0xffff << imm4;
+			uint16_t upper_bits = (reg1_val & mask) >> imm4;
+
+			reg1_val = (reg1_val << imm4) | upper_bits;
+			cpu->setXGRx(reg1_val, reg1);
+
+			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+			cpu->ccr->clrV();
+
+		} break;
+		case 7: /* ROR RD, #IMM4 */ {
+			uint16_t reg1_val = cpu->getXGRx(reg1);
+
+			uint16_t mask = 0xffff >> imm4;
+			uint16_t lower_bits = (reg1_val & mask) << imm4;
+
+			reg1_val = (reg1_val >> imm4) | lower_bits;
+			cpu->setXGRx(reg1_val, reg1);
+
+			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+			cpu->ccr->clrV();
+
+		} break;
 		}
 	}
 	}
@@ -555,7 +799,17 @@ logical_triadic.execute = {
 
 		} break;
 		case 1: /* not used */ break;
-		case 2: /* OR Rd, RS1, RS2 */ break;
+		case 2: /* OR Rd, RS1, RS2 */ {
+
+			uint16_t val = cpu->getXGRx(reg2) | cpu->getXGRx(reg3);
+			cpu->setXGRx(val, reg1);
+
+			cpu->ccr->clrV();
+
+			if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+			if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+		} break;
 		case 3: /* XNOR RD, RS1, RS2 */ {
 
 			uint16_t val = cpu->getXGRx(reg2);
@@ -578,8 +832,8 @@ op arithmetic_triadic(0b00011[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
 
 arithmetic_triadic.getCycles = {
 	switch (b) {
-	case 0: /* SUB RD, RS1, RS2 */ break;
-	case 1: /* SBC RD, RS1, RS2 */ break;
+	case 0: /* SUB RD, RS1, RS2 */ return 1;
+	case 1: /* SBC RD, RS1, RS2 */ return 1;
 	case 2: /* ADD RD, RS1, RS2 */ return 1;
 	case 3: /* ADC RD, RS1, RS2 */ return 1;
 	}
@@ -614,8 +868,48 @@ arithmetic_triadic.disasm = {
 arithmetic_triadic.execute = {
 
 	switch (b) {
-	case 0: /* SUB RD, RS1, RS2 */ break;
-	case 1: /* SBC RD, RS1, RS2 */ break;
+	case 0: /* SUB RD, RS1, RS2 */ {
+
+		uint16_t result;
+		uint8_t carry_out, overflow, sign;
+
+		uint16_t rd_reg = cpu->getXGRx(reg1);
+		uint16_t rs1_reg = cpu->getXGRx(reg2);
+		uint16_t rs2_reg = cpu->getXGRx(reg3);
+
+		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
+
+		cpu->setXGRx(rd_reg, reg1);
+
+		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+
+		if (rd_reg == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((rd_reg & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+
+	} break;
+	case 1: /* SBC RD, RS1, RS2 */ {
+
+		uint16_t result;
+		uint8_t carry_out, overflow, sign;
+		uint8_t carry_in = cpu->ccr->getC();
+
+		uint16_t rd_reg = cpu->getXGRx(reg1);
+		uint16_t rs1_reg = cpu->getXGRx(reg2);
+		uint16_t rs2_reg = cpu->getXGRx(reg3);
+
+		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
+
+		cpu->setXGRx(rd_reg, reg1);
+
+		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+
+		if (rd_reg == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((rd_reg & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	} break;
 	case 2: /* ADD RD, RS1, RS2 */ {
 
 		uint16_t result;
@@ -665,7 +959,63 @@ arithmetic_triadic.execute = {
 // Branches
 op branches(0b001[3]:b1[3]:b2[1]:rel[9])
 
-branches.getCycles = { return 0;}
+branches.getCycles = {
+	switch (b1) {
+	case 0: /* BCC REL9 ; BCS REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 1: /* BNE REL9 ; BEQ REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 2: /* BPL REL9 ; BMI REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 3: /* BVC REL9 ; BVS REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 4: /* BHI REL9 ; BLS REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 5: /* BGE REL9 ; BLT REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 6: /* BGT REL9 ; BLE REL9 */ {
+		if (b2 == 0) {
+			return 2;
+		} else {
+			return 2;
+		}
+	} break;
+	case 7: /* BRA REL10 */ {
+		return 2;
+	} break;
+	}
+
+}
 
 branches.disasm = {
 
@@ -813,10 +1163,10 @@ op ld_st_offs5(0b010[3]:b[2]:reg1[3]:reg2[3]:offs5[5])
 
 ld_st_offs5.getCycles = {
 	switch (b) {
-	case 0: /* LDB RD, (RB, #OFFS5) */ break;
-	case 1: return 2;
-	case 2: /* STB RD, (RB, #OFFS5) */ break;
-	case 3: /* STB RD, (RB, #OFFS5) */ break;
+	case 0: /* LDB RD, (RB, #OFFS5) */ return 2;
+	case 1: /* LDW RD, (RB, #OFFS5) */ return 2;
+	case 2: /* STB RD, (RB, #OFFS5) */ return 2;
+	case 3: /* STB RD, (RB, #OFFS5) */ return 2;
 	}
 
 }
@@ -849,20 +1199,40 @@ ld_st_offs5.disasm = {
 ld_st_offs5.execute = {
 
 	switch (b) {
-	case 0: /* LDB RD, (RB, #OFFS5) */ break;
-	case 1: /* LDW RD, (RB, #OFFS5) */ {
-		uint16_t val = cpu->memRead16(reg2+offs5);
+	case 0: /* LDB RD, (RB, #OFFS5) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t val = 0x00FF & cpu->memRead8(reg2_val + offs5);
 		cpu->setXGRx(val, reg1);
 	} break;
-	case 2: /* STB RD, (RB, #OFFS5) */ break;
-	case 3: /* STW RD, (RB, #OFFS5) */ break;
+	case 1: /* LDW RD, (RB, #OFFS5) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t val = cpu->memRead16(reg2_val + offs5);
+		cpu->setXGRx(val, reg1);
+	} break;
+	case 2: /* STB RD, (RB, #OFFS5) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		cpu->memWrite8(reg2_val + offs5, (cpu->getXGRx(reg1) & 0x00FF));
+	} break;
+	case 3: /* STW RD, (RB, #OFFS5) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		cpu->memWrite16(reg2_val + offs5, cpu->getXGRx(reg1));
+	} break;
 	}
 
 }
 
 op ldb(0b01100[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
 
-ldb.getCycles = { return 0;}
+ldb.getCycles = {
+		switch (b) {
+		case 0: /* LDB RD, (RD, RI) */ return 2;
+		case 1: /* LDB RD, (RD, RI+) */ return 2;
+		case 2: /* LDB RD, (RD, -RI) */ return 2;
+		case 3: {
+			// Bit Field instruction: BFEXT RD, RS1, RS2
+		} /*  */ break;
+		}
+}
 
 ldb.disasm = {
 
@@ -892,9 +1262,26 @@ ldb.disasm = {
 ldb.execute = {
 
 	switch (b) {
-	case 0: /* LDB RD, (RD, RI) */ break;
-	case 1: /* LDB RD, (RD, RI+) */ break;
-	case 2: /* LDB RD, (RD, -RI) */ break;
+	case 0: /* LDB RD, (RB, RI) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		uint8_t val = cpu->memRead8(reg2_val + reg3_val);
+		cpu->setXGRx(val & 0x00FF, reg1);
+	} break;
+	case 1: /* LDB RD, (RD, RI+) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		uint8_t val = cpu->memRead8(reg2_val + reg3_val);
+		cpu->setXGRx(val & 0x00FF, reg1);
+		cpu->setXGRx(reg3_val++, reg3);
+	} break;
+	case 2: /* LDB RD, (RD, -RI) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		uint8_t val = cpu->memRead8(reg2_val + (--reg3_val));
+		cpu->setXGRx(val & 0x00FF, reg1);
+		cpu->setXGRx(reg3_val, reg3);
+	} break;
 	case 3: {
 		// Bit Field instruction: BFEXT RD, RS1, RS2
 	} /*  */ break;
@@ -904,7 +1291,17 @@ ldb.execute = {
 
 op ldw(0b01101[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
 
-ldw.getCycles = { return 0;}
+ldw.getCycles = {
+	switch (b) {
+	case 0: /* LDW RD, (RD, RI) */ return 2;
+	case 1: /* LDW RD, (RD, RI+) */ return 2;
+	case 2: /* LDW RD, (RD, -RI) */ return 2;
+	case 3: {
+		// Bit Field instruction: BFINS RD, RS1, RS2
+	} /*  */ break;
+	}
+
+}
 
 ldw.disasm = {
 
@@ -932,9 +1329,26 @@ ldw.disasm = {
 ldw.execute = {
 
 	switch (b) {
-	case 0: /* LDW RD, (RD, RI) */ break;
-	case 1: /* LDW RD, (RD, RI+) */ break;
-	case 2: /* LDW RD, (RD, -RI) */ break;
+	case 0: /* LDW RD, (RD, RI) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		uint16_t val = cpu->memRead16(reg2_val + reg3_val);
+		cpu->setXGRx(val, reg1);
+	} break;
+	case 1: /* LDW RD, (RD, RI+) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		uint16_t val = cpu->memRead16(reg2_val + reg3_val);
+		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg3_val++, reg3);
+	} break;
+	case 2: /* LDW RD, (RD, -RI) */ {
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		uint16_t val = cpu->memRead16(reg2_val + (--reg3_val));
+		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg3_val, reg3);
+	} break;
 	case 3: {
 		// Bit Field instruction: BFINS RD, RS1, RS2
 	} /*  */ break;
@@ -944,7 +1358,16 @@ ldw.execute = {
 
 op stb(0b01110[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
 
-stb.getCycles = { return 0;}
+stb.getCycles = {
+	switch (b) {
+	case 0: /* STB RD, (RD, RI) */ return 2;
+	case 1: /* STB RD, (RD, RI+) */ return 2;
+	case 2: /* STB RD, (RD, -RI) */ return 2;
+	case 3: {
+		// Bit Field instruction: BFINSI RD, RS1, RS2
+	} /*  */ break;
+	}
+}
 
 stb.disasm = {
 
@@ -972,9 +1395,26 @@ stb.disasm = {
 stb.execute = {
 
 	switch (b) {
-	case 0: /* STB RD, (RD, RI) */ break;
-	case 1: /* STB RD, (RD, RI+) */ break;
-	case 2: /* STB RD, (RD, -RI) */ break;
+	case 0: /* STB RD, (RD, RI) */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		cpu->memWrite8(reg2_val + reg3_val, (reg1_val & 0x00FF));
+	} break;
+	case 1: /* STB RD, (RD, RI+) */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		cpu->memWrite8(reg2_val + reg3_val, (reg1_val & 0x00FF));
+		cpu->setXGRx(reg3_val++, reg3);
+	} break;
+	case 2: /* STB RD, (RD, -RI) */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+		cpu->memWrite8(reg2_val + (--reg3_val), (reg1_val & 0x00FF));
+		cpu->setXGRx(reg3_val, reg3);
+	} break;
 	case 3: {
 		// Bit Field instruction: BFINSI RD, RS1, RS2
 	} /*  */ break;
@@ -984,7 +1424,17 @@ stb.execute = {
 
 op stw(0b01111[5]:reg1[3]:reg2[3]:reg3[3]:b[2])
 
-stw.getCycles = { return 0;}
+stw.getCycles = {
+	switch (b) {
+	case 0: /* STW RD, (RD, RI) */ return 2;
+	case 1: /* STW RD, (RD, RI+) */ return 2;
+	case 2: /* STW RD, (RD, -RI) */ return 2;
+	case 3: {
+		// Bit Field instruction: BFINSX RD, RS1, RS2
+	} break;
+	}
+
+}
 
 stw.disasm = {
 
@@ -1012,17 +1462,32 @@ stw.disasm = {
 stw.execute = {
 
 	switch (b) {
-	case 0: /* STW RD, (RD, RI) */ break;
-	case 1: /* STW RD, (RD, RI+) */ {
-		uint16_t rs_reg = cpu->getXGRx(reg1);
-		uint16_t rb_reg = cpu->getXGRx(reg2);
-		uint16_t ri_reg = cpu->getXGRx(reg3);
+	case 0: /* STW RD, (RD, RI) */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
 
-		cpu->memWrite16(rb_reg + ri_reg, rs_reg);
-		ri_reg++;
+		cpu->memWrite16(reg2_val + reg3_val, reg1_val);
 
 	} break;
-	case 2: /* STW RD, (RD, -RI) */ break;
+	case 1: /* STW RD, (RD, RI+) */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+
+		cpu->memWrite16(reg2_val + reg3_val, reg1_val);
+		cpu->setXGRx(reg3_val++, reg3);
+
+	} break;
+	case 2: /* STW RD, (RD, -RI) */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+
+		cpu->memWrite16(reg2_val + (--reg3_val), reg1_val);
+		cpu->setXGRx(reg3_val, reg3);
+
+	} break;
 	case 3: {
 		// Bit Field instruction: BFINSX RD, RS1, RS2
 	} break;
@@ -1039,10 +1504,10 @@ logic_imm8.getCycles = {
 		case 1: /* ANDH RD, #IMM8 */ return 1;
 		case 2: /* BITL RD, #IMM8 */ return 1;
 		case 3: /* BITH RD, #IMM8 */ return 1;
-		case 4: /* ORL RD, #IMM8 */ break;
-		case 5: /* ORH RD, #IMM8 */ break;
-		case 6: /* XNORL RD, #IMM8 */ break;
-		case 7: /* XNORH RD, #IMM8 */ break;
+		case 4: /* ORL RD, #IMM8 */ return 1;
+		case 5: /* ORH RD, #IMM8 */ return 1;
+		case 6: /* XNORL RD, #IMM8 */ return 1;
+		case 7: /* XNORH RD, #IMM8 */ return 1;
 		}
 }
 
@@ -1095,7 +1560,7 @@ logic_imm8.execute = {
 
 		cpu->ccr->clrV();
 
-		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((result & 0x00FF) == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
 		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	} break;
@@ -1109,8 +1574,8 @@ logic_imm8.execute = {
 
 		cpu->ccr->clrV();
 
-		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((result & 0xFF00) == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	} break;
 	case 2: /* BITL RD, #IMM8 */ {
@@ -1133,10 +1598,52 @@ logic_imm8.execute = {
 		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 
 	} break;
-	case 4: /* ORL RD, #IMM8 */ break;
-	case 5: /* ORH RD, #IMM8 */ break;
-	case 6: /* XNORL RD, #IMM8 */ break;
-	case 7: /* XNORH RD, #IMM8 */ break;
+	case 4: /* ORL RD, #IMM8 */ {
+
+		uint16_t val = cpu->getXGRx(reg1) | (0x00FF & imm8);
+
+		cpu->setXGRx(val, reg1);
+
+		cpu->ccr->clrV();
+
+		if ((val & 0x00FF) == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	} break;
+	case 5: /* ORH RD, #IMM8 */ {
+
+		uint16_t val = cpu->getXGRx(reg1) | (imm8 << 8);
+
+		cpu->setXGRx(val, reg1);
+
+		cpu->ccr->clrV();
+
+		if ((val & 0xFF00) == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	} break;
+	case 6: /* XNORL RD, #IMM8 */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint8_t val = ~((reg1_val & 0x00FF) ^ imm8);
+		cpu->setXGRx((reg1_val & 0xFF00) | val , reg1);
+
+		cpu->ccr->clrV();
+
+		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	} break;
+	case 7: /* XNORH RD, #IMM8 */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t val = ~((reg1_val >> 8) ^ imm8);
+		cpu->setXGRx((reg1_val & 0x00FF) | (val << 8) , reg1);
+
+		cpu->ccr->clrV();
+
+		if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
+		if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+
+	} break;
 	}
 
 }
@@ -1147,14 +1654,14 @@ op arithmetic_imm8(0b11[2]:b[3]:reg1[3]:imm8[8])
 arithmetic_imm8.getCycles = {
 
 	switch (b) {
-	case 0: /* SUBL RD, #IMM8 */ break;
-	case 1: /* SUBH RD, #IMM8 */ break;
+	case 0: /* SUBL RD, #IMM8 */ return 1;
+	case 1: /* SUBH RD, #IMM8 */ return 1;
 	case 2: /* CMPL RS, #IMM8 */ return 1;
 	case 3: /* CPCH RS, #IMM8 */ return 1;
 	case 4: /* ADDL RD, #IMM8 */ return 1;
 	case 5: /* ADDH RD, #IMM8 */ return 1;
-	case 6: /* LDL RD, #IMM8 */ break;
-	case 7: /* LDH RD, #IMM8 */ break;
+	case 6: /* LDL RD, #IMM8 */ return 1;
+	case 7: /* LDH RD, #IMM8 */ return 1;
 	}
 
 }
@@ -1198,8 +1705,47 @@ arithmetic_imm8.disasm = {
 arithmetic_imm8.execute = {
 
 	switch (b) {
-	case 0: /* SUBL RD, #IMM8 */ break;
-	case 1: /* SUBH RD, #IMM8 */ break;
+	case 0: /* SUBL RD, #IMM8 */ {
+
+		uint8_t carry_out, overflow, sign;
+		uint16_t result;
+
+		uint8_t carry_in = 0;
+
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		Sub16(result, carry_out, overflow, sign, reg1_val, imm8, carry_in);
+
+		cpu->setXGRx(result, reg1);
+
+		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+
+		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	} break;
+	case 1: /* SUBH RD, #IMM8 */ {
+
+		uint8_t carry_out, overflow, sign;
+		uint16_t result;
+
+		uint8_t carry_in = 0;
+
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+		uint16_t to_subract = (imm8 << 8);
+
+		Sub16(result, carry_out, overflow, sign, reg1_val, to_subract, carry_in);
+
+		cpu->setXGRx(result, reg1);
+
+		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
+		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
+
+		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
+		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
+
+	} break;
 	case 2: /* CMPL RS, #IMM8 */ {
 		uint8_t result, carry_out, overflow, carry_in, sign;
 
@@ -1267,8 +1813,15 @@ arithmetic_imm8.execute = {
 
 
 	} break;
-	case 6: /* LDL RD, #IMM8 */ break;
-	case 7: /* LDH RD, #IMM8 */ break;
+	case 6: /* LDL RD, #IMM8 */ {
+		uint16_t val = 0x00FF & imm8;
+		cpu->setXGRx(val, reg1);
+	} break;
+	case 7: /* LDH RD, #IMM8 */ {
+		uint16_t val = cpu->getXGRx(reg1);
+		val = (val & 0x00FF) | (imm8 << 8);
+		cpu->setXGRx(val, reg1);
+	} break;
 	}
 
 }
