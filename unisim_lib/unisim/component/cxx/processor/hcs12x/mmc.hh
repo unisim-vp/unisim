@@ -221,9 +221,11 @@ public:
     ~MMC();
 
     static inline physical_address_t getCPU12XPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload = false, uint8_t debug_page = 0xFF);
-    static inline physical_address_t getXGATEPhysicalAddress(address_t logicalAddress);
     static inline physical_address_t getCPU12XPagedAddress(address_t logicalAddress);
-	static inline bool isPaged(address_t addr, page_t page, bool isGlobal, bool debugload);
+    static inline bool isPaged(address_t addr, page_t page, bool isGlobal, bool debugload);
+
+    static inline physical_address_t getXGATEPhysicalAddress(address_t logicalAddress);
+    static inline physical_address_t getXGATEPagedAddress(address_t logicalAddress);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -469,6 +471,22 @@ inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
 
 	return (address);
 }
+
+inline physical_address_t MMC::getXGATEPagedAddress(address_t cpu_address) {
+
+	physical_address_t address = cpu_address;
+
+	if ((cpu_address >= XGATE_RAM_LOW_OFFSET) && (cpu_address <= XGATE_RAM_HIGH_OFFSET)) { // Access to RAM
+		address = (((physical_address_t) XGATE_RAM_PAGE << (sizeof(address_t) * 8)) | cpu_address);
+	}
+
+	if ((cpu_address >= XGATE_FLASH_LOW_OFFSET) && (cpu_address <= XGATE_FLASH_HIGH_OFFSET)) { // Access to Flash
+		address = (((physical_address_t) XGATE_FLASH_PAGE << (sizeof(address_t) * 8)) | cpu_address);
+	}
+
+	return (address);
+}
+
 
 //=====================================================================
 //=             registers setters and getters                         =

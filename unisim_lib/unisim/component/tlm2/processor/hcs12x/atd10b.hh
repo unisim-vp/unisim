@@ -310,8 +310,8 @@ private:
 	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
 	 */
 	double analog_signal[ATD_SIZE];
-	int start_scan_at;
-	Parameter<int> param_start_scan_at;
+//	int start_scan_at;
+//	Parameter<int> param_start_scan_at;
 
 	struct data_t {
 		double volte[ATD_SIZE];

@@ -479,6 +479,7 @@ uint8_t XGATE::step()
 			*logger << DebugInfo << "Starting step at PC = 0x" << std::hex << getXGPC() << std::dec << std::endl << EndDebugInfo;
 
 		if(debug_control_import) {
+
 			DebugControl<physical_address_t>::DebugCommand dbg_cmd;
 
 			do {
@@ -486,7 +487,7 @@ uint8_t XGATE::step()
 					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getXGPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getCPU12XPagedAddress(getXGPC()));
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getXGATEPagedAddress(getXGPC()));
 
 				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
@@ -618,7 +619,7 @@ uint8_t XGATE::step()
 
 		if(requires_finished_instruction_reporting) {
 			if(memory_access_reporting_import) {
-				memory_access_reporting_import->ReportFinishedInstruction(MMC::getCPU12XPagedAddress(lastPC), MMC::getCPU12XPagedAddress(getXGPC()));
+				memory_access_reporting_import->ReportFinishedInstruction(MMC::getXGATEPagedAddress(lastPC), MMC::getXGATEPagedAddress(getXGPC()));
 
 			}
 		}

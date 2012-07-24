@@ -248,10 +248,11 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[3]) >> atd0->memory_export;
 	*(memoryImportExportTee->memory_import[4]) >> pwm->memory_export;
 	*(memoryImportExportTee->memory_import[5]) >> ect->memory_export;
+	*(memoryImportExportTee->memory_import[6]) >> xgate->memory_export;
 
-	*(memoryImportExportTee->memory_import[6]) >> global_ram->memory_export;
-	*(memoryImportExportTee->memory_import[7]) >> global_eeprom->memory_export;
-	*(memoryImportExportTee->memory_import[8]) >> global_flash->memory_export;
+	*(memoryImportExportTee->memory_import[7]) >> global_ram->memory_export;
+	*(memoryImportExportTee->memory_import[8]) >> global_eeprom->memory_export;
+	*(memoryImportExportTee->memory_import[9]) >> global_flash->memory_export;
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
@@ -264,6 +265,7 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[5]) >> atd0->registers_export;
 	*(registersTee->registers_import[6]) >> pwm->registers_export;
 	*(registersTee->registers_import[7]) >> ect->registers_export;
+	*(registersTee->registers_import[8]) >> xgate->registers_export;
 
 // ***********************************************************
 	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
@@ -287,6 +289,8 @@ Simulator::Simulator(int argc, char **argv)
 		}
 
 		// Connect debugger to CPU
+		xgate->debug_control_import >> debugger->debug_control_export;
+
 		cpu->debug_control_import >> debugger->debug_control_export;
 		cpu->trap_reporting_import >> debugger->trap_reporting_export;
 		debugger->disasm_import >> cpu->disasm_export;
@@ -297,6 +301,7 @@ Simulator::Simulator(int argc, char **argv)
 		pwm->trap_reporting_import >> debugger->trap_reporting_export;
 		atd0->trap_reporting_import >> debugger->trap_reporting_export;
 		atd1->trap_reporting_import >> debugger->trap_reporting_export;
+		xgate->trap_reporting_import >> debugger->trap_reporting_export;
 
 		mmc->trap_reporting_import >> debugger->trap_reporting_export;
 
@@ -485,7 +490,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.debug-enabled", false);
 	simulator->SetVariable("ATD0.use-atd-stub", false);
 	simulator->SetVariable("ATD0.atd-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("ATD0.start-scan-at", 900);
+//	simulator->SetVariable("ATD0.start-scan-at", 900);
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
@@ -498,7 +503,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.debug-enabled", false);
 	simulator->SetVariable("ATD1.use-atd-stub", false);
 	simulator->SetVariable("ATD1.atd-anx-stimulus-file", "ATD.xml");
-	simulator->SetVariable("ATD1.start-scan-at", 900);
+//	simulator->SetVariable("ATD1.start-scan-at", 900);
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
@@ -513,7 +518,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.software_channel_id[7]", 0x32);
 	simulator->SetVariable("XGATE.software-error-interrupt", 0x62);
 
-	simulator->SetVariable("XGATE.trace-enable", true);
+	simulator->SetVariable("XGATE.trace-enable", false);
 	simulator->SetVariable("XGATE.verbose-all", false);
 	simulator->SetVariable("XGATE.verbose-setup", false);
 	simulator->SetVariable("XGATE.verbose-step", false);
@@ -530,6 +535,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.verbose-tlm-run-thread", false);
 	simulator->SetVariable("XGATE.verbose-tlm-commands", false);
 	simulator->SetVariable("XGATE.trap-on-instruction-counter", -1);
+	simulator->SetVariable("XGATE.enable-fine-timing", true);
+
 
 	simulator->SetVariable("CPU.trace-enable", false);
 	simulator->SetVariable("CPU.verbose-all", false);
@@ -548,6 +555,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
+	simulator->SetVariable("CPU.enable-fine-timing", true);
 
 	simulator->SetVariable("CRG.oscillator-clock", 125000);
 	simulator->SetVariable("CRG.base-address", 0x34);

@@ -259,6 +259,8 @@ Run() {
 
 		sc_time & time_per_instruction = opCyclesArray[opCycles];
 
+		cpu_time += time_per_instruction;
+
 		if (enable_fine_timing) {
 			if (debug_enabled) {
 				std::cerr << "HCS12X: time_per_instruction=" << time_per_instruction << std::endl;
@@ -266,7 +268,6 @@ Run() {
 			
 			wait(time_per_instruction);
 		} else {
-			cpu_time += time_per_instruction;
 			if(cpu_time >= next_nice_time) {
 				next_nice_time = cpu_time + nice_time;
 				Synchronize();

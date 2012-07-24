@@ -343,7 +343,7 @@ tlm_sync_enum XINT::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& 
 
 		}
 
-//		std::cout << "XINT::handled_interrupt 0x" << std::hex << (unsigned int) (buffer->getID() * 2) << std::endl;
+//		std::cerr << "XINT::handled_interrupt 0x" << std::hex << (unsigned int) (buffer->getID() * 2) << "  @ " << sc_time_stamp().to_seconds() << std::endl;
 
 		retry_event.notify();
 	}

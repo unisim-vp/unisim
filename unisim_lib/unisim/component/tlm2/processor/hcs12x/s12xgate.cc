@@ -89,13 +89,6 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 
 	interrupt_request(*this);
 
-	/**
-	 * TODO: I have to:
-	 *  - I have merge asyncIntThread() and getIntVect() because in the case of XGATE the S12X_INT hasn't need IPL
-	 *  - Because XGATE thread aren't interruptible, I have to migrate "asyncintThread" to non-blocking request to do not block the S12X_INT.
-	 */
-
-//	interrupt_request.register_b_transport(this, &S12XGATE::asyncIntThread);
 	target_socket.register_b_transport(this, &S12XGATE::read_write);
 	bus_clock_socket.register_b_transport(this, &S12XGATE::updateBusClock);
 
@@ -305,19 +298,25 @@ Run() {
 
 			sc_time & time_per_instruction = opCyclesArray[opCycles];
 
+			cpu_time += time_per_instruction;
+
 			if (enable_fine_timing) {
+
 				if (debug_enabled) {
 					std::cerr << "XGATE: time_per_instruction=" << time_per_instruction << std::endl;
 				}
 
 				wait(time_per_instruction);
+
 			} else {
-				cpu_time += time_per_instruction;
+
 				if(cpu_time >= next_nice_time) {
 					next_nice_time = cpu_time + nice_time;
 					Synchronize();
 				}
+
 			}
+
 		}
 
 	}
@@ -471,7 +470,7 @@ void S12XGATE::Synchronize()
 	sc_time time_spent = cpu_time - last_cpu_time;
 	last_cpu_time = cpu_time;
 	if (debug_enabled) {
-		std::cerr << "HCS12X: time_spent=" << time_spent << std::endl;
+		std::cerr << "S12XGATE: time_spent=" << time_spent << std::endl;
 	}
 	wait(time_spent);
 	cpu_time = sc_time_stamp();
@@ -518,7 +517,7 @@ void S12XGATE::busWrite(address_t addr, void *buffer, uint32_t size)
 	initiator_socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
-		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
+		SC_REPORT_ERROR("S12XGATE : ", "Response error from b_transport");
 
 	trans->release();
 }
@@ -542,7 +541,7 @@ void S12XGATE::busRead(address_t addr, void *buffer, uint32_t size)
 	initiator_socket->b_transport( *trans, tlm2_btrans_time );
 
 	if (trans->is_response_error() )
-		SC_REPORT_ERROR("HCS12X : ", "Response error from b_transport");
+		SC_REPORT_ERROR("S12XGATE : ", "Response error from b_transport");
 
 	trans->release();
 }

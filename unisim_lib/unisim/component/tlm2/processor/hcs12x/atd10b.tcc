@@ -94,8 +94,8 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	use_atd_stub(false),
 	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
 
-	start_scan_at(900),
-	param_start_scan_at("start-scan-at", this, start_scan_at, "ATD start scan at <delay> ms"),
+//	start_scan_at(900),
+//	param_start_scan_at("start-scan-at", this, start_scan_at, "ATD start scan at <delay> ms"),
 
 	atd_anx_stimulus_file(""),
 	param_atd_anx_stimulus_file("atd-anx-stimulus-file", this, atd_anx_stimulus_file),
@@ -339,8 +339,8 @@ void ATD10B<ATD_SIZE>::Process()
 	int atd_data_size = atd_vect.size();
 
 	// wait before scanning ATD
-	sc_time delay(start_scan_at, SC_MS);
-	wait(delay);
+//	sc_time delay(start_scan_at, SC_MS);
+//	wait(delay);
 
 	while(1)
 	{
