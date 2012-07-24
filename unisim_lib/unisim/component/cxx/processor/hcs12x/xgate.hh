@@ -290,7 +290,11 @@ public:
 
 	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag = false) = 0;
 
-	virtual void assertChannelInterrupt(uint8_t offset) {
+	void assert_software_error_interrupt() {
+		assertInterrupt(interrupt_software_error, false);
+	}
+
+	void assertChannelInterrupt(uint8_t offset) {
 		uint8_t reg_index = offset / 8;
 		uint8_t flag_index = offset % 8;
 		xgif_register[reg_index] = xgif_register[reg_index] | (1 << flag_index);
@@ -431,8 +435,8 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-	uint64_t trap_on_instruction_counter;
-	Parameter<uint64_t> param_trap_on_instruction_counter;
+	uint64_t periodic_trap;
+	Parameter<uint64_t> param_periodic_trap;
 
 	/** indicates if the memory accesses require to be reported */
 	bool requires_memory_access_reporting;
@@ -473,8 +477,6 @@ private:
 	std::map<std::string, Register *> registers_registry;
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
-	uint8_t				interrupt_software_trigger_base;
-	Parameter<uint8_t>	param_interrupt_software_trigger_base;
 	uint8_t				interrupt_software_error;
 	Parameter<uint8_t>	param_interrupt_software_error;
 

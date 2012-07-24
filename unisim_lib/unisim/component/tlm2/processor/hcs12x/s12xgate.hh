@@ -105,10 +105,6 @@ public:
 	tlm_utils::simple_target_socket<S12XGATE> target_socket;
 	tlm_utils::simple_target_socket<S12XGATE> bus_clock_socket;
 
-//	// wake-up request from XINT
-//	tlm_utils::simple_target_socket<S12XGATE> interrupt_request;
-
-
 	// wake-up request from XINT
 	tlm_target_socket< > xint_interrupt_request;
 	virtual tlm_sync_enum nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
@@ -154,8 +150,6 @@ public:
 
 	void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 	void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
-
-//	void asyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	virtual void busWrite(address_t addr, void *buffer, uint32_t size);
 	virtual void busRead(address_t addr, void *buffer, uint32_t size);

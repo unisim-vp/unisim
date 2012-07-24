@@ -557,8 +557,8 @@ protected:
 	bool trace_enable;
 	Parameter<bool> param_trace_enable;
 
-	uint64_t trap_on_instruction_counter;
-	Parameter<uint64_t> param_trap_on_instruction_counter;
+	uint64_t periodic_trap;
+	Parameter<uint64_t> param_periodic_trap;
 
 	// verbose methods
 	inline bool VerboseSetup() GCC_INLINE;

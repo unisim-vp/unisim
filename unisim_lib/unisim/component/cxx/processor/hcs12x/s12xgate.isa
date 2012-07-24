@@ -83,6 +83,8 @@ action {uint8_t} getCycles () {
 action {void} execute({XGATE *} {cpu}) {
 	printf("Unknown instruction\n");
 
+	cpu->assert_software_error_interrupt();
+
 	exit(-1);
 }
 
@@ -135,6 +137,7 @@ return_scheduler.execute = {
 		 * Put XGATE into Debug Mode and Signals a Software breakpoint to the S12X_DBG module (not emulated).
 		 * It is not possible to single step over a BRK instruction. This instruction does not advance the program counter.
 		 */
+		cpu->reportTrap();
 	} break;
 	case 1: /* NOP */ {
 		// No Operation for one cycle.
@@ -287,7 +290,7 @@ single_register.execute = {
 		cpu->setXGRx(oldPC, reg1);
 	} break;
 	case 3: /* SIF RS */ {
-		cpu->assertChannelInterrupt(reg1);
+		cpu->assertChannelInterrupt(cpu->getXGRx(reg1));
 	} break;
 	}
 
@@ -1228,9 +1231,7 @@ ldb.getCycles = {
 		case 0: /* LDB RD, (RD, RI) */ return 2;
 		case 1: /* LDB RD, (RD, RI+) */ return 2;
 		case 2: /* LDB RD, (RD, -RI) */ return 2;
-		case 3: {
-			// Bit Field instruction: BFEXT RD, RS1, RS2
-		} /*  */ break;
+		case 3: /* BFEXT RD, RS1, RS2 */ return 1;
 		}
 }
 
@@ -1284,7 +1285,23 @@ ldb.execute = {
 	} break;
 	case 3: {
 		// Bit Field instruction: BFEXT RD, RS1, RS2
-	} /*  */ break;
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+
+		int org = (reg3_val & 0x000F);
+		int width = ((reg3_val & 0x00F0) >> 4);
+
+		int end_pos = ((org + width) > 15)? 15: (org + width);
+		int shift_left = 15 - end_pos;
+
+		uint16_t reg1_val = (reg2_val << shift_left) >> (org + shift_left);
+		cpu->setXGRx(reg1_val, reg1);
+
+		cpu->ccr->clrV();
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+	} break;
 	}
 
 }
@@ -1296,9 +1313,7 @@ ldw.getCycles = {
 	case 0: /* LDW RD, (RD, RI) */ return 2;
 	case 1: /* LDW RD, (RD, RI+) */ return 2;
 	case 2: /* LDW RD, (RD, -RI) */ return 2;
-	case 3: {
-		// Bit Field instruction: BFINS RD, RS1, RS2
-	} /*  */ break;
+	case 3: /* BFINS RD, RS1, RS2 */ return 1;
 	}
 
 }
@@ -1351,7 +1366,28 @@ ldw.execute = {
 	} break;
 	case 3: {
 		// Bit Field instruction: BFINS RD, RS1, RS2
-	} /*  */ break;
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+
+		int width = ((reg3_val & 0x00F0) >> 4);
+		int shift = 15 - width;
+		uint16_t reg1_ins_val = (reg2_val << shift) >> shift;
+
+		int org = (reg3_val & 0x000F);
+		int end_pos = ((org + width) > 15)? 15: (org + width);
+		uint16_t mask = (0xFFFF << (15 - end_pos)) >> (15 - end_pos - org);
+
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		reg1_val = (reg1_val & ~mask) | (reg1_ins_val << org);
+
+		cpu->setXGRx(reg1_val, reg1);
+
+		cpu->ccr->clrV();
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+	} break;
 	}
 
 }
@@ -1363,9 +1399,7 @@ stb.getCycles = {
 	case 0: /* STB RD, (RD, RI) */ return 2;
 	case 1: /* STB RD, (RD, RI+) */ return 2;
 	case 2: /* STB RD, (RD, -RI) */ return 2;
-	case 3: {
-		// Bit Field instruction: BFINSI RD, RS1, RS2
-	} /*  */ break;
+	case 3: /* BFINSI RD, RS1, RS2 */ return 1;
 	}
 }
 
@@ -1417,7 +1451,28 @@ stb.execute = {
 	} break;
 	case 3: {
 		// Bit Field instruction: BFINSI RD, RS1, RS2
-	} /*  */ break;
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+
+		int width = ((reg3_val & 0x00F0) >> 4);
+		int shift = 15 - width;
+		uint16_t reg1_ins_val = (reg2_val << shift) >> shift;
+
+		int org = (reg3_val & 0x000F);
+		int end_pos = ((org + width) > 15)? 15: (org + width);
+		uint16_t mask = (0xFFFF << (15 - end_pos)) >> (15 - end_pos - org);
+
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		reg1_val = (reg1_val & (~mask)) | ((~reg1_ins_val) << org);
+
+		cpu->setXGRx(reg1_val, reg1);
+
+		cpu->ccr->clrV();
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
+	} break;
 	}
 
 }
@@ -1429,9 +1484,7 @@ stw.getCycles = {
 	case 0: /* STW RD, (RD, RI) */ return 2;
 	case 1: /* STW RD, (RD, RI+) */ return 2;
 	case 2: /* STW RD, (RD, -RI) */ return 2;
-	case 3: {
-		// Bit Field instruction: BFINSX RD, RS1, RS2
-	} break;
+	case 3: /* BFINSX RD, RS1, RS2 */ return 1;
 	}
 
 }
@@ -1490,6 +1543,29 @@ stw.execute = {
 	} break;
 	case 3: {
 		// Bit Field instruction: BFINSX RD, RS1, RS2
+		// Bit Field instruction: BFINSI RD, RS1, RS2
+		uint16_t reg2_val = cpu->getXGRx(reg2);
+		uint16_t reg3_val = cpu->getXGRx(reg3);
+
+		int width = ((reg3_val & 0x00F0) >> 4);
+		int shift = 15 - width;
+		uint16_t reg1_ins_val = (reg2_val << shift) >> shift;
+
+		int org = (reg3_val & 0x000F);
+		int end_pos = ((org + width) > 15)? 15: (org + width);
+
+		uint16_t mask = (0xFFFF << (15 - end_pos)) >> (15 - end_pos - org);
+
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		reg1_val = (reg1_val & (~mask)) | (((((reg1_val & mask) >> org) ^ reg1_ins_val) << org) & mask);
+
+		cpu->setXGRx(reg1_val, reg1);
+
+		cpu->ccr->clrV();
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+
 	} break;
 	}
 

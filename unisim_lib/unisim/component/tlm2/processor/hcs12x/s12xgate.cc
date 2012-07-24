@@ -48,6 +48,10 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 	, target_socket("slave_socket")
 	, xint_interrupt_request("interrupt_request")
 
+	, xgate_enable_event()
+	, xgate_idle_event()
+	, xgate_newthread_event()
+
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
 
@@ -66,10 +70,6 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 	, enable_fine_timing(false)
 	, param_enable_fine_timing("enable-fine-timing", this, enable_fine_timing)
 
-	, xgate_enable_event()
-	, xgate_idle_event()
-	, xgate_newthread_event()
-
 	, verbose_tlm_bus_synchronize(false)
 	, param_verbose_tlm_bus_synchronize("verbose-tlm-bus-synchronize", this, verbose_tlm_bus_synchronize)
 	, verbose_tlm_run_thread(false)
@@ -83,6 +83,7 @@ S12XGATE::S12XGATE(const sc_module_name& name, Object *parent) :
 
 	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_bus_cycle_time_int.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_core_clock.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	xint_interrupt_request(*this);
 
@@ -225,20 +226,16 @@ Run() {
 
 	while(1) {
 
-		cout << "XGATE::Run (1)" << endl;
-
 		if (state == STOP) {
 			wait(xgate_idle_event);
 			continue;
 		}
 
-		cout << "XGATE::Run (2)" << endl;
 		if (!xgate_enabled) {
 			wait(xgate_enable_event);
 			continue;
 		}
 
-		cout << "XGATE::Run (3)" << endl;
 		if (state == IDLE) {
 			wait(xgate_newthread_event);
 		}
@@ -251,16 +248,12 @@ Run() {
 			channelID = getIntVector();
 			ackAsynchronousInterrupt();
 
-			cout << "XGATE::Run (4)" << endl;
 		} else {
-			cout << "XGATE::Run (5)" << endl;
 
 			// is there an S12X SW Trigger pending request ?
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
 				// is a pending SW Trigger request on that channel ?
 				if ((getXGSWT() & j) != 0) {
-
-					cout << "XGATE::Run (6)" << endl;
 
 					channelID = sofwtare_channel_id[i];
 
@@ -286,8 +279,6 @@ Run() {
 		} else {
 			state = RUNNING;
 
-			cout << "XGATE::Run  getVec of channelID " << std::hex << (unsigned int) channelID << " : vector= " << std::hex << (unsigned int) (getXGVBR() + channelID * 4) << endl;
-
 			address_t newPC = memRead16(getXGVBR() + channelID * 4);
 			setXGPC(newPC);
 
@@ -299,8 +290,6 @@ Run() {
 
 		currentThreadTerminated = false;
 		while (!currentThreadTerminated) {
-
-			cout << "XGATE::Run (7)" << endl;
 
 			if(debug_enabled && verbose_tlm_run_thread)
 				*inherited::logger << DebugInfo
@@ -451,7 +440,7 @@ void S12XGATE::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
 
-	bus_cycle_time_int = *external_bus_clock;
+    core_clock_int = *external_bus_clock / 2;
 
 	computeInternalTime();
 }

@@ -100,7 +100,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	, requires_finished_instruction_reporting(true)
 	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
 
-	, trace_enable(true)
+	, trace_enable(false)
 	, param_trace_enable("trace-enable", this, trace_enable)
 
 	, debug_enabled(false)
@@ -109,17 +109,15 @@ XGATE::XGATE(const char *name, Object *parent):
 	, baseAddress(0x0380)
 	, param_baseAddress("base-address", this, baseAddress, "XGATE base Address")
 
-	, interrupt_software_trigger_base(0x72)
-	, param_interrupt_software_trigger_base("software-trigger-interrupt-base-offset", this, interrupt_software_trigger_base, "XGATE Software Trigger Interrupt base offset")
+	, param_software_channel_id("software_channel_id", this, sofwtare_channel_id, XGATE_SIZE, "XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.")
+
 	, interrupt_software_error(0x62)
 	, param_interrupt_software_error("software-error-interrupt", this, interrupt_software_error, "XGATE Software error interrupt")
 
-	, param_software_channel_id("software_channel_id", this, sofwtare_channel_id, XGATE_SIZE, "XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.")
-
 	, max_inst((uint64_t) -1)
 	, param_max_inst("max-inst", this, max_inst)
-	, trap_on_instruction_counter(-1)
-	, param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter)
+	, periodic_trap(-1)
+	, param_periodic_trap("periodic-trap", this, periodic_trap)
 
 	, instruction_counter(0)
 	, stat_instruction_counter("instruction-counter", this, instruction_counter)
@@ -132,6 +130,7 @@ XGATE::XGATE(const char *name, Object *parent):
 
 {
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_periodic_trap.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -546,8 +545,6 @@ uint8_t XGATE::step()
 				<< std::endl << EndDebugInfo;
 		}
 
-		std::cout << "XGATE:: before fetchInstruction PC=0x" << std::hex << (unsigned int) getXGPC() << std::endl;
-
 		fetchInstruction(getXGPC(), buffer, MAX_INS_SIZE);
 		CodeType 	insn( buffer, MAX_INS_SIZE*8);
 
@@ -615,7 +612,7 @@ uint8_t XGATE::step()
 
 		instruction_counter++;
 
-		if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
+		if ((trap_reporting_import) && ((instruction_counter % periodic_trap) == 0)) {
 			trap_reporting_import->ReportTrap();
 		}
 
@@ -635,12 +632,6 @@ uint8_t XGATE::step()
 	}
 
 	if (instruction_counter >= max_inst) Stop(0);
-//	if ((instruction_counter % max_inst) == 0) {
-//		if (trap_reporting_import) {
-//			trap_reporting_import->ReportTrap();
-//		}
-//
-//	}
 
 	return (opCycles);
 

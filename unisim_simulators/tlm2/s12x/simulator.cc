@@ -511,6 +511,25 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.software_channel_id[5]", 0x34);
 	simulator->SetVariable("XGATE.software_channel_id[6]", 0x33);
 	simulator->SetVariable("XGATE.software_channel_id[7]", 0x32);
+	simulator->SetVariable("XGATE.software-error-interrupt", 0x62);
+
+	simulator->SetVariable("XGATE.trace-enable", true);
+	simulator->SetVariable("XGATE.verbose-all", false);
+	simulator->SetVariable("XGATE.verbose-setup", false);
+	simulator->SetVariable("XGATE.verbose-step", false);
+	simulator->SetVariable("XGATE.verbose-dump-regs-start", false);
+	simulator->SetVariable("XGATE.verbose-dump-regs-end", false);
+	simulator->SetVariable("XGATE.verbose-exception", false);
+	simulator->SetVariable("XGATE.requires-memory-access-reporting", false);
+	simulator->SetVariable("XGATE.requires-finished-instruction-reporting", false);
+	simulator->SetVariable("XGATE.debug-enabled", false);
+	simulator->SetVariable("XGATE.max-inst", 0xffffffffffffffffULL);
+	simulator->SetVariable("XGATE.nice-time", "1 ms");
+	simulator->SetVariable("XGATE.core-clock", 125000);
+	simulator->SetVariable("XGATE.verbose-tlm-bus-synchronize", false);
+	simulator->SetVariable("XGATE.verbose-tlm-run-thread", false);
+	simulator->SetVariable("XGATE.verbose-tlm-commands", false);
+	simulator->SetVariable("XGATE.trap-on-instruction-counter", -1);
 
 	simulator->SetVariable("CPU.trace-enable", false);
 	simulator->SetVariable("CPU.verbose-all", false);

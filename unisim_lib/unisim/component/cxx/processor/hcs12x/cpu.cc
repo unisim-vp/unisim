@@ -126,12 +126,13 @@ CPU::CPU(const char *name, Object *parent):
 	stat_store_counter("data-store-counter", this, data_store_counter),
 	param_max_inst("max-inst",this,max_inst),
 
-	trap_on_instruction_counter(-1),
-	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter)
+	periodic_trap(-1),
+	param_periodic_trap("periodic-trap", this, periodic_trap)
 
 
 {
 	param_max_inst.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
+	param_periodic_trap.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
 	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_instruction_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -139,6 +140,7 @@ CPU::CPU(const char *name, Object *parent):
 	stat_load_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	stat_store_counter.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	
+
     ccr = new CCR_t(&ccrReg);
 
     eblb = new EBLB(this);
@@ -405,7 +407,7 @@ uint8_t CPU::step()
 
 			instruction_counter++;
 
-			if ((trap_reporting_import) && (instruction_counter == trap_on_instruction_counter)) {
+			if ((trap_reporting_import) && ((instruction_counter % periodic_trap) == 0)) {
 				trap_reporting_import->ReportTrap();
 			}
 
@@ -441,12 +443,6 @@ uint8_t CPU::step()
 	}
 
 	if (instruction_counter >= max_inst) Stop(0);
-//	if ((instruction_counter % max_inst) == 0) {
-//		if (trap_reporting_import) {
-//			trap_reporting_import->ReportTrap();
-//		}
-//
-//	}
 
 	return (opCycles);
 }
