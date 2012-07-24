@@ -86,10 +86,6 @@ class Linux {
   // (stack base + stack size) will be reserved for the stack.
   void SetStackBase(ADDRESS_TYPE stack_base);
 
-  // Sets the stack size in bytes that will be reserved for the application
-  // stack
-  void SetStackSize(unsigned int stack_size);
-
   // Sets the memory page size in bytes that will be used by the linux os
   // emulator
   void SetMemoryPageSize(ADDRESS_TYPE memory_page_size);
@@ -174,8 +170,6 @@ class Linux {
   ADDRESS_TYPE elf_brk_;
   int num_segments_;
   ADDRESS_TYPE stack_base_;
-  uint64_t stack_size_;
-  ADDRESS_TYPE max_environ_;
   uint64_t memory_page_size_;
   ADDRESS_TYPE mmap_base_;
   ADDRESS_TYPE mmap_brk_point_;
@@ -197,11 +191,6 @@ class Linux {
   std::string utsname_version_;
   std::string utsname_machine_;
   std::string utsname_domainname_;
-
-  // number of aux table entries on the stack (minus AT_NULL)
-  int num_aux_table_entries_;
-  // size of each of the entries on the aux table
-  int aux_table_entry_size_;
 
   // the structure to keep all the loaded information
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;
@@ -266,7 +255,7 @@ class Linux {
       unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob);
 
   // Create the stack memory image and insert it into the given blob
-  bool CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE> * blob) const;
+  bool CreateStack(unisim::util::debug::blob::Blob<ADDRESS_TYPE> * blob, uint64_t& stack_size) const;
 
   // Set the aux table contents that will be added to the stack
   void SetAuxTable(uint8_t * stack_data, ADDRESS_TYPE & sp) const;

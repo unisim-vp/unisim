@@ -110,15 +110,6 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     , param_stack_base_("stack-base", this, stack_base_,
                         "The stack base address used for the load and execution"
                         " of the linux application")
-    , stack_size_(0x800000UL)
-    , param_stack_size_("stack-size", this, stack_size_,
-                        "The stack size used for the load and execution of the"
-                        " linux application. The top of the stack will be"
-                        " stack-base + stack-size.")
-    , max_environ_(0)
-    , param_max_environ_("max-environ", this, max_environ_,
-                         "The maximum size of the program environment during"
-                         " its execution.")
     , binary_()
     , param_binary_("binary", this, binary_,
                     "The binary to execute on the target simulator. Usually it"
@@ -131,7 +122,7 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
                   " argv[<n>] where <n> can go up to argc - 1.")
     , argv_()
     , param_argv_()
-    , apply_host_environment_(true)
+    , apply_host_environment_(false)
     , param_apply_host_environment_("apply-host-environment", this,
                                     apply_host_environment_,
                                     "Wether to apply the host environment on"
@@ -175,7 +166,6 @@ LinuxOS(const char *name, unisim::kernel::service::Object *parent)
     , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
                                "The domain name information that the uname"
                                " system call should return.") {
-  param_max_environ_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 }
@@ -336,8 +326,6 @@ bool LinuxOS<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   linuxlib_->SetEndianness(endianness_);
   // .. the stack base address
   linuxlib_->SetStackBase(stack_base_);
-  // .. the stack size
-  linuxlib_->SetStackSize(stack_size_);
   // .. and memory page size
   linuxlib_->SetMemoryPageSize(memory_page_size_);
   // .. and the uname information

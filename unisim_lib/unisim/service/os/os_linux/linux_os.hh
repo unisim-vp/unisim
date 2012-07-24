@@ -116,10 +116,6 @@ class LinuxOS :
   unisim::kernel::service::Parameter<ADDRESS_TYPE> param_memory_page_size_;
   ADDRESS_TYPE stack_base_;
   unisim::kernel::service::Parameter<ADDRESS_TYPE> param_stack_base_;
-  ADDRESS_TYPE stack_size_;
-  unisim::kernel::service::Parameter<ADDRESS_TYPE> param_stack_size_;
-  ADDRESS_TYPE max_environ_;
-  unisim::kernel::service::Parameter<ADDRESS_TYPE> param_max_environ_;
   std::string binary_;
   unisim::kernel::service::Parameter<std::string> param_binary_;
   unsigned int argc_;

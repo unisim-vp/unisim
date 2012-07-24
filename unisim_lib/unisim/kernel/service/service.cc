@@ -76,6 +76,12 @@
 #include "unisim/kernel/debug/debug.hh"
 #include "unisim/util/likely/likely.hh"
 
+#ifdef WIN32
+#include <fcntl.h>
+//Note: this is to force opening console and files in binary mode on Windows as on UNIX
+int _CRT_fmode = _O_BINARY;
+#endif
+
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size)
 {

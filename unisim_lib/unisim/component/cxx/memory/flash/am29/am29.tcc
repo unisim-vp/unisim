@@ -1060,6 +1060,9 @@ void AM29<CONFIG, BYTESIZE, IO_WIDTH>::PrintData(std::ostream& os, const uint8_t
 		case E_BIG_ENDIAN:
 			for(i = 0; i <= (int) size; i++) os << Nibble2HexChar(data[i] >> 4) << Nibble2HexChar(data[i] & 0xf);
 			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
 	}
 }
 

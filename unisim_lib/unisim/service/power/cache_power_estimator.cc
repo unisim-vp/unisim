@@ -103,16 +103,16 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 		switch(value)
 		{
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
-				SetModified(*storage != value);
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
-				SetModified(*storage != value);
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
 			default:
-				SetModified(*storage != value);
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
 				break;
 		}

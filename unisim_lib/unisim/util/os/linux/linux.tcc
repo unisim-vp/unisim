@@ -1,5 +1,3 @@
-// // TODO Fix register handling, should be done with methods.
-
 /*
  *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
  *  reserved.
@@ -102,8 +100,6 @@ Linux(unisim::kernel::logger::Logger& logger,
     , elf_brk_(0)
     , num_segments_(0)
     , stack_base_(0)
-    , stack_size_(0)
-    , max_environ_(0)
     , memory_page_size_(0)
     , mmap_base_(0xd4000000)
     , mmap_brk_point_(0)
@@ -120,9 +116,6 @@ Linux(unisim::kernel::logger::Logger& logger,
     , utsname_version_()
     , utsname_machine_()
     , utsname_domainname_()
-    , num_aux_table_entries_(14) // TODO Set the number of aux table entries
-                                 //      depending on the architecture
-    , aux_table_entry_size_(2 * sizeof(ADDRESS_TYPE))
     , blob_(NULL)
 	, regs_if_(regs_if)
 	, mem_if_(mem_if)
@@ -132,15 +125,10 @@ Linux(unisim::kernel::logger::Logger& logger,
     , syscall_impl_assoc_map_()
     , current_syscall_id_(0)
     , current_syscall_name_("(NONE)")
-    // , registers_(NULL) // TODO Remove
     , verbose_(false)
     , logger_(logger)
     , terminated_(false)
     , return_status_(0) {
-  //for (int i = 0; i < kArmNumRegs; ++i)
-    //arm_regs_[i] = NULL;
-  //for (int i = 0; i < kPpcNumRegs; ++i)
-    //ppc_regs_[i] = NULL;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -282,12 +270,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackBase(
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetStackSize(
-    unsigned int stack_size) {
-  stack_size_ = stack_size;
-}
-
-template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetMemoryPageSize(
     ADDRESS_TYPE memory_page_size) {
   memory_page_size_ = memory_page_size;
@@ -400,13 +382,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetRegister(uint32_t id,
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
-  //std::vector<std::string> target_envp;
-
-  //// get and check all the cpu registers
-  //if (!MapRegisters()) {
-    //return false;
-  //}
-
   // set the environment to be used
   if (apply_host_environnement_) GetHostEnvironment(envp_, &target_envp_);
   else target_envp_ = envp_;
@@ -429,10 +404,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   }
 
   // create the stack footprint and add it to the blob
+  uint64_t stack_size = 0;
   if (verbose_)
     logger_ << DebugInfo
         << "Creating the Linux software stack." << EndDebugInfo;
-  if (!CreateStack(blob)) {
+  if (!CreateStack(blob, stack_size)) {
     // TODO
     // Remove non finished state (i.e., unfinished blob, reset values, ...)
     logger_ << DebugError
@@ -481,7 +457,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   // Set mmap_brk_point and brk_point
   mmap_brk_point_ = mmap_base_;
 
-  ADDRESS_TYPE top_addr = /*blob->GetStackBase()*/ stack_base_ + stack_size_ - 1;
+  ADDRESS_TYPE top_addr = stack_base_ + stack_size - 1;
   if(verbose_) {
     logger_ << DebugInfo << "=== top_addr = 0x" << std::hex << top_addr << std::dec
       << EndDebugInfo;
@@ -492,10 +468,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
 
   if(verbose_) {
     logger_ << DebugInfo
+        << "=== stack_size_ = 0x" << std::hex << stack_size << " (" << std::dec << stack_size << ")" << std::endl
         << "=== brk_point_ = 0x" << std::hex << brk_point_ << std::endl
         << "=== mmap_brk_point_ = 0x" << mmap_brk_point_ << std::endl
         << "=== mmap_base_ = 0x" << mmap_base_ << std::endl
-        << "=== memory_page_size_ = 0x" << memory_page_size_ << "("
+        << "=== memory_page_size_ = 0x" << memory_page_size_ << " ("
         << std::dec << memory_page_size_ << ")" << EndDebugInfo;
   }
 
@@ -607,11 +584,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupARMTarget() {
   ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
   PARAMETER_TYPE par1 = 0;
   PARAMETER_TYPE par2 = 0;
-  // TODO check endianness conversions
   success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
   success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-  SetRegister(kARM_r1, par1);
-  SetRegister(kARM_r2, par2);
+  SetRegister(kARM_r1, Target2Host(endianness_, par1));
+  SetRegister(kARM_r2, Target2Host(endianness_, par2));
 
 
   return true;
@@ -685,11 +661,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupPPCTarget() {
   ADDRESS_TYPE par2_addr = sp_section->GetAddr() + 8;
   PARAMETER_TYPE par1 = 0;
   PARAMETER_TYPE par2 = 0;
-  // TODO check endianness conversions
   success = mem_if_->ReadMemory(par1_addr, (uint8_t *)&par1, sizeof(par1)); 
   success = mem_if_->ReadMemory(par2_addr, (uint8_t *)&par2, sizeof(par2));
-  SetRegister(kPPC_r3, par1);
-  SetRegister(kPPC_r4, par2);
+  SetRegister(kPPC_r3, Target2Host(endianness_, par1));
+  SetRegister(kPPC_r4, Target2Host(endianness_, par2));
 
   return true;
 }
@@ -738,92 +713,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& termin
     return_status = return_status_;
   }
 }
-
-//template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-//bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::MapRegisters() {
-  //typedef std::vector<unisim::util::debug::Register *>::iterator RegIterator;
-
-  //int num_registers_expected = 0;
-  //if ((system_type_.compare("arm") == 0) ||
-      //(system_type_.compare("arm-eabi") == 0))
-    //num_registers_expected = kARMNumRegs + kARMNumSysRegs;
-  //else
-    //num_registers_expected = kPPCNumRegs + kPPCNumSysRegs;
-  //if (registers_.size() < num_registers_expected) {
-    //logger_ << "Could not initiliaze register mapping. "
-        //"Number of registers handled is inferior to the number of registers "
-        //"expected." << std::endl
-        //<< "Number of registers expected = "
-        //<< num_registers_expected << std::endl
-        //<< "Number of registers given = " << registers_.size() << std::endl;
-    //return false;
-  //}
-
-  //if ((system_type_.compare("arm") == 0) ||
-      //(system_type_.compare("arm-eabi") == 0)) {
-    //for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
-      //for (int index = 0; index < kARMNumRegs; index++) {
-        //std::stringstream reg_name;
-        //reg_name << "r" << index;
-        //if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
-          //arm_regs_[index] = *it;
-      //}
-      //// try getting alternative naming for pc, sp and lr
-      //if (strcmp((*it)->GetName(), "sp") == 0) arm_regs_[13] = *it;
-      //if (strcmp((*it)->GetName(), "lr") == 0) arm_regs_[14] = *it;
-      //if (strcmp((*it)->GetName(), "pc") == 0) arm_regs_[15] = *it;
-    //}
-    //bool regs_ok = true;
-    //for (int index = 0; regs_ok && (index < kARMNumRegs); index++)
-      //regs_ok = arm_regs_ != NULL;
-    //if (!regs_ok) {
-      //logger_ << "Could not initialize register mapping. "
-          //"Missing the following registers:" << std::endl;
-      //for (int index = 0; index < kARMNumRegs; index++) {
-        //if (arm_regs_[index] == NULL) {
-          //logger_ << " - r" << index;
-          //if (index == 13) logger_ << " (or sp)";
-          //if (index == 14) logger_ << " (or lr)";
-          //if (index == 15) logger_ << " (or pc)";
-          //logger_ << std::endl;
-        //}
-        //arm_regs_[index] = NULL;
-      //}
-      //return false;
-    //}
-  //}
-
-  //if (system_type_.compare("powerpc")) {
-    //for (RegIterator it = registers_.begin(); it != registers_.end(); it++) {
-      //for (int index = 0; indx < kPPCNumRegs; index++) {
-        //std::stringstream reg_name;
-        //reg_name << "r" << index;
-        //if (strcmp((*it)->GetName(), reg_name.str().c_str()) == 0)
-          //ppc_regs_[index] = *it;
-      //}
-      //if (strcmp((*it)->GetName(), "cr") == 0) ppc_cr_ = (*it);
-      //if (strcmp((*it)->GetName(), "cia") == 0) ppc_cia_ = (*it);
-    //}
-    //bool regs_ok = (ppc_cr_ != NULL) && (ppc_cia_ != NULL);
-    //for (int index = 0; regs_ok && (index < kPPCNumRegs); index++)
-      //regs_ok = ppc_regs_ != NULL;
-    //if (!regs_ok) {
-      //logger_ << "Could not initialize register mapping. "
-          //"Missing the following registers:" << std::endl;
-      //for (int index = 0; index < kPPCNumRegs; index++) {
-        //if (ppc_regs_[index] == NULL)
-          //logger_ << " - r" << index << std::endl;
-        //ppc_regs_[index] = NULL;
-      //}
-      //if (ppc_cr_ == NULL) logger_ << " - cr" << std::endl;
-      //if (ppc_cia_ == NULL) logger_ << " - cia" << std::endl;
-      //ppc_cr_ = ppc_cia_ = NULL;
-      //return false;
-    //}
-  //}
-
-  //return true;
-//}
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
@@ -963,7 +852,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
-    unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob) const {
+    unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob, uint64_t& stack_size) const {
   typedef std::vector<ADDRESS_TYPE> AddressVector;
   typedef typename AddressVector::iterator AddressVectorIterator;
   typedef typename AddressVector::reverse_iterator AddressVectorReverseIterator;
@@ -982,179 +871,187 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
         << "argc and/or size(argv) is/are 0." << EndDebugError;
     return false;
   }
-  // Create the stack
-  // TODO: maybe we should check for a bigger stack
-  if (stack_size_ == 0) {
-    logger_ << DebugError
-        << "defined stack size is 0." << EndDebugError;
-        return false;
-  }
+  
+  ADDRESS_TYPE aux_table_size = 0;
+  SetAuxTable(0, aux_table_size);
+  aux_table_size = -aux_table_size;
+  
+  int pass;
+  stack_size = 0;
+  Section* env_section = 0;
+  Section* argv_section = 0;
+  Section* aux_table_section = 0;
+  Section* envp_section = 0;
+  Section* argvp_section = 0;
+  Section* argc_section = 0;
+  Section* stack_pointer_section = 0;
+  uint8_t *stack_data = 0;
+  // First pass for computing the size of the initialized stack
+  // Second pass for actually initializing the stack
+  for(pass = 1; pass <= 2; pass++)
+  {
+    // Create the stack
+    ADDRESS_TYPE sp = (pass == 2) ? stack_size : 0;
+    
+    stack_data = (pass == 2) ? (uint8_t *) calloc(stack_size, 1) : 0;
+    
+    // Fill the stack
+    ADDRESS_TYPE cur_length;
+    // - copy envp
+    // variable to keep the stack environment entries addresses
+    std::vector<ADDRESS_TYPE> sp_envp;
+    ADDRESS_TYPE env_top = sp;
+    for (std::vector<std::string>::const_iterator it = target_envp_.begin();
+        it != target_envp_.end(); it++) {
+      cur_length = (*it).length() + 1;
+      sp = sp - cur_length;
+      sp_envp.push_back(sp);
+      if(pass == 2) memcpy(stack_data + sp, (*it).c_str(), cur_length);
+    }
+    ADDRESS_TYPE env_bottom = sp;
+    if(pass == 2) {
+      uint8_t *env_section_data = (uint8_t *)malloc(env_top - env_bottom);
+      memcpy(env_section_data, stack_data + env_bottom, env_top - env_bottom);
+      env_section =
+          new Section(Section::TY_PROGBITS, Section::SA_AW,
+                      ".unisim.linux_os.stack.env", 1, 0, stack_base_ + env_bottom,
+                      env_top - env_bottom,env_section_data);
+    }
+    // - copy argv
+    // variable to keep the stack argument entries addresses
+    std::vector<ADDRESS_TYPE> sp_argv;
+    ADDRESS_TYPE argv_top = sp;
+    for (std::vector<std::string>::const_iterator it = argv_.begin();
+        it != argv_.end(); it++) {
+      cur_length = (*it).length() + 1;
+      sp = sp - cur_length;
+      sp_argv.push_back(sp);
+      if(pass == 2) memcpy(stack_data + sp, (*it).c_str(), cur_length);
+    }
+    ADDRESS_TYPE argv_bottom = sp;
+    if(pass == 2) {
+      uint8_t *argv_section_data = (uint8_t *)malloc(argv_top - argv_bottom);
+      memcpy(argv_section_data, stack_data + argv_bottom, argv_top - argv_bottom);
+      argv_section =
+          new Section(Section::TY_PROGBITS, Section::SA_AW,
+                      ".unisim.linux_os.stack.argv", 1, 0,
+                      stack_base_ + argv_bottom, argv_top - argv_bottom,
+                      argv_section_data);
+    }
+    // force 16 byte alignment
+    sp = sp & ~(ADDRESS_TYPE)0x0f;
+    // compute the required stack size for the aux table entries and the pointers
+    // to the different environment and argument values
+    ADDRESS_TYPE sp_content_size = 0;
+    // aux table including AT_NULL entry
+    sp_content_size += aux_table_size;
+    // number of environment entries
+    sp_content_size += target_envp_.size() * sizeof(ADDRESS_TYPE);
+    //   and its termination
+    sp_content_size += sizeof(ADDRESS_TYPE);
+    // number of argument entries (argc)
+    sp_content_size += argv_.size() * sizeof(ADDRESS_TYPE);
+    //   and its termination
+    sp_content_size += sizeof(ADDRESS_TYPE);
+    // entry for argc itself
+    sp_content_size += sizeof(ADDRESS_TYPE);
+    if ( sp_content_size & 0x0f ) // force aligned start
+      sp = sp - (16 - (sp_content_size & 0x0f));
 
-  uint8_t *stack_data = (uint8_t *)calloc(stack_size_, 1);
-  ADDRESS_TYPE sp = stack_size_;
-  // Fill the stack
-//   // - copy the filename
-//   sp = sp - sizeof(ADDRESS_TYPE);
-//   ADDRESS_TYPE argv0_top = sp;
-//   ADDRESS_TYPE cur_length = argv_[0].length() + 1;
-//   sp = sp - cur_length;
-//   // TODO Remove this line? What was this being used for?
-//   // ADDRESS_TYPE sp_argc = sp;
-//   memcpy(stack_data + sp, argv_[0].c_str(), cur_length);
-//   ADDRESS_TYPE argv0_bottom = sp;
-//   uint8_t *argv0_section_data = (uint8_t *)malloc(argv0_top - argv0_bottom);
-//   memcpy(argv0_section_data, stack_data + argv0_bottom, argv0_top - argv0_bottom);
-//   Section* argv0_section = new Section(Section::TY_PROGBITS, Section::SA_AW,
-//                                        ".unisim.linux_os.stack.argv0", 1, 0,
-//                                        stack_base_ + argv0_bottom,
-//                                        argv0_top - argv0_bottom,
-//                                        argv0_section_data);
-  ADDRESS_TYPE cur_length;
-  // - copy envp
-  // variable to keep the stack environment entries addresses
-  std::vector<ADDRESS_TYPE> sp_envp;
-  ADDRESS_TYPE env_top = sp;
-  for (std::vector<std::string>::const_iterator it = target_envp_.begin();
-       it != target_envp_.end(); it++) {
-    cur_length = (*it).length() + 1;
-    sp = sp - cur_length;
-    sp_envp.push_back(sp);
-    memcpy(stack_data + sp, (*it).c_str(), cur_length);
-  }
-  ADDRESS_TYPE env_bottom = sp;
-  uint8_t *env_section_data = (uint8_t *)malloc(env_top - env_bottom);
-  memcpy(env_section_data, stack_data + env_bottom, env_top - env_bottom);
-  Section* env_section =
-      new Section(Section::TY_PROGBITS, Section::SA_AW,
-                  ".unisim.linux_os.stack.env", 1, 0, stack_base_ + env_bottom,
-                  env_top - env_bottom,env_section_data);
-
-  // - copy argv
-  // variable to keep the stack argument entries addresses
-  std::vector<ADDRESS_TYPE> sp_argv;
-  ADDRESS_TYPE argv_top = sp;
-  for (std::vector<std::string>::const_iterator it = argv_.begin();
-       it != argv_.end(); it++) {
-    cur_length = (*it).length() + 1;
-    sp = sp - cur_length;
-    sp_argv.push_back(sp);
-    memcpy(stack_data + sp, (*it).c_str(), cur_length);
-  }
-  ADDRESS_TYPE argv_bottom = sp;
-  uint8_t *argv_section_data = (uint8_t *)malloc(argv_top - argv_bottom);
-  memcpy(argv_section_data, stack_data + argv_bottom, argv_top - argv_bottom);
-  Section* argv_section =
-      new Section(Section::TY_PROGBITS, Section::SA_AW,
-                  ".unisim.linux_os.stack.argv", 1, 0,
-                  stack_base_ + argv_bottom, argv_top - argv_bottom,
-                  argv_section_data);
-
-  // force 16 byte alignment
-  sp = sp & ~(ADDRESS_TYPE)0x0f;
-  // compute the required stack size for the aux table entries and the pointers
-  // to the different environment and argument values
-  ADDRESS_TYPE sp_content_size = 0;
-  // number of aux table entries
-  sp_content_size += num_aux_table_entries_ * 2 * sizeof(ADDRESS_TYPE);
-  //   and their values
-  //Gilles: sp_content_size += num_aux_table_entries_ * sizeof(ADDRESS_TYPE);
-  // number of environment entries
-  sp_content_size += target_envp_.size() * sizeof(ADDRESS_TYPE);
-  //   and its termination
-  sp_content_size += sizeof(ADDRESS_TYPE);
-  // number of argument entries (argc)
-  sp_content_size += argv_.size() * sizeof(ADDRESS_TYPE);
-  //   and its termination
-  sp_content_size += sizeof(ADDRESS_TYPE);
-  // entry for argc itself
-  sp_content_size += sizeof(ADDRESS_TYPE);
-  if ( sp_content_size & 0x0f ) // force aligned start
-    sp = sp - (16 - (sp_content_size & 0x0f));
-
-  ADDRESS_TYPE aux_table_top = sp;
-  SetAuxTable(stack_data, sp);
-  ADDRESS_TYPE aux_table_bottom = sp;
-  uint8_t *aux_table_section_data = (uint8_t *)malloc(aux_table_top - aux_table_bottom);
-  memcpy(aux_table_section_data, stack_data + aux_table_bottom, aux_table_top - aux_table_bottom);
-  Section* aux_table_section =
-      new Section(Section::TY_PROGBITS, Section::SA_AW,
-                  ".unisim.linux_os.stack.aux_table", 1, 0,
-                  stack_base_ + aux_table_bottom,
-                  aux_table_top - aux_table_bottom,
-                  aux_table_section_data);
-  // Now we have to put the pointers to the different argv and envp
-  ADDRESS_TYPE envp_top = sp;
-  ADDRESS_TYPE envp_value = 0;
-  sp -= sizeof(envp_value);
-  memcpy(stack_data + sp, &envp_value, sizeof(envp_value));
-  for (AddressVectorIterator it = sp_envp.begin();
-       it != sp_envp.end();
-       ++it) {
+    ADDRESS_TYPE aux_table_top = sp;
+    SetAuxTable((pass == 2) ? stack_data : 0, sp);
+    ADDRESS_TYPE aux_table_bottom = sp;
+    if(pass == 2) {
+      uint8_t *aux_table_section_data = (uint8_t *)malloc(aux_table_top - aux_table_bottom);
+      memcpy(aux_table_section_data, stack_data + aux_table_bottom, aux_table_top - aux_table_bottom);
+      aux_table_section =
+          new Section(Section::TY_PROGBITS, Section::SA_AW,
+                      ".unisim.linux_os.stack.aux_table", 1, 0,
+                      stack_base_ + aux_table_bottom,
+                      aux_table_top - aux_table_bottom,
+                      aux_table_section_data);
+    }
+    // Now we have to put the pointers to the different argv and envp
+    ADDRESS_TYPE envp_top = sp;
+    ADDRESS_TYPE envp_value = 0;
     sp -= sizeof(envp_value);
-    envp_value = Host2Target(endianness_, (*it) + stack_base_);
-    memcpy(stack_data + sp, &envp_value, sizeof(envp_value));
-  }
-  ADDRESS_TYPE envp_bottom = sp;
-  uint8_t *envp_section_data = (uint8_t *)malloc(envp_top - envp_bottom);
-  memcpy(envp_section_data, stack_data + envp_bottom, envp_top - envp_bottom);
-  Section* envp_section =
-      new Section(Section::TY_PROGBITS, Section::SA_AW,
-                  ".unisim.linux_os.stack.environment_pointers",
-                  1, 0, stack_base_ + envp_bottom,
-                  envp_top - envp_bottom,
-                  envp_section_data);
-
-  ADDRESS_TYPE argvp_top = sp;
-  ADDRESS_TYPE argvp_value = 0;
-  sp -= sizeof(argvp_value);
-  memcpy(stack_data + sp, &argvp_value, sizeof(argvp_value));
-  for (AddressVectorReverseIterator it = sp_argv.rbegin();
-       it != sp_argv.rend();
-       ++it) {
+    if(pass == 2) memcpy(stack_data + sp, &envp_value, sizeof(envp_value));
+    for (AddressVectorIterator it = sp_envp.begin();
+        it != sp_envp.end();
+        ++it) {
+      sp -= sizeof(envp_value);
+      envp_value = Host2Target(endianness_, (*it) + stack_base_);
+      if(pass == 2) memcpy(stack_data + sp, &envp_value, sizeof(envp_value));
+    }
+    ADDRESS_TYPE envp_bottom = sp;
+    if(pass == 2) {
+      uint8_t *envp_section_data = (uint8_t *)malloc(envp_top - envp_bottom);
+      memcpy(envp_section_data, stack_data + envp_bottom, envp_top - envp_bottom);
+      envp_section =
+          new Section(Section::TY_PROGBITS, Section::SA_AW,
+                      ".unisim.linux_os.stack.environment_pointers",
+                      1, 0, stack_base_ + envp_bottom,
+                      envp_top - envp_bottom,
+                      envp_section_data);
+    }
+    
+    ADDRESS_TYPE argvp_top = sp;
+    ADDRESS_TYPE argvp_value = 0;
     sp -= sizeof(argvp_value);
-    argvp_value = Host2Target(endianness_, (*it) + stack_base_);
-    memcpy(stack_data + sp, &argvp_value, sizeof(argvp_value));
+    if(pass == 2) memcpy(stack_data + sp, &argvp_value, sizeof(argvp_value));
+    for (AddressVectorReverseIterator it = sp_argv.rbegin();
+        it != sp_argv.rend();
+        ++it) {
+      sp -= sizeof(argvp_value);
+      argvp_value = Host2Target(endianness_, (*it) + stack_base_);
+      if(pass == 2) memcpy(stack_data + sp, &argvp_value, sizeof(argvp_value));
+    }
+    ADDRESS_TYPE argvp_bottom = sp;
+    if(pass == 2) {
+      uint8_t *argvp_section_data = (uint8_t *)malloc(argvp_top - argvp_bottom);
+      memcpy(argvp_section_data, stack_data + argvp_bottom, argvp_top - argvp_bottom);
+      argvp_section =
+          new Section(Section::TY_PROGBITS, Section::SA_AW,
+                      ".unisim.linux_os.stack.argument_pointers",
+                      1, 0, stack_base_ + argvp_bottom,
+                      argvp_top - argvp_bottom,
+                      argvp_section_data);
+    }
+    // and finally we put argc into the stack
+    ADDRESS_TYPE argc_top = sp;
+    ADDRESS_TYPE argc_value = Host2Target(endianness_, argc_);
+    sp -= sizeof(argc_value);
+    if(pass == 2) memcpy(stack_data + sp, &argc_value, sizeof(argc_value));
+    ADDRESS_TYPE argc_bottom = sp;
+    if(pass == 2) {
+      uint8_t *argc_section_data = (uint8_t *)malloc(argc_top - argc_bottom);
+      memcpy(argc_section_data, stack_data + argc_bottom, argc_top - argc_bottom);
+      argc_section =
+          new Section(Section::TY_PROGBITS, Section::SA_AW,
+                      ".unisim.linux_os.stack.argument_counter",
+                      1, 0, stack_base_ + argc_bottom,
+                      argc_top - argc_bottom,
+                      argc_section_data);
+    }
+    // create an empty section to keep the stack pointer
+    if(pass == 2) {
+      stack_pointer_section =
+          new Section(Section::TY_NULL, Section::SA_NULL,
+                      ".unisim.linux_os.stack.stack_pointer",
+                      0, 0, stack_base_ + sp,
+                      0, NULL);
+    }
+    
+    if(pass == 1) stack_size = -sp;
   }
-  ADDRESS_TYPE argvp_bottom = sp;
-  uint8_t *argvp_section_data = (uint8_t *)malloc(argvp_top - argvp_bottom);
-  memcpy(argvp_section_data, stack_data + argvp_bottom, argvp_top - argvp_bottom);
-  Section* argvp_section =
-      new Section(Section::TY_PROGBITS, Section::SA_AW,
-                  ".unisim.linux_os.stack.argument_pointers",
-                  1, 0, stack_base_ + argvp_bottom,
-                  argvp_top - argvp_bottom,
-                  argvp_section_data);
-
-  // and finally we put argc into the stack
-  ADDRESS_TYPE argc_top = sp;
-  ADDRESS_TYPE argc_value = Host2Target(endianness_, argc_);
-  sp -= sizeof(argc_value);
-  memcpy(stack_data + sp, &argc_value, sizeof(argc_value));
-  ADDRESS_TYPE argc_bottom = sp;
-  uint8_t *argc_section_data = (uint8_t *)malloc(argc_top - argc_bottom);
-  memcpy(argc_section_data, stack_data + argc_bottom, argc_top - argc_bottom);
-  Section* argc_section =
-      new Section(Section::TY_PROGBITS, Section::SA_AW,
-                  ".unisim.linux_os.stack.argument_counter",
-                  1, 0, stack_base_ + argc_bottom,
-                  argc_top - argc_bottom,
-                  argc_section_data);
-
-  // create an empty section to keep the stack pointer
-  Section* stack_pointer_section =
-      new Section(Section::TY_NULL, Section::SA_NULL,
-                  ".unisim.linux_os.stack.stack_pointer",
-                  0, 0, stack_base_ + sp,
-                  0, NULL);
-
+  
   // create a segment for the stack
   Segment* stack_segment =
       new Segment(Segment::TY_LOADABLE, Segment::SA_RW,
-                  4, stack_base_, stack_size_, stack_size_, stack_data);
+                  4, stack_base_, stack_size, stack_size, stack_data);
 
   // add the stack segment and the different sections to the blob
   blob->AddSegment(stack_segment);
-//   blob->AddSection(argv0_section);
   blob->AddSection(env_section);
   blob->AddSection(argv_section);
   blob->AddSection(aux_table_section);
@@ -1253,12 +1150,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
 #endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
 
-  /* TODO
-   * Adapt for other architectures as PowerPC,...
-   */
-  aux_table_symbol = AT_HWCAP;
-  aux_table_value = ARM_ELF_HWCAP;
-  sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+  if ((system_type_.compare("arm") == 0) ||
+        (system_type_.compare("arm-eabi") == 0)) {
+    aux_table_symbol = AT_HWCAP;
+    aux_table_value = ARM_ELF_HWCAP;
+    sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
+  }
 
   aux_table_symbol = AT_CLKTCK;
 #ifdef WIN32
@@ -1267,16 +1164,6 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
   aux_table_value = (ADDRESS_TYPE)sysconf(_SC_CLK_TCK);
 #endif
   sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
-
-  // Gilles
-//  aux_table_symbol = AT_SECURE;
-//  aux_table_value = 1;
-//  sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
-  /* TODO
-   * Enforce required alignment necessary in some architectures (i.e., PowerPC).
-   */
-
-  // ??? ADDRESS_TYPE saved_aux = sp;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1286,11 +1173,16 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
   ADDRESS_TYPE target_entry = Host2Target(endianness_, entry);
   ADDRESS_TYPE target_value = Host2Target(endianness_, value);
   sp = sp - sizeof(sp);
-  uint8_t *addr = stack_data + sp;
-  memcpy(addr, &target_value, sizeof(sp));
+  uint8_t *addr;
+  if(stack_data) {
+    addr = stack_data + sp;
+    memcpy(addr, &target_value, sizeof(sp));
+  }
   sp = sp - sizeof(sp);
-  addr = stack_data + sp;
-  memcpy(addr, &target_entry, sizeof(sp));
+  if(stack_data) {
+    addr = stack_data + sp;
+    memcpy(addr, &target_entry, sizeof(sp));
+  }
   return sp;
 }
 
@@ -1399,7 +1291,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
     unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob) const {
-  // TODO
+  // Nothing to do but that may change in the future if necessary
   return true;
 }
 
@@ -1652,8 +1544,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
                                &translated_id))
     return (int)translated_id;
   return 0;
-  //arm_regs[7]->GetValue(&translated_id);
-  //return (int)translated_id;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>

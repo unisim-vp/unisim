@@ -875,7 +875,6 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	//  - Linux OS run-time configuration
 	simulator->SetVariable("linux-os.endianness", "big-endian");
 	simulator->SetVariable("linux-os.stack-base", 0xc0000000);
-	simulator->SetVariable("linux-os.max-environ", 16 * 1024);
 	simulator->SetVariable("linux-os.envc", 0);
 	simulator->SetVariable("linux-os.system", "ppc");
 	simulator->SetVariable("linux-os.endianness", "big-endian");
@@ -885,6 +884,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
  	simulator->SetVariable("linux-os.utsname-version", "#1 PREEMPT Thu Jan 1 00:00:00 CEST 1970");
 	simulator->SetVariable("linux-os.utsname-machine", "ppc");
 	simulator->SetVariable("linux-os.utsname-domainname", "(none)");
+	simulator->SetVariable("linux-os.apply-host-environment", false);
 }
 
 template <class CONFIG>
@@ -905,6 +905,8 @@ void Simulator<CONFIG>::Run()
 #endif
 	}
 
+	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
+	
 	try
 	{
 		sc_start();
