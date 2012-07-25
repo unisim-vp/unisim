@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #if defined(HAVE_CONFIG_H)
@@ -37,8 +38,8 @@
 
 #include <inttypes.h>
 
-#include "unisim/util/os/linux/linux.hh"
-#include "unisim/util/os/linux/linux.tcc"
-#include "unisim/util/os/linux/calls.tcc"
+#include "unisim/util/os/linux_os/linux.hh"
+#include "unisim/util/os/linux_os/linux.tcc"
+#include "unisim/util/os/linux_os/calls.tcc"
 
 template class unisim::util::os::linux_os::Linux<uint32_t, uint32_t>;

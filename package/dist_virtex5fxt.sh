@@ -150,8 +150,8 @@ unisim/util/random/random.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
-unisim/util/os/linux/environment.cc \
-unisim/util/os/linux/linux.cc \
+unisim/util/os/linux_os/environment.cc \
+unisim/util/os/linux_os/linux.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -180,7 +180,7 @@ unisim/service/tee/stmt_lookup/tee_32.cc \
 unisim/service/tee/backtrace/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/telnet/telnet.cc \
-unisim/service/os/os_linux/linux_os.cc \
+unisim/service/os/linux_os/linux.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_debug.cc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu_wommu.cc \
@@ -316,12 +316,12 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
-unisim/util/os/linux/arm.hh \
-unisim/util/os/linux/aux_table.hh \
-unisim/util/os/linux/environment.hh \
-unisim/util/os/linux/files_flags.hh \
-unisim/util/os/linux/linux.hh \
-unisim/util/os/linux/ppc.hh \
+unisim/util/os/linux_os/arm.hh \
+unisim/util/os/linux_os/aux_table.hh \
+unisim/util/os/linux_os/environment.hh \
+unisim/util/os/linux_os/files_flags.hh \
+unisim/util/os/linux_os/linux.hh \
+unisim/util/os/linux_os/ppc.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -349,7 +349,6 @@ unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64_loader.hh \
@@ -372,7 +371,7 @@ unisim/service/tee/stmt_lookup/tee.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/telnet/telnet.hh \
-unisim/service/os/os_linux/linux_os.hh \
+unisim/service/os/linux_os/linux.hh \
 unisim/component/cxx/memory/ram/memory.hh \
 unisim/component/cxx/processor/powerpc/exception.hh \
 unisim/component/cxx/processor/powerpc/floating.hh \
@@ -454,8 +453,8 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
-unisim/util/os/linux/calls.tcc \
-unisim/util/os/linux/linux.tcc \
+unisim/util/os/linux_os/calls.tcc \
+unisim/util/os/linux_os/linux.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -474,7 +473,7 @@ unisim/service/tee/blob/tee.tcc \
 unisim/service/tee/stmt_lookup/tee.tcc \
 unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
-unisim/service/os/os_linux/linux_os.tcc \
+unisim/service/os/linux_os/linux.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/cpu.tcc \
 unisim/component/cxx/processor/powerpc/ppc440/exception.tcc \

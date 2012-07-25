@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #include <iostream>
@@ -39,7 +40,7 @@
 #include <inttypes.h>
 
 #include "unisim/util/endian/endian.hh"
-#include "unisim/util/os/linux/linux.hh"
+#include "unisim/util/os/linux_os/linux.hh"
 
 class RegInterface:
     public unisim::util::os::linux_os::LinuxRegisterInterface<uint32_t> {

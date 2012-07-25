@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_UTIL_OS_LINUX_LINUX_TCC__
@@ -53,10 +54,10 @@
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/loader/elf_loader/elf32_loader.hh"
 
-#include "unisim/util/os/linux/arm.hh"
-#include "unisim/util/os/linux/ppc.hh"
-#include "unisim/util/os/linux/environment.hh"
-#include "unisim/util/os/linux/aux_table.hh"
+#include "unisim/util/os/linux_os/arm.hh"
+#include "unisim/util/os/linux_os/ppc.hh"
+#include "unisim/util/os/linux_os/environment.hh"
+#include "unisim/util/os/linux_os/aux_table.hh"
 
 namespace unisim {
 namespace util {

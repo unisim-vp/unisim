@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
 #ifndef __UNISIM_UTIL_OS_LINUX_CALLS_TCC__
@@ -52,10 +53,10 @@
 #include <stdexcept>
 
 #include "unisim/util/endian/endian.hh"
-#include "unisim/util/os/linux/linux.hh"
-#include "unisim/util/os/linux/files_flags.hh"
-#include "unisim/util/os/linux/arm.hh"
-#include "unisim/util/os/linux/ppc.hh"
+#include "unisim/util/os/linux_os/linux.hh"
+#include "unisim/util/os/linux_os/files_flags.hh"
+#include "unisim/util/os/linux_os/arm.hh"
+#include "unisim/util/os/linux_os/ppc.hh"
 
 namespace unisim {
 namespace util {

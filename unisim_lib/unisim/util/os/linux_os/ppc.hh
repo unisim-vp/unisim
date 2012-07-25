@@ -29,6 +29,7 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #ifndef __UNISIM_UTIL_OS_LINUX_PPC_HH__

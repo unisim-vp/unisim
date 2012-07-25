@@ -73,7 +73,7 @@
 #include <unisim/service/translator/memory_address/memory/translator.hh>
 #include <unisim/service/tee/memory_access_reporting/tee.hh>
 #include <unisim/service/telnet/telnet.hh>
-#include <unisim/service/os/os_linux/linux_os.hh>
+#include <unisim/service/os/linux_os/linux.hh>
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/kernel/tlm2/tlm.hh>
 
@@ -100,7 +100,7 @@ using unisim::service::debug::inline_debugger::InlineDebugger;
 using unisim::service::profiling::addr_profiler::Profiler;
 using unisim::service::power::CachePowerEstimator;
 using unisim::service::telnet::Telnet;
-using unisim::service::os::os_linux::LinuxOS;
+using unisim::service::os::linux_os::Linux;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Variable;
 using unisim::kernel::service::VariableBase;
@@ -238,8 +238,8 @@ private:
 	DMAC2_DCR_STUB *dmac2_dcr_stub;
 	DMAC3_DCR_STUB *dmac3_dcr_stub;
 	EXTERNAL_SLAVE_DCR_STUB *external_slave_dcr_stub;
-	DCR_SLAVE_STUB *dcr_slave_stub; // used in combination with LinuxOS
-	// - Memory router (used in combination with LinuxOS)
+	DCR_SLAVE_STUB *dcr_slave_stub; // used in combination with Linux loader and ABI translator
+	// - Memory router (used in combination with Linux loader and ABI translator)
 	MEMORY_ROUTER *memory_router;
 	
 	//=========================================================================
@@ -248,7 +248,7 @@ private:
 	//  - Multiformat loader
 	MultiFormatLoader<CPU_ADDRESS_TYPE> *loader;
 	//  - Linux loader and Linux ABI translator
-	LinuxOS<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> *linux_os;
+	Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE> *linux_os;
 	//  - Debugger
 	Debugger<CPU_ADDRESS_TYPE> *debugger;
 	//  - GDB server

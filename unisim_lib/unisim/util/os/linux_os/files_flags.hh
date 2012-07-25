@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2012 Commissariat a l'Energie Atomique (CEA) All rights
+ *  Copyright (c) 2011 Commissariat a l'Energie Atomique (CEA) All rights
  *  reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,30 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#include <inttypes.h>
+#ifndef __UNISIM_UTIL_OS_LINUX_FILES_FLAGS_TCC__
+#define __UNISIM_UTIL_OS_LINUX_FILES_FLAGS_TCC__
 
-#include "unisim/service/os/os_linux/linux_os.hh"
-#include "unisim/service/os/os_linux/linux_os.tcc"
+namespace unisim {
+namespace util {
+namespace os {
+namespace linux_os {
 
-template class unisim::service::os::os_linux::LinuxOS<uint32_t, uint32_t>;
+static const int LINUX_O_ACCMODE = 00000003;
+static const int LINUX_O_RDONLY = 00000000;
+static const int LINUX_O_WRONLY = 00000001;
+static const int LINUX_O_RDWR = 00000002;
+static const int LINUX_O_CREAT = 00000100;
+static const int LINUX_O_EXCL = 00000200;
+static const int LINUX_O_TRUNC = 00001000;
+static const int LINUX_O_APPEND = 00002000;
+
+} // end of namespace linux_os
+} // end of namespace os
+} // end of namespace util
+} // end of namespace unisim
+
+#endif // __UNISIM_UTIL_OS_LINUX_FILES_FLAGS_TCC__
 

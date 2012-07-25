@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #include <string>
@@ -46,7 +47,7 @@
 
 #include <string>
 
-#include "unisim/util/os/linux/environment.hh"
+#include "unisim/util/os/linux_os/environment.hh"
 
 namespace unisim {
 namespace util {

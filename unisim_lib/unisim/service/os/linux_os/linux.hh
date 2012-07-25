@@ -30,10 +30,11 @@
  *  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_SERVICE_OS_OS_LINUX_LINUX_OS_HH__
-#define __UNISIM_SERVICE_OS_OS_LINUX_LINUX_OS_HH__
+#ifndef __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
+#define __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -43,17 +44,15 @@
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/blob.hh"
-#include "unisim/util/os/linux/linux.hh"
+#include "unisim/util/os/linux_os/linux.hh"
 
 namespace unisim {
 namespace service {
 namespace os {
-namespace os_linux {
+namespace linux_os {
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
-class LinuxOS :
-    //public unisim::kernel::service::Service<
-      //unisim::service::interfaces::Loader>,
+class Linux :
     public unisim::kernel::service::Service<
       unisim::service::interfaces::LinuxOS>,
     public unisim::kernel::service::Service<
@@ -66,8 +65,6 @@ class LinuxOS :
       unisim::service::interfaces::Registers> {
  public:
   /* Exported services */
-  //unisim::kernel::service::ServiceExport<unisim::service::interfaces::Loader>
-      //loader_export_;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::LinuxOS>
       linux_os_export_;
   unisim::kernel::service::ServiceExport<unisim::service::interfaces::Blob<ADDRESS_TYPE> >
@@ -83,8 +80,8 @@ class LinuxOS :
       registers_import_;
 
   /* Constructor/Destructor */
-  LinuxOS(const char *name, unisim::kernel::service::Object *parent = 0);
-  virtual ~LinuxOS();
+  Linux(const char *name, unisim::kernel::service::Object *parent = 0);
+  virtual ~Linux();
 
   /* Service methods */
   virtual void OnDisconnect();
@@ -142,9 +139,9 @@ class LinuxOS :
   unisim::kernel::service::Parameter<std::string> param_utsname_domainname_;
 };
 
-} // end of os_linux namespace
+} // end of linux_os namespace
 } // end of os namespace
 } // end of service namespace
 } // end of unisim namespace
 
-#endif // __UNISIM_SERVICE_OS_OS_LINUX_LINUX_OS_HH__
+#endif // __UNISIM_SERVICE_OS_LINUX_OS_LINUX_HH__
