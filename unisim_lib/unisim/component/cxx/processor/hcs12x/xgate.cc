@@ -688,7 +688,7 @@ void XGATE::RequiresFinishedInstructionReporting(bool report)
 
 bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+0xffff))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
 
 		if (size == 0) {
 			return (true);
@@ -736,7 +736,7 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
-	if ((addr >= baseAddress) && (addr <= (baseAddress+0xffff))) {
+	if ((addr >= baseAddress) && (addr < (baseAddress+64))) {
 
 		if (size == 0) {
 			return (true);
