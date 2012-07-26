@@ -460,13 +460,16 @@ inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
 	physical_address_t address = cpu_address;
 
 	if ((cpu_address >= XGATE_RAM_LOW_OFFSET) && (cpu_address <= XGATE_RAM_HIGH_OFFSET)) { // Access to RAM
-		address = ((physical_address_t) XGATE_RAM_PAGE << RAM_ADDRESS_SIZE) | ((address_t) RAM_ADDRESS_BITS & cpu_address);
+		uint8_t current_ram_page = XGATE_RAM_PAGE + (cpu_address - XGATE_RAM_LOW_OFFSET) / RAM_PAGE_SIZE;
+		address = ((physical_address_t) current_ram_page << RAM_ADDRESS_SIZE) | ((address_t) RAM_ADDRESS_BITS & cpu_address);
 	}
 
 	if ((cpu_address >= XGATE_FLASH_LOW_OFFSET) && (cpu_address <= XGATE_FLASH_HIGH_OFFSET)) { // Access to Flash
 		static const physical_address_t shifted_gpage = 0x1 << (FLASH_ADDRESS_SIZE + 8); // 1 PPAGE CPUAddr
 
-		address = (shifted_gpage | ((physical_address_t) XGATE_FLASH_PAGE << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_ADDRESS_BITS & cpu_address));
+		uint8_t current_flash_page = XGATE_FLASH_PAGE + (cpu_address - XGATE_FLASH_LOW_OFFSET) / FLASH_PAGE_SIZE;
+
+		address = (shifted_gpage | ((physical_address_t) current_flash_page << FLASH_ADDRESS_SIZE) | ((address_t) FLASH_ADDRESS_BITS & cpu_address));
 	}
 
 	return (address);
@@ -477,11 +480,13 @@ inline physical_address_t MMC::getXGATEPagedAddress(address_t cpu_address) {
 	physical_address_t address = cpu_address;
 
 	if ((cpu_address >= XGATE_RAM_LOW_OFFSET) && (cpu_address <= XGATE_RAM_HIGH_OFFSET)) { // Access to RAM
-		address = (((physical_address_t) XGATE_RAM_PAGE << (sizeof(address_t) * 8)) | cpu_address);
+		uint8_t current_ram_page = XGATE_RAM_PAGE + (cpu_address - XGATE_RAM_LOW_OFFSET) / RAM_PAGE_SIZE;
+		address = (((physical_address_t) current_ram_page << (sizeof(address_t) * 8)) | cpu_address);
 	}
 
 	if ((cpu_address >= XGATE_FLASH_LOW_OFFSET) && (cpu_address <= XGATE_FLASH_HIGH_OFFSET)) { // Access to Flash
-		address = (((physical_address_t) XGATE_FLASH_PAGE << (sizeof(address_t) * 8)) | cpu_address);
+		uint8_t current_flash_page = XGATE_FLASH_PAGE + (cpu_address - XGATE_FLASH_LOW_OFFSET) / FLASH_PAGE_SIZE;
+		address = (((physical_address_t) current_flash_page << (sizeof(address_t) * 8)) | cpu_address);
 	}
 
 	return (address);

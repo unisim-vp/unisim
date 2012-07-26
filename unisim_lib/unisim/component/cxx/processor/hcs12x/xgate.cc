@@ -839,7 +839,7 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 		case XGMCTL: *((uint16_t *) buffer) = Host2BigEndian(xgmctl_register & 0x00FB); break;
 		case XGCHID: {
 			// The XGCHID register read 0x00 if the XGATE module is idle
-			*((uint8_t *) buffer) = (state == RUNNING)? 0 : xgchid_register & 0x7F;
+			*((uint8_t *) buffer) = (state == IDLE)? 0 : xgchid_register & 0x7F;
 		} break;
 		case RESERVED1: *((uint16_t *) buffer) = 0; break;
 		case RESERVED2: *((uint16_t *) buffer) = 0; break;
