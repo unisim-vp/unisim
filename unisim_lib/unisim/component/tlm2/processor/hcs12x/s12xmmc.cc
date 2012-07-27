@@ -167,9 +167,8 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 			if (!find) {
 
-				if (debug_enabled) {
-					cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
-				}
+				cerr << "WARNING: S12XMMC => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+
 				memset(buffer->buffer, 0, buffer->data_size);
 			}
 
@@ -206,13 +205,13 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 				if ((memory_map[i].start_addr <= addr) && (memory_map[i].end_addr >= addr)) {
 					(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
 
+					if (mmc_trans->is_response_error() ) {
+						cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << " size = " << mmc_trans->get_data_length() << std::dec << endl;
+						SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
+					}
+
 					break;
 				}
-			}
-
-			if (mmc_trans->is_response_error() ) {
-				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << " size = " << mmc_trans->get_data_length() << std::dec << endl;
-				SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
 			}
 
 
@@ -301,15 +300,15 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 			for (int i=0; i <MEMORY_MAP_SIZE; i++) {
 				if ((memory_map[i].start_addr <= addr) && (memory_map[i].end_addr >= addr)) {
 					(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
+
+					if (mmc_trans->is_response_error() ) {
+						cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << " size = " << mmc_trans->get_data_length() << std::dec << endl;
+						SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
+					}
+
 					break;
 				}
 			}
-
-			if (mmc_trans->is_response_error() ) {
-				cerr << "Access error to 0x" << std::hex << mmc_trans->get_address() << " size = " << mmc_trans->get_data_length() << std::dec << endl;
-				SC_REPORT_ERROR("S12XMMC : ", "Response error from b_transport.");
-			}
-
 
 			mmc_trans->release();
 
