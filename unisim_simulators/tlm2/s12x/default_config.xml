@@ -634,6 +634,12 @@
 			<value>0x00</value>
 			<description></description>
 		</variable>
+		<variable name="ppage-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0030</value>
+			<description></description>
+		</variable>
 	</object>
 	<object name="PWM">
 		<variable name="debug-enabled">

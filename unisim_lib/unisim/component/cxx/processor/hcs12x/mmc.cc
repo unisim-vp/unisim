@@ -68,6 +68,8 @@ MMC::MMC(const char *name, Object *parent):
 	param_mmcctl1("mmcctl1", this, mmcctl1_int),
 	address_encoding(ADDRESS::BANKED),
 	param_address_encoding("address-encoding",this,address_encoding)
+	, ppage_address(0x30)
+	, param_ppage_address("ppage-address", this, ppage_address)
 
 {
 
@@ -78,7 +80,8 @@ MMC::MMC(const char *name, Object *parent):
 	MMC_REGS_ADDRESSES[MMCCTL1] = 0x0013;
 	MMC_REGS_ADDRESSES[RPAGE] = 0x0016;
 	MMC_REGS_ADDRESSES[EPAGE] = 0x0017;
-	MMC_REGS_ADDRESSES[PPAGE] = 0x0030;
+//	MMC_REGS_ADDRESSES[PPAGE] = 0x0030;
+	MMC_REGS_ADDRESSES[PPAGE] = ppage_address;
 	MMC_REGS_ADDRESSES[RAMWPC] = 0x011C;
 	MMC_REGS_ADDRESSES[RAMXGU] = 0x011D;
 	MMC_REGS_ADDRESSES[RAMSHL] = 0x011E;

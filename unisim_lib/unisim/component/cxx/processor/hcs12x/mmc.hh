@@ -220,7 +220,7 @@ public:
     MMC(const char *name, Object *parent = 0);
     ~MMC();
 
-    static inline physical_address_t getCPU12XPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload = false, uint8_t debug_page = 0xFF);
+    static inline physical_address_t getCPU12XPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type=ADDRESS::EXTENDED, bool isGlobal=false, bool debugload = false, uint8_t debug_page = 0xFF);
     static inline physical_address_t getCPU12XPagedAddress(address_t logicalAddress);
     static inline bool isPaged(address_t addr, page_t page, bool isGlobal, bool debugload);
 
@@ -327,6 +327,9 @@ private:
 
 	uint8_t	address_encoding;
 	Parameter<uint8_t> param_address_encoding;
+
+	address_t ppage_address;
+	Parameter<address_t> param_ppage_address;
 
 	// Registers map
 	std::map<string, Register *> registers_registry;
