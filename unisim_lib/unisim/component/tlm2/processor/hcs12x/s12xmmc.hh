@@ -91,7 +91,7 @@ class S12XMMC :
 
 {
 public:
-	static const uint8_t MEMORY_MAP_SIZE = 11;
+	static const uint8_t MEMORY_MAP_SIZE = 12;
 
 	typedef MMC inherited;
 	typedef tlm_utils::simple_initiator_socket<S12XMMC> InitSocket;

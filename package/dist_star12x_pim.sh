@@ -183,6 +183,7 @@ unisim/component/tlm2/processor/hcs12x/ect.cc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.cc \
 unisim/component/tlm2/processor/hcs12x/tlm_types.cc \
 unisim/component/tlm2/processor/hcs12x/s12xgate.cc \
+unisim/component/tlm2/processor/hcs12x/s12pit24b4cv1.cc \
 unisim/component/tlm2/interconnect/generic_router/router.cc \
 unisim/component/tlm2/interconnect/generic_router/variable_mapping.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
@@ -344,6 +345,7 @@ unisim/component/tlm2/processor/hcs12x/atd10b.hh \
 unisim/component/tlm2/processor/hcs12x/crg.hh \
 unisim/component/tlm2/processor/hcs12x/ect.hh \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.hh \
+unisim/component/tlm2/processor/hcs12x/s12pit24b4cv1.hh \
 unisim/service/pim/pim.hh \
 unisim/service/pim/pim_server.hh \
 unisim/service/pim/pim_thread.hh \

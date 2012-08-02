@@ -92,17 +92,20 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	memory_map[6].start_addr = 0x300;  // PWM
 	memory_map[6].end_addr = 0x327;
 
-	memory_map[7].start_addr = 0x380;  // XGATE
-	memory_map[7].end_addr = 0x3BF;
+	memory_map[7].start_addr = 0x340;  // PIT
+	memory_map[7].end_addr = 0x367;
 
-	memory_map[8].start_addr = GLOBAL_RAM_LOW_OFFSET;
-	memory_map[8].end_addr = GLOBAL_RAM_HIGH_OFFSET;
+	memory_map[8].start_addr = 0x380;  // XGATE
+	memory_map[8].end_addr = 0x3BF;
 
-	memory_map[9].start_addr = GLOBAL_EEPROM_LOW_OFFSET;
-	memory_map[9].end_addr = GLOBAL_EEPROM_HIGH_OFFSET;
+	memory_map[9].start_addr = GLOBAL_RAM_LOW_OFFSET;
+	memory_map[9].end_addr = GLOBAL_RAM_HIGH_OFFSET;
 
-	memory_map[10].start_addr = GLOBAL_FLASH_LOW_OFFSET;
-	memory_map[10].end_addr = GLOBAL_FLASH_HIGH_OFFSET;
+	memory_map[10].start_addr = GLOBAL_EEPROM_LOW_OFFSET;
+	memory_map[10].end_addr = GLOBAL_EEPROM_HIGH_OFFSET;
+
+	memory_map[11].start_addr = GLOBAL_FLASH_LOW_OFFSET;
+	memory_map[11].end_addr = GLOBAL_FLASH_HIGH_OFFSET;
 
 }
 

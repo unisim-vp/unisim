@@ -35,6 +35,7 @@ Simulator::Simulator(int argc, char **argv)
 	, atd1(0)
 	, atd0(0)
 	, pwm(0)
+	, pit(0)
 	, global_ram(0)
 	, global_eeprom(0)
 	, global_flash(0)
@@ -115,6 +116,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	crg = new CRG("CRG");
 	ect = new ECT("ECT");
+	pit = new S12PIT24B4C("PIT");
 
 	atd1 = new ATD1("ATD1");
 	atd0 = new ATD0("ATD0");
@@ -198,6 +200,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	crg->interrupt_request(s12xint->interrupt_request);
 	ect->interrupt_request(s12xint->interrupt_request);
+	pit->interrupt_request(s12xint->interrupt_request);
 	pwm->interrupt_request(s12xint->interrupt_request);
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
@@ -222,14 +225,16 @@ Simulator::Simulator(int argc, char **argv)
 	(*mmc->init_socket[4])(s12xint->slave_socket);
 	(*mmc->init_socket[5])(atd0->slave_socket);
 	(*mmc->init_socket[6])(pwm->slave_socket);
-	(*mmc->init_socket[7])(xgate->target_socket);
+	(*mmc->init_socket[7])(pit->slave_socket);
+	(*mmc->init_socket[8])(xgate->target_socket);
 
-	(*mmc->init_socket[8])(global_ram->slave_sock);
-	(*mmc->init_socket[9])(global_eeprom->slave_sock);
-	(*mmc->init_socket[10])(global_flash->slave_sock);
+	(*mmc->init_socket[9])(global_ram->slave_sock);
+	(*mmc->init_socket[10])(global_eeprom->slave_sock);
+	(*mmc->init_socket[11])(global_flash->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
+	crg->bus_clock_socket(pit->bus_clock_socket);
 	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
@@ -248,11 +253,12 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[3]) >> atd0->memory_export;
 	*(memoryImportExportTee->memory_import[4]) >> pwm->memory_export;
 	*(memoryImportExportTee->memory_import[5]) >> ect->memory_export;
-	*(memoryImportExportTee->memory_import[6]) >> xgate->memory_export;
+	*(memoryImportExportTee->memory_import[6]) >> pit->memory_export;
+	*(memoryImportExportTee->memory_import[7]) >> xgate->memory_export;
 
-	*(memoryImportExportTee->memory_import[7]) >> global_ram->memory_export;
-	*(memoryImportExportTee->memory_import[8]) >> global_eeprom->memory_export;
-	*(memoryImportExportTee->memory_import[9]) >> global_flash->memory_export;
+	*(memoryImportExportTee->memory_import[8]) >> global_ram->memory_export;
+	*(memoryImportExportTee->memory_import[9]) >> global_eeprom->memory_export;
+	*(memoryImportExportTee->memory_import[10]) >> global_flash->memory_export;
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
@@ -265,7 +271,8 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[5]) >> atd0->registers_export;
 	*(registersTee->registers_import[6]) >> pwm->registers_export;
 	*(registersTee->registers_import[7]) >> ect->registers_export;
-	*(registersTee->registers_import[8]) >> xgate->registers_export;
+	*(registersTee->registers_import[8]) >> pit->registers_export;
+	*(registersTee->registers_import[9]) >> xgate->registers_export;
 
 // ***********************************************************
 	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
@@ -397,6 +404,7 @@ Simulator::~Simulator()
 	if (xgate) { delete xgate; xgate = NULL; }
 	if (crg) { delete crg; crg = NULL; }
 	if (ect) { delete ect; ect = NULL; }
+	if (pit) { delete pit; pit = NULL; }
 	if (pwm) { delete pwm; pwm = NULL; }
 	if (atd1) { delete atd1; atd1 = NULL; }
 	if (atd0) { delete atd0; atd0 = NULL; }
@@ -577,6 +585,11 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
 	simulator->SetVariable("ECT.built-in-signal-generator-period", 80000);
+
+	simulator->SetVariable("PIT.bus-cycle-time", 250000);
+	simulator->SetVariable("PIT.base-address", 0x0340);
+	simulator->SetVariable("PIT.interrupt-offset-channel0", 0x7A);
+	simulator->SetVariable("PIT.debug-enabled", false);
 
 	simulator->SetVariable("MMC.debug-enabled", false);
 	simulator->SetVariable("MMC.mode", 0x80);

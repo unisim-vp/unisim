@@ -25,6 +25,7 @@
 
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/debug/simple_register.hh"
+#include "unisim/util/endian/endian.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -68,6 +69,9 @@ using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::Register;
 using unisim::util::debug::SimpleRegister;
+using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
+
 
 using unisim::component::tlm2::memory::ram::DEFAULT_BURST_LENGTH;
 using unisim::component::tlm2::memory::ram::DEFAULT_BUSWIDTH;

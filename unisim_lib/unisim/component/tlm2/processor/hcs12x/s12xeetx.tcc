@@ -10,7 +10,7 @@
 
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
-#include "unisim/util/endian/endian.hh"
+
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
@@ -19,9 +19,6 @@ namespace component {
 namespace tlm2 {
 namespace processor {
 namespace hcs12x {
-
-using unisim::util::endian::BigEndian2Host;
-using unisim::util::endian::Host2BigEndian;
 
 /**
  * Constructor.

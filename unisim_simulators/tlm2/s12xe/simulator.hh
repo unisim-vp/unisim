@@ -51,6 +51,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12pit24b4cv1.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -85,6 +86,7 @@ using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XEETX;
+using unisim::component::tlm2::processor::hcs12x::S12PIT24B4C;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -192,6 +194,8 @@ private:
 	ATD0 *atd0;
 
 	PWM *pwm;
+
+	S12PIT24B4C *pit;
 
 	//  - Memories
 	RAM *global_ram;
