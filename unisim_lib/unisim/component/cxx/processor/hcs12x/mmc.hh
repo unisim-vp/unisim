@@ -132,7 +132,7 @@ public:
 	static const address_t XGATE_RAM_HIGH_OFFSET	= 0xFFFF;
 
 	static const physical_address_t GLOBAL_REG_LOW_OFFSET				= 0x000000;	// GPAGE_CPUAddress
-	static const physical_address_t GLOBAL_REG_HIGH_OFFSET				= 0x000FFF;	// GPAGE_CPUAddress ($00_0800 to $00_0FFF is unused !)
+	static const physical_address_t GLOBAL_REG_HIGH_OFFSET				= 0x0007FF;	// GPAGE_CPUAddress
 
 	static const physical_address_t GLOBAL_RAM_LOW_OFFSET				= 0x000800;	// GPAGE_CPUAddress
 	static const physical_address_t GLOBAL_RAM_HIGH_OFFSET				= 0x0FFFFF;	// GPAGE_CPUAddress

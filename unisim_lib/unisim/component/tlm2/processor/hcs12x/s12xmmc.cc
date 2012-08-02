@@ -120,14 +120,14 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	memory_map[7].start_addr = 0x380;
 	memory_map[7].end_addr = 0x3BF;
 
-	memory_map[8].start_addr = 0x0f8000;
-	memory_map[8].end_addr = 0x0fffff;
+	memory_map[8].start_addr = GLOBAL_RAM_LOW_OFFSET;
+	memory_map[8].end_addr = GLOBAL_RAM_HIGH_OFFSET;
 
-	memory_map[9].start_addr = 0x13f000;
-	memory_map[9].end_addr = 0x13ffff;
+	memory_map[9].start_addr = GLOBAL_EEPROM_LOW_OFFSET;
+	memory_map[9].end_addr = GLOBAL_EEPROM_HIGH_OFFSET;
 
-	memory_map[10].start_addr = 0x780000;
-	memory_map[10].end_addr = 0x7fffff;
+	memory_map[10].start_addr = GLOBAL_FLASH_LOW_OFFSET;
+	memory_map[10].end_addr = GLOBAL_FLASH_HIGH_OFFSET;
 
 }
 

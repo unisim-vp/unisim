@@ -1,0 +1,1338 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<variables>
+	<object name="ATD0">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x02c0</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd2</value>
+			<description></description>
+		</variable>
+		<variable name="vrl">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0</value>
+			<description></description>
+		</variable>
+		<variable name="vrh">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>5.12</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="use-atd-stub">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="vih">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>3.25</value>
+			<description></description>
+		</variable>
+		<variable name="vil">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1.75</value>
+			<description></description>
+		</variable>
+		<variable name="Has-External-Trigger">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd-anx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>ATD.xml</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="ATD1">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0080</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd0</value>
+			<description></description>
+		</variable>
+		<variable name="vrl">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0</value>
+			<description></description>
+		</variable>
+		<variable name="vrh">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>5.12</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="use-atd-stub">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="vih">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>3.25</value>
+			<description></description>
+		</variable>
+		<variable name="vil">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1.75</value>
+			<description></description>
+		</variable>
+		<variable name="Has-External-Trigger">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd-anx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>ATD.xml</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="CPU">
+		<variable name="verbose-all">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-setup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-step">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-dump-regs-start">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-dump-regs-end">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-exception">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="trace-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="periodic-trap">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>18446744073709551615</value>
+			<description></description>
+		</variable>
+		<variable name="requires-memory-access-reporting">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="requires-finished-instruction-reporting">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="max-inst">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>18446744073709551615</value>
+			<description></description>
+		</variable>
+		<variable name="nice-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>1 ms</value>
+			<description></description>
+		</variable>
+		<variable name="core-clock">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>125000</value>
+			<description></description>
+		</variable>
+		<variable name="enable-fine-timing">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-tlm-bus-synchronize">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-tlm-run-thread">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-tlm-commands">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="CRG">
+		<variable name="oscillator-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>125000</value>
+			<description></description>
+		</variable>
+		<variable name="osc-ok">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>4096</value>
+			<description>A number greater equal than 4096 rising OSCCLK edges within a check window is called osc ok.</description>
+		</variable>
+		<variable name="osc-fail">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Oscillator instrument. Used to emulate oscillator fail and trigger the clock monitor.</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="check_window">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>50000</value>
+			<description>A time window of 50,000 VCO clock cycles is called check window.
+ VCO clock cycles are generated by the PLL when running at minimum frequency Fscm.</description>
+		</variable>
+		<variable name="pll-stabilization-delay">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.24</value>
+			<description>Total PLL stabilization delay (acquisition + tracking). e.g. for Fosc = 4MHz and REFDV = #$00, SYNR = #$09 the acquisition_delay = 0.09 ms and tracking_delay = 0.16 ms</description>
+		</variable>
+		<variable name="param-self-clock-mode-clock">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>100000</value>
+			<description>Self Clock Mode frequency between 1MHz and 5.5 MHz (unit PS)</description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0034</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-rti">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xf0</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-pll-lock">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xc6</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-self-clock-mode">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xc4</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="ECT">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0040</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-channel0">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xee</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-timer-overflow">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xde</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-pulse-accumulatorA-overflow">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xdc</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-pulse-accumulatorB-overflow">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xc8</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-pulse-accumulator-input-edge">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xda</value>
+			<description></description>
+		</variable>
+		<variable name="modulus-counter-interrupt">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xca</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="built-in-signal-generator-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>Use built-in signal generator or external instrument</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="built-in-signal-generator-period">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>80000</value>
+			<description>Built-in Signal generator period in pico-seconds. Default 25000ps.</description>
+		</variable>
+	</object>
+	<object name="EEPROM">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x0013f000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>4096</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xff</value>
+			<description></description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="oscillator-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>125000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0110</value>
+			<description></description>
+		</variable>
+		<variable name="command-interrupt">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xba</value>
+			<description></description>
+		</variable>
+		<variable name="erase-fail-ratio">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>0.01</value>
+			<description>Ration to emulate erase failing. </description>
+		</variable>
+	</object>
+	<object name="FLASH">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00780000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>524288</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xff</value>
+			<description></description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="MMC">
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="mode">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x80</value>
+			<description></description>
+		</variable>
+		<variable name="mmcctl1">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x05</value>
+			<description></description>
+		</variable>
+		<variable name="address-encoding">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+		<variable name="ppage-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0030</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="PWM">
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0300</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x8c</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="RAM">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x000f8000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>32768</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>250000 s</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="XGATE">
+		<variable name="verbose-all">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-setup">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-step">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-dump-regs-start">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-dump-regs-end">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-exception">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="trace-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="periodic-trap">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>18446744073709551615</value>
+			<description></description>
+		</variable>
+		<variable name="requires-memory-access-reporting">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="requires-finished-instruction-reporting">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0380</value>
+			<description>XGATE base Address</description>
+		</variable>
+		<variable name="software_channel_id[0]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x39</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[1]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x38</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[2]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x37</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[3]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x36</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[4]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x35</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[5]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x34</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[6]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x33</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software_channel_id[7]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x32</value>
+			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
+		</variable>
+		<variable name="software-error-interrupt">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x62</value>
+			<description>XGATE Software error interrupt</description>
+		</variable>
+		<variable name="max-inst">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>18446744073709551615</value>
+			<description></description>
+		</variable>
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="verbose-tlm-bus-synchronize">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-tlm-run-thread">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose-tlm-commands">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="core-clock">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>125000</value>
+			<description></description>
+		</variable>
+		<variable name="nice-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>1 ms</value>
+			<description></description>
+		</variable>
+		<variable name="enable-fine-timing">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="XINT">
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="atd-pwm-stub">
+		<variable name="trace-enable">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd0-stub-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="atd1-stub-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="anx-stimulus-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>8e+07</value>
+			<description></description>
+		</variable>
+		<variable name="pwm-fetch-period">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>1e+09</value>
+			<description></description>
+		</variable>
+		<variable name="atd0-anx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>ATD.xml</value>
+			<description></description>
+		</variable>
+		<variable name="atd0-anx-start-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+		<variable name="atd0-anx-wrap-around-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+		<variable name="atd1-anx-stimulus-file">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>ATD.xml</value>
+			<description></description>
+		</variable>
+		<variable name="atd1-anx-start-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+		<variable name="atd1-anx-wrap-around-channel">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+	</object>
+	<object name="elf32-loader">
+		<variable name="filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>the ELF filename to load into memory</description>
+		</variable>
+		<variable name="base-addr">
+			<type>parameter</type>
+			<data_type>unsigned 32-bit integer</data_type>
+			<value>0x00000000</value>
+			<description>if force-base-addr is true force base address for a unique program segment, otherwise ignored</description>
+		</variable>
+		<variable name="force-base-addr">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>if true force base address for a unique program segment</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="force-use-virtual-address">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>true</value>
+			<description>force use of virtual addresses instead of physical addresses</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="initialize-extra-segment-bytes">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>whether to initialize extra bytes in segments (p_filesz &lt; p_memsz) to zero (true for standard ELF files)</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="dump-headers">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>dump headers while loading ELF file</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="dwarf-to-html-output-directory">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF v2/v3 to HTML output directory</description>
+		</variable>
+		<variable name="dwarf-register-number-mapping-filename">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>DWARF register number mapping filename</description>
+		</variable>
+		<variable name="parse-dwarf">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable parsing of DWARF debugging informations</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<variable name="authors">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>Reda Nouacer &lt;reda.nouacer@cea.fr&gt;</value>
+		<description>Authors</description>
+	</variable>
+	<variable name="copyright">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>Copyright (C) 2008-2010, Commissariat a l'Energie Atomique (CEA)</value>
+		<description>Copyright</description>
+	</variable>
+	<variable name="description">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>UNISIM star12x, a Star12X System-on-Chip simulator with support of ELF32 binaries and s19 hex files, and targeted for automotive applications</value>
+		<description>Description</description>
+	</variable>
+	<variable name="dump-formulas">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description></description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dump-parameters">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description></description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="dump-statistics">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description></description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-gdb-server">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable GDB server instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-inline-debugger">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable inline debugger instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-pim-server">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable PIM server instantiation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-press-enter-at-exit">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable pressing key enter at exit</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="endian">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>big</value>
+		<description>Target endianness</description>
+	</variable>
+	<variable name="kernel_logger.file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Keep logger output in a file</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.txt</value>
+		<description>Filename to keep logger output (the option file must be activated)</description>
+	</variable>
+	<variable name="kernel_logger.std_err">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Show logger output through the standard error output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_err_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Show logger output through the standard output</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.std_out_color">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>true</value>
+		<description>Keep logger output in a file xml formatted</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_file_gzipped">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>If the xml_file option is active, the output file will be compressed (a .gz extension will be automatically added to the xml_filename option</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="kernel_logger.xml_filename">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>logger_output.xml</value>
+		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
+	</variable>
+	<variable name="license">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>BSD (see file COPYING)</value>
+		<description>License</description>
+	</variable>
+	<variable name="program-counter-name">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>CPU.PC</value>
+		<description>Target CPU program counter name</description>
+	</variable>
+	<variable name="program-name">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>UNISIM star12x</value>
+		<description>Program name</description>
+	</variable>
+	<variable name="schematic">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value></value>
+		<description>path to simulator schematic</description>
+	</variable>
+	<variable name="version">
+		<type>parameter</type>
+		<data_type>string</data_type>
+		<value>1.0</value>
+		<description>Version</description>
+	</variable>
+</variables>

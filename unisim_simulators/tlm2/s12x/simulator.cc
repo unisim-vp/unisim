@@ -578,15 +578,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
 	simulator->SetVariable("ECT.built-in-signal-generator-period", 80000);
 
-
-	simulator->SetVariable("RAM.org", 0x0F8000);
-	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
+	simulator->SetVariable("RAM.org", 0x000800);
+	simulator->SetVariable("RAM.bytesize", 1024*1024); // 1MByte
+//	simulator->SetVariable("RAM.org", 0x0F8000);
+//	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
 	simulator->SetVariable("RAM.initial-byte-value", 0x00);
 	simulator->SetVariable("RAM.cycle-time", 250000);
 	simulator->SetVariable("RAM.verbose", false);
 
-	simulator->SetVariable("EEPROM.org", 0x13F000);
-	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
+	simulator->SetVariable("EEPROM.org", 0x100000);
+	simulator->SetVariable("EEPROM.bytesize", 256*1024); // 256KByte
+//	simulator->SetVariable("EEPROM.org", 0x13F000);
+//	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
 	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
 	simulator->SetVariable("EEPROM.cycle-time", 250000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 125000);
@@ -595,8 +598,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
 	simulator->SetVariable("EEPROM.verbose", false);
 
-	simulator->SetVariable("FLASH.org", 0x780000);
-	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
+	simulator->SetVariable("FLASH.org", 0x400000);
+	simulator->SetVariable("FLASH.bytesize", 4*1024*1024); // 4MByte
+//	simulator->SetVariable("FLASH.org", 0x780000);
+//	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
 	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
 	simulator->SetVariable("FLASH.cycle-time", 250000);
 	simulator->SetVariable("FLASH.verbose", false);
