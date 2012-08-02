@@ -92,7 +92,6 @@ class S12XMMC :
 {
 public:
 	static const uint8_t MEMORY_MAP_SIZE = 11;
-	static const uint8_t DEVICE_MAP_SIZE = 8;
 
 	typedef MMC inherited;
 	typedef tlm_utils::simple_initiator_socket<S12XMMC> InitSocket;
@@ -116,12 +115,6 @@ private:
 
 	TSemaphore busSemaphore;
 	sc_event   busSemaphore_event;
-
-	struct {
-		address_t	start_address;
-		address_t	end_address;
-	} deviceMap[DEVICE_MAP_SIZE];
-
 
 	struct peripheral {
 		physical_address_t start_addr;

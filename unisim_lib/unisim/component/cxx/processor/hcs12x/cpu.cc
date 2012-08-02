@@ -355,7 +355,7 @@ uint8_t CPU::step()
 					<< std::endl << EndDebugInfo;
 			}
 
-			op = this->Decode(getRegPC(), insn);
+			op = this->Decode(MMC::getCPU12XPagedAddress(getRegPC()), insn);
 			lastPC = getRegPC();
 	        unsigned int insn_length = op->GetLength();
 	        if (insn_length % 8) throw "InternalError";
