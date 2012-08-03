@@ -899,7 +899,6 @@ PWM<PWM_SIZE>::Channel_t::Channel_t(const sc_module_name& name, PWM *parent, con
 	SC_HAS_PROCESS(Channel_t);
 
 	SC_THREAD(Run);
-	sensitive << wakeup_event;
 }
 
 template <uint8_t PWM_SIZE>

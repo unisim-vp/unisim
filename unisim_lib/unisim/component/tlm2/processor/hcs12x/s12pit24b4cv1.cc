@@ -67,14 +67,6 @@ S12PIT24B4C::S12PIT24B4C(const sc_module_name& name, Object *parent) :
 	, pittf_register(0x00)
 	, pitmtld0_register(0x00)
 	, pitmtld1_register(0x0000)
-	, pitld0_register(0x0000)
-	, pitcnt0_register(0x0000)
-	, pitld1_register(0x0000)
-	, pitcnt1_register(0x0000)
-	, pitld2_register(0x0000)
-	, pitcnt2_register(0x0000)
-	, pitld3_register(0x0000)
-	, pitcnt3_register(0x0000)
 
 	, bus_cycle_time_int(250000)
 	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
@@ -98,6 +90,16 @@ S12PIT24B4C::S12PIT24B4C(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(S12PIT24B4C);
 
+	char counterName[20];
+
+	for (uint8_t i=0; i<4; i++) {
+
+		sprintf (counterName, "CNT%d", i);
+
+		counter[i] = new CNT16(counterName, this, i, &pitcnt_register[i], &pitld_register[i]);
+	}
+
+	Reset();
 }
 
 S12PIT24B4C::~S12PIT24B4C() {
@@ -121,6 +123,35 @@ S12PIT24B4C::~S12PIT24B4C() {
 
 }
 
+S12PIT24B4C::CNT16::CNT16(const sc_module_name& name, S12PIT24B4C *_parent, uint8_t _index, uint16_t* _counter_register, uint16_t* _load_register) :
+		sc_module(name), parent(_parent), index(_index), counter_register(_counter_register), load_register(_load_register), isEnabled(false)
+{
+	SC_HAS_PROCESS(CNT16);
+	SC_THREAD(process);
+}
+
+void S12PIT24B4C::CNT16::process() {
+
+	while (true) {
+
+		while ((!isEnabled) || !parent->isPITEnabled()) {
+			wait(start_event);
+		}
+
+		*counter_register = *load_register;
+		while ((isEnabled) && parent->isPITEnabled()) {
+
+			wait(period);
+			if (*counter_register == 0) {
+				parent->setTimeoutFlag(index);
+				break;
+			} else {
+				*counter_register = *counter_register - 1;
+			}
+		}
+
+	}
+}
 
 void S12PIT24B4C::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
@@ -144,23 +175,32 @@ void S12PIT24B4C::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 bool S12PIT24B4C::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
-	case PITCFLMT:	*((uint8_t *) buffer) = pitcflmt_register; break;	// 1 byte
-	case PITFLT: *((uint8_t *) buffer) = pitflt_register; break;	// 1 byte
-	case PITCE: *((uint8_t *) buffer) = pitce_register; break;	// 1 byte
+	case PITCFLMT:	*((uint8_t *) buffer) = pitcflmt_register & 0xE0; break;	// 1 byte
+	case PITFLT: *((uint8_t *) buffer) = 0x00; break;	// PITFLT read 0x00
+	case PITCE: *((uint8_t *) buffer) = pitce_register & 0x0F; break;	// 1 byte
 	case PITMUX: *((uint8_t *) buffer) = pitmux_register; break;	// 1 byte
 	case PITINTE: *((uint8_t *) buffer) = pitinte_register; break;	// 1 byte
 	case PITTF: *((uint8_t *) buffer) = pittf_register; break; // 1 byte
 	case PITMTLD0: *((uint8_t *) buffer) = pitmtld0_register; break; // 1 byte
 	case PITMTLD1: *((uint8_t *) buffer) = pitmtld1_register; break; // 1 byte
-	case PITLD0: *((uint16_t *) buffer) = Host2BigEndian(pitld0_register); break; // 2 bytes
-	case PITCNT0: *((uint16_t *) buffer) = Host2BigEndian(pitcnt0_register); break; // 2 bytes
-	case PITLD1: *((uint16_t *) buffer) = Host2BigEndian(pitld1_register); break; // 2 bytes
-	case PITCNT1: *((uint16_t *) buffer) = Host2BigEndian(pitcnt1_register); break; // 2 bytes
-	case PITLD2: *((uint16_t *) buffer) = Host2BigEndian(pitld2_register); break; // 2 bytes
-	case PITCNT2: *((uint16_t *) buffer) = Host2BigEndian(pitcnt2_register); break; // 2 bytes
-	case PITLD3: *((uint16_t *) buffer) = Host2BigEndian(pitld3_register); break; // 2 bytes
-	case PITCNT3: *((uint16_t *) buffer) = Host2BigEndian(pitcnt3_register); break; // 2 bytes
-	case RESERVED: break;
+	default: {
+		if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+			uint8_t group_index = (offset - PITLD0) / 2;
+			uint8_t group_register = (offset - PITLD0) % 2;
+			if (group_register == 0) {
+				*((uint16_t *) buffer) = Host2BigEndian(pitld_register[group_index]);
+			} else {
+				*((uint16_t *) buffer) = Host2BigEndian(pitcnt_register[group_index]);
+			}
+		}
+		else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
+			memset((void*) buffer, 0, data_length);
+		}
+		else {
+			return (false);
+		}
+	} break;
+
 	}
 
 	return (true);
@@ -174,79 +214,161 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 
 	switch (offset) {
 	case PITCFLMT:	{
-		uint8_t val = *((uint8_t *) buffer);
-		pitcflmt_register = val;	// 1 byte
+		if (data_length == 1) {
+			uint8_t val = *((uint8_t *) buffer) & 0xE3;
+			pitcflmt_register = val;	// 1 byte
+		}
+		else if (data_length == 2) 	{
+			/**
+			 * Any group of timers and micro timers can be restarted at the same time by using one16-bit write
+			 * to the adjacent PITCFLMT and PITFLT registers with the relevant bits set.
+			 */
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer)) & 0xE30F;
+			pitcflmt_register = (val >> 8);	// high byte to PITCFLMT
+			pitflt_register = (val & 0x00FF); // low byte to PITFLT
+
+			uint8_t mask = 0x01;
+			for (uint8_t i=0; (i < 4) && isPITEnabled(); i++) {
+				if ((pitflt_register & mask) != 0) {
+					counter[i]->load();
+				}
+
+				mask = mask << 1;
+			}
+		}
+
+		uint8_t mask = 0x01;
+		for (uint8_t i=0; (i < 2) && isPITEnabled(); i++) {
+			if ((pitcflmt_register & mask) != 0) {
+				updateMicroCouter(i);
+			}
+
+			mask = mask << 1;
+		}
+
+		if (!isPITEnabled()) {
+			for (uint8_t i=0; i < 4; i++) {
+				counter[i]->disable();
+			}
+			pittf_register = 0;
+		}
 	} break;
 	case PITFLT: {
-		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pitflt_register; // 1 byte
+		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		pitflt_register = val; // 1 byte
+		uint8_t mask = 0x01;
+		for (uint8_t i=0; (i < 4) && isPITEnabled(); i++) {
+			if ((pitflt_register & mask) != 0) {
+				counter[i]->load();
+			}
+
+			mask = mask << 1;
+		}
 	} break;
 	case PITCE: {
-		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pitce_register; // 1 byte
+		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		pitce_register = val; // 1 byte
+		uint8_t mask = 0x01;
+		for (uint8_t i=0; i < 4; i++) {
+			if ((pitce_register & mask) == 0) {
+				pittf_register = pittf_register & ~mask;
+				counter[i]->disable();
+			} else {
+				counter[i]->enable();
+			}
+
+			mask = mask << 1;
+		}
 	} break;
 	case PITMUX: {
-		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pitmux_register; // 1 byte
+		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		pitmux_register = val; // 1 byte
+		uint8_t mask = 0x01;
+		for (uint8_t i=0; i < 4; i++) {
+			if ((pitmux_register & mask) != 0) {
+				counter[i]->setPeriod(periods[1]);
+			} else {
+				counter[i]->setPeriod(periods[0]);
+			}
+
+			mask = mask << 1;
+		}
+
 	} break;
 	case PITINTE: {
-		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pitinte_register; // 1 byte
+		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		pitinte_register = val; // 1 byte
 	} break;
 	case PITTF: {
-		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pittf_register; // 1 byte
+		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		pittf_register = pittf_register & ~val; // 1 byte
 	} break;
 	case PITMTLD0: {
 		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pitmtld0_register; // 1 byte
+		pitmtld0_register = val; // 1 byte
+		updateMicroCouter(0);
 	} break;
 	case PITMTLD1: {
 		uint8_t val = *((uint8_t *) buffer);
-		*((uint8_t *) buffer) = pitmtld1_register; // 1 byte
+		pitmtld1_register = val; // 1 byte
+		updateMicroCouter(1);
 	} break;
-	case PITLD0: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitld0_register; // 2 bytes
+	default: {
+		if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+			uint8_t group_index = (offset - PITLD0) / 2;
+			uint8_t group_register = (offset - PITLD0) % 2;
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+			if (group_register == 0) {
+				pitld_register[group_index] = val;
+			} else {
+				// write to PITCNTx registers has no meaning or effect
+//				pitcnt_register[group_index] = val;
+			}
+		}
+		else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
+			// write to reserved area has no effect
+		}
+		else {
+			return (false);
+		}
 	} break;
-	case PITCNT0: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitcnt0_register; // 2 bytes
-	} break;
-	case PITLD1: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitld1_register; // 2 bytes
-	} break;
-	case PITCNT1: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitcnt1_register; // 2 bytes
-	} break;
-	case PITLD2: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitld2_register; // 2 bytes
-	} break;
-	case PITCNT2: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitcnt2_register; // 2 bytes
-	} break;
-	case PITLD3: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitld3_register; // 2 bytes
-	} break;
-	case PITCNT3: {
-		uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-		*((uint16_t *) buffer) = pitcnt3_register;// 2 bytes
-	} break;
-	case RESERVED: break;
+
 	}
 
 	return (true);
 }
 
+void S12PIT24B4C::updateMicroCouter(uint8_t index) {
+
+	if (index == 0) {
+		periods[index] = bus_cycle_time * (pitmtld0_register + 1);
+	} else {
+		periods[index] = bus_cycle_time * (pitmtld1_register + 1);
+	}
+
+	uint8_t mask = 0x01;
+	for (uint8_t i=0; i < 4; i++) {
+		if (((pitmux_register & mask) != 0) && (index == 1)) {
+			counter[i]->setPeriod(periods[1]);
+		} else {
+			counter[i]->setPeriod(periods[0]);
+		}
+
+		mask = mask << 1;
+	}
+
+}
+
+void S12PIT24B4C::setTimeoutFlag(uint8_t index) {
+	pittf_register = pittf_register | (1 << index);
+
+	if ((pitinte_register & (1 << index)) != 0) {
+		assertInterrupt(interrupt_offset_channel0 + index);
+	}
+}
+
 
 void S12PIT24B4C::assertInterrupt(uint8_t interrupt_offset) {
-
-	// TODO:: check if interrupt is enabled or not
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
@@ -301,6 +423,8 @@ void S12PIT24B4C::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
+	updateMicroCouter(0);
+	updateMicroCouter(1);
 }
 
 void S12PIT24B4C::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
@@ -380,58 +504,58 @@ bool S12PIT24B4C::BeginSetup() {
 	pitmtld1_var->setCallBack(this, PITMTLD1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITLD0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld0_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[0]);
 
-	unisim::kernel::service::Register<uint16_t> *pitld0_var = new unisim::kernel::service::Register<uint16_t>("PITLD0", this, pitld0_register, "PIT Load Register 0 (PITLD0)");
+	unisim::kernel::service::Register<uint16_t> *pitld0_var = new unisim::kernel::service::Register<uint16_t>("PITLD0", this, pitld_register[0], "PIT Load Register 0 (PITLD0)");
 	extended_registers_registry.push_back(pitld0_var);
 	pitld0_var->setCallBack(this, PITLD0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITCNT0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt0_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[0]);
 
-	unisim::kernel::service::Register<uint16_t> *pitcnt0_var = new unisim::kernel::service::Register<uint16_t>("PITCNT0", this, pitcnt0_register, "PIT Count Register 0 (PITCNT0)");
+	unisim::kernel::service::Register<uint16_t> *pitcnt0_var = new unisim::kernel::service::Register<uint16_t>("PITCNT0", this, pitcnt_register[0], "PIT Count Register 0 (PITCNT0)");
 	extended_registers_registry.push_back(pitcnt0_var);
 	pitcnt0_var->setCallBack(this, PITCNT0, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITLD1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld1_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[1]);
 
-	unisim::kernel::service::Register<uint16_t> *pitld1_var = new unisim::kernel::service::Register<uint16_t>("PITLD1", this, pitld1_register, "PIT Load Register 1 (PITLD1)");
+	unisim::kernel::service::Register<uint16_t> *pitld1_var = new unisim::kernel::service::Register<uint16_t>("PITLD1", this, pitld_register[1], "PIT Load Register 1 (PITLD1)");
 	extended_registers_registry.push_back(pitld1_var);
 	pitld1_var->setCallBack(this, PITLD1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITCNT1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt1_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[1]);
 
-	unisim::kernel::service::Register<uint16_t> *pitcnt1_var = new unisim::kernel::service::Register<uint16_t>("PITCNT1", this, pitcnt1_register, "PIT count Register 1 (PITCNT1)");
+	unisim::kernel::service::Register<uint16_t> *pitcnt1_var = new unisim::kernel::service::Register<uint16_t>("PITCNT1", this, pitcnt_register[1], "PIT count Register 1 (PITCNT1)");
 	extended_registers_registry.push_back(pitcnt1_var);
 	pitcnt1_var->setCallBack(this, PITCNT1, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITLD2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld0_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[2]);
 
-	unisim::kernel::service::Register<uint16_t> *pitld2_var = new unisim::kernel::service::Register<uint16_t>("PITLD2", this, pitld2_register, "PIT Load register 2 (PITLD2)");
+	unisim::kernel::service::Register<uint16_t> *pitld2_var = new unisim::kernel::service::Register<uint16_t>("PITLD2", this, pitld_register[2], "PIT Load register 2 (PITLD2)");
 	extended_registers_registry.push_back(pitld2_var);
 	pitld2_var->setCallBack(this, PITLD2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITCNT2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt2_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[2]);
 
-	unisim::kernel::service::Register<uint16_t> *pitcnt2_var = new unisim::kernel::service::Register<uint16_t>("PITCNT2", this, pitcnt2_register, "PIT Count register 2 (PITCNT2)");
+	unisim::kernel::service::Register<uint16_t> *pitcnt2_var = new unisim::kernel::service::Register<uint16_t>("PITCNT2", this, pitcnt_register[2], "PIT Count register 2 (PITCNT2)");
 	extended_registers_registry.push_back(pitcnt2_var);
 	pitcnt2_var->setCallBack(this, PITCNT2, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITLD3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld3_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[3]);
 
-	unisim::kernel::service::Register<uint16_t> *pitld3_var = new unisim::kernel::service::Register<uint16_t>("PITLD3", this, pitld3_register, "PIT Load register 3 (PITLD3)");
+	unisim::kernel::service::Register<uint16_t> *pitld3_var = new unisim::kernel::service::Register<uint16_t>("PITLD3", this, pitld_register[3], "PIT Load register 3 (PITLD3)");
 	extended_registers_registry.push_back(pitld3_var);
 	pitld3_var->setCallBack(this, PITLD3, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.PITCNT3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt3_register);
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[3]);
 
-	unisim::kernel::service::Register<uint16_t> *pitcnt3_var = new unisim::kernel::service::Register<uint16_t>("PITCNT3", this, pitcnt3_register, "PIT Count register 3 (PITCNT3)");
+	unisim::kernel::service::Register<uint16_t> *pitcnt3_var = new unisim::kernel::service::Register<uint16_t>("PITCNT3", this, pitcnt_register[3], "PIT Count register 3 (PITCNT3)");
 	extended_registers_registry.push_back(pitcnt3_var);
 	pitcnt3_var->setCallBack(this, PITCNT3, &CallBackObject::write, NULL);
 
@@ -471,14 +595,10 @@ void S12PIT24B4C::Reset() {
 	pittf_register = 0x00;
 	pitmtld0_register = 0x00;
 	pitmtld1_register = 0x0000;
-	pitld0_register = 0x0000;
-	pitcnt0_register = 0x0000;
-	pitld1_register = 0x0000;
-	pitcnt1_register = 0x0000;
-	pitld2_register = 0x0000;
-	pitcnt2_register = 0x0000;
-	pitld3_register = 0x0000;
-	pitcnt3_register = 0x0000;
+	for (uint8_t i=0; i < 4; i++) {
+		pitld_register[i] = 0x0000;
+		pitcnt_register[i] = 0x0000;
+	}
 
 }
 
@@ -502,15 +622,23 @@ bool S12PIT24B4C::ReadMemory(physical_address_t addr, void *buffer, uint32_t siz
 		case PITTF: *((uint8_t *) buffer) = pittf_register; break; // 1 byte
 		case PITMTLD0: *((uint8_t *) buffer) = pitmtld0_register; break; // 1 byte
 		case PITMTLD1: *((uint8_t *) buffer) = pitmtld1_register; break; // 1 byte
-		case PITLD0: *((uint16_t *) buffer) = Host2BigEndian(pitld0_register); break; // 2 bytes
-		case PITCNT0: *((uint16_t *) buffer) = Host2BigEndian(pitcnt0_register); break; // 2 bytes
-		case PITLD1: *((uint16_t *) buffer) = Host2BigEndian(pitld1_register); break; // 2 bytes
-		case PITCNT1: *((uint16_t *) buffer) = Host2BigEndian(pitcnt1_register); break; // 2 bytes
-		case PITLD2: *((uint16_t *) buffer) = Host2BigEndian(pitld2_register); break; // 2 bytes
-		case PITCNT2: *((uint16_t *) buffer) = Host2BigEndian(pitcnt2_register); break; // 2 bytes
-		case PITLD3: *((uint16_t *) buffer) = Host2BigEndian(pitld3_register); break; // 2 bytes
-		case PITCNT3: *((uint16_t *) buffer) = Host2BigEndian(pitcnt3_register); break; // 2 bytes
-		case RESERVED: break;
+		default: {
+			if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+				uint8_t group_index = (offset - PITLD0) / 2;
+				uint8_t group_register = (offset - PITLD0) % 2;
+				if (group_register == 0) {
+					*((uint16_t *) buffer) = Host2BigEndian(pitld_register[group_index]);
+				} else {
+					*((uint16_t *) buffer) = Host2BigEndian(pitcnt_register[group_index]);
+				}
+			}
+			else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
+				memcpy((void*) buffer, (reserved_register + offset), size);
+			}
+			else {
+				return (false);
+			}
+		} break;
 		}
 
 		return (true);
@@ -563,39 +691,26 @@ bool S12PIT24B4C::WriteMemory(physical_address_t addr, const void *buffer, uint3
 			uint8_t val = *((uint8_t *) buffer);
 			*((uint8_t *) buffer) = pitmtld1_register; // 1 byte
 		} break;
-		case PITLD0: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitld0_register; // 2 bytes
+		default: {
+			if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+				uint8_t group_index = (offset - PITLD0) / 2;
+				uint8_t group_register = (offset - PITLD0) % 2;
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+				if (group_register == 0) {
+					pitld_register[group_index] = val;
+				} else {
+					// write to PITCNTx registers has no meaning or effect
+					pitcnt_register[group_index] = val;
+				}
+			}
+			else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
+				// write to reserved area has no effect
+				memcpy((reserved_register + offset), buffer, size);
+			}
+			else {
+				return (false);
+			}
 		} break;
-		case PITCNT0: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitcnt0_register; // 2 bytes
-		} break;
-		case PITLD1: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitld1_register; // 2 bytes
-		} break;
-		case PITCNT1: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitcnt1_register; // 2 bytes
-		} break;
-		case PITLD2: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitld2_register; // 2 bytes
-		} break;
-		case PITCNT2: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitcnt2_register; // 2 bytes
-		} break;
-		case PITLD3: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitld3_register; // 2 bytes
-		} break;
-		case PITCNT3: {
-			uint16_t val = BigEndian2Host(*((uint8_t *) buffer));
-			*((uint16_t *) buffer) = pitcnt3_register;// 2 bytes
-		} break;
-		case RESERVED: break;
 		}
 
 		return (true);

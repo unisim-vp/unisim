@@ -159,8 +159,10 @@ public:
 	virtual ~S12PIT24B4C();
 
 	void assertInterrupt(uint8_t interrupt_offset);
-
+	void setTimeoutFlag(uint8_t index);
+	bool isPITEnabled() { return ((pitcflmt_register & 0x80) != 0); }
 	void ComputeInternalTime();
+	void updateMicroCouter(uint8_t index);
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -222,6 +224,8 @@ private:
 	Parameter<double>	param_bus_cycle_time_int;
 	sc_time		bus_cycle_time;
 
+	sc_time periods[2];
+
 	// MC9S12XDP512V2 - PIT baseAddress
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
@@ -249,15 +253,34 @@ private:
 	uint8_t pittf_register;
 	uint8_t pitmtld0_register;
 	uint8_t pitmtld1_register;
-	uint16_t pitld0_register;
-	uint16_t pitcnt0_register;
-	uint16_t pitld1_register;
-	uint16_t pitcnt1_register;
-	uint16_t pitld2_register;
-	uint16_t pitcnt2_register;
-	uint16_t pitld3_register;
-	uint16_t pitcnt3_register;
+	uint16_t pitld_register[4];
+	uint16_t pitcnt_register[4];
 	uint8_t reserved_register[16]; // 16 bytes
+
+	class CNT16 : public sc_module {
+	public:
+		CNT16(const sc_module_name& name, S12PIT24B4C *_parent, uint8_t _index, uint16_t* _counter_register, uint16_t* _load_register);
+		~CNT16() { }
+
+		void enable() { isEnabled = true; start_event.notify(); }
+		void disable() { isEnabled = false; }
+		void load() { counter_register = load_register; }
+		void setPeriod(sc_time _period) { period = _period; }
+		void process();
+
+	protected:
+
+	private:
+		sc_event start_event;
+		sc_time period;
+
+		S12PIT24B4C *parent;
+		uint8_t index;
+		uint16_t* counter_register;
+		uint16_t* load_register;
+		bool isEnabled;
+
+	} *counter[4];
 
 }; /* end class S12PIT24B4C */
 
