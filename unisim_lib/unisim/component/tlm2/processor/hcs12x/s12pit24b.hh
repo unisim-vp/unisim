@@ -33,11 +33,11 @@
  */
 
 /*
- * This module implement the S12PIT24B4C_V1
+ * This module implement the S12PIT24B 4CV1/8CV2
  */
 
-#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_S12PIT24B4CV1_HH_
-#define __UNISIM_COMPONENT_TLM2_PROCESSOR_S12PIT24B4CV1_HH_
+#ifndef __UNISIM_COMPONENT_TLM2_PROCESSOR_S12PIT24B_HH_
+#define __UNISIM_COMPONENT_TLM2_PROCESSOR_S12PIT24B_HH_
 
 #include <inttypes.h>
 #include <iostream>
@@ -88,6 +88,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::ServiceExportBase;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
 using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::VariableBase;
 
@@ -111,7 +112,8 @@ using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::ManagedPayload;
 using unisim::kernel::tlm2::PayloadFabric;
 
-class S12PIT24B4C :
+template <uint8_t PIT_SIZE>
+class S12PIT24B :
 	public sc_module
 	, public CallBackObject
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
@@ -142,21 +144,28 @@ public:
 	static const uint8_t PITCNT2	= 0x12; // 2 bytes
 	static const uint8_t PITLD3	= 0x14; // 2 bytes
 	static const uint8_t PITCNT3	= 0x16; // 2 bytes
-	static const uint8_t RESERVED	= 0x18; // 16 bytes
+	static const uint8_t PITLD4	= 0x18; // 2 bytes
+	static const uint8_t PITCNT4	= 0x1A; // 2 bytes
+	static const uint8_t PITLD5	= 0x1C; // 2 bytes
+	static const uint8_t PITCNT5	= 0x1E; // 2 bytes
+	static const uint8_t PITLD6	= 0x20; // 2 bytes
+	static const uint8_t PITCNT6	= 0x22; // 2 bytes
+	static const uint8_t PITLD7	= 0x24; // 2 bytes
+	static const uint8_t PITCNT7	= 0x26; // 2 bytes
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
-	tlm_utils::simple_target_socket<S12PIT24B4C> slave_socket;
-	tlm_utils::simple_target_socket<S12PIT24B4C> bus_clock_socket;
+	tlm_utils::simple_target_socket<S12PIT24B> slave_socket;
+	tlm_utils::simple_target_socket<S12PIT24B> bus_clock_socket;
 
 	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
-	S12PIT24B4C(const sc_module_name& name, Object *parent = 0);
-	virtual ~S12PIT24B4C();
+	S12PIT24B(const sc_module_name& name, Object *parent = 0);
+	virtual ~S12PIT24B();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 	void setTimeoutFlag(uint8_t index);
@@ -230,8 +239,8 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interrupt_offset_channel0;  // vector offset= 0x7A  ID = 0x3D
-	Parameter<uint8_t> param_interrupt_offset_channel0;
+	uint8_t interrupt_offset_channel[PIT_SIZE];  // vector offset= 0x5E  ID = 0x2F
+	ParameterArray<uint8_t> param_interrupt_offset_channel;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
@@ -253,13 +262,12 @@ private:
 	uint8_t pittf_register;
 	uint8_t pitmtld0_register;
 	uint8_t pitmtld1_register;
-	uint16_t pitld_register[4];
-	uint16_t pitcnt_register[4];
-	uint8_t reserved_register[16]; // 16 bytes
+	uint16_t pitld_register[PIT_SIZE];
+	uint16_t pitcnt_register[PIT_SIZE];
 
 	class CNT16 : public sc_module {
 	public:
-		CNT16(const sc_module_name& name, S12PIT24B4C *_parent, uint8_t _index, uint16_t* _counter_register, uint16_t* _load_register);
+		CNT16(const sc_module_name& name, S12PIT24B *_parent, uint8_t _index, uint16_t* _counter_register, uint16_t* _load_register);
 		~CNT16() { }
 
 		void enable() { isEnabled = true; start_event.notify(); }
@@ -274,15 +282,15 @@ private:
 		sc_event start_event;
 		sc_time period;
 
-		S12PIT24B4C *parent;
+		S12PIT24B *parent;
 		uint8_t index;
 		uint16_t* counter_register;
 		uint16_t* load_register;
 		bool isEnabled;
 
-	} *counter[4];
+	} *counter[PIT_SIZE];
 
-}; /* end class S12PIT24B4C */
+}; /* end class S12PIT24B */
 
 } // end of namespace hcs12x
 } // end of namespace processor
@@ -292,4 +300,4 @@ private:
 
 
 
-#endif /* __UNISIM_COMPONENT_TLM2_PROCESSOR_S12PIT24B4CV1_HH_ */
+#endif /* __UNISIM_COMPONENT_TLM2_PROCESSOR_S12PIT24B_HH_ */

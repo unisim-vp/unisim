@@ -116,7 +116,7 @@ Simulator::Simulator(int argc, char **argv)
 
 	crg = new CRG("CRG");
 	ect = new ECT("ECT");
-	pit = new S12PIT24B4C("PIT");
+	pit = new PIT("PIT");
 
 	atd1 = new ATD1("ATD1");
 	atd0 = new ATD0("ATD0");
@@ -588,7 +588,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	simulator->SetVariable("PIT.bus-cycle-time", 250000);
 	simulator->SetVariable("PIT.base-address", 0x0340);
-	simulator->SetVariable("PIT.interrupt-offset-channel0", 0x7A);
+	simulator->SetVariable("PIT.interrupt-offset-channel[0]", 0x7A);
+	simulator->SetVariable("PIT.interrupt-offset-channel[1]", 0x78);
+	simulator->SetVariable("PIT.interrupt-offset-channel[2]", 0x76);
+	simulator->SetVariable("PIT.interrupt-offset-channel[3]", 0x74);
+	simulator->SetVariable("PIT.interrupt-offset-channel[4]", 0x5E);
+	simulator->SetVariable("PIT.interrupt-offset-channel[5]", 0x5C);
+	simulator->SetVariable("PIT.interrupt-offset-channel[6]", 0x5A);
+	simulator->SetVariable("PIT.interrupt-offset-channel[7]", 0x58);
 	simulator->SetVariable("PIT.debug-enabled", false);
 
 	simulator->SetVariable("MMC.debug-enabled", false);

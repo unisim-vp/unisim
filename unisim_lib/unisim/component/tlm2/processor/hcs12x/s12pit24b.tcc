@@ -1,38 +1,11 @@
 /*
- *  Copyright (c) 2008, 2012
- *  Commissariat a l'Energie Atomique (CEA)
- *  All rights reserved.
+ * s12pit24b.tcc
  *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright notice, this
- *     list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above copyright notice,
- *     this list of conditions and the following disclaimer in the documentation
- *     and/or other materials provided with the distribution.
- *
- *   - Neither the name of CEA nor the names of its contributors may be used to
- *     endorse or promote products derived from this software without specific prior
- *     written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *  DISCLAIMED.
- *  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
- *  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- *  OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
- *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
+ *  Created on: 3 août 2012
+ *      Author: rnouacer
  */
 
-#include <unisim/component/tlm2/processor/hcs12x/s12pit24b4cv1.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 
 namespace unisim {
@@ -41,7 +14,8 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
-S12PIT24B4C::S12PIT24B4C(const sc_module_name& name, Object *parent) :
+template <uint8_t PIT_SIZE>
+S12PIT24B<PIT_SIZE>::S12PIT24B(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
@@ -74,8 +48,7 @@ S12PIT24B4C::S12PIT24B4C(const sc_module_name& name, Object *parent) :
 	, baseAddress(0x0340)
 	, param_baseAddress("base-address", this, baseAddress)
 
-	, interrupt_offset_channel0(0x7A)
-	, param_interrupt_offset_channel0("interrupt-offset-channel0", this, interrupt_offset_channel0)
+	, param_interrupt_offset_channel("interrupt-offset-channel", this, interrupt_offset_channel, PIT_SIZE)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
@@ -85,14 +58,14 @@ S12PIT24B4C::S12PIT24B4C(const sc_module_name& name, Object *parent) :
 
 	interrupt_request(*this);
 
-	slave_socket.register_b_transport(this, &S12PIT24B4C::read_write);
-	bus_clock_socket.register_b_transport(this, &S12PIT24B4C::updateBusClock);
+	slave_socket.register_b_transport(this, &S12PIT24B::read_write);
+	bus_clock_socket.register_b_transport(this, &S12PIT24B::updateBusClock);
 
-	SC_HAS_PROCESS(S12PIT24B4C);
+	SC_HAS_PROCESS(S12PIT24B);
 
 	char counterName[20];
 
-	for (uint8_t i=0; i<4; i++) {
+	for (uint8_t i=0; i<PIT_SIZE; i++) {
 
 		sprintf (counterName, "CNT%d", i);
 
@@ -102,7 +75,8 @@ S12PIT24B4C::S12PIT24B4C(const sc_module_name& name, Object *parent) :
 	Reset();
 }
 
-S12PIT24B4C::~S12PIT24B4C() {
+template <uint8_t PIT_SIZE>
+S12PIT24B<PIT_SIZE>::~S12PIT24B() {
 
 	// Release registers_registry
 	map<string, unisim::util::debug::Register *>::iterator reg_iter;
@@ -123,14 +97,16 @@ S12PIT24B4C::~S12PIT24B4C() {
 
 }
 
-S12PIT24B4C::CNT16::CNT16(const sc_module_name& name, S12PIT24B4C *_parent, uint8_t _index, uint16_t* _counter_register, uint16_t* _load_register) :
+template <uint8_t PIT_SIZE>
+S12PIT24B<PIT_SIZE>::CNT16::CNT16(const sc_module_name& name, S12PIT24B *_parent, uint8_t _index, uint16_t* _counter_register, uint16_t* _load_register) :
 		sc_module(name), parent(_parent), index(_index), counter_register(_counter_register), load_register(_load_register), isEnabled(false)
 {
 	SC_HAS_PROCESS(CNT16);
 	SC_THREAD(process);
 }
 
-void S12PIT24B4C::CNT16::process() {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::CNT16::process() {
 
 	while (true) {
 
@@ -153,7 +129,8 @@ void S12PIT24B4C::CNT16::process() {
 	}
 }
 
-void S12PIT24B4C::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
@@ -172,19 +149,20 @@ void S12PIT24B4C::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
-bool S12PIT24B4C::read(unsigned int offset, const void *buffer, unsigned int data_length) {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
 	case PITCFLMT:	*((uint8_t *) buffer) = pitcflmt_register & 0xE0; break;	// 1 byte
 	case PITFLT: *((uint8_t *) buffer) = 0x00; break;	// PITFLT read 0x00
-	case PITCE: *((uint8_t *) buffer) = pitce_register & 0x0F; break;	// 1 byte
+	case PITCE: *((uint8_t *) buffer) = pitce_register; break;	// 1 byte
 	case PITMUX: *((uint8_t *) buffer) = pitmux_register; break;	// 1 byte
 	case PITINTE: *((uint8_t *) buffer) = pitinte_register; break;	// 1 byte
 	case PITTF: *((uint8_t *) buffer) = pittf_register; break; // 1 byte
 	case PITMTLD0: *((uint8_t *) buffer) = pitmtld0_register; break; // 1 byte
 	case PITMTLD1: *((uint8_t *) buffer) = pitmtld1_register; break; // 1 byte
 	default: {
-		if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+		if ((offset >= PITLD0) && (offset < (PITLD0 + PIT_SIZE*4))) {
 			uint8_t group_index = (offset - PITLD0) / 2;
 			uint8_t group_register = (offset - PITLD0) % 2;
 			if (group_register == 0) {
@@ -193,11 +171,8 @@ bool S12PIT24B4C::read(unsigned int offset, const void *buffer, unsigned int dat
 				*((uint16_t *) buffer) = Host2BigEndian(pitcnt_register[group_index]);
 			}
 		}
-		else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
-			memset((void*) buffer, 0, data_length);
-		}
 		else {
-			return (false);
+			memset((void*) buffer, 0, data_length);
 		}
 	} break;
 
@@ -210,7 +185,8 @@ bool S12PIT24B4C::read(unsigned int offset, const void *buffer, unsigned int dat
 //=             registers setters and getters                         =
 //=====================================================================
 
-bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int data_length) {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
 	case PITCFLMT:	{
@@ -223,12 +199,12 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 			 * Any group of timers and micro timers can be restarted at the same time by using one16-bit write
 			 * to the adjacent PITCFLMT and PITFLT registers with the relevant bits set.
 			 */
-			uint16_t val = BigEndian2Host(*((uint16_t *) buffer)) & 0xE30F;
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer)) & 0xE3FF;
 			pitcflmt_register = (val >> 8);	// high byte to PITCFLMT
 			pitflt_register = (val & 0x00FF); // low byte to PITFLT
 
 			uint8_t mask = 0x01;
-			for (uint8_t i=0; (i < 4) && isPITEnabled(); i++) {
+			for (uint8_t i=0; (i < PIT_SIZE) && isPITEnabled(); i++) {
 				if ((pitflt_register & mask) != 0) {
 					counter[i]->load();
 				}
@@ -247,17 +223,17 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 		}
 
 		if (!isPITEnabled()) {
-			for (uint8_t i=0; i < 4; i++) {
+			for (uint8_t i=0; i < PIT_SIZE; i++) {
 				counter[i]->disable();
 			}
 			pittf_register = 0;
 		}
 	} break;
 	case PITFLT: {
-		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		uint8_t val = *((uint8_t *) buffer);
 		pitflt_register = val; // 1 byte
 		uint8_t mask = 0x01;
-		for (uint8_t i=0; (i < 4) && isPITEnabled(); i++) {
+		for (uint8_t i=0; (i < PIT_SIZE) && isPITEnabled(); i++) {
 			if ((pitflt_register & mask) != 0) {
 				counter[i]->load();
 			}
@@ -266,10 +242,10 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 		}
 	} break;
 	case PITCE: {
-		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		uint8_t val = *((uint8_t *) buffer);
 		pitce_register = val; // 1 byte
 		uint8_t mask = 0x01;
-		for (uint8_t i=0; i < 4; i++) {
+		for (uint8_t i=0; i < PIT_SIZE; i++) {
 			if ((pitce_register & mask) == 0) {
 				pittf_register = pittf_register & ~mask;
 				counter[i]->disable();
@@ -281,10 +257,10 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 		}
 	} break;
 	case PITMUX: {
-		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		uint8_t val = *((uint8_t *) buffer);
 		pitmux_register = val; // 1 byte
 		uint8_t mask = 0x01;
-		for (uint8_t i=0; i < 4; i++) {
+		for (uint8_t i=0; i < PIT_SIZE; i++) {
 			if ((pitmux_register & mask) != 0) {
 				counter[i]->setPeriod(periods[1]);
 			} else {
@@ -296,11 +272,11 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 
 	} break;
 	case PITINTE: {
-		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		uint8_t val = *((uint8_t *) buffer);
 		pitinte_register = val; // 1 byte
 	} break;
 	case PITTF: {
-		uint8_t val = *((uint8_t *) buffer) & 0x0F;
+		uint8_t val = *((uint8_t *) buffer);
 		pittf_register = pittf_register & ~val; // 1 byte
 	} break;
 	case PITMTLD0: {
@@ -314,7 +290,7 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 		updateMicroCouter(1);
 	} break;
 	default: {
-		if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+		if ((offset >= PITLD0) && (offset < (PITLD0 + PIT_SIZE*4))) {
 			uint8_t group_index = (offset - PITLD0) / 2;
 			uint8_t group_register = (offset - PITLD0) % 2;
 			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
@@ -325,12 +301,6 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 //				pitcnt_register[group_index] = val;
 			}
 		}
-		else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
-			// write to reserved area has no effect
-		}
-		else {
-			return (false);
-		}
 	} break;
 
 	}
@@ -338,7 +308,8 @@ bool S12PIT24B4C::write(unsigned int offset, const void *buffer, unsigned int da
 	return (true);
 }
 
-void S12PIT24B4C::updateMicroCouter(uint8_t index) {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::updateMicroCouter(uint8_t index) {
 
 	if (index == 0) {
 		periods[index] = bus_cycle_time * (pitmtld0_register + 1);
@@ -347,7 +318,7 @@ void S12PIT24B4C::updateMicroCouter(uint8_t index) {
 	}
 
 	uint8_t mask = 0x01;
-	for (uint8_t i=0; i < 4; i++) {
+	for (uint8_t i=0; i < PIT_SIZE; i++) {
 		if (((pitmux_register & mask) != 0) && (index == 1)) {
 			counter[i]->setPeriod(periods[1]);
 		} else {
@@ -359,16 +330,18 @@ void S12PIT24B4C::updateMicroCouter(uint8_t index) {
 
 }
 
-void S12PIT24B4C::setTimeoutFlag(uint8_t index) {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::setTimeoutFlag(uint8_t index) {
 	pittf_register = pittf_register | (1 << index);
 
 	if ((pitinte_register & (1 << index)) != 0) {
-		assertInterrupt(interrupt_offset_channel0 + index);
+		assertInterrupt(interrupt_offset_channel[index]);
 	}
 }
 
 
-void S12PIT24B4C::assertInterrupt(uint8_t interrupt_offset) {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::assertInterrupt(uint8_t interrupt_offset) {
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
@@ -403,13 +376,15 @@ void S12PIT24B4C::assertInterrupt(uint8_t interrupt_offset) {
 }
 
 // Master methods
-void S12PIT24B4C::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
 	// Leave this empty as it is designed for memory mapped buses
 }
 
 // Master methods
-tlm_sync_enum S12PIT24B4C::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
+template <uint8_t PIT_SIZE>
+tlm_sync_enum S12PIT24B<PIT_SIZE>::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t)
 {
 	if(phase == BEGIN_RESP)
 	{
@@ -419,7 +394,8 @@ tlm_sync_enum S12PIT24B4C::nb_transport_bw( XINT_Payload& payload, tlm_phase& ph
 	return (TLM_ACCEPTED);
 }
 
-void S12PIT24B4C::ComputeInternalTime() {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::ComputeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
@@ -427,7 +403,8 @@ void S12PIT24B4C::ComputeInternalTime() {
 	updateMicroCouter(1);
 }
 
-void S12PIT24B4C::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
     trans.set_response_status( tlm::TLM_OK_RESPONSE );
@@ -442,7 +419,8 @@ void S12PIT24B4C::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay
 //=                  Client/Service setup methods                     =
 //=====================================================================
 
-bool S12PIT24B4C::BeginSetup() {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::BeginSetup() {
 
 
 	char buf[80];
@@ -503,77 +481,42 @@ bool S12PIT24B4C::BeginSetup() {
 	extended_registers_registry.push_back(pitmtld1_var);
 	pitmtld1_var->setCallBack(this, PITMTLD1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PITLD0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[0]);
+	for (uint8_t i=0; i<PIT_SIZE; i++) {
+		sprintf(buf, "%s.PITLD%d",sc_object::name(), i);
+		registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[i]);
 
-	unisim::kernel::service::Register<uint16_t> *pitld0_var = new unisim::kernel::service::Register<uint16_t>("PITLD0", this, pitld_register[0], "PIT Load Register 0 (PITLD0)");
-	extended_registers_registry.push_back(pitld0_var);
-	pitld0_var->setCallBack(this, PITLD0, &CallBackObject::write, NULL);
+		sprintf(buf, "PITLD%d", i);
+		unisim::kernel::service::Register<uint16_t> *pitld0_var = new unisim::kernel::service::Register<uint16_t>(buf, this, pitld_register[i], "PIT Load Register (PITLD)");
+		extended_registers_registry.push_back(pitld0_var);
+		pitld0_var->setCallBack(this, (PITLD0 + i*4), &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PITCNT0",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[0]);
+		sprintf(buf, "%s.PITCNT%d",sc_object::name(), i);
+		registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[i]);
 
-	unisim::kernel::service::Register<uint16_t> *pitcnt0_var = new unisim::kernel::service::Register<uint16_t>("PITCNT0", this, pitcnt_register[0], "PIT Count Register 0 (PITCNT0)");
-	extended_registers_registry.push_back(pitcnt0_var);
-	pitcnt0_var->setCallBack(this, PITCNT0, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.PITLD1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[1]);
-
-	unisim::kernel::service::Register<uint16_t> *pitld1_var = new unisim::kernel::service::Register<uint16_t>("PITLD1", this, pitld_register[1], "PIT Load Register 1 (PITLD1)");
-	extended_registers_registry.push_back(pitld1_var);
-	pitld1_var->setCallBack(this, PITLD1, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.PITCNT1",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[1]);
-
-	unisim::kernel::service::Register<uint16_t> *pitcnt1_var = new unisim::kernel::service::Register<uint16_t>("PITCNT1", this, pitcnt_register[1], "PIT count Register 1 (PITCNT1)");
-	extended_registers_registry.push_back(pitcnt1_var);
-	pitcnt1_var->setCallBack(this, PITCNT1, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.PITLD2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[2]);
-
-	unisim::kernel::service::Register<uint16_t> *pitld2_var = new unisim::kernel::service::Register<uint16_t>("PITLD2", this, pitld_register[2], "PIT Load register 2 (PITLD2)");
-	extended_registers_registry.push_back(pitld2_var);
-	pitld2_var->setCallBack(this, PITLD2, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.PITCNT2",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[2]);
-
-	unisim::kernel::service::Register<uint16_t> *pitcnt2_var = new unisim::kernel::service::Register<uint16_t>("PITCNT2", this, pitcnt_register[2], "PIT Count register 2 (PITCNT2)");
-	extended_registers_registry.push_back(pitcnt2_var);
-	pitcnt2_var->setCallBack(this, PITCNT2, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.PITLD3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitld_register[3]);
-
-	unisim::kernel::service::Register<uint16_t> *pitld3_var = new unisim::kernel::service::Register<uint16_t>("PITLD3", this, pitld_register[3], "PIT Load register 3 (PITLD3)");
-	extended_registers_registry.push_back(pitld3_var);
-	pitld3_var->setCallBack(this, PITLD3, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.PITCNT3",sc_object::name());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &pitcnt_register[3]);
-
-	unisim::kernel::service::Register<uint16_t> *pitcnt3_var = new unisim::kernel::service::Register<uint16_t>("PITCNT3", this, pitcnt_register[3], "PIT Count register 3 (PITCNT3)");
-	extended_registers_registry.push_back(pitcnt3_var);
-	pitcnt3_var->setCallBack(this, PITCNT3, &CallBackObject::write, NULL);
+		sprintf(buf, "PITCNT%d", i);
+		unisim::kernel::service::Register<uint16_t> *pitcnt0_var = new unisim::kernel::service::Register<uint16_t>(buf, this, pitcnt_register[i], "PIT Count Register (PITCNT)");
+		extended_registers_registry.push_back(pitcnt0_var);
+		pitcnt0_var->setCallBack(this, PITCNT0 + i*4, &CallBackObject::write, NULL);
+	}
 
 	ComputeInternalTime();
 
 	return (true);
 }
 
-bool S12PIT24B4C::Setup(ServiceExportBase *srv_export) {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::Setup(ServiceExportBase *srv_export) {
 
 	return (true);
 }
 
-bool S12PIT24B4C::EndSetup() {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::EndSetup() {
 	return (true);
 }
 
-Register* S12PIT24B4C::GetRegister(const char *name)
+template <uint8_t PIT_SIZE>
+Register* S12PIT24B<PIT_SIZE>::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
 		return (registers_registry[string(name)]);
@@ -582,10 +525,12 @@ Register* S12PIT24B4C::GetRegister(const char *name)
 
 }
 
-void S12PIT24B4C::OnDisconnect() {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::OnDisconnect() {
 }
 
-void S12PIT24B4C::Reset() {
+template <uint8_t PIT_SIZE>
+void S12PIT24B<PIT_SIZE>::Reset() {
 
 	pitcflmt_register = 0x00;
 	pitflt_register = 0x00;
@@ -595,7 +540,7 @@ void S12PIT24B4C::Reset() {
 	pittf_register = 0x00;
 	pitmtld0_register = 0x00;
 	pitmtld1_register = 0x0000;
-	for (uint8_t i=0; i < 4; i++) {
+	for (uint8_t i=0; i < PIT_SIZE; i++) {
 		pitld_register[i] = 0x0000;
 		pitcnt_register[i] = 0x0000;
 	}
@@ -607,7 +552,8 @@ void S12PIT24B4C::Reset() {
 //=             memory interface methods                              =
 //=====================================================================
 
-bool S12PIT24B4C::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr < (baseAddress+40))) {
 
@@ -623,7 +569,7 @@ bool S12PIT24B4C::ReadMemory(physical_address_t addr, void *buffer, uint32_t siz
 		case PITMTLD0: *((uint8_t *) buffer) = pitmtld0_register; break; // 1 byte
 		case PITMTLD1: *((uint8_t *) buffer) = pitmtld1_register; break; // 1 byte
 		default: {
-			if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+			if ((offset >= PITLD0) && (offset < (PITLD0 + PIT_SIZE*4))) {
 				uint8_t group_index = (offset - PITLD0) / 2;
 				uint8_t group_register = (offset - PITLD0) % 2;
 				if (group_register == 0) {
@@ -631,12 +577,6 @@ bool S12PIT24B4C::ReadMemory(physical_address_t addr, void *buffer, uint32_t siz
 				} else {
 					*((uint16_t *) buffer) = Host2BigEndian(pitcnt_register[group_index]);
 				}
-			}
-			else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
-				memcpy((void*) buffer, (reserved_register + offset), size);
-			}
-			else {
-				return (false);
 			}
 		} break;
 		}
@@ -648,7 +588,8 @@ bool S12PIT24B4C::ReadMemory(physical_address_t addr, void *buffer, uint32_t siz
 	return (false);
 }
 
-bool S12PIT24B4C::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
+template <uint8_t PIT_SIZE>
+bool S12PIT24B<PIT_SIZE>::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr < (baseAddress+40))) {
 
@@ -692,7 +633,7 @@ bool S12PIT24B4C::WriteMemory(physical_address_t addr, const void *buffer, uint3
 			*((uint8_t *) buffer) = pitmtld1_register; // 1 byte
 		} break;
 		default: {
-			if ((offset >= PITLD0) && (offset <= PITCNT3)) {
+			if ((offset >= PITLD0) && (offset < (PITLD0 + PIT_SIZE*4))) {
 				uint8_t group_index = (offset - PITLD0) / 2;
 				uint8_t group_register = (offset - PITLD0) % 2;
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
@@ -702,13 +643,6 @@ bool S12PIT24B4C::WriteMemory(physical_address_t addr, const void *buffer, uint3
 					// write to PITCNTx registers has no meaning or effect
 					pitcnt_register[group_index] = val;
 				}
-			}
-			else if ((offset >= RESERVED) && (offset < (RESERVED + 16))) {
-				// write to reserved area has no effect
-				memcpy((reserved_register + offset), buffer, size);
-			}
-			else {
-				return (false);
 			}
 		} break;
 		}

@@ -51,7 +51,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
-#include <unisim/component/tlm2/processor/hcs12x/s12pit24b4cv1.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -86,7 +86,7 @@ using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XEETX;
-using unisim::component::tlm2::processor::hcs12x::S12PIT24B4C;
+using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -168,7 +168,7 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
-
+	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<8> PIT;
 
 // ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
@@ -195,7 +195,7 @@ private:
 
 	PWM *pwm;
 
-	S12PIT24B4C *pit;
+	PIT *pit;
 
 	//  - Memories
 	RAM *global_ram;
