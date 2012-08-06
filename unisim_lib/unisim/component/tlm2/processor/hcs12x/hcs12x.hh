@@ -151,8 +151,6 @@ public:
 	 */
 	virtual address_t getIntVector(uint8_t &ipl);
 
-	virtual double  GetSimulatedTime();
-
 	void updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 private:

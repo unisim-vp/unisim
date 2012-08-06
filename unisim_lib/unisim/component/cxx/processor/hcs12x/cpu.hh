@@ -312,8 +312,6 @@ public:
 	 */
 	virtual address_t getIntVector(uint8_t &ipl) = 0;
 
-	virtual double  GetSimulatedTime() = 0;
-
 	//=====================================================================
 	//=                    Interface with outside                         =
 	//=====================================================================
@@ -751,15 +749,16 @@ uint16_t CPU::xb_getAddrRegValue(uint8_t rr) {
 void CPU::xb_setAddrRegValue(uint8_t rr,uint16_t val) {
 	switch (rr) {
 	case 0:
-		return (setRegX(val));
+		(setRegX(val)); break;
 	case 1:
-		return (setRegY(val));
+		(setRegY(val)); break;
 	case 2:
-		return (setRegSP(val));
+		(setRegSP(val)); break;
 	case 3:
-		return (setRegPC(val));
+		(setRegPC(val)); break;
+	default:
+		throw std::runtime_error("Internal error"); break;
 	}
-	throw std::runtime_error("Internal error");
 }
 
 

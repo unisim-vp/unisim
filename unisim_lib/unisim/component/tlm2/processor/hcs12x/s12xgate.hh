@@ -134,7 +134,6 @@ public:
 	virtual void Sync();
 
 	virtual address_t getIntVector();
-	virtual double  GetSimulatedTime();
 
 	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag);
 

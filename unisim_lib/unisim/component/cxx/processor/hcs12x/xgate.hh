@@ -283,7 +283,6 @@ public:
 	virtual void Sync();
 
 	virtual address_t getIntVector() = 0;
-	virtual double  GetSimulatedTime() = 0;
 
 	virtual void enbale_xgate() = 0;
 	virtual void disable_xgate() = 0;
@@ -525,7 +524,7 @@ public:
 	inline uint16_t getXGVBR() { return (xgvbr_register); }
 	inline uint16_t getXGSWT() { return (xgswt_register); }
 	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
-	inline void setXGRx(uint16_t val, uint8_t index) { xgr_register[index] = val; }
+	inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = val; }
 	inline uint16_t getXGRx(uint8_t index) { return (xgr_register[index]); }
 	inline void setXGCHID(uint8_t val) { xgchid_register = val; }
 	inline uint8_t getXGCHID() { return (xgchid_register); }

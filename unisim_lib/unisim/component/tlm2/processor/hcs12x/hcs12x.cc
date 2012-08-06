@@ -277,13 +277,6 @@ Run() {
 	}
 }
 
-double
-HCS12X ::
-GetSimulatedTime() {
-//	return cpu_time.to_seconds();
-	return (cpu_time.to_default_time_units()/1e6);
-}
-
 void
 HCS12X ::
 Reset() {

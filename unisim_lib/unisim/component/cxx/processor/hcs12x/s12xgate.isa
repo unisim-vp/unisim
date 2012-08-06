@@ -252,15 +252,11 @@ single_register.execute = {
 	switch (b) {
 	case 0: /* SEX RD */ {
 		uint16_t reg1_val = cpu->getXGRx(reg1) & 0x00FF;
-		uint16_t mask = cpu->getXGRx(reg1) & 0x0080;
-		if (mask != 0) {
-			for (uint8_t i=0; i<8; i++) {
-				mask = mask << 1;
-				reg1_val = reg1_val | mask;
-			}
+		if ((reg1_val & 0x0080) != 0) {
+			reg1_val = reg1_val | 0xFF00;
 		}
 
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		cpu->ccr->clrV();
 		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -287,7 +283,7 @@ single_register.execute = {
 	case 2: /* JAL RD */ {
 		uint16_t oldPC = cpu->getXGPC();
 		cpu->setXGPC(cpu->getXGRx(reg1));
-		cpu->setXGRx(oldPC, reg1);
+		cpu->setXGRx(reg1, oldPC);
 	} break;
 	case 3: /* SIF RS */ {
 		cpu->assertChannelInterrupt(cpu->getXGRx(reg1));
@@ -336,14 +332,14 @@ special_move.execute = {
 
 	switch (b) {
 	case 0: /* TFR RD, CCR */ {
-		cpu->setXGRx(0x000F & cpu->ccr->getCCR(), reg1);
+		cpu->setXGRx(reg1, (0x000F & cpu->ccr->getCCR()));
 	} break;
 	case 1: /* TFR CCR, RS */ {
 
 		cpu->ccr->setCCR(cpu->getXGRx(reg1) & 0x000F);
 	} break;
 	case 2: /* TFR RD, PC */ {
-		cpu->setXGRx(cpu->getXGPC() + 2, reg1);
+		cpu->setXGRx(reg1, (cpu->getXGPC() + 2));
 	} break;
 	case 3: /* not used */ break;
 	}
@@ -410,7 +406,7 @@ shift_dyadic.execute = {
 	switch (b) {
 	case 0: /* BFFO RD, RS */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
-		cpu->setXGRx(0, reg1);
+		cpu->setXGRx(reg1, 0);
 		cpu->ccr->clrC();
 
 		if (reg2_val == 0) {
@@ -419,7 +415,7 @@ shift_dyadic.execute = {
 			uint16_t mask = 0x8000;
 			for (uint8_t i=16; i > 0; i--) {
 				if ((reg2_val & mask) != 0) {
-					cpu->setXGRx(i-1, reg1);
+					cpu->setXGRx(reg1, (i-1));
 					break;
 				}
 				mask = mask >> 1;
@@ -442,7 +438,7 @@ shift_dyadic.execute = {
 		if ((val & carry_mask) == carry_mask) { carry = 1; }
 
 		val = (val >> shift) | msb;
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 
 		if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -461,7 +457,7 @@ shift_dyadic.execute = {
 
 		val = (val << shift) | (val >> (16 - shift));
 
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -479,7 +475,7 @@ shift_dyadic.execute = {
 
 		val = (val >> shift) | (val << (16 - shift));
 
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 
 		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -499,7 +495,7 @@ shift_dyadic.execute = {
 			if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 
 			reg1_val = reg1_val << n;
-			cpu->setXGRx(reg1_val, reg1);
+			cpu->setXGRx(reg1, reg1_val);
 		}
 
 		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -520,7 +516,7 @@ shift_dyadic.execute = {
 			if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 
 			reg1_val = reg1_val >> n;
-			cpu->setXGRx(reg1_val, reg1);
+			cpu->setXGRx(reg1, reg1_val);
 		}
 
 		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -537,7 +533,7 @@ shift_dyadic.execute = {
 		uint16_t upper_bits = (reg1_val & mask) >> reg2_val;
 
 		reg1_val = (reg1_val << reg2_val) | upper_bits;
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -552,7 +548,7 @@ shift_dyadic.execute = {
 		uint16_t lower_bits = (reg1_val & mask) << reg2_val;
 
 		reg1_val = (reg1_val >> reg2_val) | lower_bits;
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -633,7 +629,7 @@ shift_imm4.execute = {
 				if ((val & carry_mask) == carry_mask) { carry = 1; }
 
 				val = (val >> shift) | msb;
-				cpu->setXGRx(val, reg1);
+				cpu->setXGRx(reg1, val);
 
 				if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
 				if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -651,7 +647,7 @@ shift_imm4.execute = {
 
 			val = (val << shift) | (val >> (16 - shift));
 
-			cpu->setXGRx(val, reg1);
+			cpu->setXGRx(reg1, val);
 
 			if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -668,7 +664,7 @@ shift_imm4.execute = {
 
 			val = (val >> shift) | (val << (16 - shift));
 
-			cpu->setXGRx(val, reg1);
+			cpu->setXGRx(reg1, val);
 
 			if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -687,7 +683,7 @@ shift_imm4.execute = {
 				if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 
 				reg1_val = reg1_val << n;
-				cpu->setXGRx(reg1_val, reg1);
+				cpu->setXGRx(reg1, reg1_val);
 			}
 
 			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -707,7 +703,7 @@ shift_imm4.execute = {
 				if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 
 				reg1_val = reg1_val >> n;
-				cpu->setXGRx(reg1_val, reg1);
+				cpu->setXGRx(reg1, reg1_val);
 			}
 
 			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
@@ -723,7 +719,7 @@ shift_imm4.execute = {
 			uint16_t upper_bits = (reg1_val & mask) >> imm4;
 
 			reg1_val = (reg1_val << imm4) | upper_bits;
-			cpu->setXGRx(reg1_val, reg1);
+			cpu->setXGRx(reg1, reg1_val);
 
 			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -737,7 +733,7 @@ shift_imm4.execute = {
 			uint16_t lower_bits = (reg1_val & mask) << imm4;
 
 			reg1_val = (reg1_val >> imm4) | lower_bits;
-			cpu->setXGRx(reg1_val, reg1);
+			cpu->setXGRx(reg1, reg1_val);
 
 			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
 			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -793,24 +789,24 @@ logical_triadic.execute = {
 		case 0: /* AND RD, RS1, RS2 */ {
 
 			uint16_t val = cpu->getXGRx(reg2) & cpu->getXGRx(reg3);
-			cpu->setXGRx(val, reg1);
+			cpu->setXGRx(reg1, val);
 
 			cpu->ccr->clrV();
 
 			if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
-			if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 
 		} break;
 		case 1: /* not used */ break;
 		case 2: /* OR Rd, RS1, RS2 */ {
 
 			uint16_t val = cpu->getXGRx(reg2) | cpu->getXGRx(reg3);
-			cpu->setXGRx(val, reg1);
+			cpu->setXGRx(reg1, val);
 
 			cpu->ccr->clrV();
 
 			if (val == 0) { cpu->ccr->setZ();} else { cpu->ccr->clrZ();};
-			if ((val & 0x80) == 0x80) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
+			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN();} else { cpu->ccr->clrN();};
 
 		} break;
 		case 3: /* XNOR RD, RS1, RS2 */ {
@@ -819,7 +815,7 @@ logical_triadic.execute = {
 
 			val = ~val;
 
-			cpu->setXGRx(val, reg1);
+			cpu->setXGRx(reg1, val);
 
 			cpu->ccr->clrV();
 			if (val == 0) { cpu->ccr->setZ();} else {cpu->ccr->clrZ();}
@@ -873,7 +869,6 @@ arithmetic_triadic.execute = {
 	switch (b) {
 	case 0: /* SUB RD, RS1, RS2 */ {
 
-		uint16_t result;
 		uint8_t carry_out, overflow, sign;
 
 		uint16_t rd_reg = cpu->getXGRx(reg1);
@@ -882,19 +877,18 @@ arithmetic_triadic.execute = {
 
 		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
 
-		cpu->setXGRx(rd_reg, reg1);
+		cpu->setXGRx(reg1, rd_reg);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 		if (rd_reg == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((rd_reg & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((rd_reg & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 
 	} break;
 	case 1: /* SBC RD, RS1, RS2 */ {
 
-		uint16_t result;
 		uint8_t carry_out, overflow, sign;
 		uint8_t carry_in = cpu->ccr->getC();
 
@@ -904,18 +898,17 @@ arithmetic_triadic.execute = {
 
 		Sub16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
 
-		cpu->setXGRx(rd_reg, reg1);
+		cpu->setXGRx(reg1, rd_reg);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 		if (rd_reg == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((rd_reg & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((rd_reg & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	} break;
 	case 2: /* ADD RD, RS1, RS2 */ {
 
-		uint16_t result;
 		uint8_t carry_out, overflow, sign;
 
 		uint16_t rd_reg = cpu->getXGRx(reg1);
@@ -924,18 +917,17 @@ arithmetic_triadic.execute = {
 
 		Add16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, 0);
 
-		cpu->setXGRx(rd_reg, reg1);
+		cpu->setXGRx(reg1, rd_reg);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 		if (rd_reg == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((rd_reg & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((rd_reg & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	} break;
 	case 3: /* ADC RD, RS1, RS2 */ {
 
-		uint16_t result;
 		uint8_t carry_out, overflow, sign;
 
 		uint8_t carry_in = cpu->ccr->getC();
@@ -946,13 +938,13 @@ arithmetic_triadic.execute = {
 
 		Add16(rd_reg, carry_out, overflow, sign, rs1_reg, rs2_reg, carry_in);
 
-		cpu->setXGRx(rd_reg, reg1);
+		cpu->setXGRx(reg1, rd_reg);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 		if (rd_reg == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((rd_reg & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((rd_reg & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 	} break;
 	}
@@ -1205,12 +1197,12 @@ ld_st_offs5.execute = {
 	case 0: /* LDB RD, (RB, #OFFS5) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t val = 0x00FF & cpu->memRead8(reg2_val + offs5);
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 	} break;
 	case 1: /* LDW RD, (RB, #OFFS5) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t val = cpu->memRead16(reg2_val + offs5);
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 	} break;
 	case 2: /* STB RD, (RB, #OFFS5) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
@@ -1267,21 +1259,21 @@ ldb.execute = {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		uint8_t val = cpu->memRead8(reg2_val + reg3_val);
-		cpu->setXGRx(val & 0x00FF, reg1);
+		cpu->setXGRx(reg1, (val & 0x00FF));
 	} break;
 	case 1: /* LDB RD, (RD, RI+) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		uint8_t val = cpu->memRead8(reg2_val + reg3_val);
-		cpu->setXGRx(val & 0x00FF, reg1);
-		cpu->setXGRx(reg3_val++, reg3);
+		cpu->setXGRx(reg1, (val & 0x00FF));
+		cpu->setXGRx(reg3, (reg3_val+1));
 	} break;
 	case 2: /* LDB RD, (RD, -RI) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
-		uint8_t val = cpu->memRead8(reg2_val + (--reg3_val));
-		cpu->setXGRx(val & 0x00FF, reg1);
-		cpu->setXGRx(reg3_val, reg3);
+		uint8_t val = cpu->memRead8(reg2_val + (reg3_val-1));
+		cpu->setXGRx(reg1, (val & 0x00FF));
+		cpu->setXGRx(reg3, (reg3_val-1));
 	} break;
 	case 3: {
 		// Bit Field instruction: BFEXT RD, RS1, RS2
@@ -1295,7 +1287,7 @@ ldb.execute = {
 		int shift_left = 15 - end_pos;
 
 		uint16_t reg1_val = (reg2_val << shift_left) >> (org + shift_left);
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		cpu->ccr->clrV();
 		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -1348,21 +1340,21 @@ ldw.execute = {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		uint16_t val = cpu->memRead16(reg2_val + reg3_val);
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 	} break;
 	case 1: /* LDW RD, (RD, RI+) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		uint16_t val = cpu->memRead16(reg2_val + reg3_val);
-		cpu->setXGRx(val, reg1);
-		cpu->setXGRx(reg3_val++, reg3);
+		cpu->setXGRx(reg1, val);
+		cpu->setXGRx(reg3, (reg3_val+2));
 	} break;
 	case 2: /* LDW RD, (RD, -RI) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
-		uint16_t val = cpu->memRead16(reg2_val + (--reg3_val));
-		cpu->setXGRx(val, reg1);
-		cpu->setXGRx(reg3_val, reg3);
+		uint16_t val = cpu->memRead16(reg2_val + (reg3_val - 2));
+		cpu->setXGRx(reg1, val);
+		cpu->setXGRx(reg3, (reg3_val - 2));
 	} break;
 	case 3: {
 		// Bit Field instruction: BFINS RD, RS1, RS2
@@ -1381,7 +1373,7 @@ ldw.execute = {
 
 		reg1_val = (reg1_val & ~mask) | (reg1_ins_val << org);
 
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		cpu->ccr->clrV();
 		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -1440,14 +1432,14 @@ stb.execute = {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		cpu->memWrite8(reg2_val + reg3_val, (reg1_val & 0x00FF));
-		cpu->setXGRx(reg3_val++, reg3);
+		cpu->setXGRx(reg3, (reg3_val+1));
 	} break;
 	case 2: /* STB RD, (RD, -RI) */ {
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
-		cpu->memWrite8(reg2_val + (--reg3_val), (reg1_val & 0x00FF));
-		cpu->setXGRx(reg3_val, reg3);
+		cpu->memWrite8(reg2_val + (reg3_val-1), (reg1_val & 0x00FF));
+		cpu->setXGRx(reg3, (reg3_val-1));
 	} break;
 	case 3: {
 		// Bit Field instruction: BFINSI RD, RS1, RS2
@@ -1466,7 +1458,7 @@ stb.execute = {
 
 		reg1_val = (reg1_val & (~mask)) | ((~reg1_ins_val) << org);
 
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		cpu->ccr->clrV();
 		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -1529,7 +1521,7 @@ stw.execute = {
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 
 		cpu->memWrite16(reg2_val + reg3_val, reg1_val);
-		cpu->setXGRx(reg3_val++, reg3);
+		cpu->setXGRx(reg3, (reg3_val+2));
 
 	} break;
 	case 2: /* STW RD, (RD, -RI) */ {
@@ -1537,8 +1529,8 @@ stw.execute = {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 
-		cpu->memWrite16(reg2_val + (--reg3_val), reg1_val);
-		cpu->setXGRx(reg3_val, reg3);
+		cpu->memWrite16(reg2_val + (reg3_val - 2), reg1_val);
+		cpu->setXGRx(reg3, (reg3_val - 2));
 
 	} break;
 	case 3: {
@@ -1560,7 +1552,7 @@ stw.execute = {
 
 		reg1_val = (reg1_val & (~mask)) | (((((reg1_val & mask) >> org) ^ reg1_ins_val) << org) & mask);
 
-		cpu->setXGRx(reg1_val, reg1);
+		cpu->setXGRx(reg1, reg1_val);
 
 		cpu->ccr->clrV();
 		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
@@ -1632,7 +1624,7 @@ logic_imm8.execute = {
 
 		uint16_t result = regVal & (0xFF00 | imm8);
 
-		cpu->setXGRx(result, reg1);
+		cpu->setXGRx(reg1, result);
 
 		cpu->ccr->clrV();
 
@@ -1646,7 +1638,7 @@ logic_imm8.execute = {
 
 		uint16_t result = regVal & (0x00FF | (imm8 << 8));
 
-		cpu->setXGRx(result, reg1);
+		cpu->setXGRx(reg1, result);
 
 		cpu->ccr->clrV();
 
@@ -1678,7 +1670,7 @@ logic_imm8.execute = {
 
 		uint16_t val = cpu->getXGRx(reg1) | (0x00FF & imm8);
 
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 
 		cpu->ccr->clrV();
 
@@ -1690,7 +1682,7 @@ logic_imm8.execute = {
 
 		uint16_t val = cpu->getXGRx(reg1) | (imm8 << 8);
 
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 
 		cpu->ccr->clrV();
 
@@ -1701,7 +1693,7 @@ logic_imm8.execute = {
 	case 6: /* XNORL RD, #IMM8 */ {
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint8_t val = ~((reg1_val & 0x00FF) ^ imm8);
-		cpu->setXGRx((reg1_val & 0xFF00) | val , reg1);
+		cpu->setXGRx(reg1, ((reg1_val & 0xFF00) | (val & 0x00FF)));
 
 		cpu->ccr->clrV();
 
@@ -1712,7 +1704,7 @@ logic_imm8.execute = {
 	case 7: /* XNORH RD, #IMM8 */ {
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint16_t val = ~((reg1_val >> 8) ^ imm8);
-		cpu->setXGRx((reg1_val & 0x00FF) | (val << 8) , reg1);
+		cpu->setXGRx(reg1, ((reg1_val & 0x00FF) | (val << 8)));
 
 		cpu->ccr->clrV();
 
@@ -1790,9 +1782,9 @@ arithmetic_imm8.execute = {
 
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 
-		Sub16(result, carry_out, overflow, sign, reg1_val, imm8, carry_in);
+		Sub16(result, carry_out, overflow, sign, reg1_val, (0x00FF & imm8), carry_in);
 
-		cpu->setXGRx(result, reg1);
+		cpu->setXGRx(reg1, result);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -1813,7 +1805,7 @@ arithmetic_imm8.execute = {
 
 		Sub16(result, carry_out, overflow, sign, reg1_val, to_subract, carry_in);
 
-		cpu->setXGRx(result, reg1);
+		cpu->setXGRx(reg1, result);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
@@ -1860,13 +1852,13 @@ arithmetic_imm8.execute = {
 
 		Add16(result, carry_out, overflow, sign, rd_reg, (0x00FF & imm8), 0);
 
-		cpu->setXGRx(result, reg1);
+		cpu->setXGRx(reg1, result);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 
 	} break;
@@ -1879,24 +1871,24 @@ arithmetic_imm8.execute = {
 
 		Add16(result, carry_out, overflow, sign, rd_reg, (0xFF00 & (imm8 << 8)), 0);
 
-		cpu->setXGRx(result, reg1);
+		cpu->setXGRx(reg1, result);
 
 		if (carry_out) { cpu->ccr->setC();} else { cpu->ccr->clrC();}
 		if (overflow) { cpu->ccr->setV();} else { cpu->ccr->clrV();}
 
 		if (result == 0) cpu->ccr->setZ(); else cpu->ccr->clrZ();
-		if ((result & 0x80) == 0x80) cpu->ccr->setN(); else cpu->ccr->clrN();
+		if ((result & 0x8000) == 0x8000) cpu->ccr->setN(); else cpu->ccr->clrN();
 
 
 	} break;
 	case 6: /* LDL RD, #IMM8 */ {
 		uint16_t val = 0x00FF & imm8;
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 	} break;
 	case 7: /* LDH RD, #IMM8 */ {
 		uint16_t val = cpu->getXGRx(reg1);
 		val = (val & 0x00FF) | (imm8 << 8);
-		cpu->setXGRx(val, reg1);
+		cpu->setXGRx(reg1, val);
 	} break;
 	}
 

@@ -578,8 +578,8 @@ uint8_t XGATE::step()
 
 			ctstr << op->GetEncoding();
 
-			*logger << DebugInfo << GetSimulatedTime() << " ms: "
-				<< "PC = 0x" << std::hex << getXGPC() << std::dec << " : "
+			*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
+				<< " : PC = 0x" << std::hex << getXGPC() << std::dec << " : "
 				<< getFunctionFriendlyName(getXGPC()) << " : "
 				<< disasm_str.str()
 				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
@@ -593,8 +593,8 @@ uint8_t XGATE::step()
 			op->disasm(disasm_str);
 
 			ctstr << op->GetEncoding();
-			*logger << DebugInfo << GetSimulatedTime() << "ms: "
-				<< "Executing instruction "
+			*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
+				<< " : Executing instruction "
 				<< disasm_str.str()
 				<< " at PC = 0x" << std::hex << getXGPC() << std::dec
 				<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter

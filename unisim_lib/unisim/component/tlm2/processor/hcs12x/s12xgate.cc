@@ -276,7 +276,7 @@ Run() {
 			setXGPC(newPC);
 
 			uint16_t variablePtr = memRead16(getXGVBR() + channelID * 4 + 2);
-			setXGRx(variablePtr, 1);
+			setXGRx(1, variablePtr);
 
 			setXGCHID(channelID);
 		}
@@ -425,14 +425,6 @@ void S12XGATE::assertInterrupt(uint8_t offset, bool isXGATE_flag) {
 	}
 
 }
-
-double
-S12XGATE ::
-GetSimulatedTime() {
-//	return cpu_time.to_seconds();
-	return (cpu_time.to_default_time_units()/1e6);
-}
-
 
 void S12XGATE::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 

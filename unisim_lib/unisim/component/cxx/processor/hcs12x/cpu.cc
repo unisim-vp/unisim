@@ -372,8 +372,8 @@ uint8_t CPU::step()
 
 				ctstr << op->GetEncoding();
 
-				*logger << DebugInfo << GetSimulatedTime() << " ms: "
-					<< "PC = 0x" << std::hex << getRegPC() << std::dec << " : "
+				*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
+					<< " : PC = 0x" << std::hex << getRegPC() << std::dec << " : "
 					<< getFunctionFriendlyName(getRegPC()) << " : "
 					<< disasm_str.str()
 					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
@@ -387,8 +387,8 @@ uint8_t CPU::step()
 				op->disasm(disasm_str);
 
 				ctstr << op->GetEncoding();
-				*logger << DebugInfo << GetSimulatedTime() << "ms: "
-					<< "Executing instruction "
+				*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
+					<< " : Executing instruction "
 					<< disasm_str.str()
 					<< " at PC = 0x" << std::hex << getRegPC() << std::dec
 					<< " (0x" << std::hex << ctstr.str() << std::dec << ") , Instruction Counter = " << instruction_counter
