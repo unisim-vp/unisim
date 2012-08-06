@@ -562,7 +562,7 @@ uint8_t XGATE::step()
 		}
 
 //		op = this->Decode(getRegPC(), insn);
-		op = decoder.Decode(getXGPC(), insn);
+		op = decoder.Decode(MMC::getXGATEPagedAddress(getXGPC()), insn);
 
 		lastPC = getXGPC();
         unsigned int insn_length = op->GetLength();

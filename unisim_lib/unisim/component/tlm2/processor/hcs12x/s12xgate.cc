@@ -381,7 +381,7 @@ address_t S12XGATE ::getIntVector()
 	delete phase;
 	trans->release();
 
-	address = buffer->getVectorAddress();
+	address = buffer->getID();
 
 	delete buffer;
 
