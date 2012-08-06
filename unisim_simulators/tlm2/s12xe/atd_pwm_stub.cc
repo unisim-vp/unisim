@@ -49,7 +49,7 @@ ATD_PWM_STUB::ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 	pwm_fetch_period(1e9), // 1 ms
 
 	trace_enable(false),
-	param_trace_enable("trace-enable", this, trace_enable),
+	param_trace_enable("trace-enabled", this, trace_enable),
 
 	atd0_stub_enabled(false),
 	param_atd0_stub_enabled("atd0-stub-enabled", this, atd0_stub_enabled),

@@ -485,7 +485,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-stimulus-file", "ATD.xml");
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-start-channel", 0);
 	simulator->SetVariable("atd-pwm-stub.atd1-anx-wrap-around-channel", 0);
-	simulator->SetVariable("atd-pwm-stub.trace-enable", false);
+	simulator->SetVariable("atd-pwm-stub.trace-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
 
@@ -525,7 +525,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.software_channel_id[7]", 0x32);
 	simulator->SetVariable("XGATE.software-error-interrupt", 0x62);
 
-	simulator->SetVariable("XGATE.trace-enable", false);
+	simulator->SetVariable("XGATE.trace-enabled", false);
 	simulator->SetVariable("XGATE.verbose-all", false);
 	simulator->SetVariable("XGATE.verbose-setup", false);
 	simulator->SetVariable("XGATE.verbose-step", false);
@@ -545,7 +545,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.enable-fine-timing", true);
 
 
-	simulator->SetVariable("CPU.trace-enable", false);
+	simulator->SetVariable("CPU.trace-enabled", false);
 	simulator->SetVariable("CPU.verbose-all", false);
 	simulator->SetVariable("CPU.verbose-setup", false);
 	simulator->SetVariable("CPU.verbose-step", false);

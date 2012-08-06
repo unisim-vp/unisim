@@ -99,7 +99,7 @@ CPU::CPU(const char *name, Object *parent):
 	verbose_exception(false),
 	param_verbose_exception("verbose-exception", this, verbose_exception),
 	trace_enable(false),
-	param_trace_enable("trace-enable", this, trace_enable),
+	param_trace_enable("trace-enabled", this, trace_enable),
 	requires_memory_access_reporting(true),
 	param_requires_memory_access_reporting("requires-memory-access-reporting", this, requires_memory_access_reporting),
 	requires_finished_instruction_reporting(true),

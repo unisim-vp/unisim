@@ -101,7 +101,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	, param_requires_finished_instruction_reporting("requires-finished-instruction-reporting", this, requires_finished_instruction_reporting)
 
 	, trace_enable(false)
-	, param_trace_enable("trace-enable", this, trace_enable)
+	, param_trace_enable("trace-enabled", this, trace_enable)
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled, "")
@@ -608,6 +608,18 @@ uint8_t XGATE::step()
 		opCycles = op->getCycles();
 
 		cycles_counter += opCycles;
+
+		// ************************
+//		std::cout << "\t- XGR1" << " = 0x" << std::hex << xgr_register[1] << std::dec; // 2-bytes
+//		std::cout << "\t- XGR2" << " = 0x" << std::hex << xgr_register[2] << std::dec; // 2-bytes
+//		std::cout << "\t- XGR3" << " = 0x" << std::hex << xgr_register[3] << std::dec; // 2-bytes
+//		std::cout << "\t- XGR4" << " = 0x" << std::hex << xgr_register[4] << std::dec; // 2-bytes
+//		std::cout << "\t- XGR5" << " = 0x" << std::hex << xgr_register[5] << std::dec; // 2-bytes
+//		std::cout << "\t- XGR6" << " = 0x" << std::hex << xgr_register[6] << std::dec; // 2-bytes
+//		std::cout << "\t- XGR7" << " = 0x" << std::hex << xgr_register[7] << std::dec; // 2-bytes
+//		std::cout << std::endl;
+
+		// ************************
 
 		VerboseDumpRegsEnd();
 
