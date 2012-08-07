@@ -376,7 +376,8 @@ uint8_t CPU::step()
 					<< " : PC = 0x" << std::hex << getRegPC() << std::dec << " : "
 					<< getFunctionFriendlyName(getRegPC()) << " : "
 					<< disasm_str.str()
-					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
+					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+					<< EndDebugInfo	<< std::endl;
 
 			}
 

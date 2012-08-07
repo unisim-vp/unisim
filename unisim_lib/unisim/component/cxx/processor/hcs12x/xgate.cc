@@ -582,7 +582,8 @@ uint8_t XGATE::step()
 				<< " : PC = 0x" << std::hex << getXGPC() << std::dec << " : "
 				<< getFunctionFriendlyName(getXGPC()) << " : "
 				<< disasm_str.str()
-				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) " << EndDebugInfo	<< std::endl;
+				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+				<< EndDebugInfo	<< std::endl;
 
 		}
 
@@ -681,6 +682,29 @@ void XGATE::riseErrorCondition() {
 
 	xgmctl_register = xgmctl_register | 0x0002;
 	state = STOP;
+}
+
+bool XGATE::lockSemaphore(TSemaphore::OWNER owner, uint8_t index) {
+	if (semphore[index].lock(owner)) {
+		if (owner == TSemaphore::CPU12X) {
+			xgsem_register = xgsem_register | (1 << index);
+		} else {
+			xgsem_register = xgsem_register & ~(1 << index);
+		}
+
+		return (true);
+	}
+
+	return (false);
+}
+
+bool XGATE::unlockSemaphore(TSemaphore::OWNER owner, uint8_t index) {
+	if (semphore[index].unlock(owner)) {
+		xgsem_register = xgsem_register & ~(1 << index);
+		return (true);
+	}
+
+	return (false);
 }
 
 //=====================================================================
@@ -999,13 +1023,9 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
-						if (semphore[i].lock(TSemaphore::CPU12X)) {
-							xgsem_register = xgsem_register | j;
-						}
+						lockSemaphore(TSemaphore::CPU12X, i);
 					} else {
-						if (semphore[i].unlock(TSemaphore::CPU12X)) {
-							xgsem_register = xgsem_register & ~j;
-						}
+						unlockSemaphore(TSemaphore::CPU12X, i);
 					}
 				}
 			}

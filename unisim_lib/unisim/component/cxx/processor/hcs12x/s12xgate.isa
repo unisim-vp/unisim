@@ -200,10 +200,18 @@ semaphore.execute = {
 		cpu->unlockSemaphore(TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007);
 	} break;
 	case 2: /* SSEM IMM3 */ {
-		cpu->lockSemaphore(TSemaphore::XGATE, b1);
+		if (cpu->lockSemaphore(TSemaphore::XGATE, b1)) {
+			cpu->ccr->setC();
+		} else {
+			cpu->ccr->clrC();
+		}
 	} break;
 	case 3: /* SSEM RS */ {
-		cpu->lockSemaphore(TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007);
+		if (cpu->lockSemaphore(TSemaphore::XGATE, cpu->getXGRx(b1) & 0x0007)) {
+			cpu->ccr->setC();
+		} else {
+			cpu->ccr->clrC();
+		}
 	} break;
 	}
 

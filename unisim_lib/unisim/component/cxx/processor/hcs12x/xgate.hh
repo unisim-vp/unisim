@@ -514,8 +514,8 @@ public:
 	//=                REGISTERS ACCESSORS                    =
 	//=========================================================
 
-	bool lockSemaphore(TSemaphore::OWNER owner, uint8_t index) { return (semphore[index].lock(owner)); }
-	bool unlockSemaphore(TSemaphore::OWNER owner, uint8_t index) { return (semphore[index].unlock(owner)); }
+	bool lockSemaphore(TSemaphore::OWNER owner, uint8_t index);
+	bool unlockSemaphore(TSemaphore::OWNER owner, uint8_t index);
 
 	inline void setXGPC(address_t val) { xgpc_register = val; }
 	inline address_t getXGPC() { return (xgpc_register); }
