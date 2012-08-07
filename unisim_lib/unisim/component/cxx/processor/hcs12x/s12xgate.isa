@@ -445,7 +445,11 @@ shift_dyadic.execute = {
 		uint16_t carry_mask = (1 << (shift - 1));
 		if ((val & carry_mask) == carry_mask) { carry = 1; }
 
-		val = (val >> shift) | msb;
+//		val = (val >> shift) | msb;
+		for (uint8_t i=0; i < shift; i++) {
+			val = (val >> 1) | msb;
+		}
+
 		cpu->setXGRx(reg1, val);
 
 		if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
@@ -459,11 +463,16 @@ shift_dyadic.execute = {
 
 		uint16_t val = cpu->getXGRx(reg1);
 
+		uint16_t old_carry = cpu->ccr->getC();
+
 		uint8_t shift = (cpu->getXGRx(reg2) > 15)? 16: cpu->getXGRx(reg2);
 		uint16_t carry_mask = 0x8000 >> (16 - shift);
 		if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
-		val = (val << shift) | (val >> (16 - shift));
+//		val = (val << shift) | (val >> (16 - shift));
+		for (uint8_t i=0; i<shift; i++) {
+			val = (val << 1) | old_carry;
+		}
 
 		cpu->setXGRx(reg1, val);
 
@@ -477,11 +486,16 @@ shift_dyadic.execute = {
 
 		uint16_t val = cpu->getXGRx(reg1);
 
+		uint16_t old_carry = cpu->ccr->getC() << 15;
+
 		uint8_t shift = (cpu->getXGRx(reg2) > 15)? 16: cpu->getXGRx(reg2);
 		uint16_t carry_mask = 0x0001 << (shift - 1);
 		if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
-		val = (val >> shift) | (val << (16 - shift));
+//		val = (val >> shift) | (val << (16 - shift));
+		for (uint8_t i=0; i < shift; i++) {
+			val = (val >> 1) | old_carry;
+		}
 
 		cpu->setXGRx(reg1, val);
 
@@ -633,7 +647,11 @@ shift_imm4.execute = {
 		uint16_t carry_mask = (1 << (shift - 1));
 		if ((val & carry_mask) == carry_mask) { carry = 1; }
 
-		val = (val >> shift) | msb;
+//		val = (val >> shift) | msb;
+		for (uint8_t i=0; i < shift; i++) {
+			val = (val >> 1) | msb;
+		}
+
 		cpu->setXGRx(reg1, val);
 
 		if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
@@ -646,11 +664,16 @@ shift_imm4.execute = {
 	case 2: /* CSL RD, #IMM4 */ {
 		uint16_t val = cpu->getXGRx(reg1);
 
+		uint16_t old_carry = cpu->ccr->getC();
+
 		uint8_t shift = (imm4 == 0)? 16: imm4;
 		uint16_t carry_mask = 0x8000 >> (16 - shift);
 		if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
-		val = (val << shift) | (val >> (16 - shift));
+//		val = (val << shift) | (val >> (16 - shift));
+		for (uint8_t i=0; i<shift; i++) {
+			val = (val << 1) | old_carry;
+		}
 
 		cpu->setXGRx(reg1, val);
 
@@ -663,11 +686,16 @@ shift_imm4.execute = {
 	case 3: /* CSR RD, #IMM4 */ {
 		uint16_t val = cpu->getXGRx(reg1);
 
+		uint16_t old_carry = cpu->ccr->getC() << 15;
+
 		uint8_t shift = (imm4 == 0)? 16: imm4;
 		uint16_t carry_mask = 0x0001 << (shift - 1);
 		if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
-		val = (val >> shift) | (val << (16 - shift));
+//		val = (val >> shift) | (val << (16 - shift));
+		for (uint8_t i=0; i < shift; i++) {
+			val = (val >> 1) | old_carry;
+		}
 
 		cpu->setXGRx(reg1, val);
 
@@ -1265,18 +1293,24 @@ ldb.execute = {
 		cpu->setXGRx(reg1, (val & 0x00FF));
 	} break;
 	case 1: /* LDB RD, (RD, RI+) */ {
+		/**
+		 * If the same general purpose register is used as index (RI) and destination register (RD),
+		 * the content of the register will not be incremented after the data move: M[RB, RI] ⇒ RD
+		 */
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		uint8_t val = cpu->memRead8(reg2_val + reg3_val);
 		cpu->setXGRx(reg1, (val & 0x00FF));
-		cpu->setXGRx(reg3, (reg3_val+1));
+		if (reg1 != reg3) {
+			cpu->setXGRx(reg3, (reg3_val+1));
+		}
 	} break;
 	case 2: /* LDB RD, (RD, -RI) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
-		uint16_t reg3_val = cpu->getXGRx(reg3);
-		uint8_t val = cpu->memRead8(reg2_val + (reg3_val-1));
+		uint16_t reg3_val = cpu->getXGRx(reg3) - 1;
+		cpu->setXGRx(reg3, reg3_val);
+		uint8_t val = cpu->memRead8(reg2_val + reg3_val);
 		cpu->setXGRx(reg1, (val & 0x00FF));
-		cpu->setXGRx(reg3, (reg3_val-1));
 	} break;
 	case 3: {
 		// Bit Field instruction: BFEXT RD, RS1, RS2
@@ -1346,18 +1380,24 @@ ldw.execute = {
 		cpu->setXGRx(reg1, val);
 	} break;
 	case 1: /* LDW RD, (RD, RI+) */ {
+		/**
+		 * If the same general purpose register is used as index (RI) and destination register (RD),
+		 * the content of the register will not be incremented after the data move: M[RB, RI] ⇒ RD
+		 */
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
 		uint16_t val = cpu->memRead16(reg2_val + reg3_val);
 		cpu->setXGRx(reg1, val);
-		cpu->setXGRx(reg3, (reg3_val+2));
+		if (reg1 != reg3) {
+			cpu->setXGRx(reg3, (reg3_val+2));
+		}
 	} break;
 	case 2: /* LDW RD, (RD, -RI) */ {
 		uint16_t reg2_val = cpu->getXGRx(reg2);
-		uint16_t reg3_val = cpu->getXGRx(reg3);
-		uint16_t val = cpu->memRead16(reg2_val + (reg3_val - 2));
+		uint16_t reg3_val = cpu->getXGRx(reg3) - 2;
+		cpu->setXGRx(reg3, reg3_val);
+		uint16_t val = cpu->memRead16(reg2_val + reg3_val);
 		cpu->setXGRx(reg1, val);
-		cpu->setXGRx(reg3, (reg3_val - 2));
 	} break;
 	case 3: {
 		// Bit Field instruction: BFINS RD, RS1, RS2
@@ -1438,6 +1478,10 @@ stb.execute = {
 		cpu->setXGRx(reg3, (reg3_val+1));
 	} break;
 	case 2: /* STB RD, (RD, -RI) */ {
+		/**
+		 * If the same general purpose register is used as index (RI) and source register (RS),
+		 * the unmodified content of the source register is written to the memory: RS.L ⇒ M[RB, RS-1]; RS-1 ⇒ RS
+		 */
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
@@ -1528,6 +1572,10 @@ stw.execute = {
 
 	} break;
 	case 2: /* STW RD, (RD, -RI) */ {
+		/**
+		 * If the same general purpose register is used as index (RI) and source register (RS),
+		 * the unmodified content of the source register is written to the memory: RS ⇒ M[RB, RS–2]; RS–2 ⇒ RS
+		 */
 		uint16_t reg1_val = cpu->getXGRx(reg1);
 		uint16_t reg2_val = cpu->getXGRx(reg2);
 		uint16_t reg3_val = cpu->getXGRx(reg3);
