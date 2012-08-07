@@ -621,135 +621,130 @@ shift_imm4.disasm = {
 
 shift_imm4.execute = {
 
-		switch (b) {
-		case 0: /* not used */ break;
-		case 1: /* ASR RD, #IMM4 */ {
-			switch (b) {
-			case 0: /* BFFO RD, RS */ break;
-			case 1: /* ASR RD, RS */ {
-				uint16_t val = cpu->getXGRx(reg1);
+	switch (b) {
+	case 0: /* not used */ break;
+	case 1: /* ASR RD, #IMM4 */ {
+		uint16_t val = cpu->getXGRx(reg1);
 
-				uint16_t msb = val & 0x8000;
+		uint16_t msb = val & 0x8000;
 
-				uint16_t carry = 0;
-				uint16_t shift = (imm4 == 0)? 16: imm4;
-				uint16_t carry_mask = (1 << (shift - 1));
-				if ((val & carry_mask) == carry_mask) { carry = 1; }
+		uint16_t carry = 0;
+		uint16_t shift = (imm4 == 0)? 16: imm4;
+		uint16_t carry_mask = (1 << (shift - 1));
+		if ((val & carry_mask) == carry_mask) { carry = 1; }
 
-				val = (val >> shift) | msb;
-				cpu->setXGRx(reg1, val);
+		val = (val >> shift) | msb;
+		cpu->setXGRx(reg1, val);
 
-				if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
-				if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-				if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (carry) { cpu->ccr->setC(); }	else { cpu->ccr->clrC(); }
+		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
-				if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 
-		} break;
-		case 2: /* CSL RD, #IMM4 */ {
-			uint16_t val = cpu->getXGRx(reg1);
+	} break;
+	case 2: /* CSL RD, #IMM4 */ {
+		uint16_t val = cpu->getXGRx(reg1);
 
-			uint8_t shift = (imm4 == 0)? 16: imm4;
-			uint16_t carry_mask = 0x8000 >> (16 - shift);
-			if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+		uint8_t shift = (imm4 == 0)? 16: imm4;
+		uint16_t carry_mask = 0x8000 >> (16 - shift);
+		if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
-			val = (val << shift) | (val >> (16 - shift));
+		val = (val << shift) | (val >> (16 - shift));
 
-			cpu->setXGRx(reg1, val);
+		cpu->setXGRx(reg1, val);
 
-			if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
-			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 
-		} break;
-		case 3: /* CSR RD, #IMM4 */ {
-			uint16_t val = cpu->getXGRx(reg1);
+	} break;
+	case 3: /* CSR RD, #IMM4 */ {
+		uint16_t val = cpu->getXGRx(reg1);
 
-			uint8_t shift = (imm4 == 0)? 16: imm4;
-			uint16_t carry_mask = 0x0001 << (shift - 1);
-			if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
+		uint8_t shift = (imm4 == 0)? 16: imm4;
+		uint16_t carry_mask = 0x0001 << (shift - 1);
+		if ((val & carry_mask) == carry_mask) { cpu->ccr->setC(); } else { cpu->ccr->clrC(); }
 
-			val = (val >> shift) | (val << (16 - shift));
+		val = (val >> shift) | (val << (16 - shift));
 
-			cpu->setXGRx(reg1, val);
+		cpu->setXGRx(reg1, val);
 
-			if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		if (val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
 
-			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
 
-		} break;
-		case 4: /* LSL RD, #IMM4 */ {
-			uint16_t reg1_val = cpu->getXGRx(reg1);
+	} break;
+	case 4: /* LSL RD, #IMM4 */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
 
-			uint8_t n = (imm4 == 0)? 16: imm4;
+		uint8_t n = (imm4 == 0)? 16: imm4;
 
-			if (n != 0) {
-				uint16_t mask = 1 << (16 - n);
+		if (n != 0) {
+			uint16_t mask = 1 << (16 - n);
 
-				if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+			if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
 
-				reg1_val = reg1_val << n;
-				cpu->setXGRx(reg1, reg1_val);
-			}
-
-			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-
-			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
-
-		} break;
-		case 5: /* LSR RD, #IMM4 */ {
-			uint16_t reg1_val = cpu->getXGRx(reg1);
-
-			uint8_t n = (imm4 > 15)? 16: imm4;
-
-			if (n != 0) {
-				uint16_t mask = 1 << (n - 1);
-
-				if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
-
-				reg1_val = reg1_val >> n;
-				cpu->setXGRx(reg1, reg1_val);
-			}
-
-			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			cpu->ccr->clrN();
-
-			if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
-
-		} break;
-		case 6: /* ROL RD, #IMM4 */ {
-			uint16_t reg1_val = cpu->getXGRx(reg1);
-
-			uint16_t mask = 0xffff << imm4;
-			uint16_t upper_bits = (reg1_val & mask) >> imm4;
-
-			reg1_val = (reg1_val << imm4) | upper_bits;
+			reg1_val = reg1_val << n;
 			cpu->setXGRx(reg1, reg1_val);
-
-			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-			cpu->ccr->clrV();
-
-		} break;
-		case 7: /* ROR RD, #IMM4 */ {
-			uint16_t reg1_val = cpu->getXGRx(reg1);
-
-			uint16_t mask = 0xffff >> imm4;
-			uint16_t lower_bits = (reg1_val & mask) << imm4;
-
-			reg1_val = (reg1_val >> imm4) | lower_bits;
-			cpu->setXGRx(reg1, reg1_val);
-
-			if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
-			if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
-			cpu->ccr->clrV();
-
-		} break;
 		}
-	}
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	} break;
+	case 5: /* LSR RD, #IMM4 */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		uint8_t n = (imm4 > 15)? 16: imm4;
+
+		if (n != 0) {
+			uint16_t mask = 1 << (n - 1);
+
+			if ((reg1_val & mask) == mask) { cpu->ccr->setC();} else  { cpu->ccr->clrC();}
+
+			reg1_val = reg1_val >> n;
+			cpu->setXGRx(reg1, reg1_val);
+		}
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		cpu->ccr->clrN();
+
+		if (cpu->ccr->getN() ^ cpu->ccr->getC()) { cpu->ccr->setV(); } else { cpu->ccr->clrV(); }
+
+	} break;
+	case 6: /* ROL RD, #IMM4 */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		uint16_t mask = 0xffff << imm4;
+		uint16_t upper_bits = (reg1_val & mask) >> imm4;
+
+		reg1_val = (reg1_val << imm4) | upper_bits;
+		cpu->setXGRx(reg1, reg1_val);
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		cpu->ccr->clrV();
+
+	} break;
+	case 7: /* ROR RD, #IMM4 */ {
+		uint16_t reg1_val = cpu->getXGRx(reg1);
+
+		uint16_t mask = 0xffff >> imm4;
+		uint16_t lower_bits = (reg1_val & mask) << imm4;
+
+		reg1_val = (reg1_val >> imm4) | lower_bits;
+		cpu->setXGRx(reg1, reg1_val);
+
+		if (reg1_val == 0) { cpu->ccr->setZ(); } else { cpu->ccr->clrZ(); }
+		if ((reg1_val & 0x8000) == 0x8000) { cpu->ccr->setN(); } else { cpu->ccr->clrN(); }
+		cpu->ccr->clrV();
+
+	} break;
 	}
 
 }
@@ -1169,7 +1164,7 @@ ld_st_offs5.getCycles = {
 	case 0: /* LDB RD, (RB, #OFFS5) */ return 2;
 	case 1: /* LDW RD, (RB, #OFFS5) */ return 2;
 	case 2: /* STB RD, (RB, #OFFS5) */ return 2;
-	case 3: /* STB RD, (RB, #OFFS5) */ return 2;
+	case 3: /* STW RD, (RB, #OFFS5) */ return 2;
 	}
 
 }
