@@ -119,6 +119,9 @@ XGATE::XGATE(const char *name, Object *parent):
 	, periodic_trap(-1)
 	, param_periodic_trap("periodic-trap", this, periodic_trap)
 
+	, xgate_version("V2")
+	, param_xgate_version("version", this, xgate_version, "XGATE version. Supported are V2 and V3. Default is V2")
+
 	, instruction_counter(0)
 	, stat_instruction_counter("instruction-counter", this, instruction_counter)
 	, cycles_counter(0)
@@ -979,6 +982,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case XGVBR: {
 			// Writable if the module is disabled (XGMCTL::XGE = 0) and idle (XGCHID = 0x00)
 			// I use "RUNNING state and not IDLE because it includes "IDLE" and "STOP" modes
+
 
 			if (((xgmctl_register & 0x0080) == 0) && (xgchid_register == 0x00)) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));

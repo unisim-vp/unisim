@@ -51,6 +51,8 @@ using tlm_utils::tlm_quantumkeeper;
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
@@ -91,6 +93,7 @@ template <unsigned int CMD_PIPELINE_SIZE = DEFAULT_CMD_PIPELINE_SIZE, unsigned i
 class S12XEETX :
 	public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
 	, public CallBackObject
+	, public Service<Registers>
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 
 {
@@ -109,6 +112,8 @@ public:
 
 	// interface with bus
 	tlm_utils::simple_target_socket<S12XEETX> slave_socket;
+
+	ServiceExport<Registers> registers_export;
 
 	/**
 	 * Constructor.

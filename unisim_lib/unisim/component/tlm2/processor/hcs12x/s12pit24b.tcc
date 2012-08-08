@@ -72,7 +72,6 @@ S12PIT24B<PIT_SIZE>::S12PIT24B(const sc_module_name& name, Object *parent) :
 		counter[i] = new CNT16(counterName, this, i, &pitcnt_register[i], &pitld_register[i]);
 	}
 
-	Reset();
 }
 
 template <uint8_t PIT_SIZE>
@@ -93,6 +92,11 @@ S12PIT24B<PIT_SIZE>::~S12PIT24B() {
 	unsigned int n = extended_registers_registry.size();
 	for (i=0; i<n; i++) {
 		delete extended_registers_registry[i];
+	}
+
+	for (uint8_t i=0; i<PIT_SIZE; i++) {
+
+		if (counter[i]) { delete counter[i]; counter[i] = NULL;}
 	}
 
 }
@@ -498,6 +502,8 @@ bool S12PIT24B<PIT_SIZE>::BeginSetup() {
 		extended_registers_registry.push_back(pitcnt0_var);
 		pitcnt0_var->setCallBack(this, PITCNT0 + i*4, &CallBackObject::write, NULL);
 	}
+
+	Reset();
 
 	ComputeInternalTime();
 

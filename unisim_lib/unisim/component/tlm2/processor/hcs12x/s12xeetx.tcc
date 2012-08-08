@@ -32,6 +32,9 @@ S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 S12XEETX(const sc_module_name& name, Object *parent) :
 	Object(name, parent, "this module implements a memory")
 	, unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+
+	, registers_export("registers_export", this)
 
 	, bus_clock_socket("Bus-Clock")
 	, slave_socket("slave_socket")

@@ -456,6 +456,9 @@ protected:
 	uint8_t sofwtare_channel_id[XGATE_SIZE];
 	ParameterArray<uint8_t> param_software_channel_id;
 
+	string xgate_version;
+	Parameter<string> param_xgate_version;
+
 	bool xgate_enabled;
 	bool stop_current_thread;
 

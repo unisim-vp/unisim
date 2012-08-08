@@ -52,6 +52,8 @@
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -87,6 +89,8 @@ using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
+using unisim::component::tlm2::processor::hcs12x::S12SCI;
+using unisim::component::tlm2::processor::hcs12x::S12SPI;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -173,8 +177,8 @@ private:
 // ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
 	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
-	typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
-	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t> MemoryImportExportTee;
+	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
+	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
 	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
 	//=========================================================================
@@ -196,6 +200,10 @@ private:
 	PWM *pwm;
 
 	PIT *pit;
+
+	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5;
+
+	S12SPI *spi0, *spi1, *spi2;
 
 	//  - Memories
 	RAM *global_ram;

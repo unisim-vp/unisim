@@ -80,32 +80,59 @@ S12XMMC::S12XMMC(const sc_module_name& name, Object *parent) :
 	memory_map[2].start_addr = 0x80;  // ATD1
 	memory_map[2].end_addr = 0xAF;
 
-	memory_map[3].start_addr = 0x110;  //EEPROM
-	memory_map[3].end_addr = 0x11B;
+	memory_map[3].start_addr = 0x00B8;  // SCI2
+	memory_map[3].end_addr = 0x00BF;
 
-	memory_map[4].start_addr = 0x120;  // XINT
-	memory_map[4].end_addr = 0x12F;
+	memory_map[4].start_addr = 0x00C0;  // SCI3
+	memory_map[4].end_addr = 0x00C7;
 
-	memory_map[5].start_addr = 0x2c0;  // ATD0
-	memory_map[5].end_addr = 0x2df;
+	memory_map[5].start_addr = 0x00C8;  // SCI0
+	memory_map[5].end_addr = 0x00CF;
 
-	memory_map[6].start_addr = 0x300;  // PWM
-	memory_map[6].end_addr = 0x327;
+	memory_map[6].start_addr = 0x00D0;  // SCI1
+	memory_map[6].end_addr = 0x00D7;
 
-	memory_map[7].start_addr = 0x340;  // PIT
-	memory_map[7].end_addr = 0x367;
+	memory_map[7].start_addr = 0x00D8;  // SPI0
+	memory_map[7].end_addr = 0x00DF;
 
-	memory_map[8].start_addr = 0x380;  // XGATE
-	memory_map[8].end_addr = 0x3BF;
+	memory_map[8].start_addr = 0x00F0;  // SPI1
+	memory_map[8].end_addr = 0x00F7;
 
-	memory_map[9].start_addr = GLOBAL_RAM_LOW_OFFSET;
-	memory_map[9].end_addr = GLOBAL_RAM_HIGH_OFFSET;
+	memory_map[9].start_addr = 0x00F8;  // SPI2
+	memory_map[9].end_addr = 0x00FF;
 
-	memory_map[10].start_addr = GLOBAL_EEPROM_LOW_OFFSET;
-	memory_map[10].end_addr = GLOBAL_EEPROM_HIGH_OFFSET;
+	memory_map[10].start_addr = 0x110;  //EEPROM
+	memory_map[10].end_addr = 0x11B;
 
-	memory_map[11].start_addr = GLOBAL_FLASH_LOW_OFFSET;
-	memory_map[11].end_addr = GLOBAL_FLASH_HIGH_OFFSET;
+	memory_map[11].start_addr = 0x120;  // XINT
+	memory_map[11].end_addr = 0x12F;
+
+	memory_map[12].start_addr = 0x0130;  // SCI4
+	memory_map[12].end_addr = 0x0137;
+
+	memory_map[13].start_addr = 0x0138;  // SCI5
+	memory_map[13].end_addr = 0x013F;
+
+	memory_map[14].start_addr = 0x2c0;  // ATD0
+	memory_map[14].end_addr = 0x2df;
+
+	memory_map[15].start_addr = 0x300;  // PWM
+	memory_map[15].end_addr = 0x327;
+
+	memory_map[16].start_addr = 0x340;  // PIT
+	memory_map[16].end_addr = 0x367;
+
+	memory_map[17].start_addr = 0x380;  // XGATE
+	memory_map[17].end_addr = 0x3BF;
+
+	memory_map[18].start_addr = GLOBAL_RAM_LOW_OFFSET;
+	memory_map[18].end_addr = GLOBAL_RAM_HIGH_OFFSET;
+
+	memory_map[19].start_addr = GLOBAL_EEPROM_LOW_OFFSET;
+	memory_map[19].end_addr = GLOBAL_EEPROM_HIGH_OFFSET;
+
+	memory_map[20].start_addr = GLOBAL_FLASH_LOW_OFFSET;
+	memory_map[20].end_addr = GLOBAL_FLASH_HIGH_OFFSET;
 
 }
 
