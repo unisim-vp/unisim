@@ -309,10 +309,6 @@ Run() {
 
 			if (enable_fine_timing) {
 
-				if (debug_enabled) {
-					std::cerr << "XGATE: time_per_instruction=" << time_per_instruction << std::endl;
-				}
-
 				wait(time_per_instruction);
 
 			} else {
