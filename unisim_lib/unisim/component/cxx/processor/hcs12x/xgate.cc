@@ -88,8 +88,7 @@ XGATE::XGATE(const char *name, Object *parent):
 	, xgispsel_register(0x00)
 	, xgswt_register(0x0000)
 	, xgsem_register(0x0000)
-	, xgccr_register(0x0000)
-	, xgpc_register(0x0000)
+	, currentRegisterBank(&registerBank[0])
 
 	, verbose_all(false)
 	, param_verbose_all("verbose-all", this, verbose_all)
@@ -157,8 +156,6 @@ XGATE::XGATE(const char *name, Object *parent):
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
-	ccr = new XGCCR_t(&xgccr_register);
-
 	xgvbrPtr_register[0] = 0x0000;
 	xgvbrPtr_register[1] = 0x0000;
 	xgvbrPtr_register[2] = 0x0000;
@@ -171,13 +168,6 @@ XGATE::XGATE(const char *name, Object *parent):
 	xgif_register[5] = 0x0000;
 	xgif_register[6] = 0x0000;
 	xgif_register[7] = 0x0000;
-	xgr_register[1] = 0x0000;
-	xgr_register[2] = 0x0000;
-	xgr_register[3] = 0x0000;
-	xgr_register[4] = 0x0000;
-	xgr_register[5] = 0x0000;
-	xgr_register[6] = 0x0000;
-	xgr_register[7] = 0x0000;
 
 }
 
@@ -200,7 +190,6 @@ XGATE::~XGATE()
 
 	if (logger) { delete logger; logger = NULL;}
 
-	if (ccr) { delete ccr; ccr = NULL; }
 
 }
 
@@ -236,15 +225,15 @@ void XGATE::VerboseDumpRegs() {
 	*logger << "\t- XGIF_0F_00" << " = 0x" << std::hex << xgif_register[7] << std::dec; // 2-bytes
 	*logger << "\t- XGSWT" << " = 0x" << std::hex << xgswt_register << std::dec; // 2-bytes
 	*logger << "\t- XGSEMM" << " = 0x" << std::hex << xgsem_register << std::dec; // 2-bytes
-	*logger << "\t- XGCCR" << " = 0x" << std::hex << (unsigned int) xgccr_register << std::dec; // 1-byte
-	*logger << "\t- XGPC" << " = 0x" << std::hex << xgpc_register << std::dec; // 2-bytes
-	*logger << "\t- XGR1" << " = 0x" << std::hex << xgr_register[1] << std::dec; // 2-bytes
-	*logger << "\t- XGR2" << " = 0x" << std::hex << xgr_register[2] << std::dec; // 2-bytes
-	*logger << "\t- XGR3" << " = 0x" << std::hex << xgr_register[3] << std::dec; // 2-bytes
-	*logger << "\t- XGR4" << " = 0x" << std::hex << xgr_register[4] << std::dec; // 2-bytes
-	*logger << "\t- XGR5" << " = 0x" << std::hex << xgr_register[5] << std::dec; // 2-bytes
-	*logger << "\t- XGR6" << " = 0x" << std::hex << xgr_register[6] << std::dec; // 2-bytes
-	*logger << "\t- XGR7" << " = 0x" << std::hex << xgr_register[7] << std::dec; // 2-bytes
+	*logger << "\t- XGCCR" << " = 0x" << std::hex << (unsigned int) currentRegisterBank->getXGCCR() << std::dec; // 1-byte
+	*logger << "\t- XGPC" << " = 0x" << std::hex << currentRegisterBank->getXGPC() << std::dec; // 2-bytes
+	*logger << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes
+	*logger << "\t- XGR2" << " = 0x" << std::hex << currentRegisterBank->getXGRx(2) << std::dec; // 2-bytes
+	*logger << "\t- XGR3" << " = 0x" << std::hex << currentRegisterBank->getXGRx(3) << std::dec; // 2-bytes
+	*logger << "\t- XGR4" << " = 0x" << std::hex << currentRegisterBank->getXGRx(4) << std::dec; // 2-bytes
+	*logger << "\t- XGR5" << " = 0x" << std::hex << currentRegisterBank->getXGRx(5) << std::dec; // 2-bytes
+	*logger << "\t- XGR6" << " = 0x" << std::hex << currentRegisterBank->getXGRx(6) << std::dec; // 2-bytes
+	*logger << "\t- XGR7" << " = 0x" << std::hex << currentRegisterBank->getXGRx(7) << std::dec; // 2-bytes
 	*logger << std::endl;
 
 }
@@ -395,68 +384,68 @@ bool XGATE::BeginSetup() {
 	extended_registers_registry.push_back(xgsemm_var);
 	xgvbr_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.XGCCR", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgccr_register);
-
-	unisim::kernel::service::Register<uint8_t> *xgccr_var = new unisim::kernel::service::Register<uint8_t>("XGCCR", this, xgccr_register, "XGATE Condition Code Register (XGCCR)");
-	extended_registers_registry.push_back(xgccr_var);
-	xgvbr_var->setCallBack(this, XGCCR, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGPC", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgpc_register);
-
-	unisim::kernel::service::Register<uint16_t> *xgpc_var = new unisim::kernel::service::Register<uint16_t>("XGPC", this, xgpc_register, "XGATE Program Counter Register (XGPC)");
-	extended_registers_registry.push_back(xgpc_var);
-	xgvbr_var->setCallBack(this, XGPC, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR1", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[1]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr1_var = new unisim::kernel::service::Register<uint16_t>("XGR1", this, xgr_register[1], "XGATE Register 1 (XGR1)");
-	extended_registers_registry.push_back(xgr1_var);
-	xgvbr_var->setCallBack(this, XGR1, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR2", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[2]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr2_var = new unisim::kernel::service::Register<uint16_t>("XGR2", this, xgr_register[2], "XGATE Register 2 (XGR2)");
-	extended_registers_registry.push_back(xgr2_var);
-	xgvbr_var->setCallBack(this, XGR2, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR3", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[3]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr3_var = new unisim::kernel::service::Register<uint16_t>("XGR3", this, xgr_register[3], "XGATE Register 3 (XGR3)");
-	extended_registers_registry.push_back(xgr3_var);
-	xgvbr_var->setCallBack(this, XGR3, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR4", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[4]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr4_var = new unisim::kernel::service::Register<uint16_t>("XGR4", this, xgr_register[4], "XGATE Register 4 (XGR4)");
-	extended_registers_registry.push_back(xgr4_var);
-	xgvbr_var->setCallBack(this, XGR4, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR5", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[5]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr5_var = new unisim::kernel::service::Register<uint16_t>("XGR5", this, xgr_register[5], "XGATE Register 5 (XGR5)");
-	extended_registers_registry.push_back(xgr5_var);
-	xgvbr_var->setCallBack(this, XGR5, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR6", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[6]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr6_var = new unisim::kernel::service::Register<uint16_t>("XGR6", this, xgr_register[6], "XGATE Register 6 (XGR6)");
-	extended_registers_registry.push_back(xgr6_var);
-	xgvbr_var->setCallBack(this, XGR6, &CallBackObject::write, NULL);
-
-	sprintf(buf, "%s.XGR7", GetName());
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[7]);
-
-	unisim::kernel::service::Register<uint16_t> *xgr7_var = new unisim::kernel::service::Register<uint16_t>("XGR7", this, xgr_register[7], "XGATE Register 7 (XGR7)");
-	extended_registers_registry.push_back(xgr7_var);
-	xgvbr_var->setCallBack(this, XGR7, &CallBackObject::write, NULL);
+//	sprintf(buf, "%s.XGCCR", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgccr_register);
+//
+//	unisim::kernel::service::Register<uint8_t> *xgccr_var = new unisim::kernel::service::Register<uint8_t>("XGCCR", this, xgccr_register, "XGATE Condition Code Register (XGCCR)");
+//	extended_registers_registry.push_back(xgccr_var);
+//	xgvbr_var->setCallBack(this, XGCCR, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGPC", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgpc_register);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgpc_var = new unisim::kernel::service::Register<uint16_t>("XGPC", this, xgpc_register, "XGATE Program Counter Register (XGPC)");
+//	extended_registers_registry.push_back(xgpc_var);
+//	xgvbr_var->setCallBack(this, XGPC, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR1", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[1]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr1_var = new unisim::kernel::service::Register<uint16_t>("XGR1", this, xgr_register[1], "XGATE Register 1 (XGR1)");
+//	extended_registers_registry.push_back(xgr1_var);
+//	xgvbr_var->setCallBack(this, XGR1, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR2", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[2]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr2_var = new unisim::kernel::service::Register<uint16_t>("XGR2", this, xgr_register[2], "XGATE Register 2 (XGR2)");
+//	extended_registers_registry.push_back(xgr2_var);
+//	xgvbr_var->setCallBack(this, XGR2, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR3", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[3]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr3_var = new unisim::kernel::service::Register<uint16_t>("XGR3", this, xgr_register[3], "XGATE Register 3 (XGR3)");
+//	extended_registers_registry.push_back(xgr3_var);
+//	xgvbr_var->setCallBack(this, XGR3, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR4", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[4]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr4_var = new unisim::kernel::service::Register<uint16_t>("XGR4", this, xgr_register[4], "XGATE Register 4 (XGR4)");
+//	extended_registers_registry.push_back(xgr4_var);
+//	xgvbr_var->setCallBack(this, XGR4, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR5", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[5]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr5_var = new unisim::kernel::service::Register<uint16_t>("XGR5", this, xgr_register[5], "XGATE Register 5 (XGR5)");
+//	extended_registers_registry.push_back(xgr5_var);
+//	xgvbr_var->setCallBack(this, XGR5, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR6", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[6]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr6_var = new unisim::kernel::service::Register<uint16_t>("XGR6", this, xgr_register[6], "XGATE Register 6 (XGR6)");
+//	extended_registers_registry.push_back(xgr6_var);
+//	xgvbr_var->setCallBack(this, XGR6, &CallBackObject::write, NULL);
+//
+//	sprintf(buf, "%s.XGR7", GetName());
+//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[7]);
+//
+//	unisim::kernel::service::Register<uint16_t> *xgr7_var = new unisim::kernel::service::Register<uint16_t>("XGR7", this, xgr_register[7], "XGATE Register 7 (XGR7)");
+//	extended_registers_registry.push_back(xgr7_var);
+//	xgvbr_var->setCallBack(this, XGR7, &CallBackObject::write, NULL);
 
 	Reset();
 
@@ -485,6 +474,8 @@ void XGATE::OnDisconnect() {
 
 void XGATE::Reset() {
 
+	currentRegisterBank = &registerBank[0];
+
 	xgmctl_register = 0x0000;
 	xgchid_register = 0x0000;
 	xgvbrPtr_register[0] = 0x0000;
@@ -501,16 +492,9 @@ void XGATE::Reset() {
 	xgif_register[7] = 0x0000;
 	xgswt_register = 0x0000;
 	xgsem_register = 0x0000;
-	xgccr_register = 0x0000;
-	xgpc_register = 0x0000;
-	xgr_register[1] = 0x0000;
-	xgr_register[2] = 0x0000;
-	xgr_register[3] = 0x0000;
-	xgr_register[4] = 0x0000;
-	xgr_register[5] = 0x0000;
-	xgr_register[6] = 0x0000;
-	xgr_register[7] = 0x0000;
 
+	registerBank[0].Reset();
+	registerBank[1].Reset();
 
 }
 
@@ -669,15 +653,15 @@ uint8_t XGATE::step()
 				<< EndDebugInfo	<< std::endl;
 
 			// ************************
-			std::cout << "CCR" << " = " << std::hex << ccr->toString() << std::dec; // 1-bytes
-			std::cout << "\t- XGR0" << " = 0x" << std::hex << xgr_register[0] << std::dec; // 2-bytes
-			std::cout << "\t- XGR1" << " = 0x" << std::hex << xgr_register[1] << std::dec; // 2-bytes
-			std::cout << "\t- XGR2" << " = 0x" << std::hex << xgr_register[2] << std::dec; // 2-bytes
-			std::cout << "\t- XGR3" << " = 0x" << std::hex << xgr_register[3] << std::dec; // 2-bytes
-			std::cout << "\t- XGR4" << " = 0x" << std::hex << xgr_register[4] << std::dec; // 2-bytes
-			std::cout << "\t- XGR5" << " = 0x" << std::hex << xgr_register[5] << std::dec; // 2-bytes
-			std::cout << "\t- XGR6" << " = 0x" << std::hex << xgr_register[6] << std::dec; // 2-bytes
-			std::cout << "\t- XGR7" << " = 0x" << std::hex << xgr_register[7] << std::dec; // 2-bytes
+			std::cout << "CCR" << " = " << std::hex << currentRegisterBank->getCCR()->toString() << std::dec; // 1-bytes
+			std::cout << "\t- XGR0" << " = 0x" << std::hex << currentRegisterBank->getXGRx(0) << std::dec; // 2-bytes
+			std::cout << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes
+			std::cout << "\t- XGR2" << " = 0x" << std::hex << currentRegisterBank->getXGRx(2) << std::dec; // 2-bytes
+			std::cout << "\t- XGR3" << " = 0x" << std::hex << currentRegisterBank->getXGRx(3) << std::dec; // 2-bytes
+			std::cout << "\t- XGR4" << " = 0x" << std::hex << currentRegisterBank->getXGRx(4) << std::dec; // 2-bytes
+			std::cout << "\t- XGR5" << " = 0x" << std::hex << currentRegisterBank->getXGRx(5) << std::dec; // 2-bytes
+			std::cout << "\t- XGR6" << " = 0x" << std::hex << currentRegisterBank->getXGRx(6) << std::dec; // 2-bytes
+			std::cout << "\t- XGR7" << " = 0x" << std::hex << currentRegisterBank->getXGRx(7) << std::dec; // 2-bytes
 			std::cout << std::endl;
 
 			// ************************
@@ -807,17 +791,17 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 			case XGSWT: *((uint16_t *) buffer) = xgswt_register; break;
 			case XGSEM: *((uint16_t *) buffer) = xgsem_register; break;
 			case RESERVED4: *((uint16_t *) buffer) = 0; break;
-			case XGCCR: *((uint8_t *) buffer) = xgccr_register; break;
-			case XGPC: *((uint16_t *) buffer) = xgpc_register; break;
+			case XGCCR: *((uint8_t *) buffer) = currentRegisterBank->getXGCCR(); break;
+			case XGPC: *((uint16_t *) buffer) = currentRegisterBank->getXGPC(); break;
 			case RESERVED5: *((uint16_t *) buffer) = 0; break;
 			case RESERVED6: *((uint16_t *) buffer) = 0; break;
-			case XGR1: *((uint16_t *) buffer) = xgr_register[1]; break;
-			case XGR2: *((uint16_t *) buffer) = xgr_register[2]; break;
-			case XGR3: *((uint16_t *) buffer) = xgr_register[3]; break;
-			case XGR4: *((uint16_t *) buffer) = xgr_register[4]; break;
-			case XGR5: *((uint16_t *) buffer) = xgr_register[5]; break;
-			case XGR6: *((uint16_t *) buffer) = xgr_register[6]; break;
-			case XGR7: *((uint16_t *) buffer) = xgr_register[7]; break;
+			case XGR1: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(1); break;
+			case XGR2: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(2); break;
+			case XGR3: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(3); break;
+			case XGR4: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(4); break;
+			case XGR5: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(5); break;
+			case XGR6: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(6); break;
+			case XGR7: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(7); break;
 
 			default: {
 				if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
@@ -879,41 +863,41 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 			case RESERVED4: break;
 			case XGCCR: {
 				uint8_t val = *((uint8_t *) buffer);
-				xgccr_register = val;
+				currentRegisterBank->setXGCCR(val);
 			} break;
 			case XGPC: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgpc_register = val;
+				currentRegisterBank->setXGPC(val);
 			} break;
 			case RESERVED5: break;
 			case RESERVED6: break;
 			case XGR1: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[1] = val;
+				currentRegisterBank->setXGRx(1, val);
 			} break;
 			case XGR2: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[2] = val;
+				currentRegisterBank->setXGRx(2, val);
 			} break;
 			case XGR3: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[3] = val;
+				currentRegisterBank->setXGRx(3, val);
 			} break;
 			case XGR4: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[4] = val;
+				currentRegisterBank->setXGRx(4, val);
 			} break;
 			case XGR5: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[5] = val;
+				currentRegisterBank->setXGRx(5, val);
 			} break;
 			case XGR6: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[6] = val;
+				currentRegisterBank->setXGRx(6, val);
 			} break;
 			case XGR7: {
 				uint16_t val = *((uint16_t *) buffer);
-				xgr_register[7] = val;
+				currentRegisterBank->setXGRx(7, val);
 			} break;
 
 			default: {
@@ -956,17 +940,17 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 		case XGSWT: *((uint16_t *) buffer) = Host2BigEndian(xgswt_register & 0x00FF); break;
 		case XGSEM: *((uint16_t *) buffer) = Host2BigEndian(xgsem_register & 0x00FF); break;
 		case RESERVED4: *((uint16_t *) buffer) = 0; break;
-		case XGCCR: *((uint8_t *) buffer) = xgccr_register & 0x0F; break;
-		case XGPC: *((uint16_t *) buffer) = Host2BigEndian(xgpc_register); break;
+		case XGCCR: *((uint8_t *) buffer) = currentRegisterBank->getXGCCR() & 0x0F; break;
+		case XGPC: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGPC()); break;
 		case RESERVED5: *((uint16_t *) buffer) = 0; break;
 		case RESERVED6: *((uint16_t *) buffer) = 0; break;
-		case XGR1: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[1]); break;
-		case XGR2: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[2]); break;
-		case XGR3: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[3]); break;
-		case XGR4: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[4]); break;
-		case XGR5: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[5]); break;
-		case XGR6: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[6]); break;
-		case XGR7: *((uint16_t *) buffer) = Host2BigEndian(xgr_register[7]); break;
+		case XGR1: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(1)); break;
+		case XGR2: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(2)); break;
+		case XGR3: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(3)); break;
+		case XGR4: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(4)); break;
+		case XGR5: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(5)); break;
+		case XGR6: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(6)); break;
+		case XGR7: *((uint16_t *) buffer) = Host2BigEndian(currentRegisterBank->getXGRx(7)); break;
 
 		default: {
 			if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
@@ -1110,14 +1094,14 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case RESERVED4: break;
 		case XGCCR: {
 			if (mode == DEBUG) {
-				uint8_t val = BigEndian2Host(*((uint8_t *) buffer));
-				xgccr_register = val & 0x0F;
+				uint8_t val = *((uint8_t *) buffer);
+				currentRegisterBank->setXGCCR(val & 0x0F);
 			}
 		} break;
 		case XGPC: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgpc_register = val;
+				currentRegisterBank->setXGPC(val);
 			}
 		} break;
 		case RESERVED5: break;
@@ -1125,43 +1109,43 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 		case XGR1: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[1] = val;
+				currentRegisterBank->setXGRx(1, val);
 			}
 		} break;
 		case XGR2: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[2] = val;
+				currentRegisterBank->setXGRx(2, val);
 			}
 		} break;
 		case XGR3: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[3] = val;
+				currentRegisterBank->setXGRx(3, val);
 			}
 		} break;
 		case XGR4: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[4] = val;
+				currentRegisterBank->setXGRx(4, val);
 			}
 		} break;
 		case XGR5: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[5] = val;
+				currentRegisterBank->setXGRx(5, val);
 			}
 		} break;
 		case XGR6: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[6] = val;
+				currentRegisterBank->setXGRx(6, val);
 			}
 		} break;
 		case XGR7: {
 			if (mode == DEBUG) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-				xgr_register[7] = val;
+				currentRegisterBank->setXGRx(7, val);
 			}
 		} break;
 

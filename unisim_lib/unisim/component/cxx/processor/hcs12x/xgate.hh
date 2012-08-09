@@ -289,8 +289,6 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 
-	virtual address_t getIntVector() = 0;
-
 	virtual void enbale_xgate() = 0;
 	virtual void disable_xgate() = 0;
 
@@ -480,6 +478,61 @@ protected:
 	inline void VerboseDumpRegsStart() GCC_INLINE;
 	inline void VerboseDumpRegsEnd() GCC_INLINE;
 
+
+	/**
+	 * XGATE V3 and higher support Interruptible thread execution and have Two register banks to support fast context switching between threads
+	 *
+	 * XGATE Register Bank
+	 * 	A register bank consists of registers R1-R7, CCR and the PC.
+	 * 	Each interrupt level is associated with	one register bank.
+	 */
+
+	class TRegisterBank {
+	public:
+		TRegisterBank() {
+			xgr_register[1] = 0x0000;
+			xgr_register[2] = 0x0000;
+			xgr_register[3] = 0x0000;
+			xgr_register[4] = 0x0000;
+			xgr_register[5] = 0x0000;
+			xgr_register[6] = 0x0000;
+			xgr_register[7] = 0x0000;
+
+			ccr = new XGCCR_t(&xgccr_register);
+		}
+
+		~TRegisterBank() { if (ccr) { delete ccr; ccr = NULL; }	}
+
+		inline void setXGPC(address_t val) { xgpc_register = val; }
+		inline address_t getXGPC() { return (xgpc_register); }
+		inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = ((index == 0)? 0:val); } // R0 is tied to the value 0x0000
+		inline uint16_t getXGRx(uint8_t index) { return (((index == 0)? 0: xgr_register[index])); }
+		inline uint8_t getXGCCR() { return (xgccr_register); }
+		inline void setXGCCR(uint8_t val) { xgccr_register = val & 0x0F; }
+
+		XGCCR_t* getCCR() { return (ccr); }
+
+		void Reset() {
+			xgccr_register = 0x0000;
+			xgpc_register = 0x0000;
+			xgr_register[1] = 0x0000;
+			xgr_register[2] = 0x0000;
+			xgr_register[3] = 0x0000;
+			xgr_register[4] = 0x0000;
+			xgr_register[5] = 0x0000;
+			xgr_register[6] = 0x0000;
+			xgr_register[7] = 0x0000;
+		}
+
+	private:
+		uint16_t xgr_register[8];
+		uint8_t xgccr_register;
+		uint16_t xgpc_register;
+
+		XGCCR_t* ccr;
+
+	} *currentRegisterBank;
+
 private:
 
 	// Registers map
@@ -506,11 +559,15 @@ private:
 	//=         XGATE Memory Map                                    =
 	//===============================================================
 
-	uint8_t xgchid_register, xgccr_register;
-	uint16_t xgmctl_register, xgif_register[8], xgswt_register, xgsem_register, xgpc_register, xgr_register[8];
+	uint8_t xgchid_register;
+	uint16_t xgmctl_register, xgif_register[8], xgswt_register, xgsem_register;
+
 	// For XGATE.V3 XGVBR register is shared between {XGVBR, XGISP74, XGISP31} depending on the content of XGISPSEL register
 	uint16_t xgvbrPtr_register[4]; // 	xgvbrPtr[0]<->xgvbr xgvbrPtr[1]<->xgisp74 xgvbrPtr[2]<->xgisp31_register;
 	uint8_t xgchpl_register, xgispsel_register;
+
+
+	TRegisterBank registerBank[2];
 
 	address_t lastPC;
 
@@ -519,7 +576,9 @@ private:
 	void fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte);
 
 public:
-	XGCCR_t* ccr;
+
+	XGCCR_t* getCCR() { return (currentRegisterBank->getCCR()); }
+
 
 	void setState(STATES st) { state = st; }
 
@@ -532,8 +591,8 @@ public:
 
 	bool isINTRequestEnabled() { return ((xgmctl_register & 0x0080) != 0); }
 
-	inline void setXGPC(address_t val) { xgpc_register = val; }
-	inline address_t getXGPC() { return (xgpc_register); }
+	inline void setXGPC(address_t val) { currentRegisterBank->setXGPC(val); }
+	inline address_t getXGPC() { return (currentRegisterBank->getXGPC()); }
 	inline address_t getLastXGPC() {return (lastPC); }
 
 	inline uint8_t getXGCHPL() { return ((version.compare("V2") == 0)? 0: xgchpl_register); }
@@ -542,10 +601,45 @@ public:
 	inline void setXGISPSEL(uint8_t val) { xgispsel_register = ((version.compare("V2") == 0)? 0: val); }
 	inline uint16_t getXGVBR() { return (xgvbrPtr_register[((version.compare("V2") == 0)? 0: (xgispsel_register & 0x03))]); }
 	inline void setXGVBR(uint16_t val) { xgvbrPtr_register[((version.compare("V2") == 0)? 0: (xgispsel_register & 0x03))] = val; }
+
+	inline uint16_t getXGISP31() { return (xgvbrPtr_register[1]); }
+	inline void setXGISP31(uint16_t val) { xgvbrPtr_register[1] = val; }
+	inline uint16_t getXGISP74() { return (xgvbrPtr_register[2]); }
+	inline void setXGISP74(uint16_t val) { xgvbrPtr_register[2] = val; }
+
+	inline TRegisterBank* getRegisterBank(uint8_t priority) {
+
+		if ((version.compare("V2") != 0) & (priority > 3)) {
+			return (&registerBank[1]);
+		} else {
+			return (&registerBank[0]);
+		}
+	}
+
+	void preloadXGR7(uint8_t priority) {
+
+		/**
+		 * XGATE V3 and higher
+		 * R7 is either preloaded with the content of XGISP74 if the interrupt priority of the current channel is in the range 7 to 4,
+		 * or it is with preloaded the content of XGISP31 if the interrupt priority of the current channel is in the range 3 to 1.
+		 */
+
+		if (version.compare("V2") != 0) {
+			if (priority > 3) {
+				setXGRx(7, getXGISP74());
+			} else {
+				setXGRx(7, getXGISP31());
+			}
+		} else {
+			// R7 is unchanged for XGATE V2
+		}
+
+	}
+
 	inline uint16_t getXGSWT() { return (xgswt_register); }
 	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
-	inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = ((index == 0)? 0:val); } // R0 is tied to the value 0x0000
-	inline uint16_t getXGRx(uint8_t index) { return (((index == 0)? 0: xgr_register[index])); }
+	inline void setXGRx(uint8_t index, uint16_t val) { currentRegisterBank->setXGRx(index, val); } // R0 is tied to the value 0x0000
+	inline uint16_t getXGRx(uint8_t index) { return (currentRegisterBank->getXGRx(index)); }
 	inline void setXGCHID(uint8_t val) { xgchid_register = val; }
 	inline uint8_t getXGCHID() { return (xgchid_register); }
 

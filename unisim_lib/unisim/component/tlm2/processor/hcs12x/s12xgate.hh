@@ -133,7 +133,7 @@ public:
 	virtual void Stop(int ret);
 	virtual void Sync();
 
-	virtual address_t getIntVector();
+	virtual address_t getIntVector(uint8_t& priority);
 
 	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag);
 

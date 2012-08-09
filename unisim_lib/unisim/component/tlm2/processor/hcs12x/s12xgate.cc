@@ -235,10 +235,12 @@ Run() {
 
 		bool found = false;
 		address_t channelID = 0;
+		uint8_t priority = 0;
 
 		if (hasAsynchronousInterrupt()) {
 			found = true;
-			channelID = getIntVector();
+
+			channelID = getIntVector(priority);
 			ackAsynchronousInterrupt();
 
 		} else {
@@ -272,13 +274,19 @@ Run() {
 		} else {
 			state = RUNNING;
 
+			setXGCHID(channelID);
+			setXGCHPL(priority);
+
+			currentRegisterBank = getRegisterBank(priority);
+
 			address_t newPC = memRead16(getXGVBR() + channelID * 4);
 			setXGPC(newPC);
 
 			uint16_t variablePtr = memRead16(getXGVBR() + channelID * 4 + 2);
 			setXGRx(1, variablePtr);
 
-			setXGCHID(channelID);
+			preloadXGR7(priority);
+
 		}
 
 		if (debug_enabled) {
@@ -288,6 +296,12 @@ Run() {
 					<< std::endl;
 		}
 
+		/**
+		 * XGATE V3 and higher
+		 * Low priority threads (interrupt levels 1 to 3) can be interrupted by high priority threads (interrupt levels 4 to 7).
+		 * High priority threads are not interruptible.
+		 * The register content of an interrupted thread is maintained and restored by the XGATE hardware.
+		 */
 		currentThreadTerminated = false;
 		while (!currentThreadTerminated) {
 
@@ -349,7 +363,7 @@ tlm_sync_enum S12XGATE::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_p
 	return (TLM_ACCEPTED);
 }
 
-address_t S12XGATE ::getIntVector()
+address_t S12XGATE ::getIntVector(uint8_t& priority)
 	/*
 	 * The CPU issues a signal that tells the interrupt module to drive
 	 * the vector address of the highest priority pending exception onto the system address bus
@@ -389,6 +403,7 @@ address_t S12XGATE ::getIntVector()
 	trans->release();
 
 	address = buffer->getID();
+	priority = buffer->getPriority();
 
 	delete buffer;
 
