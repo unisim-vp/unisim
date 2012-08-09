@@ -163,6 +163,13 @@ public:
 	inline uint8_t getCCR();
 	inline void setCCR(uint8_t val);
 
+	string toString() {
+		stringstream strm;
+
+		strm << "---- " << ((getN())? "N":"-") << ((getZ())? "Z":"-") << ((getV())? "V":"-") << ((getC())? "C":"-");
+
+		return (strm.str());
+	}
 	void reset() { *ccrReg = 0x00; }
 
 private:
@@ -233,10 +240,10 @@ public:
 
 	static const unsigned int XGMCTL = 0x00; //2-bytes
 	static const unsigned int XGCHID = 0x02; // 1-byte
-	static const unsigned int RESERVED1 = 0x03; // 1-byte
+	static const unsigned int XGCHPL = 0x03; // 1-byte For XGATE.V2 this byte is reserved. For XGATE.V3 it hold the current thread priority.
 	static const unsigned int RESERVED2 = 0x04; // 1-byte
-	static const unsigned int RESERVED3 = 0x05; // 1-byte
-	static const unsigned int XGVBR = 6; // 2-bytes
+	static const unsigned int XGISPSEL = 0x05; // 1-byte For XGATE.V2 this byte is reserved. For XGATE.V3 it is mapped to selection register.
+	static const unsigned int XGVBR = 6; // 2-bytes For XGATE.V3 this 2-bytes depending on the content of XGISPSEL is mapped to {XGVBR, XGISP74, XGISP31}
 	static const unsigned int XGIF_7F_70 = 0x08; // 2-bytes
 	static const unsigned int XGIF_6F_60 = 0x0A; // 2-bytes
 	static const unsigned int XGIF_5F_50 = 0x0C; // 2-bytes
@@ -456,8 +463,8 @@ protected:
 	uint8_t sofwtare_channel_id[XGATE_SIZE];
 	ParameterArray<uint8_t> param_software_channel_id;
 
-	string xgate_version;
-	Parameter<string> param_xgate_version;
+	string version;
+	Parameter<string> param_version;
 
 	bool xgate_enabled;
 	bool stop_current_thread;
@@ -499,8 +506,11 @@ private:
 	//=         XGATE Memory Map                                    =
 	//===============================================================
 
-	uint8_t xgchid_register, reserverd_register[6], xgccr_register;
-	uint16_t xgmctl_register, xgif_register[8], xgvbr_register, xgswt_register, xgsem_register, xgpc_register, xgr_register[8];
+	uint8_t xgchid_register, xgccr_register;
+	uint16_t xgmctl_register, xgif_register[8], xgswt_register, xgsem_register, xgpc_register, xgr_register[8];
+	// For XGATE.V3 XGVBR register is shared between {XGVBR, XGISP74, XGISP31} depending on the content of XGISPSEL register
+	uint16_t xgvbrPtr_register[4]; // 	xgvbrPtr[0]<->xgvbr xgvbrPtr[1]<->xgisp74 xgvbrPtr[2]<->xgisp31_register;
+	uint8_t xgchpl_register, xgispsel_register;
 
 	address_t lastPC;
 
@@ -520,15 +530,22 @@ public:
 	bool lockSemaphore(TSemaphore::OWNER owner, uint8_t index);
 	bool unlockSemaphore(TSemaphore::OWNER owner, uint8_t index);
 
+	bool isINTRequestEnabled() { return ((xgmctl_register & 0x0080) != 0); }
+
 	inline void setXGPC(address_t val) { xgpc_register = val; }
 	inline address_t getXGPC() { return (xgpc_register); }
 	inline address_t getLastXGPC() {return (lastPC); }
 
-	inline uint16_t getXGVBR() { return (xgvbr_register); }
+	inline uint8_t getXGCHPL() { return ((version.compare("V2") == 0)? 0: xgchpl_register); }
+	inline void setXGCHPL(uint8_t val) { xgchpl_register = ((version.compare("V2") == 0)? 0: val); }
+	inline uint8_t getXGISPSEL() { return ((version.compare("V2") == 0)? 0: xgispsel_register); }
+	inline void setXGISPSEL(uint8_t val) { xgispsel_register = ((version.compare("V2") == 0)? 0: val); }
+	inline uint16_t getXGVBR() { return (xgvbrPtr_register[((version.compare("V2") == 0)? 0: (xgispsel_register & 0x03))]); }
+	inline void setXGVBR(uint16_t val) { xgvbrPtr_register[((version.compare("V2") == 0)? 0: (xgispsel_register & 0x03))] = val; }
 	inline uint16_t getXGSWT() { return (xgswt_register); }
 	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
-	inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = val; }
-	inline uint16_t getXGRx(uint8_t index) { return (xgr_register[index]); }
+	inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = ((index == 0)? 0:val); } // R0 is tied to the value 0x0000
+	inline uint16_t getXGRx(uint8_t index) { return (((index == 0)? 0: xgr_register[index])); }
 	inline void setXGCHID(uint8_t val) { xgchid_register = val; }
 	inline uint8_t getXGCHID() { return (xgchid_register); }
 

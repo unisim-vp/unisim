@@ -364,23 +364,6 @@ uint8_t CPU::step()
 
 			/* Execute instruction */
 
-			if (trace_enable) {
-				stringstream disasm_str;
-				stringstream ctstr;
-
-				op->disasm(disasm_str);
-
-				ctstr << op->GetEncoding();
-
-				*logger << DebugInfo << (Object::GetSimulator()->GetSimTime())
-					<< " : PC = 0x" << std::hex << getRegPC() << std::dec << " : "
-					<< getFunctionFriendlyName(getRegPC()) << " : "
-					<< disasm_str.str()
-					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
-					<< EndDebugInfo	<< std::endl;
-
-			}
-
 			if (debug_enabled && verbose_step) {
 				stringstream disasm_str;
 				stringstream ctstr;
@@ -399,6 +382,24 @@ uint8_t CPU::step()
 			setRegPC(getRegPC() + (insn_length/8));
 
 			op->execute(this);
+
+			if (trace_enable) {
+				stringstream disasm_str;
+				stringstream ctstr;
+
+				op->disasm(disasm_str);
+
+				ctstr << op->GetEncoding();
+
+				*logger << DebugInfo << "Cycles = " << cycles_counter
+					<< " : Time = " << (Object::GetSimulator()->GetSimTime())
+					<< " : PC = 0x" << std::hex << lastPC << std::dec << " : "
+					<< getFunctionFriendlyName(lastPC) << " : "
+					<< disasm_str.str()
+					<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
+					<< EndDebugInfo	<< std::endl;
+
+			}
 
 			opCycles = op->getCycles();
 

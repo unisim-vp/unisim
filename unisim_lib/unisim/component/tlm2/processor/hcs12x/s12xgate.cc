@@ -281,6 +281,13 @@ Run() {
 			setXGCHID(channelID);
 		}
 
+		if (debug_enabled) {
+			std::cout << "XGATE:: starting Thread XGVBR =0x" << std::hex << ((unsigned int) getXGVBR())
+					<< " chID 0x" << std::hex << ((unsigned int) channelID)
+					<< " PC 0x" << std::hex << getXGPC()
+					<< std::endl;
+		}
+
 		currentThreadTerminated = false;
 		while (!currentThreadTerminated) {
 
@@ -333,9 +340,13 @@ tlm_sync_enum S12XGATE::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase
 
 tlm_sync_enum S12XGATE::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t) {
 
-	triggerChannelThread();
+	// check XGE bit. is S12X_INT request enabled ?
+	if (isINTRequestEnabled()) {
+		triggerChannelThread();
 
-	reqAsynchronousInterrupt();
+		reqAsynchronousInterrupt();
+
+	}
 
 	payload.set_response_status( tlm::TLM_OK_RESPONSE );
 

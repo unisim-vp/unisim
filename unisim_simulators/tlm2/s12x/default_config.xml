@@ -221,7 +221,7 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="trace-enable">
+		<variable name="trace-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -483,13 +483,13 @@
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0013f000</value>
+			<value>0x00100000</value>
 			<description>memory origin/base address</description>
 		</variable>
 		<variable name="bytesize">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>4096</value>
+			<value>262144</value>
 			<description>memory size in bytes</description>
 		</variable>
 		<variable name="initial-byte-value">
@@ -561,13 +561,13 @@
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x00780000</value>
+			<value>0x00400000</value>
 			<description>memory origin/base address</description>
 		</variable>
 		<variable name="bytesize">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>524288</value>
+			<value>4194304</value>
 			<description>memory size in bytes</description>
 		</variable>
 		<variable name="initial-byte-value">
@@ -641,6 +641,54 @@
 			<description></description>
 		</variable>
 	</object>
+	<object name="PIT">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0340</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-channel[0]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x7a</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-channel[1]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x78</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-channel[2]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x76</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset-channel[3]">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x74</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="PWM">
 		<variable name="debug-enabled">
 			<type>parameter</type>
@@ -675,13 +723,13 @@
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x000f8000</value>
+			<value>0x00000800</value>
 			<description>memory origin/base address</description>
 		</variable>
 		<variable name="bytesize">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>32768</value>
+			<value>1048576</value>
 			<description>memory size in bytes</description>
 		</variable>
 		<variable name="initial-byte-value">
@@ -713,6 +761,276 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>enable/disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI0">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00c8</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd6</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI1">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00d0</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd6</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI2">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00b8</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd6</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI3">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00c0</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd6</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI4">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0130</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd6</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SCI5">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x0138</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd6</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SPI0">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00d8</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xd8</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SPI1">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00f0</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xbe</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="SPI2">
+		<variable name="bus-cycle-time">
+			<type>parameter</type>
+			<data_type>double precision floating-point</data_type>
+			<value>250000</value>
+			<description></description>
+		</variable>
+		<variable name="base-address">
+			<type>parameter</type>
+			<data_type>unsigned 16-bit integer</data_type>
+			<value>0x00f8</value>
+			<description></description>
+		</variable>
+		<variable name="interrupt-offset">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0xbc</value>
+			<description></description>
+		</variable>
+		<variable name="debug-enabled">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description></description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -780,7 +1098,7 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
-		<variable name="trace-enable">
+		<variable name="trace-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
@@ -880,6 +1198,12 @@
 			<value>0x32</value>
 			<description>XGATE channel ID associated to software trigger. Determined on chip integration level (see Interrupts section of the SoC Guide.</description>
 		</variable>
+		<variable name="version">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value>V2</value>
+			<description>XGATE version. Supported are V2 and V3. Default is V2</description>
+		</variable>
 		<variable name="software-error-interrupt">
 			<type>parameter</type>
 			<data_type>unsigned 8-bit integer</data_type>
@@ -964,7 +1288,7 @@
 		</variable>
 	</object>
 	<object name="atd-pwm-stub">
-		<variable name="trace-enable">
+		<variable name="trace-enabled">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
 			<value>false</value>
