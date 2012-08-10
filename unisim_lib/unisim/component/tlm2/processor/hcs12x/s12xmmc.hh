@@ -80,6 +80,7 @@ using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::TSemaphore;
+using unisim::component::cxx::processor::hcs12x::TOWNER;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;

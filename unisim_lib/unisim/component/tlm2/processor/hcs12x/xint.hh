@@ -74,6 +74,7 @@ using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
+using unisim::component::cxx::processor::hcs12x::TOWNER;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
@@ -104,8 +105,6 @@ class XINT :
 	, public Service<Registers>
 	, public Client<Memory<physical_address_t> >
 	, virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
-	, virtual public tlm_bw_transport_if< >
-
 
 {
 public:
@@ -153,8 +152,8 @@ public:
 
 
 	// to connect to CPU
-	tlm_initiator_socket< > toCPU12X_request;
-	tlm_initiator_socket< > toXGATE_request;
+	tlm_utils::simple_initiator_socket<XINT> toCPU12X_request;
+	tlm_utils::simple_initiator_socket<XINT> toXGATE_request;
 
 	// interface with bus
 	tlm_utils::simple_target_socket<XINT> slave_socket;
@@ -189,7 +188,9 @@ public:
 	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
 
 	// backward method for interrupts handling by CPU and XGATE
-	virtual tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+//	virtual tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	tlm_sync_enum cpu_nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	tlm_sync_enum xgate_nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
@@ -268,7 +269,7 @@ private:
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
 
-	bool selectInterrupt(INT_TRANS_T &buffer);
+	bool selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer);
 
 public:
 

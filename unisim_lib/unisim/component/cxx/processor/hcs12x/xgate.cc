@@ -734,9 +734,9 @@ void XGATE::riseErrorCondition() {
 	state = STOP;
 }
 
-bool XGATE::lockSemaphore(TSemaphore::OWNER owner, uint8_t index) {
+bool XGATE::lockSemaphore(TOWNER::OWNER owner, uint8_t index) {
 	if (semphore[index].lock(owner)) {
-		if (owner == TSemaphore::CPU12X) {
+		if (owner == TOWNER::CPU12X) {
 			xgsem_register = xgsem_register | (1 << index);
 		} else {
 			xgsem_register = xgsem_register & ~(1 << index);
@@ -748,7 +748,7 @@ bool XGATE::lockSemaphore(TSemaphore::OWNER owner, uint8_t index) {
 	return (false);
 }
 
-bool XGATE::unlockSemaphore(TSemaphore::OWNER owner, uint8_t index) {
+bool XGATE::unlockSemaphore(TOWNER::OWNER owner, uint8_t index) {
 	if (semphore[index].unlock(owner)) {
 		xgsem_register = xgsem_register & ~(1 << index);
 		return (true);
@@ -1083,9 +1083,9 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
 				if ((mask & j) != 0) {
 					if ((val & j) != 0) {
-						lockSemaphore(TSemaphore::CPU12X, i);
+						lockSemaphore(TOWNER::CPU12X, i);
 					} else {
-						unlockSemaphore(TSemaphore::CPU12X, i);
+						unlockSemaphore(TOWNER::CPU12X, i);
 					}
 				}
 			}

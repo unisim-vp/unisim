@@ -50,6 +50,12 @@ typedef uint64_t service_address_t;
 typedef uint8_t	 page_t;
 typedef double clock_t;
 
+class TOWNER {
+public:
+	enum OWNER { UNKNOWN, CPU12X, XGATE };
+
+};
+
 class ADDRESS {
 	public:
 		enum MODE {DIRECT=0, EXTENDED=1};
@@ -69,15 +75,14 @@ public:
 
 class TSemaphore {
 public:
-	enum OWNER { UNKNOWN, CPU12X, XGATE };
 
-	TSemaphore() : locked(false), who(UNKNOWN) {}
+	TSemaphore() : locked(false), who(TOWNER::UNKNOWN) {}
 	~TSemaphore() { }
 
 	bool isLocked() { return (locked); }
-	OWNER getLocker() { return (who); }
+	TOWNER::OWNER getLocker() { return (who); }
 
-	bool lock(OWNER who) {
+	bool lock(TOWNER::OWNER who) {
 		if (!locked) {
 			locked = true;
 			this->who = who;
@@ -87,10 +92,10 @@ public:
 		return (false);
 		}
 
-	bool unlock(OWNER who)  {
+	bool unlock(TOWNER::OWNER who)  {
 		if (locked && (this->who == who)) {
 			locked = false;
-			this->who = UNKNOWN;
+			this->who = TOWNER::UNKNOWN;
 			return (true);
 		}
 
@@ -99,7 +104,7 @@ public:
 
 private:
 	bool  locked;
-	OWNER who;
+	TOWNER::OWNER who;
 };
 
 } // end hcs12x namespace

@@ -125,6 +125,7 @@ using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::component::cxx::processor::hcs12x::Exception;
 using unisim::component::cxx::processor::hcs12x::AsynchronousException;
 using unisim::component::cxx::processor::hcs12x::TSemaphore;
+using unisim::component::cxx::processor::hcs12x::TOWNER;
 
 class XGCCR_t
 {
@@ -586,8 +587,8 @@ public:
 	//=                REGISTERS ACCESSORS                    =
 	//=========================================================
 
-	bool lockSemaphore(TSemaphore::OWNER owner, uint8_t index);
-	bool unlockSemaphore(TSemaphore::OWNER owner, uint8_t index);
+	bool lockSemaphore(TOWNER::OWNER owner, uint8_t index);
+	bool unlockSemaphore(TOWNER::OWNER owner, uint8_t index);
 
 	bool isINTRequestEnabled() { return ((xgmctl_register & 0x0080) != 0); }
 

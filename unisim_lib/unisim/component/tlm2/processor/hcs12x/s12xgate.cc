@@ -240,6 +240,7 @@ Run() {
 		if (hasAsynchronousInterrupt()) {
 			found = true;
 
+			priority = getXGCHPL();
 			channelID = getIntVector(priority);
 			ackAsynchronousInterrupt();
 
@@ -379,6 +380,7 @@ address_t S12XGATE ::getIntVector(uint8_t& priority)
 	address_t address; // get INT_VECTOR from XINT
 
 	INT_TRANS_T *buffer = new INT_TRANS_T();
+	buffer->setPriority(priority);
 
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 

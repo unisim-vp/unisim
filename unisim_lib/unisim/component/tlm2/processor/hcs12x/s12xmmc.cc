@@ -187,13 +187,13 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 				mmc_trans->set_address( addr & 0x7FFFFF);
 
-				while (!busSemaphore.lock(TSemaphore::XGATE)) {
+				while (!busSemaphore.lock(TOWNER::XGATE)) {
 					wait(busSemaphore_event);
 				}
 
 				(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
 
-				if (!busSemaphore.unlock(TSemaphore::XGATE)) {
+				if (!busSemaphore.unlock(TOWNER::XGATE)) {
 					busSemaphore_event.notify();
 				}
 
@@ -268,13 +268,13 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 				mmc_trans->set_address( addr & 0x7FFFFF);
 
-				while (!busSemaphore.lock(TSemaphore::CPU12X)) {
+				while (!busSemaphore.lock(TOWNER::CPU12X)) {
 					wait(busSemaphore_event);
 				}
 
 				(*init_socket[i])->b_transport( *mmc_trans, tlm2_btrans_time );
 
-				if (!busSemaphore.unlock(TSemaphore::CPU12X)) {
+				if (!busSemaphore.unlock(TOWNER::CPU12X)) {
 					busSemaphore_event.notify();
 				}
 

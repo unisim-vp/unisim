@@ -69,10 +69,10 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 
 	interrupt_request(*this);
 
-	toCPU12X_request(*this);
-	toXGATE_request(*this);
-
 	slave_socket.register_b_transport(this, &XINT::read_write);
+
+	toCPU12X_request.register_nb_transport_bw(this, &XINT::cpu_nb_transport_bw);
+	toXGATE_request.register_nb_transport_bw(this, &XINT::xgate_nb_transport_bw);
 
 	SC_HAS_PROCESS(XINT);
 
@@ -186,51 +186,61 @@ tlm_sync_enum XINT::nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_
 	return (TLM_ACCEPTED);
 }
 
-bool XINT::selectInterrupt(INT_TRANS_T &buffer) {
+bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 
-	if (interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2].getState()) {
+	if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_CLK_MONITOR_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_ClockMonitorReset_Vector());
 		buffer.setID(XINT::INT_CLK_MONITOR_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
 
 	}
-	else if (interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2].getState()) {
+	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_COPWatchdogReset_Vector());
 		buffer.setID(XINT::INT_COP_WATCHDOG_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
 
 	}
-	else if (interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2].getState()) {
+	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_IllegalAccessReset_Vector());
 		buffer.setID(XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
 
 	}
-	else if (interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2].getState()) {
+	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_SysReset_Vector());
 		buffer.setID(XINT::INT_SYS_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
 
 	}
-	else if (interrupt_flags[XINT::INT_XIRQ_OFFSET/2].getState()) {
+	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_XIRQ_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_XIRQ_Vector());
 		buffer.setID(XINT::INT_XIRQ_OFFSET/2);
 		buffer.setPriority(0x7);
 	}
 	else {
-
 		for (int index=0x30; index < 0x79; index++) {
 			if (interrupt_flags[index].getState()) {
+
 				uint8_t dataPriority = 0;
-				if (interrupt_flags[index].getPayload().isXGATE_shared_channel()) {
-					dataPriority = int_xgprio;
+
+				if (owner == TOWNER::CPU12X) {
+					if (((int_cfwdata[index] & 0x80) != 0) && interrupt_flags[index].getPayload().isXGATE_shared_channel()) {
+						dataPriority = int_xgprio;
+					} else {
+						if ((int_cfwdata[index] & 0x80) == 0) {
+							dataPriority = int_cfwdata[index] & 0x07;
+						}
+					}
+
 				} else {
-					dataPriority = int_cfwdata[index] & 0x07;
+					if (((int_cfwdata[index] & 0x80) != 0) && !interrupt_flags[index].getPayload().isXGATE_shared_channel()) {
+						dataPriority = int_cfwdata[index] & 0x07;
+					}
 				}
 
 				if (dataPriority >= buffer.getPriority()) {  // priority of maskable interrupts is from high offset to low
@@ -264,6 +274,9 @@ void XINT::run()
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
 	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
+
+	trans->set_command( tlm::TLM_WRITE_COMMAND );
+	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
 	while (true) {
 
@@ -308,17 +321,14 @@ void XINT::run()
 		} while(payload);
 
 		if (found_cpu) {
-			trans->set_command( tlm::TLM_WRITE_COMMAND );
-			trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
 			tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
 		}
 
 		if (found_xgate) {
-			trans->set_command( tlm::TLM_WRITE_COMMAND );
-			trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 
 			tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
+
 		}
 
 	}
@@ -329,14 +339,40 @@ void XINT::run()
 }
 
 // Master methods
-tlm_sync_enum XINT::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& phase, sc_core::sc_time& t)
+tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& phase, sc_core::sc_time& t)
 {
 
 	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
 
 	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
 	uint8_t cpuIPL = buffer->getPriority();
-	if (selectInterrupt(*buffer)) {
+	if (selectInterrupt(TOWNER::CPU12X, *buffer)) {
+		if (buffer->getPriority() > cpuIPL) {
+			interrupt_flags[buffer->getID()].setState(false);
+			interrupt_flags[buffer->getID()].releasePayload();
+
+		}
+
+		if (debug_enabled) {
+			std::cerr << "XINT::handled_interrupt 0x" << std::hex << (unsigned int) (buffer->getID() * 2) << "  @ " << sc_time_stamp().to_seconds() << std::endl;
+		}
+
+		retry_event.notify();
+	}
+
+	trans.set_response_status(tlm::TLM_OK_RESPONSE);
+	return (TLM_ACCEPTED);
+}
+
+// Master methods
+tlm_sync_enum XINT::xgate_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& phase, sc_core::sc_time& t)
+{
+
+	// The comparaison of the newIPL to the currentIPL is done by the CPU during I-bit-interrupt handling
+
+	INT_TRANS_T *buffer = (INT_TRANS_T *) trans.get_data_ptr();
+	uint8_t cpuIPL = buffer->getPriority();
+	if (selectInterrupt(TOWNER::XGATE, *buffer)) {
 		if (buffer->getPriority() > cpuIPL) {
 			interrupt_flags[buffer->getID()].setState(false);
 			interrupt_flags[buffer->getID()].releasePayload();
@@ -355,14 +391,7 @@ tlm_sync_enum XINT::nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_phase& 
 }
 
 
-
 void XINT::Reset() {
-
-	XINT_REGS_ADDRESSES[IVBR]		= 0x0121;	// S12XINT: Address of the Interrupt Vector Base Register
-
-	XINT_REGS_ADDRESSES[INT_XGPRIO] = 0x0126;
-
-	XINT_REGS_ADDRESSES[INT_CFADDR] = 0x0127;
 
 	ivbr = 0xFF;
 	int_xgprio = 0x01;
