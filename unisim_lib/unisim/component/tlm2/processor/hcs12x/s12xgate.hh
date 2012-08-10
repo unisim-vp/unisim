@@ -134,6 +134,7 @@ public:
 	virtual void Sync();
 
 	virtual address_t getIntVector(uint8_t& priority);
+	void handleAsynchronousInterrupt();
 
 	virtual void assertInterrupt(uint8_t offset, bool isXGATE_flag);
 

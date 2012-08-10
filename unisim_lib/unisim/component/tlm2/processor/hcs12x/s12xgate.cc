@@ -229,23 +229,20 @@ Run() {
 			continue;
 		}
 
-		if (state == IDLE) {
-			wait(xgate_newthread_event);
-		}
-
-		bool found = false;
 		address_t channelID = 0;
 		uint8_t priority = 0;
 
 		if (hasAsynchronousInterrupt()) {
-			found = true;
 
 			priority = getXGCHPL();
 			channelID = getIntVector(priority);
 			ackAsynchronousInterrupt();
 
+			state = RUNNING;
+
 		} else {
 
+			bool found = false;
 			// is there an S12X SW Trigger pending request ?
 			for (uint8_t i=0,j=1; i<8; i++,j=j*2) {
 				// is a pending SW Trigger request on that channel ?
@@ -258,6 +255,17 @@ Run() {
 					break;
 				}
 			}
+
+			if (found) {
+				state = RUNNING;
+			} else {
+				state = IDLE;
+			}
+		}
+
+		if (state == IDLE) {
+			wait(xgate_newthread_event);
+			continue;
 		}
 
 		/**
@@ -269,26 +277,19 @@ Run() {
 		 *  Note2: software_channel_id array is set by means of parameters during simulator setup phase.
 		 */
 
-		if (!found) {
-			state = IDLE;
-			continue;
-		} else {
-			state = RUNNING;
+		currentRegisterBank = getRegisterBank(priority);
 
-			setXGCHID(channelID);
-			setXGCHPL(priority);
+		setXGCHID(channelID);
+		setXGCHPL(priority);
 
-			currentRegisterBank = getRegisterBank(priority);
+		address_t newPC = memRead16(getXGVBR() + channelID * 4);
+		setXGPC(newPC);
 
-			address_t newPC = memRead16(getXGVBR() + channelID * 4);
-			setXGPC(newPC);
+		uint16_t variablePtr = memRead16(getXGVBR() + channelID * 4 + 2);
+		setXGRx(1, variablePtr);
 
-			uint16_t variablePtr = memRead16(getXGVBR() + channelID * 4 + 2);
-			setXGRx(1, variablePtr);
+		preloadXGR7(priority);
 
-			preloadXGR7(priority);
-
-		}
 
 		if (debug_enabled) {
 			std::cout << "XGATE:: starting Thread XGVBR =0x" << std::hex << ((unsigned int) getXGVBR())
@@ -335,9 +336,47 @@ Run() {
 
 			}
 
+			if (hasAsynchronousInterrupt()) {
+				handleAsynchronousInterrupt();
+			}
 		}
 
 	}
+}
+
+void S12XGATE::handleAsynchronousInterrupt() {
+
+	/**
+	 * Low priority threads (interrupt levels 1 to 3) can be interrupted by high priority threads (interrupt levels 4 to 7).
+	 * High priority threads are not interruptible.
+	 * The register content of an interrupted thread is maintained and restored by the XGATE hardware.
+	 */
+	if (getXGCHPL() < 4) {
+		uint8_t priority = 3;
+		uint8_t channelID = getIntVector(priority);
+		if (priority > 3) {
+			if (!currentThreadTerminated) {
+				isPendingThread = true;
+				pendingThreadRegisterBank =  currentRegisterBank;
+			}
+
+			currentRegisterBank = getRegisterBank(priority);
+
+			setXGCHID(channelID);
+			setXGCHPL(priority);
+
+			address_t newPC = memRead16(getXGVBR() + channelID * 4);
+			setXGPC(newPC);
+
+			uint16_t variablePtr = memRead16(getXGVBR() + channelID * 4 + 2);
+			setXGRx(1, variablePtr);
+
+			preloadXGR7(priority);
+		}
+	}
+
+	ackAsynchronousInterrupt();
+
 }
 
 void S12XGATE::riseErrorCondition() {

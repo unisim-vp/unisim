@@ -491,6 +491,10 @@ protected:
 	class TRegisterBank {
 	public:
 		TRegisterBank() {
+			xgchpl_register = 0x0000;
+			xgchid_register = 0x0000;
+			xgccr_register = 0x0000;
+			xgpc_register = 0x0000;
 			xgr_register[1] = 0x0000;
 			xgr_register[2] = 0x0000;
 			xgr_register[3] = 0x0000;
@@ -504,16 +508,27 @@ protected:
 
 		~TRegisterBank() { if (ccr) { delete ccr; ccr = NULL; }	}
 
+		inline void setXGCHPL(uint8_t val) { xgchpl_register = val; }
+		inline uint8_t getXGCHPL() { return (xgchpl_register); }
+		inline uint8_t* getXGCHPLPtr() { return (&xgchpl_register); }
+		inline void setXGCHID(uint8_t val) { xgchid_register = val; }
+		inline uint8_t getXGCHID() { return (xgchid_register); }
+		inline uint8_t* getXGCHIDPtr() { return (&xgchid_register); }
 		inline void setXGPC(address_t val) { xgpc_register = val; }
 		inline address_t getXGPC() { return (xgpc_register); }
+		inline address_t* getXGPCPtr() { return (&xgpc_register); }
 		inline void setXGRx(uint8_t index, uint16_t val) { xgr_register[index] = ((index == 0)? 0:val); } // R0 is tied to the value 0x0000
 		inline uint16_t getXGRx(uint8_t index) { return (((index == 0)? 0: xgr_register[index])); }
-		inline uint8_t getXGCCR() { return (xgccr_register); }
+		inline uint16_t* getXGRxPtr(uint8_t index) { return (&xgr_register[index]); }
 		inline void setXGCCR(uint8_t val) { xgccr_register = val & 0x0F; }
+		inline uint8_t getXGCCR() { return (xgccr_register); }
+		inline uint8_t* getXGCCRPtr() { return (&xgccr_register); }
 
 		XGCCR_t* getCCR() { return (ccr); }
 
 		void Reset() {
+			xgchpl_register = 0x0000;
+			xgchid_register = 0x0000;
 			xgccr_register = 0x0000;
 			xgpc_register = 0x0000;
 			xgr_register[1] = 0x0000;
@@ -526,6 +541,7 @@ protected:
 		}
 
 	private:
+		uint8_t xgchpl_register, xgchid_register;
 		uint16_t xgr_register[8];
 		uint8_t xgccr_register;
 		uint16_t xgpc_register;
@@ -533,6 +549,9 @@ protected:
 		XGCCR_t* ccr;
 
 	} *currentRegisterBank;
+
+	bool isPendingThread;
+	TRegisterBank *pendingThreadRegisterBank;
 
 private:
 
@@ -560,13 +579,12 @@ private:
 	//=         XGATE Memory Map                                    =
 	//===============================================================
 
-	uint8_t xgchid_register;
+
 	uint16_t xgmctl_register, xgif_register[8], xgswt_register, xgsem_register;
 
 	// For XGATE.V3 XGVBR register is shared between {XGVBR, XGISP74, XGISP31} depending on the content of XGISPSEL register
 	uint16_t xgvbrPtr_register[4]; // 	xgvbrPtr[0]<->xgvbr xgvbrPtr[1]<->xgisp74 xgvbrPtr[2]<->xgisp31_register;
-	uint8_t xgchpl_register, xgispsel_register;
-
+	uint8_t xgispsel_register;
 
 	TRegisterBank registerBank[2];
 
@@ -596,8 +614,8 @@ public:
 	inline address_t getXGPC() { return (currentRegisterBank->getXGPC()); }
 	inline address_t getLastXGPC() {return (lastPC); }
 
-	inline uint8_t getXGCHPL() { return ((version.compare("V2") == 0)? 0: xgchpl_register); }
-	inline void setXGCHPL(uint8_t val) { xgchpl_register = ((version.compare("V2") == 0)? 0: val); }
+	inline uint8_t getXGCHPL() { return ((version.compare("V2") == 0)? 0: currentRegisterBank->getXGCHPL()); }
+	inline void setXGCHPL(uint8_t val) { currentRegisterBank->setXGCHPL(((version.compare("V2") == 0)? 0: val)); }
 	inline uint8_t getXGISPSEL() { return ((version.compare("V2") == 0)? 0: xgispsel_register); }
 	inline void setXGISPSEL(uint8_t val) { xgispsel_register = ((version.compare("V2") == 0)? 0: val); }
 	inline uint16_t getXGVBR() { return (xgvbrPtr_register[((version.compare("V2") == 0)? 0: (xgispsel_register & 0x03))]); }
@@ -637,12 +655,14 @@ public:
 
 	}
 
-	inline uint16_t getXGSWT() { return (xgswt_register); }
 	inline void setXGSWT(uint16_t val) { xgswt_register = val; }
+	inline uint16_t getXGSWT() { return (xgswt_register); }
 	inline void setXGRx(uint8_t index, uint16_t val) { currentRegisterBank->setXGRx(index, val); } // R0 is tied to the value 0x0000
 	inline uint16_t getXGRx(uint8_t index) { return (currentRegisterBank->getXGRx(index)); }
-	inline void setXGCHID(uint8_t val) { xgchid_register = val; }
-	inline uint8_t getXGCHID() { return (xgchid_register); }
+	inline void setXGCHID(uint8_t val) { currentRegisterBank->setXGCHID(val); }
+	inline uint8_t getXGCHID() { return (currentRegisterBank->getXGCHID()); }
+	inline void setXGCCR(uint8_t val) { currentRegisterBank->setXGCCR(val); }
+	inline uint8_t getXGCCR() { return (currentRegisterBank->getXGCCR()); }
 
 	inline static std::string getXGRxName(uint8_t index) {
 		stringstream name;

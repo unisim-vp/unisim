@@ -83,12 +83,13 @@ XGATE::XGATE(const char *name, Object *parent):
 	, currentThreadTerminated(true)
 
 	, xgmctl_register(0x0000)
-	, xgchid_register(0x0000)
-	, xgchpl_register(0x00)
 	, xgispsel_register(0x00)
 	, xgswt_register(0x0000)
 	, xgsem_register(0x0000)
 	, currentRegisterBank(&registerBank[0])
+
+	, isPendingThread(false)
+	, pendingThreadRegisterBank(0)
 
 	, verbose_all(false)
 	, param_verbose_all("verbose-all", this, verbose_all)
@@ -211,7 +212,7 @@ inline INLINE
 void XGATE::VerboseDumpRegs() {
 
 	*logger << "\t- XGMCTL" << " = 0x" << std::hex << xgmctl_register << std::dec; //2-bytes
-	*logger << "\t- XGCHID" << " = 0x" << std::hex << (unsigned int) xgchid_register << std::dec; // 1-byte
+	*logger << "\t- XGCHID" << " = 0x" << std::hex << (unsigned int) currentRegisterBank->getXGCHID() << std::dec; // 1-byte
 	*logger << "\t- XGVBR" << " = 0x" << std::hex << xgvbrPtr_register[0] << std::dec; // 2-bytes
 	*logger << "\t- XGISP74" << " = 0x" << std::hex << xgvbrPtr_register[1] << std::dec; // 2-bytes
 	*logger << "\t- XGISP31" << " = 0x" << std::hex << xgvbrPtr_register[2] << std::dec; // 2-bytes
@@ -270,19 +271,19 @@ bool XGATE::BeginSetup() {
 	xgmctl_var->setCallBack(this, XGMCTL, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.XGCHID", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgchid_register);
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, currentRegisterBank->getXGCHIDPtr());
 
-	unisim::kernel::service::Register<uint8_t> *xgchid_var = new unisim::kernel::service::Register<uint8_t>("XGCHID", this, xgchid_register, "XGATE Channel ID Register (XGCHID)");
+	unisim::kernel::service::Register<uint8_t> *xgchid_var = new unisim::kernel::service::Register<uint8_t>("XGCHID", this, *(currentRegisterBank->getXGCHIDPtr()), "XGATE Channel ID Register (XGCHID)");
 	extended_registers_registry.push_back(xgchid_var);
-	xgchid_var->setCallBack(this, XGCHID, &CallBackObject::write, NULL);
+	xgchid_var->setCallBack(this, XGCHID, &CallBackObject::write, &CallBackObject::read);
 
 	if (version.compare("V2") != 0) {
 		sprintf(buf, "%s.XGCHPL", GetName());
-		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgchpl_register);
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, currentRegisterBank->getXGCHPLPtr());
 
-		unisim::kernel::service::Register<uint8_t> *xgchpl_var = new unisim::kernel::service::Register<uint8_t>("XGCHPL", this, xgchpl_register, "XGATE Channel Priority Level Register (XGCHPL)");
+		unisim::kernel::service::Register<uint8_t> *xgchpl_var = new unisim::kernel::service::Register<uint8_t>("XGCHPL", this, *(currentRegisterBank->getXGCHPLPtr()), "XGATE Channel Priority Level Register (XGCHPL)");
 		extended_registers_registry.push_back(xgchpl_var);
-		xgchpl_var->setCallBack(this, XGCHPL, &CallBackObject::write, NULL);
+		xgchpl_var->setCallBack(this, XGCHPL, &CallBackObject::write, &CallBackObject::read);
 
 		sprintf(buf, "%s.XGISPSEL", GetName());
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgispsel_register);
@@ -384,68 +385,68 @@ bool XGATE::BeginSetup() {
 	extended_registers_registry.push_back(xgsemm_var);
 	xgvbr_var->setCallBack(this, XGSEM, &CallBackObject::write, NULL);
 
-//	sprintf(buf, "%s.XGCCR", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &xgccr_register);
-//
-//	unisim::kernel::service::Register<uint8_t> *xgccr_var = new unisim::kernel::service::Register<uint8_t>("XGCCR", this, xgccr_register, "XGATE Condition Code Register (XGCCR)");
-//	extended_registers_registry.push_back(xgccr_var);
-//	xgvbr_var->setCallBack(this, XGCCR, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGPC", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgpc_register);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgpc_var = new unisim::kernel::service::Register<uint16_t>("XGPC", this, xgpc_register, "XGATE Program Counter Register (XGPC)");
-//	extended_registers_registry.push_back(xgpc_var);
-//	xgvbr_var->setCallBack(this, XGPC, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR1", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[1]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr1_var = new unisim::kernel::service::Register<uint16_t>("XGR1", this, xgr_register[1], "XGATE Register 1 (XGR1)");
-//	extended_registers_registry.push_back(xgr1_var);
-//	xgvbr_var->setCallBack(this, XGR1, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR2", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[2]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr2_var = new unisim::kernel::service::Register<uint16_t>("XGR2", this, xgr_register[2], "XGATE Register 2 (XGR2)");
-//	extended_registers_registry.push_back(xgr2_var);
-//	xgvbr_var->setCallBack(this, XGR2, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR3", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[3]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr3_var = new unisim::kernel::service::Register<uint16_t>("XGR3", this, xgr_register[3], "XGATE Register 3 (XGR3)");
-//	extended_registers_registry.push_back(xgr3_var);
-//	xgvbr_var->setCallBack(this, XGR3, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR4", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[4]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr4_var = new unisim::kernel::service::Register<uint16_t>("XGR4", this, xgr_register[4], "XGATE Register 4 (XGR4)");
-//	extended_registers_registry.push_back(xgr4_var);
-//	xgvbr_var->setCallBack(this, XGR4, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR5", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[5]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr5_var = new unisim::kernel::service::Register<uint16_t>("XGR5", this, xgr_register[5], "XGATE Register 5 (XGR5)");
-//	extended_registers_registry.push_back(xgr5_var);
-//	xgvbr_var->setCallBack(this, XGR5, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR6", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[6]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr6_var = new unisim::kernel::service::Register<uint16_t>("XGR6", this, xgr_register[6], "XGATE Register 6 (XGR6)");
-//	extended_registers_registry.push_back(xgr6_var);
-//	xgvbr_var->setCallBack(this, XGR6, &CallBackObject::write, NULL);
-//
-//	sprintf(buf, "%s.XGR7", GetName());
-//	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &xgr_register[7]);
-//
-//	unisim::kernel::service::Register<uint16_t> *xgr7_var = new unisim::kernel::service::Register<uint16_t>("XGR7", this, xgr_register[7], "XGATE Register 7 (XGR7)");
-//	extended_registers_registry.push_back(xgr7_var);
-//	xgvbr_var->setCallBack(this, XGR7, &CallBackObject::write, NULL);
+	sprintf(buf, "%s.XGCCR", GetName());
+	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, currentRegisterBank->getXGCCRPtr());
+
+	unisim::kernel::service::Register<uint8_t> *xgccr_var = new unisim::kernel::service::Register<uint8_t>("XGCCR", this, *(currentRegisterBank->getXGCCRPtr()), "XGATE Condition Code Register (XGCCR)");
+	extended_registers_registry.push_back(xgccr_var);
+	xgvbr_var->setCallBack(this, XGCCR, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGPC", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGPCPtr());
+
+	unisim::kernel::service::Register<uint16_t> *xgpc_var = new unisim::kernel::service::Register<uint16_t>("XGPC", this, *(currentRegisterBank->getXGPCPtr()), "XGATE Program Counter Register (XGPC)");
+	extended_registers_registry.push_back(xgpc_var);
+	xgvbr_var->setCallBack(this, XGPC, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR1", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(1));
+
+	unisim::kernel::service::Register<uint16_t> *xgr1_var = new unisim::kernel::service::Register<uint16_t>("XGR1", this, *(currentRegisterBank->getXGRxPtr(1)), "XGATE Register 1 (XGR1)");
+	extended_registers_registry.push_back(xgr1_var);
+	xgvbr_var->setCallBack(this, XGR1, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR2", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(2));
+
+	unisim::kernel::service::Register<uint16_t> *xgr2_var = new unisim::kernel::service::Register<uint16_t>("XGR2", this, *(currentRegisterBank->getXGRxPtr(2)), "XGATE Register 2 (XGR2)");
+	extended_registers_registry.push_back(xgr2_var);
+	xgvbr_var->setCallBack(this, XGR2, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR3", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(3));
+
+	unisim::kernel::service::Register<uint16_t> *xgr3_var = new unisim::kernel::service::Register<uint16_t>("XGR3", this, *(currentRegisterBank->getXGRxPtr(3)), "XGATE Register 3 (XGR3)");
+	extended_registers_registry.push_back(xgr3_var);
+	xgvbr_var->setCallBack(this, XGR3, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR4", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(4));
+
+	unisim::kernel::service::Register<uint16_t> *xgr4_var = new unisim::kernel::service::Register<uint16_t>("XGR4", this, *(currentRegisterBank->getXGRxPtr(4)), "XGATE Register 4 (XGR4)");
+	extended_registers_registry.push_back(xgr4_var);
+	xgvbr_var->setCallBack(this, XGR4, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR5", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(5));
+
+	unisim::kernel::service::Register<uint16_t> *xgr5_var = new unisim::kernel::service::Register<uint16_t>("XGR5", this, *(currentRegisterBank->getXGRxPtr(5)), "XGATE Register 5 (XGR5)");
+	extended_registers_registry.push_back(xgr5_var);
+	xgvbr_var->setCallBack(this, XGR5, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR6", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(6));
+
+	unisim::kernel::service::Register<uint16_t> *xgr6_var = new unisim::kernel::service::Register<uint16_t>("XGR6", this, *(currentRegisterBank->getXGRxPtr(6)), "XGATE Register 6 (XGR6)");
+	extended_registers_registry.push_back(xgr6_var);
+	xgvbr_var->setCallBack(this, XGR6, &CallBackObject::write, &CallBackObject::read);
+
+	sprintf(buf, "%s.XGR7", GetName());
+	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, currentRegisterBank->getXGRxPtr(7));
+
+	unisim::kernel::service::Register<uint16_t> *xgr7_var = new unisim::kernel::service::Register<uint16_t>("XGR7", this, *(currentRegisterBank->getXGRxPtr(7)), "XGATE Register 7 (XGR7)");
+	extended_registers_registry.push_back(xgr7_var);
+	xgvbr_var->setCallBack(this, XGR7, &CallBackObject::write, &CallBackObject::read);
 
 	Reset();
 
@@ -477,7 +478,6 @@ void XGATE::Reset() {
 	currentRegisterBank = &registerBank[0];
 
 	xgmctl_register = 0x0000;
-	xgchid_register = 0x0000;
 	xgvbrPtr_register[0] = 0x0000;
 	xgvbrPtr_register[1] = 0x0000;
 	xgvbrPtr_register[2] = 0x0000;
@@ -718,7 +718,15 @@ void XGATE::fetchInstruction(address_t addr, uint8_t* ins, uint8_t nByte)
 void XGATE::
 terminateCurrentThread() {
 
-	currentThreadTerminated = true;
+	if (isPendingThread) {
+		currentRegisterBank = pendingThreadRegisterBank;
+	} else {
+		currentThreadTerminated = true;
+		state = IDLE;
+		setXGCHID(0);
+		setXGCHPL(0);
+	}
+
 }
 
 void XGATE::riseErrorCondition() {
@@ -783,7 +791,7 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 		physical_address_t offset = addr-baseAddress;
 		switch (offset) {
 			case XGMCTL: *((uint16_t *) buffer) = xgmctl_register; break;
-			case XGCHID: *((uint8_t *) buffer) = xgchid_register; break;
+			case XGCHID: *((uint8_t *) buffer) = getXGCHID(); break;
 			case XGCHPL: *((uint8_t *) buffer) = getXGCHPL(); break;
 			case RESERVED2: *((uint16_t *) buffer) = 0; break;
 			case XGISPSEL: *((uint8_t *) buffer) = getXGISPSEL(); break;
@@ -791,17 +799,17 @@ bool XGATE::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 			case XGSWT: *((uint16_t *) buffer) = xgswt_register; break;
 			case XGSEM: *((uint16_t *) buffer) = xgsem_register; break;
 			case RESERVED4: *((uint16_t *) buffer) = 0; break;
-			case XGCCR: *((uint8_t *) buffer) = currentRegisterBank->getXGCCR(); break;
-			case XGPC: *((uint16_t *) buffer) = currentRegisterBank->getXGPC(); break;
+			case XGCCR: *((uint8_t *) buffer) = getXGCCR(); break;
+			case XGPC: *((uint16_t *) buffer) = getXGPC(); break;
 			case RESERVED5: *((uint16_t *) buffer) = 0; break;
 			case RESERVED6: *((uint16_t *) buffer) = 0; break;
-			case XGR1: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(1); break;
-			case XGR2: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(2); break;
-			case XGR3: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(3); break;
-			case XGR4: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(4); break;
-			case XGR5: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(5); break;
-			case XGR6: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(6); break;
-			case XGR7: *((uint16_t *) buffer) = currentRegisterBank->getXGRx(7); break;
+			case XGR1: *((uint16_t *) buffer) = getXGRx(1); break;
+			case XGR2: *((uint16_t *) buffer) = getXGRx(2); break;
+			case XGR3: *((uint16_t *) buffer) = getXGRx(3); break;
+			case XGR4: *((uint16_t *) buffer) = getXGRx(4); break;
+			case XGR5: *((uint16_t *) buffer) = getXGRx(5); break;
+			case XGR6: *((uint16_t *) buffer) = getXGRx(6); break;
+			case XGR7: *((uint16_t *) buffer) = getXGRx(7); break;
 
 			default: {
 				if ((offset >= XGIF_7F_70) && (offset <= (XGIF_0F_00 + 1))) {
@@ -837,7 +845,7 @@ bool XGATE::WriteMemory(physical_address_t addr, const void *buffer, uint32_t si
 			} break;
 			case XGCHID: {
 				uint8_t val = *((uint8_t *) buffer);
-				xgchid_register = val;
+				setXGCHID(val);
 			} break;
 			case XGCHPL: {
 				uint8_t val = *((uint8_t *) buffer);
@@ -930,8 +938,7 @@ bool XGATE::read(unsigned int offset, const void *buffer, unsigned int data_leng
 	switch (offset) {
 		case XGMCTL: *((uint16_t *) buffer) = Host2BigEndian(xgmctl_register & 0x00FB); break;
 		case XGCHID: {
-			// The XGCHID register read 0x00 if the XGATE module is idle
-			*((uint8_t *) buffer) = (state == IDLE)? 0 : xgchid_register & 0x7F;
+			*((uint8_t *) buffer) = getXGCHID();
 		} break;
 		case XGCHPL: *((uint16_t *) buffer) = getXGCHPL(); break;
 		case RESERVED2: *((uint16_t *) buffer) = 0; break;
@@ -1025,7 +1032,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			// The XGCHID register shows the identifier of the currently active channel. It is only writable in debug mode.
 			if (mode == DEBUG) {
 				uint8_t val = *((uint8_t *) buffer);
-				xgchid_register = val & 0x7F;
+				setXGCHID(val & 0x7F);
 			}
 
 		} break;
@@ -1039,7 +1046,7 @@ bool XGATE::write(unsigned int offset, const void *buffer, unsigned int data_len
 			// Writable if the module is disabled (XGMCTL::XGE = 0) and idle (XGCHID = 0x00)
 			// I use "RUNNING state and not IDLE because it includes "IDLE" and "STOP" modes
 
-			if (((xgmctl_register & 0x0080) == 0) && (xgchid_register == 0x00)) {
+			if (((xgmctl_register & 0x0080) == 0) && (getXGCHID() == 0x00)) {
 				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
 
 				setXGVBR(val & 0xFFFE);
