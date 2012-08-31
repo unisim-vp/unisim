@@ -159,8 +159,8 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 			var_iter != Simulator::simulator->variables.end();
 			var_iter++ )
 	{
-		if ( type == VariableBase::VAR_VOID ||
-				type == (*var_iter).second->GetType())
+		if ( (*var_iter).second->IsVisible() && (type == VariableBase::VAR_VOID ||
+				type == (*var_iter).second->GetType()))
 		{
 			// check that the variable is a root variable by checking that it
 			//   has not object owner

@@ -63,7 +63,7 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 	LDFLAGS=${LDFLAGS}" -L$with_systemc/lib-${SYSTEMC_TARGET_ARCH}"
 	CPPFLAGS=${CPPFLAGS}" -I$with_systemc/include"
     fi
-	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES -DSC_DISABLE_VIRTUAL_BIND"
+	CPPFLAGS=${CPPFLAGS}" -DSC_INCLUDE_DYNAMIC_PROCESSES"
 
     # Check for systemc.h
     AC_CHECK_HEADER(systemc.h,, AC_MSG_ERROR([systemc.h not found. Please install the SystemC library (version >= 2.1). Use --with-systemc=<path> to overload default search path.]))
