@@ -49,34 +49,34 @@ namespace blob {
 
 using unisim::util::endian::endian_type;
 
+typedef enum
+{
+	FFMT_UNKNOWN,
+	FFMT_ELF32,
+	FFMT_ELF64,
+	FFMT_COFF
+} FileFormat;
+
+typedef enum
+{
+	CAP_DEFAULT = 0,
+	CAP_FILENAME = 1,
+	CAP_FILE_FORMAT = 2,
+	CAP_ENTRY_POINT = 4,
+	CAP_ARCHITECTURE = 8,
+	CAP_STACK_BASE = 16,
+	CAP_ENDIAN = 32,
+	CAP_FILE_ENDIAN = 64,
+	CAP_ADDRESS_SIZE = 128,
+	CAP_MEMORY_ATOM_SIZE = 256,
+	CAP_ELF_PHOFF = 512,
+	CAP_ELF_PHENT = 1024
+} Capability;
+
 template <class MEMORY_ADDR>
 class Blob
 {
 public:
-	typedef enum
-	{
-		FFMT_UNKNOWN,
-		FFMT_ELF32,
-		FFMT_ELF64,
-		FFMT_COFF
-	} FileFormat;
-	
-	typedef enum
-	{
-		CAP_DEFAULT = 0,
-		CAP_FILENAME = 1,
-		CAP_FILE_FORMAT = 2,
-		CAP_ENTRY_POINT = 4,
-		CAP_ARCHITECTURE = 8,
-		CAP_STACK_BASE = 16,
-		CAP_ENDIAN = 32,
-		CAP_FILE_ENDIAN = 64,
-		CAP_ADDRESS_SIZE = 128,
-		CAP_MEMORY_ATOM_SIZE = 256,
-		CAP_ELF_PHOFF = 512,
-		CAP_ELF_PHENT = 1024
-	} Capability;
-	
 	Blob();
 	Blob(const Blob<MEMORY_ADDR>& blob);
 	virtual ~Blob();

@@ -362,7 +362,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	blob->SetArchitecture(file->GetArchitectureName());
 	blob->SetFileEndian(file_endianness);
 	blob->SetMemoryAtomSize(memory_atom_size);
-	blob->SetFileFormat(unisim::util::debug::blob::Blob<MEMORY_ADDR>::FFMT_COFF);
+	blob->SetFileFormat(unisim::util::debug::blob::FFMT_COFF);
 		
 	const SectionTable<MEMORY_ADDR> *section_table = file->GetSectionTable();
 

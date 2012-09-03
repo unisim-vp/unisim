@@ -216,7 +216,7 @@ void Blob<MEMORY_ADDR>::SetELF_PHENT(unsigned int _elf_phent)
 }
 
 template <class MEMORY_ADDR>
-typename Blob<MEMORY_ADDR>::Capability Blob<MEMORY_ADDR>::GetCapability() const
+Capability Blob<MEMORY_ADDR>::GetCapability() const
 {
 	// Synthesize overall blob capabilities
 	Capability ret_capability = capability;
@@ -247,7 +247,7 @@ const char *Blob<MEMORY_ADDR>::GetFilename() const
 }
 
 template <class MEMORY_ADDR>
-typename Blob<MEMORY_ADDR>::FileFormat Blob<MEMORY_ADDR>::GetFileFormat() const
+FileFormat Blob<MEMORY_ADDR>::GetFileFormat() const
 {
 	if(capability & CAP_FILE_FORMAT) return ffmt;
 	return FFMT_UNKNOWN;

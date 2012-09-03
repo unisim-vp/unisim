@@ -392,7 +392,8 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::Load() {
   unisim::util::debug::blob::Blob<ADDRESS_TYPE>* blob =
       new unisim::util::debug::blob::Blob<ADDRESS_TYPE>();
   blob->Catch();
-
+  blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF32);
+  
   // load and add files to the blob
   if (verbose_)
     logger_ << DebugInfo
@@ -726,6 +727,34 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LoadFiles(
 
   if (main_blob == NULL) return false;
 
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME) {
+    blob->SetFilename(main_blob->GetFilename());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ENTRY_POINT) {
+    blob->SetEntryPoint(main_blob->GetEntryPoint());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ARCHITECTURE) {
+    blob->SetArchitecture(main_blob->GetArchitecture());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_STACK_BASE) {
+    blob->SetStackBase(main_blob->GetStackBase());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ENDIAN) {
+    blob->SetEndian(main_blob->GetEndian());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_FILE_ENDIAN) {
+    blob->SetFileEndian(main_blob->GetFileEndian());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ADDRESS_SIZE) {
+    blob->SetAddressSize(main_blob->GetAddressSize());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ELF_PHOFF) {
+    blob->SetELF_PHOFF(main_blob->GetELF_PHOFF());
+  }
+  if(main_blob->GetCapability() & unisim::util::debug::blob::CAP_ELF_PHENT) {
+    blob->SetELF_PHENT(main_blob->GetELF_PHENT());
+  }
+
   // compute the different structure addresses from the given blob
   if (!ComputeStructuralAddresses(*main_blob))
     return false;
@@ -829,25 +858,11 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::FillBlobWithFileBlob(
     blob->AddSegment((*it));
   }
 
-  // copy sections that correspond to the copied segments
-  const SegmentVector &blob_segments = blob->GetSegments();
+  // copy all the sections
   for (SectionVectorIterator it = file_sections.begin();
        it != file_sections.end(); it++) {
-    ADDRESS_TYPE section_bottom, section_top;
-    (*it)->GetAddrRange(section_bottom, section_top);
-    bool found_segment = false;
-    for (SegmentVectorIterator bit = blob_segments.begin();
-         (!found_segment) && (bit != blob_segments.end());
-         ++bit) {
-      ADDRESS_TYPE segment_bottom, segment_top;
-      (*bit)->GetAddrRange(segment_bottom, segment_top);
-      if ((section_bottom >= segment_bottom) && (section_top <= segment_top)) {
-        blob->AddSection((*it));
-        found_segment = true;
-      }
-    }
+    blob->AddSection((*it));
   }
-
   return true;
 }
 

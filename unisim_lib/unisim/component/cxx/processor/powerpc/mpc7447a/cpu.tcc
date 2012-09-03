@@ -1377,7 +1377,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, addr, 4);
+				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, addr, 4);
 			}
 		}
 		if(CONFIG::IABR_ENABLE)
