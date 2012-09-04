@@ -75,7 +75,7 @@ static const bool DEBUG_INFORMATION = false;
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 
 using namespace std;
@@ -129,7 +129,7 @@ public:
 	virtual ~Simulator();
 	void Run();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status);
+	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
 private:
@@ -450,7 +450,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 	
 	//  - Debugger run-time configuration
-	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	//  - Linux OS run-time configuration
@@ -588,6 +588,16 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "WARNING! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " should not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+	}
+	if(enable_inline_debugger)
+	{
+		SetVariable("debugger.parse-dwarf", true);
+	}
+	
 	// Build the Linux OS arguments from the command line arguments
 	
 	VariableBase *cmd_args = FindVariable("cmd-args");
@@ -609,7 +619,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	return unisim::kernel::service::Simulator::Setup();
 }
 
-void Simulator::Stop(Object *object, int _exit_status)
+void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
@@ -622,6 +632,18 @@ void Simulator::Stop(Object *object, int _exit_status)
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_: 
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 int Simulator::GetExitStatus() const

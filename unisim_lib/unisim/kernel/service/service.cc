@@ -3214,7 +3214,7 @@ Simulator::SetupStatus Simulator::Setup()
 	return status;
 }
 
-void Simulator::Stop(Object *object, int exit_status)
+void Simulator::Stop(Object *object, int exit_status, bool asynchronous)
 {
 }
 
