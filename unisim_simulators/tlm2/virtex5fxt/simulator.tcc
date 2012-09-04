@@ -230,7 +230,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 	//  - Linux loader and Linux ABI translator
 	linux_os = enable_linux_os ? new Linux<CPU_ADDRESS_TYPE, CPU_ADDRESS_TYPE>("linux-os") : 0;
 	//  - debugger
-	debugger = (enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
+	debugger = (enable_linux_os || enable_inline_debugger || enable_gdb_server) ? new Debugger<CPU_ADDRESS_TYPE>("debugger") : 0;
 	//  - GDB server
 	gdb_server = enable_gdb_server ? new GDBServer<CPU_ADDRESS_TYPE>("gdb-server") : 0;
 	//  - Inline debugger
@@ -375,34 +375,29 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 		linux_os->memory_injection_import_ >> linux_os_cpu->memory_injection_export;
 		ram_effective_to_physical_address_translator->memory_import >> ram->memory_export;
 		
-		if(enable_inline_debugger || enable_gdb_server)
+		// Connect debugger to CPU
+		linux_os_cpu->debug_control_import >> debugger->debug_control_export;
+		linux_os_cpu->trap_reporting_import >> debugger->trap_reporting_export;
+		linux_os_cpu->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
+		debugger->disasm_import >> linux_os_cpu->disasm_export;
+		debugger->memory_import >> linux_os_cpu->memory_export;
+		debugger->registers_import >> linux_os_cpu->registers_export;
+		debugger->blob_import >> linux_os->blob_export_;
+		
+		if(enable_inline_debugger)
 		{
-			if(enable_inline_debugger)
-			{
-				// Connect tee-memory-access-reporting to CPU, debugger and profiler
-				linux_os_cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-				*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
-				*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
-				profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
-				debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-				tee_memory_access_reporting->out_control >> linux_os_cpu->memory_access_reporting_control_export;
-			}
-			else
-			{
-				// Connect CPU to debugger
-				linux_os_cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
-				debugger->memory_access_reporting_control_import >> linux_os_cpu->memory_access_reporting_control_export;
-			}
-
-			// Connect debugger to CPU
-			linux_os_cpu->debug_control_import >> debugger->debug_control_export;
-			linux_os_cpu->trap_reporting_import >> debugger->trap_reporting_export;
-			debugger->disasm_import >> linux_os_cpu->disasm_export;
-			debugger->memory_import >> linux_os_cpu->memory_export;
-			debugger->registers_import >> linux_os_cpu->registers_export;
-			
-			// changes below
-			debugger->blob_import >> linux_os->blob_export_;
+			// Connect tee-memory-access-reporting to CPU, debugger and profiler
+			linux_os_cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			*tee_memory_access_reporting->out[0] >> profiler->memory_access_reporting_export;
+			*tee_memory_access_reporting->out[1] >> debugger->memory_access_reporting_export;
+			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[0];
+			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+			tee_memory_access_reporting->out_control >> linux_os_cpu->memory_access_reporting_control_export;
+		}
+		else
+		{
+			linux_os_cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> linux_os_cpu->memory_access_reporting_control_export;
 		}
 		
 		if(enable_inline_debugger)
@@ -803,7 +798,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 	
 	//  - Debugger run-time configuration
-	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	//  - Cache/TLB power estimators run-time configuration
@@ -964,6 +959,10 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 	{
 		std::cerr << "WARNING! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " should not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
 	}
+	if(enable_inline_debugger)
+	{
+		SetVariable("debugger.parse-dwarf", true);
+	}
 	
 	if(enable_linux_os)
 	{
@@ -1016,15 +1015,6 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status)
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
-	switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
-	{
-		case SC_THREAD_PROC_: 
-		case SC_CTHREAD_PROC_:
-			wait();
-			break;
-		default:
-			break;
-	}
 }
 
 template <class CONFIG>
