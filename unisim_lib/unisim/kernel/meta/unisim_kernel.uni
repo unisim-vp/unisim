@@ -7,12 +7,15 @@
 			<file>unisim/kernel/service/service.hh</file>
 			<file>unisim/kernel/service/xml_helper.cc</file>
 			<file>unisim/kernel/service/xml_helper.hh</file>
+			<file>unisim/kernel/api/api.cc</file>
+			<file>unisim/kernel/api/api.hh</file>
 			<file>unisim/kernel/service/config.hh.in</file>
 			<file>unisim/kernel/logger/logger.cc</file>
 			<file>unisim/kernel/logger/logger.hh</file>
 			<file>unisim/kernel/logger/logger_server.cc</file>
 			<file>unisim/kernel/logger/logger_server.hh</file>
 			<file>unisim/kernel/tlm2/tlm.hh</file>
+			<file>unisim/kernel/tlm2/tlm.cc</file>
 			<file>unisim/kernel/tlm/tlm.hh</file>
 			<file>unisim/kernel/tlm/tlm.cc</file>
 			<file>unisim/kernel/debug/debug.hh</file>
@@ -37,6 +40,7 @@
 			<dep>unisim::util::garbage_collector</dep>
 			<dep>stl_iosfwd</dep>
 			<dep>clib_stdlib_h</dep>
+			<dep>unisim::util::likely</dep>
 		</depends>
 	</unit>
 	<unit>

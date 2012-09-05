@@ -58,7 +58,8 @@ namespace endian {
 typedef enum
 {
 	E_BIG_ENDIAN = 0,
-	E_LITTLE_ENDIAN = 1
+	E_LITTLE_ENDIAN = 1,
+	E_UNKNOWN_ENDIAN = 2
 } endian_type;
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)

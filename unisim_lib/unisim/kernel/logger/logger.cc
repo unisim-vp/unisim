@@ -33,29 +33,36 @@
  */
 
 #include "unisim/kernel/logger/logger.hh"
+
 #include <iostream>
+
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger_server.hh"
 
 namespace unisim {
 namespace kernel {
 namespace logger {
 
-Logger::Logger(const unisim::kernel::service::Object &_obj) : buffer(), obj(_obj), mode(NO_MODE) {
-	server = LoggerServer::GetInstance(obj);
+Logger::Logger(const unisim::kernel::service::Object &obj) 
+    : buffer_()
+    , obj_(obj)
+    , mode_(NO_MODE) {
+	server_ = LoggerServer::GetInstance(obj_);
 }
 
 Logger::~Logger() {
-	LoggerServer::RemoveInstance(obj);
+	LoggerServer::RemoveInstance(obj_);
 }
 
 Logger& operator <<(Logger& logger, std::ostream& (*f)(std::ostream &)) {
-	if(logger.mode == Logger::NO_MODE) return logger;
-	logger.buffer << f;
+	if (logger.mode_ == Logger::NO_MODE) return logger;
+	logger.buffer_ << f;
 	return logger;
 }
 
 Logger& operator <<(Logger& logger, std::ios_base& (*f)(std::ios_base &)) {
-	if(logger.mode == Logger::NO_MODE) return logger;
-	logger.buffer << f;
+	if (logger.mode_ == Logger::NO_MODE) return logger;
+	logger.buffer_ << f;
 	return logger;
 }
 
@@ -63,74 +70,80 @@ Logger& operator <<(Logger& logger, Logger& (*f)(Logger &)) {
 	return f(logger);
 }
 
+std::ostream& Logger::GetStream() {
+  return buffer_;
+}
+
 void Logger::PrintMode() {
-	cerr << "Current mode (" << obj.GetName() << "): ";
-	switch(mode) {
+  std::cerr << "Current mode (" << obj_.GetName() << "): ";
+	switch (mode_) {
 	case NO_MODE:
-		cerr << "NO_MODE";
+    std::cerr << "NO_MODE";
 		break;
 	case INFO_MODE:
-		cerr << "INFO_MODE";
+    std::cerr << "INFO_MODE";
 		break;
 	case WARNING_MODE:
-		cerr << "WARNING_MODE";
+    std::cerr << "WARNING_MODE";
 		break;
 	case ERROR_MODE:
-		cerr << "ERROR_MODE";
+    std::cerr << "ERROR_MODE";
 		break;
 	}
-	cerr << endl;
+  std::cerr << std::endl;
 }
 
 void Logger::DebugInfo() {
-	if(mode != NO_MODE) {
+	if (mode_ != NO_MODE) {
 		return;
 	}
-	mode = INFO_MODE;
-	buffer.clear();
-	buffer.str("");
+	mode_ = INFO_MODE;
+	buffer_.clear();
+	buffer_.str("");
 }
 
 void Logger::EndDebugInfo() {
-	if(mode != INFO_MODE) {
+	if (mode_ != INFO_MODE) {
 		return;
 	}
-	mode = NO_MODE;
-	server->DebugInfo(obj, buffer.str().c_str());
+	mode_ = NO_MODE;
+  if (buffer_.str().length() != 0) {
+  	server_->DebugInfo(obj_, buffer_.str().c_str());
+  }
 }
 
 void Logger::DebugWarning() {
-	if(mode != NO_MODE) return;
-	mode = WARNING_MODE;
-	buffer.clear();
-	buffer.str("");
+	if (mode_ != NO_MODE) return;
+	mode_ = WARNING_MODE;
+	buffer_.clear();
+	buffer_.str("");
 }
 
-void
-Logger::EndDebugWarning() {
-	if(mode != WARNING_MODE) return;
-	mode = NO_MODE;
-	server->DebugWarning(obj, buffer.str().c_str());
+void Logger::EndDebugWarning() {
+	if (mode_ != WARNING_MODE) return;
+	mode_ = NO_MODE;
+  if (buffer_.str().length() != 0) {
+  	server_->DebugWarning(obj_, buffer_.str().c_str());
+  }
 }
 
-void
-Logger::DebugError() {
-	if(mode != NO_MODE) return;
-	mode = ERROR_MODE;
-	buffer.clear();
-	buffer.str("");
+void Logger::DebugError() {
+	if (mode_ != NO_MODE) return;
+	mode_ = ERROR_MODE;
+	buffer_.clear();
+	buffer_.str("");
 }
 
-void
-Logger::EndDebugError() {
-	if(mode != ERROR_MODE) return;
-	mode = NO_MODE;
-	server->DebugError(obj, buffer.str().c_str());
+void Logger::EndDebugError() {
+	if (mode_ != ERROR_MODE) return;
+	mode_ = NO_MODE;
+  if (buffer_.str().length() != 0) {
+  	server_->DebugError(obj_, buffer_.str().c_str());
+  }
 }
 
-void
-Logger::EndDebug() {
-	switch(mode) {
+void Logger::EndDebug() {
+	switch (mode_) {
 	case NO_MODE:
 		/* nothing to do */
 		break;
@@ -146,44 +159,37 @@ Logger::EndDebug() {
 	}
 }
 
-Logger &
-DebugInfo(Logger &l) {
+Logger& DebugInfo(Logger &l) {
 	l.DebugInfo();
 	return l;
 }
 
-Logger &
-EndDebugInfo(Logger &l) {
+Logger& EndDebugInfo(Logger &l) {
 	l.EndDebugInfo();
 	return l;
 }
 
-Logger &
-DebugWarning(Logger &l) {
+Logger& DebugWarning(Logger &l) {
 	l.DebugWarning();
 	return l;
 }
 
-Logger &
-EndDebugWarning(Logger &l) {
+Logger& EndDebugWarning(Logger &l) {
 	l.EndDebugWarning();
 	return l;
 }
 
-Logger &
-DebugError(Logger &l) {
+Logger& DebugError(Logger &l) {
 	l.DebugError();
 	return l;
 }
 
-Logger &
-EndDebugError(Logger &l) {
+Logger& EndDebugError(Logger &l) {
 	l.EndDebugError();
 	return l;
 }
 
-Logger &
-EndDebug(Logger &l) {
+Logger& EndDebug(Logger &l) {
 	l.EndDebug();
 	return l;
 }

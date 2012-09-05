@@ -31,13 +31,16 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
+
 #ifndef __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
 #define __UNISIM_UTIL_DEBUG_ELF_SYMTAB_ELF_SYMTAB_HH__
 
 #include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/blob/blob.hh>
+#include <unisim/util/debug/symbol.hh>
 #include <unisim/util/debug/symbol_table.hh>
+#include <iostream>
+#include <list>
 
 namespace unisim {
 namespace util {
@@ -50,9 +53,9 @@ class ELF_SymtabHandler
 public:
 	ELF_SymtabHandler(unisim::kernel::logger::Logger& logger, const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob);
 	~ELF_SymtabHandler();
-	
+
 	void Parse();
-	
+
 	void GetSymbols(typename std::list<const unisim::util::debug::Symbol<MEMORY_ADDR> *>& lst, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbol(const char *name, MEMORY_ADDR addr, typename unisim::util::debug::Symbol<MEMORY_ADDR>::Type type) const;
 	const typename unisim::util::debug::Symbol<MEMORY_ADDR> *FindSymbolByAddr(MEMORY_ADDR addr) const;

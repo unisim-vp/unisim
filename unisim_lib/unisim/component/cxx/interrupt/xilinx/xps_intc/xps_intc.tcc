@@ -496,6 +496,10 @@ void XPS_IntC<CONFIG>::GenerateRequest()
 {
 	if(GetMER_ME())
 	{
+		if(IsVerbose() && (GetISR() & GetIER()))
+		{
+			logger << DebugInfo << "Pending IRQs: ISR=0x" << std::hex << GetISR() << ", IER=0x" << GetIER() << std::dec << EndDebugInfo;
+		}
 		unsigned int irq = 0;
 		if(unisim::util::arithmetic::BitScanForward(irq, isr & ier))
 		{

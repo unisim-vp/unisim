@@ -32,14 +32,14 @@
  * Author: Daniel Gracia Perez (daniel.gracia-perez@cea.fr) 
  */
 
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
+#ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
+#define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
+
 #include <string>
 #include <fstream>
 #include <vector>
 
-#ifndef __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
-#define __UNISIM_KERNEL_LOGGER_LOGGER_SERVER_HH__
+#include "unisim/kernel/service/service.hh"
 
 // Forward declaration to hide libxml2 data types
 typedef struct _xmlTextWriter xmlTextWriter;
@@ -50,10 +50,6 @@ namespace kernel {
 namespace logger {
 
 class LoggerServer {
-private:
-	typedef unisim::kernel::service::Parameter<bool> bool_parameter_t;
-	typedef unisim::kernel::service::Parameter<std::string> string_parameter_t;
-
 public:
 	/** Constructor */
 	LoggerServer();
@@ -125,25 +121,25 @@ private:
 	 *   set up at the GetInstance method if it hasn't been set up (that is, the first time
 	 *   it is called).
 	 */
-	static LoggerServer *singleton;
+	static LoggerServer *singleton_;
 
 	/** Number of references to singleton
 	 * This is a counter to the number of times the singleton is being used.
 	 */
-	static unsigned long long int singleton_refs;
+	static unsigned long long int singleton_refs_;
 
 	/** Pointer to the objects that demanded an instance of the logger
 	 */
-	static std::vector<const unisim::kernel::service::Object *> *obj_refs;
+	static std::vector<const unisim::kernel::service::Object *> *obj_refs_;
 
 	/** The unique logger server name
 	 */
-	static const char *name;
+	static const char *name_;
 
 	/** XML file handler
 	 * The type of this file handler is provided by libxml2.
 	 */
-	xmlTextWriterPtr xml_writer;
+	xmlTextWriterPtr xml_writer_;
 
 	/** XML output method for debug messages
 	 * XML output method for debug messages of the different types.
@@ -156,30 +152,30 @@ private:
 
 	/** Text file handler
 	 */
-	std::ofstream text_file;
+	std::ofstream text_file_;
 
 	/***************************************************************************
 	 * Parameters                                                        START *
 	 ***************************************************************************/
 
-	bool opt_std_err;
-	bool_parameter_t param_std_err;
-	bool opt_std_out;
-	bool_parameter_t param_std_out;
-	bool opt_std_err_color;
-	bool_parameter_t param_std_err_color;
-	bool opt_std_out_color;
-	bool_parameter_t param_std_out_color;
-	bool opt_file;
-	bool_parameter_t param_file;
-	std::string opt_filename;
-	string_parameter_t param_filename;
-	bool opt_xml_file;
-	bool_parameter_t param_xml_file;
-	std::string opt_xml_filename;
-	string_parameter_t param_xml_filename;
-	bool opt_xml_file_gzipped;
-	bool_parameter_t param_xml_file_gzipped;
+	bool opt_std_err_;
+	unisim::kernel::service::Parameter<bool> param_std_err_;
+	bool opt_std_out_;
+	unisim::kernel::service::Parameter<bool> param_std_out_;
+	bool opt_std_err_color_;
+	unisim::kernel::service::Parameter<bool> param_std_err_color_;
+	bool opt_std_out_color_;
+	unisim::kernel::service::Parameter<bool> param_std_out_color_;
+	bool opt_file_;
+	unisim::kernel::service::Parameter<bool> param_file_;
+	std::string opt_filename_;
+	unisim::kernel::service::Parameter<std::string> param_filename_;
+	bool opt_xml_file_;
+	unisim::kernel::service::Parameter<bool> param_xml_file_;
+	std::string opt_xml_filename_;
+	unisim::kernel::service::Parameter<std::string> param_xml_filename_;
+	bool opt_xml_file_gzipped_;
+	unisim::kernel::service::Parameter<bool> param_xml_file_gzipped_;
 
 	/***************************************************************************
 	 * Parameters                                                          END *

@@ -40,6 +40,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 
 namespace unisim {
 namespace service {

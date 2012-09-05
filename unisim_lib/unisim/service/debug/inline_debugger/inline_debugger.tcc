@@ -1177,7 +1177,7 @@ void InlineDebugger<ADDRESS>::SetBreakpoint(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
@@ -1186,7 +1186,7 @@ void InlineDebugger<ADDRESS>::SetReadWatchpoint(ADDRESS addr, uint32_t size)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::SetWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't set watchpoint at 0x" << hex << addr << dec << endl;
 	}
@@ -1204,7 +1204,7 @@ void InlineDebugger<ADDRESS>::DeleteBreakpoint(ADDRESS addr)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_READ, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't remove read watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
@@ -1213,7 +1213,7 @@ void InlineDebugger<ADDRESS>::DeleteReadWatchpoint(ADDRESS addr, uint32_t size)
 template <class ADDRESS>
 void InlineDebugger<ADDRESS>::DeleteWriteWatchpoint(ADDRESS addr, uint32_t size)
 {
-	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(MemoryAccessReporting<ADDRESS>::MAT_WRITE, MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+	if(!debug_event_trigger_import || !debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 	{
 		(*std_output_stream) << "Can't remove write watchpoint at 0x" << hex << addr << dec << " (" << size << " bytes)" << endl;
 	}
@@ -1285,25 +1285,25 @@ void InlineDebugger<ADDRESS>::DumpWatchpoints()
 		const Watchpoint<ADDRESS> *wt = (const Watchpoint<ADDRESS> *) event;
 		ADDRESS addr = wt->GetAddress();
 		uint32_t size = wt->GetSize();
-		typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat = wt->GetMemoryAccessType();
-		typename MemoryAccessReporting<ADDRESS>::MemoryType mt = wt->GetMemoryType();
+		unisim::util::debug::MemoryAccessType mat = wt->GetMemoryAccessType();
+		unisim::util::debug::MemoryType mt = wt->GetMemoryType();
 		
 		switch(mt)
 		{
-			case MemoryAccessReporting<ADDRESS>::MT_INSN:
+			case unisim::util::debug::MT_INSN:
 				(*std_output_stream) << "insn"; // it should never occur
 				break;
-			case MemoryAccessReporting<ADDRESS>::MT_DATA:
+			case unisim::util::debug::MT_DATA:
 				(*std_output_stream) << "data";
 				break;
 		}
 		(*std_output_stream) << " ";
 		switch(mat)
 		{
-			case MemoryAccessReporting<ADDRESS>::MAT_READ:
+			case unisim::util::debug::MAT_READ:
 				(*std_output_stream) << " read";
 				break;
-			case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
+			case unisim::util::debug::MAT_WRITE:
 				(*std_output_stream) << "write";
 				break;
 			default:
@@ -1699,8 +1699,18 @@ void InlineDebugger<ADDRESS>::DumpSymbols(const char *name)
 {
 	unsigned int i;
 	typename unisim::util::debug::Symbol<ADDRESS>::Type types[] = {
+		unisim::util::debug::Symbol<ADDRESS>::SYM_NOTYPE,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT,
 		unisim::util::debug::Symbol<ADDRESS>::SYM_FUNC,
-		unisim::util::debug::Symbol<ADDRESS>::SYM_OBJECT
+		unisim::util::debug::Symbol<ADDRESS>::SYM_SECTION,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_FILE,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_COMMON,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_TLS,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_NUM,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_LOOS,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_HIOS,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_LOPROC,
+		unisim::util::debug::Symbol<ADDRESS>::SYM_HIPROC
 	};
 	
 	typename std::list<const unisim::util::debug::Symbol<ADDRESS> *> symbols;

@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_DEBUG_DEBUGGER_DEBUGGER_TCC__
 
 #include <stdexcept>
+#include <fstream>
 
 namespace unisim {
 namespace service {
@@ -95,7 +96,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, verbose(false)
 	, dwarf_to_html_output_directory()
 	, dwarf_register_number_mapping_filename()
-	, parse_dwarf(true)
+	, parse_dwarf(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory, "DWARF v2/v3 to HTML output directory")
 	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
@@ -338,7 +339,7 @@ unisim::util::debug::Register *Debugger<ADDRESS>::GetRegister(const char *name)
 }
 
 template <class ADDRESS>
-void Debugger<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void Debugger<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
 	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
 	{
@@ -400,10 +401,13 @@ bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 	{
 		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(strcmp(blob->GetFilename(), filename) == 0)
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
 		{
-			enable_elf32_loaders[i] = enable;
-			found = true;
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				enable_elf32_loaders[i] = enable;
+				found = true;
+			}
 		}
 	}
 
@@ -412,10 +416,13 @@ bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 	{
 		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(strcmp(blob->GetFilename(), filename) == 0)
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
 		{
-			enable_elf64_loaders[i] = enable;
-			found = true;
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				enable_elf64_loaders[i] = enable;
+				found = true;
+			}
 		}
 	}
 
@@ -424,10 +431,13 @@ bool Debugger<ADDRESS>::EnableBinary(const char *filename, bool enable)
 	{
 		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(strcmp(blob->GetFilename(), filename) == 0)
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
 		{
-			enable_coff_loaders[i] = enable;
-			found = true;
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				enable_coff_loaders[i] = enable;
+				found = true;
+			}
 		}
 	}
 	
@@ -444,7 +454,10 @@ void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
 	{
 		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		lst.push_back(std::string(blob->GetFilename()));
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			lst.push_back(std::string(blob->GetFilename()));
+		}
 	}
 
 	unsigned int num_elf64_loaders = elf64_loaders.size();
@@ -452,7 +465,10 @@ void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
 	{
 		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		lst.push_back(std::string(blob->GetFilename()));
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			lst.push_back(std::string(blob->GetFilename()));
+		}
 	}
 
 	unsigned int num_coff_loaders = coff_loaders.size();
@@ -460,7 +476,10 @@ void Debugger<ADDRESS>::EnumerateBinaries(std::list<std::string>& lst) const
 	{
 		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		lst.push_back(std::string(blob->GetFilename()));
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			lst.push_back(std::string(blob->GetFilename()));
+		}
 	}
 }
 
@@ -474,9 +493,12 @@ bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
 	{
 		typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf32_loader->GetBlob();
-		if(strcmp(blob->GetFilename(), filename) == 0)
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
 		{
-			return enable_elf32_loaders[i];
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				return enable_elf32_loaders[i];
+			}
 		}
 	}
 
@@ -485,9 +507,12 @@ bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
 	{
 		typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = elf64_loader->GetBlob();
-		if(strcmp(blob->GetFilename(), filename) == 0)
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
 		{
-			return enable_elf64_loaders[i];
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				return enable_elf64_loaders[i];
+			}
 		}
 	}
 
@@ -496,9 +521,12 @@ bool Debugger<ADDRESS>::IsBinaryEnabled(const char *filename) const
 	{
 		typename unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = coff_loaders[i];
 		const unisim::util::debug::blob::Blob<ADDRESS> *blob = coff_loader->GetBlob();
-		if(strcmp(blob->GetFilename(), filename) == 0)
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
 		{
-			return enable_coff_loaders[i];
+			if(strcmp(blob->GetFilename(), filename) == 0)
+			{
+				return enable_coff_loaders[i];
+			}
 		}
 	}
 	
@@ -1049,13 +1077,13 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 template <class ADDRESS>
 bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADDRESS> *blob)
 {
-	typename unisim::util::debug::blob::Blob<ADDRESS>::FileFormat ffmt = blob->GetFileFormat();
+	typename unisim::util::debug::blob::FileFormat ffmt = blob->GetFileFormat();
 	
 	switch(ffmt)
 	{
-		case unisim::util::debug::blob::Blob<ADDRESS>::FFMT_UNKNOWN:
+		case unisim::util::debug::blob::FFMT_UNKNOWN:
 			break;
-		case unisim::util::debug::blob::Blob<ADDRESS>::FFMT_ELF32:
+		case unisim::util::debug::blob::FFMT_ELF32:
 			{
 				unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = new unisim::util::loader::elf_loader::Elf32Loader<ADDRESS>(logger, registers_import, memory_import, blob);
 				
@@ -1068,7 +1096,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 				enable_elf32_loaders.push_back(true);
 			}
 			break;
-		case unisim::util::debug::blob::Blob<ADDRESS>::FFMT_ELF64:
+		case unisim::util::debug::blob::FFMT_ELF64:
 			{
 				unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = new unisim::util::loader::elf_loader::Elf64Loader<ADDRESS>(logger, registers_import, memory_import, blob);
 				
@@ -1081,7 +1109,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 				enable_elf64_loaders.push_back(true);
 			}
 			break;
-		case unisim::util::debug::blob::Blob<ADDRESS>::FFMT_COFF:
+		case unisim::util::debug::blob::FFMT_COFF:
 			{
 				unisim::util::loader::coff_loader::CoffLoader<ADDRESS> *coff_loader = new unisim::util::loader::coff_loader::CoffLoader<ADDRESS>(logger, blob);
 				

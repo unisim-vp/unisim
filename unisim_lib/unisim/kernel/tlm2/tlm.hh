@@ -660,6 +660,27 @@ TargetStub<BUSWIDTH, TYPES>::TargetStub(const sc_module_name& name, unisim::kern
 	slave_sock(*this);
 }
 
+inline unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& logger, const tlm::tlm_generic_payload& trans)
+{
+	unsigned char *data_ptr = trans.get_data_ptr();
+	unsigned int data_length = trans.get_data_length();
+	unsigned int i;
+	logger << "[";
+	for(i = 0; i < data_length; i++)
+	{
+		logger << "0x" << std::hex << (unsigned int) data_ptr[i] << std::dec;
+		if(i != (data_length - 1)) logger << " ";
+	}
+	logger << "]";
+	return logger;
+}
+
+template <class T>
+inline unisim::kernel::logger::Logger& operator << (unisim::kernel::logger::Logger& logger, const SimplePayload<T>& trans)
+{
+	return logger << trans.GetValue();
+}
+
 template <unsigned int BUSWIDTH, class TYPES>
 void TargetStub<BUSWIDTH, TYPES>::b_transport(typename TYPES::tlm_payload_type& trans, sc_core::sc_time& t)
 {
@@ -667,7 +688,7 @@ void TargetStub<BUSWIDTH, TYPES>::b_transport(typename TYPES::tlm_payload_type& 
 	{
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << "b_transport has been called" << unisim::kernel::logger::EndDebugInfo;
+			logger << unisim::kernel::logger::DebugInfo << "b_transport(" << trans << ", " << (sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
 		}
 	}
 	else
@@ -684,7 +705,9 @@ tlm::tlm_sync_enum TargetStub<BUSWIDTH, TYPES>::nb_transport_fw(typename TYPES::
 	{
 		if(verbose)
 		{
-			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw has been called" << unisim::kernel::logger::EndDebugInfo;
+			std::stringstream sstr_phase;
+			sstr_phase << phase;
+			logger << unisim::kernel::logger::DebugInfo << "nb_transport_fw(" << trans << ", " << sstr_phase.str() << ", " << (sc_time_stamp() + t).to_string() << ")" << unisim::kernel::logger::EndDebugInfo;
 		}
 	}
 	else

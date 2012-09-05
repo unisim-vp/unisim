@@ -56,6 +56,8 @@ Blob<MEMORY_ADDR>::Blob()
 	, file_endian(E_BIG_ENDIAN)
 	, address_size(0)
 	, memory_atom_size(1)
+	, elf_phoff(0)
+	, elf_phent(0)
 	, blobs()
 	, sections()
 	, segments()
@@ -200,7 +202,21 @@ void Blob<MEMORY_ADDR>::SetMemoryAtomSize(unsigned int _memory_atom_size)
 }
 
 template <class MEMORY_ADDR>
-typename Blob<MEMORY_ADDR>::Capability Blob<MEMORY_ADDR>::GetCapability() const
+void Blob<MEMORY_ADDR>::SetELF_PHOFF(uint64_t _elf_phoff)
+{
+	elf_phoff = _elf_phoff;
+	capability = (Capability)(capability | CAP_ELF_PHOFF);
+}
+
+template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::SetELF_PHENT(unsigned int _elf_phent)
+{
+	elf_phent = _elf_phent;
+	capability = (Capability)(capability | CAP_ELF_PHENT);
+}
+
+template <class MEMORY_ADDR>
+Capability Blob<MEMORY_ADDR>::GetCapability() const
 {
 	// Synthesize overall blob capabilities
 	Capability ret_capability = capability;
@@ -231,7 +247,7 @@ const char *Blob<MEMORY_ADDR>::GetFilename() const
 }
 
 template <class MEMORY_ADDR>
-typename Blob<MEMORY_ADDR>::FileFormat Blob<MEMORY_ADDR>::GetFileFormat() const
+FileFormat Blob<MEMORY_ADDR>::GetFileFormat() const
 {
 	if(capability & CAP_FILE_FORMAT) return ffmt;
 	return FFMT_UNKNOWN;
@@ -324,6 +340,18 @@ unsigned int Blob<MEMORY_ADDR>::GetMemoryAtomSize() const
 {
 	if(capability & CAP_MEMORY_ATOM_SIZE) return memory_atom_size;
 	return 1;
+}
+
+template <class MEMORY_ADDR>
+uint64_t Blob<MEMORY_ADDR>::GetELF_PHOFF() const
+{
+	return (capability & CAP_ELF_PHOFF) ? elf_phoff : 0;
+}
+
+template <class MEMORY_ADDR>
+unsigned int Blob<MEMORY_ADDR>::GetELF_PHENT() const
+{
+	return (capability & CAP_ELF_PHENT) ? elf_phent : 0;
 }
 
 template <class MEMORY_ADDR>

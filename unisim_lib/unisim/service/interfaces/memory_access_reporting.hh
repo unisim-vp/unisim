@@ -36,8 +36,10 @@
 #ifndef __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
 #define __UNISIM_SERVICE_INTERFACES_MEMORY_ACCESS_REPORTING_HH__
 
-#include <unisim/kernel/service/service.hh>
 #include <inttypes.h>
+
+#include "unisim/kernel/service/service.hh"
+#include "unisim/util/debug/memory_access_type.hh"
 
 namespace unisim {
 namespace service {
@@ -47,8 +49,8 @@ template <class ADDRESS>
 class MemoryAccessReporting : public unisim::kernel::service::ServiceInterface
 {
 public:
-	typedef enum { MAT_NONE = 0, MAT_READ = 1, MAT_WRITE = 2 } MemoryAccessType;
-	typedef enum { MT_DATA = 0, MT_INSN = 1 } MemoryType;
+	typedef unisim::util::debug::MemoryAccessType MemoryAccessType;
+	typedef unisim::util::debug::MemoryType MemoryType;
 
 	virtual void ReportMemoryAccess(MemoryAccessType mat, MemoryType mt, ADDRESS addr, uint32_t size) = 0;
 	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr) = 0;

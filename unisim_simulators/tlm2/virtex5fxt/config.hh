@@ -66,6 +66,25 @@ public:
 };
 
 //=========================================================================
+//===                 MPLB compile time configuration                   ===
+//=========================================================================
+
+class MemoryRouterConfig : public unisim::component::tlm2::interconnect::generic_router::Config
+{
+public:
+	static const unsigned int INPUT_SOCKETS = 3;
+	static const unsigned int OUTPUT_SOCKETS = 1;
+	static const unsigned int MAX_NUM_MAPPINGS = 1;
+	static const unsigned int BUSWIDTH = 128;
+};
+
+class MemoryRouterDebugConfig : public MemoryRouterConfig
+{
+public:
+	static const bool VERBOSE = true;
+};
+
+//=========================================================================
 //===                 Simulator config (No FPU, No Debug)               ===
 //=========================================================================
 
@@ -80,12 +99,19 @@ public:
 	//=========================================================================
 
 	typedef unisim::component::cxx::processor::powerpc::ppc440::Config CPU_CONFIG;
-
+	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU LINUX_OS_CPU_CONFIG;
+	
 	//=========================================================================
 	//===                 MPLB compile time configuration                   ===
 	//=========================================================================
 
 	typedef MPLBConfig MPLB_CONFIG;
+
+	//=========================================================================
+	//===           Memory router compile time configuration                ===
+	//=========================================================================
+
+	typedef MemoryRouterConfig MEMORY_ROUTER_CONFIG;
 
 	//=========================================================================
 	//===                intc compile time configuration                    ===
@@ -295,6 +321,7 @@ public:
 	//=========================================================================
 
 	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_wFPU CPU_CONFIG;
+	typedef unisim::component::cxx::processor::powerpc::ppc440::Config_woMMU_wFPU LINUX_OS_CPU_CONFIG;
 };
 
 //=========================================================================
@@ -311,12 +338,19 @@ public:
 	//=========================================================================
 
 	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_wFPU CPU_CONFIG;
+	typedef unisim::component::cxx::processor::powerpc::ppc440::DebugConfig_woMMU_wFPU LINUX_OS_CPU_CONFIG;
 
 	//=========================================================================
 	//===                 MPLB compile time configuration                   ===
 	//=========================================================================
 
 	typedef MPLBDebugConfig MPLB_CONFIG;
+
+	//=========================================================================
+	//===           Memory router compile time configuration                ===
+	//=========================================================================
+
+	typedef MemoryRouterDebugConfig MEMORY_ROUTER_CONFIG;
 };
 
 //=========================================================================
@@ -333,6 +367,12 @@ public:
 	//=========================================================================
 
 	typedef MPLBDebugConfig MPLB_CONFIG;
+
+	//=========================================================================
+	//===           Memory router compile time configuration                ===
+	//=========================================================================
+
+	typedef MemoryRouterDebugConfig MEMORY_ROUTER_CONFIG;
 };
 
 #endif

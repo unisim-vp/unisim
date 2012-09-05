@@ -1,5 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <variables>
+	<object name="5-leds-positions">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
 	<object name="apu-dcr-stub">
 		<variable name="enable">
 			<type>parameter</type>
@@ -16,6 +28,54 @@
 			<data_type>boolean</data_type>
 			<value>false</value>
 			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+	</object>
+	<object name="bram">
+		<variable name="org">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x00000000fffc0000</value>
+			<description>memory origin/base address</description>
+		</variable>
+		<variable name="bytesize">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>262144</value>
+			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>memory cycle time</description>
+		</variable>
+		<variable name="read-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>memory read latency</description>
+		</variable>
+		<variable name="write-latency">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>0 s</value>
+			<description>memory write latency</description>
+		</variable>
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable verbosity</description>
 			<enumeration>
 				<item>true</item>
 				<item>false</item>
@@ -325,6 +385,16 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="enable-linux-syscall-snooping">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable linux syscall snooping</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="trap-on-instruction-counter">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
@@ -340,6 +410,12 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+		<variable name="halt-on">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Symbol or address where to stop simulation</description>
 		</variable>
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
@@ -364,6 +440,16 @@
 			<data_type>double precision floating-point</data_type>
 			<value>1</value>
 			<description>targeted average instructions per second</description>
+		</variable>
+		<variable name="enable-host-idle">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable host idle periods when target is idle</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="critical-input-interrupt-stub">
@@ -422,6 +508,24 @@
 			<data_type>sc_time</data_type>
 			<value>5 ns</value>
 			<description>Cycle time</description>
+		</variable>
+	</object>
+	<object name="dip-switches-8bit">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="polling-period">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>10 ms</value>
+			<description>Polling period of host keyboard</description>
 		</variable>
 	</object>
 	<object name="dma0-dcr-stub">
@@ -548,7 +652,7 @@
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
-			<value>0xfc000000</value>
+			<value>0x00000000fc000000</value>
 			<description>flash memory base address</description>
 		</variable>
 		<variable name="bytesize">
@@ -3184,6 +3288,126 @@
 			</enumeration>
 		</variable>
 	</object>
+	<object name="gpio-5-leds-positions">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="c-baseaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x0000000081420000</value>
+			<description>Base address (C_BASEADDR design parameter)</description>
+		</variable>
+		<variable name="c-highaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000008142ffff</value>
+			<description>High address (C_HIGHADDR design parameter)</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
+		</variable>
+	</object>
+	<object name="gpio-dip-switches-8bit">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="c-baseaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x0000000081460000</value>
+			<description>Base address (C_BASEADDR design parameter)</description>
+		</variable>
+		<variable name="c-highaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000008146ffff</value>
+			<description>High address (C_HIGHADDR design parameter)</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
+		</variable>
+	</object>
+	<object name="gpio-leds-8bit">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="c-baseaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x0000000081400000</value>
+			<description>Base address (C_BASEADDR design parameter)</description>
+		</variable>
+		<variable name="c-highaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000008140ffff</value>
+			<description>High address (C_HIGHADDR design parameter)</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
+		</variable>
+	</object>
+	<object name="gpio-push-buttons-5bit">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="c-baseaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x0000000081440000</value>
+			<description>Base address (C_BASEADDR design parameter)</description>
+		</variable>
+		<variable name="c-highaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000008144ffff</value>
+			<description>High address (C_HIGHADDR design parameter)</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
+		</variable>
+	</object>
 	<object name="input-interrupt-stub0">
 		<variable name="enable">
 			<type>parameter</type>
@@ -3427,28 +3651,6 @@
 		</variable>
 	</object>
 	<object name="input-interrupt-stub19">
-		<variable name="enable">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="input-interrupt-stub2">
 		<variable name="enable">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -3800,50 +4002,6 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="input-interrupt-stub7">
-		<variable name="enable">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="input-interrupt-stub8">
-		<variable name="enable">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Enable/Disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
 	<object name="input-interrupt-stub9">
 		<variable name="enable">
 			<type>parameter</type>
@@ -3880,13 +4038,13 @@
 		<variable name="c-baseaddr">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x41200000</value>
+			<value>0x0000000041200000</value>
 			<description>Base address (C_BASEADDR design parameter)</description>
 		</variable>
 		<variable name="c-highaddr">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x4120ffff</value>
+			<value>0x000000004120ffff</value>
 			<description>High address (C_HIGHADDR design parameter)</description>
 		</variable>
 		<variable name="cycle-time">
@@ -3894,6 +4052,18 @@
 			<data_type>sc_time</data_type>
 			<value>5 ns</value>
 			<description>Cycle time</description>
+		</variable>
+	</object>
+	<object name="leds-8bit">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
 		</variable>
 	</object>
 	<object name="loader">
@@ -3974,17 +4144,7 @@
 			</enumeration>
 		</variable>
 	</object>
-	<object name="mci-dcr-stub">
-		<variable name="enable">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>true</value>
-			<description>Enable/Disable a lazy implementation of TLM 2.0 method interface</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
+	<object name="mci">
 		<variable name="verbose">
 			<type>parameter</type>
 			<data_type>boolean</data_type>
@@ -3994,6 +4154,12 @@
 				<item>true</item>
 				<item>false</item>
 			</enumeration>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Enable/Disable verbosity</description>
 		</variable>
 	</object>
 	<object name="mplb">
@@ -4006,58 +4172,8 @@
 		<variable name="port_buffer_size">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0</value>
 			<description>Defines the size of the buffer for incomming requests in each of the input ports (0 = infinite)</description>
-		</variable>
-		<variable name="verbose_all">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Activate all the verbose options</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose_setup">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Display Object setup information</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose_tlm">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Display TLM blocking/non-blocking transactions information</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose_tlm_debug">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Display TLM debug transactions information</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-		<variable name="verbose_memory_interface">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>Display memory interface operations information</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
 		</variable>
 		<variable name="mapping_0">
 			<type>parameter</type>
@@ -4082,6 +4198,54 @@
 			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
 			<value>range_start=&quot;0xff800000&quot; range_end=&quot;0xffffffff&quot; output_port=&quot;3&quot; translation=&quot;0xff800000&quot;</value>
 			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_4">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x84000000&quot; range_end=&quot;0x8400ffff&quot; output_port=&quot;4&quot; translation=&quot;0x84000000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_5">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x81460000&quot; range_end=&quot;0x8146ffff&quot; output_port=&quot;5&quot; translation=&quot;0x81460000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_6">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x81400000&quot; range_end=&quot;0x8140ffff&quot; output_port=&quot;6&quot; translation=&quot;0x81400000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_7">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x81420000&quot; range_end=&quot;0x8142ffff&quot; output_port=&quot;7&quot; translation=&quot;0x81420000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+		<variable name="mapping_8">
+			<type>parameter</type>
+			<data_type>unisim::component::tlm2::interconnect::generic_router::Mapping</data_type>
+			<value>range_start=&quot;0x81440000&quot; range_end=&quot;0x8144ffff&quot; output_port=&quot;8&quot; translation=&quot;0x81440000&quot;</value>
+			<description>Defined a mapping of the router with format &quot;[range_start]&quot;,&quot;[range_end]&quot;,&quot;[outport_index]&quot; where [range_start], [range_end] and [outport_index] are to be replaced with the initial address, end address (= range_start + range_size - 1) and the output port index respectively</description>
+		</variable>
+	</object>
+	<object name="push-buttons-5bit">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="polling-period">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>10 ms</value>
+			<description>Polling period of host keyboard</description>
 		</variable>
 	</object>
 	<object name="pwm-stub">
@@ -4110,7 +4274,7 @@
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x0000000000000000</value>
 			<description>memory origin/base address</description>
 		</variable>
 		<variable name="bytesize">
@@ -4119,47 +4283,11 @@
 			<value>268435456</value>
 			<description>memory size in bytes</description>
 		</variable>
-		<variable name="cycle-time">
+		<variable name="initial-byte-value">
 			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>5 ns</value>
-			<description>memory cycle time</description>
-		</variable>
-		<variable name="read-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>5 ns</value>
-			<description>memory read latency</description>
-		</variable>
-		<variable name="write-latency">
-			<type>parameter</type>
-			<data_type>sc_time</data_type>
-			<value>0 s</value>
-			<description>memory write latency</description>
-		</variable>
-		<variable name="verbose">
-			<type>parameter</type>
-			<data_type>boolean</data_type>
-			<value>false</value>
-			<description>enable/disable verbosity</description>
-			<enumeration>
-				<item>true</item>
-				<item>false</item>
-			</enumeration>
-		</variable>
-	</object>
-	<object name="rom">
-		<variable name="org">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>0xff800000</value>
-			<description>memory origin/base address</description>
-		</variable>
-		<variable name="bytesize">
-			<type>parameter</type>
-			<data_type>unsigned 64-bit integer</data_type>
-			<value>8388608</value>
-			<description>memory size in bytes</description>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
 		</variable>
 		<variable name="cycle-time">
 			<type>parameter</type>
@@ -4248,13 +4376,13 @@
 		<variable name="c-baseaddr">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x83c00000</value>
+			<value>0x0000000083c00000</value>
 			<description>Base address (C_BASEADDR design parameter)</description>
 		</variable>
 		<variable name="c-highaddr">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
-			<value>0x83c0ffff</value>
+			<value>0x0000000083c0ffff</value>
 			<description>High address (C_HIGHADDR design parameter)</description>
 		</variable>
 		<variable name="cycle-time">
@@ -4264,24 +4392,42 @@
 			<description>Cycle time</description>
 		</variable>
 	</object>
-	<variable name="authors">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Gilles Mouchard &lt;gilles.mouchard@cea.fr&gt;, Daniel Gracia Pérez &lt;daniel.gracia-perez@cea.fr&gt;</value>
-		<description>Authors</description>
-	</variable>
-	<variable name="copyright">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)</value>
-		<description>Copyright</description>
-	</variable>
-	<variable name="description">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs</value>
-		<description>Description</description>
-	</variable>
+	<object name="uart-lite">
+		<variable name="verbose">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>Enable/Disable verbosity</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="c-baseaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x0000000084000000</value>
+			<description>Base address (C_BASEADDR design parameter)</description>
+		</variable>
+		<variable name="c-highaddr">
+			<type>parameter</type>
+			<data_type>unsigned 64-bit integer</data_type>
+			<value>0x000000008400ffff</value>
+			<description>High address (C_HIGHADDR design parameter)</description>
+		</variable>
+		<variable name="cycle-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>5 ns</value>
+			<description>Cycle time</description>
+		</variable>
+		<variable name="telnet-refresh-time">
+			<type>parameter</type>
+			<data_type>sc_time</data_type>
+			<value>10 ms</value>
+			<description>Telnet refresh time</description>
+		</variable>
+	</object>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -4302,11 +4448,31 @@
 			<item>false</item>
 		</enumeration>
 	</variable>
+	<variable name="enable-linux-os">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable target Linux ABI to host ABI translation</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
 	<variable name="enable-press-enter-at-exit">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
 		<description>Enable/Disable pressing key enter at exit</description>
+		<enumeration>
+			<item>true</item>
+			<item>false</item>
+		</enumeration>
+	</variable>
+	<variable name="enable-telnet">
+		<type>parameter</type>
+		<data_type>boolean</data_type>
+		<value>false</value>
+		<description>Enable/Disable telnet instantiation</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -4336,7 +4502,7 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.txt</value>
-		<description>Filename to keep logger output (the option file must be activated)</description>
+		<description>Filename to keep logger output _(the option file must be activated)</description>
 	</variable>
 	<variable name="kernel_logger.std_err">
 		<type>parameter</type>
@@ -4352,7 +4518,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<description>Colorize logger output through the standard error output _(only works if std_err is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -4372,7 +4538,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<description>Colorize logger output through the standard output _(only works if std_out is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -4402,30 +4568,6 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.xml</value>
-		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
-	</variable>
-	<variable name="license">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>BSD (see file COPYING)</value>
-		<description>License</description>
-	</variable>
-	<variable name="program-name">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM Virtex 5 FXT</value>
-		<description>Program name</description>
-	</variable>
-	<variable name="schematic">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>virtex5fxt/fig_schematic.pdf</value>
-		<description>path to simulator schematic</description>
-	</variable>
-	<variable name="version">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>1.0beta4</value>
-		<description>Version</description>
+		<description>Filename to keep logger xml output _(the option xml_file must be activated)</description>
 	</variable>
 </variables>
