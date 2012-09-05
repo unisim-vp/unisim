@@ -210,7 +210,7 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 
 		if (!find) {
 
-			cerr << "WARNING: S12XMMC::XGATE => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
+			std::cerr << "WARNING: S12XMMC::XGATE => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 
 			memset(buffer->buffer, 0, buffer->data_size);
 		}

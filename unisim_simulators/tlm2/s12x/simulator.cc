@@ -639,7 +639,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 	simulator->SetVariable("CPU.enable-fine-timing", true);
 
-	simulator->SetVariable("CRG.oscillator-clock", 125000);
+	simulator->SetVariable("CRG.oscillator-clock", 125000);  // 8 MHz
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);

@@ -107,8 +107,14 @@ void S12SCI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 	if (cmd == tlm::TLM_READ_COMMAND) {
 		memset(data_ptr, 0, data_length);
+
+		std::cerr << "S12SCI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
+
 		read(address - baseAddress, data_ptr, data_length);
 	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+
+		std::cerr << "S12SCI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
+
 		write(address - baseAddress, data_ptr, data_length);
 	}
 

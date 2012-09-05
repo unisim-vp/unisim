@@ -634,8 +634,6 @@ uint8_t XGATE::step()
 
 		setXGPC(getXGPC() + (insn_length/8));
 
-		op->execute(this);
-
 		if (trace_enable) {
 			stringstream disasm_str;
 			stringstream ctstr;
@@ -651,8 +649,11 @@ uint8_t XGATE::step()
 				<< disasm_str.str()
 				<< " : (0x" << std::hex << ctstr.str() << std::dec << " ) "
 				<< EndDebugInfo	<< std::endl;
+		}
 
-			// ************************
+		op->execute(this);
+
+		if (trace_enable) {
 			std::cout << "CCR" << " = " << std::hex << currentRegisterBank->getCCR()->toString() << std::dec; // 1-bytes
 			std::cout << "\t- XGR0" << " = 0x" << std::hex << currentRegisterBank->getXGRx(0) << std::dec; // 2-bytes
 			std::cout << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes
@@ -663,8 +664,6 @@ uint8_t XGATE::step()
 			std::cout << "\t- XGR6" << " = 0x" << std::hex << currentRegisterBank->getXGRx(6) << std::dec; // 2-bytes
 			std::cout << "\t- XGR7" << " = 0x" << std::hex << currentRegisterBank->getXGRx(7) << std::dec; // 2-bytes
 			std::cout << std::endl;
-
-			// ************************
 
 		}
 

@@ -638,7 +638,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 	simulator->SetVariable("CPU.enable-fine-timing", true);
 
-	simulator->SetVariable("CRG.oscillator-clock", 125000);
+//	simulator->SetVariable("CRG.oscillator-clock", 125000); // 8 MHz
+	simulator->SetVariable("CRG.oscillator-clock", 12500); // 80 MHz
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
@@ -878,7 +879,7 @@ void Simulator::Run() {
 		cerr << endl;
 
 		cerr << "Simulated time         : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
-		cerr << "Core Clock   (MHz)     : " << (double) (1 / (double) (*cpu)["core-clock"] * 1000000)  << endl;
+		cerr << "Core Clock   (MHz)     : " << (double) ((1 / (double) (*cpu)["core-clock"]) * 1000000)  << endl;
 		cerr << "Target speed (MIPS)    : " << (((double) (*cpu)["instruction-counter"] / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 		cerr << "Target speed (MHz)     : " << (((double) ((uint64_t) (*cpu)["cycles-counter"]) / sc_time_stamp().to_seconds()) / 1000000.0) << endl;
 		cerr << "cycles-per-instruction : " << (double) ((uint64_t) (*cpu)["cycles-counter"]) / ((uint64_t) (*cpu)["instruction-counter"]) << endl;

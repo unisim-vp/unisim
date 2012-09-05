@@ -119,16 +119,14 @@ void S12PIT24B<PIT_SIZE>::CNT16::process() {
 		}
 
 		*counter_register = *load_register;
-		while ((isEnabled) && parent->isPITEnabled()) {
+		wait(period);
+		while ((isEnabled) && parent->isPITEnabled() && (*counter_register != 0)) {
 
+			*counter_register = *counter_register - 1;
 			wait(period);
-			if (*counter_register == 0) {
-				parent->setTimeoutFlag(index);
-				break;
-			} else {
-				*counter_register = *counter_register - 1;
-			}
 		}
+
+		parent->setTimeoutFlag(index);
 
 	}
 }

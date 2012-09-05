@@ -381,8 +381,6 @@ uint8_t CPU::step()
 
 			setRegPC(getRegPC() + (insn_length/8));
 
-			op->execute(this);
-
 			if (trace_enable) {
 				stringstream disasm_str;
 				stringstream ctstr;
@@ -400,6 +398,8 @@ uint8_t CPU::step()
 					<< EndDebugInfo	<< std::endl;
 
 			}
+
+			op->execute(this);
 
 			opCycles = op->getCycles();
 

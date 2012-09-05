@@ -309,7 +309,7 @@ special_move.getCycles = {
 	case 0: /* TFR RD, CCR */ return 1;
 	case 1: /* TFR CCR, RS */ return 1;
 	case 2: /* TFR RD, PC */ return 1;
-	case 3: /* not used */ break;
+	case 3: /* not used */ return 0;
 	}
 
 }
