@@ -118,7 +118,7 @@ public:
 	virtual ~Simulator();
 	void Run();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status);
+	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
 private:

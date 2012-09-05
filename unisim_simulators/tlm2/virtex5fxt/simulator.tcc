@@ -1002,7 +1002,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 }
 
 template <class CONFIG>
-void Simulator<CONFIG>::Stop(Object *object, int _exit_status)
+void Simulator<CONFIG>::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
@@ -1015,6 +1015,18 @@ void Simulator<CONFIG>::Stop(Object *object, int _exit_status)
 #endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_: 
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 template <class CONFIG>
