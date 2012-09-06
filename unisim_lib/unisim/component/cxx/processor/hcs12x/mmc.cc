@@ -53,21 +53,25 @@ uint8_t MMC::epage;
 uint8_t MMC::ppage;
 
 MMC::MMC(const char *name, Object *parent):
-	Object(name, parent),
-	unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent),
-	Client<Memory<physical_address_t> >(name, parent),
-	unisim::kernel::service::Service<Registers>(name, parent),
-	memory_export("memory_export", this),
-	memory_import("memory_import", this),
-	registers_export("registers_export", this),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-	mode_int(MMC_MODE_RESET),
-	mmcctl1_int(MMCCTL1_RESET),
-	param_mode("mode", this, mode_int),
-	param_mmcctl1("mmcctl1", this, mmcctl1_int),
-	address_encoding(ADDRESS::BANKED),
-	param_address_encoding("address-encoding",this,address_encoding)
+	Object(name, parent)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, memory_export("memory_export", this)
+	, memory_import("memory_import", this)
+	, registers_export("registers_export", this)
+
+	, version("V3")
+	, param_version("version", this, version, "MMC version. Supported are V3 and V4. Default is V3")
+
+	, debug_enabled(false)
+	, param_debug_enabled("debug-enabled", this, debug_enabled)
+	, mode_int(MMC_MODE_RESET)
+	, mmcctl1_int(MMCCTL1_RESET)
+	, param_mode("mode", this, mode_int)
+	, param_mmcctl1("mmcctl1", this, mmcctl1_int)
+	, address_encoding(ADDRESS::BANKED)
+	, param_address_encoding("address-encoding",this,address_encoding)
 	, ppage_address(0x30)
 	, param_ppage_address("ppage-address", this, ppage_address)
 
@@ -194,33 +198,35 @@ bool MMC::BeginSetup() {
 	extended_registers_registry.push_back(ppage_var);
 	ppage_var->setCallBack(this, PPAGE, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMWPC", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramwpc);
+	if (version.compare("V3") == 0) {
+		sprintf(buf, "%s.RAMWPC", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramwpc);
 
-	unisim::kernel::service::Register<uint8_t> *ramwpc_var = new unisim::kernel::service::Register<uint8_t>("RAMWPC", this, ramwpc, "RAM Write Protection Control Register (RAMWPC)");
-	extended_registers_registry.push_back(ramwpc_var);
-	ramwpc_var->setCallBack(this, RAMWPC, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramwpc_var = new unisim::kernel::service::Register<uint8_t>("RAMWPC", this, ramwpc, "RAM Write Protection Control Register (RAMWPC)");
+		extended_registers_registry.push_back(ramwpc_var);
+		ramwpc_var->setCallBack(this, RAMWPC, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMXGU", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramxgu);
+		sprintf(buf, "%s.RAMXGU", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramxgu);
 
-	unisim::kernel::service::Register<uint8_t> *ramxgu_var = new unisim::kernel::service::Register<uint8_t>("RAMXGU", this, ramxgu, "RAM XGATE Upper Boundary Register (RAMXGU)");
-	extended_registers_registry.push_back(ramxgu_var);
-	ramxgu_var->setCallBack(this, RAMXGU, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramxgu_var = new unisim::kernel::service::Register<uint8_t>("RAMXGU", this, ramxgu, "RAM XGATE Upper Boundary Register (RAMXGU)");
+		extended_registers_registry.push_back(ramxgu_var);
+		ramxgu_var->setCallBack(this, RAMXGU, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMSHL", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshl);
+		sprintf(buf, "%s.RAMSHL", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshl);
 
-	unisim::kernel::service::Register<uint8_t> *ramshl_var = new unisim::kernel::service::Register<uint8_t>("RAMSHL", this, ramshl, "RAM Shared Region Lower Boundary Register (RAMSHL)");
-	extended_registers_registry.push_back(ramshl_var);
-	ramshl_var->setCallBack(this, RAMSHL, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramshl_var = new unisim::kernel::service::Register<uint8_t>("RAMSHL", this, ramshl, "RAM Shared Region Lower Boundary Register (RAMSHL)");
+		extended_registers_registry.push_back(ramshl_var);
+		ramshl_var->setCallBack(this, RAMSHL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMSHU", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
+		sprintf(buf, "%s.RAMSHU", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
 
-	unisim::kernel::service::Register<uint8_t> *ramshu_var = new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)");
-	extended_registers_registry.push_back(ramshu_var);
-	ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramshu_var = new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)");
+		extended_registers_registry.push_back(ramshu_var);
+		ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
+	}
 
 	return (true);
 }

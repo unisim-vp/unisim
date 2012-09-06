@@ -146,7 +146,8 @@ Simulator::Simulator(int argc, char **argv)
 	//  - Memories
 	global_ram = new RAM("RAM");
 	global_flash = new FLASH("FLASH");
-	global_eeprom = new EEPROM("EEPROM");
+//	global_eeprom = new EEPROM("EEPROM");
+	global_eeprom = new RAM("EEPROM");
 
 	// - Interrupt controller
 	s12xint = new XINT("XINT");
@@ -225,7 +226,9 @@ Simulator::Simulator(int argc, char **argv)
 	atd1->interrupt_request(s12xint->interrupt_request);
 	atd0->interrupt_request(s12xint->interrupt_request);
 	xgate->interrupt_request(s12xint->interrupt_request);
-	global_eeprom->interrupt_request(s12xint->interrupt_request);
+
+//	global_eeprom->interrupt_request(s12xint->interrupt_request);
+
 	sci0->interrupt_request(s12xint->interrupt_request);
 	sci1->interrupt_request(s12xint->interrupt_request);
 	sci2->interrupt_request(s12xint->interrupt_request);
@@ -247,32 +250,34 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 
 	// This order is mandatory (see the memoryMapping)
-	(*mmc->init_socket[0])(crg->slave_socket);
-	(*mmc->init_socket[1])(ect->slave_socket);
-	(*mmc->init_socket[2])(atd1->slave_socket);
-	(*mmc->init_socket[3])(sci2->slave_socket);
-	(*mmc->init_socket[4])(sci3->slave_socket);
-	(*mmc->init_socket[5])(sci0->slave_socket);
-	(*mmc->init_socket[6])(sci1->slave_socket);
-	(*mmc->init_socket[7])(spi0->slave_socket);
-	(*mmc->init_socket[8])(spi1->slave_socket);
-	(*mmc->init_socket[9])(spi2->slave_socket);
-	(*mmc->init_socket[10])(global_eeprom->slave_socket);
-	(*mmc->init_socket[11])(s12xint->slave_socket);
-	(*mmc->init_socket[12])(sci4->slave_socket);
-	(*mmc->init_socket[13])(sci5->slave_socket);
-	(*mmc->init_socket[14])(atd0->slave_socket);
-	(*mmc->init_socket[15])(pwm->slave_socket);
-	(*mmc->init_socket[16])(pit->slave_socket);
-	(*mmc->init_socket[17])(xgate->target_socket);
-	(*mmc->init_socket[18])(global_ram->slave_sock);
-	(*mmc->init_socket[19])(global_eeprom->slave_sock);
-	(*mmc->init_socket[20])(global_flash->slave_sock);
+	mmc->init_socket(crg->slave_socket);
+	mmc->init_socket(ect->slave_socket);
+	mmc->init_socket(atd1->slave_socket);
+	mmc->init_socket(sci2->slave_socket);
+	mmc->init_socket(sci3->slave_socket);
+	mmc->init_socket(sci0->slave_socket);
+	mmc->init_socket(sci1->slave_socket);
+	mmc->init_socket(spi0->slave_socket);
+	mmc->init_socket(spi1->slave_socket);
+	mmc->init_socket(spi2->slave_socket);
+//	mmc->init_socket(global_eeprom->slave_socket);
+	mmc->init_socket(s12xint->slave_socket);
+	mmc->init_socket(sci4->slave_socket);
+	mmc->init_socket(sci5->slave_socket);
+	mmc->init_socket(atd0->slave_socket);
+	mmc->init_socket(pwm->slave_socket);
+	mmc->init_socket(pit->slave_socket);
+	mmc->init_socket(xgate->target_socket);
+	mmc->init_socket(global_ram->slave_sock);
+	mmc->init_socket(global_eeprom->slave_sock);
+	mmc->init_socket(global_flash->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
 	crg->bus_clock_socket(pit->bus_clock_socket);
-	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
+
+//	crg->bus_clock_socket(global_eeprom->bus_clock_socket);
+
 	crg->bus_clock_socket(pwm->bus_clock_socket);
 	crg->bus_clock_socket(atd1->bus_clock_socket);
 	crg->bus_clock_socket(atd0->bus_clock_socket);
@@ -327,7 +332,9 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[7]) >> ect->registers_export;
 	*(registersTee->registers_import[8]) >> pit->registers_export;
 	*(registersTee->registers_import[9]) >> xgate->registers_export;
-	*(registersTee->registers_import[10]) >> global_eeprom->registers_export;
+
+//	*(registersTee->registers_import[10]) >> global_eeprom->registers_export;
+
 	*(registersTee->registers_import[11]) >> sci0->registers_export;
 	*(registersTee->registers_import[12]) >> sci1->registers_export;
 	*(registersTee->registers_import[13]) >> sci2->registers_export;
@@ -723,6 +730,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x15); // ppage address for S12XE is 0x15
+	simulator->SetVariable("MMC.version", "V4");
 
 	simulator->SetVariable("PWM.bus-cycle-time", 250000);
 	simulator->SetVariable("PWM.base-address", 0x300);

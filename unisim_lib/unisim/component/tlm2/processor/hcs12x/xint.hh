@@ -264,6 +264,9 @@ private:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
+	address_t	baseAddress;
+	Parameter<address_t>   param_baseAddress;
+
 	// Registers map
 	map<string, Register *> registers_registry;
 

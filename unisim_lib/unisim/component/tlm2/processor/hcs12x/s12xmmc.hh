@@ -49,6 +49,7 @@
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
+#include "tlm_utils/multi_passthrough_initiator_socket.h"
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include <unisim/kernel/service/service.hh>
@@ -92,16 +93,15 @@ class S12XMMC :
 
 {
 public:
-	static const uint8_t MEMORY_MAP_SIZE = 21;
 
 	typedef MMC inherited;
-	typedef tlm_utils::simple_initiator_socket<S12XMMC> InitSocket;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
 	tlm_utils::simple_target_socket<S12XMMC> xgate_socket;
-	InitSocket *init_socket[MEMORY_MAP_SIZE];
+
+	tlm_utils::multi_passthrough_initiator_socket<S12XMMC> init_socket;
 
 	S12XMMC(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12XMMC();
@@ -116,11 +116,6 @@ private:
 
 	TSemaphore busSemaphore;
 	sc_event   busSemaphore_event;
-
-	struct peripheral {
-		physical_address_t start_addr;
-		physical_address_t end_addr;
-	  } memory_map[MEMORY_MAP_SIZE];
 
 }; /* end class S12XMMC */
 

@@ -248,27 +248,27 @@ Simulator::Simulator(int argc, char **argv)
 #endif
 
 	// This order is mandatory (see the memoryMapping)
-	(*mmc->init_socket[0])(crg->slave_socket);
-	(*mmc->init_socket[1])(ect->slave_socket);
-	(*mmc->init_socket[2])(atd1->slave_socket);
-	(*mmc->init_socket[3])(sci2->slave_socket);
-	(*mmc->init_socket[4])(sci3->slave_socket);
-	(*mmc->init_socket[5])(sci0->slave_socket);
-	(*mmc->init_socket[6])(sci1->slave_socket);
-	(*mmc->init_socket[7])(spi0->slave_socket);
-	(*mmc->init_socket[8])(spi1->slave_socket);
-	(*mmc->init_socket[9])(spi2->slave_socket);
-	(*mmc->init_socket[10])(global_eeprom->slave_socket);
-	(*mmc->init_socket[11])(s12xint->slave_socket);
-	(*mmc->init_socket[12])(sci4->slave_socket);
-	(*mmc->init_socket[13])(sci5->slave_socket);
-	(*mmc->init_socket[14])(atd0->slave_socket);
-	(*mmc->init_socket[15])(pwm->slave_socket);
-	(*mmc->init_socket[16])(pit->slave_socket);
-	(*mmc->init_socket[17])(xgate->target_socket);
-	(*mmc->init_socket[18])(global_ram->slave_sock);
-	(*mmc->init_socket[19])(global_eeprom->slave_sock);
-	(*mmc->init_socket[20])(global_flash->slave_sock);
+	mmc->init_socket(crg->slave_socket);
+	mmc->init_socket(ect->slave_socket);
+	mmc->init_socket(atd1->slave_socket);
+	mmc->init_socket(sci2->slave_socket);
+	mmc->init_socket(sci3->slave_socket);
+	mmc->init_socket(sci0->slave_socket);
+	mmc->init_socket(sci1->slave_socket);
+	mmc->init_socket(spi0->slave_socket);
+	mmc->init_socket(spi1->slave_socket);
+	mmc->init_socket(spi2->slave_socket);
+	mmc->init_socket(global_eeprom->slave_socket);
+	mmc->init_socket(s12xint->slave_socket);
+	mmc->init_socket(sci4->slave_socket);
+	mmc->init_socket(sci5->slave_socket);
+	mmc->init_socket(atd0->slave_socket);
+	mmc->init_socket(pwm->slave_socket);
+	mmc->init_socket(pit->slave_socket);
+	mmc->init_socket(xgate->target_socket);
+	mmc->init_socket(global_ram->slave_sock);
+	mmc->init_socket(global_eeprom->slave_sock);
+	mmc->init_socket(global_flash->slave_sock);
 
 	crg->bus_clock_socket(cpu->bus_clock_socket);
 	crg->bus_clock_socket(ect->bus_clock_socket);
@@ -751,15 +751,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("kernel_logger.xml_file", true);
 	simulator->SetVariable("kernel_logger.xml_filename", "logger_output.xml");
 	simulator->SetVariable("kernel_logger.xml_file_gzipped", false);
+
 	simulator->SetVariable("MMC.debug-enabled", false);
 	simulator->SetVariable("MMC.mode", 0x80);
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x30);
+	simulator->SetVariable("MMC.version", "V3");
+
 	simulator->SetVariable("PWM.bus-cycle-time", 250000);
 	simulator->SetVariable("PWM.base-address", 0x300);
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);
+
 	simulator->SetVariable("XINT.debug-enabled", false);
 
 	// Inline debugger

@@ -88,27 +88,33 @@ S12SPI::~S12SPI() {
 
 void S12SPI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
+
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	assert(address >= baseAddress);
+	if ((address >= baseAddress) && (address < (baseAddress + 8))) {
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		memset(data_ptr, 0, data_length);
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			memset(data_ptr, 0, data_length);
 
-		std::cerr << "S12SPI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
+			std::cerr << "S12SPI::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
-		read(address - baseAddress, data_ptr, data_length);
-	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+			read(address - baseAddress, data_ptr, data_length);
+		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
 
-		std::cerr << "S12SPI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
+			std::cerr << "S12SPI::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
-		write(address - baseAddress, data_ptr, data_length);
+			write(address - baseAddress, data_ptr, data_length);
+		}
+
+		trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	} else {
+		trans.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
 
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
 

@@ -162,7 +162,7 @@ private:
 //	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
 //	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
-	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
+//	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 	typedef unisim::component::tlm2::processor::s12xgate::S12XGATE XGATE;
@@ -208,7 +208,8 @@ private:
 	//  - Memories
 	RAM *global_ram;
 	FLASH *global_flash;
-	EEPROM *global_eeprom;
+//	EEPROM *global_eeprom;
+	RAM *global_eeprom;
 
 	// - Interrupt controller
 	XINT *s12xint;

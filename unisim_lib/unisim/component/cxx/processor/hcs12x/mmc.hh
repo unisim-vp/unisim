@@ -300,6 +300,9 @@ protected:
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
 
+	string version;
+	Parameter<string> param_version;
+
 private:
 	//=============================================
 	//=            MMC REGISTERS                  =

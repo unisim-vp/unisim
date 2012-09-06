@@ -349,16 +349,20 @@ void PWM<PWM_SIZE>::read_write( tlm::tlm_generic_payload& trans, sc_time& delay 
 	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	assert(address >= baseAddress);
+	if ((address >= baseAddress) && (address < (baseAddress + 40))) {
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		memset(data_ptr, 0, data_length);
-		read(address - baseAddress, data_ptr, data_length);
-	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-		write(address - baseAddress, data_ptr, data_length);
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			memset(data_ptr, 0, data_length);
+			read(address - baseAddress, data_ptr, data_length);
+		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+			write(address - baseAddress, data_ptr, data_length);
+		}
+
+		trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	} else {
+		trans.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
-
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
 template <uint8_t PWM_SIZE>
