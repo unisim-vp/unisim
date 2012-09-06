@@ -162,6 +162,7 @@ unisim/service/loader/elf_loader/elf64_loader.cc \
 unisim/service/loader/s19_loader/s19_loader.cc \
 unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/profiling/addr_profiler/profiler64.cc \
+unisim/service/telnet/telnet.cc \
 unisim/service/time/host_time/time.cc \
 unisim/service/time/sc_time/time.cc \
 unisim/service/tee/registers/registers_tee.cc \
@@ -291,6 +292,7 @@ unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/xml/xml.hh \
 unisim/service/interfaces/backtrace.hh \
+unisim/service/interfaces/char_io.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
 unisim/service/interfaces/ti_c_io.hh \
@@ -322,6 +324,7 @@ unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
+unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/component/cxx/memory/ram/memory.hh \

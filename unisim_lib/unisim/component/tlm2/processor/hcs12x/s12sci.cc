@@ -23,19 +23,17 @@ S12SCI::S12SCI(const sc_module_name& name, Object *parent) :
 	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
 	, unisim::kernel::service::Service<Registers>(name, parent)
 	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Client<CharIO>(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
 	, bus_clock_socket("bus_clock_socket")
 	, slave_socket("slave_socket")
 
+	, char_io_import("char_io_import", this)
 	, memory_export("memory_export", this)
 	, memory_import("memory_import", this)
 	, registers_export("registers_export", this)
-
-	, scibyte00_register(&scibdh_register)
-	, scibyte01_register(&scibdl_register)
-	, scibyte02_register(&scicr1_register)
 
 	, scibdh_register(0x00)
 	, scibdl_register(0x00)
@@ -121,40 +119,95 @@ void S12SCI::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
+//=====================================================================
+//=             registers setters and getters                         =
+//=====================================================================
 
 bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_length) {
 
+	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
+	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
+
 	switch (offset) {
-	case 0x00: *((uint8_t *) buffer) = *scibyte00_register; break;	// 1 byte
-	case 0x01: *((uint8_t *) buffer) = *scibyte01_register; break;	// 1 byte
-	case 0x02: *((uint8_t *) buffer) = *scibyte02_register; break; // 1 byte
+	case 0x00:
+		if ((scisr2_regsiter & 0x80) == 0) {
+			if (data_length == 1) {
+				*((uint8_t *) buffer) = scibdh_register;
+			} else if (data_length == 2) {
+				uint16_t val = (scibdh_register << 8) | scibdl_register;
+				*((uint16_t *) buffer) = Host2BigEndian(val);
+			}
+
+		} else {
+			*((uint8_t *) buffer) = sciasr1_register;
+		} break;
+	case 0x01: // 1 byte
+		if ((scisr2_regsiter & 0x80) == 0) {
+			*((uint8_t *) buffer) = scibdl_register;
+		} else {
+			*((uint8_t *) buffer) = sciacr1_register;
+		} break;
+	case 0x02: // 1 byte
+		if ((scisr2_regsiter & 0x80) == 0) {
+			*((uint8_t *) buffer) = scicr1_register;
+		} else {
+			*((uint8_t *) buffer) = sciacr2_register;
+		} break;
 
 	case SCICR2: *((uint8_t *) buffer) = scicr2_register; break; // 1 byte
 	case SCISR1: *((uint8_t *) buffer) = scisr1_register; break; // 1 byte
 	case SCISR2: *((uint8_t *) buffer) = scisr2_regsiter; break; // 1 bytes
-	case SCIDRH: *((uint8_t *) buffer) = scidrh_register; break; // 1 bytes
+	case SCIDRH: if (data_length == 1) {
+		*((uint8_t *) buffer) = scidrh_register; // 1 bytes
+	} else if (data_length == 2) {
+		uint16_t val = (scidrh_register << 8) | scidrl_register;
+		*((uint16_t *) buffer) = Host2BigEndian(val);
+	} break;
 	case SCIDRL: *((uint8_t *) buffer) = scidrl_register; break; // 1 bytes
 	}
 
 	return (true);
 }
 
-//=====================================================================
-//=             registers setters and getters                         =
-//=====================================================================
-
-
 bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
-	case 0x00: *scibyte00_register = *((uint8_t *) buffer); break;	// 1 byte
-	case 0x01: *scibyte01_register = *((uint8_t *) buffer); break;	// 1 byte
-	case 0x02: *scibyte02_register = *((uint8_t *) buffer); break; // 1 byte
+	case 0x00: 	// 1 byte
+		if ((scisr2_regsiter & 0x80) == 0) {
+			if (data_length == 1) {
+				scibdh_register = *((uint8_t *) buffer);
+			} else if (data_length == 2) {
+				uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+				scibdh_register = val >> 8;
+				scibdl_register = val & 0x00FF;
+			}
+
+		} else {
+			 sciasr1_register= *((uint8_t *) buffer);
+		} break;
+	case 0x01: // 1 byte
+		if ((scisr2_regsiter & 0x80) == 0) {
+			 scibdl_register = *((uint8_t *) buffer);
+		} else {
+			 sciacr1_register = *((uint8_t *) buffer);
+		} break;
+	case 0x02: // 1 byte
+		if ((scisr2_regsiter & 0x80) == 0) {
+			 scicr1_register = *((uint8_t *) buffer);
+		} else {
+			 sciacr2_register = *((uint8_t *) buffer);
+		} break;
 
 	case SCICR2: scicr2_register = *((uint8_t *) buffer); break; // 1 byte
 	case SCISR1: scisr1_register = *((uint8_t *) buffer); break; // 1 byte
 	case SCISR2: scisr2_regsiter = *((uint8_t *) buffer); break; // 1 bytes
-	case SCIDRH: scidrh_register = *((uint8_t *) buffer); break; // 1 bytes
+	case SCIDRH: if (data_length == 1) {
+		scidrh_register = *((uint8_t *) buffer);
+	} else if (data_length == 2) {
+		uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+		scidrh_register = val >> 8;
+		scidrl_register = val & 0x00FF;
+	} break; // 1 bytes
 	case SCIDRL: scidrl_register = *((uint8_t *) buffer); break; // 1 bytes
 	}
 
@@ -382,14 +435,40 @@ bool S12SCI::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
-		case 0x00: *((uint8_t *) buffer) = *scibyte00_register; break;	// 1 byte
-		case 0x01: *((uint8_t *) buffer) = *scibyte01_register; break;	// 1 byte
-		case 0x02: *((uint8_t *) buffer) = *scibyte02_register; break; // 1 byte
+		case 0x00: 	// 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				if (size == 1) {
+					*((uint8_t *) buffer) = scibdh_register;
+				} else if (size == 2) {
+					uint16_t val = (scibdh_register << 8) | scibdl_register;
+					*((uint16_t *) buffer) = Host2BigEndian(val);
+				}
+
+			} else {
+				*((uint8_t *) buffer) = sciasr1_register;
+			} break;
+		case 0x01: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				*((uint8_t *) buffer) = scibdl_register;
+			} else {
+				*((uint8_t *) buffer) = sciacr1_register;
+			} break;
+		case 0x02: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				*((uint8_t *) buffer) = scicr1_register;
+			} else {
+				*((uint8_t *) buffer) = sciacr2_register;
+			} break;
 
 		case SCICR2: *((uint8_t *) buffer) = scicr2_register; break; // 1 byte
 		case SCISR1: *((uint8_t *) buffer) = scisr1_register; break; // 1 byte
 		case SCISR2: *((uint8_t *) buffer) = scisr2_regsiter; break; // 1 bytes
-		case SCIDRH: *((uint8_t *) buffer) = scidrh_register; break; // 1 bytes
+		case SCIDRH: if (size == 1) {
+			*((uint8_t *) buffer) = scidrh_register;
+		} else if (size == 2) {
+			uint16_t val = (scidrh_register << 8) | scidrl_register;
+			*((uint16_t *) buffer) = Host2BigEndian(val);
+		} break; // 1 bytes
 		case SCIDRL: *((uint8_t *) buffer) = scidrl_register; break; // 1 bytes
 
 		}
@@ -413,14 +492,42 @@ bool S12SCI::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
-		case 0x00: *scibyte00_register = *((uint8_t *) buffer); break;	// 1 byte
-		case 0x01: *scibyte01_register = *((uint8_t *) buffer); break;	// 1 byte
-		case 0x02: *scibyte02_register = *((uint8_t *) buffer); break; // 1 byte
+		case 0x00: 	// 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				if (size == 1) {
+					scibdh_register = *((uint8_t *) buffer);
+				} else if (size == 2) {
+					uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+					scibdh_register = val >> 8;
+					scibdl_register = val & 0x00FF;
+				}
+
+			} else {
+				 sciasr1_register= *((uint8_t *) buffer);
+			} break;
+		case 0x01: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				 scibdl_register = *((uint8_t *) buffer);
+			} else {
+				 sciacr1_register = *((uint8_t *) buffer);
+			} break;
+		case 0x02: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				 scicr1_register = *((uint8_t *) buffer);
+			} else {
+				 sciacr2_register = *((uint8_t *) buffer);
+			} break;
 
 		case SCICR2: scicr2_register = *((uint8_t *) buffer); break; // 1 byte
 		case SCISR1: scisr1_register = *((uint8_t *) buffer); break; // 1 byte
 		case SCISR2: scisr2_regsiter = *((uint8_t *) buffer); break; // 1 bytes
-		case SCIDRH: scidrh_register = *((uint8_t *) buffer); break; // 1 bytes
+		case SCIDRH: if (size == 1) {
+			scidrh_register = *((uint8_t *) buffer);
+		} else if (size == 2) {
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+			scidrh_register = val >> 8;
+			scidrl_register = val & 0x00FF;
+		} break; // 1 bytes
 		case SCIDRL: scidrl_register = *((uint8_t *) buffer); break; // 1 bytes
 		}
 

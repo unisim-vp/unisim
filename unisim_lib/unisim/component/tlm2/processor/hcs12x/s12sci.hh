@@ -65,6 +65,7 @@
 #include <unisim/kernel/service/service.hh>
 #include "unisim/kernel/tlm2/tlm.hh"
 
+#include "unisim/service/interfaces/char_io.hh"
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/service/interfaces/registers.hh"
 #include "unisim/service/interfaces/trap_reporting.hh"
@@ -100,6 +101,7 @@ using unisim::kernel::service::Parameter;
 using unisim::kernel::service::CallBackObject;
 using unisim::kernel::service::VariableBase;
 
+using unisim::service::interfaces::CharIO;
 using unisim::service::interfaces::Memory;
 using unisim::service::interfaces::Registers;
 using unisim::service::interfaces::TrapReporting;
@@ -128,6 +130,7 @@ class S12SCI :
 	, public Service<Memory<physical_address_t> >
 	, public Service<Registers>
 	, public Client<Memory<physical_address_t> >
+	, public Client<CharIO>
 
 {
 public:
@@ -151,6 +154,7 @@ public:
 	static const uint8_t SCIDRL	= 0x07; // 1 bytes
 
 	ServiceImport<TrapReporting > trap_reporting_import;
+	ServiceImport<CharIO > char_io_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
@@ -245,10 +249,6 @@ private:
 	// =============================================
 	// =            Registers                      =
 	// =============================================
-
-	uint8_t *scibyte00_register;	// 1 byte
-	uint8_t *scibyte01_register;	// 1 byte
-	uint8_t *scibyte02_register;	// 1 byte
 
 	// SCIBDH, SCIBDL, SCICR1 registers are accessible if the AMAP bit in the SCISR2 register is set to zero.
 	uint8_t scibdh_register;	// 1 byte
