@@ -35,6 +35,7 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_EPIC_EPIC_TCC__
 
+#include <unisim/util/likely/likely.hh>
 #include <inttypes.h>
 
 namespace unisim {

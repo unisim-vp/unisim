@@ -45,6 +45,7 @@
 #include <map>
 #include <getopt.h>
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/debug/debug.hh>
 #include <stdlib.h>
 #include <unisim/service/power/cache_power_estimator.hh>
 #include <unisim/component/tlm/memory/ram/memory.hh>
@@ -87,26 +88,6 @@ typedef unisim::component::cxx::processor::powerpc::mpc7447a::Config CPU_CONFIG;
 static const bool DEBUG_INFORMATION = false;
 #endif
 
-
-bool debug_enabled;
-
-void EnableDebug()
-{
-	debug_enabled = true;
-}
-
-void DisableDebug()
-{
-	debug_enabled = false;
-}
-
-void SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
-}
-
-
 using namespace std;
 using unisim::service::loader::pmac_linux_kernel_loader::PMACLinuxKernelLoader;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -128,7 +109,8 @@ public:
 	virtual ~Simulator();
 	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	void Run();
-	virtual void Stop(Object *object, int exit_status);
+	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
+	int GetExitStatus() const;
 protected:
 private:
 	//=========================================================================
@@ -292,7 +274,13 @@ private:
 	Parameter<bool> param_estimate_power;
 	Parameter<bool> param_message_spy;
 
+	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+#ifdef WIN32
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+	static void SigIntHandler(int signum);
+#endif
 };
 
 Simulator::Simulator(int argc, char **argv)
@@ -330,6 +318,7 @@ Simulator::Simulator(int argc, char **argv)
 	, param_enable_inline_debugger("enable-inline-debugger", 0, enable_inline_debugger, "Enable/Disable inline debugger instantiation")
 	, param_estimate_power("estimate-power", 0, estimate_power, "Enable/Disable power estimators instantiation")
 	, param_message_spy("message-spy", 0, message_spy, "Enable/Disable message spies instantiation")
+	, exit_status(0)
 {
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -1039,25 +1028,49 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
-void Simulator::Stop(Object *object, int exit_status)
+void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
-	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
+	exit_status = _exit_status;
+	if(object)
+	{
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+#ifdef DEBUG_PPCEMU_SYSTEM
+	std::cerr << "Call stack:" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+#endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
-	wait();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_: 
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	EnableDebug();
 	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+#ifdef WIN32
+		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+#else
+		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
+#endif
 	}
+
+	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 
 	try
 	{
@@ -1128,6 +1141,49 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 	return unisim::kernel::service::Simulator::Setup();
 }
 
+int Simulator::GetExitStatus() const
+{
+	return exit_status;
+}
+
+#ifdef WIN32
+BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool stop = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			cerr << "Interrupted by Ctrl-C" << endl;
+			stop = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			cerr << "Interrupted by Ctrl-Break" << endl;
+			stop = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			cerr << "Interrupted by a console close" << endl;
+			stop = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			cerr << "Interrupted because of logoff" << endl;
+			stop = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			cerr << "Interrupted because of shutdown" << endl;
+			stop = true;
+			break;
+	}
+	if(stop) unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+	return stop ? TRUE : FALSE;
+}
+#else
+void Simulator::SigIntHandler(int signum)
+{
+	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+}
+#endif
+
 int sc_main(int argc, char *argv[])
 {
 #ifdef WIN32
@@ -1157,13 +1213,14 @@ int sc_main(int argc, char *argv[])
 			break;
 	}
 
+	int exit_status = simulator->GetExitStatus();
 	if(simulator) delete simulator;
 #ifdef WIN32
 	// releases the winsock2 resources
 	WSACleanup();
 #endif
 
-	return 0;
+	return exit_status;
 }
 
 extern "C"

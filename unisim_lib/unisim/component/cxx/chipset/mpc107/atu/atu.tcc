@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_TCC__
 #define __UNISIM_COMPONENT_CXX_CHIPSET_MPC107_ATU_ATU_TCC__
 
+#include <unisim/util/likely/likely.hh>
+
 namespace unisim {
 namespace component {
 namespace cxx {

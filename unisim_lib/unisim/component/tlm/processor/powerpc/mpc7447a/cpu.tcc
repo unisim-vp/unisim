@@ -148,75 +148,6 @@ void CPU<CONFIG>::BusSynchronize()
 	Synchronize();
 }
 
-/*template <class CONFIG>
-void CPU<CONFIG>::BusSynchronize()
-{
-	sc_time time_spent = cpu_sctime - bus_sctime;
-
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: Bus synchro ----------------------" << endl;
-#endif
-	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: current_time_tu = " << current_time_tu << endl;
-#endif		
-	sc_dt::uint64 time_spent_tu = time_spent.value();
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: time_spent_tu = " << time_spent_tu << endl;
-#endif
-	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: next_time_tu = " << next_time_tu << endl;
-#endif
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_sctime.value();
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: bus_cycle_time_tu = " << bus_cycle_time_tu << endl;
-#endif
-	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
-#ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << "PPC: bus_time_phase_tu = " << bus_time_phase_tu << endl;
-#endif
-	if(time_spent_tu || bus_time_phase_tu)
-	{
-		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
-#ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << "PPC: delay_tu = " << delay_tu << endl;
-#endif
-		UpdateTime(sc_time(delay_tu, false));
-		Synchronize();
-//		wait(sc_time(delay_tu, false));
-//		cpu_sctime = bus_sctime = sc_time_stamp();
-	}
-}*/
-	
-// template <class CONFIG>
-// void CPU<CONFIG>::Run()
-// {
-// 	sc_time time_per_instruction = cpu_cycle_sctime * ipc;
-// 	
-// 	while(1)
-// 	{
-// 		if(cpu_sctime >= bus_sctime)
-// 		{
-// 			bus_sctime += bus_cycle_sctime;
-// 			CPU<CONFIG>::OnBusCycle();
-// 			if(cpu_sctime >= next_nice_sctime)
-// 			{
-// 				Synchronize();
-// 			}
-// 		}
-// 		CPU<CONFIG>::StepOneInstruction();
-// 		cpu_sctime += time_per_instruction;
-// 	}
-// }
-
 template <class CONFIG>
 void CPU<CONFIG>::Idle()
 {
@@ -322,8 +253,7 @@ template <class CONFIG>
 void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::WIMG wimg, bool rwitm)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusRead()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusRead()" << endl;
 #endif
 	// synchonize with bus cycle time
 	BusSynchronize();
@@ -341,16 +271,14 @@ void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32
 	
 	// loop until the request succeeds
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusRead: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusRead: loop until the request succeeds" << endl;
 #endif
 	// request succeeds when none of the processors is busy or have a modified copy of the request data in there caches
 	do
 	{
 		// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusRead: loop until bus transaction request is accepted" << endl;
+		cerr << sc_time_stamp() << " PPC::BusRead: loop until bus transaction request is accepted" << endl;
 #endif
 		while(!bus_port->Send(msg))
 		{
@@ -361,18 +289,14 @@ void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32
 			last_sync_sctime = cpu_sctime;
 			UpdateBusTime();
 #ifdef DEBUG_POWERPC
-			if(DebugEnabled())
-				cerr << sc_time_stamp() << " PPC::BusRead: retry transaction request" << endl;
+			cerr << sc_time_stamp() << " PPC::BusRead: retry transaction request" << endl;
 #endif
 		}
 		
 		// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-		{
-			cerr << sc_time_stamp() << " PPC::BusRead: transaction request accepted" << endl;
-			cerr << sc_time_stamp() << " PPC::BusRead: waiting for response" << endl;
-		}
+		cerr << sc_time_stamp() << " PPC::BusRead: transaction request accepted" << endl;
+		cerr << sc_time_stamp() << " PPC::BusRead: waiting for response" << endl;
 #endif
 		// wait for the bus transaction response
 		wait(rsp_ev);
@@ -381,27 +305,22 @@ void CPU<CONFIG>::BusRead(physical_address_t physical_addr, void *buffer, uint32
 		UpdateBusTime();
 		rsp = msg->GetResponse();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-		{
-			cerr << sc_time_stamp() << " PPC::BusRead: received response" << endl;
-			if(!rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED))
-				cerr << sc_time_stamp() << " PPC::BusRead: response read status is neither RS_BUSY nor RS_MODIFIED" << endl;
-		}
+		cerr << sc_time_stamp() << " PPC::BusRead: received response" << endl;
+		if(!rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED))
+			cerr << sc_time_stamp() << " PPC::BusRead: response read status is neither RS_BUSY nor RS_MODIFIED" << endl;
 #endif
 	} while(rsp->read_status & (FSBRsp::RS_BUSY | FSBRsp::RS_MODIFIED));
 	
 	// bus transaction response has been received at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusRead: copying response data" << endl;
+	cerr << sc_time_stamp() << " PPC::BusRead: copying response data" << endl;
 #endif
 	// copy the data from the response
 	memcpy(buffer, rsp->read_data, size);
 	
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		if(rsp->read_status & FSBRsp::RS_SHARED)
-			cerr << sc_time_stamp() << " PPC::BusRead: read status contains RS_SHARED" << endl;
+	if(rsp->read_status & FSBRsp::RS_SHARED)
+		cerr << sc_time_stamp() << " PPC::BusRead: read status contains RS_SHARED" << endl;
 #endif
 
 	// get the bus transaction response read status in order to update the block state
@@ -412,8 +331,7 @@ template <class CONFIG>
 void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::WIMG wimg)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusWrite()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusWrite()" << endl;
 #endif
 	// synchonize with bus cycle time
 	BusSynchronize();
@@ -428,15 +346,13 @@ void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer,
 	req->size = size; // actual transaction size
 	// copy the data into the bus transaction request
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusWrite: copying data into transaction request" << endl;
+	cerr << sc_time_stamp() << " PPC::BusWrite: copying data into transaction request" << endl;
 #endif
 	memcpy(req->write_data, buffer, size);
 		
 	// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusWrite: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusWrite: loop until the request succeeds" << endl;
 #endif
 	while(!bus_port->Send(msg))
 	{
@@ -447,14 +363,12 @@ void CPU<CONFIG>::BusWrite(physical_address_t physical_addr, const void *buffer,
 		last_sync_sctime = cpu_sctime;
 		UpdateBusTime();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusWrite: retry transaction request" << endl;
+		cerr << sc_time_stamp() << " PPC::BusWrite: retry transaction request" << endl;
 #endif
 	}
 	// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusWrite: transaction request accepted" << endl;
+	cerr << sc_time_stamp() << " PPC::BusWrite: transaction request accepted" << endl;
 #endif
 	req = 0;
 	msg = 0;
@@ -464,8 +378,7 @@ template <class CONFIG>
 void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusZeroBlock()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusZeroBlock()" << endl;
 #endif
 	// synchonize with bus cycle time
 	BusSynchronize();
@@ -481,8 +394,7 @@ void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 		
 	// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusZeroBlock: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusZeroBlock: loop until the request succeeds" << endl;
 #endif
 	while(!bus_port->Send(msg))
 	{
@@ -493,14 +405,12 @@ void CPU<CONFIG>::BusZeroBlock(physical_address_t physical_addr)
 		last_sync_sctime = cpu_sctime;
 		UpdateBusTime();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
+		cerr << sc_time_stamp() << " PPC::BusZeroBlock: retry transaction request" << endl;
 #endif
 	}
 	// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusZeroBlock: transaction request accepted" << endl;
+	cerr << sc_time_stamp() << " PPC::BusZeroBlock: transaction request accepted" << endl;
 #endif
 }
 
@@ -508,8 +418,7 @@ template <class CONFIG>
 void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 {
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " " << name() << "::BusFlushBlock()" << endl;
+	cerr << sc_time_stamp() << " " << name() << "::BusFlushBlock()" << endl;
 #endif
 	// synchonize with bus cycle time
 	BusSynchronize();
@@ -525,8 +434,7 @@ void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 		
 	// loop until bus transaction request is accepted
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusFlushBlock: loop until the request succeeds" << endl;
+	cerr << sc_time_stamp() << " PPC::BusFlushBlock: loop until the request succeeds" << endl;
 #endif
 	while(!bus_port->Send(msg))
 	{
@@ -537,14 +445,12 @@ void CPU<CONFIG>::BusFlushBlock(physical_address_t physical_addr)
 		last_sync_sctime = cpu_sctime;
 		UpdateBusTime();
 #ifdef DEBUG_POWERPC
-		if(DebugEnabled())
-			cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
+		cerr << sc_time_stamp() << " PPC::BusFlushBlock: retry transaction request" << endl;
 #endif
 	}
 	// bus transaction request has been accepted at this point
 #ifdef DEBUG_POWERPC
-	if(DebugEnabled())
-		cerr << sc_time_stamp() << " PPC::BusFlushBlock: transaction request accepted" << endl;
+	cerr << sc_time_stamp() << " PPC::BusFlushBlock: transaction request accepted" << endl;
 #endif
 }
 
