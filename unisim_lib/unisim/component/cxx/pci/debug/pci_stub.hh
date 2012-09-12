@@ -51,6 +51,7 @@
 #include <unisim/service/interfaces/synchronizable.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/component/cxx/pci/types.hh>
+#include <unisim/util/debug/memory_access_type.hh>
 
 namespace unisim {
 namespace component {
@@ -139,7 +140,7 @@ public:
 
 	virtual bool WriteMemory(ADDRESS physical_addr, const void *buffer, uint32_t size);
 	virtual bool ReadMemory(ADDRESS physical_addr, void *buffer, uint32_t size);
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportMemoryAccess(typename unisim::util::debug::MemoryAccessType mat, typename unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual void Trap();
 private:
