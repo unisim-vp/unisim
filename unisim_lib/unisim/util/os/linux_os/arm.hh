@@ -120,6 +120,22 @@ struct arm_timespec {
 //   };
 // #endif
 
+// sizeof(stat64)=104
+// offset(st_dev)=0, sizeof(st_dev)=8
+// offset(st_ino)=96, sizeof(st_ino)=8
+// offset(st_mode)=16, sizeof(st_mode)=4
+// offset(st_nlink)=20, sizeof(st_nlink)=4
+// offset(st_uid)=24, sizeof(st_uid)=4
+// offset(st_gid)=28, sizeof(st_gid)=4
+// offset(st_rdev)=32, sizeof(st_rdev)=8
+// offset(__pad2)=40, sizeof(__pad2)=4
+// offset(st_size)=48, sizeof(st_size)=8
+// offset(st_blksize)=56, sizeof(st_blksize)=4
+// offset(st_blocks)=64, sizeof(st_blocks)=8
+// offset(st_atim)=72, sizeof(st_atim)=8
+// offset(st_mtim)=80, sizeof(st_mtim)=8
+// offset(st_ctim)=88, sizeof(st_ctim)=8
+
 struct arm_stat64 {
   uint64_t st_dev;			/* Device.  */
   uint32_t __pad1;
@@ -129,9 +145,10 @@ struct arm_stat64 {
   uint32_t st_uid;			/* User ID of the file's owner.	*/
   uint32_t st_gid;			/* Group ID of the file's group.*/
   uint64_t st_rdev;			/* Device number, if device.  */
-  uint32_t __pad2;
-  uint64_t st_size;			/* Size of file, in bytes.  */
+  uint64_t __pad2;
+  int64_t st_size;			/* Size of file, in bytes.  */
   uint32_t st_blksize;		/* Optimal block size for I/O.  */
+  uint32_t __pad3;
   uint64_t st_blocks;		/* Number 512-byte blocks allocated. */
   struct arm_timespec st_atim;		/* Time of last access.  */
   struct arm_timespec st_mtim;		/* Time of last modification.  */
@@ -160,6 +177,28 @@ struct arm_utsname {
   char release[65];
   char version[65];
   char machine[65];
+};
+
+// 	original structure
+//struct timeval {
+//        __kernel_time_t         tv_sec;         /* seconds */
+//        __kernel_suseconds_t    tv_usec;        /* microseconds */
+//};
+
+struct arm_timeval {
+  int32_t tv_sec;         /* seconds */
+  int32_t tv_usec;        /* microseconds */
+};
+
+// 	original structure
+//struct timezone {
+//        int     tz_minuteswest; /* minutes west of Greenwich */
+//        int     tz_dsttime;     /* type of dst correction */
+//};
+
+struct arm_timezone {
+  int32_t tz_minuteswest; /* minutes west of Greenwich */
+  int32_t tz_dsttime;     /* type of dst correction */
 };
 
 } // end of namespace linux_os

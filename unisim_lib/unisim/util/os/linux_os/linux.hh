@@ -370,6 +370,7 @@ class Linux {
   int Times(struct arm_tms *target_tms);
   // system call 'gettimeofday' helper methods
   int GetTimeOfDay(struct powerpc_timeval *target_timeval, struct powerpc_timezone *target_timezone);
+  int GetTimeOfDay(struct arm_timeval *target_timeval, struct arm_timezone *target_timezone);
   // handling the mmap base address
   ADDRESS_TYPE GetMmapBase() const;
   void SetMmapBase(ADDRESS_TYPE base);
@@ -389,9 +390,6 @@ class Linux {
   void ARMSetSystemCallStatus(int ret, bool error);
   void ARMEABISetSystemCallStatus(int ret, bool error);
   void PPCSetSystemCallStatus(int ret, bool error);
-  // byte swap helper methods
-  bool Swap();
-  void PerformSwap(void *buf, int count);
   // compute the length of a buffer string
   int StringLength(ADDRESS_TYPE addr);
 };

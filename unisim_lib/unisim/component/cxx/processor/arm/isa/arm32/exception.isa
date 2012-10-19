@@ -48,7 +48,7 @@ op swi(cond[4]:0b1111[4]:immed[24])
 swi.disasm = {
 	buffer << "swi";
 	DisasmCondition(cond, buffer);
-	buffer << " #" << dec << immed;
+	buffer << " #" << dec << (unsigned int) immed;
 }
 
 swi.execute = {
@@ -76,7 +76,7 @@ bkpt.disasm = {
 	
 	immed = limmed + ((uint32_t)himmed << 4);
 	buffer << "bkpt";
-	buffer << " #" << dec << immed;
+	buffer << " #" << dec << (unsigned int) immed;
 }
 
 bkpt.execute = {

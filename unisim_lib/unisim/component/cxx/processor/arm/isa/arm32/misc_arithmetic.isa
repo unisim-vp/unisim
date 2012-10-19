@@ -46,13 +46,14 @@
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4])
 
 clz.disasm = {
 	buffer << "clz";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rd << ", r" << rm;
+	buffer << " r" << (unsigned int) rd << ", r" << (unsigned int) rm;
 }
 
 clz.execute = {

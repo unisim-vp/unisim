@@ -901,6 +901,9 @@ Disasm(uint32_t addr, uint32_t &next_addr)
 			insn = LittleEndian2Host(insn);
 
 		op = arm32_decoder.Decode(addr, insn);
+		buffer << "0x" << std::hex;
+		buffer.fill('0'); buffer.width(8); 
+		buffer << op->GetEncoding() << std::dec << " ";
 		op->disasm(*this, buffer);
 
 		next_addr = addr + 4;
@@ -1535,12 +1538,13 @@ CPU::
 UnpredictableInsnBehaviour()
 {
 	logger << DebugWarning
-		<< "Trying to execute unpredictable behavior instruction"
+		<< "Trying to execute unpredictable behavior instruction,"
 		<< "Location: " 
 		<< __FUNCTION__ << ":" 
 		<< __FILE__ << ":" 
 		<< __LINE__ << ": "
 		<< EndDebugWarning;
+	instruction_counter_trap_reporting_import->ReportTrap();
 }
 
  /** Performs the load/stores present in the queue of memory operations.

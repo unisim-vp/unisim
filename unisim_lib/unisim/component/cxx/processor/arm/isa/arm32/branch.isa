@@ -189,7 +189,7 @@ bl.execute = {
 bx.disasm = {
 	buffer << "bx";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rm;
+	buffer << " r" << (unsigned int) rm;
 }
 
 bx.execute = {
@@ -277,7 +277,7 @@ blx_1.execute = {
 blx_2.disasm = {
 	buffer << "blx";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rm;
+	buffer << " r" << (unsigned int) rm;
 }
 
 blx_2.execute = {

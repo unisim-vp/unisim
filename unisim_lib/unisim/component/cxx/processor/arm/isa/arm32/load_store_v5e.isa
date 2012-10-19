@@ -45,33 +45,44 @@
 
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op ldrd_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*i*/0b1[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+
 }:op ldrd_imm_offset(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b1[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+
 }:op ldrd_imm_pre(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b1[1]:/*w*/0b1[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1101[4]:immedL[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+
 }:op ldrd_reg_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*i*/0b0[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+
 }:op ldrd_reg_offset(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b0[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+
 }:op ldrd_reg_pre(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b0[1]:/*w*/0b1[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4])
 
 ldrd_imm_post.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
 }
@@ -79,7 +90,7 @@ ldrd_imm_post.disasm = {
 ldrd_imm_offset.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
 }
@@ -87,7 +98,7 @@ ldrd_imm_offset.disasm = {
 ldrd_imm_pre.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
 }
@@ -95,7 +106,7 @@ ldrd_imm_pre.disasm = {
 ldrd_reg_post.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_post(u, rn, rm, buffer);
 }
@@ -103,7 +114,7 @@ ldrd_reg_post.disasm = {
 ldrd_reg_offset.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_offset(u, rn, rm, buffer);
 }
@@ -111,7 +122,7 @@ ldrd_reg_offset.disasm = {
 ldrd_reg_pre.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_pre(u, rn, rm, buffer);
 }
@@ -274,33 +285,39 @@ ldrd_reg_pre.execute = {
 
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op strd_imm_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*i*/0b1[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op strd_imm_offset(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b1[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op strd_imm_pre(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b1[1]:/*w*/0b1[1]:0b0[1]:rn[4]:rd[4]:immedH[4]:0b1111[4]:immedL[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op strd_reg_post(cond[4]:0b000[3]:/*p*/0b0[1]:u[1]:/*i*/0b0[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op strd_reg_offset(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b0[1]:/*w*/0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op strd_reg_pre(cond[4]:0b000[3]:/*p*/0b1[1]:u[1]:/*i*/0b0[1]:/*w*/0b1[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4])
 
 strd_imm_post.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
 }
@@ -308,7 +325,7 @@ strd_imm_post.disasm = {
 strd_imm_offset.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
 }
@@ -316,7 +333,7 @@ strd_imm_offset.disasm = {
 strd_imm_pre.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
 }
@@ -324,7 +341,7 @@ strd_imm_pre.disasm = {
 strd_reg_post.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_post(u, rn, rm, buffer);
 }
@@ -332,7 +349,7 @@ strd_reg_post.disasm = {
 strd_reg_offset.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_offset(u, rn, rm, buffer);
 }
@@ -340,7 +357,7 @@ strd_reg_offset.disasm = {
 strd_reg_pre.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "d r" << rd << ", ";
+  buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_pre(u, rn, rm, buffer);
 }

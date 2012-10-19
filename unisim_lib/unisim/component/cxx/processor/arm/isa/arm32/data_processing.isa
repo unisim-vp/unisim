@@ -53,9 +53,9 @@ and_32imm.disasm = {
   buffer << "and";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -64,9 +64,9 @@ and_imm_shift.disasm = {
   buffer << "and";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -75,9 +75,9 @@ and_reg_shift.disasm = {
   buffer << "and";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -86,9 +86,9 @@ ands_32imm.disasm = {
   buffer << "and";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -97,9 +97,9 @@ ands_imm_shift.disasm = {
   buffer << "and";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -108,9 +108,9 @@ ands_reg_shift.disasm = {
   buffer << "and";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -275,9 +275,9 @@ eor_32imm.disasm = {
   buffer << "eor";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -286,9 +286,9 @@ eor_imm_shift.disasm = {
   buffer << "eor";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -297,9 +297,9 @@ eor_reg_shift.disasm = {
   buffer << "eor";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -308,9 +308,9 @@ eors_32imm.disasm = {
   buffer << "eor";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -319,9 +319,9 @@ eors_imm_shift.disasm = {
   buffer << "eor";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -330,9 +330,9 @@ eors_reg_shift.disasm = {
   buffer << "eor";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -496,9 +496,9 @@ sub_32imm.disasm = {
   buffer << "sub";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -507,9 +507,9 @@ sub_imm_shift.disasm = {
   buffer << "sub";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -518,9 +518,9 @@ sub_reg_shift.disasm = {
   buffer << "sub";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -529,9 +529,9 @@ subs_32imm.disasm = {
   buffer << "sub";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -540,9 +540,9 @@ subs_imm_shift.disasm = {
   buffer << "sub";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -551,9 +551,9 @@ subs_reg_shift.disasm = {
   buffer << "sub";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -712,9 +712,9 @@ rsb_32imm.disasm = {
   buffer << "rsb";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -723,9 +723,9 @@ rsb_imm_shift.disasm = {
   buffer << "rsb";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -734,9 +734,9 @@ rsb_reg_shift.disasm = {
   buffer << "rsb";
   DisasmCondition(cond, buffer);
   buffer << " r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -745,9 +745,9 @@ rsbs_32imm.disasm = {
   buffer << "rsb";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -756,9 +756,9 @@ rsbs_imm_shift.disasm = {
   buffer << "rsb";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -767,9 +767,9 @@ rsbs_reg_shift.disasm = {
   buffer << "rsb";
   DisasmCondition(cond, buffer);
   buffer << "s r";
-  buffer << rd;
+  buffer << (unsigned int) rd;
   buffer << ", r";
-  buffer << rn;
+  buffer << (unsigned int) rn;
   buffer << ", ";
   DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -928,9 +928,9 @@ add_32imm.disasm = {
 	buffer << "add";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -939,9 +939,9 @@ add_imm_shift.disasm = {
 	buffer << "add";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -950,9 +950,9 @@ add_reg_shift.disasm = {
 	buffer << "add";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -961,9 +961,9 @@ adds_32imm.disasm = {
 	buffer << "add";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -972,9 +972,9 @@ adds_imm_shift.disasm = {
 	buffer << "add";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -983,9 +983,9 @@ adds_reg_shift.disasm = {
 	buffer << "add";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1156,9 +1156,9 @@ adc_32imm.disasm = {
 	buffer << "adc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1167,9 +1167,9 @@ adc_imm_shift.disasm = {
 	buffer << "adc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1178,9 +1178,9 @@ adc_reg_shift.disasm = {
 	buffer << "adc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1189,9 +1189,9 @@ adcs_32imm.disasm = {
 	buffer << "adc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1200,9 +1200,9 @@ adcs_imm_shift.disasm = {
 	buffer << "adc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1211,9 +1211,9 @@ adcs_reg_shift.disasm = {
 	buffer << "adc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1396,9 +1396,9 @@ sbc_32imm.disasm = {
 	buffer << "sbc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1407,9 +1407,9 @@ sbc_imm_shift.disasm = {
 	buffer << "sbc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1418,9 +1418,9 @@ sbc_reg_shift.disasm = {
 	buffer << "sbc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1429,9 +1429,9 @@ sbcs_32imm.disasm = {
 	buffer << "sbc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1440,9 +1440,9 @@ sbcs_imm_shift.disasm = {
 	buffer << "sbc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1451,9 +1451,9 @@ sbcs_reg_shift.disasm = {
 	buffer << "sbc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1624,9 +1624,9 @@ rsc_32imm.disasm = {
 	buffer << "rsc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1635,9 +1635,9 @@ rsc_imm_shift.disasm = {
 	buffer << "rsc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1646,9 +1646,9 @@ rsc_reg_shift.disasm = {
 	buffer << "rsc";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1657,9 +1657,9 @@ rscs_32imm.disasm = {
 	buffer << "rsc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1668,9 +1668,9 @@ rscs_imm_shift.disasm = {
 	buffer << "rsc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1679,9 +1679,9 @@ rscs_reg_shift.disasm = {
 	buffer << "rsc";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1849,7 +1849,7 @@ tst_32imm.disasm = {
 	buffer << "tst";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1858,7 +1858,7 @@ tst_imm_shift.disasm = {
 	buffer << "tst";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1867,7 +1867,7 @@ tst_reg_shift.disasm = {
 	buffer << "tst";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -1959,7 +1959,7 @@ teq_32imm.disasm = {
 	buffer << "teq";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -1968,7 +1968,7 @@ teq_imm_shift.disasm = {
 	buffer << "teq";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -1977,7 +1977,7 @@ teq_reg_shift.disasm = {
 	buffer << "teq";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2069,7 +2069,7 @@ cmp_32imm.disasm = {
 	buffer << "cmp";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2078,7 +2078,7 @@ cmp_imm_shift.disasm = {
 	buffer << "cmp";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2088,7 +2088,7 @@ cmp_reg_shift.disasm = {
 	buffer << "cmp";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2180,7 +2180,7 @@ cmn_32imm.disasm = {
 	buffer << "cmn";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2189,7 +2189,7 @@ cmn_imm_shift.disasm = {
 	buffer << "cmn";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2198,7 +2198,7 @@ cmn_reg_shift.disasm = {
 	buffer << "cmn";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2293,9 +2293,9 @@ orr_32imm.disasm = {
 	buffer << "orr";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2304,9 +2304,9 @@ orr_imm_shift.disasm = {
 	buffer << "orr";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2315,9 +2315,9 @@ orr_reg_shift.disasm = {
 	buffer << "orr";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2326,9 +2326,9 @@ orrs_32imm.disasm = {
 	buffer << "orr";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2337,9 +2337,9 @@ orrs_imm_shift.disasm = {
 	buffer << "orr";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2348,9 +2348,9 @@ orrs_reg_shift.disasm = {
 	buffer << "orr";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2517,7 +2517,7 @@ mov_32imm.disasm = {
 	buffer << "mov";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2526,7 +2526,7 @@ mov_imm_shift.disasm = {
 	buffer << "mov";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2535,7 +2535,7 @@ mov_reg_shift.disasm = {
 	buffer << "mov";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2544,7 +2544,7 @@ movs_32imm.disasm = {
 	buffer << "mov";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2553,7 +2553,7 @@ movs_imm_shift.disasm = {
 	buffer << "mov";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2562,7 +2562,7 @@ movs_reg_shift.disasm = {
 	buffer << "mov";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2710,9 +2710,9 @@ bic_32imm.disasm = {
 	buffer << "bic";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2721,9 +2721,9 @@ bic_imm_shift.disasm = {
 	buffer << "bic";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2732,9 +2732,9 @@ bic_reg_shift.disasm = {
 	buffer << "bic";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2743,9 +2743,9 @@ bics_32imm.disasm = {
 	buffer << "bic";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2754,9 +2754,9 @@ bics_imm_shift.disasm = {
 	buffer << "bic";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2765,9 +2765,9 @@ bics_reg_shift.disasm = {
 	buffer << "bic";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", r";
-	buffer << rn;
+	buffer << (unsigned int) rn;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2931,7 +2931,7 @@ mvn_32imm.disasm = {
 	buffer << "mvn";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2940,7 +2940,7 @@ mvn_imm_shift.disasm = {
 	buffer << "mvn";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2949,7 +2949,7 @@ mvn_reg_shift.disasm = {
 	buffer << "mvn";
 	DisasmCondition(cond, buffer);
 	buffer << " r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }
@@ -2958,7 +2958,7 @@ mvns_32imm.disasm = {
 	buffer << "mvn";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
 }
@@ -2967,7 +2967,7 @@ mvns_imm_shift.disasm = {
 	buffer << "mvn";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
 }
@@ -2976,7 +2976,7 @@ mvns_reg_shift.disasm = {
 	buffer << "mvn";
 	DisasmCondition(cond, buffer);
 	buffer << "s r";
-	buffer << rd;
+	buffer << (unsigned int) rd;
 	buffer << ", ";
 	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
 }

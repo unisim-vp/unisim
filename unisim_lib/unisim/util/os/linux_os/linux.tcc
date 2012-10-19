@@ -1326,6 +1326,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
   SetSyscallId(std::string("access"), 33);
   SetSyscallId(std::string("kill"), 37);
   SetSyscallId(std::string("rename"), 38);
+  SetSyscallId(std::string("dup"), 41);
   SetSyscallId(std::string("times"), 43);
   SetSyscallId(std::string("brk"), 45);
   SetSyscallId(std::string("getgid"), 47);
@@ -1334,6 +1335,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
   SetSyscallId(std::string("ioctl"), 54);
   SetSyscallId(std::string("setrlimit"), 75);
   SetSyscallId(std::string("getrusage"), 77);
+  SetSyscallId(std::string("gettimeofday"), 78);
   SetSyscallId(std::string("munmap"), 91);
   SetSyscallId(std::string("ftruncate"), 93);
   SetSyscallId(std::string("socketcall"), 102);
@@ -1352,6 +1354,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
   SetSyscallId(std::string("getgid32"), 200);
   SetSyscallId(std::string("geteuid32"), 201);
   SetSyscallId(std::string("getegid32"), 202);
+  SetSyscallId(std::string("fcntl64"), 221);
   SetSyscallId(std::string("flistxattr"), 234);
   SetSyscallId(std::string("exit_group"), 248);
   // the following are private to the arm

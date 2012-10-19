@@ -113,6 +113,7 @@ unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/api/debug/debug_api.cc \
+unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
@@ -122,6 +123,8 @@ unisim/service/debug/sim_debugger/sim_debugger.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
+unisim/service/debug/debugger/debugger32.cc \
+unisim/service/profiling/addr_profiler/profiler32.cc \
 unisim/service/power/cache_profile.cc \
 unisim/service/power/cache_dynamic_power.cc \
 unisim/service/power/cache_leakage_power.cc \
@@ -132,7 +135,7 @@ unisim/service/pim/pim_server_64.cc \
 unisim/service/pim/pim_server_32.cc \
 unisim/service/pim/pim_thread.cc \
 unisim/service/pim/pim.cc \
-unisim/service/os/os_linux/linux_os.cc \
+unisim/service/os/linux_os/linux.cc \
 unisim/service/trap_handler/trap_handler.cc \
 unisim/service/trap_handler/trap_handler_identifier.cc \
 unisim/service/time/host_time/time.cc \
@@ -148,6 +151,7 @@ unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/dwarf32.cc \
+unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/blob/section32.cc \
 unisim/util/debug/blob/blob32.cc \
@@ -160,6 +164,7 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/elf_symtab/elf_symtab32.cc \
 unisim/util/debug/elf_symtab/elf_symtab64.cc \
+unisim/util/debug/coff_symtab/coff_symtab32.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/stmt_64.cc \
@@ -168,8 +173,9 @@ unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/symbol_32.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
-unisim/util/os/linux/environment.cc \
-unisim/util/os/linux/linux.cc \
+unisim/util/loader/coff_loader/coff_loader32.cc \
+unisim/util/os/linux_os/environment.cc \
+unisim/util/os/linux_os/linux.cc \
 unisim/util/xml/xml.cc \
 unisim/util/endian/endian.cc \
 unisim/util/garbage_collector/garbage_collector.cc \
@@ -243,9 +249,12 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/api/debug/debug_api.hh \
+unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/sim_debugger/sim_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
+unisim/service/debug/debugger/debugger.hh \
+unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/power/cache_power_estimator.hh \
 unisim/service/power/cache_profile.hh \
 unisim/service/power/cache_dynamic_power.hh \
@@ -262,10 +271,15 @@ unisim/service/pim/network/SocketReader.hpp \
 unisim/service/pim/network/SocketClientThread.hpp \
 unisim/service/pim/network/SocketThread.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \
-unisim/service/os/os_linux/linux_os.hh \
+unisim/service/os/linux_os/linux.hh \
 unisim/service/trap_handler/trap_handler.hh \
 unisim/service/trap_handler/trap_handler_identifier.hh \
 unisim/service/trap_handler/trap_handler_identifier_interface.hh \
+unisim/service/interfaces/debug_control.hh \
+unisim/service/interfaces/debug_event.hh \
+unisim/service/interfaces/debug_info_loading.hh \
+unisim/service/interfaces/profiling.hh \
+unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/power_mode.hh \
 unisim/service/interfaces/memory_access_reporting.hh \
@@ -310,6 +324,8 @@ unisim/util/debug/dwarf/cie.hh \
 unisim/util/debug/dwarf/dwarf.hh \
 unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/class.hh \
+unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/blob/segment.hh \
@@ -319,7 +335,9 @@ unisim/util/debug/stmt.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/register.hh \
 unisim/util/debug/elf_symtab/elf_symtab.hh \
+unisim/util/debug/coff_symtab/coff_symtab.hh \
 unisim/util/debug/breakpoint.hh \
+unisim/util/debug/event.hh \
 unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/profile.hh \
@@ -330,12 +348,14 @@ unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/elf_loader/elf_common.h \
 unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
-unisim/util/os/linux/aux_table.hh \
-unisim/util/os/linux/ppc.hh \
-unisim/util/os/linux/linux.hh \
-unisim/util/os/linux/files_flags.hh \
-unisim/util/os/linux/environment.hh \
-unisim/util/os/linux/arm.hh \
+unisim/util/loader/coff_loader/coff_loader.hh \
+unisim/util/loader/coff_loader/ti/ti.hh \
+unisim/util/os/linux_os/arm.hh \
+unisim/util/os/linux_os/aux_table.hh \
+unisim/util/os/linux_os/environment.hh \
+unisim/util/os/linux_os/files_flags.hh \
+unisim/util/os/linux_os/linux.hh \
+unisim/util/os/linux_os/ppc.hh \
 unisim/util/xml/xml.hh \
 unisim/util/endian/endian.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
@@ -363,12 +383,15 @@ unisim/component/cxx/processor/arm/carry_overflow.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
+unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/sim_debugger/sim_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
+unisim/service/debug/debugger/debugger.tcc \
+unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/pim/network/BlockingQueue.tcc \
 unisim/service/pim/pim_server.tcc \
-unisim/service/os/os_linux/linux_os.tcc \
+unisim/service/os/linux_os/linux.tcc \
 unisim/util/debug/profile.tcc \
 unisim/util/debug/dwarf/die.tcc \
 unisim/util/debug/dwarf/range.tcc \
@@ -386,6 +409,7 @@ unisim/util/debug/dwarf/stmt_prog.tcc \
 unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/loc.tcc \
 unisim/util/debug/dwarf/dwarf.tcc \
+unisim/util/debug/dwarf/frame.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
@@ -394,10 +418,13 @@ unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/segment.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/elf_symtab/elf_symtab.tcc \
+unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/debug/stmt.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
-unisim/util/os/linux/linux.tcc \
-unisim/util/os/linux/calls.tcc \
+unisim/util/loader/coff_loader/coff_loader.tcc \
+unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/os/linux_os/calls.tcc \
+unisim/util/os/linux_os/linux.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
@@ -423,6 +450,7 @@ UNISIM_LIB_ARMEMU_DATA_FILES="\
 unisim/service/debug/gdb_server/gdb_armv5l.xml \
 unisim/service/debug/gdb_server/gdb_armv4l.xml \
 unisim/service/debug/gdb_server/gdb_armv5b.xml \
+unisim/util/debug/dwarf/arm_eabi_dwarf_register_number_mapping.xml \
 "
 
 ARMEMU_EXTERNAL_HEADERS="\
@@ -849,7 +877,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(abs_top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(abs_top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(abs_top_srcdir) -I \$(abs_top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(abs_top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32.isa" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(abs_top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(abs_top_srcdir) -I \$(abs_top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(abs_top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"

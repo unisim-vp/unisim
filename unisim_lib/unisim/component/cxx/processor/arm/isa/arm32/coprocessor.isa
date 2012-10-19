@@ -77,12 +77,12 @@ cdp.disasm = {
 
 	buffer << "cdp";
 	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " " << dec << cp_num;
-	buffer << ", " << dec << op1;
-	buffer << ", cr" << dec << crd;
-	buffer << ", cr" << dec << crn;
-	buffer << ", cr" << dec << crm;
-	buffer << ", " << dec << op2;
+	buffer << " " << dec << (unsigned int) cp_num;
+	buffer << ", " << dec << (unsigned int) op1;
+	buffer << ", cr" << dec << (unsigned int) crd;
+	buffer << ", cr" << dec << (unsigned int) crn;
+	buffer << ", cr" << dec << (unsigned int) crm;
+	buffer << ", " << dec << (unsigned int) op2;
 }
 
 cdp.execute = {
@@ -233,8 +233,8 @@ ldc_offset.disasm = {
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_offset(u, rn, offset, buffer);
 }
@@ -245,8 +245,8 @@ ldc_pre.disasm = {
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_pre(u, rn, offset, buffer);
 }
@@ -257,8 +257,8 @@ ldc_post.disasm = {
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_post(u, rn, offset, buffer);
 }
@@ -269,8 +269,8 @@ ldc_unindexed.disasm = {
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSUnindexed(rn, option, buffer);
 }
@@ -384,12 +384,12 @@ mcr.disasm = {
 	
 	buffer << "mcr";
 	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " " << cp_num;
-	buffer << ", " << op1;
-	buffer << ", r" << rd;
-	buffer << ", cr" << crn;
-	buffer << ", cr" << crm;
-	if(op2 != 0) buffer << ", " << op2;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", " << (unsigned int) op1;
+	buffer << ", r" << (unsigned int) rd;
+	buffer << ", cr" << (unsigned int) crn;
+	buffer << ", cr" << (unsigned int) crm;
+	if(op2 != 0) buffer << ", " << (unsigned int) op2;
 }
 
 mcr.execute = {
@@ -445,12 +445,12 @@ mrc.disasm = {
 
 	buffer << "mrc";
 	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " " << cp_num;
-	buffer << ", " << op1;
-	buffer << ", r" << rd;
-	buffer << ", cr" << crn;
-	buffer << ", cr" << crm;
-	if(op2 != 0) buffer << ", " << op2;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", " << (unsigned int) op1;
+	buffer << ", r" << (unsigned int) rd;
+	buffer << ", cr" << (unsigned int) crn;
+	buffer << ", cr" << (unsigned int) crm;
+	if(op2 != 0) buffer << ", " << (unsigned int) op2;
 }
 
 mrc.execute = {
@@ -601,8 +601,8 @@ stc_offset.disasm = {
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_offset(u, rn, offset, buffer);
 }	
@@ -613,8 +613,8 @@ stc_pre.disasm = {
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_pre(u, rn, offset, buffer);
 }
@@ -625,8 +625,8 @@ stc_post.disasm = {
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_post(u, rn, offset, buffer);
 }
@@ -637,8 +637,8 @@ stc_unindexed.disasm = {
 	buffer << "stc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSUnindexed(rn, option, buffer);
 }
@@ -732,17 +732,18 @@ coprocessor_rn_init.initialize_rn_init = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4])
 
 cdp2.disasm = {
 	buffer << "cdp2";
-	buffer << " " << dec << cp_num;
-	buffer << ", " << dec << op1;
-	buffer << ", cr" << dec << crd;
-	buffer << ", cr" << dec << crn;
-	buffer << ", cr" << dec << crm;
-	buffer << ", " << dec << op2;
+	buffer << " " << dec << (unsigned int) cp_num;
+	buffer << ", " << dec << (unsigned int) op1;
+	buffer << ", cr" << dec << (unsigned int) crd;
+	buffer << ", cr" << dec << (unsigned int) crn;
+	buffer << ", cr" << dec << (unsigned int) crm;
+	buffer << ", " << dec << (unsigned int) op2;
 }
 
 cdp2.execute = {
@@ -763,32 +764,36 @@ cdp2.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op ldc2_offset(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op ldc2_pre(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op ldc2_post(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op ldc2_unindexed(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8])
 
 ldc2_offset.disasm = {
   buffer << "ldc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSImm_offset(u, rn, offset, buffer);
 }
@@ -796,8 +801,8 @@ ldc2_offset.disasm = {
 ldc2_pre.disasm = {
   buffer << "ldc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSImm_pre(u, rn, offset, buffer);
 }
@@ -805,8 +810,8 @@ ldc2_pre.disasm = {
 ldc2_post.disasm = {
   buffer << "ldc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSImm_post(u, rn, offset, buffer);
 }
@@ -817,8 +822,8 @@ ldc2_unindexed.disasm = {
 	buffer << "ldc";
 	DisasmCondition(inherited::cond_init, buffer);
 	if(n == 1) buffer << "l";
-	buffer << " " << cp_num;
-	buffer << ", cr" << crd;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSUnindexed(rn, option, buffer);
 }
@@ -893,17 +898,18 @@ ldc2_unindexed.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
 
 mcr2.disasm = {
   buffer << "mcr2";
-  buffer << " " << cp_num;
-  buffer << ", " << op1;
-  buffer << ", r" << rd;
-  buffer << ", cr" << crn;
-  buffer << ", cr" << crm;
-  if(op2 != 0) buffer << ", " << op2;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", " << (unsigned int) op1;
+  buffer << ", r" << (unsigned int) rd;
+  buffer << ", cr" << (unsigned int) crn;
+  buffer << ", cr" << (unsigned int) crm;
+  if(op2 != 0) buffer << ", " << (unsigned int) op2;
 }
 
 mcr2.execute = {
@@ -924,17 +930,18 @@ mcr2.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
 
 mrc2.disasm = {
   buffer << "mrc2";
-  buffer << " " << cp_num;
-  buffer << ", " << op1;
-  buffer << ", r" << rd;
-  buffer << ", cr" << crn;
-  buffer << ", cr" << crm;
-  if(op2 != 0) buffer << ", " << op2;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", " << (unsigned int) op1;
+  buffer << ", r" << (unsigned int) rd;
+  buffer << ", cr" << (unsigned int) crn;
+  buffer << ", cr" << (unsigned int) crm;
+  if(op2 != 0) buffer << ", " << (unsigned int) op2;
 }
 
 mrc2.execute = {
@@ -955,32 +962,36 @@ mrc2.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op stc2_offset(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op stc2_pre(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op stc2_post(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op stc2_unindexed(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8])
 
 stc2_offset.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSImm_offset(u, rn, offset, buffer);
 }
@@ -988,8 +999,8 @@ stc2_offset.disasm = {
 stc2_pre.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSImm_pre(u, rn, offset, buffer);
 }
@@ -997,8 +1008,8 @@ stc2_pre.disasm = {
 stc2_post.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSImm_post(u, rn, offset, buffer);
 }
@@ -1006,8 +1017,8 @@ stc2_post.disasm = {
 stc2_unindexed.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << cp_num;
-  buffer << ", cr" << crd;
+  buffer << " " << (unsigned int) cp_num;
+  buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
   DisasmCLSUnindexed(rn, option, buffer);
 }

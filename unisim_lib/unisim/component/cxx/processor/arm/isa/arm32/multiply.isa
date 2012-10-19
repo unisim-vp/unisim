@@ -56,10 +56,10 @@ mla.disasm = {
 	buffer << "mla";
 	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
-	buffer << " r" << rd << ", "
-		<< "r" << rm << ", "
-		<< "r" << rs << ", "
-		<< "r" << rn << "";
+	buffer << " r" << (unsigned int) rd << ", "
+		<< "r" << (unsigned int) rm << ", "
+		<< "r" << (unsigned int) rs << ", "
+		<< "r" << (unsigned int) rn << "";
 }
 
 mla.execute = {
@@ -98,9 +98,9 @@ mul.disasm = {
 	buffer << "mul";
 	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
-	buffer << " r" << rd << ", "
-		<< "r" << rm << ", "
-		<< "r" << rs << "";
+	buffer << " r" << (unsigned int) rd << ", "
+		<< "r" << (unsigned int) rm << ", "
+		<< "r" << (unsigned int) rs << "";
 }
 
 mul.execute = {
@@ -138,17 +138,18 @@ mul.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4])
 
 smlal.disasm = {
 	buffer << "smlal";
 	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
-	buffer << " r" << rdhi << ", "
-		<< "r" << rdlo << ", "
-		<< "r" << rm << ", "
-		<< "r" << rs << "";
+	buffer << " r" << (unsigned int) rdhi << ", "
+		<< "r" << (unsigned int) rdlo << ", "
+		<< "r" << (unsigned int) rm << ", "
+		<< "r" << (unsigned int) rs << "";
 }
 
 smlal.execute = {
@@ -196,10 +197,10 @@ smull.disasm = {
 	buffer << "smull";
 	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
-	buffer << " r" << rdhi << ", "
-	<< "r" << rdlo << ", "
-	<< "r" << rm << ", "
-	<< "r" << rs << "";
+	buffer << " r" << (unsigned int) rdhi << ", "
+	<< "r" << (unsigned int) rdlo << ", "
+	<< "r" << (unsigned int) rm << ", "
+	<< "r" << (unsigned int) rs << "";
 }
 
 smull.execute = {
@@ -244,10 +245,10 @@ umlal.disasm = {
 	buffer << "umlal";
 	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
-	buffer << " r" << rdhi << ", "
-		<< "r" << rdlo << ", "
-		<< "r" << rm << ", "
-		<< "r" << rs << "";
+	buffer << " r" << (unsigned int) rdhi << ", "
+		<< "r" << (unsigned int) rdlo << ", "
+		<< "r" << (unsigned int) rm << ", "
+		<< "r" << (unsigned int) rs << "";
 }
 
 umlal.execute = {
@@ -295,10 +296,10 @@ umull.disasm = {
 	buffer << "umull";
 	DisasmCondition(cond, buffer);
 	if(s) buffer << "s";
-	buffer << " r" << rdhi << ", "
-		<< "r" << rdlo << ", "
-		<< "r" << rm << ", "
-		<< "r" << rs << "";
+	buffer << " r" << (unsigned int) rdhi << ", "
+		<< "r" << (unsigned int) rdlo << ", "
+		<< "r" << (unsigned int) rm << ", "
+		<< "r" << (unsigned int) rs << "";
 }
 
 umull.execute = {
