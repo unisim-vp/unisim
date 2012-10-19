@@ -2,23 +2,18 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory>"
+	echo "  $0 <destination directory> <unisim repository>"
 }
 
-if [ -z "$1" ]; then
+if [ -z "$1" ] || [ -z "$2" ]; then
 	Usage
 	exit -1
 fi
 
 HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+UNISIM_TOOLS_DIR=$2/unisim_tools
+
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)
 
 if test -z ${DISTCOPY}; then
