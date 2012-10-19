@@ -21,6 +21,7 @@
 #include <fwd.hh>
 #include <vect.hh>
 #include <conststr.hh>
+#include <set>
 #include <memory>
 #include <iosfwd>
 #include <referencecounting.hh>
@@ -30,6 +31,7 @@ struct Isa {
   DecoderType_t                 m_decoder;         /**< Decoder Type */
   bool                          m_is_subdecoder;   /**< Subdecoder or full decoder */
   bool                          m_withsource;      /**< Action source code accessible or not */
+  bool                          m_withencode;      /**< Action source code accessible or not */
   bool                          m_little_endian;   /**< Endianness of isa (false: big endian, true: little endian) */
   bool                          m_asc_forder;      /**< bitfields ordering (false: descending)*/
   bool                          m_asc_worder;      /**< words ordering (false: descending)*/
@@ -48,6 +50,8 @@ struct Isa {
   std::vector<ConstStr_t>       m_includes;        /**< files included by the isa main file */
   Vect_t<Specialization_t>      m_specializations; /**< Requested specializations */
   Vect_t<Inheritance_t>         m_inheritances;    /**< Defined inheritances for operation class */
+  typedef std::set<std::pair<Operation_t const*,Operation_t const*> > user_orderings_t;
+  user_orderings_t              m_user_orderings;
 
   Isa();
   ~Isa();

@@ -41,6 +41,7 @@ using namespace std;
  */
 Isa::Isa()
   : m_decoder( RiscDecoder ), m_is_subdecoder( false ), m_withsource( false ),
+    m_withencode( false ),
     m_little_endian( false ), m_asc_forder( false ), m_asc_worder( false ),
     m_minwordsize( 0 )
 {}
@@ -261,6 +262,7 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   static ConstStr_t     buffer( "buffer",          Scanner::symbols );
   static ConstStr_t subdecoder( "subdecoder_p",    Scanner::symbols );
   static ConstStr_t withsource( "withsource_p",    Scanner::symbols );
+  static ConstStr_t withencode( "withencode_p",    Scanner::symbols );
   static ConstStr_t     istrue( "true",            Scanner::symbols );
   static ConstStr_t    isfalse( "false",           Scanner::symbols );
   static ConstStr_t endianness( "endianness",      Scanner::symbols );
@@ -285,6 +287,12 @@ Isa::setparam( ConstStr_t key, ConstStr_t value ) {
   else if (key == withsource) {
     if      (value == istrue)  m_withsource = true;
     else if (value == isfalse) m_withsource = false;
+    else throw UnknownIdent( value );
+  }
+  
+  else if (key == withencode) {
+    if      (value == istrue)  m_withencode = true;
+    else if (value == isfalse) m_withencode = false;
     else throw UnknownIdent( value );
   }
   
