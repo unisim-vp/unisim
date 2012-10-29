@@ -63,6 +63,39 @@ namespace util {
 namespace os {
 namespace linux_os {
 
+#ifdef WIN32
+// see http://mathieuturcotte.ca/textes/windows-gettimeofday
+struct timezone {
+  int tz_minuteswest;     /* minutes west of Greenwich */
+  int tz_dsttime;         /* type of DST correction */
+};
+int gettimeofday(struct timeval* p, struct timezone* tz) {
+  ULARGE_INTEGER ul; // As specified on MSDN.
+  FILETIME ft;
+
+  // Returns a 64-bit value representing the number of
+  // 100-nanosecond intervals since January 1, 1601 (UTC).
+  GetSystemTimeAsFileTime(&ft);
+
+  // Fill ULARGE_INTEGER low and high parts.
+  ul.LowPart = ft.dwLowDateTime;
+  ul.HighPart = ft.dwHighDateTime;
+  // Convert to microseconds.
+  ul.QuadPart /= 10ULL;
+  // Remove Windows to UNIX Epoch delta.
+  ul.QuadPart -= 11644473600000000ULL;
+  // Modulo to retrieve the microseconds.
+  p->tv_usec = (long) (ul.QuadPart % 1000000LL);
+  // Divide to retrieve the seconds.
+  p->tv_sec = (long) (ul.QuadPart / 1000000LL);
+
+  tz->tz_minuteswest = 0;
+  tz->tz_dsttime = 0;
+
+  return 0;
+}
+#endif
+
 using unisim::util::endian::Host2Target;
 using unisim::util::endian::Target2Host;
 
@@ -910,9 +943,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTimeOfDay(
     struct powerpc_timeval *target_timeval,
     struct powerpc_timezone *target_timezone) {
   int ret;
-#ifdef WIN32
-  ret = -1;
-#else
   struct timeval host_tv;
   struct timezone host_tz;
   
@@ -929,7 +959,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTimeOfDay(
       target_timezone->tz_dsttime = Host2Target(endianness_, (int32_t) host_tz.tz_dsttime);
     }
   }
-#endif
   return ret;
 }
 
@@ -970,9 +999,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTimeOfDay(
     struct arm_timeval *target_timeval,
     struct arm_timezone *target_timezone) {
   int ret;
-#ifdef WIN32
-  ret = -1;
-#else
   struct timeval host_tv;
   struct timezone host_tz;
   
@@ -989,7 +1015,6 @@ int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetTimeOfDay(
       target_timezone->tz_dsttime = Host2Target(endianness_, (int32_t) host_tz.tz_dsttime);
     }
   }
-#endif
   return ret;
 }
 
@@ -1657,8 +1682,8 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_usr32() {
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_arm_set_tls() {
-  uint32_t r0 = GetSystemCallParam(0);
-  WriteMem(0xffff0ff0UL, (uint8_t *)&(r0), 4);
+  uint32_t r0 = Host2Target(endianness_, GetSystemCallParam(0));
+  WriteMem(0xffff0ff0UL, (uint8_t *)&(r0), sizeof(r0));
   if (unlikely(verbose_))
     logger_ << DebugInfo
         << "ret = 0x" << std::hex << ((PARAMETER_TYPE)0) << std::dec

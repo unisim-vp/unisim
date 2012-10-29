@@ -38,14 +38,6 @@
 
 **********************************************/
 
-/* TODO: implement missing instructions:for E variants of version 5 and above
- *  - smulxy
- *  - smulwy
- *  - smlaxy
- *  - smlawy
- *  - smlalxy
- */
-
 /*******************************************************************
  * mla instruction
  */

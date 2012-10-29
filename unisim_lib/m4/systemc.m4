@@ -25,8 +25,11 @@ AC_DEFUN([UNISIM_CHECK_SYSTEMC], [
 		x86_64*linux*)
 			SYSTEMC_TARGET_ARCH="linux64"
 			;;
-		*linux*)
+		*86*linux*)
 			SYSTEMC_TARGET_ARCH="linux"
+			;;
+		powerpc*linux*)
+			SYSTEMC_TARGET_ARCH="linux-powerpc"
 			;;
 		amd64*freebsd* | x86_64*freebsd*)
 			SYSTEMC_TARGET_ARCH="freebsd64"

@@ -1188,16 +1188,16 @@ ADDRESS_TYPE Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTableEntry(
     ADDRESS_TYPE entry, ADDRESS_TYPE value) const {
   ADDRESS_TYPE target_entry = Host2Target(endianness_, entry);
   ADDRESS_TYPE target_value = Host2Target(endianness_, value);
-  sp = sp - sizeof(sp);
+  sp = sp - sizeof(target_value);
   uint8_t *addr;
   if(stack_data) {
     addr = stack_data + sp;
-    memcpy(addr, &target_value, sizeof(sp));
+    memcpy(addr, &target_value, sizeof(target_value));
   }
-  sp = sp - sizeof(sp);
+  sp = sp - sizeof(target_entry);
   if(stack_data) {
     addr = stack_data + sp;
-    memcpy(addr, &target_entry, sizeof(sp));
+    memcpy(addr, &target_entry, sizeof(target_entry));
   }
   return sp;
 }
@@ -1240,22 +1240,20 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
     static const uint32_t tls_buf_length = 7;
     static const uint32_t tls_buf[tls_buf_length] =
     {0xe59f0008UL, 0xe1a0f00eUL, 0, 0, 0, 0, 0};
-    uint32_t *blob_tls_buf = 0;
-    blob_tls_buf = (uint32_t *)malloc(sizeof(uint32_t) * tls_buf_length);
+    uint32_t *segment_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
+    uint32_t *section_tls_buf = (uint32_t *) malloc(sizeof(uint32_t) * tls_buf_length);
 
     for (unsigned int i = 0; i < tls_buf_length; ++i) {
-      if (endianness_ == unisim::util::endian::E_BIG_ENDIAN)
-        blob_tls_buf[i] = unisim::util::endian::Host2BigEndian(tls_buf[i]);
-      else
-        blob_tls_buf[i] = unisim::util::endian::Host2LittleEndian(tls_buf[i]);
+      segment_tls_buf[i] = unisim::util::endian::Host2Target(endianness_, tls_buf[i]);
+      section_tls_buf[i] = unisim::util::endian::Host2Target(endianness_, tls_buf[i]);
     }
+    Segment *tls_if_segment =
+        new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
+                    sizeof(tls_buf), sizeof(tls_buf), segment_tls_buf);
     Section *tls_if_section =
         new Section(Section::TY_UNKNOWN, Section::SA_A,
                     ".unisim.linux_os.interface.tls", 4, 0, tls_base_addr,
-                    sizeof(tls_buf), blob_tls_buf);
-    Segment *tls_if_segment =
-        new Segment(Segment::TY_LOADABLE, Segment::SA_X, 4, tls_base_addr,
-                    sizeof(tls_buf), sizeof(tls_buf), blob_tls_buf);
+                    sizeof(tls_buf), section_tls_buf);
 
     // Set the cmpxchg (atomic compare and exchange) interface, the
     //   following instructions need to be added to memory:
@@ -1273,27 +1271,22 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetArmBlob(
       0xe2730000UL,
       0xe1a0f00eUL
     };
-    uint32_t *blob_cmpxchg_buf = 0;
-    blob_cmpxchg_buf = (uint32_t *)malloc(sizeof(uint32_t) *
-                                          cmpxchg_buf_length);
+    uint32_t *segment_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
+    uint32_t *section_cmpxchg_buf = (uint32_t *) malloc(sizeof(uint32_t) * cmpxchg_buf_length);
 
     for (unsigned int i = 0; i < cmpxchg_buf_length; ++i) {
-      if ( endianness_ == unisim::util::endian::E_BIG_ENDIAN )
-        blob_cmpxchg_buf[i] =
-            unisim::util::endian::Host2BigEndian(cmpxchg_buf[i]);
-      else
-        blob_cmpxchg_buf[i] =
-            unisim::util::endian::Host2LittleEndian(cmpxchg_buf[i]);
+        segment_cmpxchg_buf[i] = unisim::util::endian::Host2Target(endianness_, cmpxchg_buf[i]);
+        section_cmpxchg_buf[i] = unisim::util::endian::Host2Target(endianness_, cmpxchg_buf[i]);
     }
     Section* cmpxchg_if_section =
         new Section(Section::TY_UNKNOWN, Section::SA_A,
                     ".unisim.linux_os.interface.cmpxchg",
                     4, 0, cmpxchg_base_addr,
-                    sizeof(cmpxchg_buf), blob_cmpxchg_buf);
+                    sizeof(cmpxchg_buf), segment_cmpxchg_buf);
     Segment *cmpxchg_if_segment =
         new Segment(Segment::TY_LOADABLE, Segment::SA_X,
                     4, cmpxchg_base_addr,
-                    sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), blob_cmpxchg_buf);
+                    sizeof(cmpxchg_buf), sizeof(cmpxchg_buf), section_cmpxchg_buf);
 
     blob->AddSegment(tls_if_segment);
     blob->AddSegment(cmpxchg_if_segment);

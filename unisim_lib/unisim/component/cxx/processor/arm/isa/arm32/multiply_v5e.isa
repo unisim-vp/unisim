@@ -38,15 +38,6 @@
 
 **********************************************/
 
-/*****************************************************************************
- * TODO:
- * op smla()
- * op smlal()
- * op smlaw()
- * op smul()
- * op smulw()
- */
-
 /*******************************************************************
  * smlaxy instruction
  */
@@ -112,12 +103,13 @@ smlaxy.execute = {
 		op2 = (int32_t)val_rs;
 	}
 	
-	op1 = op1 * op2;
-	val_rd = op1 + val_rn;
-	if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
+	uint32_t mul_res = (uint32_t)(op1 * op2);
+	//val_rd = op1 + val_rn;
+	uint8_t carry_out, overflow_out, sign;
+	Add32(val_rd, carry_out, overflow_out, sign, mul_res, val_rn, 0);
+	//if(op1 > 0 && (val_rd & (uint32_t)0x80000000ULL) != 0) {
+	if(overflow_out) {
 		cpu.SetCPSR_Q(true);
-	} else {
-		cpu.SetCPSR_Q(false);
 	}
 	cpu.SetGPR(rd, val_rd);
 }
@@ -153,10 +145,10 @@ smlalxy.disasm = {
 smlalxy.execute = {
 	int32_t op1;
 	int32_t op2;
+	int32_t mul_res;
 	uint32_t val_rm;
 	uint32_t val_rs;
-	uint32_t val_rdhi;
-	uint32_t val_rdlo, val_rdlo_init;
+	uint64_t val_rd;
 
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
@@ -169,8 +161,7 @@ smlalxy.execute = {
 	
 	val_rm = cpu.GetGPR(rm);
 	val_rs = cpu.GetGPR(rs);
-	val_rdhi = cpu.GetGPR(rdhi);
-	val_rdlo_init = cpu.GetGPR(rdlo);
+	val_rd = ((uint64_t) cpu.GetGPR(rdhi) << 32) | (uint64_t) cpu.GetGPR(rdlo);
 	
 	if(x)
 		val_rm = val_rm >> 16;
@@ -192,15 +183,10 @@ smlalxy.execute = {
 		op2 = (int32_t)val_rs;
 	}
 	
-	op1 = op1 * op2;
-	val_rdlo = val_rdlo_init + op1;
-	if(op1 < 0) rdhi = rdhi + (uint32_t)0xffffffffULL;
-	else {
-		if(CarryFrom(val_rdlo, val_rdlo_init, (uint32_t)op1))
-			rdhi++;
-	}
-	cpu.SetGPR(rdlo, val_rdlo);
-	cpu.SetGPR(rdhi, val_rdhi);
+	mul_res = op1 * op2;
+	val_rd = val_rd + mul_res;
+	cpu.SetGPR(rdlo, (uint32_t) val_rd);
+	cpu.SetGPR(rdhi, (uint32_t)(val_rd >> 32));
 }
 
 /*
@@ -267,22 +253,26 @@ smlawy.execute = {
 	int32_t sval_rd;
 	uint32_t op_tmp = op64;
 	sval_rd = (int32_t)op_tmp;
-	val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
-	if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-		(val_rn & (uint32_t)0x80000000ULL) ) 
+	//val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
+	uint8_t carry_out, overflow_out, sign;
+	Add32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
+// 	if ( (op_tmp & (uint32_t)0x80000000ULL) !=
+// 		(val_rn & (uint32_t)0x80000000ULL) ) 
+	if(overflow_out)
 	{
-		cpu.SetCPSR_Q(false);
+//		cpu.SetCPSR_Q(false);
+		cpu.SetCPSR_Q(true);
 	} 
-	else 
-	{
-		if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-			(val_rd & (uint32_t)0x80000000ULL) )
-		{
-			cpu.SetCPSR_Q(true);
-		} 
-		else
-			cpu.SetCPSR_Q(false);
-	}
+// 	else 
+// 	{
+// 		if ( (op_tmp & (uint32_t)0x80000000ULL) !=
+// 			(val_rd & (uint32_t)0x80000000ULL) )
+// 		{
+// 			cpu.SetCPSR_Q(true);
+// 		} 
+// 		else
+// 			cpu.SetCPSR_Q(false);
+// 	}
 	cpu.SetGPR(rd, val_rd);
 
 }

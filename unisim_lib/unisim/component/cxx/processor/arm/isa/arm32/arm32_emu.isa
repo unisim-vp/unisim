@@ -85,6 +85,7 @@ impl {
 #include <stdint.h>
 	
 using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::CountLeadingZeros;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
 }
