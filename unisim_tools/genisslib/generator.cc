@@ -237,7 +237,8 @@ Generator::iss( char const* prefix, bool sourcelines ) const {
     isa_operations_decl( sink );
     isa_operations_methods( sink );
     isa_operations_ctors( sink );
-    isa_operations_encoders( sink );
+    if (isa().m_withencode)
+      isa_operations_encoders( sink );
   
     decoder_impl( sink );
   
@@ -406,7 +407,8 @@ Generator::operation_decl( Product_t& _product ) const {
 
   _product.code( " Operation(%s code, %s addr, const char *name);\n", codetype_constref().str(), isa().m_addrtype.str() );
   _product.code( " virtual ~Operation();\n" );
-  _product.code( " virtual void Encode(%s code) const {}\n", codetype_ref().str() );
+  if (isa().m_withencode)
+    _product.code( " virtual void Encode(%s code) const {}\n", codetype_ref().str() );
   _product.code( " inline %s GetAddr() const { return addr; }\n", isa().m_addrtype.str() );
   _product.code( " inline void SetAddr(%s _addr) { this->addr = _addr; }\n", isa().m_addrtype.str() );
   _product.code( " inline %s GetEncoding() const { return encoding; }\n", codetype_constref().str() );
@@ -428,7 +430,8 @@ Generator::operation_decl( Product_t& _product ) const {
   if (isa().m_withsource) {
     /* base declaration for internal encoding and decoding code
      * introspection methods */
-    _product.code( "virtual char const* Encode_text() const;\n" );
+    if (isa().m_withencode)
+      _product.code( "virtual char const* Encode_text() const;\n" );
     _product.code( "virtual char const* Decode_text() const;\n" );
   }
   
@@ -483,7 +486,8 @@ Generator::isa_operations_decl( Product_t& _product ) const {
                    codetype_constref().str(), isa().m_addrtype.str() );
     insn_destructor_decl( _product, **op );
     insn_getlen_decl( _product, **op );
-    _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
+    if (isa().m_withencode)
+      _product.code( " void Encode(%s code) const;\n", codetype_ref().str() );
     
     for( Vect_t<BitField_t>::const_iterator bf = (**op).m_bitfields.begin(); bf < (**op).m_bitfields.end(); ++ bf ) {
       BitField_t::Type_t bftype = (**bf).type();
@@ -519,7 +523,8 @@ Generator::isa_operations_decl( Product_t& _product ) const {
     if (isa().m_withsource) {
       /* insn declaration for internal encoding and decoding code
        * introspection methods */
-      _product.code( "char const* Encode_text() const;\n" );
+      if (isa().m_withencode)
+        _product.code( "char const* Encode_text() const;\n" );
       _product.code( "char const* Decode_text() const;\n" );
     }
 
@@ -606,6 +611,7 @@ Generator::operation_impl( Product_t& _product ) const {
      * introspection methods */
     char const* xxcode[2] = {"Encode", "Decode"};
     for (int step = 0; step < 2; ++step) {
+      if (step == 0 and not isa().m_withencode) continue;
       _product.template_signature( isa().m_tparams );
       _product.code( " char const* Operation" );
       _product.template_abbrev( isa().m_tparams );
@@ -664,6 +670,7 @@ Generator::isa_operations_methods( Product_t& _product ) const {
        * introspection methods */
       char const* xxcode[2] = {"Encode", "Decode"};
       for (int step = 0; step < 2; ++step) {
+        if (step == 0 and not isa().m_withencode) continue;
         SProduct_t xxcode_text( _product.m_filename, _product.m_sourcelines );
         switch (step) {
         case 0: insn_decode_impl( xxcode_text, **op, "code", "addr" ); break;
