@@ -316,7 +316,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_abbrev->Load((const uint8_t *) debug_abbrev_section->GetData() + debug_abbrev_offset, debug_abbrev_section->GetSize() - debug_abbrev_offset, debug_abbrev_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 abbreviation informations at offset 0x" << std::hex << debug_abbrev_offset << std::dec << EndDebugWarning;
+				logger << DebugWarning;
+				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				{
+					logger << "In File \"" << blob->GetFilename() << "\", ";
+				}
+				logger << "invalid DWARF v2/v3 abbreviation informations at offset 0x" << std::hex << debug_abbrev_offset << std::dec << EndDebugWarning;
 				delete dw_abbrev;
 				break;
 			}
@@ -338,7 +343,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_abbrev section found" << EndDebugWarning;
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v2/v3 .debug_abbrev section found" << EndDebugWarning;
 	}
 
 	if(debug_info_section)
@@ -354,7 +364,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_cu->Load((const uint8_t *) debug_info_section->GetData() + debug_info_offset, debug_info_section->GetSize() - debug_info_offset, debug_info_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug informations at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugWarning;
+				logger << DebugWarning;
+				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				{
+					logger << "In File \"" << blob->GetFilename() << "\", ";
+				}
+				logger << "invalid DWARF v2/v3 debug informations at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugWarning;
 				delete dw_cu;
 				break;
 			}
@@ -369,7 +384,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_info section found" << EndDebugWarning;
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v2/v3 .debug_info section found" << EndDebugWarning;
 	}
 
 	if(debug_frame_section)
@@ -393,7 +413,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 				{
 					delete dw_cie;
 					
-					logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug frame at offset 0x" << std::hex << debug_frame_offset << std::dec << EndDebugWarning;
+					logger << DebugWarning;
+					if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+					{
+						logger << "In File \"" << blob->GetFilename() << "\", ";
+					}
+					logger << "invalid DWARF v2/v3 debug frame at offset 0x" << std::hex << debug_frame_offset << std::dec << EndDebugWarning;
 					break;
 				}
 				
@@ -412,7 +437,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_frame section found" << EndDebugWarning;
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v2/v3 .debug_frame section found" << EndDebugWarning;
 	}
 
 	if(debug_aranges_section)
@@ -428,7 +458,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_address_ranges->Load((const uint8_t *) debug_aranges_section->GetData() + debug_aranges_offset, debug_aranges_section->GetSize() - debug_aranges_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug aranges at offset 0x" << std::hex << debug_aranges_offset << std::dec << EndDebugWarning;
+				logger << DebugWarning;
+				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				{
+					logger << "In File \"" << blob->GetFilename() << "\", ";
+				}
+				logger << "invalid DWARF v2/v3 debug aranges at offset 0x" << std::hex << debug_aranges_offset << std::dec << EndDebugWarning;
 				delete dw_address_ranges;
 				break;
 			}
@@ -443,7 +478,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_aranges section found" << EndDebugWarning;
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v2/v3 .debug_aranges section found" << EndDebugWarning;
 	}
 
 	if(debug_pubnames_section)
@@ -459,7 +499,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_public_names->Load((const uint8_t *) debug_pubnames_section->GetData() + debug_pubnames_offset, debug_pubnames_section->GetSize() - debug_pubnames_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug pubnames at offset 0x" << std::hex << debug_pubnames_offset << std::dec << EndDebugWarning;
+				logger << DebugWarning;
+				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				{
+					logger << "In File \"" << blob->GetFilename() << "\", ";
+				}
+				logger << "invalid DWARF v2/v3 debug pubnames at offset 0x" << std::hex << debug_pubnames_offset << std::dec << EndDebugWarning;
 				delete dw_public_names;
 				break;
 			}
@@ -474,7 +519,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	}
 	else
 	{
-		logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", no DWARF v2/v3 .debug_pubnames section found" << EndDebugWarning;
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v2/v3 .debug_pubnames section found" << EndDebugWarning;
 	}
 
 	if(debug_pubtypes_section)
@@ -490,7 +540,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			int64_t sz;
 			if((sz = dw_public_types->Load((const uint8_t *) debug_pubtypes_section->GetData() + debug_pubtypes_offset, debug_pubtypes_section->GetSize() - debug_pubtypes_offset)) < 0)
 			{
-				logger << DebugWarning << "In File \"" << blob->GetFilename() << "\", invalid DWARF v2/v3 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << EndDebugWarning;
+				logger << DebugWarning;
+				if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+				{
+					logger << "In File \"" << blob->GetFilename() << "\", ";
+				}
+				logger << "invalid DWARF v2/v3 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << EndDebugWarning;
 				delete dw_public_types;
 				break;
 			}
@@ -2299,32 +2354,34 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 
 	do
 	{
+		//logger << DebugInfo << "Searching FDE for PC=0x" << std::hex << caller_pc << std::dec << EndDebugInfo;
 		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(caller_pc);
 		
 		if(!dw_fde)
 		{
-			logger << DebugInfo << "No more FDE found" << EndDebugInfo;
+			//logger << DebugInfo << "No more FDE found" << EndDebugInfo;
 			break;
 		}
 
+		//logger << DebugInfo << "Found FDE:" << std::endl << *dw_fde << EndDebugInfo;
 		DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
 		const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(dw_fde);
 
 		if(cfi)
 		{
-			logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+			//logger << DebugInfo << "Computed call frame information:" << std::endl << *cfi << EndDebugInfo;
 			
 			typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(caller_pc);
 			
-			logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+			//logger << DebugInfo << "Lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
 			
-			logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
+			//logger << DebugInfo << "Register set before unwinding:" << *frame << EndDebugInfo;
 			
 			DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(endianness, address_size, sp_reg_num, mem_if);
 			
 			if(!next_frame->Unwind(cfi_row, frame))
 			{
-				logger << DebugInfo << "No more unwinding context" << EndDebugInfo;
+				//logger << DebugInfo << "No more unwinding context" << EndDebugInfo;
 				delete next_frame;
 				break;
 			}
@@ -2332,7 +2389,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			delete frame;
 			frame = next_frame;
 
-			logger << DebugInfo << "Register set after unwinding:" << *frame << EndDebugInfo;
+			//logger << DebugInfo << "Register set after unwinding:" << *frame << EndDebugInfo;
 
 			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
 			
@@ -2340,7 +2397,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			
 			MEMORY_ADDR ret_addr = frame->ReadRegister(dw_ret_addr_reg_num);
 			
-			logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
+			//logger << DebugInfo << "Return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
 			
 			if(!backtrace)
 			{
@@ -2426,6 +2483,12 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 	}
 	
 	return found;
+}
+
+template <class MEMORY_ADDR>
+unisim::kernel::logger::Logger& DWARF_Handler<MEMORY_ADDR>::GetLogger() const
+{
+	return logger;
 }
 
 } // end of namespace dwarf

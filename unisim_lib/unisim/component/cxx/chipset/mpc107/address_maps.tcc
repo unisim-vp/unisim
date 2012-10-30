@@ -34,6 +34,7 @@
  
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/likely/likely.hh"
 #include "unisim/component/cxx/chipset/mpc107/config_regs.hh"
 
 namespace unisim {

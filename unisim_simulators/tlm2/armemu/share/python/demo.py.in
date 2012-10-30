@@ -1,88 +1,118 @@
 #!/usr/bin/env python
 
-from @SIM_PYTHON_IMPORT_NAME@ import simulator
+from @PYTHON__SIM__IMPORT_NAME@ import simulator
+import re
 
 class SimulatorHandler(simulator.Simulator):
 	def trap_handler(self, context, id):
-		print("Python: Received a trap handler call with id = ", id)
+		# print("Python: Received a trap handler call with id = ", id)
 		parms = self.get_parameters()
-		print("        cpu.trap-on-instruction-counter = ",
-				parms['cpu.trap-on-instruction-counter'].value)
-		if parms['cpu.trap-on-instruction-counter'].value is 100:
-			print("      Setting debugger to step mode")
-			self.debugger.set_step_mode()
-			print("      Setting trap-on-instruction-counter to 200")
-			parms['cpu.trap-on-instruction-counter'].value = 200
-			# print("      Calling stop")
-			# self.stop()
-		elif parms['cpu.trap-on-instruction-counter'].value is 200:
-			print("      Setting debugger to continue mode")
-			self.debugger.set_continue_mode()
-			print("      Setting breakpoint at 'main'", end = "")
-			if self.debugger.set_breakpoint("main"):
-				print("  OK")
-			else:
-				print("  ERROR") 
-			print("      Setting breakpoint at 'rec_fibonnaci_test'", end = "")
-			if self.debugger.set_breakpoint("rec_fibonnaci_test"):
-				print("  OK")
-			else:
-				print("  ERROR")
-			print("      Setting trap-on-instruction-counter to 300")
-			parms['cpu.trap-on-instruction-counter'].value = 300
+		stats = self.get_statistics()
+		instruction_counter = stats['cpu.instruction-counter'].value
+		current_time = stats['cpu.cpu-time'].value
+		(current_time, time_unit) = re.split(' ', current_time)
+		current_time = int(current_time)
+		if re.match('ps', time_unit):
+			current_time = current_time
+		elif re.match('ns', time_unit):
+			current_time = current_time * 1000
+		elif re.match('us', time_unit):
+			current_time = current_time * 1000 * 1000
 		else:
-			print("      Resetting cpu.trap-on-instruction-counter")
-			parms['cpu.trap-on-instruction-counter'].value = 0
-
-	def breakpoint_handler(self, context, addr):
-		print("Python: 0x%08x (%s, %s, %s)" % 
-				(addr, 
-					addr, 
-					self.debugger.is_mode_step(),
-					self.debugger.has_breakpoint(addr)))
-		if self.debugger.has_breakpoint(addr):
-			print("      Removing breakpoint at 0x%08x" % addr)
-			self.debugger.delete_breakpoint(addr)
+			print("++++++++++++++++ Unknown time unit: '" + time_unit + "'")
+			print("Stopping the simulation")
+			self.log.close()
+			self.stop()
+		cpu_dcache_read_accesses = stats['cpu.dcache.read-accesses'].value
+		cpu_dcache_write_accesses = stats['cpu.dcache.write-accesses'].value
+		cpu_dcache_prefetch_accesses = stats['cpu.dcache.prefetch-accesses'].value
+		cpu_dcache_read_hits = stats['cpu.dcache.read-hits'].value
+		cpu_dcache_write_hits = stats['cpu.dcache.write-hits'].value
+		cpu_dcache_prefetch_hits = stats['cpu.dcache.prefetch-hits'].value
+		cpu_icache_read_accesses = stats['cpu.icache.read-accesses'].value
+		cpu_icache_read_hits = stats['cpu.icache.read-hits'].value
+		list = (instruction_counter,
+				current_time - self.current_time,
+				cpu_dcache_read_accesses - self.cpu_dcache_read_accesses,
+				cpu_dcache_write_accesses - self.cpu_dcache_write_accesses,
+				cpu_dcache_prefetch_accesses - self.cpu_dcache_prefetch_accesses,
+				cpu_dcache_read_hits - self.cpu_dcache_read_hits,
+				cpu_dcache_write_hits - self.cpu_dcache_write_hits,
+				cpu_dcache_prefetch_hits - self.cpu_dcache_prefetch_hits,
+				cpu_icache_read_accesses - self.cpu_icache_read_accesses,
+				cpu_icache_read_hits - self.cpu_icache_read_hits)
+		self.current_time = current_time
+		self.cpu_dcache_read_accesses = cpu_dcache_read_accesses
+		self.cpu_dcache_write_accesses = cpu_dcache_write_accesses
+		self.cpu_dcache_prefetch_accesses = cpu_dcache_prefetch_accesses
+		self.cpu_dcache_read_hits = cpu_dcache_read_hits
+		self.cpu_dcache_write_hits = cpu_dcache_write_hits
+		self.cpu_dcache_prefetch_hits = cpu_dcache_prefetch_hits
+		self.cpu_icache_read_accesses = cpu_icache_read_accesses
+		self.cpu_icache_read_hits = cpu_icache_read_hits
+		for (i) in list:
+			self.log.write(str(i))
+			self.log.write(' ')
+		self.log.write('\n')
+		self.log.flush()
+		if instruction_counter >= self.max_insns:
+			print("Stopping the simulation")
+			self.log.close()
+			self.stop()
+		else:
+			new_instruction_counter = (instruction_counter - (instruction_counter % self.insn_threshold)) + self.insn_threshold
+			parms['cpu.trap-on-instruction-counter'].value = new_instruction_counter
 
 	def __init__(self):
-		simulator.Simulator.__init__(self, 
-			parms={
-				"enable-power-estimation":True 
-				})
-		parms = self.get_parameters()
-		self.insn_threshold = 100
-		self.traps_to_logger = True
-		print("cpu.trap-on-instruction-counter = ",
-			parms['cpu.trap-on-instruction-counter'].value)
-		print("trap-handler.send-traps-to-logger =",
-				parms['trap-handler.send-traps-to-logger'].value)
-		print("Setting cpu.trap-on-instruction-counter to ", 
-				self.insn_threshold)
-		parms['cpu.trap-on-instruction-counter'].value = \
-				self.insn_threshold
-		print("Setting trap-handler.send-traps-to-logger to ", 
-				self.traps_to_logger)
-		parms['trap-handler.send-traps-to-logger'].value = \
-			self.traps_to_logger
-		print("cpu.trap-on-instruction-counter = ",
-			parms['cpu.trap-on-instruction-counter'].value)
-		print("trap-handler.send-traps-to-logger =",
-				parms['trap-handler.send-traps-to-logger'].value)
-		print("Setting external trap handler")
-		self.set_trap_handler(None, self.trap_handler)
-		self.debugger = self.get_debugger("main")
-		# self.debugger.set_step_mode()
-		self.debugger.set_context(None)
-		self.debugger.set_breakpoint_callback(self.breakpoint_handler)
+		simulator.Simulator.__init__(self, parms={"enable-power-estimation":True})
+		print("Simulator initialized")
+		# parms = self.get_variables()
+		# for name in parms:
+		# 	print("+ %s" % (name), parms[name].get_value())
+		self.insn_threshold = 100000
+		self.insn_counter = 0
+		# self.max_insns = self.insn_threshold * 3000
+		self.max_insns = self.insn_threshold * 1 
+		self.traps_to_logger = False
+		self.current_time = 0
+		self.cpu_dcache_read_accesses = 0
+		self.cpu_dcache_write_accesses = 0
+		self.cpu_dcache_prefetch_accesses = 0
+		self.cpu_dcache_read_hits = 0
+		self.cpu_dcache_write_hits = 0
+		self.cpu_dcache_prefetch_hits = 0
+		self.cpu_icache_read_accesses = 0
+		self.cpu_icache_read_hits = 0
+		print("__init__ finished")
+		# parms['cpu.trap-on-instruction-counter'].value = self.insn_threshold
+		# parms['trap-handler.send-traps-to-logger'].value = self.traps_to_logger
+		# self.set_trap_handler(None, self.trap_handler)
+
+	def insn_counter_listener(self, variable):
+		self.insn_counter = variable.get_value()
+		if self.insn_counter >= self.max_insns:
+			if self.stop():
+				print("Stopped the simulation")
+			else:
+				print("Could not stop the simulation")
+				sys.exit(0)
 
 	def setup(self):
-		print("Launching simulator setup.")
+		print("performing setup")
 		# we can not call self.setup() because it would cause a recursive
 		#   call to the SimulatorHandler class. To avoid that we call the
 		#   class directly (simulator.Simulator.setup()) giving it the 
 		#   reference to itself.
 		simulator.Simulator.setup(self)
-		print("Launching simulator.")
+		print("setup finished")
+		# we prepare a log file for our collected data
+		self.log = open("log.txt", "w")
+		print("instruction-counter variable")
+		self.insn_counter_var = self.get_variable("cpu.instruction-counter")
+		self.insn_counter_var.add_listener(self.insn_counter_listener)
+		self.insn_counter_var.set_listener_context(self.insn_counter_var)
+		print("instruction-counter data type = ", self.insn_counter_var.get_datatypename())
+		print("instruction-counter variable finished")
 
 	def dump_params(self):
 		print("Dumping parameters:")
@@ -93,13 +123,30 @@ class SimulatorHandler(simulator.Simulator):
 	def dump_statistics(self):
 		print("Dumping statistics:")
 		stats = self.get_statistics()
-		for k, v in stats.items():
+		forms = self.get_formulas()
+		out = dict()
+		out.update(stats)
+		out.update(forms)
+		for k, v in sorted(out.items()):
 			print("- %s = %s" % (k, v.str) )
 
+print("Creating simulator")
 sim = SimulatorHandler()
+print("Launching simulator setup")
 sim.setup()
+print("Checking existence of debugger")
+has_debugger = sim.has_debugger()
+if has_debugger:
+	print("A debugger was found")
+	debuggers = sim.get_debuggers()
+	print("List of debuggers obtained.")
+	print("List of debuggers: ", debuggers)
+else:
+	print("No debugger was found")
+print("Launching simulation")
 sim.run()
-sim.remove_trap_handler()
+print("Simulation finished")
+# sim.remove_trap_handler()
 sim.dump_params()
 sim.dump_statistics()
 

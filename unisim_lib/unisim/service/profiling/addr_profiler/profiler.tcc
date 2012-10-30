@@ -108,7 +108,7 @@ bool Profiler<ADDRESS>::EndSetup()
 template <class ADDRESS>
 void Profiler<ADDRESS>::ProfileMemoryAccess(typename unisim::service::interfaces::Profiling<ADDRESS>::ProfileType prof_type, ADDRESS addr, uint32_t size)
 {
-	if(enable_prof[prof_type])
+	if((size > 0) && enable_prof[prof_type])
 	{
 		if(addr > max_prof_addr[prof_type]) return;
 		ADDRESS max_addr = addr + size - 1;
@@ -127,27 +127,30 @@ void Profiler<ADDRESS>::ProfileMemoryAccess(typename unisim::service::interfaces
 }
 
 template <class ADDRESS>
-void Profiler<ADDRESS>::ReportMemoryAccess(typename unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void Profiler<ADDRESS>::ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size)
 {
-	switch(mt)
+	if(size)
 	{
-		case MemoryAccessReporting<ADDRESS>::MT_DATA:
-			switch(mat)
-			{
-				case MemoryAccessReporting<ADDRESS>::MAT_READ:
-					ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, addr, size);
-					break;
-				case MemoryAccessReporting<ADDRESS>::MAT_WRITE:
-					ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, addr, size);
-					break;
-				default:
-					// ignore
-					break;
-			}
-			break;
-		case MemoryAccessReporting<ADDRESS>::MT_INSN:
-			ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_FETCH, addr, size);
-			break;
+		switch(mt)
+		{
+			case unisim::util::debug::MT_DATA:
+				switch(mat)
+				{
+					case unisim::util::debug::MAT_READ:
+						ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_READ, addr, size);
+						break;
+					case unisim::util::debug::MAT_WRITE:
+						ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_DATA_WRITE, addr, size);
+						break;
+					default:
+						// ignore
+						break;
+				}
+				break;
+			case unisim::util::debug::MT_INSN:
+				ProfileMemoryAccess(unisim::service::interfaces::Profiling<ADDRESS>::PROF_INSN_FETCH, addr, size);
+				break;
+		}
 	}
 }
 

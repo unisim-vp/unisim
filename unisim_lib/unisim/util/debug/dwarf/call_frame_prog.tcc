@@ -38,10 +38,11 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler, uint64_t _length, const uint8_t *_program, unsigned int _type)
+DWARF_CallFrameProgram<MEMORY_ADDR>::DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler, uint64_t _length, const uint8_t *_program, unsigned int _type, DWARF_Format _dw_fmt)
 	: type(_type)
 	, dw_handler(_dw_handler)
 	, length(_length)
+	, dw_fmt(_dw_fmt)
 	, program(_program)
 	, dw_cie(0)
 	, dw_fde(0)
@@ -76,6 +77,12 @@ template <class MEMORY_ADDR>
 uint64_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetLength() const
 {
 	return length;
+}
+
+template <class MEMORY_ADDR>
+DWARF_Format DWARF_CallFrameProgram<MEMORY_ADDR>::GetFormat() const
+{
+	return dw_fmt;
 }
 
 template <class MEMORY_ADDR>

@@ -515,6 +515,18 @@ DWARF_RegisterRule<MEMORY_ADDR> *DWARF_CFIRow<MEMORY_ADDR>::GetRegisterRule(unsi
 }
 
 template <class MEMORY_ADDR>
+void DWARF_CFIRow<MEMORY_ADDR>::GetRegisterRulesNumbers(std::set<unsigned int>& reg_rule_nums) const
+{
+	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it;
+	
+	for(it = reg_rules.begin(); it != reg_rules.end(); it++)
+	{
+		unsigned int dw_reg_num = (*it).first;
+		reg_rule_nums.insert(dw_reg_num);
+	}
+}
+
+template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_CFIRow<MEMORY_ADDR>& cfi_row)
 {
 	os << std::hex << "pc=0x" << cfi_row.location << std::dec << "  <";
@@ -694,8 +706,8 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Disasm(std::ostream& os, const DWARF_CallFr
 template <class MEMORY_ADDR>
 bool DWARF_CallFrameVM<MEMORY_ADDR>::Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
-//	return Run(dw_call_frame_prog, 0, &location, cfi);
-	return Run(dw_call_frame_prog, &std::cerr, &location, cfi);
+	return Run(dw_call_frame_prog, 0, &location, cfi);
+//	return Run(dw_call_frame_prog, &std::cerr, &location, cfi);
 }
 
 template <class MEMORY_ADDR>
@@ -742,7 +754,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 	MEMORY_ADDR cur_location = _cur_location ? *_cur_location : 0;
 	uint64_t program_length = dw_call_frame_prog.length;
 	endian_type endianness = dw_call_frame_prog.GetEndianness();
-	uint8_t address_size = dw_call_frame_prog.GetAddressSize();
+	uint8_t address_size = (dw_call_frame_prog.GetFormat() == FMT_DWARF64) ? 8 : 4;
 	const uint8_t *program = dw_call_frame_prog.program;
 	bool status = true;
 	
@@ -1774,7 +1786,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 							}
 							break;
 						default:
-							status = false;
+							status = false; std::cerr << "Execute fails (opcode " << (unsigned int) opcode << ") at " << __FILE__ << ":" << __LINE__ << std::endl;
 							break;
 					}
 					break;

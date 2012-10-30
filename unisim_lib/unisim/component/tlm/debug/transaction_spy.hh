@@ -44,6 +44,7 @@
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/garbage_collector/garbage_collector.hh"
+#include "unisim/util/likely/likely.hh"
 #include <string>
 
 #define LOCATION "In file " << __FILE__ << " function " << __FUNCTION__ << " line #" << __LINE__

@@ -36,7 +36,8 @@
 #define __PYTHON_PY_DEBUGGER_HH__
 
 #include <Python.h>
-#include "simulator.hh"
+// #include "simulator.hh"
+#include "unisim/uapi/uapi.h"
 #include "python/python_config.hh"
 
 extern "C" {
@@ -48,7 +49,7 @@ extern "C" {
 /* C API functions */
 #define PyDebugger_NewDebugger_NUM 0
 #define PyDebugger_NewDebugger_RETURN PyObject *
-#define PyDebugger_NewDebugger_PROTO (const char *)
+#define PyDebugger_NewDebugger_PROTO (UnisimDebugAPI)
 
 /* Total number of C API pointers */
 #define PyDebugger_API_pointers 1

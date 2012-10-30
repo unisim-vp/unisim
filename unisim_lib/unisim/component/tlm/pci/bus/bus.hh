@@ -688,6 +688,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 		} else if(req->type ==unisim::component::cxx::pci::TT_READ && 
 			req->space == unisim::component::cxx::pci::SP_CONFIG) {
 			if(reg != NULL && reg->state == SIZE_REQUESTED) {
+#if 0
 				//reading size
 				uint32_t bar_mask;
 				//We check the bit that indicates if it's for io or mem
@@ -695,7 +696,7 @@ updateDevMap (PReqType &req, PRspType &res) {
 					bar_mask = BAR_IO_MASK;
 				else
 					bar_mask = BAR_MEM_MASK;
-
+#endif
 				if(unlikely(DEBUG && verbose))
 					logger << DebugInfo
 						<< "reading size dev " << device << " reg "

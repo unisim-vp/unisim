@@ -159,8 +159,8 @@ XmlfyVariables(const char *filename, VariableBase::Type type) {
 			var_iter != Simulator::simulator->variables.end();
 			var_iter++ )
 	{
-		if ( type == VariableBase::VAR_VOID ||
-				type == (*var_iter).second->GetType())
+		if ( (*var_iter).second->IsVisible() && (type == VariableBase::VAR_VOID ||
+				type == (*var_iter).second->GetType()))
 		{
 			// check that the variable is a root variable by checking that it
 			//   has not object owner
@@ -509,14 +509,10 @@ ProcessXmlVariableNode(xmlTextReaderPtr reader, VariableBase::Type type)
 				return false;
 			}
 			cur_var = new CurVariable();
-			if(cur_object.size())
-			{
+			if ( cur_object.size() != 0 )
 				cur_var->name << cur_object.back() << "." << name_attr;
-			}
-			else
-			{
+			else 
 				cur_var->name << name_attr;
-			}
 			free(name_attr);
 		}
 		if (xmlTextReaderNodeType(reader) == 15)

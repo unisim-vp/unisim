@@ -66,9 +66,9 @@ using unisim::component::cxx::processor::hcs12x::XB::XbModes;
 }
 
 action {void} execute({CPU *} {cpu}) {
-	printf("Unknown instruction\n");
+	std::cerr << "Unknown instruction" << std::endl;
 
-	exit(-1);
+	cpu->Stop(-1);
 }
 
 action {string} disasm({ostream&} {sink}) {

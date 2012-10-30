@@ -339,7 +339,7 @@ inline void CPU<CONFIG>::MonitorLoad(typename CONFIG::address_t ea, uint32_t siz
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
 	}
 }
 
@@ -349,7 +349,7 @@ inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t si
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_WRITE, MemoryAccessReporting<typename CONFIG::address_t>::MT_DATA, ea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
 	}
 }
 

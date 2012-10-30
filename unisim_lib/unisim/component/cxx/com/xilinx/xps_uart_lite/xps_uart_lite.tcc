@@ -472,7 +472,7 @@ void XPS_UARTLite<CONFIG>::WriteCTRL_REG(uint8_t value)
 }
 
 template <class CONFIG>
-void XPS_UARTLite<CONFIG>::TelnetProcess()
+void XPS_UARTLite<CONFIG>::TelnetProcess(bool flush_telnet_output)
 {
 	if(char_io_import)
 	{
@@ -523,7 +523,13 @@ void XPS_UARTLite<CONFIG>::TelnetProcess()
 			
 			tx_fifo_becomes_empty = true;
 		}
+		
+		if(flush_telnet_output)
+		{
+			char_io_import->FlushChars();
+		}
 	}
+	
 }
 
 } // end of namespace xps_uart_lite

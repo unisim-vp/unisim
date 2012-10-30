@@ -42,6 +42,9 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
+using unisim::util::endian::E_BIG_ENDIAN;
+using unisim::util::endian::E_LITTLE_ENDIAN;
+
 template <class MEMORY_ADDR>
 DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Frame<MEMORY_ADDR>& frame)
 	: sp_reg_num(frame.sp_reg_num)
@@ -104,6 +107,24 @@ bool DWARF_Frame<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR&
 				uint16_t value = 0;
 				if(!mem_if->ReadMemory(addr, &value, address_size)) return false;
 				read_addr = unisim::util::endian::Target2Host(endianness, value);
+			}
+			break;
+		case 3:
+			{
+				uint8_t buf[3] = { 0, 0, 0 };
+				if(!mem_if->ReadMemory(addr, buf, address_size)) return false;
+				switch(endianness)
+				{
+					case E_BIG_ENDIAN:
+						read_addr = ((uint32_t) buf[0] << 16) | ((uint32_t) buf[1] << 8) | (uint32_t) buf[2];
+						break;
+					case E_LITTLE_ENDIAN:
+						read_addr = (uint32_t) buf[0] | ((uint32_t) buf[1] << 8) | ((uint32_t) buf[2] << 16);
+						break;
+					default:
+						read_addr = 0;
+						break;
+				}
 			}
 			break;
 		case sizeof(uint32_t):
@@ -212,12 +233,21 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 			return false;
 	}
 	
-	typename std::map<unsigned int, MEMORY_ADDR>::iterator iter;
+	typename std::set<unsigned int> dw_reg_nums;
+// 	typename std::map<unsigned int, MEMORY_ADDR>::iterator reg_set_iter;
+// 	
+// 	for(iter = reg_set_iter.begin(); iter != reg_set_iter.end(); iter++)
+// 	{
+// 		unsigned int dw_reg_num = (*reg_set_iter).first;
+// 		dw_reg_nums.insert(dw_reg_num);
+// 	}
 	
-	for(iter = reg_set.begin(); iter != reg_set.end(); iter++)
+	cfi_row->GetRegisterRulesNumbers(dw_reg_nums); // complete register set with "virtual" register rules
+
+	typename std::set<unsigned int>::iterator dw_reg_nums_iter;
+	for(dw_reg_nums_iter = dw_reg_nums.begin(); dw_reg_nums_iter != dw_reg_nums.end(); dw_reg_nums_iter++)
 	{
-		unsigned int dw_reg_num = (*iter).first;
-		
+		unsigned int dw_reg_num = *dw_reg_nums_iter;
 		DWARF_RegisterRule<MEMORY_ADDR> *reg_rule = cfi_row->GetRegisterRule(dw_reg_num);
 		
 		if(reg_rule)

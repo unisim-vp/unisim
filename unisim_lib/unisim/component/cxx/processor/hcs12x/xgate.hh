@@ -756,7 +756,7 @@ inline void XGATE::monitorLoad(address_t logicalAddress, uint32_t size)
 	// Memory access reporting
 	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
 	}
 }
 
@@ -769,7 +769,7 @@ inline void XGATE::monitorStore(address_t logicalAddress, uint32_t size)
 	// Memory access reporting
 	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_WRITE, MemoryAccessReporting<physical_address_t>::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
 	}
 }
 

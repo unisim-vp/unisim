@@ -53,15 +53,16 @@ using unisim::util::arithmetic::SignedSatSub32;
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ || 
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qadd.disasm = {
 	buffer << "qadd";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rd;
-	buffer << ", r" << rm;
-	buffer << ", r" << rn;
+	buffer << " r" << (unsigned int) rd;
+	buffer << ", r" << (unsigned int) rm;
+	buffer << ", r" << (unsigned int) rn;
 }
 
 qadd.execute = {
@@ -93,15 +94,16 @@ qadd.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ || 
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qsub.disasm = {
 	buffer << "qsub";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rd;
-	buffer << ", r" << rm;
-	buffer << ", r" << rn;
+	buffer << " r" << (unsigned int) rd;
+	buffer << ", r" << (unsigned int) rm;
+	buffer << ", r" << (unsigned int) rn;
 }
 
 qsub.execute = {
@@ -133,15 +135,16 @@ qsub.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ || 
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdadd.disasm = {
 	buffer << "qdadd";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rd;
-	buffer << ", r" << rm;
-	buffer << ", r" << rn;
+	buffer << " r" << (unsigned int) rd;
+	buffer << ", r" << (unsigned int) rm;
+	buffer << ", r" << (unsigned int) rn;
 }
 
 qdadd.execute = {
@@ -174,15 +177,16 @@ qdadd.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ || 
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdsub.disasm = {
 	buffer << "qdsub";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rd;
-	buffer << ", r" << rm;
-	buffer << ", r" << rn;
+	buffer << " r" << (unsigned int) rd;
+	buffer << ", r" << (unsigned int) rm;
+	buffer << ", r" << (unsigned int) rn;
 }
 
 qdsub.execute = {

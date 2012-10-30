@@ -67,10 +67,12 @@ public:
 	virtual void Reset();
 	virtual bool GetChar(char& c);
 	virtual void PutChar(char c);
+	virtual void FlushChars();
 private:
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	std::string guest_os;
+	bool enable_negotiation;
 	bool remove_null_character;
 	bool remove_line_feed;
 
@@ -83,6 +85,7 @@ private:
 	Parameter<bool> param_verbose;
 	Parameter<int> param_telnet_tcp_port;
 	Parameter<std::string> param_guest_os;
+	Parameter<bool> param_enable_negotiation;
 
 	unsigned int telnet_input_buffer_size;
 	unsigned int telnet_input_buffer_index;

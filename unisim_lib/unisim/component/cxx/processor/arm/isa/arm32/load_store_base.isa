@@ -59,7 +59,7 @@ group ldr_group(ldr_imm_post, ldr_imm_offset, ldr_imm_pre, \
 ldr_imm_post.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
@@ -67,7 +67,7 @@ ldr_imm_post.disasm = {
 ldr_imm_offset.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
@@ -75,7 +75,7 @@ ldr_imm_offset.disasm = {
 ldr_imm_pre.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
@@ -83,21 +83,21 @@ ldr_imm_pre.disasm = {
 ldr_reg_post.disasm = {
 			   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_reg_offset.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_reg_pre.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -246,7 +246,7 @@ op ldrb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sh
 ldrb_imm_post.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
@@ -254,7 +254,7 @@ ldrb_imm_post.disasm = {
 ldrb_imm_offset.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
@@ -262,7 +262,7 @@ ldrb_imm_offset.disasm = {
 ldrb_imm_pre.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
@@ -270,21 +270,21 @@ ldrb_imm_pre.disasm = {
 ldrb_reg_post.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_reg_offset.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_reg_pre.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -414,7 +414,8 @@ ldrb_rd15_imm_post.disasm = {
 ldrb_rd15_imm_offset.disasm = {
 	if(STATE::MODEL == ARMV5TE || 
 		STATE::MODEL == ARMV5TEJ ||
-		STATE::MODEL == ARMV6) 
+		STATE::MODEL == ARMV6 ||
+		STATE::MODEL == ARMEMU) 
 	{
 		buffer << "pld";
 		DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
@@ -433,7 +434,8 @@ ldrb_rd15_reg_post.disasm = {
 ldrb_rd15_reg_offset.disasm = {
 	if(STATE::MODEL == ARMV5TE || 
 		STATE::MODEL == ARMV5TEJ ||
-		STATE::MODEL == ARMV6) 
+		STATE::MODEL == ARMV6 ||
+		STATE::MODEL == ARMEMU) 
 	{
 		buffer << "pld ";
 		DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
@@ -454,7 +456,8 @@ ldrb_rd15_imm_post.execute = {
 ldrb_rd15_imm_offset.execute = {
 	if ((STATE::MODEL == ARMV5TE || 
 		 STATE::MODEL == ARMV5TEJ ||
-		 STATE::MODEL == ARMV6) && cond == 15 )
+		 STATE::MODEL == ARMV6 ||
+		 STATE::MODEL == ARMEMU) && cond == 15 )
 	{
 		typedef Operation<STATE> inherited;
 
@@ -487,7 +490,8 @@ ldrb_rd15_reg_post.execute = {
 ldrb_rd15_reg_offset.execute = {
 	if ((STATE::MODEL == ARMV5TE || 
 		 STATE::MODEL == ARMV5TEJ ||
-		 STATE::MODEL == ARMV6) && cond == 15 )
+		 STATE::MODEL == ARMV6 ||
+		 STATE::MODEL == ARMEMU) && cond == 15 )
 	{
 		typedef Operation<STATE> inherited;
 
@@ -529,14 +533,14 @@ op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b
 ldrt_imm.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "t r" << rd << ", ";
+  buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrt_reg.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "t r" << rd << ", ";
+  buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -584,14 +588,14 @@ op ldrbt_reg(cond[4]:0b0110[4]:u[1]:0b111[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0
 ldrbt_imm.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "bt r" << rd << ", ";
+  buffer << "bt r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrbt_reg.disasm = {
   buffer << "ldr";
   DisasmCondition(cond, buffer);
-  buffer << "bt r" << rd << ", ";
+  buffer << "bt r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -647,42 +651,42 @@ op str_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shi
 str_imm_post.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 str_imm_offset.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
 
 str_imm_pre.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
 
 str_reg_post.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_reg_offset.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_reg_pre.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", ";
+  buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -826,7 +830,7 @@ op strb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:sh
 strb_imm_post.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
@@ -834,7 +838,7 @@ strb_imm_post.disasm = {
 strb_imm_offset.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
@@ -842,7 +846,7 @@ strb_imm_offset.disasm = {
 strb_imm_pre.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
@@ -850,21 +854,21 @@ strb_imm_pre.disasm = {
 strb_reg_post.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_reg_offset.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_reg_pre.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", ";
+  buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -998,14 +1002,14 @@ op strt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_
 strt_imm.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "t r" << rd << ", ";
+  buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 strt_reg.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "t r" << rd << ", ";
+  buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
@@ -1065,7 +1069,7 @@ op strbt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift
 strbt_imm.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "bt r" << rd << ", ";
+  buffer << "bt r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
@@ -1073,7 +1077,7 @@ strbt_imm.disasm = {
 strbt_reg.disasm = {
   buffer << "str";
   DisasmCondition(cond, buffer);
-  buffer << "bt r" << rd << ", ";
+  buffer << "bt r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 

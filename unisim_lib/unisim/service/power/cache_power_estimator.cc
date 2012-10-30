@@ -33,6 +33,12 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 
+#include <iostream>
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <string.h>
+
 #if defined(HAVE_CONFIG_H)
 #include "config.h"
 #endif
@@ -44,13 +50,7 @@
 #include <cacti4_2.hh>
 #endif
 
-#include <unisim/service/power/cache_power_estimator.hh>
-#include <iostream>
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <string.h>
-
+#include "unisim/service/power/cache_power_estimator.hh"
 // #if defined(HAVE_CACTI4_2)
 // #define cacti (*(Cacti4_2 *) opaque)
 // #endif
@@ -103,16 +103,16 @@ template <> VariableBase& Variable<unisim::service::power::CachePowerEstimator::
 		switch(value)
 		{
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL:
-				SetModified(*storage != value);
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_SEQUENTIAL;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST:
-				SetModified(*storage != value);
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_FAST;
 				break;
 			case unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL:
 			default:
-				SetModified(*storage != value);
+				SetModified((unsigned long long) *storage != value);
 				*storage = unisim::service::power::CachePowerEstimator::ACCESS_MODE_NORMAL;
 				break;
 		}

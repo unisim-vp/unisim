@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/util/loader/elf_loader/elf_loader.hh>
-#include <unisim/util/loader/elf_loader/elf_loader.tcc>
+#include "unisim/util/loader/elf_loader/elf_loader.hh"
+#include "unisim/util/loader/elf_loader/elf_loader.tcc"
 
 namespace unisim {
 namespace util {

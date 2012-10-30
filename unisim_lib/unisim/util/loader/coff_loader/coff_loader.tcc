@@ -40,6 +40,7 @@
 #include <sstream>
 #include <stdlib.h>
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 
 #include <unisim/util/loader/coff_loader/ti/ti.hh>
 #include <unisim/util/loader/coff_loader/ti/ti.tcc>
@@ -361,7 +362,7 @@ bool CoffLoader<MEMORY_ADDR>::Load()
 	blob->SetArchitecture(file->GetArchitectureName());
 	blob->SetFileEndian(file_endianness);
 	blob->SetMemoryAtomSize(memory_atom_size);
-	blob->SetFileFormat(unisim::util::debug::blob::Blob<MEMORY_ADDR>::FFMT_COFF);
+	blob->SetFileFormat(unisim::util::debug::blob::FFMT_COFF);
 		
 	const SectionTable<MEMORY_ADDR> *section_table = file->GetSectionTable();
 

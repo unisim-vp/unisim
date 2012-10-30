@@ -1377,7 +1377,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, addr, 4);
+				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, addr, 4);
 			}
 		}
 		if(CONFIG::IABR_ENABLE)
@@ -1454,6 +1454,14 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
+	if(unlikely(requires_finished_instruction_reporting))
+	{
+		if(unlikely(memory_access_reporting_import != 0))
+		{
+			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
+		}
+	}
+
 	SetCIA(GetNIA());
 
 	/* update the instruction counter */
@@ -1464,14 +1472,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		trap_reporting_import->ReportTrap();
 	}
 	
-	if(unlikely(requires_finished_instruction_reporting))
-	{
-		if(unlikely(memory_access_reporting_import != 0))
-		{
-			memory_access_reporting_import->ReportFinishedInstruction(GetCIA(), GetNIA());
-		}
-	}
-
 	if(unlikely((instruction_counter >= max_inst) || (halt_on_addr && (GetCIA() == halt_on_addr)))) Stop(0);
 }
 

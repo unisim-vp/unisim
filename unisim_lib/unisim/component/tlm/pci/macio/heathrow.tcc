@@ -203,7 +203,6 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::Run()
 		{
 			wait(bus_cycle_time);
 		}
-		level = false;
 	}
 }
 
@@ -225,8 +224,11 @@ void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::SetIRQ(unsigned int int_num, bool le
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>
 void Heathrow<ADDRESS_TYPE, MAX_DATA_SIZE>::TriggerInterrupt(bool in_level)
 {
-	level = in_level;
-	set_irq_ev.notify(SC_ZERO_TIME);
+	if(level != in_level)
+	{
+		level = in_level;
+		set_irq_ev.notify(SC_ZERO_TIME);
+	}
 }
 
 template <class ADDRESS_TYPE, uint32_t MAX_DATA_SIZE>

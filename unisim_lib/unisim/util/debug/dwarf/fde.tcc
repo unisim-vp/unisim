@@ -60,7 +60,6 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 {
 	offset = _offset;
 	endian_type endianness = dw_handler->GetEndianness();
-	uint8_t address_size = dw_handler->GetAddressSize();
 	uint32_t length32;
 	
 	uint64_t size = 0;
@@ -114,19 +113,10 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		cie_pointer = cie_pointer32;
 	}
 
+	uint8_t address_size = (dw_fmt == FMT_DWARF64) ? 8 : 4;
+
 	switch(address_size)
 	{
-		case sizeof(uint16_t):
-			{
-				if(max_size < sizeof(uint16_t)) return -1;
-				uint16_t value;
-				memcpy(&value, rawdata, sizeof(uint16_t));
-				initial_location = Target2Host(endianness, value);
-				size += sizeof(uint16_t);
-				rawdata += sizeof(uint16_t);
-				max_size -= sizeof(uint16_t);
-			}
-			break;
 		case sizeof(uint32_t):
 			{
 				if(max_size < sizeof(uint32_t)) return -1;
@@ -155,17 +145,6 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 
 	switch(address_size)
 	{
-		case sizeof(uint16_t):
-			{
-				if(max_size < sizeof(uint16_t)) return -1;
-				uint16_t value;
-				memcpy(&value, rawdata, sizeof(uint16_t));
-				address_range = Target2Host(endianness, value);
-				size += sizeof(uint16_t);
-				rawdata += sizeof(uint16_t);
-				max_size -= sizeof(uint16_t);
-			}
-			break;
 		case sizeof(uint32_t):
 			{
 				if(max_size < sizeof(uint32_t)) return -1;
@@ -205,7 +184,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	}
 	
 	if(instructions_length > max_size) return -1;
-	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, instructions_length, rawdata, DW_CFP_INSTRUCTIONS);
+	dw_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, instructions_length, rawdata, DW_CFP_INSTRUCTIONS, dw_fmt);
 	dw_call_frame_prog->SetFDE(this);
 	size += instructions_length;
 
@@ -286,7 +265,14 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	std::stringstream sstr_cfi;
 	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
 	const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(this);
-	sstr_cfi << *cfi;
+	if(cfi)
+	{
+		sstr_cfi << *cfi;
+	}
+	else
+	{
+		sstr_cfi << "Invalid CFI";
+	}
 	c_string_to_HTML(os, sstr_call_frame_prog.str().c_str());
 	os << "<hr>";
 	c_string_to_HTML(os, sstr_cfi.str().c_str());

@@ -44,19 +44,23 @@
 
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mcrr_0xxx(0b0[1]:sub_cond[3]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mcrr_10xx(0b10[2]:sub_cond[2]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mcrr_110x(0b110[3]:sub_cond[1]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mcrr_1110(0b1110[4]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 
 mcrr_0xxx.initialize_condition = {
@@ -90,11 +94,11 @@ mcrr.disasm = {
 	
 	buffer << "mcrr";
 	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " " << cp_num;
-	buffer << ", " << op1;
-	buffer << ", r" << rd;
-	buffer << ", r" << rn;
-	buffer << ", cr" << crm;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", " << (unsigned int) op1;
+	buffer << ", r" << (unsigned int) rd;
+	buffer << ", r" << (unsigned int) rn;
+	buffer << ", cr" << (unsigned int) crm;
 }
 
 mcrr.execute = {
@@ -118,19 +122,23 @@ mcrr.execute = {
 
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mrrc_0xxx(0b0[1]:sub_cond[3]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mrrc_10xx(0b10[2]:sub_cond[2]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mrrc_110x(0b110[3]:sub_cond[1]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op mrrc_1110(0b1110[4]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 
 mrrc_0xxx.initialize_condition = {
@@ -164,11 +172,11 @@ mrrc.disasm = {
 
 	buffer << "mrrc";
 	DisasmCondition(inherited::cond_init, buffer);
-	buffer << " " << cp_num;
-	buffer << ", " << op1;
-	buffer << ", r" << rd;
-	buffer << ", r" << rn;
-	buffer << ", cr" << crm;
+	buffer << " " << (unsigned int) cp_num;
+	buffer << ", " << (unsigned int) op1;
+	buffer << ", r" << (unsigned int) rd;
+	buffer << ", r" << (unsigned int) rn;
+	buffer << ", cr" << (unsigned int) crm;
 }
 
 mrrc.execute = {

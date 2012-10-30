@@ -336,20 +336,26 @@ inline void CPU<CONFIG>::EmuStore(T value, typename CONFIG::address_t ea)
 template <class CONFIG>
 inline void CPU<CONFIG>::MonitorLoad(typename CONFIG::address_t ea, uint32_t size)
 {
-	// Memory access reporting
-	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	if(likely(size > 0))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_DATA, ea, size);
+		// Memory access reporting
+		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+		{
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, ea, size);
+		}
 	}
 }
 
 template <class CONFIG>
 inline void CPU<CONFIG>::MonitorStore(typename CONFIG::address_t ea, uint32_t size)
 {
-	// Memory access reporting
-	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+	if(likely(size > 0))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_WRITE, MemoryAccessReporting<typename CONFIG::address_t>::MT_DATA, ea, size);
+		// Memory access reporting
+		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+		{
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, ea, size);
+		}
 	}
 }
 
@@ -643,13 +649,8 @@ bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer
 {
 	if(size > 0)
 	{
-		MMUAccess<CONFIG> mmu_access;
-		mmu_access.pid = GetProcessID();
-		mmu_access.as = GetDataAddressSpace();
-		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = CONFIG::MAT_READ;
-		mmu_access.memory_type = CONFIG::MT_DATA;
-		
+		typename CONFIG::address_t buf_addr = addr;
+		uint32_t buf_size = size;
 		uint32_t sz;
 		uint8_t *dst = (uint8_t *) buffer;
 		do
@@ -657,16 +658,24 @@ bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer
 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
 
-			// Address translation
+			MMUAccess<CONFIG> mmu_access;
 			mmu_access.addr = addr;
+			mmu_access.pid = GetProcessID();
+			mmu_access.as = GetDataAddressSpace();
+			mmu_access.privilege_level = GetPrivilegeLevel();
+			mmu_access.memory_access_type = CONFIG::MAT_READ;
+			mmu_access.memory_type = CONFIG::MT_DATA;
 
 			EmuTranslateAddress<false>(mmu_access);
-				
+
 			EmuLoad(mmu_access, dst, sz);
+			
 			dst += sz;
 			addr += sz;
 			size -= sz;
 		} while(size > 0);
+		
+		MonitorLoad(buf_addr, buf_size);
 	}
 	return true;
 }
@@ -676,33 +685,102 @@ bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void 
 {
 	if(size > 0)
 	{
-		MMUAccess<CONFIG> mmu_access;
-		mmu_access.pid = GetProcessID();
-		mmu_access.as = GetDataAddressSpace();
-		mmu_access.privilege_level = GetPrivilegeLevel();
-		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
-		mmu_access.memory_type = CONFIG::MT_DATA;
-
+		typename CONFIG::address_t buf_addr = addr;
+		uint32_t buf_size = size;
 		uint32_t sz;
 		const uint8_t *src = (const uint8_t *) buffer;
 		do
 		{
 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
-
-			// Address translation
+			
+			MMUAccess<CONFIG> mmu_access;
 			mmu_access.addr = addr;
+			mmu_access.pid = GetProcessID();
+			mmu_access.as = GetDataAddressSpace();
+			mmu_access.privilege_level = GetPrivilegeLevel();
+			mmu_access.memory_access_type = CONFIG::MAT_WRITE;
+			mmu_access.memory_type = CONFIG::MT_DATA;
 
 			EmuTranslateAddress<false>(mmu_access);
-
+			
 			EmuStore(mmu_access, src, sz);
+			
 			src += sz;
 			addr += sz;
 			size -= sz;
 		} while(size > 0);
+		
+		MonitorStore(buf_addr, buf_size);
 	}
 	return true;
 }
+
+// template <class CONFIG>
+// bool CPU<CONFIG>::InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
+// {
+// 	if(size > 0)
+// 	{
+// 		MMUAccess<CONFIG> mmu_access;
+// 		mmu_access.pid = GetProcessID();
+// 		mmu_access.as = GetDataAddressSpace();
+// 		mmu_access.privilege_level = GetPrivilegeLevel();
+// 		mmu_access.memory_access_type = CONFIG::MAT_READ;
+// 		mmu_access.memory_type = CONFIG::MT_DATA;
+// 		
+// 		uint32_t sz;
+// 		uint8_t *dst = (uint8_t *) buffer;
+// 		do
+// 		{
+// 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
+// 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
+// 
+// 			// Address translation
+// 			mmu_access.addr = addr;
+// 
+// 			EmuTranslateAddress<false>(mmu_access);
+// 				
+// 			EmuLoad(mmu_access, dst, sz);
+// 			dst += sz;
+// 			addr += sz;
+// 			size -= sz;
+// 		} while(size > 0);
+// 	}
+// 	return true;
+// }
+// 
+// template <class CONFIG>
+// bool CPU<CONFIG>::InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
+// {
+// 	if(size > 0)
+// 	{
+// 		MMUAccess<CONFIG> mmu_access;
+// 		mmu_access.pid = GetProcessID();
+// 		mmu_access.as = GetDataAddressSpace();
+// 		mmu_access.privilege_level = GetPrivilegeLevel();
+// 		mmu_access.memory_access_type = CONFIG::MAT_WRITE;
+// 		mmu_access.memory_type = CONFIG::MT_DATA;
+// 
+// 		uint32_t sz;
+// 		const uint8_t *src = (const uint8_t *) buffer;
+// 		do
+// 		{
+// 			uint32_t size_to_fsb_boundary = CONFIG::FSB_WIDTH - (addr & (CONFIG::FSB_WIDTH - 1));
+// 			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
+// 
+// 			// Address translation
+// 			mmu_access.addr = addr;
+// 
+// 			EmuTranslateAddress<false>(mmu_access);
+// 
+// 			EmuStore(mmu_access, src, sz);
+// 			src += sz;
+// 			addr += sz;
+// 			size -= sz;
+// 		} while(size > 0);
+// 	}
+// 	return true;
+// }
 
 template <class CONFIG>
 bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)

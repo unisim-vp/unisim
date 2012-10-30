@@ -147,49 +147,37 @@ CPU::CPU(const char *name, Object *parent):
 
 	logger = new unisim::kernel::logger::Logger(*this);
 
-	char buf[80];
+	registers_registry["A"] = new SimpleRegister<uint8_t>("A", &regA);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("A", this, regA, "Accumulator register A"));
 
-	sprintf(buf, "A");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regA);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regA, "Accumulator register A"));
+	registers_registry["B"] = new SimpleRegister<uint8_t>("B", &regB);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>("B", this, regB, "Accumulator register B"));
 
-	sprintf(buf, "B");
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &regB);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint8_t>(buf, this, regB, "Accumulator register B"));
+	registers_registry["D"] = new ConcatenatedRegister<uint16_t,uint8_t>("D", &regA, &regB);
+	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>("D", this,  &regA, &regB, "Accumulator register D"));
 
-	sprintf(buf, "D");
-	registers_registry[buf] = new ConcatenatedRegister<uint16_t,uint8_t>(buf, &regA, &regB);
-	extended_registers_registry.push_back(new ConcatenatedRegisterView<uint16_t,uint8_t>(buf, this,  &regA, &regB, "Accumulator register D"));
+	registers_registry["X"] = new SimpleRegister<uint16_t>("X", &regX);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("X", this, regX, "Index register X"));
 
-	sprintf(buf, "X");
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regX);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regX, "Index register X"));
+	registers_registry["Y"] = new SimpleRegister<uint16_t>("Y", &regY);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("Y", this, regY, "Index register Y"));
 
-	sprintf(buf, "Y");
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regY);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regY, "Index register Y"));
+	registers_registry["SP"] = new SimpleRegister<uint16_t>("SP", &regSP);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("SP", this, regSP, "Stack Pointer SP"));
 
-	sprintf(buf, "SP");
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regSP);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regSP, "Stack Pointer SP"));
+	registers_registry["PC"] = new SimpleRegister<uint16_t>("PC", &regPC);
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>("PC", this, regPC, "Program counter PC"));
 
-	sprintf(buf, "PC");
-	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &regPC);
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, regPC, "Program counter PC"));
-
-	sprintf(buf, "%s", ccr->GetName());
-	registers_registry[buf] = ccr;
-	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(buf, this, ccrReg, "CCR"));
+	registers_registry[ccr->GetName()] = ccr;
+	extended_registers_registry.push_back(new unisim::kernel::service::Register<uint16_t>(ccr->GetName(), this, ccrReg, "CCR"));
 
 	unisim::util::debug::Register *ccrl = ccr->GetLowRegister();
-	sprintf(buf, "%s", ccrl->GetName());
-	registers_registry[buf] = ccrl;
-	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
+	registers_registry[ccrl->GetName()] = ccrl;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrl->GetName(), this, ccrReg, TimeBaseRegisterView::TB_LOW, "CCR LOW"));
 
 	unisim::util::debug::Register *ccrh = ccr->GetHighRegister();
-	sprintf(buf, "%s", ccrh->GetName());
-	registers_registry[buf] = ccrh;
-	extended_registers_registry.push_back(new TimeBaseRegisterView(buf, this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
+	registers_registry[ccrh->GetName()] = ccrh;
+	extended_registers_registry.push_back(new TimeBaseRegisterView(ccrh->GetName(), this, ccrReg, TimeBaseRegisterView::TB_HIGH, "CCR HIGH"));
 
 }
 
@@ -244,11 +232,6 @@ void CPU::Reset()
 //=                    execution handling methods                     =
 //=====================================================================
 
-
-void CPU::Stop(int ret)
-{
-	exit(ret);
-}
 
 void CPU::Sync()
 {
@@ -327,7 +310,7 @@ uint8_t CPU::step()
 							<< std::hex << getRegPC() << std::dec
 							<< std::endl << EndDebugInfo;
 
-					memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_INSN, getRegPC(), MAX_INS_SIZE);
+					memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, getRegPC(), MAX_INS_SIZE);
 				}
 			}
 

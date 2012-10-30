@@ -559,7 +559,7 @@ chmod +x ${INSTALL_DIR}/lib/tkConfig.sh
 cp -f ${INSTALL_DIR}/lib/tclConfig.sh ${INSTALL_DIR}/bin
 cp -f ${INSTALL_DIR}/lib/tkConfig.sh ${INSTALL_DIR}/bin
 InstallBinArchive gperf-${GPERF_VERSION}-mingw32.tar.bz2 '.' mingw
-
+InstallBinArchive nc-1.11-mingw32.tar.bz2 '.'
 
 # cp -rf ${INSTALL_DIR}/usr/local ${INSTALL_DIR}/.
 # cp -rf ${INSTALL_DIR}/usr/spool ${INSTALL_DIR}/.
@@ -573,12 +573,15 @@ rm -rf ${INSTALL_DIR}/coreutils-5.97
 
 # Install some addtional utilities from gnuwin32
 
-InstallBinArchive unrar-bin.zip http://gnuwin32.sourceforge.net/downlinks/unrar-bin-zip.php
+InstallBinArchive unrar-bin.zip http://gnuwin32.sourceforge.net/downlinks/unrar-bin-zip.php opt
 #InstallBinArchive unzip-bin.zip http://gnuwin32.sourceforge.net/downlinks/unzip-bin-zip.php
 #InstallBinArchive zip-bin.zip http://gnuwin32.sourceforge.net/downlinks/zip-bin-zip.php
 #InstallBinArchive libintl-bin.zip http://gnuwin32.sourceforge.net/downlinks/libintl-bin-zip.php
 #InstallBinArchive libiconv-bin.zip http://gnuwin32.sourceforge.net/downlinks/libiconv-bin-zip.php
 #InstallBinArchive wget-bin.zip http://gnuwin32.sourceforge.net/downlinks/wget-bin-zip.php
+InstallBinArchive libiconv-1.9.2-1-bin.zip http://gnuwin32.sourceforge.net/downlinks/libiconv-bin-zip.php opt
+InstallBinArchive libintl-0.14.4-bin.zip http://gnuwin32.sourceforge.net/downlinks/libintl-bin-zip.php opt
+InstallBinArchive util-linux-ng-2.14.1-bin.zip http://downloads.sourceforge.net/gnuwin32/util-linux-ng-2.14.1-bin.zip opt
 
 # Install subversion client
 InstallBinArchive svn-win32-1.3.2.zip http://subversion.tigris.org/files/documents/15/32473/svn-win32-1.3.2.zip
@@ -608,6 +611,8 @@ rm -f ${INSTALL_DIR}/mingw/gtk+-bundle_2.24.10-20120208_win32.README.txt
 # 	mv -f python-3.1.2-mingw32.tar.bz2 ${TMP_DIR}/python-3.1.2-mingw32.tar.bz2
 # fi
 
+# Fix msys.bat to include /opt/bin in the PATH
+sed -i '1 i \@set PATH=/opt/bin;%PATH%' "${INSTALL_DIR}/msys.bat"
 
 # Package everything into a single .EXE installer
 Package mingw32-unisim-pack msys.bat m.ico "--norxvt"

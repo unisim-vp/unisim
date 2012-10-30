@@ -49,6 +49,9 @@ namespace ppc440 {
 template <class CONFIG>
 bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
+	if(!size) return true;
+	if(addr + size <= addr) return false; // detect overflow
+
 	uint32_t read_offset = 0;
 
 	do
@@ -164,6 +167,8 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 				logger << endl << EndDebugInfo;
 			}
 
+			if(!sz) throw std::runtime_error("Internal error");
+
 			size -= sz;
 			read_offset += sz;
 			addr += sz;
@@ -178,6 +183,9 @@ bool CPU<CONFIG>::ReadMemory(typename CONFIG::address_t addr, void *buffer, uint
 template <class CONFIG>
 bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size, typename CONFIG::MemoryType mt, bool translate_addr)
 {
+	if(!size) return true;
+	if(addr + size <= addr) return false; // detect overflow
+
 	uint32_t write_offset = 0;
 
 	do
@@ -215,7 +223,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 		}
 
 		uint32_t size_to_protection_boundary = protection_boundary - addr;
-
+		
 		do
 		{
 			uint32_t sz = 0;
@@ -293,6 +301,7 @@ bool CPU<CONFIG>::WriteMemory(typename CONFIG::address_t addr, const void *buffe
 				logger << endl << EndDebugInfo;
 			}
 
+			if(!sz) throw std::runtime_error("Internal error");
 			size -= sz;
 			write_offset += sz;
 			addr += sz;

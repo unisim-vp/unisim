@@ -184,7 +184,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	}
 	
 	if(initial_instructions_length > max_size) return -1;
-	dw_initial_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, initial_instructions_length, rawdata, DW_CFP_INITIAL_INSTRUCTIONS);
+	dw_initial_call_frame_prog = new DWARF_CallFrameProgram<MEMORY_ADDR>(dw_handler, initial_instructions_length, rawdata, DW_CFP_INITIAL_INSTRUCTIONS, dw_fmt);
 	dw_initial_call_frame_prog->SetCIE(this);
 	size += initial_instructions_length;
 

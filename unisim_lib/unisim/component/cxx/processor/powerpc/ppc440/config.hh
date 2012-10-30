@@ -1098,6 +1098,15 @@ inline std::ostream& operator << (std::ostream& os, const Config::TLB_ENTRY& tlb
 	return os;
 }
 
+class Config_woMMU : public Config
+{
+public:
+	typedef CPU<Config_woMMU> STATE;
+
+	// MMU
+	static const bool HAS_MMU = false;
+};
+
 class Config_wFPU : public Config
 {
 public:
@@ -1123,6 +1132,29 @@ class DebugConfig : public Config
 {
 public:
 	typedef CPU<DebugConfig> STATE;
+
+	// Debug stuff
+	static const bool DEBUG_ENABLE = true;
+	static const bool DEBUG_STEP_ENABLE = true;
+	static const bool DEBUG_DTLB_ENABLE = true;
+	static const bool DEBUG_ITLB_ENABLE = true;
+	static const bool DEBUG_UTLB_ENABLE = true;
+	static const bool DEBUG_DL1_ENABLE = true;
+	static const bool DEBUG_IL1_ENABLE = true;
+	static const bool DEBUG_LOAD_ENABLE = true;
+	static const bool DEBUG_STORE_ENABLE = true;
+	static const bool DEBUG_READ_MEMORY_ENABLE = true;
+	static const bool DEBUG_WRITE_MEMORY_ENABLE = true;
+	static const bool DEBUG_EXCEPTION_ENABLE = true;
+	static const bool DEBUG_SET_MSR_ENABLE = true;
+	static const bool DEBUG_PRINTK_ENABLE = true;
+	static const bool DEBUG_TLBWE_ENABLE = true;
+};
+
+class DebugConfig_woMMU : public Config_woMMU
+{
+public:
+	typedef CPU<DebugConfig_woMMU> STATE;
 
 	// Debug stuff
 	static const bool DEBUG_ENABLE = true;

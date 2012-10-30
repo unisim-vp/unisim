@@ -73,7 +73,14 @@
 #include <boost/graph/graphviz.hpp>
 
 #include "unisim/kernel/service/xml_helper.hh"
-#include <unisim/kernel/debug/debug.hh>
+#include "unisim/kernel/debug/debug.hh"
+#include "unisim/util/likely/likely.hh"
+
+#ifdef WIN32
+#include <fcntl.h>
+//Note: this is to force opening console and files in binary mode on Windows as on UNIX
+int _CRT_fmode = _O_BINARY;
+#endif
 
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size)
@@ -2162,6 +2169,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	, imports()
 	, exports()
 	, variables()
+	, apis()
 	, cmd_args(0)
 	, param_cmd_args(0)
 {
@@ -2223,7 +2231,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 
 	param_enable_press_enter_at_exit = new Parameter<bool>("enable-press-enter-at-exit", 0, enable_press_enter_at_exit, "Enable/Disable pressing key enter at exit");
 	
-	// parse command line arguments
+	// parse command line arguments (first pass)
 	int state = 0;
 	int arg_num;
 	char **arg;
@@ -2343,20 +2351,22 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	{
 		if(GetBinPath(argv[0], bin_dir, program_binary))
 		{
-			//std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
-			//std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
+			// std::cerr << "bin_dir=\"" << bin_dir << "\"" << std::endl;
+			// std::cerr << "program_binary=\"" << program_binary << "\"" << std::endl;
 
 			if ( GetSharePath(bin_dir, shared_data_dir) )
 			{
-				//std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
+				// std::cerr << "shared_data_dir=\"" << shared_data_dir << "\"" << std::endl;
 			}
 			else
 			{
+				// std::cerr << "Could not resolve share data dir path" << std::endl;
 				warn_get_share_path = true;
 			}
 		}
 		else
 		{
+			// std::cerr << "Could not resolve bin and share data dir paths" << std::endl;
 			warn_get_bin_path = true;
 			warn_get_share_path = true;
 		}
@@ -2364,11 +2374,18 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 	else
 	{
 		if ( !ResolvePath(shared_data_dir_hint, string(), shared_data_dir) )
+		{
+			// std::cerr << "Could not resolve share data dir path" << std::endl;
 			warn_get_share_path = true;
+		}
+		else
+		{
+			// std::cerr << "Resolved data dir path: " << shared_data_dir
+			// 	<< std::endl;
+		}
 	}
-	// parse command line arguments
-	// int state = 0;
-	// char **arg;
+
+	// parse command line arguments (second pass)
 	state = 0;
 	
 	for(arg = argv + 1, arg_num = 1; (arg_num < argc) && state != -1;)
@@ -2735,6 +2752,39 @@ void Simulator::Unregister(ServiceExportBase *srv_export)
 	map<const char *, ServiceExportBase *, ltstr>::iterator export_iter;
 	export_iter = exports.find(srv_export->GetName());
 	if(export_iter != exports.end()) exports.erase(export_iter);
+}
+
+void Simulator::Register(unisim::kernel::api::APIBase *api)
+{
+	if ( apis.find(api->GetName()) != apis.end() )
+	{
+		cerr << "ERROR! API \"" << api->GetName() << "\" already exists" << endl;
+		exit(1);
+	}
+
+	apis[api->GetName()] = api;
+}
+
+void Simulator::Unregister(unisim::kernel::api::APIBase *api)
+{
+	map<const char *, unisim::kernel::api::APIBase *, ltstr>::iterator api_iter;
+	api_iter = apis.find(api->GetName());
+	if ( api_iter != apis.end() )
+	{
+		apis.erase(api_iter);
+	}
+}
+
+void Simulator::GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const
+{
+	map<const char *, unisim::kernel::api::APIBase *, ltstr>::const_iterator api_iter;
+
+	for ( api_iter = apis.begin();
+			api_iter != apis.end();
+			api_iter++ )
+	{
+		api_list.push_back(api_iter->second);
+	}
 }
 
 void Simulator::Dump(ostream& os)
@@ -3167,7 +3217,7 @@ Simulator::SetupStatus Simulator::Setup()
 	return status;
 }
 
-void Simulator::Stop(Object *object, int exit_status)
+void Simulator::Stop(Object *object, int exit_status, bool asynchronous)
 {
 }
 
@@ -3775,6 +3825,13 @@ void Simulator::GenerateLatexDocumentation(ostream& os) const
 bool Simulator::IsWarningEnabled() const
 {
 	return enable_warning;
+}
+
+unisim::kernel::api::APIBase *
+Simulator::
+GetAPIs()
+{
+	return 0;
 }
 
 } // end of namespace service

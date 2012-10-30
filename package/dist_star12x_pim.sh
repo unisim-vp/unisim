@@ -110,6 +110,7 @@ unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
+unisim/kernel/api/api.cc \
 unisim/kernel/debug/debug.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
@@ -232,6 +233,7 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
+unisim/kernel/api/api.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/tlm2/tlm.hh \
 unisim/util/arithmetic/arithmetic.hh \
@@ -272,6 +274,7 @@ unisim/util/debug/dwarf/ml.hh \
 unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/frame.hh \
+unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/event.hh \
 unisim/util/endian/endian.hh \
@@ -291,6 +294,7 @@ unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/xml/xml.hh \
+unisim/util/likely/likely.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
 unisim/service/interfaces/debug_control.hh \
@@ -317,11 +321,8 @@ unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
-unisim/service/loader/elf_loader/elf32.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
-unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/telnet/telnet.hh \
@@ -402,6 +403,8 @@ unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/elf_loader/elf32_loader.tcc \
+unisim/service/loader/elf_loader/elf64_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \

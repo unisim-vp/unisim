@@ -770,7 +770,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
 
-void Simulator::Stop(Object *object, int _exit_status)
+void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
@@ -779,7 +779,18 @@ void Simulator::Stop(Object *object, int _exit_status)
 	}
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	sc_stop();
-	wait();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_: 
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
+	}
 }
 
 bool Simulator::read(unsigned int offset, const void *buffer, unsigned int data_length) {

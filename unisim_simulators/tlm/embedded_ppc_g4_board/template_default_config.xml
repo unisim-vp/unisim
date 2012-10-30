@@ -217,11 +217,37 @@
 				<item>false</item>
 			</enumeration>
 		</variable>
+		<variable name="enable-linux-printk-snooping">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable linux printk buffer snooping</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
+		<variable name="enable-linux-syscall-snooping">
+			<type>parameter</type>
+			<data_type>boolean</data_type>
+			<value>false</value>
+			<description>enable/disable linux syscall snooping</description>
+			<enumeration>
+				<item>true</item>
+				<item>false</item>
+			</enumeration>
+		</variable>
 		<variable name="trap-on-instruction-counter">
 			<type>parameter</type>
 			<data_type>unsigned 64-bit integer</data_type>
 			<value>18446744073709551615</value>
 			<description>number of simulated instruction before traping</description>
+		</variable>
+		<variable name="halt-on">
+			<type>parameter</type>
+			<data_type>string</data_type>
+			<value></value>
+			<description>Symbol or address where to stop simulation</description>
 		</variable>
 		<variable name="bus-cycle-time">
 			<type>parameter</type>
@@ -254,6 +280,12 @@
 			<data_type>unsigned 32-bit integer</data_type>
 			<value>16777216</value>
 			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
 		</variable>
 		<variable name="verbose">
 			<type>parameter</type>
@@ -568,7 +600,7 @@
 		<variable name="org">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>memory origin/base address</description>
 		</variable>
 		<variable name="bytesize">
@@ -576,6 +608,12 @@
 			<data_type>unsigned 32-bit integer</data_type>
 			<value>268435456</value>
 			<description>memory size in bytes</description>
+		</variable>
+		<variable name="initial-byte-value">
+			<type>parameter</type>
+			<data_type>unsigned 8-bit integer</data_type>
+			<value>0x00</value>
+			<description></description>
 		</variable>
 		<variable name="verbose">
 			<type>parameter</type>
@@ -748,43 +786,43 @@
 		<variable name="base-address[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="base-address[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="base-address[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="base-address[3]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="base-address[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="base-address[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="base-address[6]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: base address of mapped device</description>
 		</variable>
 		<variable name="size[0]">
@@ -832,43 +870,43 @@
 		<variable name="device-number[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="device-number[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="device-number[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="device-number[3]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="device-number[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="device-number[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="device-number[6]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: device number</description>
 		</variable>
 		<variable name="target-port[0]">
@@ -916,43 +954,43 @@
 		<variable name="register-number[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x10</value>
+			<value>0x00000010</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="register-number[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="register-number[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="register-number[3]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="register-number[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="register-number[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="register-number[6]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description>mapping: BAR offset in PCI device configuration space</description>
 		</variable>
 		<variable name="addr-type[0]">
@@ -1063,7 +1101,7 @@
 		<variable name="protocol">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="pipe-name">
@@ -1081,43 +1119,43 @@
 		<variable name="tcp-port">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x3039</value>
+			<value>0x00003039</value>
 			<description></description>
 		</variable>
 		<variable name="initial-base-addr[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="initial-base-addr[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="initial-base-addr[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="initial-base-addr[3]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="initial-base-addr[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="initial-base-addr[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="address-space[0]">
@@ -1189,76 +1227,58 @@
 		<variable name="region-size[0]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="region-size[1]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="region-size[2]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="region-size[3]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="region-size[4]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="region-size[5]">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="pci-device-number">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x0</value>
+			<value>0x00000000</value>
 			<description></description>
 		</variable>
 		<variable name="pci-bus-frequency">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x21</value>
+			<value>0x00000021</value>
 			<description></description>
 		</variable>
 		<variable name="bus-frequency">
 			<type>parameter</type>
 			<data_type>unsigned 32-bit integer</data_type>
-			<value>0x4b</value>
+			<value>0x0000004b</value>
 			<description></description>
 		</variable>
 	</object>
-	<variable name="authors">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Gilles Mouchard &lt;gilles.mouchard@cea.fr&gt;, Daniel Gracia Pérez &lt;daniel.gracia-perez@cea.fr&gt;</value>
-		<description>Authors</description>
-	</variable>
-	<variable name="copyright">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)</value>
-		<description>Copyright</description>
-	</variable>
-	<variable name="description">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM embedded-ppc-g4-board simulator is a MPC7447A/MPC107 board simulator with support of ELF32, ELF64, S19, and RAW binaries and targeted for industrial applications</value>
-		<description>Description</description>
-	</variable>
 	<variable name="enable-gdb-server">
 		<type>parameter</type>
 		<data_type>boolean</data_type>
@@ -1313,7 +1333,7 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.txt</value>
-		<description>Filename to keep logger output (the option file must be activated)</description>
+		<description>Filename to keep logger output _(the option file must be activated)</description>
 	</variable>
 	<variable name="kernel_logger.std_err">
 		<type>parameter</type>
@@ -1329,7 +1349,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard error output (only works if std_err is active)</description>
+		<description>Colorize logger output through the standard error output _(only works if std_err is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -1349,7 +1369,7 @@
 		<type>parameter</type>
 		<data_type>boolean</data_type>
 		<value>false</value>
-		<description>Colorize logger output through the standard output (only works if std_out is active)</description>
+		<description>Colorize logger output through the standard output _(only works if std_out is active)</description>
 		<enumeration>
 			<item>true</item>
 			<item>false</item>
@@ -1379,13 +1399,7 @@
 		<type>parameter</type>
 		<data_type>string</data_type>
 		<value>logger_output.xml</value>
-		<description>Filename to keep logger xml output (the option xml_file must be activated)</description>
-	</variable>
-	<variable name="license">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>BSD (see file COPYING)</value>
-		<description>License</description>
+		<description>Filename to keep logger xml output _(the option xml_file must be activated)</description>
 	</variable>
 	<variable name="message-spy">
 		<type>parameter</type>
@@ -1396,23 +1410,5 @@
 			<item>true</item>
 			<item>false</item>
 		</enumeration>
-	</variable>
-	<variable name="program-name">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>UNISIM embedded-ppc-g4-board</value>
-		<description>Program name</description>
-	</variable>
-	<variable name="schematic">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value></value>
-		<description>path to simulator schematic</description>
-	</variable>
-	<variable name="version">
-		<type>parameter</type>
-		<data_type>string</data_type>
-		<value>1.1beta2</value>
-		<description>Version</description>
 	</variable>
 </variables>

@@ -175,5 +175,15 @@
 			<dep>unisim::util::debug::blob</dep>
 		</depends>
 	</unit>
+	<unit>
+		<name>unisim::service::interfaces::backtrace</name>
+		<files>
+			<file>unisim/service/interfaces/backtrace.hh</file>
+			<file>unisim/service/interfaces/backtrace/CMakeLists.txt</file>
+		</files>
+		<depends>
+			<dep>unisim::kernel::service</dep>
+		</depends>
+	</unit>
 </package>
 

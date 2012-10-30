@@ -132,7 +132,7 @@ private:
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
-	virtual void Stop(Object *object, int _exit_status);
+	virtual void Stop(Object *object, int _exit_status, bool asynchronous);
 
 	void Run();
 

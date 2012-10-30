@@ -39,6 +39,7 @@
 #include <map>
 #include <vector>
 #include <stack>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -233,6 +234,7 @@ public:
 	MEMORY_ADDR GetLocation() const;
 	DWARF_CFARule<MEMORY_ADDR> *GetCFARule() const;
 	DWARF_RegisterRule<MEMORY_ADDR> *GetRegisterRule(unsigned int reg_num) const;
+	void GetRegisterRulesNumbers(std::set<unsigned int>& reg_rule_nums) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CFIRow<MEMORY_ADDR>& cfi_row);
 private:
 	MEMORY_ADDR location;

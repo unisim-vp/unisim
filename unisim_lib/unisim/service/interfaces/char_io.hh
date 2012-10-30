@@ -47,6 +47,7 @@ public:
 	virtual void Reset() = 0;
 	virtual bool GetChar(char& c) = 0;
 	virtual void PutChar(char c) = 0;
+	virtual void FlushChars() = 0;
 };
 
 } // end of namespace interfaces

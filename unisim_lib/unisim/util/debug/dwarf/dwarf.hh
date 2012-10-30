@@ -78,6 +78,8 @@ namespace debug {
 namespace dwarf {
 
 using unisim::util::endian::endian_type;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
 
 typedef enum
 {
@@ -129,6 +131,7 @@ public:
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 
+	unisim::kernel::logger::Logger& GetLogger() const;
 private:
 	endian_type endianness;
 	uint8_t address_size;
