@@ -53,7 +53,8 @@ public:
 	~DWARF_FDE();
 	
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
 	const DWARF_CIE<MEMORY_ADDR> *GetCIE() const;
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *GetInstructions() const;
 	MEMORY_ADDR GetInitialLocation() const;
@@ -65,6 +66,7 @@ private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
 	uint64_t offset;
+	unsigned int id;
 
 	uint64_t length;               // length not including field 'length'
 	

@@ -55,8 +55,7 @@ class DWARF_CallFrameProgram
 public:
 	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program, unsigned int type, DWARF_Format dw_fmt);
 	~DWARF_CallFrameProgram();
-	endian_type GetEndianness() const;
-	uint8_t GetAddressSize() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 	DWARF_Format GetFormat() const;
 	uint64_t GetLength() const;
 	const uint8_t *GetProgram() const;

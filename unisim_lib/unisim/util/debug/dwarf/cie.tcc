@@ -71,14 +71,14 @@ template <class MEMORY_ADDR>
 int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
-	endian_type endianness = dw_handler->GetEndianness();
+	endian_type file_endianness = dw_handler->GetFileEndianness();
 	uint32_t length32;
 	
 	uint64_t size = 0;
 	int64_t sz;
 	if(max_size < sizeof(length32)) return -1;
 	memcpy(&length32, rawdata, sizeof(length32));
-	length32 = Target2Host(endianness, length32);
+	length32 = Target2Host(file_endianness, length32);
 	rawdata += sizeof(length32);
 	max_size -= sizeof(length32);
 	size += sizeof(length32);
@@ -90,7 +90,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		uint64_t length64;
 		if(max_size < sizeof(length64)) return -1;
 		memcpy(&length64, rawdata, sizeof(length64));
-		length64 = Target2Host(endianness, length64);
+		length64 = Target2Host(file_endianness, length64);
 		rawdata += sizeof(length64);
 		max_size -= sizeof(length64);
 		size += sizeof(length64);
@@ -106,7 +106,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		uint64_t cie_id64;
 		if(max_size < sizeof(cie_id64)) return -1;
 		memcpy(&cie_id64, rawdata, sizeof(cie_id64));
-		cie_id64 = Target2Host(endianness, cie_id64);
+		cie_id64 = Target2Host(file_endianness, cie_id64);
 		rawdata += sizeof(cie_id64);
 		max_size -= sizeof(cie_id64);
 		size += sizeof(cie_id64);
@@ -118,7 +118,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		uint32_t cie_id32;
 		if(max_size < sizeof(cie_id32)) return -1;
 		memcpy(&cie_id32, rawdata, sizeof(cie_id32));
-		cie_id32 = Target2Host(endianness, cie_id32);
+		cie_id32 = Target2Host(file_endianness, cie_id32);
 		rawdata += sizeof(cie_id32);
 		max_size -= sizeof(cie_id32);
 		size += sizeof(cie_id32);
@@ -128,7 +128,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 
 	if(max_size < sizeof(version)) return -1;
 	memcpy(&version, rawdata, sizeof(version));
-	version = Target2Host(endianness, version);
+	version = Target2Host(file_endianness, version);
 	rawdata += sizeof(version);
 	max_size -= sizeof(version);
 	size += sizeof(version);
@@ -157,7 +157,7 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		// DWARF v2
 		if(max_size < sizeof(dw2_return_address_register)) return -1;
 		memcpy(&dw2_return_address_register, rawdata, sizeof(dw2_return_address_register));
-		dw2_return_address_register = Target2Host(endianness, dw2_return_address_register);
+		dw2_return_address_register = Target2Host(file_endianness, dw2_return_address_register);
 		rawdata += sizeof(dw2_return_address_register);
 		max_size -= sizeof(dw2_return_address_register);
 		size += sizeof(dw2_return_address_register);
@@ -238,7 +238,7 @@ const DWARF_CallFrameProgram<MEMORY_ADDR> *DWARF_CIE<MEMORY_ADDR>::GetInitialIns
 template <class MEMORY_ADDR>
 std::ostream& DWARF_CIE<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_CIE offset=\"" << offset << "\" version=\"" << (uint32_t) version << "\" augmentation=\"";
+	os << "<DW_CIE id=\"cie-" << id << "\" version=\"" << (uint32_t) version << "\" augmentation=\"";
 	c_string_to_XML(os, augmentation);
 	os << "\" code_alignment_factor=\"" << code_alignment_factor.to_string(false) << "\" data_alignment_factor=\"" << data_alignment_factor.to_string(true) << "\" return_address_register=\"";
 	if(version == 1)

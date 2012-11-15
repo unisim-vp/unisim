@@ -54,9 +54,8 @@ public:
 	~DWARF_CompilationUnit();
 
 	const DWARF_Abbrev *FindAbbrev(const DWARF_LEB128& dw_abbrev_code) const;
-	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 	const char *GetString(uint64_t debug_str_offset) const;
-	endian_type GetEndianness() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 	DWARF_Format GetFormat() const;
 	uint8_t GetAddressSize() const;
 	uint16_t GetVersion() const;
@@ -71,6 +70,7 @@ public:
 	std::ostream& to_HTML(std::ostream& os);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CompilationUnit& dw_cu);
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;

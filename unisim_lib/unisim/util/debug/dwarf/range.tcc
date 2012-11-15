@@ -42,6 +42,7 @@ DWARF_RangeListEntry<MEMORY_ADDR>::DWARF_RangeListEntry(const DWARF_CompilationU
 	: dw_cu(_dw_cu)
 	, next(0)
 	, offset(0xffffffffffffffffULL)
+	, id(0)
 	, begin(0)
 	, end(0)
 {
@@ -114,7 +115,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 	offset = _offset;
 	int64_t size = 0;
 	
-	endian_type endianness = dw_cu->GetEndianness();
+	endian_type file_endianness = dw_cu->GetHandler()->GetFileEndianness();
 	
 	switch(dw_cu->GetAddressSize())
 	{
@@ -123,7 +124,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 				uint16_t begin16;
 				if(max_size < sizeof(begin16)) return -1;
 				memcpy(&begin16, rawdata, sizeof(begin16));
-				begin16 = Target2Host(endianness, begin16);
+				begin16 = Target2Host(file_endianness, begin16);
 				rawdata += sizeof(begin16);
 				max_size -= sizeof(begin16);
 				size += sizeof(begin16);
@@ -132,7 +133,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 				uint16_t end16;
 				if(max_size < sizeof(end16)) return -1;
 				memcpy(&end16, rawdata, sizeof(end16));
-				end16 = Target2Host(endianness, end16);
+				end16 = Target2Host(file_endianness, end16);
 				rawdata += sizeof(end16);
 				max_size -= sizeof(end16);
 				size += sizeof(end16);
@@ -144,7 +145,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 				uint32_t begin32;
 				if(max_size < sizeof(begin32)) return -1;
 				memcpy(&begin32, rawdata, sizeof(begin32));
-				begin32 = Target2Host(endianness, begin32);
+				begin32 = Target2Host(file_endianness, begin32);
 				rawdata += sizeof(begin32);
 				max_size -= sizeof(begin32);
 				size += sizeof(begin32);
@@ -153,7 +154,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 				uint32_t end32;
 				if(max_size < sizeof(end32)) return -1;
 				memcpy(&end32, rawdata, sizeof(end32));
-				end32 = Target2Host(endianness, end32);
+				end32 = Target2Host(file_endianness, end32);
 				rawdata += sizeof(end32);
 				max_size -= sizeof(end32);
 				size += sizeof(end32);
@@ -165,7 +166,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 				uint64_t begin64;
 				if(max_size < sizeof(begin64)) return -1;
 				memcpy(&begin64, rawdata, sizeof(begin64));
-				begin64 = Target2Host(endianness, begin64);
+				begin64 = Target2Host(file_endianness, begin64);
 				rawdata += sizeof(begin64);
 				max_size -= sizeof(begin64);
 				size += sizeof(begin64);
@@ -174,7 +175,7 @@ int64_t DWARF_RangeListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t
 				uint64_t end64;
 				if(max_size < sizeof(end64)) return -1;
 				memcpy(&end64, rawdata, sizeof(end64));
-				end64 = Target2Host(endianness, end64);
+				end64 = Target2Host(file_endianness, end64);
 				rawdata += sizeof(end64);
 				max_size -= sizeof(end64);
 				size += sizeof(end64);
@@ -197,7 +198,7 @@ std::ostream& DWARF_RangeListEntry<MEMORY_ADDR>::to_XML(std::ostream& os) const
 		os << "<DW_BASE_ADDRESS_SELECTION offset=\"" << offset << "\" largest_address_offset=\"0x" << std::hex << begin << std::dec << "\" address=\"0x" << std::hex << end << std::dec << "\"/>";
 		return os;
 	}
-	os << "<DW_RANGE offset=\"" << offset << "\" begin_address_offset=\"0x" << std::hex << begin << std::dec << "\" end_address_offset=\"0x" << std::hex << end << std::dec << "\"/>";
+	os << "<DW_RANGE id=\"range-" << id << "\" offset=\"" << offset << "\" begin_address_offset=\"0x" << std::hex << begin << std::dec << "\" end_address_offset=\"0x" << std::hex << end << std::dec << "\"/>";
 	return os;
 }
 

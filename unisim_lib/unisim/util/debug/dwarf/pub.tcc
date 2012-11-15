@@ -41,6 +41,7 @@ template <class MEMORY_ADDR>
 DWARF_Pub<MEMORY_ADDR>::DWARF_Pub(const DWARF_Pubs<MEMORY_ADDR> *_dw_pubs)
 	: dw_pubs(_dw_pubs)
 	, dw_die(0)
+	, id(0)
 	, debug_info_offset(0xffffffffffffffffULL)
 	, name(0)
 {
@@ -55,7 +56,7 @@ template <class MEMORY_ADDR>
 int64_t DWARF_Pub<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 {
 	DWARF_Format dw_fmt = dw_pubs->GetFormat();
-	endian_type endianness = dw_pubs->GetEndianness();
+	endian_type file_endianness = dw_pubs->GetHandler()->GetFileEndianness();
 	int64_t size = 0;
 	
 	if(dw_fmt == FMT_DWARF64)
@@ -64,7 +65,7 @@ int64_t DWARF_Pub<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 		if(max_size < sizeof(debug_info_offset64)) return -1;
 		memcpy(&debug_info_offset64, rawdata, sizeof(debug_info_offset64));
-		debug_info_offset64 = Target2Host(endianness, debug_info_offset64);
+		debug_info_offset64 = Target2Host(file_endianness, debug_info_offset64);
 		rawdata += sizeof(debug_info_offset64);
 		max_size -= sizeof(debug_info_offset64);
 		size += sizeof(debug_info_offset64);
@@ -76,7 +77,7 @@ int64_t DWARF_Pub<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 		if(max_size < sizeof(debug_info_offset32)) return -1;
 		memcpy(&debug_info_offset32, rawdata, sizeof(debug_info_offset32));
-		debug_info_offset32 = Target2Host(endianness, debug_info_offset32);
+		debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
 		rawdata += sizeof(debug_info_offset32);
 		max_size -= sizeof(debug_info_offset32);
 		size += sizeof(debug_info_offset32);
@@ -108,8 +109,15 @@ bool DWARF_Pub<MEMORY_ADDR>::IsNull() const
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Pub<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+const char *DWARF_Pub<MEMORY_ADDR>::GetName() const
 {
+	return name;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Pub<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
+{
+	id = _id;
 	uint64_t cu_debug_info_offset = dw_pubs->GetDebugInfoOffset();
 	dw_die = dw_handler->FindDIE(cu_debug_info_offset + debug_info_offset);
 	if(!dw_die)
@@ -119,10 +127,16 @@ void DWARF_Pub<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 }
 
 template <class MEMORY_ADDR>
+unsigned int DWARF_Pub<MEMORY_ADDR>::GetId() const
+{
+	return id;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_Pub<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
 	uint64_t cu_debug_info_offset = dw_pubs->GetDebugInfoOffset();
-	os << "<DW_PUB abs_debug_info_offset=\"" << (cu_debug_info_offset + debug_info_offset) << "\" debug_info_offset=\"" << debug_info_offset << "\" name=\"" << name << "\"/>";
+	os << "<DW_PUB id=\"pub-" << dw_pubs->GetId() << "-" << id << "\" abs_debug_info_offset=\"" << (cu_debug_info_offset + debug_info_offset) << "\" debug_info_offset=\"" << debug_info_offset << "\" name=\"" << name << "\" idref=\"die-" << dw_die->GetId() << "\"/>";
 	return os;
 }
 
@@ -146,6 +160,7 @@ DWARF_Pubs<MEMORY_ADDR>::DWARF_Pubs(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
 	, dw_fmt(FMT_DWARF32)
 	, offset(0xffffffffffffffffULL)
+	, id(0)
 	, dw_cu(0)
 	, unit_length(0)
 	, version(0)
@@ -158,12 +173,12 @@ DWARF_Pubs<MEMORY_ADDR>::DWARF_Pubs(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 template <class MEMORY_ADDR>
 DWARF_Pubs<MEMORY_ADDR>::~DWARF_Pubs()
 {
-	unsigned int num_pubs = dw_pubs.size();
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::iterator dw_pub_iter;
 	
-	unsigned int i;
-	for(i = 0; i < num_pubs; i++)
+	for(dw_pub_iter = dw_pubs.begin(); dw_pub_iter != dw_pubs.end(); dw_pub_iter++)
 	{
-		delete dw_pubs[i];
+		DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
+		delete dw_pub;
 	}
 }
 
@@ -174,9 +189,9 @@ uint64_t DWARF_Pubs<MEMORY_ADDR>::GetDebugInfoOffset() const
 }
 
 template <class MEMORY_ADDR>
-endian_type DWARF_Pubs<MEMORY_ADDR>::GetEndianness() const
+DWARF_Handler<MEMORY_ADDR> *DWARF_Pubs<MEMORY_ADDR>::GetHandler() const
 {
-	return dw_handler->GetEndianness();
+	return dw_handler;
 }
 
 template <class MEMORY_ADDR>
@@ -186,15 +201,22 @@ DWARF_Format DWARF_Pubs<MEMORY_ADDR>::GetFormat() const
 }
 
 template <class MEMORY_ADDR>
+const DWARF_Pub<MEMORY_ADDR> *DWARF_Pubs<MEMORY_ADDR>::FindPub(const char *name) const
+{
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter = dw_pubs.find(name);
+	return (dw_pub_iter != dw_pubs.end()) ? (*dw_pub_iter).second : 0;
+}
+
+template <class MEMORY_ADDR>
 int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 {
-	endian_type endianness = dw_handler->GetEndianness();
+	endian_type file_endianness = dw_handler->GetFileEndianness();
 	uint32_t unit_length32;
 	
 	uint64_t size = 0;
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
-	unit_length32 = Target2Host(endianness, unit_length32);
+	unit_length32 = Target2Host(file_endianness, unit_length32);
 	rawdata += sizeof(unit_length32);
 	max_size -= sizeof(unit_length32);
 	size += sizeof(unit_length32);
@@ -206,7 +228,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 		uint64_t unit_length64;
 		if(max_size < sizeof(unit_length64)) return -1;
 		memcpy(&unit_length64, rawdata, sizeof(unit_length64));
-		unit_length64 = Target2Host(endianness, unit_length64);
+		unit_length64 = Target2Host(file_endianness, unit_length64);
 		rawdata += sizeof(unit_length64);
 		max_size -= sizeof(unit_length64);
 		size += sizeof(unit_length64);
@@ -221,7 +243,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 	if(max_size < sizeof(version)) return -1;
 	memcpy(&version, rawdata, sizeof(version));
-	version = Target2Host(endianness, version);
+	version = Target2Host(file_endianness, version);
 	rawdata += sizeof(version);
 	max_size -= sizeof(version);
 	size += sizeof(version);
@@ -234,7 +256,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 		if(max_size < sizeof(debug_info_offset64)) return -1;
 		memcpy(&debug_info_offset64, rawdata, sizeof(debug_info_offset64));
-		debug_info_offset64 = Target2Host(endianness, debug_info_offset64);
+		debug_info_offset64 = Target2Host(file_endianness, debug_info_offset64);
 		rawdata += sizeof(debug_info_offset64);
 		max_size -= sizeof(debug_info_offset64);
 		size += sizeof(debug_info_offset64);
@@ -244,7 +266,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 		if(max_size < sizeof(debug_info_length64)) return -1;
 		memcpy(&debug_info_length64, rawdata, sizeof(debug_info_length64));
-		debug_info_length64 = Target2Host(endianness, debug_info_length64);
+		debug_info_length64 = Target2Host(file_endianness, debug_info_length64);
 		rawdata += sizeof(debug_info_length64);
 		max_size -= sizeof(debug_info_length64);
 		size += sizeof(debug_info_length64);
@@ -256,7 +278,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 		if(max_size < sizeof(debug_info_offset32)) return -1;
 		memcpy(&debug_info_offset32, rawdata, sizeof(debug_info_offset32));
-		debug_info_offset32 = Target2Host(endianness, debug_info_offset32);
+		debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
 		rawdata += sizeof(debug_info_offset32);
 		max_size -= sizeof(debug_info_offset32);
 		size += sizeof(debug_info_offset32);
@@ -266,7 +288,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	
 		if(max_size < sizeof(debug_info_length32)) return -1;
 		memcpy(&debug_info_length32, rawdata, sizeof(debug_info_length32));
-		debug_info_length32 = Target2Host(endianness, debug_info_length32);
+		debug_info_length32 = Target2Host(file_endianness, debug_info_length32);
 		rawdata += sizeof(debug_info_length32);
 		max_size -= sizeof(debug_info_length32);
 		size += sizeof(debug_info_length32);
@@ -293,7 +315,7 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 			break;
 		}
 		
-		dw_pubs.push_back(dw_pub);
+		dw_pubs.insert(std::pair<std::string, DWARF_Pub<MEMORY_ADDR> *>(dw_pub->GetName(), dw_pub));
 	}
 	while(size < ((dw_fmt == FMT_DWARF64) ? (unit_length + sizeof(uint32_t) + sizeof(uint64_t)) : (unit_length + sizeof(uint32_t))));
 	
@@ -303,33 +325,42 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 }
 
 template <class MEMORY_ADDR>
-void DWARF_Pubs<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+void DWARF_Pubs<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
 {
+	id = _id;
 	dw_cu = dw_handler->FindCompilationUnit(debug_info_offset);
 	if(!dw_cu)
 	{
 		dw_handler->GetLogger() << DebugWarning << "While resolving [pubs -> CU] reference, can't find CU (Compilation Unit) in .debug_info at offset " << debug_info_offset << EndDebugWarning;
 	}
 	
-	unsigned int num_pubs = dw_pubs.size();
-	
 	unsigned int i;
-	for(i = 0; i < num_pubs; i++)
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::iterator dw_pub_iter;
+	
+	for(dw_pub_iter = dw_pubs.begin(), i = 0; dw_pub_iter != dw_pubs.end(); dw_pub_iter++, i++)
 	{
-		dw_pubs[i]->Fix(dw_handler);
+		DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
+		dw_pub->Fix(dw_handler, i);
 	}
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_Pubs<MEMORY_ADDR>::GetId() const
+{
+	return id;
 }
 
 template <class MEMORY_ADDR>
 std::ostream& DWARF_Pubs<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_PUBS unit_length=\"" << unit_length << "\" version=\"" << version << "\" debug_info_offset=\"" << debug_info_offset << "\" debug_info_length=\"" << debug_info_length << "\">" << std::endl;
-	unsigned int num_pubs = dw_pubs.size();
+	os << "<DW_PUBS id=\"pubs-" << id << "\" unit_length=\"" << unit_length << "\" version=\"" << version << "\" debug_info_offset=\"" << debug_info_offset << "\" debug_info_length=\"" << debug_info_length << "\" idref=\"cu-" << dw_cu->GetId() << "\">" << std::endl;
 	
-	unsigned int i;
-	for(i = 0; i < num_pubs; i++)
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter;
+	
+	for(dw_pub_iter = dw_pubs.begin(); dw_pub_iter != dw_pubs.end(); dw_pub_iter++)
 	{
-		dw_pubs[i]->to_XML(os);
+		DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
+		dw_pub->to_XML(os);
 		os << std::endl;
 	}
 	os << "</DW_PUBS>";
@@ -340,12 +371,13 @@ template <class MEMORY_ADDR>
 std::ostream& DWARF_Pubs<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 {
 	os << "<tr><td>" << version << "</td><td><a href=\"../" << dw_cu->GetHREF() << "\">cu-" << dw_cu->GetId() << "</a></td><td><table>";
-	unsigned int num_pubs = dw_pubs.size();
 	
-	unsigned int i;
-	for(i = 0; i < num_pubs; i++)
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter;
+	
+	for(dw_pub_iter = dw_pubs.begin(); dw_pub_iter != dw_pubs.end(); dw_pub_iter++)
 	{
-		dw_pubs[i]->to_HTML(os);
+		DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
+		dw_pub->to_HTML(os);
 		os << std::endl;
 	}
 	os << "</table></td></tr>";
@@ -360,12 +392,13 @@ std::ostream& operator << (std::ostream& os, const DWARF_Pubs<MEMORY_ADDR>& dw_p
 	os << " - Version: " << dw_pubs.version << std::endl;
 	os << " - Offset in .debug_info: " << dw_pubs.debug_info_offset << std::endl;
 	os << " - Length in .debug_info: " << dw_pubs.debug_info_length << std::endl;
-	unsigned int num_pubs = dw_pubs.dw_pubs.size();
+
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter;
 	
-	unsigned int i;
-	for(i = 0; i < num_pubs; i++)
+	for(dw_pub_iter = dw_pubs.dw_pubs.begin(); dw_pub_iter != dw_pubs.dw_pubs.end(); dw_pub_iter++)
 	{
-		os << *dw_pubs.dw_pubs[i] << std::endl;
+		DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
+		os << *dw_pub << std::endl;
 	}
 	return os;
 }

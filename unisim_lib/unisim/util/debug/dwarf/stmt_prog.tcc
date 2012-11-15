@@ -61,16 +61,16 @@ DWARF_StatementProgram<MEMORY_ADDR>::~DWARF_StatementProgram()
 }
 
 template <class MEMORY_ADDR>
-endian_type DWARF_StatementProgram<MEMORY_ADDR>::GetEndianness() const
+DWARF_Handler<MEMORY_ADDR> *DWARF_StatementProgram<MEMORY_ADDR>::GetHandler() const
 {
-	return dw_handler->GetEndianness();
+	return dw_handler;
 }
 
 template <class MEMORY_ADDR>
 int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
-	endian_type endianness = dw_handler->GetEndianness();
+	endian_type file_endianness = dw_handler->GetFileEndianness();
 	standard_opcode_lengths.clear();
 	include_directories.clear();
 	filenames.clear();
@@ -81,7 +81,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
-	unit_length32 = Target2Host(endianness, unit_length32);
+	unit_length32 = Target2Host(file_endianness, unit_length32);
 	rawdata += sizeof(unit_length32);
 	max_size -= sizeof(unit_length32);
 	size += sizeof(unit_length32);
@@ -94,7 +94,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		uint64_t unit_length64;
 		if(max_size < sizeof(unit_length64)) return -1;
 		memcpy(&unit_length64, rawdata, sizeof(unit_length64));
-		unit_length64 = Target2Host(endianness, unit_length64);
+		unit_length64 = Target2Host(file_endianness, unit_length64);
 		rawdata += sizeof(unit_length64);
 		max_size -= sizeof(unit_length64);
 		size += sizeof(unit_length64);
@@ -109,7 +109,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 
 	if(max_size < sizeof(version)) return -1;
 	memcpy(&version, rawdata, sizeof(version));
-	version = Target2Host(endianness, version);
+	version = Target2Host(file_endianness, version);
 	rawdata += sizeof(version);
 	max_size -= sizeof(version);
 	size += sizeof(version);
@@ -121,7 +121,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		
 		if(max_size < sizeof(header_length64)) return -1;
 		memcpy(&header_length64, rawdata, sizeof(header_length64));
-		header_length64 = Target2Host(endianness, header_length64);
+		header_length64 = Target2Host(file_endianness, header_length64);
 		rawdata += sizeof(header_length64);
 		max_size -= sizeof(header_length64);
 		size += sizeof(header_length64);
@@ -133,7 +133,7 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		
 		if(max_size < sizeof(header_length32)) return -1;
 		memcpy(&header_length32, rawdata, sizeof(header_length32));
-		header_length32 = Target2Host(endianness, header_length32);
+		header_length32 = Target2Host(file_endianness, header_length32);
 		rawdata += sizeof(header_length32);
 		max_size -= sizeof(header_length32);
 		size += sizeof(header_length32);
@@ -154,35 +154,35 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 
 	if(max_size < sizeof(minimum_instruction_length)) return -1;
 	memcpy(&minimum_instruction_length, rawdata, sizeof(minimum_instruction_length));
-	minimum_instruction_length = Target2Host(endianness, minimum_instruction_length);
+	minimum_instruction_length = Target2Host(file_endianness, minimum_instruction_length);
 	rawdata += sizeof(minimum_instruction_length);
 	max_size -= sizeof(minimum_instruction_length);
 	size += sizeof(minimum_instruction_length);
 
 	if(max_size < sizeof(default_is_stmt)) return -1;
 	memcpy(&default_is_stmt, rawdata, sizeof(default_is_stmt));
-	default_is_stmt = Target2Host(endianness, default_is_stmt);
+	default_is_stmt = Target2Host(file_endianness, default_is_stmt);
 	rawdata += sizeof(default_is_stmt);
 	max_size -= sizeof(default_is_stmt);
 	size += sizeof(default_is_stmt);
 
 	if(max_size < sizeof(line_base)) return -1;
 	memcpy(&line_base, rawdata, sizeof(line_base));
-	line_base = Target2Host(endianness, line_base);
+	line_base = Target2Host(file_endianness, line_base);
 	rawdata += sizeof(line_base);
 	max_size -= sizeof(line_base);
 	size += sizeof(line_base);
 
 	if(max_size < sizeof(line_range)) return -1;
 	memcpy(&line_range, rawdata, sizeof(line_range));
-	line_range = Target2Host(endianness, line_range);
+	line_range = Target2Host(file_endianness, line_range);
 	rawdata += sizeof(line_range);
 	max_size -= sizeof(line_range);
 	size += sizeof(line_range);
 	
 	if(max_size < sizeof(opcode_base)) return -1;
 	memcpy(&opcode_base, rawdata, sizeof(opcode_base));
-	opcode_base = Target2Host(endianness, opcode_base);
+	opcode_base = Target2Host(file_endianness, opcode_base);
 	rawdata += sizeof(opcode_base);
 	max_size -= sizeof(opcode_base);
 	size += sizeof(opcode_base);
@@ -279,7 +279,7 @@ std::ostream& DWARF_StatementProgram<MEMORY_ADDR>::to_XML(std::ostream& os) cons
 {
 	unsigned int i;
 	
-	os << "<DW_STMT_PROG unit_length=\"" << unit_length << "\" version=\"" << version << "\" header_length=\"" << header_length << "\"";
+	os << "<DW_STMT_PROG id=\"stmt-prog-" << id << "\" unit_length=\"" << unit_length << "\" version=\"" << version << "\" header_length=\"" << header_length << "\"";
 	os << " minimum_instruction_length=\"" << (uint32_t) minimum_instruction_length << "\" default_is_stmt=\"" << (uint32_t) default_is_stmt << "\"";
 	os << " line_base=\"" << (int32_t) line_base << "\" line_range=\"" << (uint32_t) line_range << "\" opcode_base=\"" << (uint32_t) opcode_base << "\"";
 	os << " standard_opcode_lengths=\"";
@@ -305,7 +305,7 @@ std::ostream& DWARF_StatementProgram<MEMORY_ADDR>::to_XML(std::ostream& os) cons
 	{
 		filenames[i].to_XML(os) << std::endl;
 	}
-	os << "</FILENAMES>" << std::endl;
+	os << "</DW_FILENAMES>" << std::endl;
 	os << "<DW_STMT_PROG_OPCODES>" << std::endl;
 	std::stringstream sstr;
 	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
