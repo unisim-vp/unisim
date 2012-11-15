@@ -149,7 +149,7 @@ bool DWARF_Abbrev::HasChildren() const
 
 std::ostream& DWARF_Abbrev::to_XML(std::ostream& os) const
 {
-	os << "<DW_ABBREV offset=\"" << offset << "\" abbrev_code=\"" << abbrev_code.to_string(false) << "\" tag=\"";
+	os << "<DW_ABBREV id=\"abbrev-" << offset << "\" abbrev_code=\"" << abbrev_code.to_string(false) << "\" tag=\"";
 	c_string_to_XML(os, DWARF_GetTagName((uint16_t) dw_tag));
 	os << "\" children=\"";
 	c_string_to_XML(os, DWARF_GetCHILDRENName(dw_children));

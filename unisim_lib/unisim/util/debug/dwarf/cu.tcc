@@ -66,12 +66,6 @@ DWARF_CompilationUnit<MEMORY_ADDR>::~DWARF_CompilationUnit()
 }
 
 template <class MEMORY_ADDR>
-endian_type DWARF_CompilationUnit<MEMORY_ADDR>::GetEndianness() const
-{
-	return dw_handler->GetEndianness();
-}
-
-template <class MEMORY_ADDR>
 DWARF_Format DWARF_CompilationUnit<MEMORY_ADDR>::GetFormat() const
 {
 	return dw_fmt;
@@ -123,13 +117,13 @@ template <class MEMORY_ADDR>
 int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
-	endian_type endianness = dw_handler->GetEndianness();
+	endian_type file_endianness = dw_handler->GetFileEndianness();
 	uint32_t unit_length32;
 	
 	uint64_t size = 0;
 	if(max_size < sizeof(unit_length32)) return -1;
 	memcpy(&unit_length32, rawdata, sizeof(unit_length32));
-	unit_length32 = Target2Host(endianness, unit_length32);
+	unit_length32 = Target2Host(file_endianness, unit_length32);
 	rawdata += sizeof(unit_length32);
 	max_size -= sizeof(unit_length32);
 	size += sizeof(unit_length32);
@@ -141,7 +135,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 		uint64_t unit_length64;
 		if(max_size < sizeof(unit_length64)) return -1;
 		memcpy(&unit_length64, rawdata, sizeof(unit_length64));
-		unit_length64 = Target2Host(endianness, unit_length64);
+		unit_length64 = Target2Host(file_endianness, unit_length64);
 		rawdata += sizeof(unit_length64);
 		max_size -= sizeof(unit_length64);
 		size += sizeof(unit_length64);
@@ -156,7 +150,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	
 	if(max_size < sizeof(version)) return -1;
 	memcpy(&version, rawdata, sizeof(version));
-	version = Target2Host(endianness, version);
+	version = Target2Host(file_endianness, version);
 	rawdata += sizeof(version);
 	max_size -= sizeof(version);
 	size += sizeof(version);
@@ -169,7 +163,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	
 		if(max_size < sizeof(debug_abbrev_offset64)) return -1;
 		memcpy(&debug_abbrev_offset64, rawdata, sizeof(debug_abbrev_offset64));
-		debug_abbrev_offset64 = Target2Host(endianness, debug_abbrev_offset64);
+		debug_abbrev_offset64 = Target2Host(file_endianness, debug_abbrev_offset64);
 		rawdata += sizeof(debug_abbrev_offset64);
 		max_size -= sizeof(debug_abbrev_offset64);
 		size += sizeof(debug_abbrev_offset64);
@@ -181,7 +175,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	
 		if(max_size < sizeof(debug_abbrev_offset32)) return -1;
 		memcpy(&debug_abbrev_offset32, rawdata, sizeof(debug_abbrev_offset32));
-		debug_abbrev_offset32 = Target2Host(endianness, debug_abbrev_offset32);
+		debug_abbrev_offset32 = Target2Host(file_endianness, debug_abbrev_offset32);
 		rawdata += sizeof(debug_abbrev_offset32);
 		max_size -= sizeof(debug_abbrev_offset32);
 		size += sizeof(debug_abbrev_offset32);
@@ -190,7 +184,7 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 
 	if(max_size < sizeof(address_size)) return -1;
 	memcpy(&address_size, rawdata, sizeof(address_size));
-	address_size = Target2Host(endianness, address_size);
+	address_size = Target2Host(file_endianness, address_size);
 	rawdata += sizeof(address_size);
 	max_size -= sizeof(address_size);
 	size += sizeof(address_size);
@@ -209,8 +203,15 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 		max_size -= sz;
 		size += sz;
 		
-		debug_info_entries.push_back(dw_die);
-		Register(dw_die);
+		if(!dw_die->IsNull())
+		{
+			debug_info_entries.push_back(dw_die);
+			Register(dw_die);
+		}
+		else
+		{
+			delete dw_die;
+		}
  	}
  	while(size < ((dw_fmt == FMT_DWARF64) ? (unit_length + sizeof(uint32_t) + sizeof(uint64_t)) : (unit_length + sizeof(uint32_t))));
 	return size;
@@ -245,7 +246,7 @@ unsigned int DWARF_CompilationUnit<MEMORY_ADDR>::GetId() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_XML(std::ostream& os)
 {
-	os << "<DW_CU offset=\"" << offset
+	os << "<DW_CU id=\"cu-" << id
 	   << "\" unit_length=\"" << unit_length
 	   << "\" version=\"" << version
 	   << "\" debug_abbrev_offset=\"" << debug_abbrev_offset
@@ -310,6 +311,21 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_AD
 		
 		dw_die->BuildStatementMatrix(stmt_matrix);
 	}
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
+{
+	unsigned int num_debug_info_entries = debug_info_entries.size();
+	unsigned int i;
+	for(i = 0; i < num_debug_info_entries; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_die = debug_info_entries[i];
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_die->FindDIEByAddrRange(addr, length);
+		if(dw_found_die) return dw_found_die;
+	}
+	return 0;
 }
 
 } // end of namespace dwarf

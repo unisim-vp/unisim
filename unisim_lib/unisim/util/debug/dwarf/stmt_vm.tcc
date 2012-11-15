@@ -128,7 +128,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 	filenames = dw_stmt_prog->filenames;
 
 	// Run the program
-	endian_type endianness = dw_stmt_prog->GetEndianness();
+	endian_type file_endianness = dw_stmt_prog->GetHandler()->GetFileEndianness();
 	const uint8_t *prg = dw_stmt_prog->program;
 	unsigned int count = dw_stmt_prog->program_length;
 	uint8_t opcode;
@@ -171,7 +171,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							return false;
 						}
 						memcpy(&uhalf_arg, prg, sizeof(uhalf_arg));
-						uhalf_arg = Target2Host(endianness, uhalf_arg);
+						uhalf_arg = Target2Host(file_endianness, uhalf_arg);
 						prg += sizeof(uhalf_arg);
 						count -= sizeof(uhalf_arg);
 					}
@@ -335,7 +335,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 									{
 										uint32_t addr;
 										memcpy(&addr, prg, sizeof(uint32_t));
-										addr = Target2Host(endianness, addr);
+										addr = Target2Host(file_endianness, addr);
 										// Set Address to 'addr'
 										address = addr;
 									}
@@ -344,7 +344,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 									{
 										uint64_t addr;
 										memcpy(&addr, prg, sizeof(uint64_t));
-										addr = Target2Host(endianness, addr);
+										addr = Target2Host(file_endianness, addr);
 										// Set Address to 'addr'
 										address = addr;
 									}

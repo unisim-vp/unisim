@@ -100,6 +100,7 @@ public:
 	DWARF_CFARuleExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	DWARF_CFARuleExpression(const DWARF_CFARuleExpression<MEMORY_ADDR>& cfa_rule_expression);
 	virtual ~DWARF_CFARuleExpression();
+	const DWARF_Expression<MEMORY_ADDR> *GetExpression() const;
 protected:
 	virtual std::ostream& Print(std::ostream& os) const;
 private:

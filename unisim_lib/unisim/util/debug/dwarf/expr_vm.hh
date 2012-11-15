@@ -36,7 +36,8 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_EXPR_VM_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
-#include <unisim/util/debug/register.hh>
+#include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/memory.hh>
 
 namespace unisim {
 namespace util {
@@ -61,6 +62,7 @@ template <class MEMORY_ADDR>
 class DWARF_MemoryLocationPiece : public DWARF_LocationPiece<MEMORY_ADDR>
 {
 public:
+	DWARF_MemoryLocationPiece(MEMORY_ADDR dw_addr);
 	DWARF_MemoryLocationPiece(MEMORY_ADDR dw_addr, unsigned int dw_bit_offset, unsigned int dw_bit_size);
 	~DWARF_MemoryLocationPiece();
 	MEMORY_ADDR GetAddress() const;
@@ -76,13 +78,14 @@ template <class MEMORY_ADDR>
 class DWARF_RegisterLocationPiece : public DWARF_LocationPiece<MEMORY_ADDR>
 {
 public:
-	DWARF_RegisterLocationPiece(unisim::util::debug::Register *dw_reg, unsigned int dw_bit_offset, unsigned int dw_bit_size);
+	DWARF_RegisterLocationPiece(unsigned int dw_reg_num);
+	DWARF_RegisterLocationPiece(unsigned int dw_reg_num, unsigned int dw_bit_offset, unsigned int dw_bit_size);
 	~DWARF_RegisterLocationPiece();
 	unsigned int GetRegisterNumber() const;
 	unsigned int GetBitOffset() const;
 	unsigned int GetBitSize() const;
 private:
-	unisim::util::debug::Register *dw_reg;
+	unsigned int dw_reg_num;
 	unsigned int dw_bit_offset;
 	unsigned int dw_bit_size;
 };
@@ -103,19 +106,26 @@ template <class MEMORY_ADDR>
 class DWARF_ExpressionVM
 {
 public:
-	DWARF_ExpressionVM(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
-	DWARF_ExpressionVM(const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_ExpressionVM();
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
-	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, DWARF_Location<MEMORY_ADDR> *dw_location);
+	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 private:
-	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
-	const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp;
-	unisim::util::debug::Register *registers[32];
+	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	const DWARF_RegisterNumberMapping *reg_num_mapping;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+	unisim::util::endian::endian_type file_endianness;
+	unisim::util::endian::endian_type arch_endianness;
+	unsigned int file_address_size;
+	unsigned int arch_address_size;
+	std::vector<MEMORY_ADDR> dw_stack;
+	bool in_dw_op_reg;
 
-	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, DWARF_Location<MEMORY_ADDR> *dw_location);
+	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 
+	MEMORY_ADDR ReadRegister(unsigned int dw_reg_num) const;
+	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size = 0, MEMORY_ADDR addr_space = 0) const;
 };
 
 } // end of namespace dwarf

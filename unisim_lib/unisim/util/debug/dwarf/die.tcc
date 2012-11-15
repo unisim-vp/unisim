@@ -104,8 +104,16 @@ const std::vector<DWARF_Attribute<MEMORY_ADDR> *>& DWARF_DIE<MEMORY_ADDR>::GetAt
 }
 
 template <class MEMORY_ADDR>
-const DWARF_Attribute<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetAttribute(uint16_t dw_at) const
+const DWARF_Attribute<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindAttribute(uint16_t dw_at) const
 {
+	unsigned int num_attributes = attributes.size();
+	unsigned int i;
+
+	for(i = 0; i < num_attributes; i++)
+	{
+		const DWARF_Attribute<MEMORY_ADDR> *dw_attr = attributes[i];
+		if((uint16_t) dw_attr->GetAbbrevAttribute()->GetTag() == dw_at) return dw_attr;
+	}
 	return 0;
 }
 
@@ -139,7 +147,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	offset = _offset;
 	uint8_t address_size = dw_cu->GetAddressSize();
 	uint8_t offset_size = dw_cu->GetOffsetSize();
-	endian_type endianness = dw_cu->GetEndianness();
+	endian_type file_endianness = dw_cu->GetHandler()->GetFileEndianness();
 	uint64_t size = 0;
 	int64_t sz;
 	DWARF_LEB128 dw_abbrev_code;
@@ -209,7 +217,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								if(max_size < sizeof(uint8_t)) return -1;
 								uint8_t value;
 								memcpy(&value, rawdata, sizeof(uint8_t));
-								addr = Target2Host(endianness, value);
+								addr = Target2Host(file_endianness, value);
 								size += sizeof(uint8_t);
 								rawdata += sizeof(uint8_t);
 								max_size -= sizeof(uint8_t);
@@ -220,7 +228,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								if(max_size < sizeof(uint16_t)) return -1;
 								uint16_t value;
 								memcpy(&value, rawdata, sizeof(uint16_t));
-								addr = Target2Host(endianness, value);
+								addr = Target2Host(file_endianness, value);
 								size += sizeof(uint16_t);
 								rawdata += sizeof(uint16_t);
 								max_size -= sizeof(uint16_t);
@@ -231,7 +239,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								if(max_size < sizeof(uint32_t)) return -1;
 								uint32_t value;
 								memcpy(&value, rawdata, sizeof(uint32_t));
-								addr = Target2Host(endianness, value);
+								addr = Target2Host(file_endianness, value);
 								size += sizeof(uint32_t);
 								rawdata += sizeof(uint32_t);
 								max_size -= sizeof(uint32_t);
@@ -242,7 +250,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 								if(max_size < sizeof(uint64_t)) return -1;
 								uint64_t value;
 								memcpy(&value, rawdata, sizeof(uint64_t));
-								addr = Target2Host(endianness, value);
+								addr = Target2Host(file_endianness, value);
 								size += sizeof(uint64_t);
 								rawdata += sizeof(uint64_t);
 								max_size -= sizeof(uint64_t);
@@ -261,7 +269,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint16_t)) return -1;
 					uint16_t block_length;
 					memcpy(&block_length, rawdata, sizeof(block_length));
-					block_length = Target2Host(endianness, block_length);
+					block_length = Target2Host(file_endianness, block_length);
 					size += sizeof(block_length);
 					rawdata += sizeof(block_length);
 					max_size -= sizeof(block_length);
@@ -309,7 +317,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint32_t)) return -1;
 					uint32_t block_length;
 					memcpy(&block_length, rawdata, sizeof(block_length));
-					block_length = Target2Host(endianness, block_length);
+					block_length = Target2Host(file_endianness, block_length);
 					size += sizeof(block_length);
 					rawdata += sizeof(block_length);
 					max_size -= sizeof(block_length);
@@ -357,7 +365,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint16_t)) return -1;
 					uint16_t value;
 					memcpy(&value, rawdata, sizeof(uint16_t));
-					value = Target2Host(endianness, value);
+					value = Target2Host(file_endianness, value);
 					size += sizeof(uint16_t);
 					rawdata += sizeof(uint16_t);
 					max_size -= sizeof(uint16_t);
@@ -370,7 +378,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint32_t)) return -1;
 					uint32_t value;
 					memcpy(&value, rawdata, sizeof(uint32_t));
-					value = Target2Host(endianness, value);
+					value = Target2Host(file_endianness, value);
 					size += sizeof(uint32_t);
 					rawdata += sizeof(uint32_t);
 					max_size -= sizeof(uint32_t);
@@ -411,7 +419,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint64_t)) return -1;
 					uint64_t value;
 					memcpy(&value, rawdata, sizeof(uint64_t));
-					value = Target2Host(endianness, value);
+					value = Target2Host(file_endianness, value);
 					size += sizeof(uint64_t);
 					rawdata += sizeof(uint64_t);
 					max_size -= sizeof(uint64_t);
@@ -513,7 +521,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint8_t)) return -1;
 					uint8_t block_length;
 					memcpy(&block_length, rawdata, sizeof(block_length));
-					block_length = Target2Host(endianness, block_length);
+					block_length = Target2Host(file_endianness, block_length);
 					size += sizeof(block_length);
 					rawdata += sizeof(block_length);
 					max_size -= sizeof(block_length);
@@ -562,7 +570,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					if(max_size < sizeof(uint8_t)) return -1;
 					uint8_t value;
 					memcpy(&value, rawdata, sizeof(uint8_t));
-					value = Target2Host(endianness, value);
+					value = Target2Host(file_endianness, value);
 					size += sizeof(uint8_t);
 					rawdata += sizeof(uint8_t);
 					max_size -= sizeof(uint8_t);
@@ -607,7 +615,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							
 								if(max_size < sizeof(debug_str_offset16)) return -1;
 								memcpy(&debug_str_offset16, rawdata, sizeof(debug_str_offset16));
-								debug_str_offset16 = Target2Host(endianness, debug_str_offset16);
+								debug_str_offset16 = Target2Host(file_endianness, debug_str_offset16);
 								rawdata += sizeof(debug_str_offset16);
 								max_size -= sizeof(debug_str_offset16);
 								size += sizeof(debug_str_offset16);
@@ -620,7 +628,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							
 								if(max_size < sizeof(debug_str_offset32)) return -1;
 								memcpy(&debug_str_offset32, rawdata, sizeof(debug_str_offset32));
-								debug_str_offset32 = Target2Host(endianness, debug_str_offset32);
+								debug_str_offset32 = Target2Host(file_endianness, debug_str_offset32);
 								rawdata += sizeof(debug_str_offset32);
 								max_size -= sizeof(debug_str_offset32);
 								size += sizeof(debug_str_offset32);
@@ -633,7 +641,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							
 								if(max_size < sizeof(debug_str_offset64)) return -1;
 								memcpy(&debug_str_offset64, rawdata, sizeof(debug_str_offset64));
-								debug_str_offset64 = Target2Host(endianness, debug_str_offset64);
+								debug_str_offset64 = Target2Host(file_endianness, debug_str_offset64);
 								rawdata += sizeof(debug_str_offset64);
 								max_size -= sizeof(debug_str_offset64);
 								size += sizeof(debug_str_offset64);
@@ -673,7 +681,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							
 								if(max_size < sizeof(debug_info_offset16)) return -1;
 								memcpy(&debug_info_offset16, rawdata, sizeof(debug_info_offset16));
-								debug_info_offset16 = Target2Host(endianness, debug_info_offset16);
+								debug_info_offset16 = Target2Host(file_endianness, debug_info_offset16);
 								rawdata += sizeof(debug_info_offset16);
 								max_size -= sizeof(debug_info_offset16);
 								size += sizeof(debug_info_offset16);
@@ -686,7 +694,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							
 								if(max_size < sizeof(debug_info_offset32)) return -1;
 								memcpy(&debug_info_offset32, rawdata, sizeof(debug_info_offset32));
-								debug_info_offset32 = Target2Host(endianness, debug_info_offset32);
+								debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
 								rawdata += sizeof(debug_info_offset32);
 								max_size -= sizeof(debug_info_offset32);
 								size += sizeof(debug_info_offset32);
@@ -699,7 +707,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 							
 								if(max_size < sizeof(debug_info_offset64)) return -1;
 								memcpy(&debug_info_offset64, rawdata, sizeof(debug_info_offset64));
-								debug_info_offset64 = Target2Host(endianness, debug_info_offset64);
+								debug_info_offset64 = Target2Host(file_endianness, debug_info_offset64);
 								rawdata += sizeof(debug_info_offset64);
 								max_size -= sizeof(debug_info_offset64);
 								size += sizeof(debug_info_offset64);
@@ -719,7 +727,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					
 					if(max_size < sizeof(debug_info_offset)) return -1;
 					memcpy(&debug_info_offset, rawdata, sizeof(debug_info_offset));
-					debug_info_offset = Target2Host(endianness, debug_info_offset);
+					debug_info_offset = Target2Host(file_endianness, debug_info_offset);
 					rawdata += sizeof(debug_info_offset);
 					max_size -= sizeof(debug_info_offset);
 					size += sizeof(debug_info_offset);
@@ -734,7 +742,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					
 					if(max_size < sizeof(debug_info_offset)) return -1;
 					memcpy(&debug_info_offset, rawdata, sizeof(debug_info_offset));
-					debug_info_offset = Target2Host(endianness, debug_info_offset);
+					debug_info_offset = Target2Host(file_endianness, debug_info_offset);
 					rawdata += sizeof(debug_info_offset);
 					max_size -= sizeof(debug_info_offset);
 					size += sizeof(debug_info_offset);
@@ -749,7 +757,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					
 					if(max_size < sizeof(debug_info_offset)) return -1;
 					memcpy(&debug_info_offset, rawdata, sizeof(debug_info_offset));
-					debug_info_offset = Target2Host(endianness, debug_info_offset);
+					debug_info_offset = Target2Host(file_endianness, debug_info_offset);
 					rawdata += sizeof(debug_info_offset);
 					max_size -= sizeof(debug_info_offset);
 					size += sizeof(debug_info_offset);
@@ -764,7 +772,7 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 					
 					if(max_size < sizeof(debug_info_offset)) return -1;
 					memcpy(&debug_info_offset, rawdata, sizeof(debug_info_offset));
-					debug_info_offset = Target2Host(endianness, debug_info_offset);
+					debug_info_offset = Target2Host(file_endianness, debug_info_offset);
 					rawdata += sizeof(debug_info_offset);
 					max_size -= sizeof(debug_info_offset);
 					size += sizeof(debug_info_offset);
@@ -812,10 +820,15 @@ int64_t DWARF_DIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			max_size -= sz;
 			size += sz;
 			
-			children.push_back(dw_die);
-			dw_cu->Register(dw_die);
+			if(!dw_die->IsNull())
+			{
+				children.push_back(dw_die);
+				dw_cu->Register(dw_die);
+			}
 		}
 		while(!dw_die->IsNull());
+		
+		delete dw_die;
 	}
 	
 	abbrev = dw_abbrev;
@@ -861,7 +874,8 @@ std::ostream& DWARF_DIE<MEMORY_ADDR>::to_XML(std::ostream& os)
 {
 	unsigned int i;
 
-	os << "<DW_DIE offset=\"" << offset << "\"" << ">" << std::endl;
+	//os << "<DW_DIE id=\"die-" << id << "\" dw_tag=\"" << DWARF_GetTagName(GetTag()) << "\">" << std::endl;
+	os << "<" << DWARF_GetTagName(GetTag()) << " id=\"die-" << id << "\">" << std::endl;
 	unsigned int num_attributes = attributes.size();
 	for(i = 0; i < num_attributes; i++)
 	{
@@ -872,7 +886,7 @@ std::ostream& DWARF_DIE<MEMORY_ADDR>::to_XML(std::ostream& os)
 	{
 		children[i]->to_XML(os) << std::endl;
 	}
-	os << "</DW_DIE>" << std::endl;
+	os << "</" << DWARF_GetTagName(GetTag()) << ">" << std::endl;
 	return os;
 }
 
@@ -983,6 +997,57 @@ void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const St
 		
 		dw_child->BuildStatementMatrix(stmt_matrix);
 	}
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_at_low_pc = FindAttribute(DW_AT_low_pc);
+	if(dw_at_low_pc)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_low_pc_value = dw_at_low_pc->GetValue();
+		if(dw_at_low_pc_value->GetClass() == DW_CLASS_ADDRESS)
+		{
+			MEMORY_ADDR low_pc = ((const DWARF_Address<MEMORY_ADDR> *) dw_at_low_pc_value)->GetValue();
+			
+			const DWARF_Attribute<MEMORY_ADDR> *dw_at_high_pc = FindAttribute(DW_AT_high_pc);
+			if(dw_at_high_pc)
+			{
+				const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_high_pc_value = dw_at_high_pc->GetValue();
+				if(dw_at_high_pc_value->GetClass() == DW_CLASS_ADDRESS)
+				{
+					MEMORY_ADDR high_pc = ((const DWARF_Address<MEMORY_ADDR> *) dw_at_high_pc_value)->GetValue();
+					
+					MEMORY_ADDR high_addr = addr + length;
+					
+					return ((high_pc < high_addr) ? high_pc : high_addr) > ((low_pc < addr) ? addr : low_pc);
+				}
+			}
+			else
+			{
+				// single address
+				return (addr == low_pc);
+			}
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
+{
+	if(HasOverlap(addr, length)) return this;
+	
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_child->FindDIEByAddrRange(addr, length);
+		if(dw_found_die) return dw_found_die;
+	}
+	return 0;
 }
 
 } // end of namespace dwarf

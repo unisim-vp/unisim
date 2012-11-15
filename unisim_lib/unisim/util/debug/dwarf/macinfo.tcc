@@ -161,7 +161,7 @@ std::string DWARF_MacInfoListEntryDefine<MEMORY_ADDR>::to_string() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryDefine<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_MACINFO_define offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" lineno=\"" << lineno.to_string(false) << "\" preprocessor_symbol_name=\"";
+	os << "<DW_MACINFO_define id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\" lineno=\"" << lineno.to_string(false) << "\" preprocessor_symbol_name=\"";
 	c_string_to_XML(os, preprocessor_symbol_name);
 	os << "\"/>";
 	return os;
@@ -269,7 +269,7 @@ std::string DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::to_string() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryUndef<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_MACINFO_undef offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" lineno=\"" << lineno.to_string(false) << "\" preprocessor_symbol_name=\"";
+	os << "<DW_MACINFO_undef id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\" lineno=\"" << lineno.to_string(false) << "\" preprocessor_symbol_name=\"";
 	c_string_to_XML(os, preprocessor_symbol_name);
 	os << "\"/>";
 	return os;
@@ -374,7 +374,7 @@ std::string DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::to_string() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryStartFile<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_MACINFO_start_file offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" lineno=\"" << lineno.to_string(false) << "\" file_idx=\"" << file_idx.to_string(false) << "\"/>";
+	os << "<DW_MACINFO_start_file id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\" lineno=\"" << lineno.to_string(false) << "\" file_idx=\"" << file_idx.to_string(false) << "\"/>";
 	return os;
 }
 
@@ -448,7 +448,7 @@ std::string DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::to_string() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryEndFile<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_MACINFO_end_file offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\"/>";
+	os << "<DW_MACINFO_end_file id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\"/>";
 	return os;
 }
 
@@ -542,7 +542,7 @@ std::string DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_string() cons
 template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryVendorExtension<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_MACINFO_vendor_ext offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\" vendor_ext_constant=\"" << vendor_ext_constant.to_string(false) << "\" vendor_ext_string=\"";
+	os << "<DW_MACINFO_vendor_ext id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\" vendor_ext_constant=\"" << vendor_ext_constant.to_string(false) << "\" vendor_ext_string=\"";
 	c_string_to_XML(os, vendor_ext_string);
 	os << "\"/>";
 	return os;
@@ -620,7 +620,7 @@ std::string DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_string() const
 template <class MEMORY_ADDR>
 std::ostream& DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_MACINFO_null offset=\"" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetOffset() << "\"/>";
+	os << "<DW_MACINFO_null id=\"mac-" << DWARF_MacInfoListEntry<MEMORY_ADDR>::GetId() << "\"/>";
 	return os;
 }
 

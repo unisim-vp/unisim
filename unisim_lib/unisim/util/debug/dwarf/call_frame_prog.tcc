@@ -55,23 +55,16 @@ DWARF_CallFrameProgram<MEMORY_ADDR>::~DWARF_CallFrameProgram()
 }
 
 template <class MEMORY_ADDR>
+DWARF_Handler<MEMORY_ADDR> *DWARF_CallFrameProgram<MEMORY_ADDR>::GetHandler() const
+{
+	return dw_handler;
+}
+
+template <class MEMORY_ADDR>
 unsigned int DWARF_CallFrameProgram<MEMORY_ADDR>::GetType() const
 {
 	return type;
 }
-
-template <class MEMORY_ADDR>
-endian_type DWARF_CallFrameProgram<MEMORY_ADDR>::GetEndianness() const
-{
-	return dw_handler->GetEndianness();
-}
-
-template <class MEMORY_ADDR>
-uint8_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetAddressSize() const
-{
-	return dw_handler->GetAddressSize();
-}
-
 
 template <class MEMORY_ADDR>
 uint64_t DWARF_CallFrameProgram<MEMORY_ADDR>::GetLength() const

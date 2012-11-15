@@ -56,6 +56,7 @@ public:
 	bool IsBaseAddressSelection() const;
 	bool IsEndOfList() const;
 	uint64_t GetOffset() const;
+	const DWARF_Expression<MEMORY_ADDR> *GetLocationExpression() const;
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	std::string GetHREF() const;
 	unsigned int GetId() const;
@@ -72,7 +73,7 @@ private:
 	DWARF_LocListEntry<MEMORY_ADDR> *next;
 	MEMORY_ADDR begin_addr_offset;
 	MEMORY_ADDR end_addr_offset;
-	DWARF_Expression<MEMORY_ADDR> *dw_expr;
+	DWARF_Expression<MEMORY_ADDR> *dw_loc_expr;
 };
 
 } // end of namespace dwarf

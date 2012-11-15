@@ -257,6 +257,8 @@ public:
 	DWARF_Expression(const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp, uint64_t length, const uint8_t *value);
 	DWARF_Expression(const DWARF_Expression<MEMORY_ADDR>& dw_exp);
 	~DWARF_Expression();
+	const DWARF_CompilationUnit<MEMORY_ADDR> *GetCompilationUnit() const;
+	const DWARF_CallFrameProgram<MEMORY_ADDR> *GetCallFrameProgram() const;
 	uint64_t GetLength() const;
 	const uint8_t *GetValue() const;
 	virtual std::string to_string() const;

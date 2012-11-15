@@ -68,6 +68,7 @@ typedef enum
 	OPT_VERBOSE,
 	OPT_PARSE_DWARF,
 	OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY,
+	OPT_DWARF_TO_XML_OUTPUT_FILENAME,
 	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME
 } Option;
 	
@@ -119,6 +120,7 @@ private:
 	unisim::service::interfaces::Registers *regs_if;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	string dwarf_to_html_output_directory;
+	string dwarf_to_xml_output_filename;
 	string dwarf_register_number_mapping_filename;
 	bool verbose;
 	endian_type endianness;

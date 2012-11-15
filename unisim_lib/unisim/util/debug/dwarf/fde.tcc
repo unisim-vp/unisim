@@ -42,7 +42,15 @@ namespace dwarf {
 template <class MEMORY_ADDR>
 DWARF_FDE<MEMORY_ADDR>::DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
+	, dw_fmt(FMT_DWARF32)
+	, offset(0)
+	, id(0)
+	, length(0)
+	, cie_pointer(0)
+	, initial_location(0)
+	, address_range(0)
 	, dw_call_frame_prog(0)
+	, dw_cie(0)
 {
 }
 
@@ -59,13 +67,13 @@ template <class MEMORY_ADDR>
 int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
 {
 	offset = _offset;
-	endian_type endianness = dw_handler->GetEndianness();
+	endian_type file_endianness = dw_handler->GetFileEndianness();
 	uint32_t length32;
 	
 	uint64_t size = 0;
 	if(max_size < sizeof(length32)) return -1;
 	memcpy(&length32, rawdata, sizeof(length32));
-	length32 = Target2Host(endianness, length32);
+	length32 = Target2Host(file_endianness, length32);
 	rawdata += sizeof(length32);
 	max_size -= sizeof(length32);
 	size += sizeof(length32);
@@ -77,7 +85,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		uint64_t length64;
 		if(max_size < sizeof(length64)) return -1;
 		memcpy(&length64, rawdata, sizeof(length64));
-		length64 = Target2Host(endianness, length64);
+		length64 = Target2Host(file_endianness, length64);
 		rawdata += sizeof(length64);
 		max_size -= sizeof(length64);
 		size += sizeof(length64);
@@ -93,7 +101,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		uint64_t cie_pointer64;
 		if(max_size < sizeof(cie_pointer64)) return -1;
 		memcpy(&cie_pointer64, rawdata, sizeof(cie_pointer64));
-		cie_pointer64 = Target2Host(endianness, cie_pointer64);
+		cie_pointer64 = Target2Host(file_endianness, cie_pointer64);
 		rawdata += sizeof(cie_pointer64);
 		max_size -= sizeof(cie_pointer64);
 		size += sizeof(cie_pointer64);
@@ -105,7 +113,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		uint32_t cie_pointer32;
 		if(max_size < sizeof(cie_pointer32)) return -1;
 		memcpy(&cie_pointer32, rawdata, sizeof(cie_pointer32));
-		cie_pointer32 = Target2Host(endianness, cie_pointer32);
+		cie_pointer32 = Target2Host(file_endianness, cie_pointer32);
 		rawdata += sizeof(cie_pointer32);
 		max_size -= sizeof(cie_pointer32);
 		size += sizeof(cie_pointer32);
@@ -122,7 +130,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 				if(max_size < sizeof(uint32_t)) return -1;
 				uint32_t value;
 				memcpy(&value, rawdata, sizeof(uint32_t));
-				initial_location = Target2Host(endianness, value);
+				initial_location = Target2Host(file_endianness, value);
 				size += sizeof(uint32_t);
 				rawdata += sizeof(uint32_t);
 				max_size -= sizeof(uint32_t);
@@ -133,7 +141,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 				if(max_size < sizeof(uint64_t)) return -1;
 				uint64_t value;
 				memcpy(&value, rawdata, sizeof(uint64_t));
-				initial_location = Target2Host(endianness, value);
+				initial_location = Target2Host(file_endianness, value);
 				size += sizeof(uint64_t);
 				rawdata += sizeof(uint64_t);
 				max_size -= sizeof(uint64_t);
@@ -150,7 +158,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 				if(max_size < sizeof(uint32_t)) return -1;
 				uint32_t value;
 				memcpy(&value, rawdata, sizeof(uint32_t));
-				address_range = Target2Host(endianness, value);
+				address_range = Target2Host(file_endianness, value);
 				size += sizeof(uint32_t);
 				rawdata += sizeof(uint32_t);
 				max_size -= sizeof(uint32_t);
@@ -161,7 +169,7 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 				if(max_size < sizeof(uint64_t)) return -1;
 				uint64_t value;
 				memcpy(&value, rawdata, sizeof(uint64_t));
-				address_range = Target2Host(endianness, value);
+				address_range = Target2Host(file_endianness, value);
 				size += sizeof(uint64_t);
 				rawdata += sizeof(uint64_t);
 				max_size -= sizeof(uint64_t);
@@ -192,8 +200,9 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 }
 
 template <class MEMORY_ADDR>
-void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
+void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
 {
+	id = _id;
 	dw_cie = dw_handler->FindCIE(cie_pointer);
 	if(!dw_cie)
 	{
@@ -237,16 +246,16 @@ MEMORY_ADDR DWARF_FDE<MEMORY_ADDR>::GetAddressRange() const
 // 	return sstr.str();
 // }
 // 
-// template <class MEMORY_ADDR>
-// unsigned int DWARF_FDE<MEMORY_ADDR>::GetId() const
-// {
-// 	return id;
-// }
+template <class MEMORY_ADDR>
+unsigned int DWARF_FDE<MEMORY_ADDR>::GetId() const
+{
+	return id;
+}
 
 template <class MEMORY_ADDR>
 std::ostream& DWARF_FDE<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	os << "<DW_FDE offset=\"" << offset << "\" length=\"" << length << "\" cie_pointer=\"" << cie_pointer << "\" initial_location=\"0x" << std::hex << initial_location << std::dec << "\" address_range=\"0x" << std::hex << address_range << std::dec << "\" call_frame_program=\"";
+	os << "<DW_FDE id=\"fde-" << id << "\" length=\"" << length << "\" cie_pointer=\"" << cie_pointer << "\" idref=\"cie-" << dw_cie->GetId() << "\" initial_location=\"0x" << std::hex << initial_location << std::dec << "\" address_range=\"0x" << std::hex << address_range << std::dec << "\" call_frame_program=\"";
 	std::stringstream sstr;
 	sstr << *dw_call_frame_prog;
 	c_string_to_XML(os, sstr.str().c_str());

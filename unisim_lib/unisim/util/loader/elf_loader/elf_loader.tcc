@@ -126,6 +126,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			dwarf_to_html_output_directory = s;
 			break;
+		case OPT_DWARF_TO_XML_OUTPUT_FILENAME:
+			dwarf_to_xml_output_filename = s;
+			break;
 		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
 			dwarf_register_number_mapping_filename = s;
 			break;
@@ -183,6 +186,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			s = dwarf_to_html_output_directory;
+			break;
+		case OPT_DWARF_TO_XML_OUTPUT_FILENAME:
+			s = dwarf_to_xml_output_filename;
 			break;
 		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
 			s = dwarf_register_number_mapping_filename;
@@ -582,6 +588,14 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					logger << DebugInfo << "Dumping DWARF debugging informations as HTML into directory " << dwarf_to_html_output_directory << EndDebugInfo;
 				}
 				dw_handler->to_HTML(dwarf_to_html_output_directory.c_str());
+			}
+			if(!dwarf_to_xml_output_filename.empty())
+			{
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Dumping DWARF debugging informations as XML into file " << dwarf_to_xml_output_filename << EndDebugInfo;
+				}
+				dw_handler->to_XML(dwarf_to_xml_output_filename.c_str());
 			}
 		}
 	}
