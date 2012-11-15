@@ -749,7 +749,7 @@ inline void XGATE::memWrite16(address_t logicalAddress,uint16_t data) {
 
 inline void XGATE::monitorLoad(address_t logicalAddress, uint32_t size)
 {
-	physical_address_t pea = MMC::getXGATEPhysicalAddress(logicalAddress);
+	physical_address_t pea = MMC<>::getXGATEPhysicalAddress(logicalAddress);
 
 	data_load_counter++;
 
@@ -762,7 +762,7 @@ inline void XGATE::monitorLoad(address_t logicalAddress, uint32_t size)
 
 inline void XGATE::monitorStore(address_t logicalAddress, uint32_t size)
 {
-	physical_address_t pea = MMC::getXGATEPhysicalAddress(logicalAddress);
+	physical_address_t pea = MMC<>::getXGATEPhysicalAddress(logicalAddress);
 
 	data_store_counter++;
 

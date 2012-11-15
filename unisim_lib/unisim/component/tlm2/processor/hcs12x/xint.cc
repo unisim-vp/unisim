@@ -358,8 +358,10 @@ tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_pha
 
 		}
 
+		std::cerr << "XINT::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
+
 		if (debug_enabled) {
-			std::cerr << "XINT::handled_interrupt 0x" << std::hex << (unsigned int) (buffer->getID() * 2) << "  @ " << sc_time_stamp().to_seconds() << std::endl;
+			std::cerr << "XINT::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
 		}
 
 		retry_event.notify();
@@ -384,8 +386,10 @@ tlm_sync_enum XINT::xgate_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_p
 
 		}
 
+		std::cerr << "XINT::XGATE::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getID() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
+
 		if (debug_enabled) {
-			std::cerr << "XINT::handled_interrupt 0x" << std::hex << (unsigned int) (buffer->getID() * 2) << "  @ " << sc_time_stamp().to_seconds() << std::endl;
+			std::cerr << "XINT::XGATE::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getID() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
 		}
 
 		retry_event.notify();

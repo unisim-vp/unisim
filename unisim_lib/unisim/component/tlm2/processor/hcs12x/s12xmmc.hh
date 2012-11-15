@@ -76,6 +76,7 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::MMC;
 using unisim::component::cxx::processor::hcs12x::MMC_DATA;
+using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
@@ -86,15 +87,16 @@ using unisim::component::cxx::processor::hcs12x::TOWNER;
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;
 
+template <class mpu>
 class S12XMMC :
 	public sc_module,
-	public MMC,
+	public MMC<mpu>,
 	public Client<TrapReporting >
 
 {
 public:
 
-	typedef MMC inherited;
+	typedef MMC<mpu> inherited;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
@@ -116,6 +118,8 @@ private:
 
 	TSemaphore busSemaphore;
 	sc_event   busSemaphore_event;
+
+	bool accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd);
 
 }; /* end class S12XMMC */
 

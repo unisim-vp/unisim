@@ -25,7 +25,6 @@ void SigIntHandler(int signum)
 	sc_stop();
 }
 
-
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)

@@ -41,6 +41,7 @@
 #include <unisim/service/time/host_time/time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+#include <unisim/component/cxx/processor/hcs12x/s12mpu_if.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xgate.hh>
@@ -54,6 +55,7 @@
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12mpu.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -83,6 +85,7 @@ using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::address_t;
+using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
@@ -91,6 +94,7 @@ using unisim::component::tlm2::processor::hcs12x::S12XEETX;
 using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 using unisim::component::tlm2::processor::hcs12x::S12SCI;
 using unisim::component::tlm2::processor::hcs12x::S12SPI;
+using unisim::component::tlm2::processor::hcs12x::S12MPU;
 
 using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -167,7 +171,8 @@ private:
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 	typedef unisim::component::tlm2::processor::s12xgate::S12XGATE XGATE;
 
-	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
+	typedef unisim::component::tlm2::processor::hcs12x::S12MPU MPU;
+	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC<MPU> MMC;
 
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
@@ -190,6 +195,7 @@ private:
 	XGATE *xgate;
 
 	MMC *mmc;
+	MPU *mpu;
 
 	CRG  *crg;
 	ECT  *ect;

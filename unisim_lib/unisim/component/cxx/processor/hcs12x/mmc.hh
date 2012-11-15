@@ -51,6 +51,7 @@
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
 #include <unisim/component/cxx/processor/hcs12x/exception.hh>
+#include <unisim/component/cxx/processor/hcs12x/s12mpu_if.hh>
 
 namespace unisim {
 namespace component {
@@ -73,7 +74,9 @@ using unisim::service::interfaces::Registers;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Register;
 
+using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
 
+template <class mpu=S12MPU_IF>
 class MMC :
 	public CallBackObject
 	, public Service<Memory<physical_address_t> >
@@ -341,7 +344,19 @@ private:
 
 };
 
-inline bool MMC::isPaged(address_t addr) {
+template <class mpu>
+address_t MMC<mpu>::MMC_REGS_ADDRESSES[MMC<mpu>::MMC_MEMMAP_SIZE];
+
+template <class mpu> uint8_t MMC<mpu>::gpage;
+template <class mpu> uint8_t MMC<mpu>::direct;
+template <class mpu> uint8_t MMC<mpu>::mmcctl1;
+template <class mpu> uint8_t MMC<mpu>::rpage;
+template <class mpu> uint8_t MMC<mpu>::epage;
+template <class mpu> uint8_t MMC<mpu>::ppage;
+
+
+template <class mpu>
+inline bool MMC<mpu>::isPaged(address_t addr) {
 
 	// EEPROM window
 	if ((addr >= CPU12X_EEPROM_WIN_LOW_OFFSET) && (addr <= CPU12X_EEPROM_WIN_HIGH_OFFSET)) {
@@ -361,7 +376,8 @@ inline bool MMC::isPaged(address_t addr) {
 	return (false);
 }
 
-inline physical_address_t MMC::getCPU12XPagedAddress(address_t cpu_address) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getCPU12XPagedAddress(address_t cpu_address) {
 
 	physical_address_t address = cpu_address;
 
@@ -380,7 +396,8 @@ inline physical_address_t MMC::getCPU12XPagedAddress(address_t cpu_address) {
 	return (address);
 }
 
-inline physical_address_t MMC::getCPU12XPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload, uint8_t debug_page) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getCPU12XPhysicalAddress(address_t logicalAddress, ADDRESS::MODE type, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	static const uint8_t gShift = 16;	// CPU12 address size is 16-bits
 
@@ -418,7 +435,8 @@ inline physical_address_t MMC::getCPU12XPhysicalAddress(address_t logicalAddress
 	return (address);
 }
 
-inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
+template <class mpu>
+inline physical_address_t MMC<mpu>::getXGATEPhysicalAddress(address_t cpu_address)
 {
 	/**
 	 * The XGATE memory map is linear and static. There are no mapping or page registers.
@@ -442,7 +460,8 @@ inline physical_address_t MMC::getXGATEPhysicalAddress(address_t cpu_address)
 	return (address);
 }
 
-inline physical_address_t MMC::getXGATEPagedAddress(address_t cpu_address) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getXGATEPagedAddress(address_t cpu_address) {
 
 	physical_address_t address = cpu_address;
 
@@ -464,7 +483,8 @@ inline physical_address_t MMC::getXGATEPagedAddress(address_t cpu_address) {
 //=             registers setters and getters                         =
 //=====================================================================
 
-inline bool MMC::read(unsigned int address, const void *buffer, unsigned int data_length)
+template <class mpu>
+inline bool MMC<mpu>::read(unsigned int address, const void *buffer, unsigned int data_length)
 {
 
 	if (address == MMC_REGS_ADDRESSES[MMCCTL0]) { *((uint8_t *) buffer) = mmcctl0; return (true); }
@@ -485,7 +505,8 @@ inline bool MMC::read(unsigned int address, const void *buffer, unsigned int dat
 	return (false);
 }
 
-inline bool MMC::write(unsigned int address, const void *buffer, unsigned int data_length)
+template <class mpu>
+inline bool MMC<mpu>::write(unsigned int address, const void *buffer, unsigned int data_length)
 {
 
 	uint8_t val = *((uint8_t *) buffer);
@@ -512,25 +533,35 @@ inline bool MMC::write(unsigned int address, const void *buffer, unsigned int da
 	return (false);
 }
 
+template <class mpu>
+inline uint8_t MMC<mpu>::getMmcctl0 () { return (mmcctl0); }
 
-inline uint8_t MMC::getMmcctl0 () { return (mmcctl0); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getMode () { return (mode); }
 
-inline uint8_t MMC::getMode () { return (mode); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getMmcctl1 () { return (mmcctl1); }
 
-inline uint8_t MMC::getMmcctl1 () { return (mmcctl1); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getRamwpc () { return (ramwpc); }
 
-inline uint8_t MMC::getRamwpc () { return (ramwpc); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getRamxgu () { return (ramxgu); }
 
-inline uint8_t MMC::getRamxgu () { return (ramxgu); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getRamshl () { return (ramshl); }
 
-inline uint8_t MMC::getRamshl () { return (ramshl); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getRamshu () { return (ramshu); }
 
-inline uint8_t MMC::getRamshu () { return (ramshu); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getGpage () { return (gpage); }
 
-inline uint8_t MMC::getGpage () { return (gpage); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getDirect () { return (direct); }
 
-inline uint8_t MMC::getDirect () { return (direct); }
-inline physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getDirectAddress(uint8_t lowByte) {
 
 	uint8_t _direct = getDirect ();
 
@@ -544,9 +575,11 @@ inline physical_address_t MMC::getDirectAddress(uint8_t lowByte) {
 
 }
 
-inline uint8_t MMC::getRpage () { return (rpage); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getRpage () { return (rpage); }
 
-inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getRamAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	uint8_t _rpage;
 	physical_address_t shifted_gpage = 0x0 << (RAM_ADDRESS_SIZE + 8); // 000 RPAGE CPUAddr
@@ -587,7 +620,8 @@ inline physical_address_t MMC::getRamAddress(address_t logicalAddress, bool isGl
 	return (logicalAddress);
 }
 
-inline physical_address_t MMC::getPagedRamAddress(address_t logicalAddress) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getPagedRamAddress(address_t logicalAddress) {
 
 
 	if ((logicalAddress > 0x1FFF) && (logicalAddress < 0x3000)) {
@@ -602,9 +636,11 @@ inline physical_address_t MMC::getPagedRamAddress(address_t logicalAddress) {
 
 }
 
-inline uint8_t MMC::getEpage () { return (epage); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getEpage () { return (epage); }
 
-inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getEepromAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	uint8_t _epage;
 	physical_address_t shifted_gpage = 0x4 << (EEPROM_ADDRESS_SIZE + 8); // 00100 RPAGE CPUAddr
@@ -638,7 +674,8 @@ inline physical_address_t MMC::getEepromAddress(address_t logicalAddress, bool i
 	return (logicalAddress);
 }
 
-inline physical_address_t MMC::getPagedEepromAddress(address_t logicalAddress) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getPagedEepromAddress(address_t logicalAddress) {
 
 	if ((logicalAddress > 0x0BFF) && (logicalAddress < 0x1000)) {
 		return (logicalAddress);
@@ -649,11 +686,14 @@ inline physical_address_t MMC::getPagedEepromAddress(address_t logicalAddress) {
 
 }
 
-inline uint8_t MMC::getPpage () { return (ppage); }
+template <class mpu>
+inline uint8_t MMC<mpu>::getPpage () { return (ppage); }
 
-inline void MMC::setPpage(uint8_t page) { ppage = page; }
+template <class mpu>
+inline void MMC<mpu>::setPpage(uint8_t page) { ppage = page; }
 
-inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getFlashAddress(address_t logicalAddress, bool isGlobal, bool debugload, uint8_t debug_page) {
 
 	static const uint8_t ROMHM_MASK = 0x02;
 
@@ -701,7 +741,8 @@ inline physical_address_t MMC::getFlashAddress(address_t logicalAddress, bool is
 
 }
 
-inline physical_address_t MMC::getPagedFlashAddress(address_t logicalAddress) {
+template <class mpu>
+inline physical_address_t MMC<mpu>::getPagedFlashAddress(address_t logicalAddress) {
 
 	if ((logicalAddress > 0x3FFF) && (logicalAddress < 0x8000)) {
 		return (logicalAddress);

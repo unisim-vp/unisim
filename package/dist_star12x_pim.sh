@@ -352,6 +352,7 @@ unisim/component/tlm2/processor/hcs12x/ect.hh \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.hh \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.hh \
 unisim/component/tlm2/processor/hcs12x/s12sci.hh \
+unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
 unisim/component/tlm2/processor/hcs12x/s12spi.hh \
 unisim/service/pim/pim.hh \
 unisim/service/pim/pim_server.hh \
@@ -407,7 +408,9 @@ unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
+unisim/component/cxx/processor/hcs12x/mmc.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
+unisim/component/tlm2/processor/hcs12x/s12xmmc.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
 unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \

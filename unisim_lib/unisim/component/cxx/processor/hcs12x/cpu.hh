@@ -629,7 +629,7 @@ private:
 
 inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	physical_address_t pea = MMC<>::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_load_counter++;
 
@@ -642,7 +642,7 @@ inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlo
 
 inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	physical_address_t pea = MMC<>::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_store_counter++;
 

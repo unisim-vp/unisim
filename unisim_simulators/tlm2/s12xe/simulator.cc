@@ -6,6 +6,8 @@
  */
 
 #include <simulator.hh>
+#include <unisim/component/cxx/processor/hcs12x/mmc.tcc>
+#include <unisim/component/tlm2/processor/hcs12x/s12xmmc.tcc>
 
 bool debug_enabled = false;
 
@@ -25,6 +27,33 @@ void SigIntHandler(int signum)
 	sc_stop();
 }
 
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace hcs12x {
+
+template class MMC<S12MPU>;
+
+} // end of namespace hcs12x
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+namespace unisim {
+namespace component {
+namespace tlm2 {
+namespace processor {
+namespace hcs12x {
+
+template class S12XMMC<S12MPU>;
+
+} // end of namespace hcs12x
+} // end of namespace processor
+} // end of namespace tlm2
+} // end of namespace component
+} // end of namespace unisim
 
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
@@ -750,7 +779,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
 	simulator->SetVariable("EEPROM.cycle-time", 250000);
 	simulator->SetVariable("EEPROM.oscillator-cycle-time", 125000);
-	simulator->SetVariable("EEPROM.base-address", 0x0110);
+//	simulator->SetVariable("EEPROM.base-address", 0x0110);
 	simulator->SetVariable("EEPROM.erase-fail-ratio", 0.01);
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
 	simulator->SetVariable("EEPROM.verbose", false);

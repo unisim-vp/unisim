@@ -280,7 +280,7 @@ uint8_t CPU::step()
 					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getCPU12XPagedAddress(getRegPC()));
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC<>::getCPU12XPagedAddress(getRegPC()));
 
 				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
@@ -355,7 +355,7 @@ uint8_t CPU::step()
 					<< std::endl << EndDebugInfo;
 			}
 
-			op = this->Decode(MMC::getCPU12XPagedAddress(getRegPC()), insn);
+			op = this->Decode(MMC<>::getCPU12XPagedAddress(getRegPC()), insn);
 			lastPC = getRegPC();
 	        unsigned int insn_length = op->GetLength();
 	        if (insn_length % 8) throw "InternalError";
@@ -415,7 +415,7 @@ uint8_t CPU::step()
 
 			if(requires_finished_instruction_reporting) {
 				if(memory_access_reporting_import) {
-					memory_access_reporting_import->ReportFinishedInstruction(MMC::getCPU12XPagedAddress(lastPC), MMC::getCPU12XPagedAddress(getRegPC()));
+					memory_access_reporting_import->ReportFinishedInstruction(MMC<>::getCPU12XPagedAddress(lastPC), MMC<>::getCPU12XPagedAddress(getRegPC()));
 
 				}
 			}
