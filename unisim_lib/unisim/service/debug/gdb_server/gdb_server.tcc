@@ -43,6 +43,7 @@
 #include <list>
 
 #include <string.h>
+#include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -1257,7 +1258,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 			return PutPacket("OK");
 		case 2:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return PutPacket("OK");
 			}
@@ -1266,7 +1267,7 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 				return PutPacket("E00");
 			}
 		case 3:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return PutPacket("OK");
 			}
@@ -1276,18 +1277,18 @@ bool GDBServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 
 		case 4:
-			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return PutPacket("E00");
 			}
 			
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return PutPacket("OK");
 			}
 			else
 			{
-				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size));
+				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
 				return PutPacket("E00");
 			}
 	}
@@ -1315,7 +1316,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			return PutPacket("OK");
 
 		case 2:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return PutPacket("OK");
 			}
@@ -1324,7 +1325,7 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 				return PutPacket("E00");
 			}
 		case 3:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return PutPacket("OK");
 			}
@@ -1335,8 +1336,8 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 4:
 			{
 				bool status = true;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
 				if(status)
 				{
 					return PutPacket("OK");

@@ -47,6 +47,14 @@ template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_die);
 
 template <class MEMORY_ADDR>
+class DWARF_DIE_Visitor
+{
+public:
+	virtual ~DWARF_DIE_Visitor() {}
+	void Visit(const DWARF_DIE<MEMORY_ADDR> *dw_die) = 0;
+};
+
+template <class MEMORY_ADDR>
 class DWARF_DIE // Debug Info Entry
 {
 public:
@@ -58,7 +66,7 @@ public:
 	const DWARF_Abbrev *GetAbbrev() const;
 	const std::vector<DWARF_DIE<MEMORY_ADDR> *>& GetChildren() const;
 	const std::vector<DWARF_Attribute<MEMORY_ADDR> *>& GetAttributes() const;
-	const DWARF_Attribute<MEMORY_ADDR> *GetAttribute(uint16_t dw_at) const;
+	const DWARF_Attribute<MEMORY_ADDR> *FindAttribute(uint16_t dw_at) const;
 	uint16_t GetTag() const;
 	uint64_t GetOffset() const;
 	void Add(DWARF_Attribute<MEMORY_ADDR> *dw_attribute);
@@ -72,6 +80,8 @@ public:
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_die);
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
+	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 private:
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;

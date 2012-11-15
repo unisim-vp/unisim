@@ -43,15 +43,6 @@
 #include <stack>
 #include <string>
 
-extern void EnableDebug();
-extern void DisableDebug();
-extern bool debug_enabled;
-
-inline bool DebugEnabled()
-{
-	return debug_enabled;
-}
-
 namespace unisim {
 namespace kernel {
 namespace tlm {

@@ -740,7 +740,7 @@ void CPU<CONFIG>::EmuTranslateAddress(MMUAccess<CONFIG>& mmu_access)
 		mmu_access.physical_addr = mmu_access.addr;
 		mmu_access.virtual_addr = mmu_access.addr;
 		mmu_access.storage_attr = (typename CONFIG::STORAGE_ATTR)(CONFIG::SA_DEFAULT);
-		mmu_access.protection_boundary = 0xffffffffUL;
+		mmu_access.protection_boundary = 0x0UL; // Note: caller should detect address calculation overflow !
 	}
 }
 

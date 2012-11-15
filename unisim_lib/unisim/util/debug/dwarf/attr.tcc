@@ -385,7 +385,7 @@ void DWARF_Reference<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_die = dw_handler->FindDIE(debug_info_offset);
 	if(!dw_die)
 	{
-		std::cerr << "Can't find DIE at offset " << debug_info_offset << std::endl;
+		dw_handler->GetLogger() << DebugWarning << "While resolving [reference attribute value -> DIE] reference, can't find DIE (Debug Information Entry) at offset " << debug_info_offset << EndDebugWarning;
 	}
 }
 
@@ -426,6 +426,10 @@ template <class MEMORY_ADDR>
 void DWARF_LinePtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 {
 	dw_stmt_prog = dw_handler->FindStatementProgram(debug_line_offset);
+	if(!dw_stmt_prog)
+	{
+		dw_handler->GetLogger() << DebugWarning << "While resolving [line pointer attribute value -> statement program] reference, can't find .debug_line statement program at offset " << debug_line_offset << EndDebugWarning;
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -468,7 +472,7 @@ void DWARF_LocListPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_loc_list_entry = dw_handler->FindLocListEntry(dw_cu, debug_loc_offset);
 	if(!dw_loc_list_entry)
 	{
-		std::cerr << "Can't find Loc list entry at offset " << debug_loc_offset << std::endl;
+		dw_handler->GetLogger() << DebugWarning << "While resolving [location pointer attribute value -> location list entry] reference, can't find location list entry in .debug_loc at offset " << debug_loc_offset << EndDebugWarning;
 	}
 }
 
@@ -511,7 +515,7 @@ void DWARF_MacPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 	dw_macinfo_list_entry = dw_handler->FindMacInfoListEntry(debug_macinfo_offset);
 	if(!dw_macinfo_list_entry)
 	{
-		std::cerr << "Can't find macinfo list entry at offset " << debug_macinfo_offset << std::endl;
+		dw_handler->GetLogger() << DebugWarning << "While resolving [macro pointer attribute value -> mac info list entry] reference, can't find mac info list entry in .debug_macinfo at offset " << debug_macinfo_offset << EndDebugWarning;
 	}
 }
 
@@ -555,7 +559,7 @@ void DWARF_RangeListPtr<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler
 	dw_range_list_entry = dw_handler->FindRangeListEntry(dw_cu, debug_ranges_offset);
 	if(!dw_range_list_entry)
 	{
-		std::cerr << "Can't find Range list entry at offset " << debug_ranges_offset << std::endl;
+		dw_handler->GetLogger() << DebugWarning << "While resolving [range list pointer attribute value -> range list entry] reference, can't find range list entry in .debug_ranges at offset " << debug_ranges_offset << EndDebugWarning;
 	}
 }
 
@@ -595,6 +599,18 @@ DWARF_Expression<MEMORY_ADDR>::~DWARF_Expression()
 }
 
 template <class MEMORY_ADDR>
+const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Expression<MEMORY_ADDR>::GetCompilationUnit() const
+{
+	return dw_cu;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_CallFrameProgram<MEMORY_ADDR> *DWARF_Expression<MEMORY_ADDR>::GetCallFrameProgram() const
+{
+	return dw_cfp;
+}
+
+template <class MEMORY_ADDR>
 uint64_t DWARF_Expression<MEMORY_ADDR>::GetLength() const
 {
 	return length;
@@ -611,19 +627,8 @@ std::string DWARF_Expression<MEMORY_ADDR>::to_string() const
 {
 	std::stringstream sstr;
 	
-	if(dw_cu)
-	{
-		DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu);
-		return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
-	}
-	
-	if(dw_cfp)
-	{
-		DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cfp);
-		return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
-	}
-	
-	return std::string();
+	DWARF_ExpressionVM<MEMORY_ADDR> expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu ? dw_cu->GetHandler() : dw_cfp->GetHandler());
+	return expr_vm.Disasm(sstr, this) ? sstr.str() : std::string();
 }
 
 template <class MEMORY_ADDR>
@@ -816,13 +821,27 @@ std::ostream& operator << (std::ostream& os, const DWARF_Attribute<MEMORY_ADDR>&
 template <class MEMORY_ADDR>
 std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_XML(std::ostream& os)
 {
-	os << "<DW_AT name=\"";
-	c_string_to_XML(os, dw_abbrev_attribute->GetName());
-	os << "\" class=\"";
+// 	os << "<DW_AT name=\"";
+// 	c_string_to_XML(os, dw_abbrev_attribute->GetName());
+	os << "<" << dw_abbrev_attribute->GetName() << " class=\"";
+	//os << "\" class=\"";
 	c_string_to_XML(os, dw_value->GetClassName());
-	os << "\" value=\"";
-
+	os << "\" ";
 	unsigned int dw_class = dw_value->GetClass();
+	switch(dw_class)
+	{
+		case DW_CLASS_LINEPTR:
+		case DW_CLASS_LOCLISTPTR:
+		case DW_CLASS_MACPTR:
+		case DW_CLASS_RANGELISTPTR:
+		case DW_CLASS_REFERENCE:
+			os << "idref=\"";
+			break;
+		default:
+			os << "value=\"";
+			break;
+	}
+
 	switch(dw_class)
 	{
 		case DW_CLASS_UNSIGNED_CONSTANT:
@@ -876,6 +895,21 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_XML(std::ostream& os)
 						break;
 				}
 			}
+			break;
+		case DW_CLASS_LINEPTR:
+			os << "stmt-prog-" << ((DWARF_LinePtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+			break;
+		case DW_CLASS_LOCLISTPTR:
+			os << "loc-" << ((DWARF_LocListPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+			break;
+		case DW_CLASS_MACPTR:
+			os << "mac-" << ((DWARF_MacPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+			break;
+		case DW_CLASS_RANGELISTPTR:
+			os << "range-" << ((DWARF_RangeListPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+			break;
+		case DW_CLASS_REFERENCE:
+			os << "die-" << ((DWARF_Reference<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
 			break;
 		default:
 			c_string_to_XML(os, dw_value->to_string().c_str());

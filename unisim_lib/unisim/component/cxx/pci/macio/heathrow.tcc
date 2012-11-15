@@ -36,6 +36,7 @@
 #define __UNISIM_COMPONENT_CXX_PCI_MACIO_HEATHROW_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 #include <sstream>
 #include <iostream>
 

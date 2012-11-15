@@ -95,7 +95,8 @@ LSWUBReg(const uint32_t u,
 		}
 		else
 		{
-			index = ((uint32_t)val_rm) >> shift_imm;
+//			index = ((uint32_t)val_rm) >> shift_imm;   // Gilles: It's an arithmetic shift not a logical shift !!!!!
+			index = ((int32_t)val_rm) >> shift_imm;
 		}
 		break;
 	case 3:

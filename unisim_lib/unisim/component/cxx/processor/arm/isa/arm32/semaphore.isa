@@ -53,9 +53,9 @@ op swp(cond[4]:0b00010000[8]:rn[4]:rd[4]:0b0000[4]:0b1001[4]:rm[4])
 swp.disasm = {
   buffer << "swp";
   DisasmCondition(cond, buffer);
-  buffer << " r" << rd << ", "
-  << "r" << rm << ", "
-  << "[r" << rn << "]";
+  buffer << " r" << (unsigned int) rd << ", "
+  << "r" << (unsigned int) rm << ", "
+  << "[r" << (unsigned int) rn << "]";
 }
 
 swp.execute = {
@@ -87,9 +87,9 @@ op swpb(cond[4]:0b00010100[8]:rn[4]:rd[4]:0b0000[4]:0b1001[4]:rm[4])
 swpb.disasm = {
   buffer << "swp";
   DisasmCondition(cond, buffer);
-  buffer << "b r" << rd << ", "
-  << "r" << rm << ", "
-  << "[r" << rn << "]";
+  buffer << "b r" << (unsigned int) rd << ", "
+  << "r" << (unsigned int) rm << ", "
+  << "[r" << (unsigned int) rn << "]";
 }
 
 swpb.execute = {

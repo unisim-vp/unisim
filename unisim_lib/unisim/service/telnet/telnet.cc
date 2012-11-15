@@ -86,6 +86,7 @@ Telnet::Telnet(const char *name, Object *parent)
 	, logger(*this)
 	, verbose(false)
 	, guest_os("unknown")
+	, enable_negotiation(true)
 	, remove_null_character(false)
 	, remove_line_feed(false)
 	, telnet_tcp_port(23)
@@ -96,6 +97,7 @@ Telnet::Telnet(const char *name, Object *parent)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_telnet_tcp_port("telnet-tcp-port", this, telnet_tcp_port, "TCP/IP port of telnet")
 	, param_guest_os("guest-os", this, guest_os, "Guest operating system")
+	, param_enable_negotiation("enable-negotiation", this, enable_negotiation, "Enable negotiation with client")
 {
 	param_telnet_tcp_port.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_guest_os.AddEnumeratedValue("unknown");
@@ -106,6 +108,7 @@ Telnet::~Telnet()
 {
 	if(telnet_sock >= 0)
 	{
+		TelnetFlushOutput();
 #ifdef WIN32
 		closesocket(telnet_sock);
 #else
@@ -240,21 +243,24 @@ bool Telnet::EndSetup()
 #else
 	close(server_sock);
 #endif
-	TelnetPut(IAC);
-	TelnetPut(WILL);
-	TelnetPut(BINARY);
+	if(enable_negotiation)
+	{
+		TelnetPut(IAC);
+		TelnetPut(WILL);
+		TelnetPut(BINARY);
 
-	TelnetPut(IAC);
-	TelnetPut(WILL);
-	TelnetPut(ECHO);
-	
-	TelnetPut(IAC);
-	TelnetPut(WILL);
-	TelnetPut(SUPPRESS_GO_AHEAD);
-	
-	TelnetPut(IAC);
-	TelnetPut(WONT);
-	TelnetPut(LINEMODE);
+		TelnetPut(IAC);
+		TelnetPut(WILL);
+		TelnetPut(ECHO);
+		
+		TelnetPut(IAC);
+		TelnetPut(WILL);
+		TelnetPut(SUPPRESS_GO_AHEAD);
+		
+		TelnetPut(IAC);
+		TelnetPut(WONT);
+		TelnetPut(LINEMODE);
+	}
 	
 	return true;
 }
@@ -263,6 +269,10 @@ void Telnet::TelnetFlushOutput()
 {
 	if(telnet_output_buffer_size > 0)
 	{
+		if(IsVerbose())
+		{
+			logger << DebugInfo << "sending " << telnet_output_buffer_size << " chars" << EndDebugInfo;
+		}
 		unsigned int index = 0;
 		do
 		{
@@ -294,7 +304,6 @@ void Telnet::TelnetPut(uint8_t v)
 	}
 
 	telnet_output_buffer[telnet_output_buffer_size++] = v;
-	TelnetFlushOutput();
 }
 
 bool Telnet::TelnetGet(uint8_t& v)
@@ -564,6 +573,11 @@ void Telnet::PutChar(char c)
 	}
 	TelnetPut(v);
 	if(v == IAC) TelnetPut(v);
+}
+
+void Telnet::FlushChars()
+{
+	TelnetFlushOutput();
 }
 
 } // end of namespace telnet

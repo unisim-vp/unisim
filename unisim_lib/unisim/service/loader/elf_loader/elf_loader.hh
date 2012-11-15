@@ -135,6 +135,7 @@ private:
 	bool initialize_extra_segment_bytes;
 	bool dump_headers;
 	string dwarf_to_html_output_directory;
+	string dwarf_to_xml_output_filename;
 	string dwarf_register_number_mapping_filename;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
@@ -149,6 +150,7 @@ private:
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;
+	Parameter<string> param_dwarf_to_xml_output_filename;
 	Parameter<string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
 };

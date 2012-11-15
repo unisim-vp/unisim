@@ -47,21 +47,24 @@
 #include <string.h>
 #include <assert.h>
 
-#if defined(__GNUC__) && ((__GNUC__ >= 2 && __GNUC_MINOR__ >= 96) || __GNUC__ >= 3)
-#if defined(likely)
-#undef likely
-#endif
+namespace unisim {
+namespace kernel {
+namespace service {
 
-#if defined(unlikely)
-#undef unlikely
-#endif
+class Object;
+class Simulator;
 
-#define likely(x)       __builtin_expect((x),1)
-#define unlikely(x)     __builtin_expect((x),0)
-#else
-#define likely(x) (x)
-#define unlikely(x) (x)
-#endif
+}
+
+namespace api {
+
+class APIBase;
+
+}
+}
+}
+
+#include "unisim/kernel/api/api.hh"
 
 #ifdef DEBUG_MEMORY_ALLOCATION
 void *operator new(std::size_t size);
@@ -87,7 +90,6 @@ using std::ostream;
 using std::vector;
 
 class EmptyClientInterface {};
-class Object;
 class VariableBase;
 template <class TYPE> class Variable;
 template <class TYPE> class Parameter;
@@ -247,10 +249,11 @@ public:
 	static Simulator *simulator;
 	VariableBase *void_variable;
 
-	Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
+	Simulator(int argc, char **argv,
+			void (*LoadBuiltInConfig)(Simulator *simulator) = 0);
 	virtual ~Simulator();
 	virtual SetupStatus Setup();
-	virtual void Stop(Object *object, int exit_status);
+	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 
 	const VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID) const;
 	VariableBase *FindVariable(const char *name, VariableBase::Type type = VariableBase::VAR_VOID);
@@ -296,6 +299,8 @@ public:
 
 	bool IsWarningEnabled() const;
 
+	unisim::kernel::api::APIBase *GetAPIs();
+
 private:
 	friend class Object;
 	friend class VariableBase;
@@ -303,6 +308,7 @@ private:
 	friend class XMLHelper;
 	friend class ServiceImportBase;
 	friend class ServiceExportBase;
+	friend class unisim::kernel::api::APIBase;
 
 	string shared_data_dir;
 	std::map<string, string> set_vars;
@@ -347,6 +353,9 @@ private:
 	void Unregister(ServiceImportBase *srv_import);
 	void Unregister(ServiceExportBase *srv_export);
 	void Unregister(VariableBase *variable);
+
+	void Register(unisim::kernel::api::APIBase *api);
+	void Unregister(unisim::kernel::api::APIBase *api);
 	
 	void Initialize(VariableBase *variable);
 
@@ -365,12 +374,13 @@ private:
 	bool XmlfyVariables(const char *filename);
 	bool LoadXmlVariables(const char *filename);
 
-protected:
+public:
 	// TOCHECK: this method was previously declared as private,
 	//   and should probably become again private unless we consider
 	//   it part of the simulator API in which case it should
 	//   become public
 	void GetRootObjects(list<Object *>& lst) const;
+	void GetAPIs(list<unisim::kernel::api::APIBase *> &api_list) const;
 
 private:
 	class CommandLineOption
@@ -404,6 +414,7 @@ private:
 	map<const char *, ServiceImportBase *, ltstr> imports;
 	map<const char *, ServiceExportBase *, ltstr> exports;
 	map<const char *, VariableBase *, ltstr> variables;
+	map<const char *, unisim::kernel::api::APIBase *, ltstr> apis;
 	
 	string *cmd_args;
 	ParameterArray<string> *param_cmd_args;

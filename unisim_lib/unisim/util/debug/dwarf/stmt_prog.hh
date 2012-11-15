@@ -62,7 +62,7 @@ public:
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_StatementProgram<MEMORY_ADDR>& dw_stmt_prog);
 	uint64_t GetOffset() const;
-	endian_type GetEndianness() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 private:
 	friend class DWARF_StatementVM<MEMORY_ADDR>;
 	

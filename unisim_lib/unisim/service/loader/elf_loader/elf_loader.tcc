@@ -36,6 +36,7 @@
 #define __UNISIM_SERVICE_LOADER_ELF_LOADER_ELF_LOADER_TCC__
 
 #include <unisim/util/endian/endian.hh>
+#include <unisim/util/likely/likely.hh>
 #include <iostream>
 #include <fstream>
 #include <stdlib.h>
@@ -98,6 +99,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", 
 			this, dwarf_to_html_output_directory, 
 			"DWARF v2/v3 to HTML output directory")
+	, param_dwarf_to_xml_output_filename("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename, "DWARF v2/v3 to XML output filename")
 	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
 	, param_parse_dwarf("parse-dwarf", this, parse_dwarf,
 			"Enable/Disable parsing of DWARF debugging informations")
@@ -173,6 +175,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory.c_str());
+	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename.c_str());
 	elf_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
 	
 	return elf_loader->Load();

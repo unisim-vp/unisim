@@ -18,6 +18,7 @@
 			<dep>unisim::service::interfaces::registers</dep>
 			<dep>unisim::service::interfaces::memory</dep>
 			<dep>unisim::service::interfaces::trap_reporting</dep>
+			<dep>unisim::service::interfaces::backtrace</dep>
 			<dep>unisim::util::debug</dep>
 			<dep>unisim::util::endian</dep>
 			<dep>unisim::kernel::service</dep>

@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_PROG_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/fmt.hh>
 
 namespace unisim {
 namespace util {
@@ -52,10 +53,10 @@ template <class MEMORY_ADDR>
 class DWARF_CallFrameProgram
 {
 public:
-	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program, unsigned int type);
+	DWARF_CallFrameProgram(DWARF_Handler<MEMORY_ADDR> *dw_handler, uint64_t length, const uint8_t *program, unsigned int type, DWARF_Format dw_fmt);
 	~DWARF_CallFrameProgram();
-	endian_type GetEndianness() const;
-	uint8_t GetAddressSize() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
+	DWARF_Format GetFormat() const;
 	uint64_t GetLength() const;
 	const uint8_t *GetProgram() const;
 	unsigned int GetType() const;
@@ -70,6 +71,7 @@ private:
 	unsigned int type;
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	uint64_t length;
+	DWARF_Format dw_fmt;
 	const uint8_t *program;
 	const DWARF_CIE<MEMORY_ADDR> *dw_cie;
 	const DWARF_FDE<MEMORY_ADDR> *dw_fde;

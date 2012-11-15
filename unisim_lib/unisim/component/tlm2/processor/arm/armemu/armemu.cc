@@ -32,11 +32,14 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
+#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
+
 #include <systemc.h>
 #include <tlm.h>
+
 #include "unisim/kernel/tlm2/tlm.hh"
-#include "unisim/component/tlm2/processor/arm/armemu/armemu.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include "unisim/util/likely/likely.hh"
 
 #define LOCATION \
 	" - location = " \
@@ -145,6 +148,8 @@ ARMEMU(const sc_module_name& name, Object *parent)
 			"Maximum time between SystemC waits.")
 	, param_ipc("ipc", this, ipc,
 			"Instructions per cycle performance.")
+  , stat_cpu_time("cpu-time", this, cpu_time,
+                  "The processor time")
 	, verbose_tlm(false)
 	, param_verbose_tlm("verbose-tlm", this, verbose_tlm, 
 			"Display TLM information")
@@ -464,7 +469,7 @@ invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 
 bool 
 ARMEMU ::
-ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
+ExternalReadMemory(uint32_t addr, void *buffer, uint32_t size)
 {
 	transaction_type *trans;
 	unsigned int read_size;
@@ -498,7 +503,7 @@ ExternalReadMemory(uint64_t addr, void *buffer, uint32_t size)
  */
 bool 
 ARMEMU ::
-ExternalWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+ExternalWriteMemory(uint32_t addr, const void *buffer, uint32_t size)
 {
 	transaction_type *trans;
 	unsigned int write_size;

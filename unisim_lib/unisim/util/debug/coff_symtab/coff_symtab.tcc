@@ -85,6 +85,8 @@ void Coff_SymtabHandler<MEMORY_ADDR>::Parse()
 	bool dump_headers = false;
 	MEMORY_ADDR basic_type_sizes[NUM_BASIC_TYPES];
 	
+	// Note: basic_type_sizes is architecture dependent
+	// Values below are for TMS320C3X
 	basic_type_sizes[T_NULL] = 0;
 	basic_type_sizes[T_VOID] = 0;
 	basic_type_sizes[T_CHAR] = 1;

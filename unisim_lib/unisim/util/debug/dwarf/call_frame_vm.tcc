@@ -147,6 +147,12 @@ DWARF_CFARuleExpression<MEMORY_ADDR>::~DWARF_CFARuleExpression()
 }
 
 template <class MEMORY_ADDR>
+const DWARF_Expression<MEMORY_ADDR> *DWARF_CFARuleExpression<MEMORY_ADDR>::GetExpression() const
+{
+	return dw_expr;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_CFARuleExpression<MEMORY_ADDR>::Print(std::ostream& os) const
 {
 	return os << "cfa={" << *dw_expr << "}";
@@ -388,6 +394,12 @@ DWARF_RegisterRuleValExpression<MEMORY_ADDR>::~DWARF_RegisterRuleValExpression()
 }
 
 template <class MEMORY_ADDR>
+const DWARF_Expression<MEMORY_ADDR> *DWARF_RegisterRuleValExpression<MEMORY_ADDR>::GetExpression() const
+{
+	return dw_expr;
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_RegisterRuleValExpression<MEMORY_ADDR>::Print(std::ostream& os) const
 {
 	return os << "{" << *dw_expr << "}";
@@ -512,6 +524,18 @@ DWARF_RegisterRule<MEMORY_ADDR> *DWARF_CFIRow<MEMORY_ADDR>::GetRegisterRule(unsi
 {
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it = reg_rules.find(reg_num);
 	return (it != reg_rules.end()) ? (*it).second : 0;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_CFIRow<MEMORY_ADDR>::GetRegisterRulesNumbers(std::set<unsigned int>& reg_rule_nums) const
+{
+	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::const_iterator it;
+	
+	for(it = reg_rules.begin(); it != reg_rules.end(); it++)
+	{
+		unsigned int dw_reg_num = (*it).first;
+		reg_rule_nums.insert(dw_reg_num);
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -694,8 +718,8 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Disasm(std::ostream& os, const DWARF_CallFr
 template <class MEMORY_ADDR>
 bool DWARF_CallFrameVM<MEMORY_ADDR>::Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
-//	return Run(dw_call_frame_prog, 0, &location, cfi);
-	return Run(dw_call_frame_prog, &std::cerr, &location, cfi);
+	return Run(dw_call_frame_prog, 0, &location, cfi);
+//	return Run(dw_call_frame_prog, &std::cerr, &location, cfi);
 }
 
 template <class MEMORY_ADDR>
@@ -741,8 +765,8 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 	unsigned int dw_cfp_type = dw_call_frame_prog.GetType();
 	MEMORY_ADDR cur_location = _cur_location ? *_cur_location : 0;
 	uint64_t program_length = dw_call_frame_prog.length;
-	endian_type endianness = dw_call_frame_prog.GetEndianness();
-	uint8_t address_size = dw_call_frame_prog.GetAddressSize();
+	endian_type file_endianness = dw_call_frame_prog.GetHandler()->GetFileEndianness();
+	uint8_t file_address_size = (dw_call_frame_prog.GetFormat() == FMT_DWARF64) ? 8 : 4;
 	const uint8_t *program = dw_call_frame_prog.program;
 	bool status = true;
 	
@@ -891,7 +915,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 								MEMORY_ADDR addr;
 								
-								switch(address_size)
+								switch(file_address_size)
 								{
 									case sizeof(uint16_t):
 										{
@@ -902,7 +926,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 											}
 											uint16_t value;
 											memcpy(&value, program, sizeof(uint16_t));
-											addr = Target2Host(endianness, value);
+											addr = Target2Host(file_endianness, value);
 											program += sizeof(uint16_t);
 											program_length -= sizeof(uint16_t);
 										}
@@ -916,7 +940,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 											}
 											uint32_t value;
 											memcpy(&value, program, sizeof(uint32_t));
-											addr = Target2Host(endianness, value);
+											addr = Target2Host(file_endianness, value);
 											program += sizeof(uint32_t);
 											program_length -= sizeof(uint32_t);
 										}
@@ -930,7 +954,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 											}
 											uint64_t value;
 											memcpy(&value, program, sizeof(uint64_t));
-											addr = Target2Host(endianness, value);
+											addr = Target2Host(file_endianness, value);
 											program += sizeof(uint64_t);
 											program_length -= sizeof(uint64_t);
 										}
@@ -960,7 +984,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									break;
 								}
 								memcpy(&delta, program, sizeof(delta));
-								delta = Target2Host(dw_call_frame_prog.GetEndianness(), delta);
+								delta = Target2Host(file_endianness, delta);
 								program += sizeof(delta);
 								program_length -= sizeof(delta);
 								uint64_t advance_loc = delta * (uint64_t) dw_cie->GetCodeAlignmentFactor();
@@ -990,7 +1014,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									break;
 								}
 								memcpy(&delta, program, sizeof(delta));
-								delta = Target2Host(dw_call_frame_prog.GetEndianness(), delta);
+								delta = Target2Host(file_endianness, delta);
 								program += sizeof(delta);
 								program_length -= sizeof(delta);
 								uint64_t advance_loc = delta * (uint64_t) dw_cie->GetCodeAlignmentFactor();
@@ -1020,7 +1044,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 									break;
 								}
 								memcpy(&delta, program, sizeof(delta));
-								delta = Target2Host(dw_call_frame_prog.GetEndianness(), delta);
+								delta = Target2Host(file_endianness, delta);
 								program += sizeof(delta);
 								program_length -= sizeof(delta);
 								uint64_t advance_loc = delta * (uint64_t) dw_cie->GetCodeAlignmentFactor();
@@ -1774,7 +1798,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 							}
 							break;
 						default:
-							status = false;
+							status = false; std::cerr << "Execute fails (opcode " << (unsigned int) opcode << ") at " << __FILE__ << ":" << __LINE__ << std::endl;
 							break;
 					}
 					break;

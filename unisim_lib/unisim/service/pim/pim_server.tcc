@@ -68,6 +68,9 @@
 
 #endif
 
+#include "unisim/util/xml/xml.hh"
+#include "unisim/util/debug/memory_access_type.hh"
+
 namespace unisim {
 namespace service {
 namespace pim {
@@ -1019,7 +1022,7 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 	if (watchpoint_hit != NULL) {
 
 		std::stringstream sstr;
-		if (watchpoint_hit->GetMemoryAccessType() == MemoryAccessReporting<ADDRESS>::MAT_READ) {
+		if (watchpoint_hit->GetMemoryAccessType() == unisim::util::debug::MAT_READ) {
 			sstr << "rwatch";
 		} else {
 			sstr << "watch";
@@ -1058,7 +1061,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			return (true);
 
 		case 2:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return (true);
 			}
@@ -1068,7 +1071,7 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 			}
 
 		case 3:
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return (true);
 			}
@@ -1079,18 +1082,18 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 
 
 		case 4:
-			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return (false);
 			}
 
-			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return (true);
 			}
 			else
 			{
-				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size));
+				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
 				return (false);
 			}
 
@@ -1119,7 +1122,7 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			return (true);
 
 		case 2:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return (true);
 			}
@@ -1129,7 +1132,7 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 			}
 
 		case 3:
-			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size)))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
 				return (true);
 			}
@@ -1141,8 +1144,8 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 4:
 			{
 				bool status = true;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_READ, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
-				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MAT_WRITE, unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
 				return (status);
 			}
 

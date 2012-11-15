@@ -1,0 +1,24 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<package>
+	<unit>
+		<name>unisim::uapi</name>
+		<files>
+			<file>unisim/uapi/uapi.h</file>
+			<file>unisim/uapi/types.h</file>
+			<file>unisim/uapi/simulator.h</file>
+			<file>unisim/uapi/simulator.c</file>
+			<file>unisim/uapi/variable.h</file>
+			<file>unisim/uapi/variable.c</file>
+			<file>unisim/uapi/eapi.h</file>
+			<file>unisim/uapi/eapi.c</file>
+			<file>unisim/uapi/uapi_priv.h</file>
+			<file>unisim/uapi/config.h.in</file>
+			<file>unisim/uapi/simulator_priv.h</file>
+			<file>unisim/uapi/variable_priv.h</file>
+			<file>unisim/uapi/eapi_priv.h</file>
+			<file>unisim/uapi/debug/debug.h</file>
+			<file>unisim/uapi/debug/debug.c</file>
+		</files>
+	</unit>
+</package>

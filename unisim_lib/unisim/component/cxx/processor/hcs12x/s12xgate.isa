@@ -81,11 +81,11 @@ action {uint8_t} getCycles () {
 }
 
 action {void} execute({XGATE *} {cpu}) {
-	printf("Unknown instruction\n");
+	std::cerr << "Unknown instruction" << std::endl;
 
 	cpu->assert_software_error_interrupt();
 
-	exit(-1);
+	cpu->Stop(-1);
 }
 
 // Return to Scheduler and others

@@ -43,10 +43,11 @@ namespace dwarf {
 
 const char *DWARF_GetTagName(uint16_t dw_tag)
 {
-	static char buf[14];
+	static char buf[23];
 	
 	switch(dw_tag)
 	{
+		case 0: return "DW_TAG_NULL";
 		case DW_TAG_array_type: return "DW_TAG_array_type";
 		case DW_TAG_class_type: return "DW_TAG_class_type";
 		case DW_TAG_entry_point: return "DW_TAG_entry_point";
@@ -96,19 +97,14 @@ const char *DWARF_GetTagName(uint16_t dw_tag)
 		case DW_TAG_volatile_type: return "DW_TAG_volatile_type";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << dw_tag << std::dec << " ("
-			// << (((dw_tag >= DW_TAG_lo_user) && (dw_tag <= DW_TAG_hi_user)) ?
-			<< (((dw_tag >= DW_TAG_lo_user)) ?
-					"user" : "?")
-			<< ")";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_TAG_" << (((dw_tag >= DW_TAG_lo_user) && (dw_tag <= DW_TAG_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_tag << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetATName(uint16_t dw_at)
 {
-	static char buf[14];
+	static char buf[21];
 	switch(dw_at)
 	{
 		case DW_AT_sibling: return "DW_AT_sibling";
@@ -199,15 +195,14 @@ const char *DWARF_GetATName(uint16_t dw_at)
 		case DW_AT_recursive: return "DW_AT_recursive";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << dw_at << std::dec << " (" << (((dw_at >= DW_AT_lo_user) && (dw_at <= DW_AT_hi_user)) ? "user" : "?") << ")";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_AT_" << (((dw_at >= DW_AT_lo_user) && (dw_at <= DW_AT_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_at << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetFORMName(uint16_t dw_form)
 {
-	static char buf[14];
+	static char buf[23];
 	switch(dw_form)
 	{
 		case DW_FORM_addr: return "DW_FORM_addr";
@@ -233,15 +228,14 @@ const char *DWARF_GetFORMName(uint16_t dw_form)
 		case DW_FORM_indirect: return "DW_FORM_indirect";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << dw_form << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_FORM_unknown_0x" << std::hex << dw_form << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetATEName(uint8_t dw_ate)
 {
-	static char buf[9];
+	static char buf[22];
 	switch(dw_ate)
 	{
 		case DW_ATE_address: return "DW_ATE_address";
@@ -261,15 +255,14 @@ const char *DWARF_GetATEName(uint8_t dw_ate)
 		case DW_ATE_decimal_float: return "DW_ATE_decimal_float";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_ate << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_ATE_unknown_0x" << std::hex << (unsigned int) dw_ate << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetLANGName(uint16_t dw_lang)
 {
-	static char buf[14];
+	static char buf[23];
 	switch(dw_lang)
 	{
 		case DW_LANG_C89: return "DW_LANG_C89";
@@ -295,15 +288,14 @@ const char *DWARF_GetLANGName(uint16_t dw_lang)
 		case DW_LANG_Upc: return "DW_LANG_Upc";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_lang << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_LANG_unknown_0x" << std::hex << (unsigned int) dw_lang << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetVIRTUALITYName(uint8_t dw_virtuality)
 {
-	static char buf[9];
+	static char buf[27];
 	switch(dw_virtuality)
 	{
 		case DW_VIRTUALITY_none: return "DW_VIRTUALITY_none";
@@ -311,15 +303,14 @@ const char *DWARF_GetVIRTUALITYName(uint8_t dw_virtuality)
 		case DW_VIRTUALITY_pure_virtual: return "DW_VIRTUALITY_pure_virtual";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_virtuality << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_VIRTUALITY_unknown_0x" << std::hex << (unsigned int) dw_virtuality << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetVISName(uint8_t dw_vis)
 {
-	static char buf[9];
+	static char buf[20];
 	switch(dw_vis)
 	{
 		case DW_VIS_local: return "DW_VIS_local";
@@ -327,15 +318,14 @@ const char *DWARF_GetVISName(uint8_t dw_vis)
 		case DW_VIS_qualified: return "DW_VIS_qualified";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_vis << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_VIS_unknown_0x" << std::hex << (unsigned int) dw_vis << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetACCESSName(uint8_t dw_access)
 {
-	static char buf[9];
+	static char buf[23];
 	switch(dw_access)
 	{
 		case DW_ACCESS_public: return "DW_ACCESS_public";
@@ -343,15 +333,14 @@ const char *DWARF_GetACCESSName(uint8_t dw_access)
 		case DW_ACCESS_private: return "DW_ACCESS_private";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_access << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_ACCESS_unknown_0x" << std::hex << (unsigned int) dw_access << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetENDName(uint8_t dw_end)
 {
-	static char buf[9];
+	static char buf[20];
 	switch(dw_end)
 	{
 		case DW_END_default: return "DW_END_default";
@@ -359,15 +348,14 @@ const char *DWARF_GetENDName(uint8_t dw_end)
 		case DW_END_little: return "DW_END_little";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_end << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_END_unknown_0x" << std::hex << (unsigned int) dw_end << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetDSName(uint8_t dw_ds)
 {
-	static char buf[9];
+	static char buf[19];
 	switch(dw_ds)
 	{
 		case DW_DS_unsigned: return "DW_DS_unsigned";
@@ -377,15 +365,14 @@ const char *DWARF_GetDSName(uint8_t dw_ds)
 		case DW_DS_trailing_separate: return "DW_DS_trailing_separate";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_ds << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_DS_unknown_0x" << std::hex << (unsigned int) dw_ds << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetIDName(uint8_t dw_id)
 {
-	static char buf[9];
+	static char buf[19];
 	switch(dw_id)
 	{
 		case DW_ID_case_sensitive: return "DW_ID_case_sensitive";
@@ -394,15 +381,14 @@ const char *DWARF_GetIDName(uint8_t dw_id)
 		case DW_ID_case_insensitive: return "DW_ID_case_insensitive";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_id << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_ID_unknown_0x" << std::hex << (unsigned int) dw_id << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetCCName(uint8_t dw_cc)
 {
-	static char buf[9];
+	static char buf[19];
 	switch(dw_cc)
 	{
 		case DW_CC_normal: return "DW_CC_normal";
@@ -410,15 +396,14 @@ const char *DWARF_GetCCName(uint8_t dw_cc)
 		case DW_CC_nocall: return "DW_CC_nocall";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_cc << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_CC_unknown_0x" << std::hex << (unsigned int) dw_cc << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetINLName(uint8_t dw_inl)
 {
-	static char buf[9];
+	static char buf[20];
 	switch(dw_inl)
 	{
 		case DW_INL_not_inlined: return "DW_INL_not_inlined";
@@ -427,54 +412,50 @@ const char *DWARF_GetINLName(uint8_t dw_inl)
 		case DW_INL_declared_inlined: return "DW_INL_declared_inlined";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_inl << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_INL_unknown_0x" << std::hex << (unsigned int) dw_inl << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetORDName(uint8_t dw_ord)
 {
-	static char buf[9];
+	static char buf[20];
 	switch(dw_ord)
 	{
 		case DW_ORD_row_major: return "DW_ORD_row_major";
 		case DW_ORD_col_major: return "DW_ORD_col_major";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_ord << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_ORD_unknown_0x" << std::hex << (unsigned int) dw_ord << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetDSCName(uint8_t dw_dsc)
 {
-	static char buf[9];
+	static char buf[20];
 	switch(dw_dsc)
 	{
 		case DW_DSC_label: return "DW_DSC_label";
 		case DW_DSC_range: return "DW_DSC_range";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_dsc << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_DSC_unknown_0x" << std::hex << (unsigned int) dw_dsc << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 
 const char *DWARF_GetCHILDRENName(uint8_t dw_children)
 {
-	static char buf[9];
+	static char buf[25];
 	switch(dw_children)
 	{
 		case DW_CHILDREN_no: return "DW_CHILDREN_no";
 		case DW_CHILDREN_yes: return "DW_CHILDREN_yes";
 	}
 	std::stringstream sstr;
-	sstr << "0x" << std::hex << (unsigned int) dw_children << std::dec << " (?)";
-	strncpy(buf, sstr.str().c_str(), sizeof(buf));
-	buf[sizeof(buf) - 1] = 0;
+	sstr << "DW_CHILDREN_unknown_0x" << std::hex << (unsigned int) dw_children << std::dec;
+	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
 }
 

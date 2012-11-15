@@ -44,16 +44,16 @@ DWARF_LocListEntry<MEMORY_ADDR>::DWARF_LocListEntry(const DWARF_CompilationUnit<
 	, next(0)
 	, begin_addr_offset(0)
 	, end_addr_offset(0)
-	, dw_expr(0)
+	, dw_loc_expr(0)
 {
 }
 
 template <class MEMORY_ADDR>
 DWARF_LocListEntry<MEMORY_ADDR>::~DWARF_LocListEntry()
 {
-	if(dw_expr)
+	if(dw_loc_expr)
 	{
-		delete dw_expr;
+		delete dw_loc_expr;
 	}
 }
 
@@ -88,6 +88,12 @@ uint64_t DWARF_LocListEntry<MEMORY_ADDR>::GetOffset() const
 }
 
 template <class MEMORY_ADDR>
+const DWARF_Expression<MEMORY_ADDR> *DWARF_LocListEntry<MEMORY_ADDR>::GetLocationExpression() const
+{
+	return dw_loc_expr;
+}
+
+template <class MEMORY_ADDR>
 void DWARF_LocListEntry<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
 {
 	id = _id;
@@ -119,7 +125,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 	offset = _offset;
 	int64_t size = 0;
 	
-	endian_type endianness = dw_cu->GetEndianness();
+	endian_type file_endianness = dw_cu->GetHandler()->GetFileEndianness();
 	
 	switch(dw_cu->GetAddressSize())
 	{
@@ -128,7 +134,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 				uint16_t begin_addr_offset16;
 				if(max_size < sizeof(begin_addr_offset16)) return -1;
 				memcpy(&begin_addr_offset16, rawdata, sizeof(begin_addr_offset16));
-				begin_addr_offset16 = Target2Host(endianness, begin_addr_offset16);
+				begin_addr_offset16 = Target2Host(file_endianness, begin_addr_offset16);
 				rawdata += sizeof(begin_addr_offset16);
 				max_size -= sizeof(begin_addr_offset16);
 				size += sizeof(begin_addr_offset16);
@@ -137,7 +143,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 				uint16_t end_addr_offset16;
 				if(max_size < sizeof(end_addr_offset16)) return -1;
 				memcpy(&end_addr_offset16, rawdata, sizeof(end_addr_offset16));
-				end_addr_offset16 = Target2Host(endianness, end_addr_offset16);
+				end_addr_offset16 = Target2Host(file_endianness, end_addr_offset16);
 				rawdata += sizeof(end_addr_offset16);
 				max_size -= sizeof(end_addr_offset16);
 				size += sizeof(end_addr_offset16);
@@ -149,7 +155,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 				uint32_t begin_addr_offset32;
 				if(max_size < sizeof(begin_addr_offset32)) return -1;
 				memcpy(&begin_addr_offset32, rawdata, sizeof(begin_addr_offset32));
-				begin_addr_offset32 = Target2Host(endianness, begin_addr_offset32);
+				begin_addr_offset32 = Target2Host(file_endianness, begin_addr_offset32);
 				rawdata += sizeof(begin_addr_offset32);
 				max_size -= sizeof(begin_addr_offset32);
 				size += sizeof(begin_addr_offset32);
@@ -158,7 +164,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 				uint32_t end_addr_offset32;
 				if(max_size < sizeof(end_addr_offset32)) return -1;
 				memcpy(&end_addr_offset32, rawdata, sizeof(end_addr_offset32));
-				end_addr_offset32 = Target2Host(endianness, end_addr_offset32);
+				end_addr_offset32 = Target2Host(file_endianness, end_addr_offset32);
 				rawdata += sizeof(end_addr_offset32);
 				max_size -= sizeof(end_addr_offset32);
 				size += sizeof(end_addr_offset32);
@@ -170,7 +176,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 				uint64_t begin_addr_offset64;
 				if(max_size < sizeof(begin_addr_offset64)) return -1;
 				memcpy(&begin_addr_offset64, rawdata, sizeof(begin_addr_offset64));
-				begin_addr_offset64 = Target2Host(endianness, begin_addr_offset64);
+				begin_addr_offset64 = Target2Host(file_endianness, begin_addr_offset64);
 				rawdata += sizeof(begin_addr_offset64);
 				max_size -= sizeof(begin_addr_offset64);
 				size += sizeof(begin_addr_offset64);
@@ -179,7 +185,7 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 				uint64_t end_addr_offset64;
 				if(max_size < sizeof(end_addr_offset64)) return -1;
 				memcpy(&end_addr_offset64, rawdata, sizeof(end_addr_offset64));
-				end_addr_offset64 = Target2Host(endianness, end_addr_offset64);
+				end_addr_offset64 = Target2Host(file_endianness, end_addr_offset64);
 				rawdata += sizeof(end_addr_offset64);
 				max_size -= sizeof(end_addr_offset64);
 				size += sizeof(end_addr_offset64);
@@ -196,13 +202,13 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 	uint16_t block_length;
 	if(max_size < sizeof(block_length)) return -1;
 	memcpy(&block_length, rawdata, sizeof(block_length));
-	block_length = Target2Host(endianness, block_length);
+	block_length = Target2Host(file_endianness, block_length);
 	rawdata += sizeof(block_length);
 	max_size -= sizeof(block_length);
 	size += sizeof(block_length);
 
 	if(max_size < block_length) return -1;
-	dw_expr = new DWARF_Expression<MEMORY_ADDR>(dw_cu, block_length, rawdata);
+	dw_loc_expr = new DWARF_Expression<MEMORY_ADDR>(dw_cu, block_length, rawdata);
 	rawdata += block_length;
 	size += block_length;
 	max_size -= block_length;
@@ -213,17 +219,17 @@ int64_t DWARF_LocListEntry<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t m
 template <class MEMORY_ADDR>
 std::ostream& DWARF_LocListEntry<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
-	if(IsEndOfList()) return os << "<DW_EOL offset=\"" << offset << "\"/>";
+	if(IsEndOfList()) return os << "<DW_EOL id=\"loc-" << id << "\"/>";
 	if(IsBaseAddressSelection())
 	{
-		os << "<DW_BASE_ADDRESS_SELECTION offset=\"" << offset << "\" largest_address_offset=\"0x" << std::hex << begin_addr_offset << std::dec << "\" address=\"0x" << std::hex << end_addr_offset << std::dec << "\"/>";
+		os << "<DW_BASE_ADDRESS_SELECTION id=\"" << offset << "\" largest_address_offset=\"0x" << std::hex << begin_addr_offset << std::dec << "\" address=\"0x" << std::hex << end_addr_offset << std::dec << "\"/>";
 		return os;
 	}
-	os << "<DW_LOC offset=\"" << offset << "\" begin_address_offset=\"0x" << std::hex << begin_addr_offset << std::dec << "\" end_address_offset=\"0x" << std::hex << end_addr_offset << std::dec << "\"";
-	if(dw_expr)
+	os << "<DW_LOC id=\"loc-" << id << "\" begin_address_offset=\"0x" << std::hex << begin_addr_offset << std::dec << "\" end_address_offset=\"0x" << std::hex << end_addr_offset << std::dec << "\"";
+	if(dw_loc_expr)
 	{
-		os << " expression=\"";
-		c_string_to_XML(os, dw_expr->to_string().c_str());
+		os << " location_expression=\"";
+		c_string_to_XML(os, dw_loc_expr->to_string().c_str());
 		os << "\"";
 	}
 	os << "/>";
@@ -269,9 +275,9 @@ std::ostream& DWARF_LocListEntry<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	}
 	else
 	{
-		os << "<td><table><tr><th>Beginning address offset</th><th>End Address offset</th><th>Expression</th></tr>";
+		os << "<td><table><tr><th>Beginning address offset</th><th>End Address offset</th><th>Location Expression</th></tr>";
 		os << "<tr><td>0x" << std::hex << begin_addr_offset << std::dec << "</td><td>0x" << std::hex << end_addr_offset << std::dec << "</td><td>";
-		c_string_to_HTML(os, dw_expr->to_string().c_str());
+		c_string_to_HTML(os, dw_loc_expr->to_string().c_str());
 		os << "</td></tr></table></td>";
 	}
 	os << "</tr>" << std::endl;
@@ -284,9 +290,9 @@ std::ostream& operator << (std::ostream& os, const DWARF_LocListEntry<MEMORY_ADD
 	if(dw_loc_list_entry.IsEndOfList()) return os << "EOL";
 	if(dw_loc_list_entry.IsBaseAddressSelection()) os << "Base";
 	os << "[0x" << std::hex << dw_loc_list_entry.begin_addr_offset << "-0x" << dw_loc_list_entry.end_addr_offset;
-	if(dw_loc_list_entry.dw_expr)
+	if(dw_loc_list_entry.dw_loc_expr)
 	{
-		os << ":" << *dw_loc_list_entry.dw_expr;
+		os << ":" << *dw_loc_list_entry.dw_loc_expr;
 	}
 	os << "]";
 	return os;

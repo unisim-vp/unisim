@@ -49,32 +49,34 @@ namespace blob {
 
 using unisim::util::endian::endian_type;
 
+typedef enum
+{
+	FFMT_UNKNOWN,
+	FFMT_ELF32,
+	FFMT_ELF64,
+	FFMT_COFF
+} FileFormat;
+
+typedef enum
+{
+	CAP_DEFAULT = 0,
+	CAP_FILENAME = 1,
+	CAP_FILE_FORMAT = 2,
+	CAP_ENTRY_POINT = 4,
+	CAP_ARCHITECTURE = 8,
+	CAP_STACK_BASE = 16,
+	CAP_ENDIAN = 32,
+	CAP_FILE_ENDIAN = 64,
+	CAP_ADDRESS_SIZE = 128,
+	CAP_MEMORY_ATOM_SIZE = 256,
+	CAP_ELF_PHOFF = 512,
+	CAP_ELF_PHENT = 1024
+} Capability;
+
 template <class MEMORY_ADDR>
 class Blob
 {
 public:
-	typedef enum
-	{
-		FFMT_UNKNOWN,
-		FFMT_ELF32,
-		FFMT_ELF64,
-		FFMT_COFF
-	} FileFormat;
-	
-	typedef enum
-	{
-		CAP_DEFAULT = 0,
-		CAP_FILENAME = 1,
-		CAP_FILE_FORMAT = 2,
-		CAP_ENTRY_POINT = 4,
-		CAP_ARCHITECTURE = 8,
-		CAP_STACK_BASE = 16,
-		CAP_ENDIAN = 32,
-		CAP_FILE_ENDIAN = 64,
-		CAP_ADDRESS_SIZE = 128,
-		CAP_MEMORY_ATOM_SIZE = 256
-	} Capability;
-	
 	Blob();
 	Blob(const Blob<MEMORY_ADDR>& blob);
 	virtual ~Blob();
@@ -88,6 +90,8 @@ public:
 	void SetFileEndian(endian_type file_endian);
 	void SetAddressSize(unsigned int address_size);
 	void SetMemoryAtomSize(unsigned int memory_atom_size);
+	void SetELF_PHOFF(uint64_t elf_phoff);
+	void SetELF_PHENT(unsigned int elf_phent);
 	
 	Capability GetCapability() const;
 	const char *GetFilename() const;
@@ -99,6 +103,8 @@ public:
 	endian_type GetFileEndian() const;
 	unsigned int GetAddressSize() const;
 	unsigned int GetMemoryAtomSize() const;
+	uint64_t GetELF_PHOFF() const;
+	unsigned int GetELF_PHENT() const;
 	const std::vector<const Blob<MEMORY_ADDR> *>& GetBlobs() const;
 	const std::vector<const Section<MEMORY_ADDR> *>& GetSections() const;
 	const std::vector<const Segment<MEMORY_ADDR> *>& GetSegments() const;
@@ -126,6 +132,8 @@ private:
 	endian_type file_endian;
 	unsigned int address_size;
 	unsigned int memory_atom_size;
+	uint64_t elf_phoff;
+	unsigned int elf_phent;
 	std::vector<const Blob<MEMORY_ADDR> *> blobs;
 	std::vector<const Section<MEMORY_ADDR> *> sections;
 	std::vector<const Segment<MEMORY_ADDR> *> segments;

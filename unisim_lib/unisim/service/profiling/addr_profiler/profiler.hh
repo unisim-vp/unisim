@@ -76,7 +76,7 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 	
-	virtual void ReportMemoryAccess(typename unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename unisim::service::interfaces::MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
+	virtual void ReportMemoryAccess(unisim::util::debug::MemoryAccessType mat, unisim::util::debug::MemoryType mt, ADDRESS addr, uint32_t size);
 	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 
 	virtual void SetProfileOption(typename unisim::service::interfaces::Profiling<ADDRESS>::ProfileType prof_type, typename unisim::service::interfaces::Profiling<ADDRESS>::Option opt, bool flag);

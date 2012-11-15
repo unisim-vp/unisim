@@ -280,7 +280,6 @@ public:
 	//=====================================================================
 
 	uint8_t step();	// Return the number of cpu cycles consumed by the operation
-	virtual void Stop(int ret);
 	virtual void Sync();
 
 	enum STATES {RUNNING, WAIT, STOP};
@@ -636,7 +635,7 @@ inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlo
 	// Memory access reporting
 	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_READ, MemoryAccessReporting<physical_address_t>::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, pea, size);
 	}
 }
 
@@ -649,7 +648,7 @@ inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGl
 	// Memory access reporting
 	if(memory_access_reporting_import)
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<physical_address_t>::MAT_WRITE, MemoryAccessReporting<physical_address_t>::MT_DATA, pea, size);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, pea, size);
 	}
 }
 

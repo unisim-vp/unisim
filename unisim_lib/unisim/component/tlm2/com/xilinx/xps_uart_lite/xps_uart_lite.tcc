@@ -265,6 +265,8 @@ tlm::tlm_sync_enum XPS_UARTLite<CONFIG>::nb_transport_bw(InterruptPayload& paylo
 template <class CONFIG>
 void XPS_UARTLite<CONFIG>::ProcessEvents()
 {
+	bool flush_telnet_output = false;
+	
 	time_stamp = sc_time_stamp();
 	if(inherited::IsVerbose())
 	{
@@ -292,6 +294,7 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 			{
 				case Event::EV_TELNET_IO:
 					{
+						flush_telnet_output = true;
 						schedule.FreeEvent(event);
 						// schedule a wake for handling I/O with telnet client
 						sc_time notify_time_stamp(sc_time_stamp());
@@ -322,10 +325,7 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 		schedule.Notify(event);
 	}
 	
-	if(!interrupt_output || inherited::HasInterrupt())
-	{
-		inherited::TelnetProcess();       // Handle I/O with telnet client only if interrupt signal would go low because of processor activity
-	}
+	inherited::TelnetProcess(flush_telnet_output);       // Handle I/O with telnet client
 	GenerateOutput();                 // Generate interrupt signal
 		
 	inherited::ResetTX_FIFO_BecomesEmpty();

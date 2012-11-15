@@ -81,31 +81,11 @@
 
 #endif
 
-
 #ifdef DEBUG_EMBEDDED_PPC_G4_BOARD
 	static const bool DEBUG_INFORMATION = true;
 #else
 	static const bool DEBUG_INFORMATION = false;
 #endif
-
-bool debug_enabled;
-
-void EnableDebug()
-{
-	debug_enabled = true;
-}
-
-void DisableDebug()
-{
-	debug_enabled = false;
-}
-
-void SigIntHandler(int signum)
-{
-	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
-}
-
 
 using namespace std;
 using unisim::service::debug::gdb_server::GDBServer;
@@ -128,7 +108,8 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual void Stop(Object *object, int exit_status);
+	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
+	int GetExitStatus() const;
 protected:
 private:
 	//=========================================================================
@@ -281,7 +262,13 @@ private:
 	Parameter<bool> param_estimate_power;
 	Parameter<bool> param_message_spy;
 
+	int exit_status;
 	static void LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator);
+#ifdef WIN32
+	static BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType);
+#else
+	static void SigIntHandler(int signum);
+#endif
 };
 
 Simulator::Simulator(int argc, char **argv)
@@ -431,110 +418,110 @@ Simulator::Simulator(int argc, char **argv)
 		unsigned irq_msg_spy_index = 0;
 
 		cpu->bus_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = cpu->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = cpu->bus_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->inport[0]);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->inport[0]->sc_object::name();
 		bus_msg_spy_index++;
 
 		(*bus->outport[0])(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->outport[0]->sc_object::name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(cpu->snoop_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = cpu->snoop_port.name();
 		bus_msg_spy_index++;
 
 		(*bus->chipset_outport)(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = bus->chipset_outport->sc_object::name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(mpc107->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = mpc107->slave_port.name();
 		bus_msg_spy_index++;
 
 		mpc107->master_port(bus_msg_spy[bus_msg_spy_index]->slave_port);
-		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*bus_msg_spy[bus_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*bus_msg_spy[bus_msg_spy_index])["source_port_name"] = mpc107->master_port.name();
 		bus_msg_spy[bus_msg_spy_index]->master_port(*bus->chipset_inport);
-		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->name();
-		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->chipset_inport->name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_module_name"] = bus->sc_object::name();
+		(*bus_msg_spy[bus_msg_spy_index])["target_port_name"] = bus->chipset_inport->sc_object::name();
 		bus_msg_spy_index++;
 
 		mpc107->ram_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->ram_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(memory->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = memory->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = memory->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->rom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->rom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(flash->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = flash->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = flash->slave_port.name();
 		mem_msg_spy_index++;
 
 		mpc107->erom_master_port(mem_msg_spy[mem_msg_spy_index]->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*mem_msg_spy[mem_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["source_port_name"] = mpc107->erom_master_port.name();
 		mem_msg_spy[mem_msg_spy_index]->master_port(erom->slave_port);
-		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->name();
+		(*mem_msg_spy[mem_msg_spy_index])["target_module_name"] = erom->sc_object::name();
 		(*mem_msg_spy[mem_msg_spy_index])["target_port_name"] = erom->slave_port.name();
 		mem_msg_spy_index++;
 		
 		mpc107->pci_master_port(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = mpc107->pci_master_port.name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(*pci_bus->input_port[PCI_MPC107_MASTER_PORT]);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->name();
-		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_MPC107_MASTER_PORT]->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_bus->input_port[PCI_MPC107_MASTER_PORT]->sc_object::name();
 		pci_msg_spy_index++;
 
 		(*pci_bus->output_port[PCI_MPC107_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
-		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_MPC107_TARGET_PORT]->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_MPC107_TARGET_PORT]->sc_object::name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(mpc107->pci_slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = mpc107->pci_slave_port.name();
 		pci_msg_spy_index++;
 
 #ifdef WITH_PCI_STUB
 		(*pci_bus->output_port[PCI_STUB_TARGET_PORT])(pci_msg_spy[pci_msg_spy_index]->slave_port);
-		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->name();
-		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_STUB_TARGET_PORT]->name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_module_name"] = pci_bus->sc_object::name();
+		(*pci_msg_spy[pci_msg_spy_index])["source_port_name"] = pci_bus->output_port[PCI_STUB_TARGET_PORT]->sc_object::name();
 		pci_msg_spy[pci_msg_spy_index]->master_port(pci_stub->bus_port);
-		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_stub->name();
+		(*pci_msg_spy[pci_msg_spy_index])["target_module_name"] = pci_stub->sc_object::name();
 		(*pci_msg_spy[pci_msg_spy_index])["target_port_name"] = pci_stub->bus_port.name();
 		pci_msg_spy_index++;
 #endif
 
 		mpc107->irq_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->irq_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->external_interrupt_port);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->external_interrupt_port.name();
 		irq_msg_spy_index++;
 
 		mpc107->soft_reset_master_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = mpc107->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = mpc107->soft_reset_master_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(cpu->soft_reset_port);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = cpu->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = cpu->soft_reset_port.name();
 		irq_msg_spy_index++;
 
 #ifdef WITH_PCI_STUB
 		pci_stub->cpu_irq_port(irq_msg_spy[irq_msg_spy_index]->slave_port);
-		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_stub->name();
+		(*irq_msg_spy[irq_msg_spy_index])["source_module_name"] = pci_stub->sc_object::name();
 		(*irq_msg_spy[irq_msg_spy_index])["source_port_name"] = pci_stub->cpu_irq_port.name();
 		irq_msg_spy[irq_msg_spy_index]->master_port(*mpc107->irq_slave_port[pci_stub_irq]);
-		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->name();
-		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[pci_stub_irq]->name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_module_name"] = mpc107->sc_object::name();
+		(*irq_msg_spy[irq_msg_spy_index])["target_port_name"] = mpc107->irq_slave_port[pci_stub_irq]->sc_object::name();
 		irq_msg_spy_index++;
 #endif
 	}
@@ -565,54 +552,25 @@ Simulator::Simulator(int argc, char **argv)
 
 	cpu->memory_import >> bus->memory_export;
 
-#if 0
-	if(enable_inline_debugger || enable_gdb_server) 
-	{
-		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-		tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
-	}
-
-	if(inline_debugger)
-	{
-		// Connect inline-debugger to CPU
-		cpu->debug_control_import >> inline_debugger->debug_control_export;
-		*tee_memory_access_reporting->out[1] >> inline_debugger->memory_access_reporting_export;
-		inline_debugger->memory_access_reporting_control_import >>
-			*tee_memory_access_reporting->in_control[1];
-		cpu->trap_reporting_import >> inline_debugger->trap_reporting_export;
-		inline_debugger->disasm_import >> cpu->disasm_export;
-		inline_debugger->memory_import >> cpu->memory_export;
-		inline_debugger->registers_import >> cpu->registers_export;
-	}
-	else if(gdb_server)
-	{
-		// Connect gdb-server to CPU
-		cpu->debug_control_import >> gdb_server->debug_control_export;
-		*tee_memory_access_reporting->out[1] >> gdb_server->memory_access_reporting_export;
-		gdb_server->memory_access_reporting_control_import >>
-			*tee_memory_access_reporting->in_control[1];
-		cpu->trap_reporting_import >> gdb_server->trap_reporting_export;
-		gdb_server->memory_import >> cpu->memory_export;
-		gdb_server->registers_import >> cpu->registers_export;
-	}
-
-	if(inline_debugger)
-	{
-		*inline_debugger->loader_import[0] >> loader->loader_export;
-		*inline_debugger->symbol_table_lookup_import[0] >> loader->symbol_table_lookup_export;
-		*inline_debugger->stmt_lookup_import[0] >> loader->stmt_lookup_export;
-	}
-#endif
-
 	if(enable_inline_debugger || enable_gdb_server)
 	{
-		// Connect tee-memory-access-reporting to CPU, debugger and profiler
-		cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
-		*tee_memory_access_reporting->out[1] >> profiler->memory_access_reporting_export;
-		*tee_memory_access_reporting->out[2] >> debugger->memory_access_reporting_export;
-		profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
-		debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[2];
-
+		if(enable_inline_debugger)
+		{
+			// Connect tee-memory-access-reporting to CPU, debugger and profiler
+			cpu->memory_access_reporting_import >> tee_memory_access_reporting->in;
+			*tee_memory_access_reporting->out[1] >> profiler->memory_access_reporting_export;
+			*tee_memory_access_reporting->out[2] >> debugger->memory_access_reporting_export;
+			profiler->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[1];
+			debugger->memory_access_reporting_control_import >> *tee_memory_access_reporting->in_control[2];
+			tee_memory_access_reporting->out_control >> cpu->memory_access_reporting_control_export;
+		}
+		else
+		{
+			// Connect CPU to debugger
+			cpu->memory_access_reporting_import >> debugger->memory_access_reporting_export;
+			debugger->memory_access_reporting_control_import >> cpu->memory_access_reporting_control_export;
+		}
+		
 		// Connect debugger to CPU
 		cpu->debug_control_import >> debugger->debug_control_export;
 		cpu->trap_reporting_import >> debugger->trap_reporting_export;
@@ -939,13 +897,18 @@ void Simulator::Run()
 {
 	double time_start = host_time->GetTime();
 
-	EnableDebug();
 	void (*prev_sig_int_handler)(int) = 0;
 
 	if(!inline_debugger)
 	{
-		prev_sig_int_handler = signal(SIGINT, SigIntHandler);
+#ifdef WIN32
+		SetConsoleCtrlHandler(&Simulator::ConsoleCtrlHandler, TRUE);
+#else
+		prev_sig_int_handler = signal(SIGINT, &Simulator::SigIntHandler);
+#endif
 	}
+
+	sc_report_handler::set_actions(SC_INFO, SC_DO_NOTHING); // disable SystemC messages
 
 	try
 	{
@@ -981,58 +944,77 @@ void Simulator::Run()
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
-	if(estimate_power)
+}
+
+void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)
+{
+	exit_status = _exit_status;
+	if(object)
 	{
-		double total_dynamic_energy = il1_power_estimator->GetDynamicEnergy()
-			+ dl1_power_estimator->GetDynamicEnergy()
-			+ l2_power_estimator->GetDynamicEnergy()
-			+ itlb_power_estimator->GetDynamicEnergy()
-			+ dtlb_power_estimator->GetDynamicEnergy();
-
-		double total_dynamic_power = il1_power_estimator->GetDynamicPower()
-			+ dl1_power_estimator->GetDynamicPower()
-			+ l2_power_estimator->GetDynamicPower()
-			+ itlb_power_estimator->GetDynamicPower()
-			+ dtlb_power_estimator->GetDynamicPower();
-
-		double total_leakage_power = il1_power_estimator->GetLeakagePower()
-			+ dl1_power_estimator->GetLeakagePower()
-			+ l2_power_estimator->GetLeakagePower()
-			+ itlb_power_estimator->GetLeakagePower()
-			+ dtlb_power_estimator->GetLeakagePower();
-
-		double total_power = total_dynamic_power + total_leakage_power;
-
-		cerr << "L1 instruction cache dynamic energy: " << il1_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "L1 data cache dynamic energy: " << dl1_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "L2 cache dynamic energy: " << l2_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "Instruction TLB dynamic energy: " << itlb_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "Data TLB dynamic energy: " << dtlb_power_estimator->GetDynamicEnergy() << " J" << endl;
-		cerr << "L1 instruction cache dynamic power: " << il1_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "L1 data cache dynamic power: " << dl1_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "L2 cache dynamic power: " << l2_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "Instruction TLB dynamic power: " << itlb_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "Data TLB dynamic power: " << dtlb_power_estimator->GetDynamicPower() << " W" << endl;
-		cerr << "L1 instruction cache leakage power: " << il1_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "L1 data cache leakage power: " << dl1_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "L2 cache leakage power: " << l2_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "Instruction TLB leakage power: " << itlb_power_estimator->GetLeakagePower() << " W" << endl;
-		cerr << "Data TLB leakage power: " << dtlb_power_estimator->GetLeakagePower() << " W" << endl;
-
-		cerr << "Total dynamic energy: " << total_dynamic_energy << " J" << endl;
-		cerr << "Total dynamic power: " << total_dynamic_power << " W" << endl;
-		cerr << "Total leakage power: " << total_leakage_power << " W" << endl;
-		cerr << "Total power (dynamic+leakage): " << total_power << " W" << endl;
+		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
+	}
+#ifdef DEBUG_PPCEMU_SYSTEM
+	std::cerr << "Call stack:" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+#endif
+	std::cerr << "Program exited with status " << exit_status << std::endl;
+	sc_stop();
+	if(!asynchronous)
+	{
+		switch(sc_get_curr_simcontext()->get_curr_proc_info()->kind)
+		{
+			case SC_THREAD_PROC_: 
+			case SC_CTHREAD_PROC_:
+				wait();
+				break;
+			default:
+				break;
+		}
 	}
 }
 
-void Simulator::Stop(Object *object, int exit_status)
+int Simulator::GetExitStatus() const
 {
-	std::cerr << object->GetName() << " has requested simulation stop" << std::endl;
-	std::cerr << "Program exited with status " << exit_status << std::endl;
-	sc_stop();
-	wait();
+	return exit_status;
 }
+
+#ifdef WIN32
+BOOL WINAPI Simulator::ConsoleCtrlHandler(DWORD dwCtrlType)
+{
+	bool stop = false;
+	switch(dwCtrlType)
+	{
+		case CTRL_C_EVENT:
+			cerr << "Interrupted by Ctrl-C" << endl;
+			stop = true;
+			break;
+		case CTRL_BREAK_EVENT:
+			cerr << "Interrupted by Ctrl-Break" << endl;
+			stop = true;
+			break;
+		case CTRL_CLOSE_EVENT:
+			cerr << "Interrupted by a console close" << endl;
+			stop = true;
+			break;
+		case CTRL_LOGOFF_EVENT:
+			cerr << "Interrupted because of logoff" << endl;
+			stop = true;
+			break;
+		case CTRL_SHUTDOWN_EVENT:
+			cerr << "Interrupted because of shutdown" << endl;
+			stop = true;
+			break;
+	}
+	if(stop) unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+	return stop ? TRUE : FALSE;
+}
+#else
+void Simulator::SigIntHandler(int signum)
+{
+	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
+}
+#endif
 
 int sc_main(int argc, char *argv[])
 {

@@ -133,7 +133,7 @@ dlmzb.execute = {
 }
 
 dlmzb.disasm = {
-	os << "isel" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r " << (unsigned int) rs << ", r" << (unsigned int) rb;
+	os << "dlmzb" << (rc ? "." : "") << " r" << (unsigned int) ra << ", r " << (unsigned int) rs << ", r" << (unsigned int) rb;
 }
 
 op macchw(4[6]:rd[5]:ra[5]:rb[5]:oe[1]:172[9]:rc[1])

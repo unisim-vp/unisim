@@ -78,6 +78,8 @@ namespace debug {
 namespace dwarf {
 
 using unisim::util::endian::endian_type;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
 
 typedef enum
 {
@@ -99,7 +101,7 @@ public:
 	void GetOption(Option opt, bool& flag);
 
 	void Parse();
-	void to_XML(std::ostream& os);
+	void to_XML(const char *output_filename);
 	void to_HTML(const char *output_dir);
 	
 	void Register(DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog);
@@ -116,8 +118,17 @@ public:
 	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
 	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset) const;
 	
-	endian_type GetEndianness() const;
-	uint8_t GetAddressSize() const;
+	const DWARF_Pub<MEMORY_ADDR> *FindPubName(const char *name) const;
+	const DWARF_Pub<MEMORY_ADDR> *FindPubType(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubName(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubType(const char *name) const;
+	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+
+	endian_type GetFileEndianness() const;
+	endian_type GetArchEndianness() const;
+	uint8_t GetFileAddressSize() const;
+	uint8_t GetArchAddressSize() const;
 	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
 	const char *GetString(uint64_t debug_str_offset) const;
 
@@ -125,13 +136,21 @@ public:
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
+	uint8_t GetCallingConvention(MEMORY_ADDR pc) const;
+	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	
+	DWARF_RegisterNumberMapping *GetRegisterNumberMapping() const;
+	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface() const;
 
+	unisim::kernel::logger::Logger& GetLogger() const;
 private:
-	endian_type endianness;
-	uint8_t address_size;
+	endian_type file_endianness;
+	endian_type arch_endianness;
+	uint8_t file_address_size;
+	uint8_t arch_address_size;
 	
 	// Raw data
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)

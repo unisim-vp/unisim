@@ -110,6 +110,7 @@ unisim/kernel/tlm/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
+unisim/kernel/api/api.cc \
 unisim/util/xml/xml.cc \
 unisim/util/debug/profile_32.cc \
 unisim/util/debug/profile_64.cc \
@@ -253,7 +254,10 @@ unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
 unisim/kernel/tlm/tlm.hh \
 unisim/kernel/debug/debug.hh \
+unisim/kernel/api/api.hh \
+unisim/util/likely/likely.hh \
 unisim/util/arithmetic/arithmetic.hh \
+unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/breakpoint.hh \
 unisim/util/debug/event.hh \
 unisim/util/debug/profile.hh \
@@ -342,10 +346,7 @@ unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/elf_loader/elf_common.h \
 unisim/service/loader/elf_loader/elf_loader.hh \
-unisim/service/loader/elf_loader/elf32.h \
-unisim/service/loader/elf_loader/elf64.h \
 unisim/service/loader/elf_loader/elf32_loader.hh \
 unisim/service/loader/pmac_linux_kernel_loader/pmac_linux_kernel_loader.hh \
 unisim/service/loader/pmac_bootx/pmac_bootx.hh \
@@ -460,6 +461,7 @@ unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/elf_loader/elf32_loader.tcc \
 unisim/service/sdl/sdl.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/powerpc/exception.tcc \

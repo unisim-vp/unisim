@@ -1496,7 +1496,7 @@ void CPU<CONFIG>::StepOneInstruction()
 		{
 			if(unlikely(memory_access_reporting_import != 0))
 			{
-				memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<typename CONFIG::address_t>::MAT_READ, MemoryAccessReporting<typename CONFIG::address_t>::MT_INSN, addr, 4);
+				memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, addr, 4);
 			}
 		}
 
@@ -1563,11 +1563,6 @@ void CPU<CONFIG>::StepOneInstruction()
 		}
 	}
 
-	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
-	{
-		trap_reporting_import->ReportTrap();
-	}
-	
 	if(unlikely(requires_finished_instruction_reporting))
 	{
 		if(unlikely(memory_access_reporting_import != 0))
@@ -1581,6 +1576,11 @@ void CPU<CONFIG>::StepOneInstruction()
 	/* update the instruction counter */
 	instruction_counter++;
 
+	if(unlikely(trap_reporting_import && instruction_counter == trap_on_instruction_counter))
+	{
+		trap_reporting_import->ReportTrap();
+	}
+	
 	if(unlikely((instruction_counter >= max_inst) || (enable_halt_on && (GetCIA() == halt_on_addr)))) Stop(0);
 	
 	//DL1SanityCheck();

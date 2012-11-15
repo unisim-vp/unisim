@@ -46,35 +46,40 @@
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
 }:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4])
 
 clz.disasm = {
 	buffer << "clz";
 	DisasmCondition(cond, buffer);
-	buffer << " r" << rd << ", r" << rm;
+	buffer << " r" << (unsigned int) rd << ", r" << (unsigned int) rm;
 }
 
 clz.execute = {
 	typedef Operation<STATE> inherited;
 	
-	uint32_t src;
+// 	uint32_t src;
 	uint32_t res;
 	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
   
 	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
-	src = rm_value;
-	if(src == 0) {
-		res = 32;
-	} else {
-		res = 0;
-		while((src & 0x80000000) == 0) {
-			res++;
-			src = src << 1;
-		}
-		//    res = 31 - res;
-	}
+	if(!cpu.CheckCondition(cond)) return;
+	
+// 	src = rm_value;
+// 	if(src == 0) {
+// 		res = 32;
+// 	} else {
+// 		res = 0;
+// 		while((src & 0x80000000) == 0) {
+// 			res++;
+// 			src = src << 1;
+// 		}
+// 		//    res = 31 - res;
+// 	}
+  
+  res = CountLeadingZeros(rm_value);
   
 	cpu.SetGPR(rd, res);
 }

@@ -43,6 +43,7 @@
 #include "unisim/service/interfaces/memory.hh"
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
+#include <unisim/util/likely/likely.hh>
 
 namespace unisim {
 namespace service {
@@ -287,7 +288,7 @@ Load()
 		if ( verbose )
 		{
 			logger << DebugInfo
-				<< "Not loading \"" << ((blob->GetCapability() & unisim::util::debug::blob::Blob<MEMORY_ADDR>::CAP_FILENAME) ? blob->GetFilename() : "")
+				<< "Not loading \"" << ((blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME) ? blob->GetFilename() : "")
 				<< "\" because the memory is not connected to"
 				<< " the loader."
 				<< EndDebugInfo;
