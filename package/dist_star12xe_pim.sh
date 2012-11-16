@@ -2,7 +2,7 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory>"
+	echo "  $0 <destination directory> [ln|cp]"
 }
 
 if [ -z "$1" ]; then
@@ -17,6 +17,19 @@ if test ${MY_DIR} = "."; then
 elif test ${MY_DIR} = ".."; then
 	MY_DIR=${HERE}/..
 fi
+
+CPLN="cp -f"
+if [ -z "$2" ]; then
+	CPLN="cp -f"
+elif test $2 = "ln"; then
+	CPLN="ln -s"
+elif test $2 = "cp"; then
+	CPLN="cp -f"
+else
+	Usage
+	exit -1
+fi
+
 
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
@@ -105,6 +118,7 @@ unistd.h \
 vector"
 
 UNISIM_LIB_STAR12X_SOURCE_FILES="\
+unisim/kernel/api/api.cc \
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
 unisim/kernel/tlm2/tlm.cc \
@@ -229,6 +243,7 @@ unisim/component/cxx/processor/hcs12x/s12xgate.isa \
 "
 
 UNISIM_LIB_STAR12X_HEADER_FILES="${UNISIM_LIB_STAR12X_ISA_FILES} ${UNISIM_LIB_XB_ISA_FILES} ${UNISIM_LIB_S12XGATE_ISA_FILES} \
+unisim/kernel/api/api.hh \
 unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
@@ -279,14 +294,14 @@ unisim/util/endian/endian.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
+unisim/util/debug/memory_access_type.hh \
 unisim/util/garbage_collector/garbage_collector.hh \
 unisim/util/hash_table/hash_table.hh \
+unisim/util/likely/likely.hh \
 unisim/util/loader/elf_loader/elf_loader.hh \
 unisim/util/loader/elf_loader/elf32.h \
 unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf_common.h \
-unisim/util/loader/elf_loader/elf32.h \
-unisim/util/loader/elf_loader/elf64.h \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
@@ -318,12 +333,6 @@ unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
 unisim/service/interfaces/profiling.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
-unisim/service/loader/elf_loader/elf_common.h \
-unisim/service/loader/elf_loader/elf_loader.hh \
-unisim/service/loader/elf_loader/elf32.h \
-unisim/service/loader/elf_loader/elf32_loader.hh \
-unisim/service/loader/elf_loader/elf64.h \
-unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/telnet/telnet.hh \
 unisim/service/time/host_time/time.hh \
@@ -361,7 +370,6 @@ unisim/service/pim/pim_server.hh \
 unisim/service/pim/pim_thread.hh \
 unisim/service/pim/convert.hh \
 unisim/service/pim/network/BlockingQueue.hpp \
-unisim/service/pim/network/BlockingQueue.tcc \
 unisim/service/pim/network/GenericThread.hpp \
 unisim/service/pim/network/SocketClientThread.hpp \
 unisim/service/pim/network/SocketServerThread.hpp \
@@ -404,6 +412,8 @@ unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
+unisim/service/loader/elf_loader/elf32_loader.tcc \
+unisim/service/loader/elf_loader/elf64_loader.tcc \
 unisim/service/loader/elf_loader/elf_loader.tcc \
 unisim/service/loader/s19_loader/s19_loader.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
@@ -417,6 +427,7 @@ unisim/component/tlm2/processor/hcs12x/pwm.tcc \
 unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.tcc \
+unisim/service/pim/network/BlockingQueue.tcc \
 unisim/service/pim/pim_server.tcc "
 
 UNISIM_LIB_STAR12X_M4_FILES="\
@@ -525,7 +536,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${CPLN} "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 	fi
 done
 
@@ -543,7 +554,7 @@ for file in ${UNISIM_LIB_STAR12X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${CPLN} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 	fi
 done
 
@@ -561,7 +572,7 @@ for file in ${UNISIM_SIMULATORS_STAR12X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${CPLN} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 	fi
 done
 
@@ -577,7 +588,7 @@ for file in ${UNISIM_SIMULATORS_STAR12X_DATA_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		${CPLN} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
@@ -599,7 +610,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${CPLN} "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 		has_to_build_genisslib_configure=yes
 	fi
 done
@@ -615,7 +626,7 @@ for file in ${UNISIM_LIB_STAR12X_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${CPLN} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 		has_to_build_star12x_configure=yes
 	fi
 done
@@ -848,7 +859,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/bin' && ${CPLN} \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
@@ -859,7 +870,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\trm -f \"\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tmkdir -p '\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}'; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}' && ${CPLN} \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${STAR12X_MAKEFILE_AM}"

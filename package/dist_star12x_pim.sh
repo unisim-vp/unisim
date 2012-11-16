@@ -2,7 +2,7 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory>"
+	echo "  $0 <destination directory> [ln|cp]"
 }
 
 if [ -z "$1" ]; then
@@ -16,6 +16,18 @@ if test ${MY_DIR} = "."; then
 	MY_DIR=${HERE}
 elif test ${MY_DIR} = ".."; then
 	MY_DIR=${HERE}/..
+fi
+
+CPLN="cp -f"
+if [ -z "$2" ]; then
+	CPLN="cp -f"
+elif test $2 = "ln"; then
+	CPLN="ln -s"
+elif test $2 = "cp"; then
+	CPLN="cp -f"
+else
+	Usage
+	exit -1
 fi
 
 DEST_DIR=$1
@@ -526,7 +538,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${CPLN} "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 	fi
 done
 
@@ -544,7 +556,7 @@ for file in ${UNISIM_LIB_STAR12X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${CPLN} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 	fi
 done
 
@@ -562,7 +574,7 @@ for file in ${UNISIM_SIMULATORS_STAR12X_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${CPLN} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 	fi
 done
 
@@ -578,7 +590,7 @@ for file in ${UNISIM_SIMULATORS_STAR12X_DATA_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		${CPLN} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
@@ -600,7 +612,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${CPLN} "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 		has_to_build_genisslib_configure=yes
 	fi
 done
@@ -616,7 +628,7 @@ for file in ${UNISIM_LIB_STAR12X_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/star12x/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
+		${CPLN} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/star12x/${file}" || exit
 		has_to_build_star12x_configure=yes
 	fi
 done
@@ -849,7 +861,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\trm -f \"\$(top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/bin' && ${CPLN} \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
@@ -860,7 +872,7 @@ if [ "${has_to_build_star12x_configure}" = "yes" ]; then
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\trm -f \"\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tmkdir -p '\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}'; \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
-	printf "\t(cd '\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}' && cp -f \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
+	printf "\t(cd '\$(top_builddir)/share/unisim-star12x-${STAR12X_VERSION}' && ${CPLN} \"\$(abs_top_builddir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${STAR12X_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${STAR12X_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${STAR12X_MAKEFILE_AM}"
