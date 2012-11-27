@@ -118,15 +118,18 @@ Linux(unisim::kernel::logger::Logger& logger,
     , utsname_machine_()
     , utsname_domainname_()
     , blob_(NULL)
-	, regs_if_(regs_if)
-	, mem_if_(mem_if)
-	, mem_inject_if_(mem_inject_if)
+    , regs_if_(regs_if)
+    , mem_if_(mem_if)
+    , mem_inject_if_(mem_inject_if)
     , syscall_name_map_()
     , syscall_name_assoc_map_()
     , syscall_impl_assoc_map_()
     , current_syscall_id_(0)
     , current_syscall_name_("(NONE)")
     , verbose_(false)
+    , parse_dwarf_(false)
+    , dwarf_to_html_output_directory_()
+    , dwarf_to_xml_output_filename_()
     , logger_(logger)
     , terminated_(false)
     , return_status_(0) {
@@ -151,6 +154,23 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetVerbose(bool verbose) {
   verbose_ = verbose;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetParseDWARF(bool parse_dwarf) {
+  parse_dwarf_ = parse_dwarf;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory)
+{
+	dwarf_to_html_output_directory_ = dwarf_to_html_output_directory;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename)
+{
+	dwarf_to_xml_output_filename_ = dwarf_to_xml_output_filename;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -220,6 +240,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
 
   loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
   loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
 
   if (!loader->Load()) {
     logger_ << DebugError

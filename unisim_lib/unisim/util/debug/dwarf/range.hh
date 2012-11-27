@@ -55,6 +55,8 @@ public:
 	bool IsEndOfList() const;
 	MEMORY_ADDR GetBegin() const;
 	MEMORY_ADDR GetEnd() const;
+	MEMORY_ADDR GetBaseAddress() const;
+	bool HasOverlap(MEMORY_ADDR base_addr, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNext() const;
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
@@ -68,11 +70,19 @@ private:
 	friend class DWARF_Handler<MEMORY_ADDR>;
 	
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
-	DWARF_RangeListEntry<MEMORY_ADDR> *next;
-	uint64_t offset; // offset within .debug_range section
+	DWARF_RangeListEntry<MEMORY_ADDR> *next; // next entry in the list
+	uint64_t offset;     // offset within .debug_range section
 	unsigned int id;
-	MEMORY_ADDR begin;
-	MEMORY_ADDR end;
+	
+	MEMORY_ADDR begin;   // A beginning address offset. This address offset has the size of an address and is relative to
+	                     // the applicable base address of the compilation unit referencing this range list. It marks the
+	                     //beginning of an address range.
+	
+	MEMORY_ADDR end;     // An ending address offset. This address offset again has the size of an address and is relative
+	                     // to the applicable base address of the compilation unit referencing this range list. It marks the
+	                     // first address past the end of the address range.The ending address must be greater than or
+	                     // equal to the beginning address.
+
 };
 
 } // end of namespace dwarf

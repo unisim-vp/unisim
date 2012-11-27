@@ -51,18 +51,20 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 	, version(0)
 	, debug_abbrev_offset(0)
 	, address_size(0)
+	, dw_die(0)
 {
 }
 
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::~DWARF_CompilationUnit()
 {
-	unsigned int num_debug_info_entries = debug_info_entries.size();
-	unsigned int i;
-	for(i = 0; i < num_debug_info_entries; i++)
-	{
-		delete debug_info_entries[i];
-	}
+	if(dw_die) delete dw_die;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::GetDIE() const
+{
+	return dw_die;
 }
 
 template <class MEMORY_ADDR>
@@ -189,38 +191,38 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	max_size -= sizeof(address_size);
 	size += sizeof(address_size);
 	
- 	do
- 	{
-		DWARF_DIE<MEMORY_ADDR> *dw_die = new DWARF_DIE<MEMORY_ADDR>(this);
-		
-		int64_t sz;
-		if((sz = dw_die->Load(rawdata, max_size, offset + size)) < 0)
-		{
-			delete dw_die;
-			return -1;
-		}
-		rawdata += sz;
-		max_size -= sz;
-		size += sz;
-		
-		if(!dw_die->IsNull())
-		{
-			debug_info_entries.push_back(dw_die);
-			Register(dw_die);
-		}
-		else
-		{
-			delete dw_die;
-		}
- 	}
- 	while(size < ((dw_fmt == FMT_DWARF64) ? (unit_length + sizeof(uint32_t) + sizeof(uint64_t)) : (unit_length + sizeof(uint32_t))));
-	return size;
+	dw_die = new DWARF_DIE<MEMORY_ADDR>(this);
+	
+	int64_t sz;
+	if((sz = dw_die->Load(rawdata, max_size, offset + size)) < 0)
+	{
+		delete dw_die;
+		return -1;
+	}
+	rawdata += sz;
+	max_size -= sz;
+	size += sz;
+	
+	if(!dw_die->IsNull())
+	{
+		Register(dw_die);
+	}
+	else
+	{
+		delete dw_die;
+		dw_die = 0;
+		return -1;
+	}
+	// Each Compilation Unit Header should be followed by exactly one DW_TAG_compile_unit or one DW_TAG_partial_unit,
+	// and the children of the DW_TAG_compile_unit or DW_TAG_partial_unit contain Debugging Information Entries for the unit.
+	// A DW_TAG_compile_unit or DW_TAG_partial_unit has no sibling entries.
+	return (size != ((dw_fmt == FMT_DWARF64) ? (unit_length + sizeof(uint32_t) + sizeof(uint64_t)) : (unit_length + sizeof(uint32_t)))) ? -1 : size;
 }
 
 template <class MEMORY_ADDR>
-void DWARF_CompilationUnit<MEMORY_ADDR>::Register(DWARF_DIE<MEMORY_ADDR> *dw_die)
+void DWARF_CompilationUnit<MEMORY_ADDR>::Register(DWARF_DIE<MEMORY_ADDR> *_dw_die)
 {
-	dw_handler->Register(dw_die);
+	dw_handler->Register(_dw_die);
 }
 
 template <class MEMORY_ADDR>
@@ -252,12 +254,7 @@ std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_XML(std::ostream& os)
 	   << "\" debug_abbrev_offset=\"" << debug_abbrev_offset
 	   << "\" address_size=\"" << (uint32_t) address_size
 	   << "\">" << std::endl;
-	unsigned int num_debug_info_entries = debug_info_entries.size();
-	unsigned int i;
-	for(i = 0; i < num_debug_info_entries; i++)
-	{
-		debug_info_entries[i]->to_XML(os) << std::endl;
-	}
+	dw_die->to_XML(os) << std::endl;
 	os << "</DW_CU>" << std::endl;
 	return os;
 }
@@ -268,13 +265,7 @@ std::ostream& DWARF_CompilationUnit<MEMORY_ADDR>::to_HTML(std::ostream& os)
 	os << "<tr id=\"cu-" << id << "\">" << std::endl;
 	os << "<td>" << id << "</td><td>" << offset << "</td><td>" << (uint32_t) version << "</td><td>" << (uint32_t) address_size << "</td>" << std::endl;
 	os << "<td>";
-	unsigned int num_debug_info_entries = debug_info_entries.size();
-	unsigned int i;
-	for(i = 0; i < num_debug_info_entries; i++)
-	{
-		if(i != 0) os << "&nbsp;";
-		os << "<a href=\"../../" << debug_info_entries[i]->GetHREF() << "\">die #" << debug_info_entries[i]->GetId() << "</a>";
-	}
+	os << "<a href=\"../../" << dw_die->GetHREF() << "\">die #" << dw_die->GetId() << "</a>";
 	os << "</td>" << std::endl;
 	os << "</tr>" << std::endl;
 
@@ -291,41 +282,26 @@ std::ostream& operator << (std::ostream& os, const DWARF_CompilationUnit<MEMORY_
 	   << " - Offset in .debug_abbrev: " << dw_cu.debug_abbrev_offset << std::endl
 	   << " - Address Size: " << (uint32_t) dw_cu.address_size << std::endl
 	   << " - Debug Info Entries:" << std::endl;
-	unsigned int num_debug_info_entries = dw_cu.debug_info_entries.size();
-	unsigned int i;
-	for(i = 0; i < num_debug_info_entries; i++)
-	{
-		os << *dw_cu.debug_info_entries[i] << std::endl;
-	}
+	os << *dw_cu.dw_die << std::endl;
 	return os;
 }
 
 template <class MEMORY_ADDR>
 void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix)
 {
-	unsigned int num_debug_info_entries = debug_info_entries.size();
-	unsigned int i;
-	for(i = 0; i < num_debug_info_entries; i++)
-	{
-		DWARF_DIE<MEMORY_ADDR> *dw_die = debug_info_entries[i];
-		
-		dw_die->BuildStatementMatrix(stmt_matrix);
-	}
+	dw_die->BuildStatementMatrix(stmt_matrix);
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
-	unsigned int num_debug_info_entries = debug_info_entries.size();
-	unsigned int i;
-	for(i = 0; i < num_debug_info_entries; i++)
-	{
-		DWARF_DIE<MEMORY_ADDR> *dw_die = debug_info_entries[i];
-		
-		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_die->FindDIEByAddrRange(addr, length);
-		if(dw_found_die) return dw_found_die;
-	}
-	return 0;
+	return dw_die ? dw_die->FindDIEByAddrRange(dw_tag, addr, length) : 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const
+{
+	return dw_die->GetDefaultBaseAddress(base_addr);
 }
 
 } // end of namespace dwarf

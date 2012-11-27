@@ -292,6 +292,7 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
+unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \

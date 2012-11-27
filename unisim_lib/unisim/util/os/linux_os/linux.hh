@@ -61,6 +61,12 @@ class Linux {
 
   void  SetVerbose(bool verbose);
 
+  void  SetParseDWARF(bool parse_dwarf);
+
+  void SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory);
+  
+  void SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename);
+
   bool SetCommandLine(std::vector<std::string> const &cmd);
 
   std::vector<std::string> GetCommandLine();
@@ -222,6 +228,11 @@ class Linux {
 
   // activate the verbose
   bool verbose_;
+  // activate DWARF parsing
+  bool parse_dwarf_;
+  // DWARF dump parameters
+  std::string dwarf_to_html_output_directory_;
+  std::string dwarf_to_xml_output_filename_;
   // logger stream
   unisim::kernel::logger::Logger& logger_;
 

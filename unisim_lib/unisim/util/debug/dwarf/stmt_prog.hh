@@ -58,6 +58,8 @@ public:
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
 	std::string GetHREF() const;
+	const DWARF_Filename *GetFilename(unsigned int filename_idx) const;
+	const char *GetIncludeDirectory(unsigned int include_directory_idx) const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_StatementProgram<MEMORY_ADDR>& dw_stmt_prog);

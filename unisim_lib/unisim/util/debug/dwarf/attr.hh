@@ -58,10 +58,9 @@ public:
 	unsigned int GetClass() const;
 	const char *GetClassName() const;
 	virtual std::string to_string() const = 0;
-	virtual uint64_t to_int() const;
 	virtual void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_AttributeValue& dw_value);
-private:
+protected:
 	unsigned int dw_class;
 };
 
@@ -73,7 +72,6 @@ public:
 	~DWARF_Address();
 	MEMORY_ADDR GetValue() const;
 	virtual std::string to_string() const;
-	virtual uint64_t to_int() const;
 private:
 	MEMORY_ADDR value;
 };
@@ -93,53 +91,67 @@ private:
 };
 
 template <class MEMORY_ADDR>
-class DWARF_UnsignedConstant : public DWARF_AttributeValue<MEMORY_ADDR>
+class DWARF_Constant : public DWARF_AttributeValue<MEMORY_ADDR>
+{
+public:
+	DWARF_Constant(unsigned int dw_class);
+	bool IsSigned() const;
+	virtual int64_t to_int() const = 0;
+	virtual uint64_t to_uint() const = 0;
+};
+
+template <class MEMORY_ADDR>
+class DWARF_UnsignedConstant : public DWARF_Constant<MEMORY_ADDR>
 {
 public:
 	DWARF_UnsignedConstant(uint64_t value);
-	~DWARF_UnsignedConstant();
+	virtual ~DWARF_UnsignedConstant();
 	uint64_t GetValue() const;
 	virtual std::string to_string() const;
-	virtual uint64_t to_int() const;
+	virtual int64_t to_int() const;
+	virtual uint64_t to_uint() const;
 private:
 	uint64_t value;
 };
 
 template <class MEMORY_ADDR>
-class DWARF_SignedConstant : public DWARF_AttributeValue<MEMORY_ADDR>
+class DWARF_SignedConstant : public DWARF_Constant<MEMORY_ADDR>
 {
 public:
 	DWARF_SignedConstant(int64_t value);
-	~DWARF_SignedConstant();
+	virtual ~DWARF_SignedConstant();
 	int64_t GetValue() const;
 	virtual std::string to_string() const;
-	virtual uint64_t to_int() const;
+	virtual int64_t to_int() const;
+	virtual uint64_t to_uint() const;
 private:
 	int64_t value;
 };
 
 template <class MEMORY_ADDR>
-class DWARF_UnsignedLEB128Constant : public DWARF_AttributeValue<MEMORY_ADDR>
+class DWARF_UnsignedLEB128Constant : public DWARF_Constant<MEMORY_ADDR>
 {
 public:
 	DWARF_UnsignedLEB128Constant(const DWARF_LEB128& leb128);
-	~DWARF_UnsignedLEB128Constant();
+	virtual ~DWARF_UnsignedLEB128Constant();
 	const DWARF_LEB128& GetValue() const;
 	virtual std::string to_string() const;
-	virtual uint64_t to_int() const;
+	virtual int64_t to_int() const;
+	virtual uint64_t to_uint() const;
 private:
 	DWARF_LEB128 value;
 };
 
 template <class MEMORY_ADDR>
-class DWARF_SignedLEB128Constant : public DWARF_AttributeValue<MEMORY_ADDR>
+class DWARF_SignedLEB128Constant : public DWARF_Constant<MEMORY_ADDR>
 {
 public:
 	DWARF_SignedLEB128Constant(const DWARF_LEB128& leb128);
-	~DWARF_SignedLEB128Constant();
+	virtual ~DWARF_SignedLEB128Constant();
 	const DWARF_LEB128& GetValue() const;
 	virtual std::string to_string() const;
-	virtual uint64_t to_int() const;
+	virtual int64_t to_int() const;
+	virtual uint64_t to_uint() const;
 private:
 	DWARF_LEB128 value;
 };
@@ -149,10 +161,9 @@ class DWARF_Flag : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Flag(bool value);
-	~DWARF_Flag();
+	virtual ~DWARF_Flag();
 	bool GetValue() const;
 	virtual std::string to_string() const;
-	virtual uint64_t to_int() const;
 private:
 	bool value;
 };
@@ -162,7 +173,7 @@ class DWARF_LinePtr : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_LinePtr(uint64_t debug_line_offset);
-	~DWARF_LinePtr();
+	virtual ~DWARF_LinePtr();
 	const DWARF_StatementProgram<MEMORY_ADDR> *GetValue() const;
 	uint64_t GetDebugLineOffset() const;
 	virtual std::string to_string() const;
@@ -177,7 +188,7 @@ class DWARF_LocListPtr : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_LocListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
-	~DWARF_LocListPtr();
+	virtual ~DWARF_LocListPtr();
 	const DWARF_LocListEntry<MEMORY_ADDR> *GetValue() const;
 	uint64_t GetDebugLocOffset() const;
 	virtual std::string to_string() const;
@@ -193,7 +204,7 @@ class DWARF_MacPtr : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_MacPtr(uint64_t debug_macinfo_offset);
-	~DWARF_MacPtr();
+	virtual ~DWARF_MacPtr();
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *GetValue() const;
 	uint64_t GetDebugMacInfoOffset() const;
 	virtual std::string to_string() const;
@@ -208,7 +219,7 @@ class DWARF_RangeListPtr : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_RangeListPtr(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_ranges_offset);
-	~DWARF_RangeListPtr();
+	virtual ~DWARF_RangeListPtr();
 	uint64_t GetDebugRangesOffset() const;
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetValue() const;
 	virtual std::string to_string() const;
@@ -224,7 +235,7 @@ class DWARF_Reference : public DWARF_AttributeValue<MEMORY_ADDR>
 {
 public:
 	DWARF_Reference(uint64_t debug_info_offset);
-	~DWARF_Reference();
+	virtual ~DWARF_Reference();
 	const DWARF_DIE<MEMORY_ADDR> *GetValue() const;
 	uint64_t GetDebugInfoOffset() const;
 	virtual std::string to_string() const;
@@ -240,7 +251,7 @@ class DWARF_String : public DWARF_AttributeValue<MEMORY_ADDR>
 public:
 	DWARF_String(uint64_t debug_strp_offset);
 	DWARF_String(const char *value);
-	~DWARF_String();
+	virtual ~DWARF_String();
 	unsigned int GetLength() const;
 	const char *GetValue() const;
 	virtual std::string to_string() const;
@@ -256,7 +267,7 @@ public:
 	DWARF_Expression(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t length, const uint8_t *value);
 	DWARF_Expression(const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp, uint64_t length, const uint8_t *value);
 	DWARF_Expression(const DWARF_Expression<MEMORY_ADDR>& dw_exp);
-	~DWARF_Expression();
+	virtual ~DWARF_Expression();
 	const DWARF_CompilationUnit<MEMORY_ADDR> *GetCompilationUnit() const;
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *GetCallFrameProgram() const;
 	uint64_t GetLength() const;

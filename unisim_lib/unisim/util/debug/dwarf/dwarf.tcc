@@ -547,7 +547,7 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 				{
 					logger << "In File \"" << blob->GetFilename() << "\", ";
 				}
-				logger << "invalid DWARF v2/v3 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << EndDebugWarning;
+				logger << "invalid DWARF v3 debug pubtypes at offset 0x" << std::hex << debug_pubtypes_offset << std::dec << EndDebugWarning;
 				delete dw_public_types;
 				break;
 			}
@@ -560,7 +560,26 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		}
 		while(debug_pubtypes_offset < debug_pubtypes_section->GetSize());
 	}
+	else
+	{
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v3 .debug_pubtypes section found" << EndDebugWarning;
+	}
 
+	if(!debug_ranges_section)
+	{
+		logger << DebugWarning;
+		if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+		{
+			logger << "In File \"" << blob->GetFilename() << "\", ";
+		}
+		logger << "no DWARF v3 .debug_ranges section found" << EndDebugWarning;
+	}
+	
 	// Fix all pointer cross-references
 	if(verbose)
 	{
@@ -2196,7 +2215,7 @@ const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindRangeLi
 			
 		if((sz = dw_range_list_entry->Load((const uint8_t *) debug_ranges_section->GetData() + debug_ranges_offset, debug_ranges_section->GetSize() - debug_ranges_offset, debug_ranges_offset)) < 0)
 		{
-			logger << DebugWarning << "Invalid DWARF v2/v3 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << EndDebugWarning;
+			logger << DebugWarning << "Invalid DWARF v3 debug ranges at offset 0x" << std::hex << debug_ranges_offset << std::dec << EndDebugWarning;
 			delete dw_range_list_entry;
 			return head;
 		}
@@ -2419,40 +2438,44 @@ const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompil
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = FindCompilationUnitByAddrRange(addr, length);
 	
 	if(!dw_cu) return 0;
 	
-	return dw_cu->FindDIEByAddrRange(addr, length);
+	return dw_cu->FindDIEByAddrRange(DW_TAG_subprogram, addr, length);
 }
 
 template <class MEMORY_ADDR>
-uint8_t DWARF_Handler<MEMORY_ADDR>::GetCallingConvention(MEMORY_ADDR pc) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgram(MEMORY_ADDR pc) const
 {
-	const DWARF_DIE<MEMORY_ADDR> *dw_die = FindDIEByAddrRange(pc, 1);
+	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = FindCompilationUnitByAddrRange(pc, 1);
 	
-	if(dw_die)
-	{
-		if(dw_die->GetTag() == DW_TAG_subprogram)
-		{
-			const DWARF_Attribute<MEMORY_ADDR> *dw_at_calling_convention = dw_die->FindAttribute(DW_AT_calling_convention);
-			if(dw_at_calling_convention)
-			{
-				
-				const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_calling_convention_value = dw_at_calling_convention->GetValue();
-				return (uint8_t) dw_at_calling_convention_value->to_int();
-			}
-		}
-	}
-	return DW_CC_normal;
+	if(!dw_cu) return 0;
+	
+	return dw_cu->FindDIEByAddrRange(DW_TAG_subprogram, pc, 1);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_Handler<MEMORY_ADDR>::GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const
+{
+	const DWARF_DIE<MEMORY_ADDR> *dw_die = FindSubProgram(pc);
+	
+	return dw_die && dw_die->GetCallingConvention(calling_convention);
 }
 
 template <class MEMORY_ADDR>
 unsigned int DWARF_Handler<MEMORY_ADDR>::GetReturnAddressSize(MEMORY_ADDR pc) const
 {
-	if((strcmp(blob->GetArchitecture(), "68hc12") == 0) && (GetCallingConvention(pc) == hc12::DW_CC_far)) return 3;
+	if(strcmp(blob->GetArchitecture(), "68hc12") == 0)
+	{
+		uint8_t calling_convention;
+		if(GetCallingConvention(pc, calling_convention))
+		{
+			if(calling_convention == hc12::DW_CC_far) return 3;
+		}
+	}
 	return arch_address_size;
 }
 

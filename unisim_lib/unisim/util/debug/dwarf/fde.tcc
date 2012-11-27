@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__
+
 #include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {
@@ -306,3 +309,5 @@ std::ostream& operator << (std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fd
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_FDE_TCC__

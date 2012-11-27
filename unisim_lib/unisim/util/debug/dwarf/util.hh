@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2012,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,35 +32,33 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_CLASS_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_CLASS_HH__
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
-const unsigned int DW_CLASS_ADDRESS = 1;                   // DWARF_Address (machine address)
-const unsigned int DW_CLASS_BLOCK = 2;                     // DWARF_Block (raw data block)
-const unsigned int DW_CLASS_EXPRESSION = 3;                // DWARF_Expression (DWARF Expression)
-const unsigned int DW_CLASS_UNSIGNED_CONSTANT = 4;         // DWARF_UnsignedConstant (unsigned integer up to 64-bit)
-const unsigned int DW_CLASS_SIGNED_CONSTANT = 8;           // DWARF_SignedConstant (signed integer up to 64-bit)
-const unsigned int DW_CLASS_UNSIGNED_LEB128_CONSTANT = 16; // DWARF_UnsignedLEB128Constant (variable length unsigned integer)
-const unsigned int DW_CLASS_SIGNED_LEB128_CONSTANT = 32;   // DWARF_SignedLEB128Constant (variable length signed integer)
-const unsigned int DW_CLASS_CONSTANT = DW_CLASS_UNSIGNED_CONSTANT | DW_CLASS_SIGNED_CONSTANT | DW_CLASS_UNSIGNED_LEB128_CONSTANT | DW_CLASS_SIGNED_LEB128_CONSTANT;
-const unsigned int DW_CLASS_FLAG = 64;                     // DWARF_Flag (boolean)
-const unsigned int DW_CLASS_LINEPTR = 65;                  // DWARF_LinePtr (reference to a statement program)
-const unsigned int DW_CLASS_LOCLISTPTR = 66;               // DWARF_LocListPtr
-const unsigned int DW_CLASS_MACPTR = 67;                   // DWARF_MacPtr
-const unsigned int DW_CLASS_RANGELISTPTR = 128;            // DWARF_RangeListPtr
-const unsigned int DW_CLASS_REFERENCE = 129;               // DWARF_Reference (reference to a DWARF_DIE)
-const unsigned int DW_CLASS_STRING = 130;                  // DWARF_String (C string)
+#if defined(__GNUC__) && (__GNUC__ >= 3)
+template <typename SCALAR> inline bool HasOverlap(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2) __attribute__((always_inline));
+#endif
 
-const char *DWARF_GetCLASSName(unsigned int dw_class);
+// Some helper function to determine if two intervals [l1,h1] and [l2,h2] overlap
+template <typename SCALAR> inline bool HasOverlap(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
+{
+	return ((h1 < h2) ? h1 : h2) >= ((l1 < l2) ? l2 : l1);
+}
+
+// Some helper function to determine if two intervals [l1,h1[ and [l2,h2[ overlap
+template <typename SCALAR> inline bool HasOverlapEx(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
+{
+	return ((h1 < h2) ? h1 : h2) > ((l1 < l2) ? l2 : l1);
+}
 
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__

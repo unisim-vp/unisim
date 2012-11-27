@@ -102,6 +102,14 @@ class Linux :
   bool verbose_;
   unisim::kernel::service::Parameter<bool> param_verbose_;
   
+  /* DWARF options */
+  bool parse_dwarf_;
+  std::string dwarf_to_html_output_directory_;
+  std::string dwarf_to_xml_output_filename_;
+  unisim::kernel::service::Parameter<bool> param_parse_dwarf_;
+  unisim::kernel::service::Parameter<std::string> param_dwarf_to_html_output_directory_;
+  unisim::kernel::service::Parameter<std::string> param_dwarf_to_xml_output_filename_;
+  
   /* the linux library */
   unisim::util::os::linux_os::Linux<ADDRESS_TYPE, PARAMETER_TYPE> *linuxlib_;
 

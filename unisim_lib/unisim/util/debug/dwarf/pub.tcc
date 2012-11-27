@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_PUB_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_PUB_TCC__
+
 namespace unisim {
 namespace util {
 namespace debug {
@@ -407,3 +410,5 @@ std::ostream& operator << (std::ostream& os, const DWARF_Pubs<MEMORY_ADDR>& dw_p
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_PUB_TCC__

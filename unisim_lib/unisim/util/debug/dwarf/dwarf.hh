@@ -123,8 +123,9 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubName(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByPubType(const char *name) const;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
-
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc) const;
+	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;
 	uint8_t GetFileAddressSize() const;
@@ -136,7 +137,7 @@ public:
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
 	
-	uint8_t GetCallingConvention(MEMORY_ADDR pc) const;
+	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
 	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;

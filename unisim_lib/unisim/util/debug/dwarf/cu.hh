@@ -66,11 +66,13 @@ public:
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
 	std::string GetHREF() const;
+	const DWARF_DIE<MEMORY_ADDR> *GetDIE() const;
 	std::ostream& to_XML(std::ostream& os);
 	std::ostream& to_HTML(std::ostream& os);
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CompilationUnit& dw_cu);
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
-	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
@@ -90,7 +92,7 @@ private:
 	                                      // architecture. If the system uses segmented addressing, this value represents the size of the
 	                                      // offset portion of an address.
 	
-	std::vector<DWARF_DIE<MEMORY_ADDR> *> debug_info_entries;
+	DWARF_DIE<MEMORY_ADDR> *dw_die;
 };
 
 } // end of namespace dwarf
