@@ -415,7 +415,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_const_leb128;
 						int64_t sz;
-						if((sz = dw_const_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						uint64_t value = (uint64_t) dw_const_leb128;
@@ -428,7 +428,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_const_leb128;
 						int64_t sz;
-						if((sz = dw_const_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						int64_t value = (int64_t) dw_const_leb128;
@@ -441,7 +441,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_offset_leb128;
 						int64_t sz;
-						if((sz = dw_offset_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						int64_t offset = (int64_t) dw_offset_leb128;
@@ -488,7 +488,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						uint8_t dw_reg_num = opcode - DW_OP_breg0;
 						DWARF_LEB128 dw_offset_leb128;
 						int64_t sz;
-						if((sz = dw_offset_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						int64_t offset = (int64_t) dw_offset_leb128;
@@ -505,13 +505,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_reg_num_leb128;
 						int64_t sz;
-						if((sz = dw_reg_num_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						uint64_t dw_reg_num = (uint64_t) dw_reg_num_leb128;
 
 						DWARF_LEB128 dw_offset_leb128;
-						if((sz = dw_offset_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						int64_t offset = (int64_t) dw_offset_leb128;
@@ -821,7 +821,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_uconst_leb128;
 						int64_t sz;
-						if((sz = dw_uconst_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_uconst_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						MEMORY_ADDR dw_uconst = (MEMORY_ADDR) dw_uconst_leb128;
@@ -1190,7 +1190,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_reg_num_leb128;
 						int64_t sz;
-						if((sz = dw_reg_num_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						MEMORY_ADDR dw_reg_num = (MEMORY_ADDR) dw_reg_num_leb128;
@@ -1212,7 +1212,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_byte_size_leb128;
 						int64_t sz;
-						if((sz = dw_byte_size_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_byte_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						uint64_t dw_byte_size = (uint64_t) dw_byte_size_leb128;
@@ -1254,13 +1254,13 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						DWARF_LEB128 dw_bit_size_leb128;
 						int64_t sz;
-						if((sz = dw_bit_size_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_bit_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						uint64_t dw_bit_size = (uint64_t) dw_bit_size_leb128;
 
 						DWARF_LEB128 dw_bit_offset_leb128;
-						if((sz = dw_bit_offset_leb128.Load(expr, expr_length - expr_pos)) < 0) return -1;
+						if((sz = dw_bit_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return -1;
 						expr_pos += sz;
 						
 						uint64_t dw_bit_offset = (uint64_t) dw_bit_offset_leb128;
@@ -1486,6 +1486,12 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMOR
 			return false;
 	}
 	return true;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_ExpressionVM<MEMORY_ADDR>::Push(MEMORY_ADDR addr)
+{
+	dw_stack.push_back(addr);
 }
 
 } // end of namespace dwarf

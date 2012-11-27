@@ -691,6 +691,7 @@ public:
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNonContigousAddressRange() const;
 	const DWARF_Expression<MEMORY_ADDR> *GetSegment() const;
 	bool GetCallingConvention(uint8_t& calling_convention) const;
+	bool GetFrameBase(MEMORY_ADDR frame_base) const;
 
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

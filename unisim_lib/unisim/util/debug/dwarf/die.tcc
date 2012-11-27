@@ -1081,9 +1081,12 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(unsigne
 template <class MEMORY_ADDR>
 const char *DWARF_DIE<MEMORY_ADDR>::GetName() const
 {
-	const DWARF_Attribute<MEMORY_ADDR> *dw_at_name = FindAttribute(DW_AT_name);
-	const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_name_value = dw_at_name->GetValue();
-	return (dw_at_name_value->GetClass() == DW_CLASS_STRING) ? ((const DWARF_String<MEMORY_ADDR> *) dw_at_name_value)->GetValue() : 0;
+	const DWARF_String<MEMORY_ADDR> *dw_at_name;
+	if(GetAttributeValue(DW_AT_name, dw_at_name))
+	{
+		return dw_at_name->GetValue();
+	}
+	return 0;
 }
 
 template <class MEMORY_ADDR>
@@ -1165,6 +1168,12 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCallingConvention(uint8_t& calling_convention) c
 			return true;
 		}
 	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR frame_base) const
+{
 	return false;
 }
 

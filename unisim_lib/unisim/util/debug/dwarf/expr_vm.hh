@@ -111,6 +111,7 @@ public:
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
+	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	const DWARF_RegisterNumberMapping *reg_num_mapping;
