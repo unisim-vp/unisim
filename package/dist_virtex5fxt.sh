@@ -10,13 +10,8 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
+HERE=$(pwd)
+MY_DIR=$(cd $(dirname $0); pwd)
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
@@ -996,12 +991,12 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 
 	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -1069,7 +1064,7 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}\"], [path of shared data relative to bin directory])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
@@ -1077,8 +1072,8 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 
 	AM_VIRTEX5FXT_VERSION=`printf ${VIRTEX5FXT_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating virtex5fxt Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "libvirtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
@@ -1096,36 +1091,36 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_VIRTEX5FXT_DATA_FILES} ${UNISIM_SIMULATORS_VIRTEX5FXT_DATA_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc: \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh: ${UNISIM_LIB_VIRTEX5FXT_ISA_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh: ${UNISIM_LIB_VIRTEX5FXT_ISA_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa -w 8 -I \$(abs_top_srcdir) \$(abs_top_srcdir)/unisim/component/cxx/processor/powerpc/ppc440/isa/ppc440.isa" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/ppc440/isa/ppc440.isa" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -f \"\$(abs_top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(abs_top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\t(cd '\$(abs_top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -rf '\$(abs_top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "all-local-share: \$(dist_share_DATA)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -f \"\$(abs_top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(abs_top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\t(cd '\$(abs_top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}' && cp -f \"\$(abs_top_srcdir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -rf '\$(abs_top_builddir)/share'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
 	echo "Building powerpc configure"
