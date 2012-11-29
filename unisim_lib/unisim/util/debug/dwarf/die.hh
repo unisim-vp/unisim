@@ -682,6 +682,7 @@ public:
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindParentDIE(unsigned int dw_tag) const;
 	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
@@ -691,8 +692,8 @@ public:
 	const DWARF_RangeListEntry<MEMORY_ADDR> *GetNonContigousAddressRange() const;
 	const DWARF_Expression<MEMORY_ADDR> *GetSegment() const;
 	bool GetCallingConvention(uint8_t& calling_convention) const;
-	bool GetFrameBase(MEMORY_ADDR frame_base) const;
-
+	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Constant<MEMORY_ADDR> * & p_dw_const_attr) const;

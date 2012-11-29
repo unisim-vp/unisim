@@ -1363,7 +1363,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_fcntl64() {
   switch(cmd)
   {
     case F_DUPFD:
-    case F_DUPFD_CLOEXEC:
+//    case F_DUPFD_CLOEXEC:
     case F_GETFD:
     case F_SETFD:
     case F_GETFL:

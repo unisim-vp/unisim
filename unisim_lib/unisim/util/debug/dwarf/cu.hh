@@ -73,6 +73,8 @@ public:
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
+	
+	bool GetVariableLocation(const char *var_name, MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& var_loc) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;

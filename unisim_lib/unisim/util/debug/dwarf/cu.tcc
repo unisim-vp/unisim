@@ -304,6 +304,12 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base
 	return dw_die->GetDefaultBaseAddress(base_addr);
 }
 
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetVariableLocation(const char *var_name, MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& var_loc) const
+{
+	return false;
+}
+
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util

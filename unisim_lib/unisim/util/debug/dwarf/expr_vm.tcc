@@ -180,6 +180,7 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, arch_endianness(_dw_handler->GetArchEndianness())
 	, file_address_size(_dw_handler->GetFileAddressSize())
 	, arch_address_size(_dw_handler->GetArchAddressSize())
+	, frame_base(0)
 {
 }
 
@@ -447,7 +448,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						int64_t offset = (int64_t) dw_offset_leb128;
 						if(executing)
 						{
-							// TODO: push onto the stack frame pointer + offset
+							// push onto the stack (frame base + offset)
+							dw_stack.push_back(frame_base + offset);
 						}
 						if(os) *os << "DW_OP_fbreg " << offset;
 					}

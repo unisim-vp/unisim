@@ -1171,9 +1171,118 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCallingConvention(uint8_t& calling_convention) c
 	return false;
 }
 
+// 							const DWARF_DIE<MEMORY_ADDR> *dw_subprog_die = dw_die->FindParentDIE(DW_TAG_subprogram);
+//							if(!dw_subprog_die) return false;
+//							MEMORY_ADDR frame_base;
+//							if(!dw_subprog_die->GetFrameBase(pc, frame_base)) return false;
+
+
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR frame_base) const
+bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
 {
+	const DWARF_Expression<MEMORY_ADDR> *dw_at_frame_base_loc_expr = 0;
+	
+	switch(GetTag())
+	{
+		case DW_TAG_subprogram:
+		case DW_TAG_entry_point:
+			{
+				if(!GetAttributeValue(DW_AT_frame_base, dw_at_frame_base_loc_expr))
+				{
+					const DWARF_LocListPtr<MEMORY_ADDR> *dw_at_frame_base_loclistptr;
+					if(GetAttributeValue(DW_AT_frame_base, dw_at_frame_base_loclistptr))
+					{
+						const DWARF_LocListEntry<MEMORY_ADDR> *loc_list_entry = dw_at_frame_base_loclistptr->GetValue();
+						bool has_base_addr = false;
+						MEMORY_ADDR base_addr = 0;
+						do
+						{
+							if(loc_list_entry->IsBaseAddressSelection())
+							{
+								base_addr = loc_list_entry->GetBaseAddress();
+								has_base_addr = true;
+							}
+							else
+							{
+								if(!has_base_addr)
+								{
+									if(!dw_cu->GetDefaultBaseAddress(base_addr)) return false;
+									has_base_addr = true;
+								}
+								if(loc_list_entry->HasOverlap(base_addr, pc, 1))
+								{
+									 // found the entry we're looking for
+									 dw_at_frame_base_loc_expr = loc_list_entry->GetLocationExpression();
+									break;
+								}
+							}
+							if(loc_list_entry->IsEndOfList()) break;
+						}
+						while((loc_list_entry = loc_list_entry->GetNext()) != 0);
+					}
+				}
+				
+				if(dw_at_frame_base_loc_expr)
+				{
+					DWARF_ExpressionVM<MEMORY_ADDR> loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+					DWARF_Location<MEMORY_ADDR> frame_base_loc;
+					bool loc_expr_vm_status = loc_expr_vm.Execute(dw_at_frame_base_loc_expr, frame_base, &frame_base_loc);
+					if(!loc_expr_vm_status) return false;
+					const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& frame_base_loc_pieces = frame_base_loc.GetLocationPieces();
+					
+					if(frame_base_loc_pieces.size() != 1) return false;
+					
+					const DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece = frame_base_loc_pieces[0];
+					
+					switch(dw_loc_piece->GetType())
+					{
+						case DW_LOC_REGISTER:
+							{
+								unsigned int dw_reg_num = ((const DWARF_RegisterLocationPiece<MEMORY_ADDR> *) dw_loc_piece)->GetRegisterNumber();
+								unisim::util::debug::Register *arch_reg = dw_cu->GetHandler()->GetRegisterNumberMapping()->GetArchReg(dw_reg_num);
+								MEMORY_ADDR reg_value = 0;
+								switch(arch_reg->GetSize())
+								{
+									case 1:
+										{
+											uint8_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+									case 2:
+										{
+											uint16_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+									case 4:
+										{
+											uint32_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+									case 8:
+										{
+											uint64_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+								}
+								frame_base = reg_value;
+							}
+							return true;
+						case DW_LOC_MEMORY:
+							frame_base = ((const DWARF_MemoryLocationPiece<MEMORY_ADDR> *) dw_loc_piece)->GetAddress();
+							return true;
+					}
+				}
+			}
+			break;
+	}
 	return false;
 }
 
@@ -1432,6 +1541,11 @@ bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Expre
 	return false;
 }
 
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindParentDIE(unsigned int dw_tag) const
+{
+	return dw_parent_die ? ((dw_parent_die->GetTag() == dw_tag) ? dw_parent_die : dw_parent_die->FindParentDIE(dw_tag)) : 0;
+}
 
 } // end of namespace dwarf
 } // end of namespace debug
