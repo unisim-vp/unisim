@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2012,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,55 +32,33 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_LOC_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_LOC_HH__
-
-#include <unisim/util/debug/dwarf/fwd.hh>
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
-template <class MEMORY_ADDR>
-std::ostream& operator << (std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry);
+#if defined(__GNUC__) && (__GNUC__ >= 3)
+template <typename SCALAR> inline bool HasOverlap(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2) __attribute__((always_inline));
+#endif
 
-template <class MEMORY_ADDR>
-class DWARF_LocListEntry
+// Some helper function to determine if two intervals [l1,h1] and [l2,h2] overlap
+template <typename SCALAR> inline bool HasOverlap(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
 {
-public:
-	DWARF_LocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu);
-	~DWARF_LocListEntry();
-	bool IsBaseAddressSelection() const;
-	bool IsEndOfList() const;
-	MEMORY_ADDR GetBegin() const;
-	MEMORY_ADDR GetEnd() const;
-	MEMORY_ADDR GetBaseAddress() const;
-	bool HasOverlap(MEMORY_ADDR base_addr, MEMORY_ADDR addr, MEMORY_ADDR length) const;
-	uint64_t GetOffset() const;
-	const DWARF_Expression<MEMORY_ADDR> *GetLocationExpression() const;
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
-	std::string GetHREF() const;
-	unsigned int GetId() const;
-	const DWARF_LocListEntry<MEMORY_ADDR> *GetNext() const;
-	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
-	std::ostream& to_XML(std::ostream& os) const;
-	std::ostream& to_HTML(std::ostream& os) const;
-	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_LocListEntry<MEMORY_ADDR>& dw_loc_list_entry);
-private:
-	friend class DWARF_Handler<MEMORY_ADDR>;
-	uint64_t offset;
-	unsigned int id;
-	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
-	DWARF_LocListEntry<MEMORY_ADDR> *next;
-	MEMORY_ADDR begin;
-	MEMORY_ADDR end;
-	DWARF_Expression<MEMORY_ADDR> *dw_loc_expr;
-};
+	return ((h1 < h2) ? h1 : h2) >= ((l1 < l2) ? l2 : l1);
+}
+
+// Some helper function to determine if two intervals [l1,h1[ and [l2,h2[ overlap
+template <typename SCALAR> inline bool HasOverlapEx(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
+{
+	return ((h1 < h2) ? h1 : h2) > ((l1 < l2) ? l2 : l1);
+}
 
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__

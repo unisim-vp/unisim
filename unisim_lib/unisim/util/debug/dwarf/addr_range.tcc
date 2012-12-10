@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_ADDR_RANGE_TCC__
 
 #include <unisim/util/debug/dwarf/encoding.hh>
+#include <unisim/util/debug/dwarf/util.hh>
 #include <iostream>
 
 namespace unisim {
@@ -159,9 +160,7 @@ bool DWARF_AddressRangeDescriptor<MEMORY_ADDR>::IsNull() const
 template <class MEMORY_ADDR>
 bool DWARF_AddressRangeDescriptor<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR _addr, MEMORY_ADDR _length) const
 {
-	MEMORY_ADDR high_addr = addr + length;
-	MEMORY_ADDR _high_addr = _addr + _length;
-	return ((high_addr < _high_addr) ? high_addr : _high_addr) > ((addr < _addr) ? _addr : addr);
+	return unisim::util::debug::dwarf::HasOverlapEx(addr, addr + length, _addr, _addr + _length);
 }
 
 template <class MEMORY_ADDR>

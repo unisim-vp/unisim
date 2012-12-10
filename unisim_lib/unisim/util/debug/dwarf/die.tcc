@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_DIE_TCC__
 #define __UNISIM_UTIL_DEBUG_DWARF_DIE_TCC__
 
+#include <unisim/util/debug/dwarf/util.hh>
+
 namespace unisim {
 namespace util {
 namespace debug {
@@ -1002,41 +1004,67 @@ void DWARF_DIE<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_ADDR, const St
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
-	const DWARF_Attribute<MEMORY_ADDR> *dw_at_low_pc = FindAttribute(DW_AT_low_pc);
-	if(dw_at_low_pc)
+	MEMORY_ADDR low_pc = 0;
+	if(GetLowPC(low_pc))
 	{
-		const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_low_pc_value = dw_at_low_pc->GetValue();
-		if(dw_at_low_pc_value->GetClass() == DW_CLASS_ADDRESS)
+		MEMORY_ADDR high_pc = 0;
+		if(GetHighPC(high_pc))
 		{
-			MEMORY_ADDR low_pc = ((const DWARF_Address<MEMORY_ADDR> *) dw_at_low_pc_value)->GetValue();
+			return unisim::util::debug::dwarf::HasOverlapEx(low_pc, high_pc, addr, addr + length);
+		}
+		else
+		{
+			// single address
+			return (addr == low_pc);
+		}
+		return false;
+	}
+
+	// DW_AT_ranges is only available in DWARF3 and more
+	const DWARF_Attribute<MEMORY_ADDR> *dw_at_ranges = FindAttribute(DW_AT_ranges);
+	
+	if(dw_at_ranges)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_ranges_value = dw_at_ranges->GetValue();
+		if(dw_at_ranges_value->GetClass() == DW_CLASS_RANGELISTPTR)
+		{
+			const DWARF_RangeListPtr<MEMORY_ADDR> *range_list_ptr = (const DWARF_RangeListPtr<MEMORY_ADDR> *) dw_at_ranges_value;
 			
-			const DWARF_Attribute<MEMORY_ADDR> *dw_at_high_pc = FindAttribute(DW_AT_high_pc);
-			if(dw_at_high_pc)
+			const DWARF_RangeListEntry<MEMORY_ADDR> *range_list_entry = range_list_ptr->GetValue();
+			
+			bool has_base_addr = false;
+			MEMORY_ADDR base_addr = 0;
+			do
 			{
-				const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_high_pc_value = dw_at_high_pc->GetValue();
-				if(dw_at_high_pc_value->GetClass() == DW_CLASS_ADDRESS)
+				if(range_list_entry->IsBaseAddressSelection())
 				{
-					MEMORY_ADDR high_pc = ((const DWARF_Address<MEMORY_ADDR> *) dw_at_high_pc_value)->GetValue();
-					
-					MEMORY_ADDR high_addr = addr + length;
-					
-					return ((high_pc < high_addr) ? high_pc : high_addr) > ((low_pc < addr) ? addr : low_pc);
+					base_addr = range_list_entry->GetBaseAddress();
+					has_base_addr = true;
 				}
+				else
+				{
+					if(!has_base_addr)
+					{
+						if(!dw_cu->GetDefaultBaseAddress(base_addr)) return false;
+						has_base_addr = true;
+					}
+					if(range_list_entry->HasOverlap(base_addr, addr, length)) return true;
+				}
+				if(range_list_entry->IsEndOfList()) break;
 			}
-			else
-			{
-				// single address
-				return (addr == low_pc);
-			}
+			while((range_list_entry = range_list_entry->GetNext()) != 0);
 		}
 	}
 	return false;
 }
 
 template <class MEMORY_ADDR>
-const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
-	if(HasOverlap(addr, length)) return this;
+	if((GetTag() == dw_tag) && HasOverlap(addr, length))
+	{
+		return this;
+	}
 	
 	unsigned int num_children = children.size();
 	unsigned int i;
@@ -1044,10 +1072,479 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(MEMORY_
 	{
 		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
 		
-		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_child->FindDIEByAddrRange(addr, length);
+		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_child->FindDIEByAddrRange(dw_tag, addr, length);
 		if(dw_found_die) return dw_found_die;
 	}
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_DIE<MEMORY_ADDR>::GetName() const
+{
+	const DWARF_String<MEMORY_ADDR> *dw_at_name;
+	if(GetAttributeValue(DW_AT_name, dw_at_name))
+	{
+		return dw_at_name->GetValue();
+	}
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetLowPC(MEMORY_ADDR& low_pc) const
+{
+	const DWARF_Address<MEMORY_ADDR> *dw_at_low_pc;
+	if(GetAttributeValue(DW_AT_low_pc, dw_at_low_pc))
+	{
+		low_pc = dw_at_low_pc->GetValue();
+		return true;
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetHighPC(MEMORY_ADDR& high_pc) const
+{
+	const DWARF_Address<MEMORY_ADDR> *dw_at_high_pc;
+	if(GetAttributeValue(DW_AT_high_pc, dw_at_high_pc))
+	{
+		high_pc = dw_at_high_pc->GetValue();
+		return true;
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetContigousAddressRange(MEMORY_ADDR& low_pc, MEMORY_ADDR& high_pc) const
+{
+	return GetLowPC(low_pc) && GetHighPC(high_pc);
+}
+
+template <class MEMORY_ADDR>
+const DWARF_RangeListEntry<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetNonContigousAddressRange() const
+{
+	// DW_AT_ranges is only available in DWARF3 and more
+	const DWARF_RangeListPtr<MEMORY_ADDR> *dw_at_ranges;
+	if(GetAttributeValue(DW_AT_ranges, dw_at_ranges))
+	{
+		return dw_at_ranges->GetValue();
+	}
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const
+{
+	// the default base address for a compilation unit is only available in DWARF3 and more
+	return GetLowPC(base_addr);
+}
+
+template <class MEMORY_ADDR>
+const DWARF_Expression<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetSegment() const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_at_segment = FindAttribute(DW_AT_segment);
+	
+	if(dw_at_segment)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_segment_value = dw_at_segment->GetValue();
+		if(dw_at_segment_value->GetClass() == DW_CLASS_EXPRESSION)
+		{
+			return (const DWARF_Expression<MEMORY_ADDR> *) dw_at_segment_value;
+		}
+	}
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetCallingConvention(uint8_t& calling_convention) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_at_calling_convention = FindAttribute(DW_AT_calling_convention);
+	
+	if(dw_at_calling_convention)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_calling_convention_value = dw_at_calling_convention->GetValue();
+		if(dw_at_calling_convention_value->GetClass() & DW_CLASS_CONSTANT)
+		{
+			calling_convention = (uint8_t) ((const DWARF_Constant<MEMORY_ADDR> *) dw_at_calling_convention_value)->to_uint();
+			return true;
+		}
+	}
+	return false;
+}
+
+// 							const DWARF_DIE<MEMORY_ADDR> *dw_subprog_die = dw_die->FindParentDIE(DW_TAG_subprogram);
+//							if(!dw_subprog_die) return false;
+//							MEMORY_ADDR frame_base;
+//							if(!dw_subprog_die->GetFrameBase(pc, frame_base)) return false;
+
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+{
+	const DWARF_Expression<MEMORY_ADDR> *dw_at_frame_base_loc_expr = 0;
+	
+	switch(GetTag())
+	{
+		case DW_TAG_subprogram:
+		case DW_TAG_entry_point:
+			{
+				if(!GetAttributeValue(DW_AT_frame_base, dw_at_frame_base_loc_expr))
+				{
+					const DWARF_LocListPtr<MEMORY_ADDR> *dw_at_frame_base_loclistptr;
+					if(GetAttributeValue(DW_AT_frame_base, dw_at_frame_base_loclistptr))
+					{
+						const DWARF_LocListEntry<MEMORY_ADDR> *loc_list_entry = dw_at_frame_base_loclistptr->GetValue();
+						bool has_base_addr = false;
+						MEMORY_ADDR base_addr = 0;
+						do
+						{
+							if(loc_list_entry->IsBaseAddressSelection())
+							{
+								base_addr = loc_list_entry->GetBaseAddress();
+								has_base_addr = true;
+							}
+							else
+							{
+								if(!has_base_addr)
+								{
+									if(!dw_cu->GetDefaultBaseAddress(base_addr)) return false;
+									has_base_addr = true;
+								}
+								if(loc_list_entry->HasOverlap(base_addr, pc, 1))
+								{
+									 // found the entry we're looking for
+									 dw_at_frame_base_loc_expr = loc_list_entry->GetLocationExpression();
+									break;
+								}
+							}
+							if(loc_list_entry->IsEndOfList()) break;
+						}
+						while((loc_list_entry = loc_list_entry->GetNext()) != 0);
+					}
+				}
+				
+				if(dw_at_frame_base_loc_expr)
+				{
+					DWARF_ExpressionVM<MEMORY_ADDR> loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
+					DWARF_Location<MEMORY_ADDR> frame_base_loc;
+					bool loc_expr_vm_status = loc_expr_vm.Execute(dw_at_frame_base_loc_expr, frame_base, &frame_base_loc);
+					if(!loc_expr_vm_status) return false;
+					const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& frame_base_loc_pieces = frame_base_loc.GetLocationPieces();
+					
+					if(frame_base_loc_pieces.size() != 1) return false;
+					
+					const DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece = frame_base_loc_pieces[0];
+					
+					switch(dw_loc_piece->GetType())
+					{
+						case DW_LOC_REGISTER:
+							{
+								unsigned int dw_reg_num = ((const DWARF_RegisterLocationPiece<MEMORY_ADDR> *) dw_loc_piece)->GetRegisterNumber();
+								unisim::util::debug::Register *arch_reg = dw_cu->GetHandler()->GetRegisterNumberMapping()->GetArchReg(dw_reg_num);
+								MEMORY_ADDR reg_value = 0;
+								switch(arch_reg->GetSize())
+								{
+									case 1:
+										{
+											uint8_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+									case 2:
+										{
+											uint16_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+									case 4:
+										{
+											uint32_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+									case 8:
+										{
+											uint64_t value = 0;
+											arch_reg->GetValue(&value);
+											reg_value = value;
+										}
+										break;
+								}
+								frame_base = reg_value;
+							}
+							return true;
+						case DW_LOC_MEMORY:
+							frame_base = ((const DWARF_MemoryLocationPiece<MEMORY_ADDR> *) dw_loc_piece)->GetAddress();
+							return true;
+					}
+				}
+			}
+			break;
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_ADDRESS)
+		{
+			p_dw_addr_attr = (const DWARF_Address<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_BLOCK)
+		{
+			p_dw_block_attr = (const DWARF_Block<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Constant<MEMORY_ADDR> * & p_dw_const_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_CONSTANT)
+		{
+			p_dw_const_attr = (const DWARF_Constant<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_UnsignedConstant<MEMORY_ADDR> * & p_dw_uconst_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_UNSIGNED_CONSTANT)
+		{
+			p_dw_uconst_attr = (const DWARF_UnsignedConstant<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_SignedConstant<MEMORY_ADDR> * & p_dw_sconst_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_SIGNED_CONSTANT)
+		{
+			p_dw_sconst_attr = (const DWARF_SignedConstant<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_UnsignedLEB128Constant<MEMORY_ADDR> * & p_dw_uconst_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_UNSIGNED_LEB128_CONSTANT)
+		{
+			p_dw_uconst_attr = (const DWARF_UnsignedLEB128Constant<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_SignedLEB128Constant<MEMORY_ADDR> * & p_dw_sconst_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_SIGNED_LEB128_CONSTANT)
+		{
+			p_dw_sconst_attr = (const DWARF_SignedLEB128Constant<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Flag<MEMORY_ADDR> * & p_dw_flag_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_FLAG)
+		{
+			p_dw_flag_attr = (const DWARF_Flag<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_LinePtr<MEMORY_ADDR> * & p_dw_lineptr_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_LINEPTR)
+		{
+			p_dw_lineptr_attr = (const DWARF_LinePtr<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_LocListPtr<MEMORY_ADDR> * & p_dw_loclist_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_LOCLISTPTR)
+		{
+			p_dw_loclist_attr = (const DWARF_LocListPtr<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_MacPtr<MEMORY_ADDR> * & p_dw_macptr_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_MACPTR)
+		{
+			p_dw_macptr_attr = (const DWARF_MacPtr<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_RangeListPtr<MEMORY_ADDR> * & p_dw_ranges_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_RANGELISTPTR)
+		{
+			p_dw_ranges_attr = (const DWARF_RangeListPtr<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Reference<MEMORY_ADDR> * & p_dw_ref_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_REFERENCE)
+		{
+			p_dw_ref_attr = (const DWARF_Reference<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_String<MEMORY_ADDR> * & p_dw_str_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_STRING)
+		{
+			p_dw_str_attr = (const DWARF_String<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const
+{
+	const DWARF_Attribute<MEMORY_ADDR> *dw_attr = FindAttribute(dw_at);
+	
+	if(dw_attr)
+	{
+		const DWARF_AttributeValue<MEMORY_ADDR> *dw_attr_value = dw_attr->GetValue();
+		if(dw_attr_value->GetClass() == DW_CLASS_EXPRESSION)
+		{
+			p_dw_expr_attr = (const DWARF_Expression<MEMORY_ADDR> *) dw_attr_value;
+			return true;
+		}
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindParentDIE(unsigned int dw_tag) const
+{
+	return dw_parent_die ? ((dw_parent_die->GetTag() == dw_tag) ? dw_parent_die : dw_parent_die->FindParentDIE(dw_tag)) : 0;
 }
 
 } // end of namespace dwarf

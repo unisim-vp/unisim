@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_MACINFO_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_MACINFO_TCC__
+
 namespace unisim {
 namespace util {
 namespace debug {
@@ -651,3 +654,5 @@ std::ostream& DWARF_MacInfoListEntryNull<MEMORY_ADDR>::to_HTML(std::ostream& os)
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_MACINFO_TCC__

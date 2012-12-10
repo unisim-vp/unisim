@@ -94,7 +94,13 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
     , logger_(*this)
     , verbose_(false)
     , param_verbose_("verbose", this, verbose_)
-	, linuxlib_(0)
+    , parse_dwarf_(false)
+    , dwarf_to_html_output_directory_()
+    , dwarf_to_xml_output_filename_()
+    , param_parse_dwarf_("parse-dwarf", this, parse_dwarf_)
+    , param_dwarf_to_html_output_directory_("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory_)
+    , param_dwarf_to_xml_output_filename_("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename_)
+    , linuxlib_(0)
     , system_("")
     , param_system_("system", this, system_, "Emulated system architecture "
                    "available values are \"arm\", \"arm-eabi\" and \"powerpc\"")
@@ -258,6 +264,9 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   
   // set up the different linuxlib parameters
   linuxlib_->SetVerbose(verbose_);
+  linuxlib_->SetParseDWARF(parse_dwarf_);
+  linuxlib_->SetDWARFToHTMLOutputDirectory(dwarf_to_html_output_directory_.c_str());
+  linuxlib_->SetDWARFToXMLOutputFilename(dwarf_to_xml_output_filename_.c_str());
 
   // set the linuxlib command line
   if (argc_ != 0) {

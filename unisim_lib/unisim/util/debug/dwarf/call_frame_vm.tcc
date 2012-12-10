@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_TCC__
+
 #include <stdexcept>
 
 namespace unisim {
@@ -1849,3 +1852,5 @@ const DWARF_CFI<MEMORY_ADDR> *DWARF_CallFrameVM<MEMORY_ADDR>::ComputeCFI(const D
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_TCC__

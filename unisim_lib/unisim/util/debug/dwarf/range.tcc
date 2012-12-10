@@ -32,6 +32,11 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_RANGE_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_RANGE_TCC__
+
+#include <unisim/util/debug/dwarf/util.hh>
+
 namespace unisim {
 namespace util {
 namespace debug {
@@ -75,6 +80,18 @@ template <class MEMORY_ADDR>
 MEMORY_ADDR DWARF_RangeListEntry<MEMORY_ADDR>::GetEnd() const
 {
 	return end;
+}
+
+template <class MEMORY_ADDR>
+MEMORY_ADDR DWARF_RangeListEntry<MEMORY_ADDR>::GetBaseAddress() const
+{
+	return end;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_RangeListEntry<MEMORY_ADDR>::HasOverlap(MEMORY_ADDR base_addr, MEMORY_ADDR addr, MEMORY_ADDR length) const
+{
+	return unisim::util::debug::dwarf::HasOverlapEx(base_addr + begin, base_addr + end, addr, addr + length);
 }
 
 template <class MEMORY_ADDR>
@@ -261,3 +278,5 @@ std::ostream& operator << (std::ostream& os, const DWARF_RangeListEntry<MEMORY_A
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_RANGE_TCC__

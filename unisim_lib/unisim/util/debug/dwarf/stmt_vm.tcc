@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__
+
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
 
 namespace unisim {
@@ -389,3 +392,5 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__

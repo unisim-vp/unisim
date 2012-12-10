@@ -67,12 +67,6 @@ const char *DWARF_AttributeValue<MEMORY_ADDR>::GetClassName() const
 }
 
 template <class MEMORY_ADDR>
-uint64_t DWARF_AttributeValue<MEMORY_ADDR>::to_int() const
-{
-	return 0;
-}
-
-template <class MEMORY_ADDR>
 void DWARF_AttributeValue<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler)
 {
 }
@@ -122,8 +116,20 @@ std::string DWARF_Block<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
+DWARF_Constant<MEMORY_ADDR>::DWARF_Constant(unsigned int _dw_class)
+	: DWARF_AttributeValue<MEMORY_ADDR>(_dw_class)
+{
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_Constant<MEMORY_ADDR>::IsSigned() const
+{
+	return (DWARF_AttributeValue<MEMORY_ADDR>::dw_class & (DW_CLASS_SIGNED_CONSTANT | DW_CLASS_SIGNED_LEB128_CONSTANT)) != 0;
+}
+
+template <class MEMORY_ADDR>
 DWARF_UnsignedConstant<MEMORY_ADDR>::DWARF_UnsignedConstant(uint64_t _value)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_UNSIGNED_CONSTANT)
+	: DWARF_Constant<MEMORY_ADDR>(DW_CLASS_UNSIGNED_CONSTANT)
 	, value(_value)
 {
 }
@@ -148,14 +154,20 @@ std::string DWARF_UnsignedConstant<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
-uint64_t DWARF_UnsignedConstant<MEMORY_ADDR>::to_int() const
+uint64_t DWARF_UnsignedConstant<MEMORY_ADDR>::to_uint() const
+{
+	return value;
+}
+
+template <class MEMORY_ADDR>
+int64_t DWARF_UnsignedConstant<MEMORY_ADDR>::to_int() const
 {
 	return value;
 }
 
 template <class MEMORY_ADDR>
 DWARF_SignedConstant<MEMORY_ADDR>::DWARF_SignedConstant(int64_t _value)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_SIGNED_CONSTANT)
+	: DWARF_Constant<MEMORY_ADDR>(DW_CLASS_SIGNED_CONSTANT)
 	, value(_value)
 {
 }
@@ -180,14 +192,20 @@ std::string DWARF_SignedConstant<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
-uint64_t DWARF_SignedConstant<MEMORY_ADDR>::to_int() const
+uint64_t DWARF_SignedConstant<MEMORY_ADDR>::to_uint() const
 {
 	return (uint64_t) value;
 }
 
 template <class MEMORY_ADDR>
+int64_t DWARF_SignedConstant<MEMORY_ADDR>::to_int() const
+{
+	return (int64_t) value;
+}
+
+template <class MEMORY_ADDR>
 DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::DWARF_UnsignedLEB128Constant(const DWARF_LEB128& leb128)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_UNSIGNED_LEB128_CONSTANT)
+	: DWARF_Constant<MEMORY_ADDR>(DW_CLASS_UNSIGNED_LEB128_CONSTANT)
 	, value(leb128)
 {
 }
@@ -210,14 +228,20 @@ std::string DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
-uint64_t DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::to_int() const
+uint64_t DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::to_uint() const
 {
 	return (uint64_t) value;
 }
 
 template <class MEMORY_ADDR>
+int64_t DWARF_UnsignedLEB128Constant<MEMORY_ADDR>::to_int() const
+{
+	return (int64_t) value;
+}
+
+template <class MEMORY_ADDR>
 DWARF_SignedLEB128Constant<MEMORY_ADDR>::DWARF_SignedLEB128Constant(const DWARF_LEB128& leb128)
-	: DWARF_AttributeValue<MEMORY_ADDR>(DW_CLASS_UNSIGNED_LEB128_CONSTANT)
+	: DWARF_Constant<MEMORY_ADDR>(DW_CLASS_SIGNED_LEB128_CONSTANT)
 	, value(leb128)
 {
 }
@@ -240,9 +264,15 @@ std::string DWARF_SignedLEB128Constant<MEMORY_ADDR>::to_string() const
 }
 
 template <class MEMORY_ADDR>
-uint64_t DWARF_SignedLEB128Constant<MEMORY_ADDR>::to_int() const
+uint64_t DWARF_SignedLEB128Constant<MEMORY_ADDR>::to_uint() const
 {
 	return (uint64_t) (int64_t) value;
+}
+
+template <class MEMORY_ADDR>
+int64_t DWARF_SignedLEB128Constant<MEMORY_ADDR>::to_int() const
+{
+	return (int64_t) value;
 }
 
 template <class MEMORY_ADDR>
@@ -267,12 +297,6 @@ template <class MEMORY_ADDR>
 std::string DWARF_Flag<MEMORY_ADDR>::to_string() const
 {
 	return value ? std::string("1") : std::string("0");
-}
-
-template <class MEMORY_ADDR>
-uint64_t DWARF_Flag<MEMORY_ADDR>::to_int() const
-{
-	return value ? 1 : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -338,12 +362,6 @@ std::string DWARF_Address<MEMORY_ADDR>::to_string() const
 	std::stringstream sstr;
 	sstr << "0x" << std::hex << value << std::dec;
 	return std::string(sstr.str());
-}
-
-template <class MEMORY_ADDR>
-uint64_t DWARF_Address<MEMORY_ADDR>::to_int() const
-{
-	return (uint64_t) value;
 }
 
 template <class MEMORY_ADDR>
@@ -756,63 +774,57 @@ std::ostream& operator << (std::ostream& os, const DWARF_Attribute<MEMORY_ADDR>&
 	os << dw_attribute.dw_abbrev_attribute->GetName() << ": ";
 	
 	unsigned int dw_class = dw_attribute.dw_value->GetClass();
-	switch(dw_class)
+	if(dw_class & DW_CLASS_CONSTANT)
 	{
-		case DW_CLASS_UNSIGNED_CONSTANT:
-		case DW_CLASS_SIGNED_CONSTANT:
-		case DW_CLASS_UNSIGNED_LEB128_CONSTANT:
-		case DW_CLASS_SIGNED_LEB128_CONSTANT:
-			{
-				uint64_t int_value = dw_attribute.dw_value->to_int();
-				uint16_t dw_at = (uint16_t) dw_attribute.dw_abbrev_attribute->GetTag();
-				
-				switch(dw_at)
-				{
-					case DW_AT_encoding:
-						os << DWARF_GetATEName(int_value);
-						break;
-					case DW_AT_language:
-						os << DWARF_GetLANGName(int_value);
-						break;
-					case DW_AT_virtuality:
-						os << DWARF_GetVIRTUALITYName(int_value);
-						break;
-					case DW_AT_visibility:
-						os << DWARF_GetVISName(int_value);
-						break;
-					case DW_AT_accessibility:
-						os << DWARF_GetACCESSName(int_value);
-						break;
-					case DW_AT_endianity:
-						os << DWARF_GetENDName(int_value);
-						break;
-					case DW_AT_decimal_sign:
-						os << DWARF_GetDSName(int_value);
-						break;
-					case DW_AT_identifier_case:
-						os << DWARF_GetIDName(int_value);
-						break;
-					case DW_AT_calling_convention:
-						os << DWARF_GetCCName(int_value);
-						break;
-					case DW_AT_inline:
-						os << DWARF_GetINLName(int_value);
-						break;
-					case DW_AT_ordering:
-						os << DWARF_GetORDName(int_value);
-						break;
-					case DW_AT_discr_list:
-						os << DWARF_GetDSCName(int_value);
-						break;
-					default:
-						os << dw_attribute.dw_value->to_string();
-						break;
-				}
-			}
-			break;
-		default:
-			os << dw_attribute.dw_value->to_string();
-			break;
+		uint64_t uint_value = ((const DWARF_Constant<MEMORY_ADDR> *) dw_attribute.dw_value)->to_uint();
+		uint16_t dw_at = (uint16_t) dw_attribute.dw_abbrev_attribute->GetTag();
+		
+		switch(dw_at)
+		{
+			case DW_AT_encoding:
+				os << DWARF_GetATEName(uint_value);
+				break;
+			case DW_AT_language:
+				os << DWARF_GetLANGName(uint_value);
+				break;
+			case DW_AT_virtuality:
+				os << DWARF_GetVIRTUALITYName(uint_value);
+				break;
+			case DW_AT_visibility:
+				os << DWARF_GetVISName(uint_value);
+				break;
+			case DW_AT_accessibility:
+				os << DWARF_GetACCESSName(uint_value);
+				break;
+			case DW_AT_endianity:
+				os << DWARF_GetENDName(uint_value);
+				break;
+			case DW_AT_decimal_sign:
+				os << DWARF_GetDSName(uint_value);
+				break;
+			case DW_AT_identifier_case:
+				os << DWARF_GetIDName(uint_value);
+				break;
+			case DW_AT_calling_convention:
+				os << DWARF_GetCCName(uint_value);
+				break;
+			case DW_AT_inline:
+				os << DWARF_GetINLName(uint_value);
+				break;
+			case DW_AT_ordering:
+				os << DWARF_GetORDName(uint_value);
+				break;
+			case DW_AT_discr_list:
+				os << DWARF_GetDSCName(uint_value);
+				break;
+			default:
+				os << dw_attribute.dw_value->to_string();
+				break;
+		}
+	}
+	else
+	{
+		os << dw_attribute.dw_value->to_string();
 	}
 	
 	return os;
@@ -842,78 +854,77 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_XML(std::ostream& os)
 			break;
 	}
 
-	switch(dw_class)
+	if(dw_class & DW_CLASS_CONSTANT)
 	{
-		case DW_CLASS_UNSIGNED_CONSTANT:
-		case DW_CLASS_SIGNED_CONSTANT:
-		case DW_CLASS_UNSIGNED_LEB128_CONSTANT:
-		case DW_CLASS_SIGNED_LEB128_CONSTANT:
-			{
-				uint64_t int_value = dw_value->to_int();
-				uint16_t dw_at = (uint16_t) dw_abbrev_attribute->GetTag();
-				
-				switch(dw_at)
-				{
-					case DW_AT_encoding:
-						c_string_to_XML(os, DWARF_GetATEName(int_value));
-						break;
-					case DW_AT_language:
-						c_string_to_XML(os, DWARF_GetLANGName(int_value));
-						break;
-					case DW_AT_virtuality:
-						c_string_to_XML(os, DWARF_GetVIRTUALITYName(int_value));
-						break;
-					case DW_AT_visibility:
-						c_string_to_XML(os, DWARF_GetVISName(int_value));
-						break;
-					case DW_AT_accessibility:
-						c_string_to_XML(os, DWARF_GetACCESSName(int_value));
-						break;
-					case DW_AT_endianity:
-						c_string_to_XML(os, DWARF_GetENDName(int_value));
-						break;
-					case DW_AT_decimal_sign:
-						c_string_to_XML(os, DWARF_GetDSName(int_value));
-						break;
-					case DW_AT_identifier_case:
-						c_string_to_XML(os, DWARF_GetIDName(int_value));
-						break;
-					case DW_AT_calling_convention:
-						c_string_to_XML(os, DWARF_GetCCName(int_value));
-						break;
-					case DW_AT_inline:
-						c_string_to_XML(os, DWARF_GetINLName(int_value));
-						break;
-					case DW_AT_ordering:
-						c_string_to_XML(os, DWARF_GetORDName(int_value));
-						break;
-					case DW_AT_discr_list:
-						c_string_to_XML(os, DWARF_GetDSCName(int_value));
-						break;
-					default:
-						c_string_to_XML(os, dw_value->to_string().c_str());
-						break;
-				}
-			}
-			break;
-		case DW_CLASS_LINEPTR:
-			os << "stmt-prog-" << ((DWARF_LinePtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
-			break;
-		case DW_CLASS_LOCLISTPTR:
-			os << "loc-" << ((DWARF_LocListPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
-			break;
-		case DW_CLASS_MACPTR:
-			os << "mac-" << ((DWARF_MacPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
-			break;
-		case DW_CLASS_RANGELISTPTR:
-			os << "range-" << ((DWARF_RangeListPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
-			break;
-		case DW_CLASS_REFERENCE:
-			os << "die-" << ((DWARF_Reference<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
-			break;
-		default:
-			c_string_to_XML(os, dw_value->to_string().c_str());
-			break;
+		uint64_t uint_value = ((const DWARF_Constant<MEMORY_ADDR> *) dw_value)->to_uint();
+		uint16_t dw_at = (uint16_t) dw_abbrev_attribute->GetTag();
+		
+		switch(dw_at)
+		{
+			case DW_AT_encoding:
+				c_string_to_XML(os, DWARF_GetATEName(uint_value));
+				break;
+			case DW_AT_language:
+				c_string_to_XML(os, DWARF_GetLANGName(uint_value));
+				break;
+			case DW_AT_virtuality:
+				c_string_to_XML(os, DWARF_GetVIRTUALITYName(uint_value));
+				break;
+			case DW_AT_visibility:
+				c_string_to_XML(os, DWARF_GetVISName(uint_value));
+				break;
+			case DW_AT_accessibility:
+				c_string_to_XML(os, DWARF_GetACCESSName(uint_value));
+				break;
+			case DW_AT_endianity:
+				c_string_to_XML(os, DWARF_GetENDName(uint_value));
+				break;
+			case DW_AT_decimal_sign:
+				c_string_to_XML(os, DWARF_GetDSName(uint_value));
+				break;
+			case DW_AT_identifier_case:
+				c_string_to_XML(os, DWARF_GetIDName(uint_value));
+				break;
+			case DW_AT_calling_convention:
+				c_string_to_XML(os, DWARF_GetCCName(uint_value));
+				break;
+			case DW_AT_inline:
+				c_string_to_XML(os, DWARF_GetINLName(uint_value));
+				break;
+			case DW_AT_ordering:
+				c_string_to_XML(os, DWARF_GetORDName(uint_value));
+				break;
+			case DW_AT_discr_list:
+				c_string_to_XML(os, DWARF_GetDSCName(uint_value));
+				break;
+			default:
+				c_string_to_XML(os, dw_value->to_string().c_str());
+				break;
+		}
+	}
+	else
+	{
+		switch(dw_class)
+		{
+			case DW_CLASS_LINEPTR:
+				os << "stmt-prog-" << ((DWARF_LinePtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+				break;
+			case DW_CLASS_LOCLISTPTR:
+				os << "loc-" << ((DWARF_LocListPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+				break;
+			case DW_CLASS_MACPTR:
+				os << "mac-" << ((DWARF_MacPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+				break;
+			case DW_CLASS_RANGELISTPTR:
+				os << "range-" << ((DWARF_RangeListPtr<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+				break;
+			case DW_CLASS_REFERENCE:
+				os << "die-" << ((DWARF_Reference<MEMORY_ADDR> *) dw_value)->GetValue()->GetId();
+				break;
+			default:
+				c_string_to_XML(os, dw_value->to_string().c_str());
+				break;
+		}
 	}
 	os << "\"/>";
 	return os;
@@ -931,91 +942,90 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	os << "</td>" << std::endl;
 	os << "<td>" << std::endl;
 	unsigned int dw_class = dw_value->GetClass();
-	switch(dw_class)
+	if(dw_class & DW_CLASS_CONSTANT)
 	{
-		case DW_CLASS_REFERENCE:
-			{
-				DWARF_Reference<MEMORY_ADDR> *dw_ref = (DWARF_Reference<MEMORY_ADDR> *) dw_value;
-				const DWARF_DIE<MEMORY_ADDR> *dw_ref_die = dw_ref->GetValue();
-				os << "<a href=\"../../" << dw_ref_die->GetHREF() << "\">die-" << dw_ref_die->GetId() << "</a>" << std::endl;
-			}
-			break;
-		case DW_CLASS_MACPTR:
-			{
-				DWARF_MacPtr<MEMORY_ADDR> *dw_macptr = (DWARF_MacPtr<MEMORY_ADDR> *) dw_value;
-				const DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = dw_macptr->GetValue();
-				os << "<a href=\"../../" << dw_macinfo_list_entry->GetHREF() << "\">mac-" << dw_macinfo_list_entry->GetId() << "</a>" << std::endl;
-			}
-			break;
-		case DW_CLASS_LOCLISTPTR:
-			{
-				DWARF_LocListPtr<MEMORY_ADDR> *dw_loclistptr = (DWARF_LocListPtr<MEMORY_ADDR> *) dw_value;
-				const DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = dw_loclistptr->GetValue();
-				os << "<a href=\"../../" << dw_loc_list_entry->GetHREF() << "\">loc-" << dw_loc_list_entry->GetId() << "</a>" << std::endl;
-			}
-			break;
-		case DW_CLASS_LINEPTR:
-			{
-				DWARF_LinePtr<MEMORY_ADDR> *dw_lineptr = (DWARF_LinePtr<MEMORY_ADDR> *) dw_value;
-				const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_lineptr->GetValue();
-				os << "<a href=\"../../" << dw_stmt_prog->GetHREF() << "\">stmt-prog-" << dw_stmt_prog->GetId() << "</a>" << std::endl;
-			}
-			break;
-		case DW_CLASS_UNSIGNED_CONSTANT:
-		case DW_CLASS_SIGNED_CONSTANT:
-		case DW_CLASS_UNSIGNED_LEB128_CONSTANT:
-		case DW_CLASS_SIGNED_LEB128_CONSTANT:
-			{
-				uint64_t int_value = dw_value->to_int();
-				uint16_t dw_at = (uint16_t) dw_abbrev_attribute->GetTag();
-				
-				switch(dw_at)
+		uint64_t uint_value = ((const DWARF_Constant<MEMORY_ADDR> *) dw_value)->to_uint();
+		uint16_t dw_at = (uint16_t) dw_abbrev_attribute->GetTag();
+		
+		switch(dw_at)
+		{
+			case DW_AT_encoding:
+				c_string_to_HTML(os, DWARF_GetATEName(uint_value));
+				break;
+			case DW_AT_language:
+				c_string_to_HTML(os, DWARF_GetLANGName(uint_value));
+				break;
+			case DW_AT_virtuality:
+				c_string_to_HTML(os, DWARF_GetVIRTUALITYName(uint_value));
+				break;
+			case DW_AT_visibility:
+				c_string_to_HTML(os, DWARF_GetVISName(uint_value));
+				break;
+			case DW_AT_accessibility:
+				c_string_to_HTML(os, DWARF_GetACCESSName(uint_value));
+				break;
+			case DW_AT_endianity:
+				c_string_to_HTML(os, DWARF_GetENDName(uint_value));
+				break;
+			case DW_AT_decimal_sign:
+				c_string_to_HTML(os, DWARF_GetDSName(uint_value));
+				break;
+			case DW_AT_identifier_case:
+				c_string_to_HTML(os, DWARF_GetIDName(uint_value));
+				break;
+			case DW_AT_calling_convention:
+				c_string_to_HTML(os, DWARF_GetCCName(uint_value));
+				break;
+			case DW_AT_inline:
+				c_string_to_HTML(os, DWARF_GetINLName(uint_value));
+				break;
+			case DW_AT_ordering:
+				c_string_to_HTML(os, DWARF_GetORDName(uint_value));
+				break;
+			case DW_AT_discr_list:
+				c_string_to_HTML(os, DWARF_GetDSCName(uint_value));
+				break;
+			default:
+				c_string_to_HTML(os, dw_value->to_string().c_str());
+				break;
+		}
+	}
+	else
+	{
+		switch(dw_class)
+		{
+			case DW_CLASS_REFERENCE:
 				{
-					case DW_AT_encoding:
-						c_string_to_HTML(os, DWARF_GetATEName(int_value));
-						break;
-					case DW_AT_language:
-						c_string_to_HTML(os, DWARF_GetLANGName(int_value));
-						break;
-					case DW_AT_virtuality:
-						c_string_to_HTML(os, DWARF_GetVIRTUALITYName(int_value));
-						break;
-					case DW_AT_visibility:
-						c_string_to_HTML(os, DWARF_GetVISName(int_value));
-						break;
-					case DW_AT_accessibility:
-						c_string_to_HTML(os, DWARF_GetACCESSName(int_value));
-						break;
-					case DW_AT_endianity:
-						c_string_to_HTML(os, DWARF_GetENDName(int_value));
-						break;
-					case DW_AT_decimal_sign:
-						c_string_to_HTML(os, DWARF_GetDSName(int_value));
-						break;
-					case DW_AT_identifier_case:
-						c_string_to_HTML(os, DWARF_GetIDName(int_value));
-						break;
-					case DW_AT_calling_convention:
-						c_string_to_HTML(os, DWARF_GetCCName(int_value));
-						break;
-					case DW_AT_inline:
-						c_string_to_HTML(os, DWARF_GetINLName(int_value));
-						break;
-					case DW_AT_ordering:
-						c_string_to_HTML(os, DWARF_GetORDName(int_value));
-						break;
-					case DW_AT_discr_list:
-						c_string_to_HTML(os, DWARF_GetDSCName(int_value));
-						break;
-					default:
-						c_string_to_HTML(os, dw_value->to_string().c_str());
-						break;
+					DWARF_Reference<MEMORY_ADDR> *dw_ref = (DWARF_Reference<MEMORY_ADDR> *) dw_value;
+					const DWARF_DIE<MEMORY_ADDR> *dw_ref_die = dw_ref->GetValue();
+					os << "<a href=\"../../" << dw_ref_die->GetHREF() << "\">die-" << dw_ref_die->GetId() << "</a>" << std::endl;
 				}
-			}
-			break;
-		default:
-			c_string_to_HTML(os, dw_value->to_string().c_str());
-			break;
+				break;
+			case DW_CLASS_MACPTR:
+				{
+					DWARF_MacPtr<MEMORY_ADDR> *dw_macptr = (DWARF_MacPtr<MEMORY_ADDR> *) dw_value;
+					const DWARF_MacInfoListEntry<MEMORY_ADDR> *dw_macinfo_list_entry = dw_macptr->GetValue();
+					os << "<a href=\"../../" << dw_macinfo_list_entry->GetHREF() << "\">mac-" << dw_macinfo_list_entry->GetId() << "</a>" << std::endl;
+				}
+				break;
+			case DW_CLASS_LOCLISTPTR:
+				{
+					DWARF_LocListPtr<MEMORY_ADDR> *dw_loclistptr = (DWARF_LocListPtr<MEMORY_ADDR> *) dw_value;
+					const DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry = dw_loclistptr->GetValue();
+					os << "<a href=\"../../" << dw_loc_list_entry->GetHREF() << "\">loc-" << dw_loc_list_entry->GetId() << "</a>" << std::endl;
+				}
+				break;
+			case DW_CLASS_LINEPTR:
+				{
+					DWARF_LinePtr<MEMORY_ADDR> *dw_lineptr = (DWARF_LinePtr<MEMORY_ADDR> *) dw_value;
+					const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_lineptr->GetValue();
+					os << "<a href=\"../../" << dw_stmt_prog->GetHREF() << "\">stmt-prog-" << dw_stmt_prog->GetId() << "</a>" << std::endl;
+				}
+				break;
+			default:
+				c_string_to_HTML(os, dw_value->to_string().c_str());
+				break;
+		}
 	}
 	os << "</tr>" << std::endl;
 

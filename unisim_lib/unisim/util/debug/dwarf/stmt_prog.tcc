@@ -32,6 +32,9 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_STMT_PROG_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_STMT_PROG_TCC__
+
 #include <unisim/util/debug/dwarf/stmt_prog.hh>
 #include <unisim/util/debug/dwarf/filename.hh>
 
@@ -418,7 +421,21 @@ uint64_t DWARF_StatementProgram<MEMORY_ADDR>::GetOffset() const
 	return offset;
 }
 
+template <class MEMORY_ADDR>
+const DWARF_Filename *DWARF_StatementProgram<MEMORY_ADDR>::GetFilename(unsigned int filename_idx) const
+{
+	return &filenames[filename_idx];
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_StatementProgram<MEMORY_ADDR>::GetIncludeDirectory(unsigned int include_directory_idx) const
+{
+	return include_directories[include_directory_idx];
+}
+
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_STMT_PROG_TCC__
