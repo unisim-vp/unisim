@@ -37,6 +37,7 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
+#include <unisim/util/debug/dwarf/expr_vm.hh>
 
 namespace unisim {
 namespace util {

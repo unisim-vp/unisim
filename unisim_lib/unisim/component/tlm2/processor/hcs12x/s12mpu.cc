@@ -26,7 +26,6 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 
 	, trap_reporting_import("trap_reporting_import", this)
 
-	, bus_clock_socket("bus_clock_socket")
 	, slave_socket("slave_socket")
 
 	, memory_export("memory_export", this)
@@ -40,14 +39,11 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 	, reserved(0x00)
 	, mpusel_register(0x00)
 
-	, bus_cycle_time_int(250000)
-	, param_bus_cycle_time_int("bus-cycle-time", this, bus_cycle_time_int)
-
-	, baseAddress(0x00C8)
+	, baseAddress(0x0114)
 	, param_baseAddress("base-address", this, baseAddress)
 
-	, interrupt_offset(0xD6)
-	, param_interrupt_offset("interrupt-offset", this, interrupt_offset)
+	, interrupt_offset(0x14)
+	, param_interrupt_offset("interrupt-offset", this, interrupt_offset, "MPU Access Error interrupt")
 
 	, debug_enabled(false)
 	, param_debug_enabled("debug-enabled", this, debug_enabled)
@@ -58,7 +54,6 @@ S12MPU::S12MPU(const sc_module_name& name, Object *parent) :
 	interrupt_request(*this);
 
 	slave_socket.register_b_transport(this, &S12MPU::read_write);
-	bus_clock_socket.register_b_transport(this, &S12MPU::updateBusClock);
 
 	SC_HAS_PROCESS(S12MPU);
 
@@ -86,6 +81,63 @@ S12MPU::~S12MPU() {
 
 }
 
+bool S12MPU:: validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size, bool isWrite, bool isExecute) {
+
+	bool isViolation = false;
+
+	for (uint8_t i=0; i<MPU_SIZE; i++) {
+		/**
+		 * is descriptor applicable to the requester ?
+		 * MSTR0 and MSTR1 are used for CPU (NOTE: Distinction between supervisor and user mode is not implemented)
+		 * MSTR2 for XGATE
+		 * MSTR3 for master3 (not implemented)
+		 */
+		bool isApplicable = false;
+		if (who == TOWNER::CPU12X) {
+			isApplicable = ((mpudesc[i].mpudesc0_register & 0xC0) != 0);
+		} else if (who == TOWNER::XGATE) {
+			isApplicable = ((mpudesc[i].mpudesc0_register & 0x20) != 0);
+		} else {
+			isApplicable = ((mpudesc[i].mpudesc0_register & 0x10) != 0);
+		}
+
+		if (isApplicable) {
+			uint32_t aligned_start_addr = ((addr >> 3) << 3); // The granularity of each descriptor is 8-bytes
+			uint32_t aligned_end_addr = (((addr + size - 1) >> 3) << 3); // The granularity of each descriptor is 8-bytes
+
+			// check protection range limits
+			uint32_t low_addr = (uint32_t) ((mpudesc[i].mpudesc0_register & 0x0F) << 19)
+											| (mpudesc[i].mpudesc1_register << 11)
+											| (mpudesc[i].mpudesc2_register << 3);
+
+			uint32_t high_addr = (uint32_t) ((mpudesc[i].mpudesc3_register & 0x0F) << 19)
+											| (mpudesc[i].mpudesc4_register << 11)
+											| (mpudesc[i].mpudesc5_register << 3)
+											| 0x7; // all the 8-bits are covered by the protection range
+
+			// check access violation and set MPUFLG register
+			if ((aligned_start_addr <= high_addr) && (aligned_end_addr >= low_addr)) {
+				// The Violations are combined
+				if (isWrite && ((mpudesc[i].mpudesc3_register & 0x80) != 0)) {
+					isViolation = true;
+				}
+
+				if (isExecute && ((mpudesc[i].mpudesc3_register & 0x40) != 0)) {
+					isViolation = true;
+				}
+			}
+		}
+	}
+
+	if (isViolation) {
+		cerr << "MPU:: Violation detected" << endl;
+
+		assertInterrupt();
+		return false;
+	}
+
+	return (true);
+}
 
 void S12MPU::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
@@ -99,12 +151,8 @@ void S12MPU::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			memset(data_ptr, 0, data_length);
 
-			std::cerr << "S12MPU::Warning: READ access to 0x" << std::hex << (address - baseAddress) << std::endl;
-
 			read(address - baseAddress, data_ptr, data_length);
 		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-
-			std::cerr << "S12MPU::Warning: WRITE access to 0x" << std::hex << (address - baseAddress) << std::endl;
 
 			write(address - baseAddress, data_ptr, data_length);
 		}
@@ -152,7 +200,8 @@ bool S12MPU::write(unsigned int offset, const void *buffer, unsigned int data_le
 
 	switch (offset) {
 		case MPUFLG: {
-			uint8_t val = (*((uint8_t *) buffer) & 0x80) | mpuflg_register;
+			// only AEF is writable, the rest of flags are automatically update when next violation occur
+			uint8_t val = ~(*((uint8_t *) buffer) & 0x80) && mpuflg_register;
 			mpuflg_register = val;
 		} break;
 		case MPUASTAT0: break;
@@ -195,7 +244,7 @@ bool S12MPU::write(unsigned int offset, const void *buffer, unsigned int data_le
 }
 
 
-void S12MPU::assertInterrupt(uint8_t interrupt_offset) {
+void S12MPU::assertInterrupt() {
 
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
@@ -249,24 +298,6 @@ tlm_sync_enum S12MPU::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, 
 }
 
 
-void S12MPU::ComputeInternalTime() {
-
-	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
-
-}
-
-
-void S12MPU::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
-
-	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
-    trans.set_response_status( tlm::TLM_OK_RESPONSE );
-
-	bus_cycle_time_int = *external_bus_clock;
-
-	ComputeInternalTime();
-}
-
-
 //=====================================================================
 //=                  Client/Service setup methods                     =
 //=====================================================================
@@ -275,8 +306,6 @@ void S12MPU::updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 bool S12MPU::BeginSetup() {
 
 	Reset();
-
-	ComputeInternalTime();
 
 	char buf[80];
 
@@ -364,7 +393,7 @@ void S12MPU::Reset() {
 		mpudesc[i].mpudesc5_register = 0xFF;
 	}
 
-	mpudesc[0].mpudesc0_register = 0xF0;
+	mpudesc[0].mpudesc0_register = 0xE0;
 
 }
 

@@ -116,6 +116,7 @@ using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
+using unisim::component::cxx::processor::hcs12x::TOWNER;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::ManagedPayload;
@@ -150,12 +151,13 @@ public:
 	static const uint8_t MPUDESC4 = 0X0A;
 	static const uint8_t MPUDESC5 = 0X0B;
 
+	static const uint8_t MPU_SIZE = 8;	// Number of protection descriptors
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
 	tlm_utils::simple_target_socket<S12MPU> slave_socket;
-	tlm_utils::simple_target_socket<S12MPU> bus_clock_socket;
 
 	ServiceExport<Memory<physical_address_t> > memory_export;
 	ServiceImport<Memory<physical_address_t> > memory_import;
@@ -164,8 +166,8 @@ public:
 	S12MPU(const sc_module_name& name, Object *parent = 0);
 	virtual ~S12MPU();
 
-	void assertInterrupt(uint8_t interrupt_offset);
-	void ComputeInternalTime();
+	virtual bool validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size, bool isWrite, bool isExecute);
+	virtual void assertInterrupt();
 
     //================================================================
     //=                    tlm2 Interface                            =
@@ -174,8 +176,6 @@ public:
 	virtual tlm_sync_enum nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 
     virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
-
-    void updateBusClock(tlm::tlm_generic_payload& trans, sc_time& delay);
 
 	//=====================================================================
 	//=                  Client/Service setup methods                     =
@@ -223,15 +223,11 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	double	bus_cycle_time_int;
-	Parameter<double>	param_bus_cycle_time_int;
-	sc_time		bus_cycle_time;
-
-	// S12MPU baseAddress  SCI0=0x00C8:0x00CF  SCI1=0x00D0:0x00D7 SCI2=0x00B8:0x00BF SCI3=0x00C0:0x00C7 SCI4=0x0130:0x0137 SCI5=0x0138:0x013F
+	// S12MPU baseAddress
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	uint8_t interrupt_offset;  // vector offset SCI0=0xD6  SCI1=0xD4 SCI2=0x8A SCI3=0x88 SCI4=0x86 SCI5=0x84
+	uint8_t interrupt_offset;
 	Parameter<uint8_t> param_interrupt_offset;
 
 	bool	debug_enabled;
@@ -261,7 +257,7 @@ private:
 		uint8_t mpudesc3_register;	// 1 byte
 		uint8_t mpudesc4_register;	// 1 byte
 		uint8_t mpudesc5_register;	// 1 byte
-	} mpudesc[8];
+	} mpudesc[MPU_SIZE];
 
 }; /* end class S12MPU */
 

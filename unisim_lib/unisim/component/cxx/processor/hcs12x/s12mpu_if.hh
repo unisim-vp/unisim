@@ -61,8 +61,8 @@ public:
 
 	S12MPU_IF() { }
 	virtual ~S12MPU_IF() { }
-	virtual bool validate(physical_address_t addr) { return (true); }
-
+	virtual bool validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size, bool isWrite, bool isExecute) { return (true); }
+	virtual void assertInterrupt() { }
 protected:
 
 private:

@@ -27,38 +27,11 @@ void SigIntHandler(int signum)
 	sc_stop();
 }
 
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace hcs12x {
-
-template class MMC<S12MPU>;
-
-} // end of namespace hcs12x
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
-
-namespace unisim {
-namespace component {
-namespace tlm2 {
-namespace processor {
-namespace hcs12x {
-
-template class S12XMMC<S12MPU>;
-
-} // end of namespace hcs12x
-} // end of namespace processor
-} // end of namespace tlm2
-} // end of namespace component
-} // end of namespace unisim
-
 Simulator::Simulator(int argc, char **argv)
 	: unisim::kernel::service::Simulator(argc, argv, LoadBuiltInConfig)
 	, cpu(0)
 	, mmc(0)
+	, mpu(0)
 	, crg(0)
 	, ect(0)
 	, atd1(0)
@@ -150,7 +123,8 @@ Simulator::Simulator(int argc, char **argv)
 	cpu =new CPU("CPU");
 	xgate =new XGATE("XGATE");
 
-	mmc = 	new MMC("MMC");
+	mpu = 	new MPU("MPU");
+	mmc = 	new MMC("MMC", mpu);
 
 	crg = new CRG("CRG");
 	ect = new ECT("ECT");
@@ -256,7 +230,7 @@ Simulator::Simulator(int argc, char **argv)
 	atd0->interrupt_request(s12xint->interrupt_request);
 	xgate->interrupt_request(s12xint->interrupt_request);
 
-//	global_eeprom->interrupt_request(s12xint->interrupt_request);
+	mpu->interrupt_request(s12xint->interrupt_request);
 
 	sci0->interrupt_request(s12xint->interrupt_request);
 	sci1->interrupt_request(s12xint->interrupt_request);
@@ -289,7 +263,7 @@ Simulator::Simulator(int argc, char **argv)
 	mmc->init_socket(spi0->slave_socket);
 	mmc->init_socket(spi1->slave_socket);
 	mmc->init_socket(spi2->slave_socket);
-//	mmc->init_socket(global_eeprom->slave_socket);
+	mmc->init_socket(mpu->slave_socket);
 	mmc->init_socket(s12xint->slave_socket);
 	mmc->init_socket(sci4->slave_socket);
 	mmc->init_socket(sci5->slave_socket);
@@ -347,6 +321,7 @@ Simulator::Simulator(int argc, char **argv)
 	*(memoryImportExportTee->memory_import[17]) >> spi0->memory_export;
 	*(memoryImportExportTee->memory_import[18]) >> spi1->memory_export;
 	*(memoryImportExportTee->memory_import[19]) >> spi2->memory_export;
+	*(memoryImportExportTee->memory_import[20]) >> mpu->memory_export;
 
 	mmc->memory_import >> memoryImportExportTee->memory_export;
 
@@ -373,6 +348,7 @@ Simulator::Simulator(int argc, char **argv)
 	*(registersTee->registers_import[17]) >> spi0->registers_export;
 	*(registersTee->registers_import[18]) >> spi1->registers_export;
 	*(registersTee->registers_import[19]) >> spi2->registers_export;
+	*(registersTee->registers_import[20]) >> mpu->registers_export;
 
 // ***********************************************************
 	if(enable_inline_debugger || enable_gdb_server || enable_pim_server)
@@ -510,6 +486,7 @@ Simulator::~Simulator()
 	if (atd0) { delete atd0; atd0 = NULL; }
 	if (s12xint) { delete s12xint; s12xint = NULL; }
 	if (mmc) { delete mmc; mmc = NULL; }
+	if (mpu) { delete mpu; mpu = NULL; }
 	if (sci0) { delete sci0; sci0 = NULL; }
 	if (sci1) { delete sci1; sci1 = NULL; }
 	if (sci2) { delete sci2; sci2 = NULL; }
@@ -625,6 +602,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
 
 	simulator->SetVariable("XGATE.version", "V3");
+	simulator->SetVariable("XGATE.base-address", 0x0380);
 	simulator->SetVariable("XGATE.software_channel_id[0]", 0x39);
 	simulator->SetVariable("XGATE.software_channel_id[1]", 0x38);
 	simulator->SetVariable("XGATE.software_channel_id[2]", 0x37);
@@ -760,6 +738,10 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x15); // ppage address for S12XE is 0x15
 	simulator->SetVariable("MMC.version", "V4");
+
+	simulator->SetVariable("MPU.debug-enabled", false);
+	simulator->SetVariable("MPU.base-address", 0x0114);
+	simulator->SetVariable("MPU.interrupt-offset", 0x14);
 
 	simulator->SetVariable("PWM.bus-cycle-time", 250000);
 	simulator->SetVariable("PWM.base-address", 0x300);

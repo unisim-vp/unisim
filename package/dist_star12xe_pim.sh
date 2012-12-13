@@ -289,6 +289,7 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
+unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/event.hh \
 unisim/util/endian/endian.hh \
 unisim/util/debug/blob/blob.hh \
@@ -306,6 +307,7 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
+unisim/util/singleton/singleton.hh \
 unisim/util/xml/xml.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -420,9 +422,7 @@ unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/tlm2/interconnect/generic_router/router.tcc \
 unisim/component/tlm2/interconnect/generic_router/router_dispatcher.tcc \
 unisim/component/cxx/memory/ram/memory.tcc \
-unisim/component/cxx/processor/hcs12x/mmc.tcc \
 unisim/component/tlm2/memory/ram/memory.tcc \
-unisim/component/tlm2/processor/hcs12x/s12xmmc.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
 unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \

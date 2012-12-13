@@ -227,8 +227,15 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 		buffer.setID(XINT::INT_XIRQ_OFFSET/2);
 		buffer.setPriority(0x7);
 	}
+	// This interrupt is used for 68HCS12XE family only
+	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_MPU_ACCESS_ERROR_OFFSET/2].getState()) {
+
+		buffer.setVectorAddress(get_MPUACCESSERROR_Vector());
+		buffer.setID(XINT::INT_MPU_ACCESS_ERROR_OFFSET/2);
+		buffer.setPriority(0x7);
+	}
 	else {
-		for (int index=0x30; index < 0x79; index++) {
+		for (int index=0x9; index < 0x79; index++) {
 			if (interrupt_flags[index].getState()) {
 
 				uint8_t dataPriority = 0;
@@ -358,8 +365,6 @@ tlm_sync_enum XINT::cpu_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_pha
 
 		}
 
-		std::cerr << "XINT::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
-
 		if (debug_enabled) {
 			std::cerr << "XINT::CPU12::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getVectorAddress() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
 		}
@@ -385,8 +390,6 @@ tlm_sync_enum XINT::xgate_nb_transport_bw(tlm::tlm_generic_payload& trans, tlm_p
 			interrupt_flags[buffer->getID()].releasePayload();
 
 		}
-
-		std::cerr << "XINT::XGATE::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getID() << "  @ " << sc_time_stamp().to_seconds() << std::endl;
 
 		if (debug_enabled) {
 			std::cerr << "XINT::XGATE::handled_interrupt 0x" << std::hex << (unsigned int) buffer->getID() << "  @ " << sc_time_stamp().to_seconds() << std::endl;

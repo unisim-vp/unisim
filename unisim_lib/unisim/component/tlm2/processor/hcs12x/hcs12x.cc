@@ -429,6 +429,10 @@ address_t HCS12X ::getIntVector(uint8_t &ipl)
 				reqXIRQInterrupt();
 			}
 			break;
+			case XINT::INT_MPU_ACCESS_ERROR_OFFSET: {
+				reqMPUAccessErrorInterrupt();
+			}
+			break;
 			default: {
 				reqIbitInterrupt();
 			}

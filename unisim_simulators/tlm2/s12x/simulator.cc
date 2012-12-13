@@ -589,6 +589,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
 
 	simulator->SetVariable("XGATE.version", "V2");
+	simulator->SetVariable("XGATE.base-address", 0x0380);
 	simulator->SetVariable("XGATE.software_channel_id[0]", 0x39);
 	simulator->SetVariable("XGATE.software_channel_id[1]", 0x38);
 	simulator->SetVariable("XGATE.software_channel_id[2]", 0x37);

@@ -113,6 +113,7 @@ CPU::CPU(const char *name, Object *parent):
 	nonMascableSWI_interrupt(false),
 	trap_interrupt(false),
 	reset(false),
+	mpuAccessError_interrupt(false),
 	syscall_interrupt(false),
 	spurious_interrupt(false),
 	instruction_counter(0),
@@ -263,7 +264,7 @@ uint8_t CPU::step()
 					*logger << DebugInfo << "Fetching debug command (PC = 0x" << std::hex << getRegPC() << std::dec << ")"
 						<< std::endl << EndDebugInfo;
 
-				dbg_cmd = debug_control_import->FetchDebugCommand(MMC<>::getCPU12XPagedAddress(getRegPC()));
+				dbg_cmd = debug_control_import->FetchDebugCommand(MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
 
 				if(dbg_cmd == DebugControl<physical_address_t>::DBG_STEP) {
 					if(debug_enabled && verbose_step)
@@ -338,7 +339,7 @@ uint8_t CPU::step()
 					<< std::endl << EndDebugInfo;
 			}
 
-			op = this->Decode(MMC<>::getCPU12XPagedAddress(getRegPC()), insn);
+			op = this->Decode(MMC::getInstance()->getCPU12XPagedAddress(getRegPC()), insn);
 			lastPC = getRegPC();
 	        unsigned int insn_length = op->GetLength();
 	        if (insn_length % 8) throw "InternalError";
@@ -398,7 +399,7 @@ uint8_t CPU::step()
 
 			if(requires_finished_instruction_reporting) {
 				if(memory_access_reporting_import) {
-					memory_access_reporting_import->ReportFinishedInstruction(MMC<>::getCPU12XPagedAddress(lastPC), MMC<>::getCPU12XPagedAddress(getRegPC()));
+					memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getCPU12XPagedAddress(lastPC), MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
 
 				}
 			}
@@ -553,6 +554,10 @@ void CPU::handleException(const AsynchronousException& exc)
 		handleNonMaskableXIRQException(asyncVector, newIPL);
 	}
 
+	if (hasMPUAccessErrorInterrupt()) {
+		handleMPUAccessErrorException(asyncVector, newIPL);
+	}
+
 	if (CONFIG::HAS_MASKABLE_IBIT_INTERRUPT && hasMaskableIbitInterrup()) {
 		handleMaskableIbitException(asyncVector, newIPL);
 	}
@@ -628,6 +633,32 @@ void CPU::ackXIRQInterrupt()
 void CPU::reqXIRQInterrupt()
 {
 	if (ccr->getX() == 0) nonMaskableXIRQ_interrupt = true;
+}
+
+// Non-maskable MPU Access Error interrupt
+void CPU::handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL)
+{
+	ackMPUAccessErrorInterrupt();
+
+	saveCPUContext();
+
+	ccr->setIPL(newIPL);
+
+	address_t address = memRead16(mpuAccessErrorVector);
+
+	setEntryPoint(address);
+
+}
+
+void CPU::ackMPUAccessErrorInterrupt()
+{
+	mpuAccessError_interrupt = false;
+	ackAsynchronousInterrupt();
+}
+
+void CPU::reqMPUAccessErrorInterrupt()
+{
+	mpuAccessError_interrupt = true;
 }
 
 // Maskable (I bit) interrupt

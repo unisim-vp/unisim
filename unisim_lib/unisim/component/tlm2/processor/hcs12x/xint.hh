@@ -130,7 +130,8 @@ public:
 	static const uint8_t	INT_SWI_OFFSET					= 0xF6;
 	static const uint8_t	INT_XIRQ_OFFSET					= 0xF4;
 	static const uint8_t	INT_IRQ_OFFSET					= 0xF2;
-	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;
+	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;	// used for 68HCS12XD only
+	static const uint8_t	INT_MPU_ACCESS_ERROR_OFFSET		= 0x14;	// used for 68HCS12XE only
 	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
 	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
 
@@ -285,6 +286,7 @@ public:
 	address_t get_ClockMonitorReset_Vector() { return (0xFFFC); }
 	address_t get_COPWatchdogReset_Vector() { return (0xFFFA); }
 	address_t get_XIRQ_Vector() { return (((address_t) getIVBR() << 8) + INT_XIRQ_OFFSET); }
+	address_t get_MPUACCESSERROR_Vector() { return (((address_t) getIVBR() << 8) + INT_MPU_ACCESS_ERROR_OFFSET); }
 
 	address_t get_Spurious_Vector() { return (((address_t) getIVBR() << 8) + INT_SPURIOUS_OFFSET); } // Spurious interrupt
 

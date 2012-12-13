@@ -172,7 +172,7 @@ private:
 	typedef unisim::component::tlm2::processor::s12xgate::S12XGATE XGATE;
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12MPU MPU;
-	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC<MPU> MMC;
+	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;

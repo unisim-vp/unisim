@@ -322,6 +322,7 @@ public:
 	inline bool hasNonMaskableSWIInterrupt() const { return (nonMascableSWI_interrupt); }
 	inline bool hasTrapInterrupt() const { return (trap_interrupt); }
 	inline bool hasReset() const { return (reset); }
+	inline bool hasMPUAccessErrorInterrupt() const { return (mpuAccessError_interrupt); }
 	inline bool hasSysCallInterrupt() const { return (syscall_interrupt); }
 	inline bool hasSpuriousInterrupt() const { return (spurious_interrupt); }
 
@@ -340,6 +341,9 @@ public:
 
 	// Non-maskable (X bit) interrupts
 	void handleNonMaskableXIRQException(address_t xirqVector, uint8_t newIPL);
+
+	// Non-maskable MPU Access Error interrupt
+	void handleMPUAccessErrorException(address_t mpuAccessErrorVector, uint8_t newIPL);
 
 	// Maskable (I bit) interrupt
 	void handleMaskableIbitException(address_t ibitVector, uint8_t newIPL);
@@ -370,6 +374,7 @@ public:
 	void ackSWIInterrupt();
 	void ackTrapInterrupt();
 	void ackReset();
+	void ackMPUAccessErrorInterrupt();
 	void ackSysInterrupt();
 	void ackSpuriousInterrupt();
 
@@ -384,6 +389,7 @@ public:
 	void reqSWIInterrupt();
 	void reqTrapInterrupt();
 	void reqReset();
+	void reqMPUAccessErrorInterrupt();
 	void reqSysInterrupt();
 	void reqSpuriousInterrupt();
 
@@ -588,6 +594,7 @@ protected:
 	// non maskable software interrupt request or background debug mode vector request
 	bool trap_interrupt;			// non maskable unimplemented opcode => IVBR + 0x00F8
 	bool reset;						// Hardware and Software interrupt =>  0xFFFA-0xFFFE
+	bool mpuAccessError_interrupt; // non maskable MPU Access Error interrupt
 	bool syscall_interrupt;			// SYS call interrupt =>
 	bool spurious_interrupt;		// Spurious interrupt => IVBR + 0x0010 (default interrupt)
 
@@ -628,7 +635,7 @@ private:
 
 inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC<>::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_load_counter++;
 
@@ -641,7 +648,7 @@ inline void CPU::monitorLoad(address_t logicalAddress, uint32_t size, bool isGlo
 
 inline void CPU::monitorStore(address_t logicalAddress, uint32_t size, bool isGlobal)
 {
-	physical_address_t pea = MMC<>::getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
+	physical_address_t pea = MMC::getInstance()->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED,isGlobal,false, 0x00);
 
 	data_store_counter++;
 

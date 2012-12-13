@@ -87,16 +87,16 @@ using unisim::component::cxx::processor::hcs12x::TOWNER;
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;
 
-template <class mpu>
+
 class S12XMMC :
 	public sc_module,
-	public MMC<mpu>,
+	public MMC,
 	public Client<TrapReporting >
 
 {
 public:
 
-	typedef MMC<mpu> inherited;
+	typedef MMC inherited;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
@@ -105,7 +105,7 @@ public:
 
 	tlm_utils::multi_passthrough_initiator_socket<S12XMMC> init_socket;
 
-	S12XMMC(const sc_module_name& name, Object *parent = 0);
+	S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu = 0, Object *parent = 0);
 	virtual ~S12XMMC();
 
 	virtual void cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
