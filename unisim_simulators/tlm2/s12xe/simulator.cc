@@ -6,8 +6,6 @@
  */
 
 #include <simulator.hh>
-#include <unisim/component/cxx/processor/hcs12x/mmc.tcc>
-#include <unisim/component/tlm2/processor/hcs12x/s12xmmc.tcc>
 
 bool debug_enabled = false;
 
