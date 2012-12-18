@@ -151,7 +151,10 @@ public:
 	static const uint8_t MPUDESC4 = 0X0A;
 	static const uint8_t MPUDESC5 = 0X0B;
 
-	static const uint8_t MPU_SIZE = 8;	// Number of protection descriptors
+	static const uint8_t MPU_DESC_NUMBER = 8;	// Number of protection descriptors
+
+	static const uint8_t MPU_DESC_BANKS_OFFSET = 0x0C;	// This offset is used to instruments all descriptors
+	static const uint8_t MPU_DESC_WINDOW_SIZE = 6;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 
@@ -246,18 +249,13 @@ private:
 	uint8_t mpuastat0_register, mpuastat1_register, mpuastat2_register;	// 1*3 byte (22:16, 15:8, 7:0)
 	uint8_t reserved;	// 1 byte
 	uint8_t mpusel_register;		// 1 byte
+
 	/**
 	 * The module address 0x0006-0x000B represent a window in the register map
 	 * through which different descriptor registers are visible depending on the selection of MPUSEL register
 	 */
-	struct MPUDESC {
-		uint8_t mpudesc0_register;	// 1 byte
-		uint8_t mpudesc1_register;	// 1 byte
-		uint8_t mpudesc2_register;	// 1 byte
-		uint8_t mpudesc3_register;	// 1 byte
-		uint8_t mpudesc4_register;	// 1 byte
-		uint8_t mpudesc5_register;	// 1 byte
-	} mpudesc[MPU_SIZE];
+
+	uint8_t mpudesc[MPU_DESC_NUMBER][MPU_DESC_WINDOW_SIZE];
 
 }; /* end class S12MPU */
 

@@ -134,41 +134,66 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 	// SCIASR1, SCIACR1, SCIACR2 registers are accessible if the AMAP bit in the SCISR2 register is set to one.
 
 	switch (offset) {
-	case 0x00:
-		if ((scisr2_regsiter & 0x80) == 0) {
+		case 0x00:
+			if ((scisr2_regsiter & 0x80) == 0) {
+				if (data_length == 1) {
+					*((uint8_t *) buffer) = scibdh_register;
+				} else if (data_length == 2) {
+					uint16_t val = (scibdh_register << 8) | scibdl_register;
+					*((uint16_t *) buffer) = Host2BigEndian(val);
+				}
+
+			} else {
+				*((uint8_t *) buffer) = sciasr1_register;
+			} break;
+		case 0x01: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				*((uint8_t *) buffer) = scibdl_register;
+			} else {
+				*((uint8_t *) buffer) = sciacr1_register;
+			} break;
+		case 0x02: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				*((uint8_t *) buffer) = scicr1_register;
+			} else {
+				*((uint8_t *) buffer) = sciacr2_register;
+			} break;
+
+		case SCICR2: *((uint8_t *) buffer) = scicr2_register; break; // 1 byte
+		case SCISR1: *((uint8_t *) buffer) = scisr1_register; break; // 1 byte
+		case SCISR2: *((uint8_t *) buffer) = scisr2_regsiter; break; // 1 bytes
+		case SCIDRH: if (data_length == 1) {
+			*((uint8_t *) buffer) = scidrh_register; // 1 bytes
+		} else if (data_length == 2) {
+			uint16_t val = (scidrh_register << 8) | scidrl_register;
+			*((uint16_t *) buffer) = Host2BigEndian(val);
+		} break;
+		case SCIDRL: *((uint8_t *) buffer) = scidrl_register; break; // 1 bytes
+
+		case SCIBDH_BANK_OFFSET: {
 			if (data_length == 1) {
 				*((uint8_t *) buffer) = scibdh_register;
 			} else if (data_length == 2) {
 				uint16_t val = (scibdh_register << 8) | scibdl_register;
 				*((uint16_t *) buffer) = Host2BigEndian(val);
 			}
-
-		} else {
+		} break;
+		case SCIBDL_BANK_OFFSET: {
+			*((uint8_t *) buffer) = scibdl_register;
+		} break;
+		case SCICR1_BANK_OFFSET: {
+			*((uint8_t *) buffer) = scicr1_register;
+		} break;
+		case SCIASR1_BANK_OFFSET: {
 			*((uint8_t *) buffer) = sciasr1_register;
 		} break;
-	case 0x01: // 1 byte
-		if ((scisr2_regsiter & 0x80) == 0) {
-			*((uint8_t *) buffer) = scibdl_register;
-		} else {
+		case SCIACR1_BANK_OFFSET: {
 			*((uint8_t *) buffer) = sciacr1_register;
 		} break;
-	case 0x02: // 1 byte
-		if ((scisr2_regsiter & 0x80) == 0) {
-			*((uint8_t *) buffer) = scicr1_register;
-		} else {
+		case SCIACR2_BANK_OFFSET: {
 			*((uint8_t *) buffer) = sciacr2_register;
 		} break;
 
-	case SCICR2: *((uint8_t *) buffer) = scicr2_register; break; // 1 byte
-	case SCISR1: *((uint8_t *) buffer) = scisr1_register; break; // 1 byte
-	case SCISR2: *((uint8_t *) buffer) = scisr2_regsiter; break; // 1 bytes
-	case SCIDRH: if (data_length == 1) {
-		*((uint8_t *) buffer) = scidrh_register; // 1 bytes
-	} else if (data_length == 2) {
-		uint16_t val = (scidrh_register << 8) | scidrl_register;
-		*((uint16_t *) buffer) = Host2BigEndian(val);
-	} break;
-	case SCIDRL: *((uint8_t *) buffer) = scidrl_register; break; // 1 bytes
 	}
 
 	return (true);
@@ -177,8 +202,45 @@ bool S12SCI::read(unsigned int offset, const void *buffer, unsigned int data_len
 bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_length) {
 
 	switch (offset) {
-	case 0x00: 	// 1 byte
-		if ((scisr2_regsiter & 0x80) == 0) {
+		case 0x00: 	// 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				if (data_length == 1) {
+					scibdh_register = *((uint8_t *) buffer);
+				} else if (data_length == 2) {
+					uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+					scibdh_register = val >> 8;
+					scibdl_register = val & 0x00FF;
+				}
+
+			} else {
+				 sciasr1_register= *((uint8_t *) buffer);
+			} break;
+		case 0x01: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				 scibdl_register = *((uint8_t *) buffer);
+			} else {
+				 sciacr1_register = *((uint8_t *) buffer);
+			} break;
+		case 0x02: // 1 byte
+			if ((scisr2_regsiter & 0x80) == 0) {
+				 scicr1_register = *((uint8_t *) buffer);
+			} else {
+				 sciacr2_register = *((uint8_t *) buffer);
+			} break;
+
+		case SCICR2: scicr2_register = *((uint8_t *) buffer); break; // 1 byte
+		case SCISR1: scisr1_register = *((uint8_t *) buffer); break; // 1 byte
+		case SCISR2: scisr2_regsiter = *((uint8_t *) buffer); break; // 1 bytes
+		case SCIDRH: if (data_length == 1) {
+			scidrh_register = *((uint8_t *) buffer);
+		} else if (data_length == 2) {
+			uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
+			scidrh_register = val >> 8;
+			scidrl_register = val & 0x00FF;
+		} break; // 1 bytes
+		case SCIDRL: scidrl_register = *((uint8_t *) buffer); break; // 1 bytes
+
+		case SCIBDH_BANK_OFFSET: {
 			if (data_length == 1) {
 				scibdh_register = *((uint8_t *) buffer);
 			} else if (data_length == 2) {
@@ -186,34 +248,22 @@ bool S12SCI::write(unsigned int offset, const void *buffer, unsigned int data_le
 				scibdh_register = val >> 8;
 				scibdl_register = val & 0x00FF;
 			}
-
-		} else {
+		} break;
+		case SCIBDL_BANK_OFFSET: {
+			 scibdl_register = *((uint8_t *) buffer);
+		} break;
+		case SCICR1_BANK_OFFSET: {
+			 scicr1_register = *((uint8_t *) buffer);
+		} break;
+		case SCIASR1_BANK_OFFSET: {
 			 sciasr1_register= *((uint8_t *) buffer);
 		} break;
-	case 0x01: // 1 byte
-		if ((scisr2_regsiter & 0x80) == 0) {
-			 scibdl_register = *((uint8_t *) buffer);
-		} else {
+		case SCIACR1_BANK_OFFSET: {
 			 sciacr1_register = *((uint8_t *) buffer);
 		} break;
-	case 0x02: // 1 byte
-		if ((scisr2_regsiter & 0x80) == 0) {
-			 scicr1_register = *((uint8_t *) buffer);
-		} else {
+		case SCIACR2_BANK_OFFSET: {
 			 sciacr2_register = *((uint8_t *) buffer);
 		} break;
-
-	case SCICR2: scicr2_register = *((uint8_t *) buffer); break; // 1 byte
-	case SCISR1: scisr1_register = *((uint8_t *) buffer); break; // 1 byte
-	case SCISR2: scisr2_regsiter = *((uint8_t *) buffer); break; // 1 bytes
-	case SCIDRH: if (data_length == 1) {
-		scidrh_register = *((uint8_t *) buffer);
-	} else if (data_length == 2) {
-		uint16_t val = BigEndian2Host(*((uint16_t *) buffer));
-		scidrh_register = val >> 8;
-		scidrl_register = val & 0x00FF;
-	} break; // 1 bytes
-	case SCIDRL: scidrl_register = *((uint8_t *) buffer); break; // 1 bytes
 	}
 
 	return (true);
@@ -306,42 +356,42 @@ bool S12SCI::BeginSetup() {
 
 	unisim::kernel::service::Register<uint8_t> *scibdh_var = new unisim::kernel::service::Register<uint8_t>("SCIBDH", this, scibdh_register, "SCI Baud Rate Registers High byte (SCIBDH)");
 	extended_registers_registry.push_back(scibdh_var);
-	scibdh_var->setCallBack(this, SCIBDH, &CallBackObject::write, NULL);
+	scibdh_var->setCallBack(this, SCIBDH_BANK_OFFSET, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SCIBDL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scibdl_register);
 
 	unisim::kernel::service::Register<uint8_t> *scibdl_var = new unisim::kernel::service::Register<uint8_t>("SCIBDL", this, scibdl_register, "SCI Baud Rate Registers Low byte (SCIBDL)");
 	extended_registers_registry.push_back(scibdl_var);
-	scibdl_var->setCallBack(this, SCIBDL, &CallBackObject::write, NULL);
+	scibdl_var->setCallBack(this, SCIBDL_BANK_OFFSET, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SCICR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scicr1_register);
 
 	unisim::kernel::service::Register<uint8_t> *scicr1_var = new unisim::kernel::service::Register<uint8_t>("SCICR1", this, scicr1_register, "SCI Control Register 1 (SCICR1)");
 	extended_registers_registry.push_back(scicr1_var);
-	scicr1_var->setCallBack(this, SCICR1, &CallBackObject::write, NULL);
+	scicr1_var->setCallBack(this, SCICR1_BANK_OFFSET, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SCIASR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &sciasr1_register);
 
 	unisim::kernel::service::Register<uint8_t> *sciasr1_var = new unisim::kernel::service::Register<uint8_t>("SCIASR1", this, sciasr1_register, "SCI Alternative Status Register 1 (SCIASR1)");
 	extended_registers_registry.push_back(sciasr1_var);
-	sciasr1_var->setCallBack(this, SCIASR1, &CallBackObject::write, NULL);
+	sciasr1_var->setCallBack(this, SCIASR1_BANK_OFFSET, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SCIACR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &sciacr1_register);
 
 	unisim::kernel::service::Register<uint8_t> *sciacr1_var = new unisim::kernel::service::Register<uint8_t>("SCIACR1", this, sciacr1_register, "SCI Alternative Control Register (SCIACR1)");
 	extended_registers_registry.push_back(sciacr1_var);
-	sciacr1_var->setCallBack(this, SCIACR1, &CallBackObject::write, NULL);
+	sciacr1_var->setCallBack(this, SCIACR1_BANK_OFFSET, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SCIACR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &sciacr2_register);
 
 	unisim::kernel::service::Register<uint8_t> *sciacr2_var = new unisim::kernel::service::Register<uint8_t>("SCIACR2", this, sciacr2_register, "SCI Alternative Control Register 2 (SCIACR2)");
 	extended_registers_registry.push_back(sciacr2_var);
-	sciacr2_var->setCallBack(this, SCIACR2, &CallBackObject::write, NULL);
+	sciacr2_var->setCallBack(this, SCIACR2_BANK_OFFSET, &CallBackObject::write, NULL);
 
 	sprintf(buf, "%s.SCICR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &scicr2_register);

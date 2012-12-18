@@ -85,7 +85,7 @@ bool S12MPU:: validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size
 
 	bool isViolation = false;
 
-	for (uint8_t i=0; i<MPU_SIZE; i++) {
+	for (uint8_t i=0; i<MPU_DESC_NUMBER; i++) {
 		/**
 		 * is descriptor applicable to the requester ?
 		 * MSTR0 and MSTR1 are used for CPU (NOTE: Distinction between supervisor and user mode is not implemented)
@@ -94,11 +94,11 @@ bool S12MPU:: validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size
 		 */
 		bool isApplicable = false;
 		if (who == TOWNER::CPU12X) {
-			isApplicable = ((mpudesc[i].mpudesc0_register & 0xC0) != 0);
+			isApplicable = ((mpudesc[i][0] & 0xC0) != 0);
 		} else if (who == TOWNER::XGATE) {
-			isApplicable = ((mpudesc[i].mpudesc0_register & 0x20) != 0);
+			isApplicable = ((mpudesc[i][0] & 0x20) != 0);
 		} else {
-			isApplicable = ((mpudesc[i].mpudesc0_register & 0x10) != 0);
+			isApplicable = ((mpudesc[i][0] & 0x10) != 0);
 		}
 
 		if (isApplicable) {
@@ -106,23 +106,23 @@ bool S12MPU:: validate(TOWNER::OWNER who, physical_address_t addr, uint32_t size
 			uint32_t aligned_end_addr = (((addr + size - 1) >> 3) << 3); // The granularity of each descriptor is 8-bytes
 
 			// check protection range limits
-			uint32_t low_addr = (uint32_t) ((mpudesc[i].mpudesc0_register & 0x0F) << 19)
-											| (mpudesc[i].mpudesc1_register << 11)
-											| (mpudesc[i].mpudesc2_register << 3);
+			uint32_t low_addr = (uint32_t) ((mpudesc[i][0] & 0x0F) << 19)
+											| (mpudesc[i][1] << 11)
+											| (mpudesc[i][2] << 3);
 
-			uint32_t high_addr = (uint32_t) ((mpudesc[i].mpudesc3_register & 0x0F) << 19)
-											| (mpudesc[i].mpudesc4_register << 11)
-											| (mpudesc[i].mpudesc5_register << 3)
+			uint32_t high_addr = (uint32_t) ((mpudesc[i][3] & 0x0F) << 19)
+											| (mpudesc[i][4] << 11)
+											| (mpudesc[i][5] << 3)
 											| 0x7; // all the 8-bits are covered by the protection range
 
 			// check access violation and set MPUFLG register
 			if ((aligned_start_addr <= high_addr) && (aligned_end_addr >= low_addr)) {
 				// The Violations are combined
-				if (isWrite && ((mpudesc[i].mpudesc3_register & 0x80) != 0)) {
+				if (isWrite && ((mpudesc[i][3] & 0x80) != 0)) {
 					isViolation = true;
 				}
 
-				if (isExecute && ((mpudesc[i].mpudesc3_register & 0x40) != 0)) {
+				if (isExecute && ((mpudesc[i][3] & 0x40) != 0)) {
 					isViolation = true;
 				}
 			}
@@ -184,13 +184,23 @@ bool S12MPU::read(unsigned int offset, const void *buffer, unsigned int data_len
 		case MPUASTAT2: *((uint8_t *) buffer) = mpuastat2_register; break;
 		case RESERVED: *((uint8_t *) buffer) = 0x00; break;
 		case MPUSEL: *((uint8_t *) buffer) = mpusel_register & 0x87; break;
-		case MPUDESC0: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc0_register; break;
-		case MPUDESC1: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc1_register; break;
-		case MPUDESC2: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc2_register; break;
-		case MPUDESC3: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc3_register & 0xCF; break;
-		case MPUDESC4: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc4_register; break;
-		case MPUDESC5: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc5_register; break;
-		default: return (false);
+		case MPUDESC0: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][0]; break;
+		case MPUDESC1: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][1]; break;
+		case MPUDESC2: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][2]; break;
+		case MPUDESC3: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][3] & 0xCF; break;
+		case MPUDESC4: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][4]; break;
+		case MPUDESC5: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][5]; break;
+		default:
+			if ((offset >= MPU_DESC_BANKS_OFFSET) && (offset < (MPU_DESC_BANKS_OFFSET + (MPU_DESC_NUMBER * MPU_DESC_WINDOW_SIZE)))) {
+				/**
+				 * don't use the following linearization because it suppose specific allocation
+				 * *((uint8_t *) buffer) = ((uint8_t *) mpudesc)[offset - MPU_DESC_BANKS_OFFSET]; break;
+				 */
+				*((uint8_t *) buffer) = mpudesc[(offset - MPU_DESC_BANKS_OFFSET) / MPU_DESC_NUMBER][(offset - MPU_DESC_BANKS_OFFSET) % MPU_DESC_NUMBER]; break;
+
+			} else {
+				return (false);
+			}
 	}
 
 	return (true);
@@ -214,30 +224,42 @@ bool S12MPU::write(unsigned int offset, const void *buffer, unsigned int data_le
 		} break;
 		case MPUDESC0: {
 			uint8_t val = *((uint8_t *) buffer);
-			mpudesc[(mpusel_register & 0x07)].mpudesc0_register = val;
+			mpudesc[(mpusel_register & 0x07)][0] = val;
 		} break;
 		case MPUDESC1: {
 			uint8_t val = *((uint8_t *) buffer);
-			mpudesc[(mpusel_register & 0x07)].mpudesc1_register = val;
+			mpudesc[(mpusel_register & 0x07)][1] = val;
 		} break;
 		case MPUDESC2: {
 			uint8_t val = *((uint8_t *) buffer);
-			mpudesc[(mpusel_register & 0x07)].mpudesc2_register = val;
+			mpudesc[(mpusel_register & 0x07)][2] = val;
 		} break;
 		case MPUDESC3: {
 			uint8_t val = *((uint8_t *) buffer) & 0xCF;
-			mpudesc[(mpusel_register & 0x07)].mpudesc3_register = val;
+			mpudesc[(mpusel_register & 0x07)][3] = val;
 		} break;
 		case MPUDESC4: {
 			uint8_t val = *((uint8_t *) buffer);
-			mpudesc[(mpusel_register & 0x07)].mpudesc4_register = val;
+			mpudesc[(mpusel_register & 0x07)][4] = val;
 		} break;
 		case MPUDESC5: {
 			uint8_t val = *((uint8_t *) buffer);
-			mpudesc[(mpusel_register & 0x07)].mpudesc5_register = val;
+			mpudesc[(mpusel_register & 0x07)][5] = val;
 		} break;
 
-		default: return (false);
+		default:
+			if ((offset >= MPU_DESC_BANKS_OFFSET) && (offset < (MPU_DESC_BANKS_OFFSET + (MPU_DESC_NUMBER * MPU_DESC_WINDOW_SIZE)))) {
+				/**
+				 * don't use the following linearization because it suppose specific allocation
+				 * *((uint8_t *) buffer) = ((uint8_t *) mpudesc)[offset - MPU_DESC_BANKS_OFFSET]; break;
+				 */
+				mpudesc[(offset - MPU_DESC_BANKS_OFFSET) / MPU_DESC_NUMBER][(offset - MPU_DESC_BANKS_OFFSET) % MPU_DESC_NUMBER] = *((uint8_t *) buffer);
+				break;
+
+			} else {
+				return (false);
+			}
+
 	}
 
 	return (true);
@@ -344,7 +366,21 @@ bool S12MPU::BeginSetup() {
 	extended_registers_registry.push_back(mpusel_var);
 	mpusel_var->setCallBack(this, MPUSEL, &CallBackObject::write, NULL);
 
-// *** *** pb sur writeBack à cause de la fenetre de descripteurs ***
+//	static const uint8_t MPU_DESC_BANKS_OFFSET = 0x0C;	// This offset is used to instruments all descriptors
+//	static const uint8_t MPU_DESC_WINDOW_SIZE = 6;
+
+	for (uint8_t i=0; i<MPU_DESC_NUMBER; i++) {
+		for (uint8_t j=0; j<MPU_DESC_WINDOW_SIZE; j++) {
+			char shortName[80];
+			sprintf(shortName, "MPUDESC%d_%d", j, i);
+			sprintf(buf, "%s.%s",sc_object::name(), shortName);
+			registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &(mpudesc[i][j]));
+
+			unisim::kernel::service::Register<uint8_t> *mpudesc_var = new unisim::kernel::service::Register<uint8_t>(shortName, this, mpudesc[i][j], "MPU Descriptor register");
+			extended_registers_registry.push_back(mpudesc_var);
+			mpusel_var->setCallBack(this, MPU_DESC_BANKS_OFFSET + (i * MPU_DESC_WINDOW_SIZE) + j, &CallBackObject::write, NULL);
+		}
+	}
 
 	return (true);
 }
@@ -385,15 +421,15 @@ void S12MPU::Reset() {
 	mpusel_register = 0x00;
 
 	for (int i=0; i < 8; i++) {
-		mpudesc[i].mpudesc0_register = 0x00;
-		mpudesc[i].mpudesc1_register = 0x00;
-		mpudesc[i].mpudesc2_register = 0x00;
-		mpudesc[i].mpudesc3_register = 0x0F;
-		mpudesc[i].mpudesc4_register = 0xFF;
-		mpudesc[i].mpudesc5_register = 0xFF;
+		mpudesc[i][0] = 0x00;
+		mpudesc[i][1] = 0x00;
+		mpudesc[i][2] = 0x00;
+		mpudesc[i][3] = 0x0F;
+		mpudesc[i][4] = 0xFF;
+		mpudesc[i][5] = 0xFF;
 	}
 
-	mpudesc[0].mpudesc0_register = 0xE0;
+	mpudesc[0][0] = 0xE0;
 
 }
 
@@ -416,12 +452,12 @@ bool S12MPU::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 			case MPUASTAT2: *((uint8_t *) buffer) = mpuastat2_register; break;
 			case RESERVED: *((uint8_t *) buffer) = 0x00; break;
 			case MPUSEL: *((uint8_t *) buffer) = mpusel_register; break;
-			case MPUDESC0: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc0_register; break;
-			case MPUDESC1: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc1_register; break;
-			case MPUDESC2: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc2_register; break;
-			case MPUDESC3: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc3_register; break;
-			case MPUDESC4: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc4_register; break;
-			case MPUDESC5: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)].mpudesc5_register; break;
+			case MPUDESC0: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][0]; break;
+			case MPUDESC1: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][1]; break;
+			case MPUDESC2: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][2]; break;
+			case MPUDESC3: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][3]; break;
+			case MPUDESC4: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][4]; break;
+			case MPUDESC5: *((uint8_t *) buffer) = mpudesc[(mpusel_register & 0x07)][5]; break;
 			default: return (false);
 		}
 
@@ -450,12 +486,12 @@ bool S12MPU::WriteMemory(physical_address_t addr, const void *buffer, uint32_t s
 			case MPUASTAT2: mpuastat2_register = *((uint8_t *) buffer); break;
 			case RESERVED: break;
 			case MPUSEL: mpusel_register = *((uint8_t *) buffer); break;
-			case MPUDESC0: mpudesc[(mpusel_register & 0x07)].mpudesc0_register = *((uint8_t *) buffer); break;
-			case MPUDESC1: mpudesc[(mpusel_register & 0x07)].mpudesc1_register = *((uint8_t *) buffer); break;
-			case MPUDESC2: mpudesc[(mpusel_register & 0x07)].mpudesc2_register = *((uint8_t *) buffer); break;
-			case MPUDESC3: mpudesc[(mpusel_register & 0x07)].mpudesc3_register = *((uint8_t *) buffer); break;
-			case MPUDESC4: mpudesc[(mpusel_register & 0x07)].mpudesc4_register = *((uint8_t *) buffer); break;
-			case MPUDESC5: mpudesc[(mpusel_register & 0x07)].mpudesc5_register = *((uint8_t *) buffer); break;
+			case MPUDESC0: mpudesc[(mpusel_register & 0x07)][0] = *((uint8_t *) buffer); break;
+			case MPUDESC1: mpudesc[(mpusel_register & 0x07)][1] = *((uint8_t *) buffer); break;
+			case MPUDESC2: mpudesc[(mpusel_register & 0x07)][2] = *((uint8_t *) buffer); break;
+			case MPUDESC3: mpudesc[(mpusel_register & 0x07)][3] = *((uint8_t *) buffer); break;
+			case MPUDESC4: mpudesc[(mpusel_register & 0x07)][4] = *((uint8_t *) buffer); break;
+			case MPUDESC5: mpudesc[(mpusel_register & 0x07)][5] = *((uint8_t *) buffer); break;
 			default: return (false);
 		}
 

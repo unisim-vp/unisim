@@ -153,6 +153,14 @@ public:
 	static const uint8_t SCIDRH	= 0x06; // 1 bytes
 	static const uint8_t SCIDRL	= 0x07; // 1 bytes
 
+	static const uint8_t MPU_REG_BANKS_OFFSET = 0x08;	// This offset is used to instruments all banked registers
+	static const uint8_t SCIBDH_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x00;	// 1 byte
+	static const uint8_t SCIBDL_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x01;	// 1 byte
+	static const uint8_t SCICR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x02;	// 1 byte
+	static const uint8_t SCIASR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x03;	// 1 byte
+	static const uint8_t SCIACR1_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x04;	// 1 byte
+	static const uint8_t SCIACR2_BANK_OFFSET	= MPU_REG_BANKS_OFFSET + 0x05; // 1 byte
+
 	ServiceImport<TrapReporting > trap_reporting_import;
 	ServiceImport<CharIO > char_io_import;
 
