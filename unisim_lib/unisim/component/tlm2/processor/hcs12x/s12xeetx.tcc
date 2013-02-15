@@ -804,7 +804,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->setInterruptOffset(cmd_interruptOffset);
+	payload->setInterruptOffset(interrupt_offset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -1135,16 +1135,10 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 				 */
 
 				if ((value & 0x80) != 0) {
-					// note: Clearing CBEIF outside of a command write sequence has no effect on the E2P state machine (CBEIF and CCIF)
-					// note: Writing a 0 to CBEIF (clearing CBEIF) outside of a command write sequence will not set the ACCERR flag
-					if (cmd_queue.empty()) {
-						value = (value & 0x3B) | (estat_reg & 0xC4);
+					if ((estat_reg & 0x30) != 0) {
+						inherited::logger << DebugWarning << " : " << sc_object::name() << ":: can't launch new command. PVIOL/ACCERR flag is set." << std::endl << EndDebugWarning;
+						break;
 					} else {
-						// clear CBEIF
-						// CCIF is cleared automatically when CBEIF is cleared
-						// BLANK is cleared automatically when CBEIF is cleared
-						value = value & 0x3B;
-
 						if ((eclkdiv_reg & 0x80) == 0) {
 							/**
 							 *  If the ECLKDIV register has not been written to,
@@ -1155,7 +1149,18 @@ bool S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 							value = value | 0x10;
 
 						} else {
-							command_launch_event.notify();
+							// note: Clearing CBEIF outside of a command write sequence has no effect on the E2P state machine (CBEIF and CCIF)
+							// note: Writing a 0 to CBEIF (clearing CBEIF) outside of a command write sequence will not set the ACCERR flag
+							if (cmd_queue.empty()) {
+								value = (value & 0x3B) | (estat_reg & 0xC4);
+							} else {
+								// clear CBEIF
+								// CCIF is cleared automatically when CBEIF is cleared
+								// BLANK is cleared automatically when CBEIF is cleared
+								value = value & 0x3B;
+
+								command_launch_event.notify();
+							}
 						}
 					}
 

@@ -324,6 +324,9 @@ unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \

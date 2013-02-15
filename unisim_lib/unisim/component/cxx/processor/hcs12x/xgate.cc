@@ -676,7 +676,7 @@ uint8_t XGATE::step()
 
 		op->execute(this);
 
-		if (trace_enable) {
+		if (trace_enable && debug_enabled) {
 			std::cout << "CCR" << " = " << std::hex << currentRegisterBank->getCCR()->toString() << std::dec; // 1-bytes
 			std::cout << "\t- XGR0" << " = 0x" << std::hex << currentRegisterBank->getXGRx(0) << std::dec; // 2-bytes
 			std::cout << "\t- XGR1" << " = 0x" << std::hex << currentRegisterBank->getXGRx(1) << std::dec; // 2-bytes

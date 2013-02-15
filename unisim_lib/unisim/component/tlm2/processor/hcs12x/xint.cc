@@ -273,6 +273,8 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 		return (false);
 	}
 
+	cerr << "XINT::selectInterrupt() ID=0x" << std::hex << (unsigned int) buffer.getID() << " vect 0x" << std::hex << buffer.getVectorAddress() << endl;
+
 	return (true);
 
 }

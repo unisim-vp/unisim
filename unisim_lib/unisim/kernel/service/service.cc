@@ -2069,7 +2069,7 @@ const char *ServiceExportBase::GetName() const
 
 void ServiceExportBase::SetupDependsOn(ServiceImportBase& srv_import)
 {
-	return setup_dependencies.push_back(&srv_import);
+	setup_dependencies.push_back(&srv_import);
 }
 
 list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()

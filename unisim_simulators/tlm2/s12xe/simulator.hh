@@ -51,11 +51,11 @@
 #include <unisim/component/tlm2/processor/hcs12x/pwm.hh>
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
-#include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12mpu.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
 
@@ -90,7 +90,7 @@ using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
-using unisim::component::tlm2::processor::hcs12x::S12XEETX;
+using unisim::component::tlm2::processor::hcs12x::S12XFTMX;
 using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
 using unisim::component::tlm2::processor::hcs12x::S12SCI;
 using unisim::component::tlm2::processor::hcs12x::S12SPI;
@@ -164,9 +164,8 @@ private:
 //	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
 	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  RAM;
 //	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
-	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
-//	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
-//	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
+//	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
+	typedef unisim::component::tlm2::processor::hcs12x::S12XFTMX<32, physical_address_t, 8, 1024*1024, false>  FTM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
 	typedef unisim::component::tlm2::processor::s12xgate::S12XGATE XGATE;
@@ -213,9 +212,7 @@ private:
 
 	//  - Memories
 	RAM *global_ram;
-	FLASH *global_flash;
-//	EEPROM *global_eeprom;
-	RAM *global_eeprom;
+	FTM *global_flash;
 
 	// - Interrupt controller
 	XINT *s12xint;

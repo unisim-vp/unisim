@@ -196,6 +196,7 @@ unisim/component/tlm2/processor/hcs12x/atd10b.cc \
 unisim/component/tlm2/processor/hcs12x/crg.cc \
 unisim/component/tlm2/processor/hcs12x/ect.cc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.cc \
+unisim/component/tlm2/processor/hcs12x/s12xftmx.cc \
 unisim/component/tlm2/processor/hcs12x/tlm_types.cc \
 unisim/component/tlm2/processor/hcs12x/s12xgate.cc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.cc \
@@ -324,6 +325,9 @@ unisim/service/interfaces/time.hh \
 unisim/service/interfaces/memory_injection.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/trap_reporting.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
 unisim/service/tee/backtrace/tee.hh \
 unisim/service/tee/registers/registers_tee.hh \
 unisim/service/tee/memory_import_export/memory_import_export_tee.hh \
@@ -362,6 +366,7 @@ unisim/component/tlm2/processor/hcs12x/atd10b.hh \
 unisim/component/tlm2/processor/hcs12x/crg.hh \
 unisim/component/tlm2/processor/hcs12x/ect.hh \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.hh \
+unisim/component/tlm2/processor/hcs12x/s12xftmx.hh \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.hh \
 unisim/component/tlm2/processor/hcs12x/s12sci.hh \
 unisim/component/cxx/processor/hcs12x/s12mpu_if.hh \
@@ -426,6 +431,7 @@ unisim/component/tlm2/memory/ram/memory.tcc \
 unisim/component/tlm2/processor/hcs12x/pwm.tcc \
 unisim/component/tlm2/processor/hcs12x/atd10b.tcc \
 unisim/component/tlm2/processor/hcs12x/s12xeetx.tcc \
+unisim/component/tlm2/processor/hcs12x/s12xftmx.tcc \
 unisim/component/tlm2/processor/hcs12x/s12pit24b.tcc \
 unisim/service/pim/network/BlockingQueue.tcc \
 unisim/service/pim/pim_server.tcc "
