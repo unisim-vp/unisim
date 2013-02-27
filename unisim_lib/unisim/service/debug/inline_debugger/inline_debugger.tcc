@@ -93,6 +93,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, Client<BackTrace<ADDRESS> >(_name, _parent)
 	, Client<Profiling<ADDRESS> >(_name, _parent)
 	, Client<DebugInfoLoading>(_name, _parent)
+	, Client<DataObjectLookup<ADDRESS> >(_name, _parent)
 	, InlineDebuggerBase()
 	, debug_control_export("debug-control-export", this)
 	, debug_event_listener_export("debug-event-listener-export", this)
@@ -106,6 +107,7 @@ InlineDebugger<ADDRESS>::InlineDebugger(const char *_name, Object *_parent)
 	, backtrace_import("backtrace-import", this)
 	, profiling_import("profiling-import", this)
 	, debug_info_loading_import("debug-info-loading-import", this)
+	, data_object_lookup_import("data-object-lookup-import", this)
 	, logger(*this)
 	, memory_atom_size(1)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -555,6 +557,20 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 				}
 				break;
 			case 2:
+				if(IsDumpDataObject(parm[0].c_str()))
+				{
+					recognized = true;
+					DumpDataObject(parm[1].c_str(), cia);
+					break;
+				}
+				
+				if(IsEditDataObject(parm[0].c_str()))
+				{
+					recognized = true;
+					EditDataObject(parm[1].c_str(), cia);
+					break;
+				}
+
 				if(IsLoadConfigCommand(parm[0].c_str()))
 				{
 					recognized = true;
@@ -1369,13 +1385,11 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 }
 
 template <class ADDRESS>
-bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
+bool InlineDebugger<ADDRESS>::EditBuffer(ADDRESS addr, std::vector<uint8_t>& buffer)
 {
-	unsigned int written = 0;
-	unsigned int failed = 0;
 	std::string line;
 
-	(*std_output_stream) << "Entering data memory edit mode." << std::endl;
+	(*std_output_stream) << "Entering edit mode." << std::endl;
 	do
 	{
 		std::stringstream sstr;
@@ -1402,10 +1416,7 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 			
 			if(ptr == endptr) break;
 		
-			if(memory_import->WriteMemory(addr, &value, 1))
-				written++;
-			else
-				failed++;
+			buffer.push_back(value);
 			
 			addr++;
 			ptr = endptr;
@@ -1413,7 +1424,78 @@ bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
 		while(1);
 	}
 	while(1);
-	(*std_output_stream) << "Leaving data memory edit mode." << std::endl;
+	(*std_output_stream) << "Leaving edit mode." << std::endl;
+	return true;
+}
+
+// template <class ADDRESS>
+// bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
+// {
+// 	unsigned int written = 0;
+// 	unsigned int failed = 0;
+// 	std::string line;
+// 
+// 	(*std_output_stream) << "Entering data memory edit mode." << std::endl;
+// 	do
+// 	{
+// 		std::stringstream sstr;
+// 		sstr << "0x" << std::hex;
+// 		sstr.fill('0');
+// 		sstr.width(2 * sizeof(addr));
+// 		sstr << addr;
+// 		sstr << ": ";
+// 		
+// 		bool interactive = false;
+// 		if(!GetLine(sstr.str().c_str(), line, interactive))
+// 		{
+// 			return false;
+// 		}
+// 	
+// 		if(IsBlankLine(line)) break;
+// 
+// 		const char *ptr = line.c_str();
+// 		char *endptr = 0;
+// 		
+// 		do
+// 		{
+// 			uint8_t value = strtoul(ptr, &endptr, 0);
+// 			
+// 			if(ptr == endptr) break;
+// 		
+// 			if(memory_import->WriteMemory(addr, &value, 1))
+// 				written++;
+// 			else
+// 				failed++;
+// 			
+// 			addr++;
+// 			ptr = endptr;
+// 		}
+// 		while(1);
+// 	}
+// 	while(1);
+// 	(*std_output_stream) << "Leaving data memory edit mode." << std::endl;
+// 	(*std_output_stream) << written << " of " << (failed + written) << " bytes written" << std::endl;
+// 	return true;
+// }
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::EditMemory(ADDRESS addr)
+{
+	std::vector<uint8_t> buffer;
+	if(!EditBuffer(addr, buffer)) return false;
+	
+	unsigned int written = 0;
+	unsigned int failed = 0;
+	
+	unsigned int buffer_size = buffer.size();
+	unsigned int i;
+	for(i = 0; i < buffer_size; i++, addr++)
+	{
+		if(memory_import->WriteMemory(addr, &buffer[i], 1))
+			written++;
+		else
+			failed++;
+	}
 	(*std_output_stream) << written << " of " << (failed + written) << " bytes written" << std::endl;
 	return true;
 }
@@ -2473,8 +2555,112 @@ void InlineDebugger<ADDRESS>::DumpProfilingStatus()
 	DumpDataProfilingStatus();
 }
 
+template <class ADDRESS>
+void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRESS cia)
+{
+	if(data_object_lookup_import)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		
+		if(data_object)
+		{
+			if(data_object->Fetch())
+			{
+				ADDRESS data_object_bit_size = data_object->GetBitSize();
+				ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
+				uint8_t data_object_raw_value[data_object_byte_size];
+				memset(data_object_raw_value, 0, data_object_byte_size);
+				if(data_object->Read(0, data_object_raw_value, data_object_bit_size))
+				{
+					(*std_output_stream) << data_object_name << " = [ ";
+					ADDRESS byte_offset;
+					for(byte_offset = 0; byte_offset < data_object_byte_size; byte_offset++)
+					{
+						if(byte_offset) (*std_output_stream) << " ";
+						(*std_output_stream) << "0x" << std::hex << (unsigned int) data_object_raw_value[byte_offset] << std::dec;
+					}
+					(*std_output_stream) << " ]" << endl;
+				}
+				else
+				{
+					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+				}
+			}
+			else
+			{
+				(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+			}
+			
+			delete data_object;
+		}
+		else
+		{
+			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+		}
+	}
+	else
+	{
+		(*std_output_stream) << "Can' lookup data objects" << endl;
+	}
+}
 
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRESS cia)
+{
+	bool status = true;
+	std::vector<uint8_t> buffer;
+	if(!EditBuffer(0, buffer)) return false;
 
+	if(data_object_lookup_import)
+	{
+		unisim::util::debug::DataObject<ADDRESS> *data_object = data_object_lookup_import->FindDataObject(data_object_name, cia);
+		
+		if(data_object)
+		{
+			if(data_object->Fetch())
+			{
+				unsigned int written = 0;
+				unsigned int failed = 0;
+				
+				unsigned int buffer_size = buffer.size();
+				unsigned int i;
+				unsigned int bit_offset;
+				for(i = 0, bit_offset = 0; i < buffer_size; i++, bit_offset += 8)
+				{
+					if(data_object->Write(bit_offset, &buffer[i], 8)) 
+						written++;
+					else
+						failed++;
+				}
+				(*std_output_stream) << written << " of " << (failed + written) << " bytes written" << std::endl;
+				
+				if(!data_object->Commit())
+				{
+					status = false;
+					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+				}
+			}
+			else
+			{
+				status = false;
+				(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be fetched" << endl;
+			}
+			
+			delete data_object;
+		}
+		else
+		{
+			status = false;
+			(*std_output_stream) << "Data object \"" << data_object_name << "\" not found" << endl;
+		}
+	}
+	else
+	{
+		status = false;
+		(*std_output_stream) << "Can' lookup data objects" << endl;
+	}
+	return status;
+}
 
 template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::GetLine(const char *prompt, std::string& line, bool& interactive)
@@ -2757,6 +2943,18 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::IsListBinariesCommand(const char *cmd) const
 {
 	return strcmp(cmd, "files") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsDumpDataObject(const char *cmd) const
+{
+	return strcmp(cmd, "dob") == 0 || strcmp(cmd, "dumpobj") == 0 || strcmp(cmd, "dumpobject") == 0;
+}
+
+template <class ADDRESS>
+bool InlineDebugger<ADDRESS>::IsEditDataObject(const char *cmd) const
+{
+	return strcmp(cmd, "eob") == 0 || strcmp(cmd, "editobj") == 0 || strcmp(cmd, "editobject") == 0;
 }
 
 } // end of namespace inline_debugger

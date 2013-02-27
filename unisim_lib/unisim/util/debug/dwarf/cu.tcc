@@ -305,9 +305,51 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetVariableLocation(const char *var_name, MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& var_loc) const
+const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject(const char *name, MEMORY_ADDR pc) const
 {
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
+	if(dw_die_code_portion)
+	{
+		do
+		{
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_data_object = dw_die_code_portion->FindDataObject(name);
+		
+			if(dw_die_data_object)
+			{
+				return dw_die_data_object;
+			}
+		}
+		while((dw_die_code_portion = dw_die_code_portion->GetParentDIE()) != 0);
+	}
+	return 0;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+{
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
+	if(dw_die_code_portion)
+	{
+		do
+		{
+			switch(dw_die_code_portion->GetTag())
+			{
+				case DW_TAG_subprogram:
+				case DW_TAG_entry_point:
+					return dw_die_code_portion->GetFrameBase(pc, frame_base);
+			}
+		}
+		while((dw_die_code_portion = dw_die_code_portion->GetParentDIE()) != 0);
+	}
 	return false;
+}
+
+template <class MEMORY_ADDR>
+unsigned int DWARF_CompilationUnit<MEMORY_ADDR>::GetLanguage() const
+{
+	const DWARF_Constant<MEMORY_ADDR> *dw_at_language = 0;
+	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_language, dw_at_language)) return false;
+	return dw_at_language->to_uint();
 }
 
 } // end of namespace dwarf

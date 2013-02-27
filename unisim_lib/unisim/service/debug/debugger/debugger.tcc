@@ -64,6 +64,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, Service<StatementLookup<ADDRESS> >(name, parent)
 	, Service<BackTrace<ADDRESS> >(name, parent)
 	, Service<DebugInfoLoading>(name, parent)
+	, Service<DataObjectLookup<ADDRESS> >(name, parent)
 	, Client<DebugEventListener<ADDRESS> >(name, parent)
 	, Client<DebugControl<ADDRESS> >(name, parent)
 	, Client<MemoryAccessReportingControl>(name, parent)
@@ -84,6 +85,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, stmt_lookup_export("stmt-lookup-export", this)
 	, backtrace_export("backtrace-export", this)
 	, debug_info_loading_export("debug-info-loading-export", this)
+	, data_object_lookup_export("data-object-lookup-export", this)
 	, debug_event_listener_import("debug-event-listener", this)
 	, debug_control_import("debug-control-import", this)
 	, disasm_import("disasm-import", this)
@@ -106,6 +108,8 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 {
 	backtrace_export.SetupDependsOn(registers_import);
 	backtrace_export.SetupDependsOn(memory_import);
+	data_object_lookup_export.SetupDependsOn(registers_import);
+	data_object_lookup_export.SetupDependsOn(memory_import);
 }
 
 template <class ADDRESS>
@@ -174,6 +178,7 @@ bool Debugger<ADDRESS>::Setup(unisim::kernel::service::ServiceExportBase *srv_ex
 	if(srv_export == &symbol_table_lookup_export) return SetupDebugInfo();
 	if(srv_export == &stmt_lookup_export) return SetupDebugInfo();
 	if(srv_export == &backtrace_export) return SetupDebugInfo();
+	if(srv_export == &data_object_lookup_export) return SetupDebugInfo();
 
 	logger << DebugError << "Internal Error" << EndDebugError;
 	return false;
@@ -961,6 +966,7 @@ bool Debugger<ADDRESS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
 	
 	return false;
 }
+
 template <class ADDRESS>
 bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 {
@@ -1141,6 +1147,36 @@ bool Debugger<ADDRESS>::SetupDebugInfo()
 	bool status = SetupDebugInfo(blob);
 	if(status) setup_debug_info_done = true;
 	return setup_debug_info_done;
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(const char *data_object_name, ADDRESS pc) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+	
+	return 0;
 }
 
 } // end of namespace debugger

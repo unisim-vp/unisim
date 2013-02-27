@@ -42,6 +42,7 @@
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/blob/blob.hh>
 #include <unisim/util/debug/stmt.hh>
+#include <unisim/util/debug/data_object.hh>
 #include <unisim/util/endian/endian.hh>
 #include <unisim/kernel/logger/logger.hh>
 
@@ -125,6 +126,9 @@ public:
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnitByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgramByAddrRange(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc) const;
+	//bool FindDataObjectLocation(const char *name, MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& data_object_loc, MEMORY_ADDR& data_object_bit_size) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;

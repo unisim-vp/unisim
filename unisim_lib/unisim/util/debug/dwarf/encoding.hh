@@ -128,6 +128,7 @@ const uint16_t DW_AT_prototyped           = 0x27; // DWARF2
 const uint16_t DW_AT_return_addr          = 0x2a; // DWARF2
 const uint16_t DW_AT_start_scope          = 0x2c; // DWARF2
 const uint16_t DW_AT_stride_size          = 0x2e; // DWARF2
+const uint16_t DW_AT_bit_stride           = 0x2e; // DWARF3
 const uint16_t DW_AT_upper_bound          = 0x2f; // DWARF2
 const uint16_t DW_AT_abstract_origin      = 0x31; // DWARF2
 const uint16_t DW_AT_accessibility        = 0x32; // DWARF2

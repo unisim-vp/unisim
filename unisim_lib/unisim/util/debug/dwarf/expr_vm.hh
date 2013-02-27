@@ -38,24 +38,29 @@
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
+#include <unisim/util/endian/endian.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
-const unsigned int DW_LOC_REGISTER = 1;
-const unsigned int DW_LOC_MEMORY = 2;
+const unsigned int DW_LOC_PIECE_NULL = 0;
+const unsigned int DW_LOC_PIECE_REGISTER = 1;
+const unsigned int DW_LOC_PIECE_MEMORY = 2;
 
 template <class MEMORY_ADDR>
 class DWARF_LocationPiece
 {
 public:
-	DWARF_LocationPiece(unsigned int dw_loc_type);
+	DWARF_LocationPiece(unsigned int dw_bit_size);
+	DWARF_LocationPiece(unsigned int dw_loc_type, unsigned int dw_bit_size);
 	~DWARF_LocationPiece();
 	unsigned int GetType() const;
+	unsigned int GetBitSize() const;
 private:
-	unsigned int dw_loc_type;
+	unsigned int dw_loc_piece_type;
+	unsigned int dw_bit_size;
 };
 
 template <class MEMORY_ADDR>
@@ -67,11 +72,9 @@ public:
 	~DWARF_MemoryLocationPiece();
 	MEMORY_ADDR GetAddress() const;
 	unsigned int GetBitOffset() const;
-	unsigned int GetBitSize() const;
 private:
 	MEMORY_ADDR dw_addr;
 	unsigned int dw_bit_offset;
-	unsigned int dw_bit_size;
 };
 
 template <class MEMORY_ADDR>
@@ -83,12 +86,15 @@ public:
 	~DWARF_RegisterLocationPiece();
 	unsigned int GetRegisterNumber() const;
 	unsigned int GetBitOffset() const;
-	unsigned int GetBitSize() const;
 private:
 	unsigned int dw_reg_num;
 	unsigned int dw_bit_offset;
-	unsigned int dw_bit_size;
 };
+
+const unsigned int DW_LOC_NULL = 0;
+const unsigned int DW_LOC_SIMPLE_REGISTER = 1;
+const unsigned int DW_LOC_SIMPLE_MEMORY = 2;
+const unsigned int DW_LOC_COMPOSITE = 3;
 
 template <class MEMORY_ADDR>
 class DWARF_Location
@@ -96,9 +102,17 @@ class DWARF_Location
 public:
 	DWARF_Location();
 	~DWARF_Location();
+	unsigned int GetType() const;
 	void Add(DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece);
 	const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& GetLocationPieces() const;
+	void SetRegisterNumber(unsigned int dw_reg_num);
+	void SetAddress(MEMORY_ADDR dw_addr);
+	unsigned int GetRegisterNumber() const;
+	MEMORY_ADDR GetAddress() const;
 private:
+	unsigned int dw_loc_type;
+	unsigned int dw_reg_num;
+	MEMORY_ADDR dw_addr;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
 };
 
@@ -122,7 +136,6 @@ private:
 	unsigned int file_address_size;
 	unsigned int arch_address_size;
 	std::vector<MEMORY_ADDR> dw_stack;
-	bool in_dw_op_reg;
 	MEMORY_ADDR frame_base;
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);

@@ -56,6 +56,7 @@
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 
 #include <string>
 
@@ -85,6 +86,7 @@ using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugInfoLoading;
+using unisim::service::interfaces::DataObjectLookup;
 
 template <class ADDRESS>
 class Debugger
@@ -99,6 +101,7 @@ class Debugger
 	, public Service<StatementLookup<ADDRESS> >
 	, public Service<BackTrace<ADDRESS> >
 	, public Service<DebugInfoLoading>
+	, public Service<DataObjectLookup<ADDRESS> >
 	, public Client<DebugEventListener<ADDRESS> >
 	, public Client<DebugControl<ADDRESS> >
 	, public Client<MemoryAccessReportingControl>
@@ -121,6 +124,7 @@ public:
 	ServiceExport<StatementLookup<ADDRESS> > stmt_lookup_export;
 	ServiceExport<BackTrace<ADDRESS> > backtrace_export;
 	ServiceExport<DebugInfoLoading> debug_info_loading_export;
+	ServiceExport<DataObjectLookup<ADDRESS> > data_object_lookup_export;
 	
 	ServiceImport<DebugEventListener<ADDRESS> > debug_event_listener_import;
 	ServiceImport<DebugControl<ADDRESS> > debug_control_import;
@@ -179,6 +183,8 @@ public:
 	virtual bool EnableBinary(const char *filename, bool enable);
 	virtual void EnumerateBinaries(std::list<std::string>& lst) const;
 	virtual bool IsBinaryEnabled(const char *filename) const;
+	
+	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const;
 private:
 	bool verbose;
 	std::string dwarf_to_html_output_directory;

@@ -64,6 +64,7 @@ template <class MEMORY_ADDR> class DWARF_DIE;
 template <class MEMORY_ADDR> class DWARF_CompilationUnit;
 class DWARF_Abbrev;
 class DWARF_AbbrevAttribute;
+template <class MEMORY_ADDR> class DWARF_Location;
 template <class MEMORY_ADDR> class DWARF_ExpressionVM;
 template <class MEMORY_ADDR> class DWARF_CallFrameProgram;
 template <class MEMORY_ADDR> class DWARF_CIE;
@@ -93,6 +94,7 @@ template <class MEMORY_ADDR> class DWARF_Pub;
 template <class MEMORY_ADDR> class DWARF_Pubs;
 template <class MEMORY_ADDR> class DWARF_LocListEntry;
 template <class MEMORY_ADDR> class DWARF_Handler;
+template <class MEMORY_ADDR> class DWARF_DataObject;
 
 } // end of namespace dwarf
 } // end of namespace debug
