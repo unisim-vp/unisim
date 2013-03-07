@@ -37,6 +37,8 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
+#include <list>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -115,7 +117,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 // - DW_TAG_common_block
 //   - DW_AT_declaration : DW_CLASS_FLAG
 //   - DW_AT_description : DW_CLASS_STRING
-//   - DW_AT_location : DW_CLASS_EXPRESSION
+//   - DW_AT_location : DW_CLASS_EXPRESSION | DW_CLASS_LOCLISTPTR
 //   - DW_AT_name : DW_CLASS_STRING
 //   - DW_AT_segment : DW_CLASS_EXPRESSION
 //   - DW_AT_sibling : DW_CLASS_REFERENCE
@@ -168,7 +170,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 //   - DW_AT_visibility : DW_CLASS_CONSTANT = DW_VIS_local | DW_VIS_exported | DW_VIS_qualified
 
 // - DW_TAG_dwarf_procedure
-//   - DW_AT_location : DW_CLASS_EXPRESSION
+//   - DW_AT_location : DW_CLASS_EXPRESSION | DW_CLASS_LOCLISTPTR
 
 // - DW_TAG_entry_point
 //   - DW_AT_address_class : DW_CLASS_CONSTANT = arch
@@ -227,7 +229,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 //   - DW_AT_description : DW_CLASS_STRING
 //   - DW_AT_endianity : DW_CLASS_CONSTANT = DW_END_default | DW_END_big | DW_END_little
 //   - DW_AT_is_optional : DW_CLASS_FLAG
-//   - DW_AT_location : DW_CLASS_EXPRESSION
+//   - DW_AT_location : DW_CLASS_EXPRESSION | DW_CLASS_LOCLISTPTR
 //   - DW_AT_name : DW_CLASS_STRING
 //   - DW_AT_segment : DW_CLASS_EXPRESSION
 //   - DW_AT_sibling : DW_CLASS_REFERENCE
@@ -608,7 +610,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 //   - DW_AT_description : DW_CLASS_STRING
 //   - DW_AT_endianity : DW_CLASS_CONSTANT = DW_END_default | DW_END_big | DW_END_little
 //   - DW_AT_external : DW_CLASS_FLAG
-//   - DW_AT_location : DW_CLASS_EXPRESSION
+//   - DW_AT_location : DW_CLASS_EXPRESSION | DW_CLASS_LOCLISTPTR
 //   - DW_AT_name : DW_CLASS_STRING
 //   - DW_AT_segment : DW_CLASS_EXPRESSION
 //   - DW_AT_sibling : DW_CLASS_REFERENCE
@@ -646,7 +648,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_DIE<MEMORY_ADDR>& dw_di
 //   - DW_AT_address_class : DW_CLASS_CONSTANT = arch
 //   - DW_AT_declaration : DW_CLASS_FLAG
 //   - DW_AT_high_pc : DW_CLASS_ADDRESS
-//   - DW_AT_location : DW_CLASS_EXPRESSION
+//   - DW_AT_location : DW_CLASS_EXPRESSION | DW_CLASS_LOCLISTPTR
 //   - DW_AT_low_pc : DW_CLASS_ADDRESS
 //   - DW_AT_ranges : DW_CLASS_RANGELISTPTR
 //   - DW_AT_segment : DW_CLASS_EXPRESSION
@@ -665,6 +667,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *GetParentDIE() const;
 	const DWARF_Abbrev *GetAbbrev() const;
 	const std::vector<DWARF_DIE<MEMORY_ADDR> *>& GetChildren() const;
+	const DWARF_DIE<MEMORY_ADDR> *GetChild(uint16_t _dw_tag) const;
 	const std::vector<DWARF_Attribute<MEMORY_ADDR> *>& GetAttributes() const;
 	const DWARF_Attribute<MEMORY_ADDR> *FindAttribute(uint16_t dw_at) const;
 	uint16_t GetTag() const;
@@ -684,6 +687,10 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindParentDIE(unsigned int dw_tag) const;
 	
+	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindSubRangeType() const;
+	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
 	bool GetHighPC(MEMORY_ADDR& high_pc) const;
@@ -693,6 +700,18 @@ public:
 	const DWARF_Expression<MEMORY_ADDR> *GetSegment() const;
 	bool GetCallingConvention(uint8_t& calling_convention) const;
 	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	bool GetLowerBound(MEMORY_ADDR& upper_bound) const;
+	bool GetUpperBound(MEMORY_ADDR& upper_bound) const;
+	bool GetCount(MEMORY_ADDR& count) const;
+	bool GetByteSize(MEMORY_ADDR& byte_size) const;
+	bool GetBitSize(MEMORY_ADDR& bit_size) const;
+	bool GetBitOffset(MEMORY_ADDR& bit_offset) const;
+	bool GetDataBitOffset(MEMORY_ADDR& data_bit_offset) const;
+	bool GetObjectBitSize(MEMORY_ADDR& bit_size) const;
+	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
+	bool GetLocation(MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& loc) const;
+	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
+	bool GetDataMemberLocation(MEMORY_ADDR pc, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;
@@ -709,6 +728,7 @@ public:
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Reference<MEMORY_ADDR> * & p_dw_ref_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_String<MEMORY_ADDR> * & p_dw_str_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const;
+	bool GetAttributeStaticDynamicValue(uint16_t dw_at, MEMORY_ADDR& value) const;
 private:
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;

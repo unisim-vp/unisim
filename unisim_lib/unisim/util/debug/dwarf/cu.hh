@@ -37,7 +37,11 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
+
 #include <unisim/util/debug/dwarf/expr_vm.hh>
+
+#include <list>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -74,8 +78,10 @@ public:
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
+	unsigned int GetLanguage() const;
 	
-	bool GetVariableLocation(const char *var_name, MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& var_loc) const;
+	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
+	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;

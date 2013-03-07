@@ -39,6 +39,7 @@
 #include <unisim/util/debug/dwarf/ml.hh>
 #include <unisim/util/debug/dwarf/register_number_mapping.hh>
 #include <unisim/util/debug/dwarf/frame.hh>
+#include <unisim/util/debug/dwarf/data_object.hh>
 
 #include <stdlib.h>
 
@@ -68,7 +69,7 @@ template <class MEMORY_ADDR>
 DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<MEMORY_ADDR> *_blob, unisim::kernel::logger::Logger& _logger, unisim::service::interfaces::Registers *_regs_if, unisim::service::interfaces::Memory<MEMORY_ADDR> *_mem_if)
 	: file_endianness(_blob->GetEndian())
 	, arch_endianness(_blob->GetEndian())
-	, file_address_size(_blob->GetAddressSize())
+	, file_address_size(_blob->GetFileFormat() == unisim::util::debug::blob::FFMT_ELF32 ? 4 : 8)
 	, arch_address_size(_blob->GetAddressSize())
 	, debug_line_section(_blob->FindSection(".debug_line", false))
 	, debug_info_section(_blob->FindSection(".debug_info", false))
@@ -2450,12 +2451,321 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgramByAddrRa
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindSubProgram(MEMORY_ADDR pc) const
 {
+	return FindSubProgramByAddrRange(pc, 1);
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const
+{
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = FindCompilationUnitByAddrRange(pc, 1);
 	
-	if(!dw_cu) return 0;
+	if(!dw_cu) return false;
 	
-	return dw_cu->FindDIEByAddrRange(DW_TAG_subprogram, pc, 1);
+	std::cerr << "dw_cu=" << dw_cu << std::endl;
+
+	return dw_cu->FindDataObject(name, pc);
 }
+
+template <class MEMORY_ADDR>
+unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
+{
+	std::string data_object_base_name;
+	const char *p = data_object_name;
+	while(*p && (*p != '.') && (*p != '[') && (*p != ' ')) data_object_base_name += *p++;
+	std::cerr << "data_object_base_name=\"" << data_object_base_name << "\"" << std::endl;
+
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_data_object = FindDataObjectDIE(data_object_base_name.c_str(), pc);
+	
+	if(!dw_die_data_object) return 0;
+	std::cerr << "dw_die_data_object=" << dw_die_data_object << std::endl;
+
+	DWARF_Location<MEMORY_ADDR> *dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+	if(!dw_die_data_object->GetLocation(pc, *dw_data_object_loc))
+	{
+		delete dw_data_object_loc;
+		return 0;
+	}
+
+	std::cerr << "dw_data_object_loc=" << dw_data_object_loc << std::endl;
+
+	while(*p && (*p == ' ')) p++; // skip spaces
+	
+	if(*p == 0)
+	{
+		// match
+		MEMORY_ADDR dw_data_object_byte_size;
+		if(!dw_die_data_object->GetByteSize(dw_data_object_byte_size))
+		{
+			delete dw_data_object_loc;
+			return 0;
+		}
+
+		MEMORY_ADDR dw_data_object_bit_size;
+		if(!dw_die_data_object->GetBitSize(dw_data_object_bit_size))
+		{
+			delete dw_data_object_loc;
+			return 0;
+		}
+		
+		return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, 0, dw_data_object_bit_size);
+	}
+	
+	MEMORY_ADDR object_addr = 0;
+	bool has_object_addr = false;
+	if(dw_data_object_loc->GetType() == DW_LOC_SIMPLE_MEMORY)
+	{
+		object_addr = dw_data_object_loc->GetAddress();
+		has_object_addr = true;
+	}
+	delete dw_data_object_loc;
+	
+	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	
+	if(!dw_die_data_object->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+	
+	bool status = true;
+	
+	do
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+		
+		switch(dw_die_type->GetTag())
+		{
+			case DW_TAG_base_type:
+				{
+					if(*p != 0)
+					{
+						status = false;
+					}
+				}
+				break;
+			case DW_TAG_structure_type:
+				{
+					if(*p != '.')
+					{
+						status = false;
+						break;
+					}
+					p++;
+					while(*p && (*p == ' ')) p++; // skip spaces
+					
+					std::string data_member_name;
+					while(*p && (*p != '.') && (*p != '[')&& (*p != ' ')) data_member_name += *p++;
+//					std::cerr << "data_member_name=\"" << data_member_name << "\"" << std::endl;
+					
+					const DWARF_DIE<MEMORY_ADDR> *dw_die_data_member = dw_die_type->FindDataMember(data_member_name.c_str());
+					if(!dw_die_data_member)
+					{
+						status = false;
+						break;
+					}
+					
+					if(!has_object_addr) return 0;
+					
+					DWARF_Location<MEMORY_ADDR> *dw_data_member_loc = new DWARF_Location<MEMORY_ADDR>();
+					if(!dw_die_data_member->GetDataMemberLocation(pc, object_addr, *dw_data_member_loc))
+					{
+						delete dw_data_member_loc;
+						return 0;
+					}
+
+					while(*p && (*p == ' ')) p++; // skip spaces
+
+					if(*p == 0)
+					{
+						// match
+//						std::cerr << "dw_die_data_member:" << std::endl << *dw_die_data_member << std::endl;
+						MEMORY_ADDR dw_data_member_byte_size;
+						if(!dw_die_data_member->GetByteSize(dw_data_member_byte_size))
+						{
+							delete dw_data_member_loc;
+							return 0;
+						}
+
+						MEMORY_ADDR dw_data_member_bit_size;
+						if(!dw_die_data_member->GetBitSize(dw_data_member_bit_size))
+						{
+							delete dw_data_member_loc;
+							return 0;
+						}
+						
+						MEMORY_ADDR dw_data_member_data_bit_offset = 0;
+						MEMORY_ADDR dw_data_member_bit_offset = 0;
+						if(dw_die_data_member->GetBitOffset(dw_data_member_bit_offset))
+						{
+							dw_data_member_data_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : dw_data_member_bit_size - dw_data_member_bit_offset;
+						}
+						else if(!dw_die_data_member->GetDataBitOffset(dw_data_member_data_bit_offset))
+						{
+							dw_data_member_data_bit_offset = 0;
+						}
+
+//						std::cerr << "dw_data_member_byte_size=" << dw_data_member_byte_size << std::endl;
+//						std::cerr << "dw_data_member_bit_size=" << dw_data_member_bit_size << std::endl;
+//						std::cerr << "dw_data_member_bit_offset=" << dw_data_member_bit_offset << std::endl;
+						return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_member_loc, dw_data_member_byte_size, dw_data_member_data_bit_offset, dw_data_member_bit_size);
+					}
+
+					if(dw_data_member_loc->GetType() == DW_LOC_SIMPLE_MEMORY)
+					{
+						object_addr = dw_data_member_loc->GetAddress();
+						has_object_addr = true;
+					}
+					else
+					{
+						has_object_addr = false;
+					}
+					delete dw_data_member_loc;
+					
+					if(!dw_die_data_member->GetAttributeValue(DW_AT_type, dw_type_ref))
+					{
+						status = false;
+						break;
+					}
+					
+				}
+				break;
+			case DW_TAG_array_type:
+				{
+// 					MEMORY_ADDR lower_bound = 0;
+// 					MEMORY_ADDR upper_bound = 0;
+// 					MEMORY_ADDR count = 0;
+// 					
+// 					if(*p != '[') return false;
+// 					p++;
+// 					
+// 					const DWARF_DIE<MEMORY_ADDR> *dw_die_subrange_type = dw_die_type->FindSubRangeType();
+// 					
+// 					if(!dw_die_subrange_type) return false;
+// 					
+// 					dw_die_subrange_type->GetLowerBound(lower_bound);
+// 					if(dw_die_subrange_type->GetUpperBound(upper_bound))
+// 					{
+// 						count = upper_bound - lower_bound + 1;
+// 					}
+// 					else if(dw_die_subrange_type->GetCount(count))
+// 					{
+// 						upper_bound = lower_bound + count - 1;
+// 					}
+// 					else return false;
+					throw std::runtime_error("Internal error");
+				}
+				break;
+			case DW_TAG_typedef:
+				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+				break;
+		}
+	}
+	while(status && dw_type_ref);
+	
+	return 0;
+}
+
+/*
+template <class MEMORY_ADDR>
+bool DWARF_Handler<MEMORY_ADDR>::FindDataObjectLocation(const char *name, MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& data_object_loc) const
+{
+	std::string data_object_name;
+	const char *p = name;
+	while(*p && (*p != '.') && (*p != '[')) data_object_name += *p++;
+
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_data_object = FindDataObject(data_object_name.c_str(), pc);
+	
+	if(!dw_die_data_object) return false;
+	
+	const DWARF_Expression<MEMORY_ADDR> *dw_data_object_loc_expr = 0;
+	if(!dw_die_data_object->GetAttributeValue(DW_AT_location, dw_data_object_loc_expr)) return false;
+	
+	MEMORY_ADDR data_object_addr;
+	DWARF_ExpressionVM<MEMORY_ADDR> dw_data_object_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(this);
+	bool dw_data_object_loc_expr_vm_status = dw_data_object_loc_expr_vm.Execute(dw_at_frame_base_loc_expr, data_object_addr, &data_object_loc);
+	if(!dw_data_object_loc_expr_vm_status) return false;
+	
+	
+	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	
+	if(!dw_die_data_object->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+	
+	do
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+		
+		switch(dw_die_type->GetTag())
+		{
+			case DW_TAG_base_type:
+				{
+					if(*p != 0) return false;
+					
+					const DWARF_Constant<MEMORY_ADDR> *dw_at_encoding;
+					if(!dw_type_ref->GetAttributeValue(DW_AT_encoding, dw_at_encoding)) return false;
+					switch(dw_at_encoding->to_uint())
+					{
+						case DW_ATE_address:
+							data_object_loc.
+						case DW_ATE_boolean:
+						case DW_ATE_complex_float:
+						case DW_ATE_float:
+						case DW_ATE_signed:
+						case DW_ATE_signed_char:
+						case DW_ATE_unsigned:
+						case DW_ATE_unsigned_char:
+						case DW_ATE_imaginary_float:
+						case DW_ATE_packed_decimal:
+						case DW_ATE_numeric_string:
+						case DW_ATE_edited:
+						case DW_ATE_signed_fixed:
+						case DW_ATE_unsigned_fixed:
+						case DW_ATE_decimal_float:
+					}
+				}
+				break;
+			case DW_TAG_structure_type:
+				{
+					if(*p != '.') return false;
+					p++;
+					
+					std::string member_name;
+					while(*p && (*p != '.') && (*p != '[')) member_name += *p++;
+					
+					const DWARF_DIE<MEMORY_ADDR> *dw_die_member = dw_die_type->FindDataMember(member_name);
+					if(!dw_die_member) return false;
+					
+					if(!dw_die_data_object->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+				}
+				break;
+			case DW_TAG_array_type:
+				{
+					MEMORY_ADDR lower_bound = 0;
+					MEMORY_ADDR upper_bound = 0;
+					MEMORY_ADDR count = 0;
+					
+					if(*p != '[') return false;
+					p++;
+					
+					const DWARF_DIE<MEMORY_ADDR> *dw_die_subrange_type = dw_die_type->FindSubRangeType();
+					
+					if(!dw_die_subrange_type) return false;
+					
+					dw_die_subrange_type->GetLowerBound(lower_bound);
+					if(dw_die_subrange_type->GetUpperBound(upper_bound))
+					{
+						count = upper_bound - lower_bound + 1;
+					}
+					else if(dw_die_subrange_type->GetCount(count))
+					{
+						upper_bound = lower_bound + count - 1;
+					}
+					else return false;
+					
+				}
+				break;
+		}
+	}
+	while(dw_type_ref);
+	
+	return true;
+}
+*/
 
 template <class MEMORY_ADDR>
 bool DWARF_Handler<MEMORY_ADDR>::GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const

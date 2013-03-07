@@ -385,6 +385,7 @@ Simulator::Simulator(int argc, char **argv)
 		debugger->trap_reporting_import >> inline_debugger->trap_reporting_export;
 		debugger->debug_control_import >> inline_debugger->debug_control_export;
 		inline_debugger->debug_event_trigger_import >> debugger->debug_event_trigger_export;
+		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
 		inline_debugger->disasm_import >> debugger->disasm_export;
 		inline_debugger->memory_import >> debugger->memory_export;
 		inline_debugger->registers_import >> debugger->registers_export;

@@ -197,7 +197,9 @@ const unisim::util::debug::Register *DWARF_RegisterNumberMapping::GetArchReg(uns
 
 unisim::util::debug::Register *DWARF_RegisterNumberMapping::GetArchReg(unsigned int dw_reg_num)
 {
-	return reg_num_mapping[dw_reg_num];
+	std::map<unsigned int, unisim::util::debug::Register *>::const_iterator iter = reg_num_mapping.find(dw_reg_num);
+	
+	return (iter != reg_num_mapping.end()) ? (*iter).second : 0;
 }
 
 void DWARF_RegisterNumberMapping::EnumRegisterNumbers(std::set<unsigned int>& reg_num_set) const

@@ -106,6 +106,8 @@ public:
 	
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
 private:
 	unisim::kernel::logger::Logger& logger;
 	string filename;

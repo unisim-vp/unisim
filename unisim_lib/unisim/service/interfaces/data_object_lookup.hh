@@ -31,40 +31,26 @@
  *
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
+ 
+#ifndef __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__
+#define __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
+#include <unisim/kernel/service/service.hh>
+#include <unisim/util/debug/data_object.hh>
 
 namespace unisim {
-namespace util {
-namespace debug {
-namespace dwarf {
+namespace service {
+namespace interfaces {
 
-#if defined(__GNUC__) && (__GNUC__ >= 3)
-template <typename SCALAR> inline bool HasOverlap(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2) __attribute__((always_inline));
-#endif
-
-// Some helper function to determine if two intervals [l1,h1] and [l2,h2] overlap
-template <typename SCALAR> inline bool HasOverlap(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
+template <class ADDRESS>
+class DataObjectLookup : public unisim::kernel::service::ServiceInterface
 {
-	return ((h1 < h2) ? h1 : h2) >= ((l1 < l2) ? l2 : l1);
-}
+public:
+	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
+};
 
-// Some helper function to determine if two intervals [l1,h1[ and [l2,h2[ overlap
-template <typename SCALAR> inline bool HasOverlapEx(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
-{
-	return ((h1 < h2) ? h1 : h2) > ((l1 < l2) ? l2 : l1);
-}
-
-// Some helper function to determine if interval [l1,h1] includes interval [l2,h2] (as well as if interval [l1,h1[ includes interval [l2,h2[ )
-template <typename SCALAR> inline bool Includes(SCALAR l1, SCALAR h1, SCALAR l2, SCALAR h2)
-{
-	return (l2 >= l1) && (h2 <= h1);
-}
-
-} // end of namespace dwarf
-} // end of namespace debug
-} // end of namespace util
+} // end of namespace interfaces
+} // end of namespace service
 } // end of namespace unisim
 
-#endif // __UNISIM_UTIL_DEBUG_DWARF_UTIL_HH__
+#endif // __UNISIM_SERVICE_INTERFACES_DATA_OBJECT_LOOKUP_HH__

@@ -146,6 +146,7 @@ unisim/util/debug/dwarf/encoding.cc \
 unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
+unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
@@ -287,6 +288,8 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
+unisim/util/debug/data_object.hh \
+unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/event.hh \
@@ -309,6 +312,7 @@ unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/singleton/singleton.hh \
 unisim/util/xml/xml.hh \
 unisim/util/likely/likely.hh \
+unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
 unisim/service/interfaces/debug_control.hh \
@@ -390,6 +394,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
+unisim/util/debug/dwarf/data_object.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \

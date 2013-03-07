@@ -280,24 +280,29 @@ bool GDBServer<ADDRESS>::EndSetup()
 						bool cpu_has_reg = true;
 						bool cpu_has_right_reg_size = true;
 
-						unisim::util::debug::Register *reg = registers_import->GetRegister(reg_name.c_str());
+						unisim::util::debug::Register *reg = 0;
+						
+						if(!reg_name.empty())
+						{
+							reg = registers_import->GetRegister(reg_name.c_str());
 
-						if(!reg)
-						{
-							cpu_has_reg = false;
-							if(verbose)
+							if(!reg)
 							{
-								logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
-							}
-						}
-						else
-						{
-							if(reg->GetSize() != reg_size)
-							{
-								cpu_has_right_reg_size = false;
+								cpu_has_reg = false;
 								if(verbose)
 								{
-									logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+									logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
+								}
+							}
+							else
+							{
+								if(reg->GetSize() != reg_size)
+								{
+									cpu_has_right_reg_size = false;
+									if(verbose)
+									{
+										logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+									}
 								}
 							}
 						}
