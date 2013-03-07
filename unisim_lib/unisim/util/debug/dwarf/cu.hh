@@ -38,6 +38,7 @@
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <list>
+#include <set>
 
 namespace unisim {
 namespace util {

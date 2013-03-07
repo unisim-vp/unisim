@@ -38,6 +38,7 @@
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <list>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -703,7 +704,14 @@ public:
 	bool GetUpperBound(MEMORY_ADDR& upper_bound) const;
 	bool GetCount(MEMORY_ADDR& count) const;
 	bool GetByteSize(MEMORY_ADDR& byte_size) const;
-	bool GetLocation(MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& loc, MEMORY_ADDR& bit_size) const;
+	bool GetBitSize(MEMORY_ADDR& bit_size) const;
+	bool GetBitOffset(MEMORY_ADDR& bit_offset) const;
+	bool GetDataBitOffset(MEMORY_ADDR& data_bit_offset) const;
+	bool GetObjectBitSize(MEMORY_ADDR& bit_size) const;
+	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
+	bool GetLocation(MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& loc) const;
+	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
+	bool GetDataMemberLocation(MEMORY_ADDR pc, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

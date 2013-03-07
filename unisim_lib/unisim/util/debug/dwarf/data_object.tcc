@@ -42,9 +42,12 @@ namespace util {
 namespace debug {
 namespace dwarf {
 
+	
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, MEMORY_ADDR _dw_data_object_bit_size)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, MEMORY_ADDR _dw_data_object_byte_size, MEMORY_ADDR _dw_data_object_bit_offset, MEMORY_ADDR _dw_data_object_bit_size)
 	: dw_data_object_loc(_dw_data_object_loc)
+	, dw_data_object_byte_size(_dw_data_object_byte_size)
+	, dw_data_object_bit_offset(_dw_data_object_bit_offset)
 	, dw_data_object_bit_size(_dw_data_object_bit_size)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
@@ -53,7 +56,7 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, bv(arch_endianness)
 {
 }
-
+	
 template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
@@ -67,6 +70,12 @@ MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetBitSize() const
 }
 
 template <class MEMORY_ADDR>
+unisim::util::endian::endian_type DWARF_DataObject<MEMORY_ADDR>::GetEndian() const
+{
+	return arch_endianness;
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 {
 	bv.Clear();
@@ -76,13 +85,13 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 		case DW_LOC_SIMPLE_MEMORY:
 			{
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
-				MEMORY_ADDR dw_byte_size = (dw_data_object_bit_size + 7) / 8;
+				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				std::cerr << "DW_LOC_SIMPLE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_byte_size=" << dw_byte_size << std::endl;
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
-				if(!mem_if->ReadMemory(dw_addr, buffer, dw_byte_size)) return false;
+				if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
 				
-				bv.Append(buffer, 0, dw_data_object_bit_size);
+				bv.Append(buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size);
 			}
 			return true;
 		case DW_LOC_SIMPLE_REGISTER:
@@ -100,28 +109,28 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 						{
 							uint8_t value = 0;
 							arch_reg->GetValue(&value);
-							bv.Append(value, dw_data_object_bit_size);
+							bv.Append(value, dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					case 2:
 						{
 							uint16_t value = 0;
 							arch_reg->GetValue(&value);
-							bv.Append(value, dw_data_object_bit_size);
+							bv.Append(value, dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					case 4:
 						{
 							uint32_t value = 0;
 							arch_reg->GetValue(&value);
-							bv.Append(value, dw_data_object_bit_size);
+							bv.Append(value, dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					case 8:
 						{
 							uint64_t value = 0;
 							arch_reg->GetValue(&value);
-							bv.Append(value, dw_data_object_bit_size);
+							bv.Append(value, dw_data_object_bit_offset, dw_data_object_bit_size);
 						}
 						break;
 					default:
@@ -160,32 +169,28 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 										{
 											uint8_t value = 0;
 											arch_reg->GetValue(&value);
-											value = value >> dw_bit_offset;
-											bv.Append(value, dw_bit_size ? dw_bit_size : 8);
+											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									case 2:
 										{
 											uint16_t value = 0;
 											arch_reg->GetValue(&value);
-											value = value >> dw_bit_offset;
-											bv.Append(value, dw_bit_size ? dw_bit_size : 16);
+											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 16 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									case 4:
 										{
 											uint32_t value = 0;
 											arch_reg->GetValue(&value);
-											value = value >> dw_bit_offset;
-											bv.Append(value, dw_bit_size ? dw_bit_size : 32);
+											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 32 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									case 8:
 										{
 											uint64_t value = 0;
 											arch_reg->GetValue(&value);
-											value = value >> dw_bit_offset;
-											bv.Append(value, dw_bit_size ? dw_bit_size : 64);
+											bv.Append(value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 64 - dw_bit_size - dw_bit_offset: dw_bit_offset, dw_bit_size);
 										}
 										break;
 									default:
@@ -207,7 +212,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 								memset(buffer, 0, dw_byte_size);
 								if(!mem_if->ReadMemory(dw_addr, buffer, dw_byte_size)) return false;
 								
-								bv.Append(buffer, dw_bit_size ? dw_bit_offset : 0, dw_bit_size ? dw_bit_size : dw_byte_size * 8);
+								bv.Append(buffer, dw_bit_offset, dw_bit_size);
 							}
 							break;
 					}
@@ -225,6 +230,8 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 {
+	if(!dw_data_object_loc) return false;
+	
 	unsigned int source_bit_offset = 0;
 	
 	switch(dw_data_object_loc->GetType())
@@ -232,13 +239,13 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 		case DW_LOC_SIMPLE_MEMORY:
 			{
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
-				MEMORY_ADDR dw_byte_size = (dw_data_object_bit_size + 7) / 8;
+				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				std::cerr << "DW_LOC_SIMPLE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_byte_size=" << dw_byte_size << std::endl;
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
-				if(!bv.Read(source_bit_offset, buffer, 0, dw_data_object_bit_size)) return false;
+				if(!bv.Read(source_bit_offset, buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size)) return false;
 				source_bit_offset += dw_data_object_bit_size;
-				if(!mem_if->WriteMemory(dw_addr, buffer, dw_byte_size)) return false;
+				if(!mem_if->WriteMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
 			}
 			return true;
 		case DW_LOC_SIMPLE_REGISTER:
@@ -255,7 +262,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 					case 1:
 						{
 							uint64_t value = 0;
-							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_size)) return false;
+							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							uint8_t value8 = value;
 							arch_reg->SetValue(&value8);
@@ -264,7 +271,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 					case 2:
 						{
 							uint64_t value = 0;
-							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_size)) return false;
+							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							uint16_t value16 = value;
 							arch_reg->SetValue(&value16);
@@ -273,7 +280,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 					case 4:
 						{
 							uint64_t value = 0;
-							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_size)) return false;
+							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							uint32_t value32 = value;
 							arch_reg->SetValue(&value32);
@@ -282,7 +289,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 					case 8:
 						{
 							uint64_t value = 0;
-							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_size)) return false;
+							if(!bv.Read(source_bit_offset, value, dw_data_object_bit_offset, dw_data_object_bit_size)) return false;
 							source_bit_offset += dw_data_object_bit_size;
 							arch_reg->SetValue(&value);
 						}
@@ -324,10 +331,10 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 											uint8_t value8 = 0;
 											arch_reg->GetValue(&value8);
 											uint64_t value = 0;
-											if(!bv.Read(source_bit_offset, value, dw_bit_size)) return false;
+											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint8_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
-											value8 = (value & ~mask) | (value << dw_bit_offset);
+											value8 = (value & ~mask) | (value & mask);
 											arch_reg->SetValue(&value8);
 										}
 										break;
@@ -336,10 +343,10 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 											uint16_t value16 = 0;
 											arch_reg->GetValue(&value16);
 											uint64_t value = 0;
-											if(!bv.Read(source_bit_offset, value, dw_bit_size)) return false;
+											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 16 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint16_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
-											value16 = (value & ~mask) | (value << dw_bit_offset);
+											value16 = (value & ~mask) | (value & mask);
 											arch_reg->SetValue(&value16);
 										}
 										break;
@@ -348,10 +355,10 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 											uint8_t value32 = 0;
 											arch_reg->GetValue(&value32);
 											uint64_t value = 0;
-											if(!bv.Read(source_bit_offset, value, dw_bit_size)) return false;
+											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 32 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint16_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
-											value32 = (value & ~mask) | (value << dw_bit_offset);
+											value32 = (value & ~mask) | (value & mask);
 											arch_reg->SetValue(&value32);
 										}
 										break;
@@ -360,10 +367,10 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 											uint8_t value64 = 0;
 											arch_reg->GetValue(&value64);
 											uint64_t value = 0;
-											if(!bv.Read(source_bit_offset, value, dw_bit_size)) return false;
+											if(!bv.Read(source_bit_offset, value, (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? 64 - dw_bit_size - dw_bit_offset : dw_bit_offset, dw_bit_size)) return false;
 											source_bit_offset += dw_bit_size;
 											uint16_t mask = ((1 << dw_bit_size) - 1) << dw_bit_offset;
-											value64 = (value & ~mask) | (value << dw_bit_offset);
+											value64 = (value & ~mask) | (value & mask);
 											arch_reg->SetValue(&value64);
 										}
 										break;
@@ -403,15 +410,39 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DataObject<MEMORY_ADDR>::Read(MEMORY_ADDR _bit_offset, void *_buffer, MEMORY_ADDR _bit_size) const
+bool DWARF_DataObject<MEMORY_ADDR>::Read(MEMORY_ADDR obj_bit_offset, uint64_t& value, MEMORY_ADDR bit_size) const
 {
-	return bv.Read(_bit_offset, (uint8_t *) _buffer, 0, _bit_size);
+	MEMORY_ADDR dest_bit_offset = 0;
+	if(arch_endianness == unisim::util::endian::E_BIG_ENDIAN)
+	{
+		MEMORY_ADDR l_bit_size = bit_size % 8;
+		dest_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
+	}
+	return bv.Read(obj_bit_offset, value, dest_bit_offset, bit_size);
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DataObject<MEMORY_ADDR>::Write(MEMORY_ADDR _bit_offset, const void *_buffer, MEMORY_ADDR _bit_size)
+bool DWARF_DataObject<MEMORY_ADDR>::Write(MEMORY_ADDR obj_bit_offset, uint64_t value, MEMORY_ADDR bit_size)
 {
-	return bv.Write(_bit_offset, (uint8_t *) _buffer, 0, _bit_size);
+	MEMORY_ADDR source_bit_offset = 0;
+	if(arch_endianness == unisim::util::endian::E_BIG_ENDIAN)
+	{
+		MEMORY_ADDR l_bit_size = bit_size % 8;
+		source_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
+	}
+	return bv.Write(obj_bit_offset, value, source_bit_offset, bit_size);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DataObject<MEMORY_ADDR>::Read(MEMORY_ADDR obj_bit_offset, void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size) const
+{
+	return bv.Read(obj_bit_offset, (uint8_t *) buffer, buf_bit_offset, bit_size);
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DataObject<MEMORY_ADDR>::Write(MEMORY_ADDR obj_bit_offset, const void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size)
+{
+	return bv.Write(obj_bit_offset, (uint8_t *) buffer, buf_bit_offset, bit_size);
 }
 
 } // end of namespace dwarf

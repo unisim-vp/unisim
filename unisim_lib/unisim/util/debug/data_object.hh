@@ -35,6 +35,8 @@
 #ifndef __UNISIM_UTIL_DEBUG_DATA_OBJECT_HH__
 #define __UNISIM_UTIL_DEBUG_DATA_OBJECT_HH__
 
+#include <unisim/util/endian/endian.hh>
+
 namespace unisim {
 namespace util {
 namespace debug {
@@ -44,10 +46,13 @@ class DataObject
 {
 public:
 	virtual ADDRESS GetBitSize() const = 0;
+	virtual unisim::util::endian::endian_type GetEndian() const = 0;
 	virtual bool Fetch() = 0;
 	virtual bool Commit() = 0;
-	virtual bool Read(ADDRESS bit_offset, void *buffer, ADDRESS bit_size) const = 0;
-	virtual bool Write(ADDRESS bit_offset, const void *buffer, ADDRESS bit_size) = 0;
+	virtual bool Read(ADDRESS obj_bit_offset, uint64_t& value, ADDRESS bit_size) const = 0;
+	virtual bool Write(ADDRESS obj_bit_offset, uint64_t value, ADDRESS bit_size) = 0;
+	virtual bool Read(ADDRESS obj_bit_offset, void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) const = 0;
+	virtual bool Write(ADDRESS obj_bit_offset, const void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) = 0;
 };
 
 

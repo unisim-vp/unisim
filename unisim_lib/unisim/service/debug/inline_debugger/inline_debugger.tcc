@@ -1074,6 +1074,12 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<p | prof | profile> data read" << endl;
 	(*std_output_stream) << "<p | prof | profile> data write" << endl;
 	(*std_output_stream) << "    display the program/data profile" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<dumpobject | dumobj | dob> <data object name>" << endl;
+	(*std_output_stream) << "    dump data object bytes" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<editobject | editobj | eob> <data object name>" << endl;
+	(*std_output_stream) << "    edit data object bytes" << endl;
 	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
 	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << endl;
 	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << endl;
@@ -2568,9 +2574,17 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 			{
 				ADDRESS data_object_bit_size = data_object->GetBitSize();
 				ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
+				unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
 				uint8_t data_object_raw_value[data_object_byte_size];
 				memset(data_object_raw_value, 0, data_object_byte_size);
-				if(data_object->Read(0, data_object_raw_value, data_object_bit_size))
+				
+				ADDRESS buf_bit_offset = 0;
+				if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
+				{
+					ADDRESS l_bit_size = data_object_bit_size % 8;
+					buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
+				}
+				if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
 				{
 					(*std_output_stream) << data_object_name << " = [ ";
 					ADDRESS byte_offset;
@@ -2600,7 +2614,7 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 	}
 	else
 	{
-		(*std_output_stream) << "Can' lookup data objects" << endl;
+		(*std_output_stream) << "Can't lookup data objects" << endl;
 	}
 }
 
@@ -2608,8 +2622,6 @@ template <class ADDRESS>
 bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRESS cia)
 {
 	bool status = true;
-	std::vector<uint8_t> buffer;
-	if(!EditBuffer(0, buffer)) return false;
 
 	if(data_object_lookup_import)
 	{
@@ -2619,25 +2631,61 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 		{
 			if(data_object->Fetch())
 			{
-				unsigned int written = 0;
-				unsigned int failed = 0;
+				std::vector<uint8_t> buffer;
+				if(!EditBuffer(0, buffer)) return false;
 				
-				unsigned int buffer_size = buffer.size();
-				unsigned int i;
-				unsigned int bit_offset;
-				for(i = 0, bit_offset = 0; i < buffer_size; i++, bit_offset += 8)
+				ADDRESS data_object_bit_size = data_object->GetBitSize();
+				ADDRESS data_object_byte_size = (data_object_bit_size + 7) / 8;
+				unisim::util::endian::endian_type data_object_endian = data_object->GetEndian();
+				uint8_t data_object_raw_value[data_object_byte_size];
+				memset(data_object_raw_value, 0, data_object_byte_size);
+				
+				ADDRESS buf_bit_offset = 0;
+				if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
 				{
-					if(data_object->Write(bit_offset, &buffer[i], 8)) 
-						written++;
-					else
-						failed++;
+					ADDRESS l_bit_size = data_object_bit_size % 8;
+					buf_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
 				}
-				(*std_output_stream) << written << " of " << (failed + written) << " bytes written" << std::endl;
-				
-				if(!data_object->Commit())
+
+				if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
+				{
+					unsigned int buffer_size = buffer.size();
+					unsigned int i;
+					unsigned int n = (data_object_byte_size < buffer_size) ? data_object_byte_size : buffer_size;
+					if(data_object_endian == unisim::util::endian::E_BIG_ENDIAN)
+					{
+						unsigned int j;
+						for(i = data_object_byte_size - n, j = 0; j < n; i++, j++)
+						{
+							data_object_raw_value[i] = buffer[j];
+						}
+					}
+					else
+					{
+						for(i = 0; i < n; i++)
+						{
+							data_object_raw_value[i] = buffer[i];
+						}
+					}
+					
+					if(data_object->Write(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
+					{
+						if(!data_object->Commit())
+						{
+							status = false;
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+						}
+					}
+					else
+					{
+						status = false;
+						(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be written" << endl;
+					}
+				}
+				else
 				{
 					status = false;
-					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be committed" << endl;
+					(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
 				}
 			}
 			else
@@ -2657,7 +2705,7 @@ bool InlineDebugger<ADDRESS>::EditDataObject(const char *data_object_name, ADDRE
 	else
 	{
 		status = false;
-		(*std_output_stream) << "Can' lookup data objects" << endl;
+		(*std_output_stream) << "Can't lookup data objects" << endl;
 	}
 	return status;
 }

@@ -219,6 +219,9 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, file_address_size(_dw_handler->GetFileAddressSize())
 	, arch_address_size(_dw_handler->GetArchAddressSize())
 	, frame_base(0)
+	, has_frame_base(false)
+	, object_addr(0)
+	, has_object_addr(false)
 {
 }
 
@@ -520,6 +523,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						if(executing)
 						{
 							// push onto the stack (frame base + offset)
+							if(!has_frame_base) return false;
 							dw_stack.push_back(frame_base + offset);
 						}
 					}
@@ -750,8 +754,9 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 
 						if(!dw_cu) return false;
 						
-						// Currently unimplemented.
-						return false;
+						// push object address
+						if(!has_object_addr) return false;
+						dw_stack.push_back(object_addr);
 					}
 					break;
 				case DW_OP_form_tls_address:
@@ -780,7 +785,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 					{
 						if(dw_stack.empty()) return false;
 						MEMORY_ADDR op1 = dw_stack.back();
-						if(op1 & (1ULL << ((8 * sizeof(MEMORY_ADDR)) - 1))) // 2's complement negative value
+						if(op1 & (1ULL << ((8 * sizeof(MEMORY_ADDR)) - 1))) // is it negative ?
 						{
 							dw_stack.back() = -op1;
 						}
@@ -807,7 +812,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						dw_stack.pop_back();
 						int64_t op2 = dw_stack.back();
 						dw_stack.pop_back();
-						dw_stack.push_back(op1 ? (op2 / op1) : 0); // Note: division by zero is unspecified
+						if(!op1) return false; // division by zero
+						dw_stack.push_back(op2 / op1);
 					}
 					break;
 				case DW_OP_minus:
@@ -831,8 +837,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 						dw_stack.pop_back();
 						MEMORY_ADDR op2 = dw_stack.back();
 						dw_stack.pop_back();
-						dw_stack.push_back(op1 ? (op2 % op1) : 0); // Note1: modulo zero is unspecified
-						                                           // Note2: unsigned modulus
+						if(!op1) return false; // division by zero
+						dw_stack.push_back(op2 % op1); // Note: unsigned modulus
 					}
 					break;
 				case DW_OP_mul:
@@ -1390,7 +1396,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 		while(expr_pos < expr_length);
 	}
 	
-	if(result_addr && !dw_stack.empty()) *result_addr = dw_stack.back();
+	if(result_addr && !in_dw_op_reg && !dw_stack.empty()) *result_addr = dw_stack.back();
 	if(dw_location && !dw_stack.empty())
 	{
 		if(in_dw_op_reg)
@@ -1575,6 +1581,14 @@ template <class MEMORY_ADDR>
 void DWARF_ExpressionVM<MEMORY_ADDR>::SetFrameBase(MEMORY_ADDR _frame_base)
 {
 	frame_base = _frame_base;
+	has_frame_base = true;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_ExpressionVM<MEMORY_ADDR>::SetObjectAddress(MEMORY_ADDR _object_addr)
+{
+	object_addr = _object_addr;
+	has_object_addr = true;
 }
 
 template <class MEMORY_ADDR>

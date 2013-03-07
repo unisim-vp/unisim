@@ -61,10 +61,8 @@ void DWARF_BitVector::Clear()
 // 
 // little endian: A7 A6 A5 A4 A3 A2 A1 A0 || B3 B2 B1 B0 A11 A10 A9 A8 || C3 C2 C1 C0 B7 B6 B5 B4 || C11 C10 C9 C8 C7 C6 C5 C4
 
-void DWARF_BitVector::Append(uint64_t source_value, unsigned int source_bit_size)
+void DWARF_BitVector::Append(uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
-	unsigned int source_bit_offset = target_endian == unisim::util::endian::E_BIG_ENDIAN ? source_bit_size - 1: 0;
-	
 	while(source_bit_size)
 	{
 		unsigned int dest_byte_index = bit_size / 8;
@@ -74,12 +72,12 @@ void DWARF_BitVector::Append(uint64_t source_value, unsigned int source_bit_size
 		unsigned int bit_sz = bit_size_to_byte_boundary;
 		if(bit_sz > source_bit_size) bit_sz = source_bit_size;
 		
-		unsigned int source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_offset - bit_sz + 1 : source_bit_offset;
+		unsigned int source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_size - source_bit_offset - bit_sz : source_bit_offset;
 		unsigned int dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dest_bit_offset - bit_sz : dest_bit_offset;
 		uint8_t mask = ((1 << bit_sz) - 1) << dest_shift;
 		uint8_t v = (source_value >> source_shift) << dest_shift;
 		storage[dest_byte_index] = storage[dest_byte_index] | (v & mask);
-		source_bit_offset = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_offset - bit_sz : source_bit_offset + bit_sz;
+		source_bit_offset = source_bit_offset + bit_sz;
 
 		bit_size += bit_sz;
 		source_bit_size = source_bit_size - bit_sz;
@@ -117,10 +115,8 @@ void DWARF_BitVector::Append(uint8_t *source_buffer, unsigned int source_bit_off
 	}
 }
 
-bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value, unsigned int dest_bit_size) const
+bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value, unsigned int dest_bit_offset, unsigned int dest_bit_size) const
 {
-	unsigned int dest_bit_offset = target_endian == unisim::util::endian::E_BIG_ENDIAN ? dest_bit_size - 1: 0;
-	
 	dest_value = 0;
 
 	while(dest_bit_size)
@@ -134,22 +130,20 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value,
 		if(bit_sz > dest_bit_size) bit_sz = dest_bit_size;
 		
 		unsigned source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? 8 - l_source_bit_offset - bit_sz : l_source_bit_offset;
-		unsigned dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? dest_bit_offset - bit_sz + 1 : dest_bit_offset;
+		unsigned dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? dest_bit_size - dest_bit_offset - bit_sz : dest_bit_offset;
 		uint64_t mask = (uint64_t)((1 << bit_sz) - 1) << dest_shift;
 		uint64_t v = (uint64_t)(storage[source_byte_index] >> source_shift) << dest_shift;
 		dest_value = dest_value | (v & mask);
 
-		dest_bit_offset = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? dest_bit_offset - bit_sz : dest_bit_offset + bit_sz;
+		dest_bit_offset = dest_bit_offset + bit_sz;
 		source_bit_offset = source_bit_offset + bit_sz;
 		dest_bit_size = dest_bit_size - bit_sz;
 	}
 	return true;
 }
 
-bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint64_t source_value, unsigned int source_bit_size)
+bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
-	unsigned int source_bit_offset = target_endian == unisim::util::endian::E_BIG_ENDIAN ? source_bit_size - 1: 0;
-	
 	source_value = 0;
 
 	while(source_bit_size)
@@ -162,13 +156,13 @@ bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint64_t source_value,
 		unsigned int bit_sz = bit_size_to_byte_boundary;
 		if(bit_sz > source_bit_size) bit_sz = source_bit_size;
 		
-		unsigned int source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_offset - bit_sz + 1 : source_bit_offset;
+		unsigned int source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_size - source_bit_offset - bit_sz : source_bit_offset;
 		unsigned int dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? 8 - l_dest_bit_offset - bit_sz : l_dest_bit_offset;
 		uint8_t mask = ((1 << bit_sz) - 1) << dest_shift;
 		uint8_t v = (source_value >> source_shift) << dest_shift;
 		storage[dest_byte_index] = (storage[dest_byte_index] & ~mask) | (v & mask);
 		
-		source_bit_offset = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_offset - bit_sz : source_bit_offset + bit_sz;
+		source_bit_offset = source_bit_offset + bit_sz;
 		dest_bit_offset = dest_bit_offset + bit_sz;
 		source_bit_size = source_bit_size - bit_sz;
 	}

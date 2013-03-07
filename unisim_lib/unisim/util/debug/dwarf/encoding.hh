@@ -186,6 +186,12 @@ const uint16_t DW_AT_endianity            = 0x65; // DWARF3
 const uint16_t DW_AT_elemental            = 0x66; // DWARF3
 const uint16_t DW_AT_pure                 = 0x67; // DWARF3
 const uint16_t DW_AT_recursive            = 0x68; // DWARF3
+const uint16_t DW_AT_signature            = 0x69; // DWARF4
+const uint16_t DW_AT_main_subprogram      = 0x6a; // DWARF4
+const uint16_t DW_AT_data_bit_offset      = 0x6b; // DWARF4
+const uint16_t DW_AT_const_expr           = 0x6c; // DWARF4
+const uint16_t DW_AT_enum_class           = 0x6d; // DWARF4
+const uint16_t DW_AT_linkage_name         = 0x6e; // DWARF4
 const uint16_t DW_AT_lo_user              = 0x2000;
 const uint16_t DW_AT_hi_user              = 0x3fff;
 

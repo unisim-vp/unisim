@@ -126,6 +126,7 @@ public:
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 	void SetFrameBase(MEMORY_ADDR frame_base);
+	void SetObjectAddress(MEMORY_ADDR object_addr);
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
@@ -137,6 +138,9 @@ private:
 	unsigned int arch_address_size;
 	std::vector<MEMORY_ADDR> dw_stack;
 	MEMORY_ADDR frame_base;
+	bool has_frame_base;
+	MEMORY_ADDR object_addr;
+	bool has_object_addr;
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 
