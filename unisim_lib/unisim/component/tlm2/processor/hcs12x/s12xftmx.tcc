@@ -48,18 +48,6 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, baseAddress(0x0100)
 	, param_baseAddress("base-address", this, baseAddress)
 
-	, flashSecurityByteAddress(0x7FFF0F)
-	, param_flashSecurityByteAddress("flash-security-byte-address", this, flashSecurityByteAddress)
-
-	, flashProtectionByteAddress(0x7FFF0C)
-	, param_flashProtectionByteAddress("protection-byte-address", this, flashProtectionByteAddress)
-
-	, epromProtectionByteAddress(0x7FFF0D)
-	, param_epromProtectionByteAddress("eee-protection-byte-address", this, epromProtectionByteAddress)
-
-	, flashOptionByteAddress(0x7FFF0E)
-	, param_flashOptionByteAddress("flash-option-byte-address", this, flashOptionByteAddress)
-
 	, flashFaultDetect_interruptOffset(0xBA)
 	, param_flashFaultDetect_interruptOffset("flash-fault-detect-interrupt", this, flashFaultDetect_interruptOffset)
 
@@ -99,6 +87,34 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, buffer_ram_end_address(0x13FFFF)
 	, param_buffer_ram_end_address("buffer-ram-end-address", this, buffer_ram_end_address)
 
+	, pflash_start_address(0x700000)
+	, param_pflash_start_address("pflash-start-address", this, pflash_start_address)
+	, pflash_end_address(0x7FFFFF)
+	, param_pflash_end_address("pflash-end-address", this, pflash_end_address)
+
+	, param_pflash_blobk_0_address("pflash-blobk-0-address", this, blockDescriptorArray[0].start_address)
+	, param_pflash_blobk_0_size("pflash-blobk-0-size", this, blockDescriptorArray[0].size)
+	, param_pflash_blobk_1N_address("pflash-blobk-1N-address", this, blockDescriptorArray[1].start_address)
+	, param_pflash_blobk_1N_size("pflash-blobk-1N-size", this, blockDescriptorArray[1].size)
+	, param_pflash_blobk_1S_address("pflash-blobk-1S-address", this, blockDescriptorArray[2].start_address)
+	, param_pflash_blobk_1S_size("pflash-blobk-1S-size", this, blockDescriptorArray[2].size)
+	, param_pflash_blobk_2_address("pflash-blobk-2-address", this, blockDescriptorArray[3].start_address)
+	, param_pflash_blobk_2_size("pflash-blobk-2-size", this, blockDescriptorArray[3].size)
+	, param_pflash_blobk_3_address("pflash-blobk-3-address", this, blockDescriptorArray[4].start_address)
+	, param_pflash_blobk_3_size("pflash-blobk-3-size", this, blockDescriptorArray[4].size)
+
+	, pflash_blocks_description_string("0x7C0000,0x7FFFFF;0x7A0000,0x7BFFFF;0x780000,0x79FFFF;0x740000,0x77FFFF;0x700000,0x73FFFF")
+	, param_pflash_blocks_description_string("pflash-blocks-description", this, pflash_blocks_description_string)
+
+	, param_blackdoor_comparison_key_address("blackdoor-comparison-key-address", this, blackdoor_comparison_key_address)
+	, pflash_protection_byte_address(0x7FFF0C)
+	, param_pflash_protection_byte_address("pflash-protection-byte-address", this, pflash_protection_byte_address)
+	, eee_protection_byte_address(0x7FFF0D)
+	, param_eee_protection_byte_address("eee-protection-byte-address", this, eee_protection_byte_address)
+	, flash_nonvolatile_byte_address(0x7FFF0E)
+	, param_flash_nonvolatile_byte_address("flash-nonvolatile-byte-address", this, flash_nonvolatile_byte_address, "Flash non-volatile (option) byte address")
+	, flash_security_byte_address(0x7FFF0F)
+	, param_flash_security_byte_address("flash-security-byte-address", this, flash_security_byte_address)
 
 	, dflash_partition_user_access_address(0x120000)
 	, param_dflash_partition_user_access_address("dflash-partition-user-access-address", this, dflash_partition_user_access_address)
@@ -157,6 +173,31 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Process);
 
+	blockDescriptorArray[0].start_address = 0x7C0000;
+	blockDescriptorArray[0].size = 256;
+	blockDescriptorArray[1].start_address = 0x7A0000;
+	blockDescriptorArray[1].size = 128;
+	blockDescriptorArray[2].start_address = 0x780000;
+	blockDescriptorArray[2].size = 128;
+	blockDescriptorArray[3].start_address = 0x740000;
+	blockDescriptorArray[3].size = 256;
+	blockDescriptorArray[4].start_address = 0x700000;
+	blockDescriptorArray[4].size = 256;
+
+	vector<string> result;
+	split( pflash_blocks_description_string, result, ";" );
+	for ( int i = 0; i < result.size(); ++i) {
+		vector<string> oneBlockSegments;
+		split( result[i], oneBlockSegments, "," );
+		BlockDescription *oneBlock = new BlockDescription();
+		// TODO: *** TO COMPLETE ***
+		oneBlock->start_address = 0;
+		oneBlock->end_address = 0;
+		pflash_blocks_description.push_back(oneBlock);
+		oneBlockSegments.clear();
+	}
+
+
 }
 
 /**
@@ -183,6 +224,10 @@ S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 		delete extended_registers_registry[i];
 	}
 
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		delete pflash_blocks_description[i];
+	}
+	pflash_blocks_description.clear();
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
@@ -254,44 +299,145 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyAllBlocks_cmd()
 {
-
+	// Erase Verify All Blocks command will verify that all P-Flash and D-Flash blocks have been erased (i.e. all bytes=0xFF)
 	cout << "cmd:: eraseVerifyAllBlocks" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: I have to emulate erase error
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyBlock_cmd()
 {
+	// Erase Verify Block command allows the user to verify that an entire P-Flash or D-Flash block has been erased.
+
 	cout << "cmd:: eraseVerifyBlock" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+	physical_address_t block_addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16);
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: Set ACCERR if an invalid global address [22:16] is supplied
+
+	// TODO: I have to emulate erase error
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyPFlashSection_cmd()
 {
+	// Erase Verify P-Flash Section command will verify that a section of code in the P-Flash memory is erased
+
 	cout << "cmd:: eraseVerifyPFlashSection" << endl;
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+	uint16_t number_phrases = fccob_reg[2]; // 1 phrase is a group of 8 bytes
+
+	if (fccobix_reg != 2) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	if ((addr & 0x7) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: Set ACCERR if an invalid global address [22:0] is supplied
+
+	// TODO: Set ACCERR if the requested section crosses a 256K byte boundary
+
+	// TODO: I have to emulate erase error
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::readOnce_cmd()
 {
+	// The Read Once command provides read access to a reserved 64 byte field (8 phrases each phrase is 8 bytes)
+	// located in the non-volatile information register of P-Flash block 0.
+
 	cout << "cmd:: readOnce" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+	uint16_t phrase_index = fccob_reg[1];
+
+
+	if (fccobix_reg != 2) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	if (phrase_index > 7) {
+		setACCERR();
+		return;
+	}
+
+	uint16_t word;
+	physical_address_t phrase_address = blockDescriptorArray[0].start_address + (phrase_index*PHRASE_SIZE);
+	for (uint8_t i=0; i<4; i++) {
+		inherited::ReadMemory(phrase_address + (i*WORD_SIZE), &word, WORD_SIZE);
+		fccob_reg[2 + i] = BigEndian2Host(word);
+		// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
+		// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
+	}
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::loadDataField_cmd()
 {
+	// Load Data Field Command is executed to provide FCCOB parameters for multiple P-Flash blocks
+	// for a future simultaneous program operation in the P-Flash memory space.
+
 	cout << "cmd:: loadDataField" << endl;
 	loadDataFieldCommandSequenceActive = true;
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
+/**
+ * This command allows you to program mulitple phrases into separate flash blocks simultaneously.
+ * Basically you load up the data matching the spec in the command but it will not program
+ * until you launch the program P-Flash command.
+ * Used appropriately, this can save time to program the whole flash
+ *
+ * cette command charge la phrase dans un buffer interne à la flash.
+ * si elle est suivie par "program P-flash Command" sur le même block alors c'est la phrase pre-loadée qui sera utilisée
+ * à la place de celle fournie dans la commande "program P-Flash" => gain de temps
+ */
 	loadDataFieldCommandSequenceActive = false;
 }
 
@@ -870,7 +1016,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 
 	fclkdiv_reg = 0x00;
 	fsec_reg = 0x00;
-	inherited::ReadMemory(flashSecurityByteAddress, &fsec_reg, 1);
+	inherited::ReadMemory(flash_security_byte_address, &fsec_reg, 1);
 	fccobix_reg = 0x00;
 	feccrix_reg = 0x00;
 	fcnfg_reg = 0x00;
@@ -878,11 +1024,11 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 	fstat_reg = 0x80;
 	ferstat_reg = 0x00;
 	fprot_reg = 0x00;
-	inherited::ReadMemory(flashProtectionByteAddress, &fprot_reg, 1);
+	inherited::ReadMemory(pflash_protection_byte_address, &fprot_reg, 1);
 	eprot_reg = 0x00;
-	inherited::ReadMemory(epromProtectionByteAddress, &eprot_reg, 1);
+	inherited::ReadMemory(eee_protection_byte_address, &eprot_reg, 1);
 	fopt_reg = 0x00;
-	inherited::ReadMemory(flashOptionByteAddress, &fopt_reg, 1);
+	inherited::ReadMemory(flash_nonvolatile_byte_address, &fopt_reg, 1);
 	frsv0_reg = 0x00;
 	frsv1_reg = 0x00;
 	frsv2_reg = 0x00;
@@ -1273,12 +1419,16 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned
 						val = val | 0x10;
 
 					} else {
-						if ((fstat_reg & 0x80) == 0) {
-							inherited::logger << DebugWarning << " : " << sc_object::name() << ":: can't launch new command. The last command has not finished yet." << std::endl << EndDebugWarning;
-						} else {
-							val = val & 0x7F;
-							command_launch_event.notify();
-						}
+//						if ((fstat_reg & 0x80) == 0) {
+//							inherited::logger << DebugWarning << " : " << sc_object::name() << ":: can't launch new command. The last command has not finished yet." << std::endl << EndDebugWarning;
+//						} else {
+//							val = val & 0x7F;
+//							command_launch_event.notify();
+//						}
+
+						val = val & 0x7F;
+						command_launch_event.notify();
+
 					}
 				}
 			}
@@ -1315,23 +1465,31 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned
 
 		} break;
 		case FCCOBHI: {
-			if ((fstat_reg & 0x80) == 0) {
-				inherited::logger << DebugWarning << " : " << sc_object::name() << ":: can't launch new command. The last command has not finished yet." << std::endl << EndDebugWarning;
+//			if ((fstat_reg & 0x80) == 0) {
+//				inherited::logger << DebugWarning << " : " << sc_object::name() << ":: try launching new command while the last command has not finished yet." << std::endl << EndDebugWarning;
+//			} else {
+//				if (data_length == 2) {
+//					 fccob_reg[fccobix_reg] = BigEndian2Host(*((uint16_t *) buffer));
+//				} else {
+//					fccob_reg[fccobix_reg] = (fccob_reg[fccobix_reg] & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
+//				}
+//			}
+
+			if (data_length == 2) {
+				 fccob_reg[fccobix_reg] = BigEndian2Host(*((uint16_t *) buffer));
 			} else {
-				if (data_length == 2) {
-					 fccob_reg[fccobix_reg] = BigEndian2Host(*((uint16_t *) buffer));
-				} else {
-					fccob_reg[fccobix_reg] = (fccob_reg[fccobix_reg] & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
-				}
+				fccob_reg[fccobix_reg] = (fccob_reg[fccobix_reg] & 0x00FF) | ((uint16_t) *((uint8_t *) buffer) << 8);
 			}
 
 		} break;
 		case FCCOBLO: {
-			if ((fstat_reg & 0x80) == 0) {
-				inherited::logger << DebugWarning << " : " << sc_object::name() << ":: can't launch new command. The last command has not finished yet." << std::endl << EndDebugWarning;
-			} else {
-				fccob_reg[fccobix_reg] = (fccob_reg[fccobix_reg] & 0xFF00) | *((uint8_t *) buffer);
-			}
+//			if ((fstat_reg & 0x80) == 0) {
+//				inherited::logger << DebugWarning << " : " << sc_object::name() << ":: can't launch new command. The last command has not finished yet." << std::endl << EndDebugWarning;
+//			} else {
+//				fccob_reg[fccobix_reg] = (fccob_reg[fccobix_reg] & 0xFF00) | *((uint8_t *) buffer);
+//			}
+
+			fccob_reg[fccobix_reg] = (fccob_reg[fccobix_reg] & 0xFF00) | *((uint8_t *) buffer);
 
 		} break;
 		case ETAGHI: {

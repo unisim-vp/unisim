@@ -54,6 +54,7 @@ using unisim::kernel::service::Client;
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
+using unisim::kernel::service::ParameterArray;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
 using unisim::kernel::service::CallBackObject;
@@ -84,9 +85,6 @@ using unisim::component::tlm2::memory::ram::DEFAULT_ADDRESS;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
-
-#define SECTOR_SIZE 4
-#define WORD_SIZE 2
 
 template <unsigned int BUSWIDTH = DEFAULT_BUSWIDTH, class ADDRESS = DEFAULT_ADDRESS, unsigned int BURST_LENGTH = DEFAULT_BURST_LENGTH, uint32_t PAGE_SIZE = DEFAULT_PAGE_SIZE, bool DEBUG = DEFAULT_DEBUG>
 class S12XFTMX :
@@ -132,6 +130,11 @@ public:
 	static const uint8_t DisableEEPROMEmulation = 0x14;
 	static const uint8_t EEPROMEmulationQuery = 0x15;
 	static const uint8_t PartitionDFlash = 0x20;
+
+	static const uint16_t WORD_SIZE = 2;
+	static const uint16_t DFLASH_SECTOR_SIZE = 64;
+	static const uint16_t PHRASE_SIZE = 8;
+	static const uint16_t PFLASH_SECTOR_SIZE = 1024;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
@@ -267,18 +270,6 @@ private:
 	address_t	baseAddress;
 	Parameter<address_t>   param_baseAddress;
 
-	physical_address_t	flashSecurityByteAddress;
-	Parameter<physical_address_t>   param_flashSecurityByteAddress;
-
-	physical_address_t	flashProtectionByteAddress;
-	Parameter<physical_address_t>   param_flashProtectionByteAddress;
-
-	physical_address_t	epromProtectionByteAddress;
-	Parameter<physical_address_t>   param_epromProtectionByteAddress;
-
-	physical_address_t	flashOptionByteAddress;
-	Parameter<physical_address_t>   param_flashOptionByteAddress;
-
 	uint8_t flashFaultDetect_interruptOffset;
 	Parameter<uint8_t> param_flashFaultDetect_interruptOffset;
 
@@ -287,6 +278,38 @@ private:
 
 	double erase_fail_ratio;
 	Parameter<double> param_erase_fail_ratio;
+
+	struct {
+		physical_address_t	start_address;
+		uint16_t			size;	// unit is K-Bytes
+	} blockDescriptorArray[5];
+
+	physical_address_t	pflash_start_address;
+	Parameter<physical_address_t> param_pflash_start_address;
+	physical_address_t	pflash_end_address;
+	Parameter<physical_address_t> param_pflash_end_address;
+
+	Parameter<physical_address_t> param_pflash_blobk_0_address;
+	Parameter<uint16_t> param_pflash_blobk_0_size;		// 256 K
+	Parameter<physical_address_t> param_pflash_blobk_1N_address;
+	Parameter<uint16_t> param_pflash_blobk_1N_size;		// 128 K
+	Parameter<physical_address_t> param_pflash_blobk_1S_address;
+	Parameter<uint16_t> param_pflash_blobk_1S_size;		// 128 K
+	Parameter<physical_address_t> param_pflash_blobk_2_address;
+	Parameter<uint16_t> param_pflash_blobk_2_size;		// 256 K
+	Parameter<physical_address_t> param_pflash_blobk_3_address;
+	Parameter<uint16_t> param_pflash_blobk_3_size;		// 256 K
+
+	physical_address_t	blackdoor_comparison_key_address;	// 8 bytes
+	Parameter<physical_address_t> param_blackdoor_comparison_key_address;
+	physical_address_t	pflash_protection_byte_address;		// 1 byte
+	Parameter<physical_address_t> param_pflash_protection_byte_address;
+	physical_address_t	eee_protection_byte_address;		// 1 byte
+	Parameter<physical_address_t> param_eee_protection_byte_address;
+	physical_address_t	flash_nonvolatile_byte_address;		// 1 byte
+	Parameter<physical_address_t> param_flash_nonvolatile_byte_address;
+	physical_address_t	flash_security_byte_address;		// 1 byte
+	Parameter<physical_address_t> param_flash_security_byte_address;
 
 	physical_address_t	dflash_start_address;
 	Parameter<physical_address_t> param_dflash_start_address;
@@ -326,6 +349,14 @@ private:
 	Parameter<uint16_t>	param_min_number_sectors_in_dflash_for_eee;
 	uint16_t			min_ratio_dflash_buffer_ram;
 	Parameter<uint16_t>	param_min_ratio_dflash_buffer_ram;
+
+	string			pflash_blocks_description_string;
+	Parameter<string> param_pflash_blocks_description_string;
+	struct BlockDescription {
+		physical_address_t start_address;
+		physical_address_t end_address;
+	};
+	vector<BlockDescription*> pflash_blocks_description;
 
 	// Registers map
 	map<string, Register *> registers_registry;
@@ -392,6 +423,30 @@ private:
 		return (loadDataFieldCommandSequenceActive);
 	}
 
+	void split( string str, vector<string> result, const char * delimiters ) {
+		vector<string> vec_String;
+		char * cstr = new char [str.length()+1];
+		std::strcpy (cstr, str.c_str());
+		char *token = strtok( cstr, delimiters );
+
+		cout << "Extracting and storing data in a vector..\n\n\n";
+
+		while( token != NULL )
+		{
+			vec_String.push_back(token);
+			token = strtok( NULL, delimiters );
+		}
+
+//		cout << "Displaying end result in  vector line storage..\n\n";
+//
+//		for ( int i = 0; i < vec_String.size(); ++i) {
+//			cout << vec_String[i] << "\n";
+//		}
+//
+//		cout << "\n\n\n";
+
+		delete[] cstr;
+	}
 };
 
 
