@@ -86,7 +86,7 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 			{
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
-				std::cerr << "DW_LOC_SIMPLE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_byte_size=" << dw_byte_size << std::endl;
+				std::cerr << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=0x" << std::hex << dw_data_object_bit_offset << std::dec << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
 				if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;

@@ -115,7 +115,7 @@ const DWARF_FDE<MEMORY_ADDR> *DWARF_CallFrameProgram<MEMORY_ADDR>::GetFDE() cons
 template <class MEMORY_ADDR>
 std::ostream& operator << (std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog)
 {
-	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm = DWARF_CallFrameVM<MEMORY_ADDR>(dw_call_frame_prog.GetHandler());
 	if(!dw_call_frame_vm.Disasm(os, dw_call_frame_prog))
 	{
 		os << "Invalid opcode";

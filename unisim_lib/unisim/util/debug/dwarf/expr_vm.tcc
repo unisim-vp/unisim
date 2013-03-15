@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_EXPR_VM_TCC__
 
 #include <unisim/util/debug/dwarf/expr_vm.hh>
+#include <unisim/util/debug/dwarf/option.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <unisim/util/endian/endian.hh>
 #include <stack>
@@ -49,6 +50,13 @@ using unisim::util::arithmetic::SignExtend;
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
 using unisim::util::endian::Target2Host;
+
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR>
 DWARF_LocationPiece<MEMORY_ADDR>::DWARF_LocationPiece(unsigned int _dw_bit_size)
@@ -222,7 +230,10 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, has_frame_base(false)
 	, object_addr(0)
 	, has_object_addr(false)
+	, debug(false)
+	, logger(_dw_handler->GetLogger())
 {
+	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -249,7 +260,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = dw_expr->GetCompilationUnit();
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp = dw_expr->GetCallFrameProgram();
 	
-	uint8_t file_address_size = dw_cu ? dw_cu->GetHandler()->GetFileAddressSize() : dw_cfp->GetHandler()->GetFileAddressSize();
+	uint8_t address_size = dw_cu ? dw_cu->GetAddressSize() : dw_cfp->GetHandler()->GetFileAddressSize();
 	endian_type file_endianness = dw_cu ? dw_cu->GetHandler()->GetFileEndianness() : dw_cfp->GetHandler()->GetFileEndianness();
 //	uint8_t offset_size = dw_cu ? dw_cu->GetOffsetSize() : 0; // offsets are unused for expressions in a call frame program
 	
@@ -259,6 +270,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 	uint8_t opcode;
 	
 	bool in_dw_op_reg = false;
+	bool got_vendor_specific_extension = false;
 	
 	if(expr_length)
 	{
@@ -269,1101 +281,1716 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 			opcode = expr[expr_pos];
 			expr_pos++;
 			
-			switch(opcode)
+			if(got_vendor_specific_extension)
 			{
-				case DW_OP_lit0:
-				case DW_OP_lit1:
-				case DW_OP_lit2:
-				case DW_OP_lit3:
-				case DW_OP_lit4:
-				case DW_OP_lit5:
-				case DW_OP_lit6:
-				case DW_OP_lit7:
-				case DW_OP_lit8:
-				case DW_OP_lit9:
-				case DW_OP_lit10:
-				case DW_OP_lit11:
-				case DW_OP_lit12:
-				case DW_OP_lit13:
-				case DW_OP_lit14:
-				case DW_OP_lit15:
-				case DW_OP_lit16:
-				case DW_OP_lit17:
-				case DW_OP_lit18:
-				case DW_OP_lit19:
-				case DW_OP_lit20:
-				case DW_OP_lit21:
-				case DW_OP_lit22:
-				case DW_OP_lit23:
-				case DW_OP_lit24:
-				case DW_OP_lit25:
-				case DW_OP_lit26:
-				case DW_OP_lit27:
-				case DW_OP_lit28:
-				case DW_OP_lit29:
-				case DW_OP_lit30:
-				case DW_OP_lit31:
-					{
-						MEMORY_ADDR literal_value = (opcode - DW_OP_lit0);
-						if(os) *os << "DW_OP_lit" << literal_value;
-						if(executing)
+				if(os) *os << "0x" << std::hex << opcode << std::dec;
+			}
+			else
+			{
+				switch(opcode)
+				{
+					case DW_OP_lit0:
+					case DW_OP_lit1:
+					case DW_OP_lit2:
+					case DW_OP_lit3:
+					case DW_OP_lit4:
+					case DW_OP_lit5:
+					case DW_OP_lit6:
+					case DW_OP_lit7:
+					case DW_OP_lit8:
+					case DW_OP_lit9:
+					case DW_OP_lit10:
+					case DW_OP_lit11:
+					case DW_OP_lit12:
+					case DW_OP_lit13:
+					case DW_OP_lit14:
+					case DW_OP_lit15:
+					case DW_OP_lit16:
+					case DW_OP_lit17:
+					case DW_OP_lit18:
+					case DW_OP_lit19:
+					case DW_OP_lit20:
+					case DW_OP_lit21:
+					case DW_OP_lit22:
+					case DW_OP_lit23:
+					case DW_OP_lit24:
+					case DW_OP_lit25:
+					case DW_OP_lit26:
+					case DW_OP_lit27:
+					case DW_OP_lit28:
+					case DW_OP_lit29:
+					case DW_OP_lit30:
+					case DW_OP_lit31:
 						{
-							if(dw_stack.empty()) return false;
-							dw_stack.push_back(literal_value);
+							MEMORY_ADDR literal_value = (opcode - DW_OP_lit0);
+							if(os) *os << "DW_OP_lit" << literal_value;
+							if(executing)
+							{
+								dw_stack.push_back(literal_value);
+							}
 						}
-					}
-					break;
-				case DW_OP_addr:
-					{
-						MEMORY_ADDR addr;
-						std::cerr << "DW_OP_addr: file_address_size=" << (unsigned int) file_address_size << std::endl;
-						if((expr_pos + file_address_size) > expr_length) return false;
-						switch(file_address_size)
+						break;
+					case DW_OP_addr:
 						{
-							case 1:
+							MEMORY_ADDR addr;
+							if((expr_pos + address_size) > expr_length)
+							{
+								if(debug)
 								{
-									uint8_t addr8;
-									memcpy(&addr8, expr + expr_pos, file_address_size);
-									addr8 = Target2Host(file_endianness, addr8);
-									addr = addr8;
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_addr: missing " << address_size << "-byte address operand" << EndDebugError;
 								}
-								break;
-							case 2:
-								{
-									uint16_t addr16;
-									memcpy(&addr16, expr + expr_pos, file_address_size);
-									addr16 = Target2Host(file_endianness, addr16);
-									addr = addr16;
-								}
-								break;
-							case 4:
-								{
-									uint32_t addr32;
-									memcpy(&addr32, expr + expr_pos, file_address_size);
-									addr32 = Target2Host(file_endianness, addr32);
-									addr = addr32;
-								}
-								break;
-							case 8:
-								{
-									uint64_t addr64;
-									memcpy(&addr64, expr + expr_pos, file_address_size);
-									addr64 = Target2Host(file_endianness, addr64);
-									addr = addr64;
-								}
-								break;
-							default:
 								return false;
+							}
+							switch(address_size)
+							{
+								case 4:
+									{
+										uint32_t addr32;
+										memcpy(&addr32, expr + expr_pos, file_address_size);
+										addr32 = Target2Host(file_endianness, addr32);
+										addr = addr32;
+									}
+									break;
+								case 8:
+									{
+										uint64_t addr64;
+										memcpy(&addr64, expr + expr_pos, file_address_size);
+										addr64 = Target2Host(file_endianness, addr64);
+										addr = addr64;
+									}
+									break;
+								default:
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_addr: unsupported address operand size (" << address_size << " bytes)" << EndDebugError;
+									}
+									return false;
+							}
+							expr_pos += address_size;
+							if(os) *os << "DW_OP_addr 0x" << std::hex << addr << std::dec;
+							if(executing) dw_stack.push_back(addr);
 						}
-						expr_pos += file_address_size;
-						if(os) *os << "DW_OP_addr 0x" << std::hex << addr << std::dec;
-						if(executing) dw_stack.push_back(addr);
-					}
-					break;
-				case DW_OP_const1u:
-					{
-						uint8_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const1u " << (uint32_t) dw_const;
-						if(executing)
+						break;
+					case DW_OP_const1u:
 						{
-							MEMORY_ADDR value = dw_const;
-							dw_stack.push_back(value);
+							uint8_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const1u: missing 1-byte unsigned constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const1u " << (uint32_t) dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = dw_const;
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const1s:
-					{
-						uint8_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const1s " << (int64_t)(int8_t) dw_const;
-						if(executing)
+						break;
+					case DW_OP_const1s:
 						{
-							MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
-							dw_stack.push_back(value);
+							uint8_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const1s: missing 1-byte signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const1s " << (int64_t)(int8_t) dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const2u:
-					{
-						uint16_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const2u " << (uint32_t) dw_const;
-						if(executing)
+						break;
+					case DW_OP_const2u:
 						{
-							MEMORY_ADDR value = dw_const;
-							dw_stack.push_back(value);
+							uint16_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const2u: missing 2-byte unsigned constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const2u " << (uint32_t) dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = dw_const;
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const2s:
-					{
-						uint16_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const2s " << (int64_t)(int16_t) dw_const;
-						if(executing)
+						break;
+					case DW_OP_const2s:
 						{
-							MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
-							dw_stack.push_back(value);
+							uint16_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const2s: missing 2-byte signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const2s " << (int64_t)(int16_t) dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const4u:
-					{
-						uint32_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const4u " << dw_const;
-						if(executing)
+						break;
+					case DW_OP_const4u:
 						{
-							MEMORY_ADDR value = dw_const;
-							dw_stack.push_back(value);
+							uint32_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const4u: missing 4-byte unsigned constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const4u " << dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = dw_const;
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const4s:
-					{
-						uint32_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const4s " << (int64_t)(int32_t) dw_const;
-						if(executing)
+						break;
+					case DW_OP_const4s:
 						{
-							MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
-							dw_stack.push_back(value);
+							uint32_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const4s: missing 4-byte signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const4s " << (int64_t)(int32_t) dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const8u:
-					{
-						uint64_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const8u " << dw_const;
-						if(executing)
+						break;
+					case DW_OP_const8u:
 						{
-							MEMORY_ADDR value = dw_const;
-							dw_stack.push_back(value);
+							uint64_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const8u: missing 8-byte unsigned constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const8u " << dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = dw_const;
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_const8s:
-					{
-						uint64_t dw_const;
-						if((expr_pos + sizeof(dw_const)) > expr_length) return false;
-						memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
-						dw_const = Target2Host(file_endianness, dw_const);
-						expr_pos += sizeof(dw_const);
-						if(os) *os << "DW_OP_const8s " << (int64_t) dw_const;
-						if(executing)
+						break;
+					case DW_OP_const8s:
 						{
-							MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
-							dw_stack.push_back(value);
+							uint64_t dw_const;
+							if((expr_pos + sizeof(dw_const)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_const8s: missing 8-byte signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_const, expr + expr_pos, sizeof(dw_const));
+							dw_const = Target2Host(file_endianness, dw_const);
+							expr_pos += sizeof(dw_const);
+							if(os) *os << "DW_OP_const8s " << (int64_t) dw_const;
+							if(executing)
+							{
+								MEMORY_ADDR value = SignExtend((MEMORY_ADDR) dw_const, 8 * sizeof(dw_const));
+								dw_stack.push_back(value);
+							}
 						}
-					}
-					break;
-				case DW_OP_constu:
-					{
-						DWARF_LEB128 dw_const_leb128;
-						int64_t sz;
-						if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						uint64_t value = (uint64_t) dw_const_leb128;
-						if(os) *os << "DW_OP_constu " << value;
-						if(executing)
+						break;
+					case DW_OP_constu:
 						{
-							MEMORY_ADDR addr = value;
-							dw_stack.push_back(addr);
+							DWARF_LEB128 dw_const_leb128;
+							int64_t sz;
+							if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_constu: missing LEB128 unsigned constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t value = (uint64_t) dw_const_leb128;
+							if(os) *os << "DW_OP_constu " << value;
+							if(executing)
+							{
+								MEMORY_ADDR addr = value;
+								dw_stack.push_back(addr);
+							}
 						}
-					}
-					break;
-				case DW_OP_consts:
-					{
-						DWARF_LEB128 dw_const_leb128;
-						int64_t sz;
-						if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						int64_t value = (int64_t) dw_const_leb128;
-						if(os) *os << "DW_OP_consts " << value;
-						if(executing)
+						break;
+					case DW_OP_consts:
 						{
-							MEMORY_ADDR addr = value;
-							dw_stack.push_back(addr);
+							DWARF_LEB128 dw_const_leb128;
+							int64_t sz;
+							if((sz = dw_const_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_consts: missing LEB128 signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							int64_t value = (int64_t) dw_const_leb128;
+							if(os) *os << "DW_OP_consts " << value;
+							if(executing)
+							{
+								MEMORY_ADDR addr = value;
+								dw_stack.push_back(addr);
+							}
 						}
-					}
-					break;
-				case DW_OP_fbreg:
-					{
-						DWARF_LEB128 dw_offset_leb128;
-						int64_t sz;
-						if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						int64_t offset = (int64_t) dw_offset_leb128;
-						if(os) *os << "DW_OP_fbreg " << offset;
-						if(executing)
+						break;
+					case DW_OP_fbreg:
 						{
-							// push onto the stack (frame base + offset)
-							if(!has_frame_base) return false;
-							dw_stack.push_back(frame_base + offset);
+							DWARF_LEB128 dw_offset_leb128;
+							int64_t sz;
+							if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg: missing LEB128 signed offset operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							int64_t offset = (int64_t) dw_offset_leb128;
+							if(os) *os << "DW_OP_fbreg " << offset;
+							if(executing)
+							{
+								// push onto the stack (frame base + offset)
+								if(!has_frame_base)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_fbreg " << offset << ": frame base address is not set" << EndDebugError;
+									}
+									return false;
+								}
+								dw_stack.push_back(frame_base + offset);
+							}
 						}
-					}
-					break;
-				case DW_OP_breg0:
-				case DW_OP_breg1:
-				case DW_OP_breg2:
-				case DW_OP_breg3:
-				case DW_OP_breg4:
-				case DW_OP_breg5:
-				case DW_OP_breg6:
-				case DW_OP_breg7:
-				case DW_OP_breg8:
-				case DW_OP_breg9:
-				case DW_OP_breg10:
-				case DW_OP_breg11:
-				case DW_OP_breg12:
-				case DW_OP_breg13:
-				case DW_OP_breg14:
-				case DW_OP_breg15:
-				case DW_OP_breg16:
-				case DW_OP_breg17:
-				case DW_OP_breg18:
-				case DW_OP_breg19:
-				case DW_OP_breg20:
-				case DW_OP_breg21:
-				case DW_OP_breg22:
-				case DW_OP_breg23:
-				case DW_OP_breg24:
-				case DW_OP_breg25:
-				case DW_OP_breg26:
-				case DW_OP_breg27:
-				case DW_OP_breg28:
-				case DW_OP_breg29:
-				case DW_OP_breg30:
-				case DW_OP_breg31:
-					{
-						uint8_t dw_reg_num = opcode - DW_OP_breg0;
-						DWARF_LEB128 dw_offset_leb128;
-						int64_t sz;
-						if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						int64_t offset = (int64_t) dw_offset_leb128;
-						if(os) *os << "DW_OP_breg" << (unsigned int) dw_reg_num << " " << offset;
-						if(executing)
+						break;
+					case DW_OP_breg0:
+					case DW_OP_breg1:
+					case DW_OP_breg2:
+					case DW_OP_breg3:
+					case DW_OP_breg4:
+					case DW_OP_breg5:
+					case DW_OP_breg6:
+					case DW_OP_breg7:
+					case DW_OP_breg8:
+					case DW_OP_breg9:
+					case DW_OP_breg10:
+					case DW_OP_breg11:
+					case DW_OP_breg12:
+					case DW_OP_breg13:
+					case DW_OP_breg14:
+					case DW_OP_breg15:
+					case DW_OP_breg16:
+					case DW_OP_breg17:
+					case DW_OP_breg18:
+					case DW_OP_breg19:
+					case DW_OP_breg20:
+					case DW_OP_breg21:
+					case DW_OP_breg22:
+					case DW_OP_breg23:
+					case DW_OP_breg24:
+					case DW_OP_breg25:
+					case DW_OP_breg26:
+					case DW_OP_breg27:
+					case DW_OP_breg28:
+					case DW_OP_breg29:
+					case DW_OP_breg30:
+					case DW_OP_breg31:
 						{
-							MEMORY_ADDR reg_value = ReadRegister(dw_reg_num);
-							// push onto the stack reg value + offset
-							dw_stack.push_back(reg_value + offset);
+							uint8_t dw_reg_num = opcode - DW_OP_breg0;
+							DWARF_LEB128 dw_offset_leb128;
+							int64_t sz;
+							if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_breg" << (unsigned int) dw_reg_num << ": missing LEB128 signed offset operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							int64_t offset = (int64_t) dw_offset_leb128;
+							if(os) *os << "DW_OP_breg" << (unsigned int) dw_reg_num << " " << offset;
+							if(executing)
+							{
+								MEMORY_ADDR reg_value = ReadRegister(dw_reg_num);
+								// push onto the stack reg value + offset
+								dw_stack.push_back(reg_value + offset);
+							}
 						}
-					}
-					break;
-				case DW_OP_bregx:
-					{
-						DWARF_LEB128 dw_reg_num_leb128;
-						int64_t sz;
-						if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						uint64_t dw_reg_num = (uint64_t) dw_reg_num_leb128;
+						break;
+					case DW_OP_bregx:
+						{
+							DWARF_LEB128 dw_reg_num_leb128;
+							int64_t sz;
+							if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bregx: missing LEB128 register number operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t dw_reg_num = (uint64_t) dw_reg_num_leb128;
 
-						DWARF_LEB128 dw_offset_leb128;
-						if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						int64_t offset = (int64_t) dw_offset_leb128;
-						
-						if(os) *os << "DW_OP_bregx " << dw_reg_num;
-						if(executing)
-						{
-							MEMORY_ADDR reg_value = ReadRegister(dw_reg_num);
-							// push onto the stack reg value + offset
-							dw_stack.push_back(reg_value + offset);
+							DWARF_LEB128 dw_offset_leb128;
+							if((sz = dw_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bregx: missing LEB128 signed offset operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							int64_t offset = (int64_t) dw_offset_leb128;
+							
+							if(os) *os << "DW_OP_bregx " << dw_reg_num;
+							if(executing)
+							{
+								MEMORY_ADDR reg_value = ReadRegister(dw_reg_num);
+								// push onto the stack reg value + offset
+								dw_stack.push_back(reg_value + offset);
+							}
 						}
-					}
-					break;
-				case DW_OP_dup:
-					if(os) *os << "DW_OP_dup";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						MEMORY_ADDR addr = dw_stack.back();
-						dw_stack.push_back(addr);
-					}
-					break;
-				case DW_OP_drop:
-					if(os) *os << "DW_OP_drop";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						dw_stack.pop_back();
-					}
-					break;
-				case DW_OP_pick:
-					{
-						uint8_t dw_index;
-						if((expr_pos + sizeof(dw_index)) > expr_length) return false;
-						memcpy(&dw_index, expr + expr_pos, sizeof(dw_index));
-						dw_index = Target2Host(file_endianness, dw_index);
-						expr_pos += sizeof(dw_index);
-						if(os) *os << "DW_OP_pick " << (uint32_t) dw_index;
+						break;
+					case DW_OP_dup:
+						if(os) *os << "DW_OP_dup";
 						if(executing)
 						{
+							if(dw_stack.empty())
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_dup: DWARF stack is empty" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR addr = dw_stack.back();
+							dw_stack.push_back(addr);
+						}
+						break;
+					case DW_OP_drop:
+						if(os) *os << "DW_OP_drop";
+						if(executing)
+						{
+							if(dw_stack.empty())
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_drop: DWARF stack is empty" << EndDebugError;
+								}
+								return false;
+							}
+							dw_stack.pop_back();
+						}
+						break;
+					case DW_OP_pick:
+						{
+							uint8_t dw_index;
+							if((expr_pos + sizeof(dw_index)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_pick: missing 1-byte unsigned index operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_index, expr + expr_pos, sizeof(dw_index));
+							dw_index = Target2Host(file_endianness, dw_index);
+							expr_pos += sizeof(dw_index);
+							if(os) *os << "DW_OP_pick " << (unsigned int) dw_index;
+							if(executing)
+							{
+								unsigned int dw_stack_size = dw_stack.size();
+								if(dw_index >= dw_stack_size)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_pick: DWARF stack index (" << (unsigned int)  dw_index << ") is out of range (must be < " << dw_stack_size << ")" << EndDebugError;
+									}
+									return false;
+								}
+								MEMORY_ADDR pick_value = dw_stack[dw_stack_size - 1 - dw_index];
+								dw_stack.push_back(pick_value);
+							}
+						}
+						break;
+					case DW_OP_over:
+						if(os) *os << "DW_OP_over";
+						if(executing)
+						{
+							unsigned int dw_index = 1; // same as DW_OP_pick 1
 							unsigned int dw_stack_size = dw_stack.size();
-							if(dw_index >= dw_stack_size) return false;
+							if(dw_index >= dw_stack_size)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_over: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
+								}
+								return false;
+							}
 							MEMORY_ADDR pick_value = dw_stack[dw_stack_size - 1 - dw_index];
 							dw_stack.push_back(pick_value);
 						}
-					}
-					break;
-				case DW_OP_over:
-					if(os) *os << "DW_OP_over";
-					if(executing)
-					{
-						unsigned int dw_index = 1; // same as DW_OP_pick 1
-						unsigned int dw_stack_size = dw_stack.size();
-						if(dw_index >= dw_stack_size) return false;
-						MEMORY_ADDR pick_value = dw_stack[dw_stack_size - 1 - dw_index];
-						dw_stack.push_back(pick_value);
-					}
-					break;
-				case DW_OP_swap:
-					if(os) *os << "DW_OP_swap";
-					if(executing)
-					{
-						unsigned int dw_stack_size = dw_stack.size();
-						if(dw_stack_size < 2) return false;
-						MEMORY_ADDR second_value = dw_stack[dw_stack_size - 2];
-						MEMORY_ADDR first_value = dw_stack[dw_stack_size - 1];
-						// swap the top two stack entries
-						dw_stack[dw_stack_size - 2] = first_value;
-						dw_stack[dw_stack_size - 1] = second_value;
-					}
-					break;
-				case DW_OP_rot:
-					if(os) *os << "DW_OP_rot";
-					if(executing)
-					{
-						unsigned int dw_stack_size = dw_stack.size();
-						if(dw_stack_size < 3) return false;
-						MEMORY_ADDR third_value = dw_stack[dw_stack_size - 3];
-						MEMORY_ADDR second_value = dw_stack[dw_stack_size - 2];
-						MEMORY_ADDR first_value = dw_stack[dw_stack_size - 1];
-						// rotates the first three stack entries
-						dw_stack[dw_stack_size - 3] = second_value;
-						dw_stack[dw_stack_size - 2] = first_value;
-						dw_stack[dw_stack_size - 1] = third_value;
-					}
-					break;
-				case DW_OP_deref:
-					if(os) *os << "DW_OP_deref";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						MEMORY_ADDR addr = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR read_addr = 0;
-						
-						if(!ReadAddrFromMemory(addr, read_addr)) return false;
-						dw_stack.push_back(read_addr);
-					}
-					break;
-				case DW_OP_deref_size:
-					{
-						uint8_t dw_size;
-						if((expr_pos + sizeof(dw_size)) > expr_length) return false;
-						memcpy(&dw_size, expr + expr_pos, sizeof(dw_size));
-						dw_size = Target2Host(file_endianness, dw_size);
-						expr_pos += sizeof(dw_size);
-						if(os) *os << "DW_OP_deref_size " << (uint32_t) dw_size;
+						break;
+					case DW_OP_swap:
+						if(os) *os << "DW_OP_swap";
 						if(executing)
 						{
-							if(dw_stack.empty()) return false;
+							unsigned int dw_stack_size = dw_stack.size();
+							if(dw_stack_size < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_swap: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR second_value = dw_stack[dw_stack_size - 2];
+							MEMORY_ADDR first_value = dw_stack[dw_stack_size - 1];
+							// swap the top two stack entries
+							dw_stack[dw_stack_size - 2] = first_value;
+							dw_stack[dw_stack_size - 1] = second_value;
+						}
+						break;
+					case DW_OP_rot:
+						if(os) *os << "DW_OP_rot";
+						if(executing)
+						{
+							unsigned int dw_stack_size = dw_stack.size();
+							if(dw_stack_size < 3)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_rot: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR third_value = dw_stack[dw_stack_size - 3];
+							MEMORY_ADDR second_value = dw_stack[dw_stack_size - 2];
+							MEMORY_ADDR first_value = dw_stack[dw_stack_size - 1];
+							// rotates the first three stack entries
+							dw_stack[dw_stack_size - 3] = second_value;
+							dw_stack[dw_stack_size - 2] = first_value;
+							dw_stack[dw_stack_size - 1] = third_value;
+						}
+						break;
+					case DW_OP_deref:
+						if(os) *os << "DW_OP_deref";
+						if(executing)
+						{
+							if(dw_stack.empty())
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref: DWARF stack is empty" << EndDebugError;
+								}
+								return false;
+							}
 							MEMORY_ADDR addr = dw_stack.back();
 							dw_stack.pop_back();
 							MEMORY_ADDR read_addr = 0;
 							
-							if(!ReadAddrFromMemory(addr, read_addr, dw_size)) return false;
+							if(!ReadAddrFromMemory(addr, read_addr))
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
+								}
+								return false;
+							}
 							dw_stack.push_back(read_addr);
 						}
-					}
-					break;
-				case DW_OP_xderef:
-					if(os) *os << "DW_OP_xderef";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						MEMORY_ADDR addr = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR addr_space = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR read_addr = 0;
-						
-						if(!ReadAddrFromMemory(addr, read_addr, 0, addr_space)) return false;
-						dw_stack.push_back(read_addr);
-					}
-					break;
-				case DW_OP_xderef_size:
-					{
-						uint8_t dw_size;
-						if((expr_pos + sizeof(dw_size)) > expr_length) return false;
-						memcpy(&dw_size, expr + expr_pos, sizeof(dw_size));
-						dw_size = Target2Host(file_endianness, dw_size);
-						expr_pos += sizeof(dw_size);
-						if(os) *os << "DW_OP_xderef_size " << (uint32_t) dw_size;
+						break;
+					case DW_OP_deref_size:
+						{
+							uint8_t dw_size;
+							if((expr_pos + sizeof(dw_size)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: missing 1-byte size operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_size, expr + expr_pos, sizeof(dw_size));
+							dw_size = Target2Host(file_endianness, dw_size);
+							expr_pos += sizeof(dw_size);
+							if(os) *os << "DW_OP_deref_size " << (uint32_t) dw_size;
+							if(executing)
+							{
+								if(dw_stack.empty())
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: DWARF stack is empty" << EndDebugError;
+									}
+									return false;
+								}
+								MEMORY_ADDR addr = dw_stack.back();
+								dw_stack.pop_back();
+								MEMORY_ADDR read_addr = 0;
+								
+								if(!ReadAddrFromMemory(addr, read_addr, dw_size))
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_deref_size: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
+									}
+									return false;
+								}
+								dw_stack.push_back(read_addr);
+							}
+						}
+						break;
+					case DW_OP_xderef:
+						if(os) *os << "DW_OP_xderef";
 						if(executing)
 						{
-							if(dw_stack.empty()) return false;
+							unsigned int dw_stack_size = dw_stack.size();
+							if(dw_stack_size < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
+								}
+								return false;
+							}
 							MEMORY_ADDR addr = dw_stack.back();
 							dw_stack.pop_back();
 							MEMORY_ADDR addr_space = dw_stack.back();
 							dw_stack.pop_back();
 							MEMORY_ADDR read_addr = 0;
 							
-							if(!ReadAddrFromMemory(addr, read_addr, dw_size, addr_space)) return false;
+							if(!ReadAddrFromMemory(addr, read_addr, 0, addr_space))
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
+								}
+								return false;
+							}
 							dw_stack.push_back(read_addr);
 						}
-					}
-					break;
-				case DW_OP_push_object_address:
-					if(os) *os << "DW_OP_push_object_address";
-					if(executing)
-					{
-						// DW_OP_push_object_address is not meaningful in an operand of these instructions because
-						// there is no object context to provide a value to push.
-						if(dw_cfp) return false;
-
-						if(!dw_cu) return false;
-						
-						// push object address
-						if(!has_object_addr) return false;
-						dw_stack.push_back(object_addr);
-					}
-					break;
-				case DW_OP_form_tls_address:
-					if(os) *os << "DW_OP_form_tls_address";
-					if(executing)
-					{
-						// Currently unimplemented.
-						return false;
-					}
-					break;
-				case DW_OP_call_frame_cfa:
-					if(os) *os << "DW_OP_call_frame_cfa";
-					if(executing)
-					{
-						// DW_OP_call_frame_cfa is not meaningful in an operand of these instructions because its use
-						// would be circular.
-						if(dw_cfp) return false;
-						
-						// Currently unimplemented. I don't understand the specification !
-						return false;
-					}
-					break;
-				case DW_OP_abs:
-					if(os) *os << "DW_OP_abs";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						if(op1 & (1ULL << ((8 * sizeof(MEMORY_ADDR)) - 1))) // is it negative ?
+						break;
+					case DW_OP_xderef_size:
 						{
-							dw_stack.back() = -op1;
-						}
-					}
-					break;
-				case DW_OP_and:
-					if(os) *os << "DW_OP_and";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op1 & op2);
-					}
-					break;
-				case DW_OP_div:
-					if(os) *os << "DW_OP_div";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						int64_t op1 = dw_stack.back();
-						dw_stack.pop_back();
-						int64_t op2 = dw_stack.back();
-						dw_stack.pop_back();
-						if(!op1) return false; // division by zero
-						dw_stack.push_back(op2 / op1);
-					}
-					break;
-				case DW_OP_minus:
-					if(os) *os << "DW_OP_minus";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 - op1);
-					}
-					break;
-				case DW_OP_mod:
-					if(os) *os << "DW_OP_mod";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						if(!op1) return false; // division by zero
-						dw_stack.push_back(op2 % op1); // Note: unsigned modulus
-					}
-					break;
-				case DW_OP_mul:
-					if(os) *os << "DW_OP_mul";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 * op1);
-					}
-					break;
-				case DW_OP_neg:
-					if(os) *os << "DW_OP_neg";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.back() = -op1;
-					}
-					break;
-				case DW_OP_not:
-					if(os) *os << "DW_OP_not";
-					if(executing)
-					{
-						if(dw_stack.empty()) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.back() = ~op1;
-					}
-					break;
-				case DW_OP_or:
-					if(os) *os << "DW_OP_or";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 | op1);
-					}
-					break;
-				case DW_OP_plus:
-					if(os) *os << "DW_OP_plus";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 + op1);
-					}
-					break;
-				case DW_OP_plus_uconst:
-					{
-						DWARF_LEB128 dw_uconst_leb128;
-						int64_t sz;
-						if((sz = dw_uconst_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						MEMORY_ADDR dw_uconst = (MEMORY_ADDR) dw_uconst_leb128;
-						if(os) *os << "DW_OP_plus_uconst " << dw_uconst;
-						if(executing)
-						{
-							if(dw_stack.empty()) return false;
-							MEMORY_ADDR op1 = dw_stack.back();
-							dw_stack.pop_back();
-							dw_stack.push_back(dw_uconst + op1);
-						}
-					}
-					break;
-				case DW_OP_shl:
-					if(os) *os << "DW_OP_shl";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 << op1);
-					}
-					break;
-				case DW_OP_shr:
-					if(os) *os << "DW_OP_shr";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 >> op1);
-					}
-					break;
-				case DW_OP_shra:
-					if(os) *os << "DW_OP_shra";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back((signed) op2 >> op1);
-					}
-					break;
-				case DW_OP_xor:
-					if(os) *os << "DW_OP_xor";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(op2 ^ op1);
-					}
-					break;
-				case DW_OP_le:
-					if(os) *os << "DW_OP_le";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(((signed) op2 <= (signed) op1) ? 1 : 0);
-					}
-					break;
-				case DW_OP_ge:
-					if(os) *os << "DW_OP_ge";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(((signed) op2 >= (signed) op1) ? 1 : 0);
-					}
-					break;
-				case DW_OP_eq:
-					if(os) *os << "DW_OP_eq";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back((op2 == op1) ? 1 : 0);
-					}
-					break;
-				case DW_OP_lt:
-					if(os) *os << "DW_OP_lt";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(((signed) op2 < (signed) op1) ? 1 : 0);
-					}
-					break;
-				case DW_OP_gt:
-					if(os) *os << "DW_OP_gt";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back(((signed) op2 > (signed) op1) ? 1 : 0);
-					}
-					break;
-				case DW_OP_ne:
-					if(os) *os << "DW_OP_ne";
-					if(executing)
-					{
-						if(dw_stack.size() < 2) return false;
-						MEMORY_ADDR op1 = dw_stack.back();
-						dw_stack.pop_back();
-						MEMORY_ADDR op2 = dw_stack.back();
-						dw_stack.pop_back();
-						dw_stack.push_back((op2 != op1) ? 1 : 0);
-					}
-					break;
-				case DW_OP_skip:
-					{
-						int16_t dw_skip_amount;
-						if((expr_pos + sizeof(dw_skip_amount)) > expr_length) return false;
-						memcpy(&dw_skip_amount, expr + expr_pos, sizeof(dw_skip_amount));
-						dw_skip_amount = Target2Host(file_endianness, dw_skip_amount);
-						expr_pos += sizeof(dw_skip_amount);
-						if(os) *os << "DW_OP_skip " << dw_skip_amount;
-						if(executing)
-						{
-							if(dw_skip_amount > 0)
+							uint8_t dw_size;
+							if((expr_pos + sizeof(dw_size)) > expr_length)
 							{
-								if(expr_pos + dw_skip_amount > expr_length) return false;
-							}
-							else
-							{
-								if(expr_pos < (uint64_t) -dw_skip_amount) return false;
-							}
-							
-							expr_pos += dw_skip_amount;
-						}
-					}
-					break;
-				case DW_OP_bra:
-					{
-						int16_t dw_skip_amount;
-						if((expr_pos + sizeof(dw_skip_amount)) > expr_length) return false;
-						memcpy(&dw_skip_amount, expr + expr_pos, sizeof(dw_skip_amount));
-						dw_skip_amount = Target2Host(file_endianness, dw_skip_amount);
-						expr_pos += sizeof(dw_skip_amount);
-						if(os) *os << "DW_OP_bra " << dw_skip_amount;
-						if(executing)
-						{
-							if(dw_skip_amount > 0)
-							{
-								if(expr_pos + dw_skip_amount > expr_length) return false;
-							}
-							else
-							{
-								if(expr_pos < (uint64_t) -dw_skip_amount) return false;
-							}
-							
-							if(dw_stack.empty()) return false;
-							MEMORY_ADDR cond = dw_stack.back();
-							dw_stack.pop_back();
-							if(cond) expr_pos += dw_skip_amount;
-						}
-					}
-					break;
-				case DW_OP_call2:
-					{
-						// DW_OP_call2, DW_OP_call4 and DW_OP_call_ref operators are not meaningful in an
-						// operand of these instructions because there is no mapping from call frame information to any
-						// corresponding debugging compilation unit information, thus there is no way to interpret the call
-						// offset.
-						if(dw_cfp) return false;
-						
-						uint16_t debug_info_offset16;
-						if((expr_pos + sizeof(debug_info_offset16)) > expr_length) return false;
-						memcpy(&debug_info_offset16, expr + expr_pos, sizeof(debug_info_offset16));
-						debug_info_offset16 = Target2Host(file_endianness, debug_info_offset16);
-						expr_pos += sizeof(debug_info_offset16);
-						if(os) *os << "DW_OP_call2 " << debug_info_offset16;
-						if(executing)
-						{
-							const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset16);
-							if(!dw_die) return false;
-							const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
-							if(dw_at_location)
-							{
-								const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
-								if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION) return false;
-								const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
-								MEMORY_ADDR call_result_addr;
-								DWARF_Location<MEMORY_ADDR> dw_call_location;
-								bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
-								if(!call_status) return false;
-							}
-						}
-					}
-					break;
-				case DW_OP_call4:
-					{
-						// DW_OP_call2, DW_OP_call4 and DW_OP_call_ref operators are not meaningful in an
-						// operand of these instructions because there is no mapping from call frame information to any
-						// corresponding debugging compilation unit information, thus there is no way to interpret the call
-						// offset.
-						if(dw_cfp) return false;
-						
-						uint32_t debug_info_offset32;
-						if((expr_pos + sizeof(debug_info_offset32)) > expr_length) return false;
-						memcpy(&debug_info_offset32, expr + expr_pos, sizeof(debug_info_offset32));
-						debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
-						expr_pos += sizeof(debug_info_offset32);
-						if(os) *os << "DW_OP_call4 " << debug_info_offset32;
-						if(executing)
-						{
-							const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset32);
-							if(!dw_die) return false;
-							const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
-							if(dw_at_location)
-							{
-								const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
-								if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION) return false;
-								const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
-								MEMORY_ADDR call_result_addr;
-								DWARF_Location<MEMORY_ADDR> dw_call_location;
-								bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
-								if(!call_status) return false;
-							}
-						}
-					}
-					break;
-				case DW_OP_call_ref:
-					{
-						// DW_OP_call2, DW_OP_call4 and DW_OP_call_ref operators are not meaningful in an
-						// operand of these instructions because there is no mapping from call frame information to any
-						// corresponding debugging compilation unit information, thus there is no way to interpret the call
-						// offset.
-						if(dw_cfp) return false;
-						
-						if(!dw_cu) return false;
-						uint64_t debug_info_offset;
-						switch(dw_cu->GetOffsetSize())
-						{
-							case 2:
+								if(debug)
 								{
-									uint16_t debug_info_offset16;
-								
-									if((expr_pos + sizeof(debug_info_offset16)) > expr_length) return false;
-									memcpy(&debug_info_offset16, expr + expr_pos, sizeof(debug_info_offset16));
-									debug_info_offset16 = Target2Host(file_endianness, debug_info_offset16);
-									expr_pos += sizeof(debug_info_offset16);
-									debug_info_offset = debug_info_offset16;
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: missing 1-byte size operand" << EndDebugError;
 								}
-								break;
-							case 4:
-								{
-									uint32_t debug_info_offset32;
-								
-									if((expr_pos + sizeof(debug_info_offset32)) > expr_length) return false;
-									memcpy(&debug_info_offset32, expr + expr_pos, sizeof(debug_info_offset32));
-									debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
-									expr_pos += sizeof(debug_info_offset32);
-									debug_info_offset = debug_info_offset32;
-								}
-								break;
-							case 8:
-								{
-									uint64_t debug_info_offset64;
-								
-									if((expr_pos + sizeof(debug_info_offset64)) > expr_length) return false;
-									memcpy(&debug_info_offset64, expr + expr_pos, sizeof(debug_info_offset64));
-									debug_info_offset64 = Target2Host(file_endianness, debug_info_offset64);
-									expr_pos += sizeof(debug_info_offset64);
-									debug_info_offset = debug_info_offset64;
-								}
-								break;
-							default:
 								return false;
-						}
-						if(os) *os << "DW_OP_call_ref " << debug_info_offset;
-						if(executing)
-						{
-							const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset);
-							if(!dw_die) return false;
-							const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
-							if(dw_at_location)
-							{
-								const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
-								if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION) return false;
-								const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
-								MEMORY_ADDR call_result_addr;
-								DWARF_Location<MEMORY_ADDR> dw_call_location;
-								bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
-								if(!call_status) return false;
 							}
-						}
-					}
-					break;
-				case DW_OP_nop:
-					if(os) *os << "DW_OP_nop";
-					break;
-				case DW_OP_reg0:
-				case DW_OP_reg1:
-				case DW_OP_reg2:
-				case DW_OP_reg3:
-				case DW_OP_reg4:
-				case DW_OP_reg5:
-				case DW_OP_reg6:
-				case DW_OP_reg7:
-				case DW_OP_reg8:
-				case DW_OP_reg9:
-				case DW_OP_reg10:
-				case DW_OP_reg11:
-				case DW_OP_reg12:
-				case DW_OP_reg13:
-				case DW_OP_reg14:
-				case DW_OP_reg15:
-				case DW_OP_reg16:
-				case DW_OP_reg17:
-				case DW_OP_reg18:
-				case DW_OP_reg19:
-				case DW_OP_reg20:
-				case DW_OP_reg21:
-				case DW_OP_reg22:
-				case DW_OP_reg23:
-				case DW_OP_reg24:
-				case DW_OP_reg25:
-				case DW_OP_reg26:
-				case DW_OP_reg27:
-				case DW_OP_reg28:
-				case DW_OP_reg29:
-				case DW_OP_reg30:
-				case DW_OP_reg31:
-					{
-						uint8_t dw_reg_num = opcode - DW_OP_reg0;
-						if(os) *os << "DW_OP_reg" << (unsigned int) dw_reg_num;
-						if(executing)
-						{
-							if(!dw_location) return false; // DW_OP_reg* are only allowed in location expressions
-							
-							// Each register name operator must be used alone (as a DWARF expression
-							// consisting of just that one operation).
-							if((expr_pos != expr_length) && (expr[expr_pos] != DW_OP_piece)) return false;
-							
-							in_dw_op_reg = true; // indicate that we started a DW_OP_reg* and that the register number is at top of the stack
-							dw_stack.push_back(dw_reg_num);
-						}
-					}
-					break;
-				case DW_OP_regx:
-					{
-						DWARF_LEB128 dw_reg_num_leb128;
-						int64_t sz;
-						if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						MEMORY_ADDR dw_reg_num = (MEMORY_ADDR) dw_reg_num_leb128;
-						if(os) *os << "DW_OP_regx " << dw_reg_num;
-						if(executing)
-						{
-							if(!dw_location) return false; // DW_OP_reg* are only allowed in location expressions
-
-							// Each register name operator must be used alone (as a DWARF expression
-							// consisting of just that one operation).
-							if((expr_pos != expr_length) && (expr[expr_pos] != DW_OP_piece)) return false;
-							
-							in_dw_op_reg = true; // indicate that we started a DW_OP_reg* and that the register number is at top of the stack
-							dw_stack.push_back(dw_reg_num);
-						}
-					}
-					break;
-				case DW_OP_piece:
-					{
-						DWARF_LEB128 dw_byte_size_leb128;
-						int64_t sz;
-						if((sz = dw_byte_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						uint64_t dw_byte_size = (uint64_t) dw_byte_size_leb128;
-						if(os) *os << "DW_OP_piece " << dw_byte_size;
-						if(executing)
-						{
-							uint64_t dw_bit_size = dw_byte_size * 8;
-							if(!dw_location) return false; // DW_OP_piece is only allowed in location expressions
-
-							if(dw_stack.empty()) return false; // DW_OP_piece must be preceeded by a register name operator or an address operation that have pushed a register number or an address on the stack
-							
-							DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece;
-							if(in_dw_op_reg)
+							memcpy(&dw_size, expr + expr_pos, sizeof(dw_size));
+							dw_size = Target2Host(file_endianness, dw_size);
+							expr_pos += sizeof(dw_size);
+							if(os) *os << "DW_OP_xderef_size " << (uint32_t) dw_size;
+							if(executing)
 							{
-								// register location
-								MEMORY_ADDR dw_reg_num = dw_stack.back();
-								dw_stack.pop_back();
-								dw_loc_piece = new DWARF_RegisterLocationPiece<MEMORY_ADDR>(dw_reg_num, 0, dw_bit_size);
-								in_dw_op_reg = false;
-							}
-							else
-							{
-								// memory location
+								unsigned int dw_stack_size = dw_stack.size();
+								if(dw_stack_size < 2)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: DWARF stack (" << dw_stack_size << " elements) is too small for operation" << EndDebugError;
+									}
+									return false;
+								}
 								MEMORY_ADDR addr = dw_stack.back();
 								dw_stack.pop_back();
-								dw_loc_piece = new DWARF_MemoryLocationPiece<MEMORY_ADDR>(addr, 0, dw_bit_size);
+								MEMORY_ADDR addr_space = dw_stack.back();
+								dw_stack.pop_back();
+								MEMORY_ADDR read_addr = 0;
+								
+								if(!ReadAddrFromMemory(addr, read_addr, dw_size, addr_space))
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xderef_size: failed reading at memory address 0x" << std::hex << addr << std::dec << EndDebugError;
+									}
+									return false;
+								}
+								dw_stack.push_back(read_addr);
 							}
-							
-							dw_location->Add(dw_loc_piece);
-							
-							// Each simple location expression describes the location of one piece of the object;
-							// each composition operator describes which part of the object is located there. Each simple
-							// location expression that is a DWARF expression is evaluated independently of any others (as
-							// though on its own separate stack).
-							dw_stack.clear();
 						}
-					}
-					break;
-				case DW_OP_bit_piece:
-					{
-						DWARF_LEB128 dw_bit_size_leb128;
-						int64_t sz;
-						if((sz = dw_bit_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						uint64_t dw_bit_size = (uint64_t) dw_bit_size_leb128;
-
-						DWARF_LEB128 dw_bit_offset_leb128;
-						if((sz = dw_bit_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0) return false;
-						expr_pos += sz;
-						
-						uint64_t dw_bit_offset = (uint64_t) dw_bit_offset_leb128;
-						
-						if(os) *os << "DW_OP_bit_piece " << dw_bit_size << ", " << dw_bit_offset;
+						break;
+					case DW_OP_push_object_address:
+						if(os) *os << "DW_OP_push_object_address";
 						if(executing)
 						{
-							if(!dw_location) return false; // DW_OP_piece is only allowed in location expressions
+							// DW_OP_push_object_address is not meaningful in an operand of these instructions because
+							// there is no object context to provide a value to push.
+							if(dw_cfp)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: not meaningful in a call frame program" << EndDebugError;
+								}
+								return false;
+							}
+
+							if(!dw_cu)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: only meaningful in a DIE" << EndDebugError;
+								}
+								return false;
+							}
 							
-							DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece;
+							// push object address
+							if(!has_object_addr)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_push_object_address: object address is not set" << EndDebugError;
+								}
+								return false;
+							}
+							dw_stack.push_back(object_addr);
+						}
+						break;
+					case DW_OP_form_tls_address:
+						if(os) *os << "DW_OP_form_tls_address";
+						if(executing)
+						{
+							// Currently unimplemented.
+							if(debug)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_form_tls_address: currently unimplemented" << EndDebugError;
+							}
+							return false;
+						}
+						break;
+					case DW_OP_call_frame_cfa:
+						if(os) *os << "DW_OP_call_frame_cfa";
+						if(executing)
+						{
+							// DW_OP_call_frame_cfa is not meaningful in an operand of these instructions because its use
+							// would be circular.
+							if(dw_cfp)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: not meaningful in a call frame program" << EndDebugError;
+								}
+								return false;
+							}
+							
+							// Currently unimplemented. I don't understand the specification !
+							if(debug)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: currently unimplemented" << EndDebugError;
+							}
+							return false;
+						}
+						break;
+					case DW_OP_abs:
+						if(os) *os << "DW_OP_abs";
+						if(executing)
+						{
 							if(dw_stack.empty())
 							{
-								// null location
-								dw_loc_piece = new DWARF_LocationPiece<MEMORY_ADDR>(dw_bit_size);
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_abs: DWARF stack is empty" << EndDebugError;
+								}
+								return false;
 							}
-							else
+							MEMORY_ADDR op1 = dw_stack.back();
+							if(op1 & (1ULL << ((8 * sizeof(MEMORY_ADDR)) - 1))) // is it negative ?
 							{
+								dw_stack.back() = -op1;
+							}
+						}
+						break;
+					case DW_OP_and:
+						if(os) *os << "DW_OP_and";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_and: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op1 & op2);
+						}
+						break;
+					case DW_OP_div:
+						if(os) *os << "DW_OP_div";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_div: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							int64_t op1 = dw_stack.back();
+							dw_stack.pop_back();
+							int64_t op2 = dw_stack.back();
+							dw_stack.pop_back();
+							if(!op1)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_div: division by zero" << EndDebugError;
+								}
+								return false; // division by zero
+							}
+							dw_stack.push_back(op2 / op1);
+						}
+						break;
+					case DW_OP_minus:
+						if(os) *os << "DW_OP_minus";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_minus: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 - op1);
+						}
+						break;
+					case DW_OP_mod:
+						if(os) *os << "DW_OP_mod";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mod: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							if(!op1)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mod: division by zero" << EndDebugError;
+								}
+								return false; // division by zero
+							}
+							dw_stack.push_back(op2 % op1); // Note: unsigned modulus
+						}
+						break;
+					case DW_OP_mul:
+						if(os) *os << "DW_OP_mul";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_mul: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 * op1);
+						}
+						break;
+					case DW_OP_neg:
+						if(os) *os << "DW_OP_neg";
+						if(executing)
+						{
+							if(dw_stack.empty())
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_neg: DWARF stack is empty" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.back() = -op1;
+						}
+						break;
+					case DW_OP_not:
+						if(os) *os << "DW_OP_not";
+						if(executing)
+						{
+							if(dw_stack.empty())
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_not: DWARF stack is empty" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.back() = ~op1;
+						}
+						break;
+					case DW_OP_or:
+						if(os) *os << "DW_OP_or";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_or: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 | op1);
+						}
+						break;
+					case DW_OP_plus:
+						if(os) *os << "DW_OP_plus";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 + op1);
+						}
+						break;
+					case DW_OP_plus_uconst:
+						{
+							DWARF_LEB128 dw_uconst_leb128;
+							int64_t sz;
+							if((sz = dw_uconst_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus_uconst: missing LEB128 unsigned constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							MEMORY_ADDR dw_uconst = (MEMORY_ADDR) dw_uconst_leb128;
+							if(os) *os << "DW_OP_plus_uconst " << dw_uconst;
+							if(executing)
+							{
+								if(dw_stack.empty())
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_plus_uconst: DWARF stack is empty" << EndDebugError;
+									}
+									return false;
+								}
+								MEMORY_ADDR op1 = dw_stack.back();
+								dw_stack.pop_back();
+								dw_stack.push_back(dw_uconst + op1);
+							}
+						}
+						break;
+					case DW_OP_shl:
+						if(os) *os << "DW_OP_shl";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shl: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 << op1);
+						}
+						break;
+					case DW_OP_shr:
+						if(os) *os << "DW_OP_shr";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shr: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 >> op1);
+						}
+						break;
+					case DW_OP_shra:
+						if(os) *os << "DW_OP_shra";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_shra: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back((signed) op2 >> op1);
+						}
+						break;
+					case DW_OP_xor:
+						if(os) *os << "DW_OP_xor";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_xor: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(op2 ^ op1);
+						}
+						break;
+					case DW_OP_le:
+						if(os) *os << "DW_OP_le";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_le: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(((signed) op2 <= (signed) op1) ? 1 : 0);
+						}
+						break;
+					case DW_OP_ge:
+						if(os) *os << "DW_OP_ge";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_ge: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(((signed) op2 >= (signed) op1) ? 1 : 0);
+						}
+						break;
+					case DW_OP_eq:
+						if(os) *os << "DW_OP_eq";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_eq: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back((op2 == op1) ? 1 : 0);
+						}
+						break;
+					case DW_OP_lt:
+						if(os) *os << "DW_OP_lt";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_lt: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(((signed) op2 < (signed) op1) ? 1 : 0);
+						}
+						break;
+					case DW_OP_gt:
+						if(os) *os << "DW_OP_gt";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_gt: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back(((signed) op2 > (signed) op1) ? 1 : 0);
+						}
+						break;
+					case DW_OP_ne:
+						if(os) *os << "DW_OP_ne";
+						if(executing)
+						{
+							if(dw_stack.size() < 2)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_ne: DWARF stack (" << dw_stack.size() << " elements) is too small for binary operation" << EndDebugError;
+								}
+								return false;
+							}
+							MEMORY_ADDR op1 = dw_stack.back();
+							dw_stack.pop_back();
+							MEMORY_ADDR op2 = dw_stack.back();
+							dw_stack.pop_back();
+							dw_stack.push_back((op2 != op1) ? 1 : 0);
+						}
+						break;
+					case DW_OP_skip:
+						{
+							int16_t dw_skip_amount;
+							if((expr_pos + sizeof(dw_skip_amount)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: missing 2-byte signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_skip_amount, expr + expr_pos, sizeof(dw_skip_amount));
+							dw_skip_amount = Target2Host(file_endianness, dw_skip_amount);
+							expr_pos += sizeof(dw_skip_amount);
+							if(os) *os << "DW_OP_skip " << dw_skip_amount;
+							if(executing)
+							{
+								if(dw_skip_amount > 0)
+								{
+									if(expr_pos + dw_skip_amount > expr_length)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: forward skip amount is out of range" << EndDebugError;
+										}
+										return false;
+									}
+								}
+								else
+								{
+									if(expr_pos < (uint64_t) -dw_skip_amount)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_skip: backward skip amount is out of range" << EndDebugError;
+										}
+										return false;
+									}
+								}
+								
+								expr_pos += dw_skip_amount;
+							}
+						}
+						break;
+					case DW_OP_bra:
+						{
+							int16_t dw_skip_amount;
+							if((expr_pos + sizeof(dw_skip_amount)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: missing 2-byte signed constant operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&dw_skip_amount, expr + expr_pos, sizeof(dw_skip_amount));
+							dw_skip_amount = Target2Host(file_endianness, dw_skip_amount);
+							expr_pos += sizeof(dw_skip_amount);
+							if(os) *os << "DW_OP_bra " << dw_skip_amount;
+							if(executing)
+							{
+								if(dw_stack.empty())
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: DWARF stack is empty" << EndDebugError;
+									}
+									return false;
+								}
+								MEMORY_ADDR cond = dw_stack.back();
+								dw_stack.pop_back();
+								if(cond)
+								{
+									if(dw_skip_amount > 0)
+									{
+										if(expr_pos + dw_skip_amount > expr_length)
+										{
+											if(debug)
+											{
+												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: forward skip amount is out of range" << EndDebugError;
+											}
+											return false;
+										}
+									}
+									else
+									{
+										if(expr_pos < (uint64_t) -dw_skip_amount)
+										{
+											if(debug)
+											{
+												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bra: backward skip amount is out of range" << EndDebugError;
+											}
+											return false;
+										}
+									}
+									expr_pos += dw_skip_amount;
+								}
+							}
+						}
+						break;
+					case DW_OP_call2:
+						{
+							// DW_OP_call2, DW_OP_call4 and DW_OP_call_ref operators are not meaningful in an
+							// operand of these instructions because there is no mapping from call frame information to any
+							// corresponding debugging compilation unit information, thus there is no way to interpret the call
+							// offset.
+							if(dw_cfp)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: not meaningful in a call frame program" << EndDebugError;
+								}
+								return false;
+							}
+							
+							uint16_t debug_info_offset16;
+							if((expr_pos + sizeof(debug_info_offset16)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: missing 2-byte unsigned offset operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&debug_info_offset16, expr + expr_pos, sizeof(debug_info_offset16));
+							debug_info_offset16 = Target2Host(file_endianness, debug_info_offset16);
+							expr_pos += sizeof(debug_info_offset16);
+							if(os) *os << "DW_OP_call2 " << debug_info_offset16;
+							if(executing)
+							{
+								const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset16);
+								if(!dw_die)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: can't find DIE at offset 0x" << std::hex << debug_info_offset16 << std::dec << EndDebugError;
+									}
+									return false;
+								}
+								const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
+								if(dw_at_location)
+								{
+									const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
+									if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
+										}
+										return false;
+									}
+									const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
+									MEMORY_ADDR call_result_addr;
+									DWARF_Location<MEMORY_ADDR> dw_call_location;
+									bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
+									if(!call_status)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call2: DWARF expression evaluation failed" << EndDebugError;
+										}
+										return false;
+									}
+								}
+								else
+								{
+									if(debug)
+									{
+										logger << DebugWarning << "DW_OP_call2: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
+									}
+								}
+							}
+						}
+						break;
+					case DW_OP_call4:
+						{
+							// DW_OP_call2, DW_OP_call4 and DW_OP_call_ref operators are not meaningful in an
+							// operand of these instructions because there is no mapping from call frame information to any
+							// corresponding debugging compilation unit information, thus there is no way to interpret the call
+							// offset.
+							if(dw_cfp)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: not meaningful in a call frame program" << EndDebugError;
+								}
+								return false;
+							}
+							
+							uint32_t debug_info_offset32;
+							if((expr_pos + sizeof(debug_info_offset32)) > expr_length)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: missing 4-byte unsigned offset operand" << EndDebugError;
+								}
+								return false;
+							}
+							memcpy(&debug_info_offset32, expr + expr_pos, sizeof(debug_info_offset32));
+							debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
+							expr_pos += sizeof(debug_info_offset32);
+							if(os) *os << "DW_OP_call4 " << debug_info_offset32;
+							if(executing)
+							{
+								const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset32);
+								if(!dw_die)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: can't find DIE at offset 0x" << std::hex << debug_info_offset32 << std::dec << EndDebugError;
+									}
+									return false;
+								}
+								const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
+								if(dw_at_location)
+								{
+									const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
+									if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
+										}
+										return false;
+									}
+									const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
+									MEMORY_ADDR call_result_addr;
+									DWARF_Location<MEMORY_ADDR> dw_call_location;
+									bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
+									if(!call_status)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call4: DWARF expression evaluation failed" << EndDebugError;
+										}
+										return false;
+									}
+								}
+								else
+								{
+									if(debug)
+									{
+										logger << DebugWarning << "DW_OP_call4: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
+									}
+								}
+							}
+						}
+						break;
+					case DW_OP_call_ref:
+						{
+							// DW_OP_call2, DW_OP_call4 and DW_OP_call_ref operators are not meaningful in an
+							// operand of these instructions because there is no mapping from call frame information to any
+							// corresponding debugging compilation unit information, thus there is no way to interpret the call
+							// offset.
+							if(dw_cfp)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: not meaningful in a call frame program" << EndDebugError;
+								}
+								return false;
+							}
+							
+							if(!dw_cu)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: only meaningful in a DIE" << EndDebugError;
+								}
+								return false;
+							}
+							uint64_t debug_info_offset;
+							switch(dw_cu->GetOffsetSize())
+							{
+								case 4:
+									{
+										uint32_t debug_info_offset32;
+									
+										if((expr_pos + sizeof(debug_info_offset32)) > expr_length)
+										{
+											if(debug)
+											{
+												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: missing 4-byte unsigned offset operand" << EndDebugError;
+											}
+											return false;
+										}
+										memcpy(&debug_info_offset32, expr + expr_pos, sizeof(debug_info_offset32));
+										debug_info_offset32 = Target2Host(file_endianness, debug_info_offset32);
+										expr_pos += sizeof(debug_info_offset32);
+										debug_info_offset = debug_info_offset32;
+									}
+									break;
+								case 8:
+									{
+										uint64_t debug_info_offset64;
+									
+										if((expr_pos + sizeof(debug_info_offset64)) > expr_length)
+										{
+											if(debug)
+											{
+												logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: missing 8-byte unsigned offset operand" << EndDebugError;
+											}
+											return false;
+										}
+										memcpy(&debug_info_offset64, expr + expr_pos, sizeof(debug_info_offset64));
+										debug_info_offset64 = Target2Host(file_endianness, debug_info_offset64);
+										expr_pos += sizeof(debug_info_offset64);
+										debug_info_offset = debug_info_offset64;
+									}
+									break;
+								default:
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: unsupported unsigned offset operand size" << EndDebugError;
+									}
+									return false;
+							}
+							if(os) *os << "DW_OP_call_ref " << debug_info_offset;
+							if(executing)
+							{
+								const DWARF_DIE<MEMORY_ADDR> *dw_die = dw_handler->FindDIE(debug_info_offset);
+								if(!dw_die)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: can't find DIE at offset 0x" << std::hex << debug_info_offset << std::dec << EndDebugError;
+									}
+									return false;
+								}
+								const DWARF_Attribute<MEMORY_ADDR> *dw_at_location = dw_die->FindAttribute(DW_AT_location);
+								if(dw_at_location)
+								{
+									const DWARF_AttributeValue<MEMORY_ADDR> *dw_at_location_value = dw_at_location->GetValue();
+									if(dw_at_location_value->GetClass() != DW_CLASS_EXPRESSION)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: DW_AT_location attribute of referenced DIE is not a DWARF expression" << EndDebugError;
+										}
+										return false;
+									}
+									const DWARF_Expression<MEMORY_ADDR> *dw_at_location_expr = (const DWARF_Expression<MEMORY_ADDR> *) dw_at_location_value;
+									MEMORY_ADDR call_result_addr;
+									DWARF_Location<MEMORY_ADDR> dw_call_location;
+									bool call_status = Run(dw_at_location_expr, os, &call_result_addr, &dw_call_location);
+									if(!call_status)
+									{
+										if(debug)
+										{
+											logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_ref: DWARF expression evaluation failed" << EndDebugError;
+										}
+										return false;
+									}
+								}
+								else
+								{
+									if(debug)
+									{
+										logger << DebugWarning << "DW_OP_call_ref: operation has no effect because referenced DIE has no DW_AT_location attribute" << EndDebugWarning;
+									}
+								}
+							}
+						}
+						break;
+					case DW_OP_nop:
+						if(os) *os << "DW_OP_nop";
+						break;
+					case DW_OP_reg0:
+					case DW_OP_reg1:
+					case DW_OP_reg2:
+					case DW_OP_reg3:
+					case DW_OP_reg4:
+					case DW_OP_reg5:
+					case DW_OP_reg6:
+					case DW_OP_reg7:
+					case DW_OP_reg8:
+					case DW_OP_reg9:
+					case DW_OP_reg10:
+					case DW_OP_reg11:
+					case DW_OP_reg12:
+					case DW_OP_reg13:
+					case DW_OP_reg14:
+					case DW_OP_reg15:
+					case DW_OP_reg16:
+					case DW_OP_reg17:
+					case DW_OP_reg18:
+					case DW_OP_reg19:
+					case DW_OP_reg20:
+					case DW_OP_reg21:
+					case DW_OP_reg22:
+					case DW_OP_reg23:
+					case DW_OP_reg24:
+					case DW_OP_reg25:
+					case DW_OP_reg26:
+					case DW_OP_reg27:
+					case DW_OP_reg28:
+					case DW_OP_reg29:
+					case DW_OP_reg30:
+					case DW_OP_reg31:
+						{
+							uint8_t dw_reg_num = opcode - DW_OP_reg0;
+							if(os) *os << "DW_OP_reg" << (unsigned int) dw_reg_num;
+							if(executing)
+							{
+								if(!dw_location)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_reg" << (unsigned int) dw_reg_num << ": only allowed in location expressions" << EndDebugError;
+									}
+									return false; // DW_OP_reg* are only allowed in location expressions
+								}
+								
+								// Each register name operator must be used alone (as a DWARF expression
+								// consisting of just that one operation).
+								if((expr_pos != expr_length) && (expr[expr_pos] != DW_OP_piece))
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_reg" << (unsigned int) dw_reg_num << ": each register name operator must be used alone" << EndDebugError;
+									}
+									return false;
+								}
+								
+								in_dw_op_reg = true; // indicate that we started a DW_OP_reg* and that the register number is at top of the stack
+								dw_stack.push_back(dw_reg_num);
+							}
+						}
+						break;
+					case DW_OP_regx:
+						{
+							DWARF_LEB128 dw_reg_num_leb128;
+							int64_t sz;
+							if((sz = dw_reg_num_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx: missing LEB128 register number operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							MEMORY_ADDR dw_reg_num = (MEMORY_ADDR) dw_reg_num_leb128;
+							if(os) *os << "DW_OP_regx " << dw_reg_num;
+							if(executing)
+							{
+								if(!dw_location)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx " << dw_reg_num << ": only allowed in location expressions" << EndDebugError;
+									}
+									return false; // DW_OP_reg* are only allowed in location expressions
+								}
+
+								// Each register name operator must be used alone (as a DWARF expression
+								// consisting of just that one operation).
+								if((expr_pos != expr_length) && (expr[expr_pos] != DW_OP_piece))
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_regx" << dw_reg_num << ": each register name operator must be used alone" << EndDebugError;
+									}
+									return false;
+								}
+								
+								in_dw_op_reg = true; // indicate that we started a DW_OP_reg* and that the register number is at top of the stack
+								dw_stack.push_back(dw_reg_num);
+							}
+						}
+						break;
+					case DW_OP_piece:
+						{
+							DWARF_LEB128 dw_byte_size_leb128;
+							int64_t sz;
+							if((sz = dw_byte_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: missing LEB128 byte size operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t dw_byte_size = (uint64_t) dw_byte_size_leb128;
+							if(os) *os << "DW_OP_piece " << dw_byte_size;
+							if(executing)
+							{
+								uint64_t dw_bit_size = dw_byte_size * 8;
+								if(!dw_location)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: only allowed in location expressions" << EndDebugError;
+									}
+									return false; // DW_OP_piece is only allowed in location expressions
+								}
+
+								if(dw_stack.empty())
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_piece: DWARF stack is empty" << EndDebugError;
+									}
+									return false; // DW_OP_piece must be preceeded by a register name operator or an address operation that have pushed a register number or an address on the stack
+								}
+								
+								DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece;
 								if(in_dw_op_reg)
 								{
 									// register location
 									MEMORY_ADDR dw_reg_num = dw_stack.back();
 									dw_stack.pop_back();
-									dw_loc_piece = new DWARF_RegisterLocationPiece<MEMORY_ADDR>(dw_reg_num, dw_bit_offset, dw_bit_size); // whole register
+									dw_loc_piece = new DWARF_RegisterLocationPiece<MEMORY_ADDR>(dw_reg_num, 0, dw_bit_size);
 									in_dw_op_reg = false;
 								}
 								else
@@ -1371,22 +1998,117 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 									// memory location
 									MEMORY_ADDR addr = dw_stack.back();
 									dw_stack.pop_back();
-									dw_loc_piece = new DWARF_MemoryLocationPiece<MEMORY_ADDR>(addr, dw_bit_offset, dw_bit_size);
+									dw_loc_piece = new DWARF_MemoryLocationPiece<MEMORY_ADDR>(addr, 0, dw_bit_size);
 								}
+								
+								dw_location->Add(dw_loc_piece);
+								
+								// Each simple location expression describes the location of one piece of the object;
+								// each composition operator describes which part of the object is located there. Each simple
+								// location expression that is a DWARF expression is evaluated independently of any others (as
+								// though on its own separate stack).
+								dw_stack.clear();
 							}
-							
-							dw_location->Add(dw_loc_piece);
-							
-							// Each simple location expression describes the location of one piece of the object;
-							// each composition operator describes which part of the object is located there. Each simple
-							// location expression that is a DWARF expression is evaluated independently of any others (as
-							// though on its own separate stack).
-							dw_stack.clear();
 						}
-					}
-					break;
-				default:
-					return false;
+						break;
+					case DW_OP_bit_piece:
+						{
+							DWARF_LEB128 dw_bit_size_leb128;
+							int64_t sz;
+							if((sz = dw_bit_size_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: missing LEB128 bit size operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t dw_bit_size = (uint64_t) dw_bit_size_leb128;
+
+							DWARF_LEB128 dw_bit_offset_leb128;
+							if((sz = dw_bit_offset_leb128.Load(expr + expr_pos, expr_length - expr_pos)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: missing LEB128 offset operand" << EndDebugError;
+								}
+								return false;
+							}
+							expr_pos += sz;
+							
+							uint64_t dw_bit_offset = (uint64_t) dw_bit_offset_leb128;
+							
+							if(os) *os << "DW_OP_bit_piece " << dw_bit_size << ", " << dw_bit_offset;
+							if(executing)
+							{
+								if(!dw_location)
+								{
+									if(debug)
+									{
+										logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_bit_piece: only allowed in location expressions" << EndDebugError;
+									}
+									return false; // DW_OP_bit_piece is only allowed in location expressions
+								}
+								
+								DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece;
+								if(dw_stack.empty())
+								{
+									// null location
+									dw_loc_piece = new DWARF_LocationPiece<MEMORY_ADDR>(dw_bit_size);
+								}
+								else
+								{
+									if(in_dw_op_reg)
+									{
+										// register location
+										MEMORY_ADDR dw_reg_num = dw_stack.back();
+										dw_stack.pop_back();
+										dw_loc_piece = new DWARF_RegisterLocationPiece<MEMORY_ADDR>(dw_reg_num, dw_bit_offset, dw_bit_size); // whole register
+										in_dw_op_reg = false;
+									}
+									else
+									{
+										// memory location
+										MEMORY_ADDR addr = dw_stack.back();
+										dw_stack.pop_back();
+										dw_loc_piece = new DWARF_MemoryLocationPiece<MEMORY_ADDR>(addr, dw_bit_offset, dw_bit_size);
+									}
+								}
+								
+								dw_location->Add(dw_loc_piece);
+								
+								// Each simple location expression describes the location of one piece of the object;
+								// each composition operator describes which part of the object is located there. Each simple
+								// location expression that is a DWARF expression is evaluated independently of any others (as
+								// though on its own separate stack).
+								dw_stack.clear();
+							}
+						}
+						break;
+					default:
+						if((opcode >= DW_OP_lo_user) && (opcode <= DW_OP_hi_user))
+						{
+							if(debug)
+							{
+								const char *producer = dw_cu ? dw_cu->GetProducer() : 0;
+								logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", in DWARF expression, unsupported vendor specific extension (opcode 0x" << std::hex << (unsigned int) opcode << std::dec << ") from " << (producer ? producer : "an unknown producer") << EndDebugWarning;
+							}
+							got_vendor_specific_extension = true;
+						}
+						
+						if(os) *os << "0x" << std::hex << (unsigned int) opcode << std::dec;
+						if(executing)
+						{
+							if(debug)
+							{
+								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", while evaluating a DWARF expression, unknown or invalid operation (0x" << std::hex << (unsigned int) opcode << std::dec << ")" << EndDebugError;
+							}
+							return false;
+						}
+						break;
+				}
 			}
 			
 			if(os && (expr_pos < expr_length))
@@ -1414,7 +2136,7 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 		}
 	}
 
-	return true;
+	return !got_vendor_specific_extension;
 }
 
 template <class MEMORY_ADDR>
@@ -1425,7 +2147,8 @@ MEMORY_ADDR DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_nu
 	
 	if(arch_reg)
 	{
-		switch(arch_reg->GetSize())
+		unsigned int reg_size = arch_reg->GetSize();
+		switch(reg_size)
 		{
 			case 1:
 				{
@@ -1456,7 +2179,10 @@ MEMORY_ADDR DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_nu
 				}
 				break;
 			default:
-				throw std::runtime_error("Internal error");
+				if(debug)
+				{
+					logger << DebugError << "register size (" << reg_size << " bytes) is unsupported for reading" << EndDebugError;
+				}
 				return false;
 		}
 	}
@@ -1467,7 +2193,14 @@ template <class MEMORY_ADDR>
 bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size, MEMORY_ADDR addr_space) const
 {
 	// FIXME: addr_space is currently ignored in our implementation
-	if(read_size > arch_address_size) return false;
+	if(read_size > arch_address_size)
+	{
+		if(debug)
+		{
+			logger << DebugError << "memory read of " << read_size << " bytes is unsupported" << EndDebugError;
+		}
+		return false;
+	}
 	if(!read_size) read_size = arch_address_size;
 	
 	switch(read_size)
@@ -1573,6 +2306,10 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadAddrFromMemory(MEMORY_ADDR addr, MEMOR
 			}
 			break;
 		default:
+			if(debug)
+			{
+				logger << DebugError << "memory read of " << read_size << " bytes is unsupported" << EndDebugError;
+			}
 			return false;
 	}
 	return true;

@@ -39,6 +39,7 @@
 #include <iosfwd>
 #include <vector>
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 
 namespace unisim {
 namespace util {
@@ -56,6 +57,7 @@ public:
 	~DWARF_StatementProgram();
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	DWARF_Version GetDWARFVersion() const;
 	unsigned int GetId() const;
 	std::string GetHREF() const;
 	const DWARF_Filename *GetFilename(unsigned int filename_idx) const;
@@ -69,6 +71,7 @@ private:
 	friend class DWARF_StatementVM<MEMORY_ADDR>;
 	
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	DWARF_Version dw_ver;
 	
 	uint64_t offset;
 	unsigned int id;

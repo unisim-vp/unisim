@@ -95,6 +95,19 @@ const char *DWARF_GetTagName(uint16_t dw_tag)
 		case DW_TAG_variant_part: return "DW_TAG_variant_part";
 		case DW_TAG_variable: return "DW_TAG_variable";
 		case DW_TAG_volatile_type: return "DW_TAG_volatile_type";
+		case DW_TAG_dwarf_procedure: return "DW_TAG_dwarf_procedure";
+		case DW_TAG_restrict_type: return "DW_TAG_restrict_type";
+		case DW_TAG_interface_type: return "DW_TAG_interface_type";
+		case DW_TAG_namespace: return "DW_TAG_namespace";
+		case DW_TAG_imported_module: return "DW_TAG_imported_module";
+		case DW_TAG_unspecified_type: return "DW_TAG_unspecified_type";
+		case DW_TAG_partial_unit: return "DW_TAG_partial_unit";
+		case DW_TAG_imported_unit: return "DW_TAG_imported_unit";
+		case DW_TAG_condition: return "DW_TAG_condition";
+		case DW_TAG_shared_type: return "DW_TAG_shared_type";
+		case DW_TAG_type_unit: return "DW_TAG_type_unit";
+		case DW_TAG_rvalue_reference_type: return "DW_TAG_rvalue_reference_type";
+		case DW_TAG_template_alias: return "DW_TAG_template_alias";
 	}
 	std::stringstream sstr;
 	sstr << "DW_TAG_" << (((dw_tag >= DW_TAG_lo_user) && (dw_tag <= DW_TAG_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_tag << std::dec;
@@ -193,6 +206,12 @@ const char *DWARF_GetATName(uint16_t dw_at)
 		case DW_AT_elemental: return "DW_AT_elemental";
 		case DW_AT_pure: return "DW_AT_pure";
 		case DW_AT_recursive: return "DW_AT_recursive";
+		case DW_AT_signature: return "DW_AT_signature";
+		case DW_AT_main_subprogram: return "DW_AT_main_subprogram";
+		case DW_AT_data_bit_offset: return "DW_AT_data_bit_offset";
+		case DW_AT_const_expr: return "DW_AT_const_expr";
+		case DW_AT_enum_class: return "DW_AT_enum_class";
+		case DW_AT_linkage_name: return "DW_AT_linkage_name";
 	}
 	std::stringstream sstr;
 	sstr << "DW_AT_" << (((dw_at >= DW_AT_lo_user) && (dw_at <= DW_AT_hi_user)) ? "user" : "unknown") << "_0x" << std::hex << dw_at << std::dec;
@@ -226,6 +245,7 @@ const char *DWARF_GetFORMName(uint16_t dw_form)
 		case DW_FORM_ref8: return "DW_FORM_ref8";
 		case DW_FORM_ref_udata: return "DW_FORM_ref_udata";
 		case DW_FORM_indirect: return "DW_FORM_indirect";
+		case DW_FORM_sec_offset: return "DW_FORM_sec_offset";
 	}
 	std::stringstream sstr;
 	sstr << "DW_FORM_unknown_0x" << std::hex << dw_form << std::dec;
@@ -284,6 +304,7 @@ const char *DWARF_GetLANGName(uint16_t dw_lang)
 		case DW_LANG_ObjC_plus_plus: return "DW_LANG_ObjC_plus_plus";
 		case DW_LANG_UPC: return "DW_LANG_UPC";
 		case DW_LANG_D: return "DW_LANG_D";
+		case DW_LANG_python: return "DW_LANG_python";
 		case DW_LANG_Mips_Assembler: return "DW_LANG_Mips_Assembler";
 		case DW_LANG_Upc: return "DW_LANG_Upc";
 	}
@@ -291,6 +312,36 @@ const char *DWARF_GetLANGName(uint16_t dw_lang)
 	sstr << "DW_LANG_unknown_0x" << std::hex << (unsigned int) dw_lang << std::dec;
 	strcpy(buf, sstr.str().c_str());
 	return (const char *) buf;
+}
+
+const char *DWARF_GetFriendlyLANGName(uint16_t dw_lang)
+{
+	switch(dw_lang)
+	{
+		case DW_LANG_C89: return "ISO C:1989";
+		case DW_LANG_C: return "Non-standardized C, such as K&R";
+		case DW_LANG_Ada83: return "ISO Ada:1983";
+		case DW_LANG_C_plus_plus: return "ISO C++:1998";
+		case DW_LANG_Cobol74: return "ISO Cobol:1974";
+		case DW_LANG_Cobol85: return "ISO Cobol:1985";
+		case DW_LANG_Fortran77: return "ISO FORTRAN 77";
+		case DW_LANG_Fortran90: return "ISO Fortran 90";
+		case DW_LANG_Pascal83: return "DW_LANG_Pascal83";
+		case DW_LANG_Modula2: return "ISO Modula-2:1996";
+		case DW_LANG_Java: return "Java";
+		case DW_LANG_C99: return "ISO C:1999";
+		case DW_LANG_Ada95: return "ISO Ada:1995";
+		case DW_LANG_Fortran95: return "ISO Fortran 95";
+		case DW_LANG_PLI: return "ANSI PL/I:1976";
+		case DW_LANG_ObjC: return "Objective-C";
+		case DW_LANG_ObjC_plus_plus: return "Objective-C++";
+		case DW_LANG_UPC: return "Unified Parallel C";
+		case DW_LANG_D: return "D";
+		case DW_LANG_python: return "DW_LANG_python";
+		case DW_LANG_Mips_Assembler: return "MIPS assembler";
+		case DW_LANG_Upc: return "Unified Parallel C";
+	}
+	return "an unknown programming language";
 }
 
 const char *DWARF_GetVIRTUALITYName(uint8_t dw_virtuality)

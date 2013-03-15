@@ -46,6 +46,7 @@ namespace dwarf {
 template <class MEMORY_ADDR>
 DWARF_StatementProgram<MEMORY_ADDR>::DWARF_StatementProgram(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
+	, dw_ver(DW_VER_UNKNOWN)
 	, unit_length(0)
 	, version(0)
 	, header_length(0)
@@ -67,6 +68,12 @@ template <class MEMORY_ADDR>
 DWARF_Handler<MEMORY_ADDR> *DWARF_StatementProgram<MEMORY_ADDR>::GetHandler() const
 {
 	return dw_handler;
+}
+
+template <class MEMORY_ADDR>
+DWARF_Version DWARF_StatementProgram<MEMORY_ADDR>::GetDWARFVersion() const
+{
+	return dw_ver;
 }
 
 template <class MEMORY_ADDR>
@@ -143,8 +150,13 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 		header_length = header_length32;
 	}
 
-
-	if((version != 2) && (version != 3)) return -1;
+	switch(version)
+	{
+		case DW_DEBUG_LINE_VER2: dw_ver = DW_VER2; break;
+		case DW_DEBUG_LINE_VER3: dw_ver = DW_VER3; break;
+		case DW_DEBUG_LINE_VER4: dw_ver = DW_VER4; break;
+		default: return -1;
+	}
 
 	if(dw_fmt == FMT_DWARF64)
 	{
@@ -311,7 +323,7 @@ std::ostream& DWARF_StatementProgram<MEMORY_ADDR>::to_XML(std::ostream& os) cons
 	os << "</DW_FILENAMES>" << std::endl;
 	os << "<DW_STMT_PROG_OPCODES>" << std::endl;
 	std::stringstream sstr;
-	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
+	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>(dw_handler);
 	dw_stmt_vm.Run(this, &sstr, 0);
 	c_string_to_XML(os, sstr.str().c_str());
 	os << "</DW_STMT_PROG_OPCODES>" << std::endl;
@@ -365,7 +377,7 @@ std::ostream& DWARF_StatementProgram<MEMORY_ADDR>::to_HTML(std::ostream& os) con
 	os << "Program (" << program_length << " bytes):<br>" << std::endl;
 	
 	std::stringstream sstr;
-	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
+	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>(dw_handler);
 	dw_stmt_vm.Run(this, &sstr, 0);
 	c_string_to_HTML(os, sstr.str().c_str());
 	os << "</td>" << std::endl;
@@ -409,7 +421,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_StatementProgram<MEMORY
 	}
 	os << " - Program (" << dw_stmt_prog.program_length << " bytes):" << std::endl;
 	
-	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>();
+	DWARF_StatementVM<MEMORY_ADDR> dw_stmt_vm = DWARF_StatementVM<MEMORY_ADDR>(dw_stmt_prog.dw_handler);
 	
 	dw_stmt_vm.Run(&dw_stmt_prog, &os, 0);
 	return os;

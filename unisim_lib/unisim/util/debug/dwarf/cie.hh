@@ -37,6 +37,7 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/dwarf/fmt.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 
 namespace unisim {
 namespace util {
@@ -56,6 +57,7 @@ public:
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
 	unsigned int GetId() const;
+	DWARF_Version GetDWARFVersion() const;
 	std::string GetHREF() const;
 	const DWARF_LEB128& GetCodeAlignmentFactor() const;
 	const DWARF_LEB128& GetDataAlignmentFactor() const;
@@ -67,6 +69,7 @@ public:
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
+	DWARF_Version dw_ver;
 	uint64_t offset;
 	unsigned int id;
 	

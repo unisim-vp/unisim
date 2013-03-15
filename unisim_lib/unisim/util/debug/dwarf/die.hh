@@ -37,7 +37,9 @@
 
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <list>
+#include <vector>
 #include <set>
 
 namespace unisim {
@@ -689,7 +691,6 @@ public:
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
-	const DWARF_DIE<MEMORY_ADDR> *FindSubRangeType() const;
 	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
@@ -700,18 +701,23 @@ public:
 	const DWARF_Expression<MEMORY_ADDR> *GetSegment() const;
 	bool GetCallingConvention(uint8_t& calling_convention) const;
 	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
-	bool GetLowerBound(MEMORY_ADDR& upper_bound) const;
-	bool GetUpperBound(MEMORY_ADDR& upper_bound) const;
-	bool GetCount(MEMORY_ADDR& count) const;
-	bool GetByteSize(MEMORY_ADDR& byte_size) const;
-	bool GetBitSize(MEMORY_ADDR& bit_size) const;
-	bool GetBitOffset(MEMORY_ADDR& bit_offset) const;
-	bool GetDataBitOffset(MEMORY_ADDR& data_bit_offset) const;
-	bool GetObjectBitSize(MEMORY_ADDR& bit_size) const;
+	bool GetLowerBound(int64_t& upper_bound) const;
+	bool GetUpperBound(int64_t& upper_bound) const;
+	bool GetCount(uint64_t& count) const;
+	bool GetArrayElementCount(unsigned int dim, uint64_t& count) const;
+	bool GetByteSize(uint64_t& byte_size) const;
+	bool GetBitSize(uint64_t& bit_size) const;
+	bool GetArrayElementBitSize(uint64_t& bit_size) const;
+	bool GetBitOffset(uint64_t& bit_offset) const;
+	bool GetBitStride(uint64_t& bit_stride) const;
+	bool GetDataBitOffset(uint64_t& data_bit_offset) const;
+	bool GetObjectBitSize(uint64_t& bit_size) const;
 	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetLocation(MEMORY_ADDR pc, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
-	bool GetDataMemberLocation(MEMORY_ADDR pc, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
+	bool GetExternalFlag(bool& external_flag) const;
+	bool GetOrdering(uint8_t& ordering) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;
@@ -728,10 +734,14 @@ public:
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Reference<MEMORY_ADDR> * & p_dw_ref_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_String<MEMORY_ADDR> * & p_dw_str_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Expression<MEMORY_ADDR> * & p_dw_expr_attr) const;
-	bool GetAttributeStaticDynamicValue(uint16_t dw_at, MEMORY_ADDR& value) const;
+	bool GetAttributeStaticDynamicValue(uint16_t dw_at, uint64_t& value) const;
+	bool GetAttributeStaticDynamicValue(uint16_t dw_at, int64_t& value) const;
 private:
+	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	DWARF_DIE<MEMORY_ADDR> *dw_parent_die;
+	unisim::kernel::logger::Logger& logger;
+	bool debug;
 	uint64_t offset;
 	unsigned int id;
 	const DWARF_Abbrev *abbrev;

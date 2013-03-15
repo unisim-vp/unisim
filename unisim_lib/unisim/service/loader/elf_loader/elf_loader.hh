@@ -141,6 +141,7 @@ private:
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
@@ -153,6 +154,7 @@ private:
 	Parameter<string> param_dwarf_to_xml_output_filename;
 	Parameter<string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
+	Parameter<bool> param_debug_dwarf;
 };
 
 } // end of namespace elf_loader

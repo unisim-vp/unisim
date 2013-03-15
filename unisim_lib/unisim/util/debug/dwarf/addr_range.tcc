@@ -190,6 +190,7 @@ DWARF_AddressRanges<MEMORY_ADDR>::DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR>
 	: dw_handler(_dw_handler)
 	, dw_cu(0)
 	, id(0)
+	, dw_ver(DW_VER_UNKNOWN)
 	, unit_length(0)
 	, version(0)
 	, debug_info_offset(0)
@@ -210,6 +211,12 @@ DWARF_AddressRanges<MEMORY_ADDR>::~DWARF_AddressRanges()
 	{
 		delete dw_addr_range_descriptors[i];
 	}
+}
+
+template <class MEMORY_ADDR>
+DWARF_Version DWARF_AddressRanges<MEMORY_ADDR>::GetDWARFVersion() const
+{
+	return dw_ver;
 }
 
 template <class MEMORY_ADDR>
@@ -315,7 +322,11 @@ int64_t DWARF_AddressRanges<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t 
 	max_size -= sizeof(version);
 	size += sizeof(version);
 
-	if(version != 2) return -1; // 2=(DWARF2 or DWARF3)
+	switch(version)
+	{
+		case DW_DEBUG_ARANGES_VER2: dw_ver = DW_VER2; break;
+		default: return -1;
+	}
 	
 	if(dw_fmt == FMT_DWARF64)
 	{

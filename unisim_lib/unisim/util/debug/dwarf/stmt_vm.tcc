@@ -36,15 +36,26 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__
 
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
+#include <unisim/util/debug/dwarf/option.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class MEMORY_ADDR>
-DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM()
-	: address(0)
+DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+	: dw_handler(_dw_handler)
+	, logger(_dw_handler->GetLogger())
+	, debug(false)
+	, address(0)
 	, file(1)
 	, line(1)
 	, column(0)
@@ -56,6 +67,7 @@ DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM()
 	, isa(0)
 	, filenames()
 {
+	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -92,7 +104,11 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 				dirname = (dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
 				if(!dirname)
 				{
-					std::cerr << "WARNING! Invalid directory index in statement program" << std::endl;
+					if(debug)
+					{
+						logger << DebugWarning << "Directory index is out of range in line number program" << EndDebugInfo;
+					}
+					
 					return;
 				}
 			}
@@ -159,7 +175,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							int64_t sz;
 							if((sz = args[i].Load(prg, count)) < 0)
 							{
-								std::cerr << "Bad LEB128" << std::endl;
+								if(debug)
+								{
+									logger << DebugError << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+								}
 								return false;
 							}
 							prg += sz;
@@ -170,7 +189,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					{
 						if(count < sizeof(uhalf_arg))
 						{
-							std::cerr << "Bad uhalf operand" << std::endl;
+							if(debug)
+							{
+								logger << DebugError << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+							}
 							return false;
 						}
 						memcpy(&uhalf_arg, prg, sizeof(uhalf_arg));
@@ -296,7 +318,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				int64_t sz;
 				if((sz = leb128_insn_length.Load(prg, count)) < 0)
 				{
-					std::cerr << "Bad LEB128" << std::endl;
+					if(debug)
+					{
+						logger << DebugError << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << EndDebugError;
+					}
 					return false;
 				}
 				prg += sz;
@@ -353,7 +378,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 									}
 									break;
 								default:
-									std::cerr << "Bad address" << std::endl;
+									if(debug)
+									{
+										logger << DebugError << "DW_LNE_set_address: unsupported address size" << EndDebugError;
+									}
 									return false;
 							}
 							if(os) (*os) << std::hex << "0x" << address << std::dec;
@@ -366,7 +394,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							int64_t sz;
 							if((sz = dw_filename.Load(prg, count)) < 0)
 							{
-								std::cerr << "Bad DWARF filename entry" << std::endl;
+								if(debug)
+								{
+									logger << DebugError << "DW_LNE_define_file: bad DWARF filename entry" << EndDebugError;
+								}
 								return false;
 							}
 							// Define File 'dw_filename'
@@ -375,7 +406,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						}
 						break;
 					default:
-						std::cerr << "Unknown extended opcode " << (unsigned int) opcode << std::endl;
+						if(debug)
+						{
+							logger << DebugError << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << EndDebugError;
+						}
 						return false;
 				}
 				prg += insn_length - 1;

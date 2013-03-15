@@ -70,6 +70,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
 	, parse_dwarf(false)
+	, debug_dwarf(false)
 {
 	if(const_blob)
 	{
@@ -157,13 +158,16 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case OPT_PARSE_DWARF:
 			parse_dwarf = flag;
 			break;
+		case OPT_DEBUG_DWARF:
+			debug_dwarf = flag;
+			break;
 		default:
 			break;
 	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, MEMORY_ADDR& addr)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, MEMORY_ADDR& addr) const
 {
 	switch(opt)
 	{
@@ -177,7 +181,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, std::string& s)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, std::string& s) const
 {
 	switch(opt)
 	{
@@ -200,7 +204,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, bool& flag)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, bool& flag) const
 {
 	switch(opt)
 	{
@@ -218,6 +222,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_PARSE_DWARF:
 			flag = parse_dwarf;
+			break;
+		case OPT_DEBUG_DWARF:
+			flag = debug_dwarf;
 			break;
 		default:
 			flag = false;
@@ -575,6 +582,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		{
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, dwarf_register_number_mapping_filename.c_str());
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
+			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
 			
 			if(verbose)
 			{

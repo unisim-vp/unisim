@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_PUB_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 #include <map>
 #include <string>
 
@@ -82,6 +83,7 @@ public:
 	uint64_t GetDebugInfoOffset() const;
 	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 	DWARF_Format GetFormat() const;
+	DWARF_Version GetDWARFVersion() const;
 	const DWARF_Pub<MEMORY_ADDR> *FindPub(const char *name) const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
 	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
@@ -92,6 +94,8 @@ public:
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
+	DWARF_Version dw_ver;
+	
 	uint64_t offset;
 	unsigned int id;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;

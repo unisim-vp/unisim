@@ -69,7 +69,8 @@ typedef enum
 	OPT_PARSE_DWARF,
 	OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY,
 	OPT_DWARF_TO_XML_OUTPUT_FILENAME,
-	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME
+	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME,
+	OPT_DEBUG_DWARF
 } Option;
 	
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -87,9 +88,9 @@ public:
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
 	
-	void GetOption(Option opt, MEMORY_ADDR& addr);
-	void GetOption(Option opt, std::string& s);
-	void GetOption(Option opt, bool& flag);
+	void GetOption(Option opt, MEMORY_ADDR& addr) const;
+	void GetOption(Option opt, std::string& s) const;
+	void GetOption(Option opt, bool& flag) const;
 	
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
@@ -127,6 +128,7 @@ private:
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
 	
 	void SwapElfHeader(Elf_Ehdr *hdr);

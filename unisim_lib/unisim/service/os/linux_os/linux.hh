@@ -104,9 +104,11 @@ class Linux :
   
   /* DWARF options */
   bool parse_dwarf_;
+  bool debug_dwarf_;
   std::string dwarf_to_html_output_directory_;
   std::string dwarf_to_xml_output_filename_;
   unisim::kernel::service::Parameter<bool> param_parse_dwarf_;
+  unisim::kernel::service::Parameter<bool> param_debug_dwarf_;
   unisim::kernel::service::Parameter<std::string> param_dwarf_to_html_output_directory_;
   unisim::kernel::service::Parameter<std::string> param_dwarf_to_xml_output_filename_;
   

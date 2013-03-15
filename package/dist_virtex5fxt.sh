@@ -271,6 +271,8 @@ unisim/util/debug/dwarf/die.hh \
 unisim/util/debug/dwarf/encoding.hh \
 unisim/util/debug/dwarf/fde.hh \
 unisim/util/debug/dwarf/fmt.hh \
+unisim/util/debug/dwarf/version.hh \
+unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/leb128.hh \
 unisim/util/debug/dwarf/macinfo.hh \
 unisim/util/debug/dwarf/pub.hh \

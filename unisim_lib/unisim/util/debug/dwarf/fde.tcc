@@ -275,7 +275,7 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	std::stringstream sstr_call_frame_prog;
 	sstr_call_frame_prog << *dw_call_frame_prog;
 	std::stringstream sstr_cfi;
-	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm;
+	DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm = DWARF_CallFrameVM<MEMORY_ADDR>(dw_handler);
 	const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(this);
 	if(cfi)
 	{
@@ -301,7 +301,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_FDE<MEMORY_ADDR>& dw_fd
 	os << " - Pointer to CIE: " << dw_fde.cie_pointer << std::endl;
 	os << " - Initial location: 0x" << std::hex <<  dw_fde.initial_location << std::dec << std::endl;
 	os << " - Address range: 0x" << std::hex <<  dw_fde.address_range << std::dec << std::endl;
-	os << " - Instructions (" << dw_fde.dw_call_frame_prog->GetLength()  << " bytes): " << *dw_fde.dw_call_frame_prog << std::endl;
+	os << " - Instructions (" << dw_fde.dw_call_frame_prog->GetLength()  << " bytes): " << std::endl << *dw_fde.dw_call_frame_prog << std::endl;
 	return os;
 }
 

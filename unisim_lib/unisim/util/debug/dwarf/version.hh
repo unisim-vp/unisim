@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2010,
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,8 +32,8 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DWARF_FMT_HH__
-#define __UNISIM_UTIL_DEBUG_DWARF_FMT_HH__
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_VERSION_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_VERSION_HH__
 
 namespace unisim {
 namespace util {
@@ -42,10 +42,11 @@ namespace dwarf {
 
 typedef enum
 {
-	FMT_DWARF_UNKNOWN,
-	FMT_DWARF32, // 32-bit DWARF (either version 2, 3, or 4)
-	FMT_DWARF64  // 64-bit DWARF (version 3 or 4 only)
-} DWARF_Format;
+	DW_VER_UNKNOWN = 0,
+	DW_VER2 = 2,
+	DW_VER3 = 3,
+	DW_VER4 = 4
+} DWARF_Version;
 
 } // end of namespace dwarf
 } // end of namespace debug

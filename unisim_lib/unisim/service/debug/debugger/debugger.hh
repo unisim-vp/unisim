@@ -190,12 +190,14 @@ private:
 	std::string dwarf_to_html_output_directory;
 	std::string dwarf_register_number_mapping_filename;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	std::string filename;
 
 	Parameter<bool> param_verbose;
 	Parameter<std::string> param_dwarf_to_html_output_directory;
 	Parameter<std::string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
+	Parameter<bool> param_debug_dwarf;
 
 	unisim::kernel::logger::Logger logger;
 	bool setup_debug_info_done;

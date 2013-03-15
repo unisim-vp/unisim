@@ -162,6 +162,7 @@ template <class MEMORY_ADDR>
 DWARF_Pubs<MEMORY_ADDR>::DWARF_Pubs(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
 	, dw_fmt(FMT_DWARF32)
+	, dw_ver(DW_VER_UNKNOWN)
 	, offset(0xffffffffffffffffULL)
 	, id(0)
 	, dw_cu(0)
@@ -201,6 +202,12 @@ template <class MEMORY_ADDR>
 DWARF_Format DWARF_Pubs<MEMORY_ADDR>::GetFormat() const
 {
 	return dw_fmt;
+}
+
+template <class MEMORY_ADDR>
+DWARF_Version DWARF_Pubs<MEMORY_ADDR>::GetDWARFVersion() const
+{
+	return dw_ver;
 }
 
 template <class MEMORY_ADDR>
@@ -251,7 +258,11 @@ int64_t DWARF_Pubs<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size)
 	max_size -= sizeof(version);
 	size += sizeof(version);
 
-	if(version != 2) return -1; // 2=(DWARF2 or DWARF3)
+	switch(version)
+	{
+		case DW_DEBUG_PUBS_VER2: dw_ver = DW_VER2; break;
+		default: return -1;
+	}
 	
 	if(dw_fmt == FMT_DWARF64)
 	{

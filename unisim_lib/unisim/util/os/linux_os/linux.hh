@@ -62,6 +62,8 @@ class Linux {
   void  SetVerbose(bool verbose);
 
   void  SetParseDWARF(bool parse_dwarf);
+  
+  void  SetDebugDWARF(bool debug_dwarf);
 
   void SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory);
   
@@ -230,6 +232,8 @@ class Linux {
   bool verbose_;
   // activate DWARF parsing
   bool parse_dwarf_;
+  // activate debugging DWARF
+  bool debug_dwarf_;
   // DWARF dump parameters
   std::string dwarf_to_html_output_directory_;
   std::string dwarf_to_xml_output_filename_;

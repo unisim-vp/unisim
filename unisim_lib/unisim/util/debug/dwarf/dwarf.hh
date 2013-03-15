@@ -47,6 +47,8 @@
 #include <unisim/kernel/logger/logger.hh>
 
 #include <unisim/util/debug/dwarf/fmt.hh>
+#include <unisim/util/debug/dwarf/version.hh>
+#include <unisim/util/debug/dwarf/option.hh>
 #include <unisim/util/debug/dwarf/abbrev.hh>
 #include <unisim/util/debug/dwarf/attr.hh>
 #include <unisim/util/debug/dwarf/call_frame_vm.hh>
@@ -82,12 +84,6 @@ using unisim::util::endian::endian_type;
 using unisim::kernel::logger::DebugWarning;
 using unisim::kernel::logger::EndDebugWarning;
 
-typedef enum
-{
-	OPT_REG_NUM_MAPPING_FILENAME,
-	OPT_VERBOSE
-} Option;
-
 template <class MEMORY_ADDR>
 class DWARF_Handler
 {
@@ -98,8 +94,8 @@ public:
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
 
-	void GetOption(Option opt, std::string& s);
-	void GetOption(Option opt, bool& flag);
+	void GetOption(Option opt, std::string& s) const;
+	void GetOption(Option opt, bool& flag) const;
 
 	void Parse();
 	void to_XML(const char *output_filename);
@@ -133,6 +129,7 @@ public:
 	endian_type GetArchEndianness() const;
 	uint8_t GetFileAddressSize() const;
 	uint8_t GetArchAddressSize() const;
+	const char *GetFilename() const;
 	const DWARF_Abbrev *FindAbbrev(uint64_t debug_abbrev_offset, const DWARF_LEB128& dw_abbrev_code) const;
 	const char *GetString(uint64_t debug_str_offset) const;
 
@@ -145,6 +142,7 @@ public:
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
 	
 	DWARF_RegisterNumberMapping *GetRegisterNumberMapping() const;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface() const;
@@ -187,6 +185,7 @@ private:
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *blob;
 	std::string reg_num_mapping_filename;
 	bool verbose;
+	bool debug;
 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 	unisim::service::interfaces::Registers *regs_if;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;

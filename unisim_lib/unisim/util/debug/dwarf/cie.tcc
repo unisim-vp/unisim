@@ -44,6 +44,7 @@ template <class MEMORY_ADDR>
 DWARF_CIE<MEMORY_ADDR>::DWARF_CIE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
 	, dw_fmt(FMT_DWARF32)
+	, dw_ver(DW_VER_UNKNOWN)
 	, offset(0)
 	, id(0)
 	, length(0)
@@ -133,8 +134,14 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	max_size -= sizeof(version);
 	size += sizeof(version);
 
-	if((version != 1) && (version != 3)) return -1;
-	
+	switch(version)
+	{
+		case DW_DEBUG_FRAME_VER2: dw_ver = DW_VER2; break;
+		case DW_DEBUG_FRAME_VER3: dw_ver = DW_VER3; break;
+		case DW_DEBUG_FRAME_VER4: dw_ver = DW_VER4; break;
+		default: return -1;
+	}
+
 	augmentation = (const char *) rawdata;
 	unsigned int augmentation_length = strlen(augmentation);
 	if(max_size < (augmentation_length + 1)) return -1;
@@ -152,23 +159,27 @@ int64_t DWARF_CIE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	max_size -= sz;
 	size += sz;
 	
-	if(version == 1)
+	switch(dw_ver)
 	{
-		// DWARF v2
-		if(max_size < sizeof(dw2_return_address_register)) return -1;
-		memcpy(&dw2_return_address_register, rawdata, sizeof(dw2_return_address_register));
-		dw2_return_address_register = Target2Host(file_endianness, dw2_return_address_register);
-		rawdata += sizeof(dw2_return_address_register);
-		max_size -= sizeof(dw2_return_address_register);
-		size += sizeof(dw2_return_address_register);
-	}
-	else
-	{
-		// DWARF v3
-		if((sz = dw3_return_address_register.Load(rawdata, max_size)) < 0) return -1;
-		rawdata += sz;
-		max_size -= sz;
-		size += sz;
+		case DW_VER2:
+			// DWARF v2
+			if(max_size < sizeof(dw2_return_address_register)) return -1;
+			memcpy(&dw2_return_address_register, rawdata, sizeof(dw2_return_address_register));
+			dw2_return_address_register = Target2Host(file_endianness, dw2_return_address_register);
+			rawdata += sizeof(dw2_return_address_register);
+			max_size -= sizeof(dw2_return_address_register);
+			size += sizeof(dw2_return_address_register);
+			break;
+		case DW_VER3:
+		case DW_VER4:
+			// DWARF v3/v4
+			if((sz = dw3_return_address_register.Load(rawdata, max_size)) < 0) return -1;
+			rawdata += sz;
+			max_size -= sz;
+			size += sz;
+			break;
+		default:
+			break;
 	}
 	
 	uint64_t initial_instructions_length;
@@ -212,6 +223,12 @@ unsigned int DWARF_CIE<MEMORY_ADDR>::GetId() const
 }
 
 template <class MEMORY_ADDR>
+DWARF_Version DWARF_CIE<MEMORY_ADDR>::GetDWARFVersion() const
+{
+	return dw_ver;
+}
+
+template <class MEMORY_ADDR>
 const DWARF_LEB128& DWARF_CIE<MEMORY_ADDR>::GetCodeAlignmentFactor() const
 {
 	return code_alignment_factor;
@@ -226,7 +243,7 @@ const DWARF_LEB128& DWARF_CIE<MEMORY_ADDR>::GetDataAlignmentFactor() const
 template <class MEMORY_ADDR>
 unsigned int DWARF_CIE<MEMORY_ADDR>::GetReturnAddressRegister() const
 {
-	return (version == 1) ? dw2_return_address_register : dw3_return_address_register;
+	return (dw_ver == DW_VER2) ? dw2_return_address_register : dw3_return_address_register;
 }
 
 template <class MEMORY_ADDR>
@@ -241,7 +258,7 @@ std::ostream& DWARF_CIE<MEMORY_ADDR>::to_XML(std::ostream& os) const
 	os << "<DW_CIE id=\"cie-" << id << "\" version=\"" << (uint32_t) version << "\" augmentation=\"";
 	c_string_to_XML(os, augmentation);
 	os << "\" code_alignment_factor=\"" << code_alignment_factor.to_string(false) << "\" data_alignment_factor=\"" << data_alignment_factor.to_string(true) << "\" return_address_register=\"";
-	if(version == 1)
+	if(dw_ver == DW_VER2)
 	{
 		os << (uint32_t) dw2_return_address_register;
 	}
@@ -264,7 +281,7 @@ std::ostream& DWARF_CIE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 	os << "<td>" << id << "</td><td>" << offset << "</td><td>" << (uint32_t) version << "</td><td>";
 	c_string_to_HTML(os, augmentation);
 	os << "</td><td>" << code_alignment_factor.to_string(false) << "</td><td>" << data_alignment_factor.to_string(true) << "</td><td>";
-	if(version == 1)
+	if(dw_ver == DW_VER2)
 	{
 		os << (uint32_t) dw2_return_address_register;
 	}
@@ -290,7 +307,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_ci
 	os << " - Code alignment factor: " << dw_cie.code_alignment_factor.to_string(false) << std::endl;
 	os << " - Data alignment factor: " << dw_cie.data_alignment_factor.to_string(true) << std::endl;
 	os << " - Return address register: ";
-	if(dw_cie.version == 1)
+	if(dw_cie.dw_ver == DW_VER2)
 	{
 		os << (uint32_t) dw_cie.dw2_return_address_register;
 	}
@@ -299,7 +316,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_CIE<MEMORY_ADDR>& dw_ci
 		os << dw_cie.dw3_return_address_register.to_string(false);
 	}
 	os << std::endl;
-	os << " - Initial instructions (" << dw_cie.dw_initial_call_frame_prog->GetLength() << " bytes): " << *dw_cie.dw_initial_call_frame_prog << std::endl;
+	os << " - Initial instructions (" << dw_cie.dw_initial_call_frame_prog->GetLength() << " bytes): " << std::endl << *dw_cie.dw_initial_call_frame_prog << std::endl;
 	return os;
 }
 

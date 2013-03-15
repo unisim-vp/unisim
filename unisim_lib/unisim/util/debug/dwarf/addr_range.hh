@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_ADDR_RANGE_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 
 namespace unisim {
 namespace util {
@@ -77,6 +78,7 @@ public:
 	endian_type GetFileEndianness() const;
 	uint8_t GetSegmentSize() const;
 	uint8_t GetAddressSize() const;
+	DWARF_Version GetDWARFVersion() const;
 	const std::vector<DWARF_AddressRangeDescriptor<MEMORY_ADDR> *>& GetDescriptors() const;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *GetCompilationUnit() const;
 	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
@@ -90,6 +92,7 @@ private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	unsigned int id;
+	DWARF_Version dw_ver;
 	
 	uint64_t unit_length;        // The length of the entries for that set, not including the length field itself (see Section 7.2.2).
 	

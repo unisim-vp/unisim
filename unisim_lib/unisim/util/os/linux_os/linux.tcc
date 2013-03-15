@@ -128,6 +128,7 @@ Linux(unisim::kernel::logger::Logger& logger,
     , current_syscall_name_("(NONE)")
     , verbose_(false)
     , parse_dwarf_(false)
+	, debug_dwarf_(false)
     , dwarf_to_html_output_directory_()
     , dwarf_to_xml_output_filename_()
     , logger_(logger)
@@ -159,6 +160,11 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetVerbose(bool verbose) {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetParseDWARF(bool parse_dwarf) {
   parse_dwarf_ = parse_dwarf;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDebugDWARF(bool debug_dwarf) {
+  debug_dwarf_ = debug_dwarf;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -241,6 +247,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
   loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
   loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
   loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
   loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
   loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
 

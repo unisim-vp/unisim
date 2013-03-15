@@ -36,9 +36,12 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_CU_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/fmt.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 #include <unisim/util/debug/stmt.hh>
 
 #include <unisim/util/debug/dwarf/expr_vm.hh>
+#include <unisim/kernel/logger/logger.hh>
 
 #include <list>
 #include <set>
@@ -64,6 +67,7 @@ public:
 	DWARF_Format GetFormat() const;
 	uint8_t GetAddressSize() const;
 	uint16_t GetVersion() const;
+	DWARF_Version GetDWARFVersion() const;
 	uint8_t GetOffsetSize() const;
 	uint64_t GetOffset() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size, uint64_t offset);
@@ -78,13 +82,18 @@ public:
 	void BuildStatementMatrix(std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& stmt_matrix);
 	const DWARF_DIE<MEMORY_ADDR> *FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	bool GetDefaultBaseAddress(MEMORY_ADDR& base_addr) const;
-	unsigned int GetLanguage() const;
+	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	uint16_t GetLanguage() const;
+	const char *GetProducer() const;
+	uint8_t GetDefaultOrdering() const;
 	
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
-	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	unisim::kernel::logger::Logger& logger;
+	bool debug;
 	DWARF_Format dw_fmt;
+	DWARF_Version dw_ver;
 	
 	uint64_t offset;
 	unsigned int id;

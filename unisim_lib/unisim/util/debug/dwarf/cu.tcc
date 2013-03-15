@@ -37,15 +37,27 @@
 
 #include <unisim/util/debug/dwarf/cu.hh>
 #include <unisim/util/debug/dwarf/ml.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::EndDebugError;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugInfo;
+
 template <class MEMORY_ADDR>
 DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	: dw_handler(_dw_handler)
+	, logger(_dw_handler->GetLogger())
+	, debug(false)
+	, dw_fmt(FMT_DWARF_UNKNOWN)
+	, dw_ver(DW_VER_UNKNOWN)
 	, offset(0xffffffffffffffffULL)
 	, unit_length(0)
 	, version(0)
@@ -53,6 +65,7 @@ DWARF_CompilationUnit<MEMORY_ADDR>::DWARF_CompilationUnit(DWARF_Handler<MEMORY_A
 	, address_size(0)
 	, dw_die(0)
 {
+	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -86,9 +99,15 @@ uint16_t DWARF_CompilationUnit<MEMORY_ADDR>::GetVersion() const
 }
 
 template <class MEMORY_ADDR>
+DWARF_Version DWARF_CompilationUnit<MEMORY_ADDR>::GetDWARFVersion() const
+{
+	return dw_ver;
+}
+
+template <class MEMORY_ADDR>
 uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetOffsetSize() const
 {
-	return (version == 3) ? ((dw_fmt == FMT_DWARF64) ? 8 : 4) : address_size;
+	return ((dw_ver == DW_VER3) || (dw_ver == DW_VER4)) ? ((dw_fmt == FMT_DWARF64) ? 8 : 4) : address_size;
 }
 
 template <class MEMORY_ADDR>
@@ -157,7 +176,13 @@ int64_t DWARF_CompilationUnit<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_
 	max_size -= sizeof(version);
 	size += sizeof(version);
 
-	if(version != 2 && version != 3) return -1;
+	switch(version)
+	{
+		case DW_DEBUG_INFO_VER2: dw_ver = DW_VER2; break;
+		case DW_DEBUG_INFO_VER3: dw_ver = DW_VER3; break;
+		case DW_DEBUG_INFO_VER4: dw_ver = DW_VER4; break;
+		default: return -1;
+	}
 	
 	if(dw_fmt == FMT_DWARF64)
 	{
@@ -305,53 +330,97 @@ bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultBaseAddress(MEMORY_ADDR& base
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+{
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
+	if(!dw_die_code_portion)
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+		}
+		return 0;
+	}
+	return dw_die_code_portion->GetFrameBase(pc, frame_base);
+}
+
+template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject(const char *name, MEMORY_ADDR pc) const
 {
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
-	if(dw_die_code_portion)
+	if(!dw_die_code_portion)
 	{
-		do
+		if(debug)
 		{
-			const DWARF_DIE<MEMORY_ADDR> *dw_die_data_object = dw_die_code_portion->FindDataObject(name);
-		
-			if(dw_die_data_object)
-			{
-				return dw_die_data_object;
-			}
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 		}
-		while((dw_die_code_portion = dw_die_code_portion->GetParentDIE()) != 0);
+		return 0;
+	}
+	
+	do
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_data_object = dw_die_code_portion->FindDataObject(name);
+	
+		if(dw_die_data_object)
+		{
+			return dw_die_data_object;
+		}
+	}
+	while((dw_die_code_portion = dw_die_code_portion->GetParentDIE()) != 0);
+	if(debug)
+	{
+		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching data object name \"" << name << "\" and PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 	}
 	return 0;
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_CompilationUnit<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const
+uint16_t DWARF_CompilationUnit<MEMORY_ADDR>::GetLanguage() const
 {
-	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
-	std::cerr << "GetFrameBase: dw_die_code_portion=" << dw_die_code_portion << std::endl;
-	if(dw_die_code_portion)
-	{
-		do
-		{
-			switch(dw_die_code_portion->GetTag())
-			{
-				case DW_TAG_subprogram:
-				case DW_TAG_entry_point:
-					std::cerr << "GetFrameBase: DW_TAG_subprogram or DW_TAG_entry_point dw_die_code_portion=" << dw_die_code_portion << std::endl;
-					return dw_die_code_portion->GetFrameBase(pc, frame_base);
-			}
-		}
-		while((dw_die_code_portion = dw_die_code_portion->GetParentDIE()) != 0);
-	}
-	return false;
+	const DWARF_Constant<MEMORY_ADDR> *dw_at_language = 0;
+	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_language, dw_at_language)) return 0;
+	return dw_at_language->to_uint();
 }
 
 template <class MEMORY_ADDR>
-unsigned int DWARF_CompilationUnit<MEMORY_ADDR>::GetLanguage() const
+const char *DWARF_CompilationUnit<MEMORY_ADDR>::GetProducer() const
 {
-	const DWARF_Constant<MEMORY_ADDR> *dw_at_language = 0;
-	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_language, dw_at_language)) return false;
-	return dw_at_language->to_uint();
+	const DWARF_String<MEMORY_ADDR> *dw_at_producer = 0;
+	if(!dw_die || !dw_die->GetAttributeValue(DW_AT_producer, dw_at_producer)) return 0;
+	return dw_at_producer->GetValue();
+}
+
+template <class MEMORY_ADDR>
+uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultOrdering() const
+{
+	uint16_t language = GetLanguage();
+	switch(language)
+	{
+		case DW_LANG_C89:
+		case DW_LANG_C:
+		case DW_LANG_C_plus_plus:
+		case DW_LANG_Java:
+		case DW_LANG_C99:
+		case DW_LANG_ObjC:
+		case DW_LANG_ObjC_plus_plus:
+		case DW_LANG_UPC:
+		case DW_LANG_Mips_Assembler:
+		case DW_LANG_Upc:
+		case DW_LANG_Ada83:
+		case DW_LANG_Modula2:
+		case DW_LANG_Ada95:
+		case DW_LANG_Pascal83:
+		case DW_LANG_Cobol74:
+		case DW_LANG_Cobol85:
+		case DW_LANG_PLI:
+			return DW_ORD_row_major;
+		case DW_LANG_Fortran77:
+		case DW_LANG_Fortran90:
+		case DW_LANG_Fortran95:
+		case DW_LANG_D: // not sure but most probably because 2D-array are written as A[col][row] in D
+			return DW_ORD_col_major;
+	}
+	return DW_ORD_row_major;
 }
 
 } // end of namespace dwarf
