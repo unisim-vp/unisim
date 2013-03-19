@@ -296,7 +296,6 @@ typename DebugControl<ADDRESS>::DebugCommand InlineDebugger<ADDRESS>::FetchDebug
 	ADDRESS addr;
 	ADDRESS cont_addr;
 	unsigned int size;
-	std::vector<std::string> parm;
 
 	if(!trap && (running_mode == INLINE_DEBUGGER_MODE_CONTINUE || running_mode == INLINE_DEBUGGER_MODE_CONTINUE_UNTIL))
 	{

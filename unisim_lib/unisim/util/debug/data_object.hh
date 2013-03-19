@@ -45,6 +45,7 @@ template <class ADDRESS>
 class DataObject
 {
 public:
+	virtual ~DataObject() {}
 	virtual ADDRESS GetBitSize() const = 0;
 	virtual unisim::util::endian::endian_type GetEndian() const = 0;
 	virtual bool Fetch() = 0;

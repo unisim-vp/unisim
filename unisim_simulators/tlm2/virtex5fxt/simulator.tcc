@@ -630,6 +630,7 @@ Simulator<CONFIG>::~Simulator()
 	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
 	if(telnet) delete telnet;
 	if(linux_os) delete linux_os;
+	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
 }
 
 template <class CONFIG>

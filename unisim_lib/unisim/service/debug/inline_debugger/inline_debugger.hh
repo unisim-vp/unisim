@@ -212,6 +212,7 @@ private:
 	char *int_addr_fmt;
 	std::string last_line;
 	std::string line;
+	std::vector<std::string> parm;
 	std::ostream *output_stream;
 	std::ostream *std_output_stream;
 	std::ostream *std_error_stream;
