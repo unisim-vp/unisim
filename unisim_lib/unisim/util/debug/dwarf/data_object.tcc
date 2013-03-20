@@ -44,7 +44,7 @@ namespace dwarf {
 
 	
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, MEMORY_ADDR _dw_data_object_byte_size, MEMORY_ADDR _dw_data_object_bit_offset, MEMORY_ADDR _dw_data_object_bit_size)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, uint64_t _dw_data_object_byte_size, int64_t _dw_data_object_bit_offset, uint64_t _dw_data_object_bit_size)
 	: dw_data_object_loc(_dw_data_object_loc)
 	, dw_data_object_byte_size(_dw_data_object_byte_size)
 	, dw_data_object_bit_offset(_dw_data_object_bit_offset)
@@ -86,12 +86,21 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 			{
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
-				std::cerr << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=0x" << std::hex << dw_data_object_bit_offset << std::dec << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
+				std::cerr << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
-				if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
-				
-				bv.Append(buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size);
+				if(dw_data_object_bit_offset >= 0)
+				{
+					if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
+					
+					bv.Append(buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size);
+				}
+				else
+				{
+					if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8) - 1, buffer, dw_byte_size)) return false;
+
+					bv.Append(buffer, 8 + (dw_data_object_bit_offset % 8), dw_data_object_bit_size);
+				}
 			}
 			return true;
 		case DW_LOC_SIMPLE_REGISTER:
@@ -240,12 +249,21 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 			{
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
-				std::cerr << "DW_LOC_SIMPLE_MEMORY: dw_addr=0x" << std::hex << dw_addr << std::dec << ", dw_byte_size=" << dw_byte_size << std::endl;
+				std::cerr << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				uint8_t buffer[dw_byte_size];
 				memset(buffer, 0, dw_byte_size);
-				if(!bv.Read(source_bit_offset, buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size)) return false;
-				source_bit_offset += dw_data_object_bit_size;
-				if(!mem_if->WriteMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
+				if(dw_data_object_bit_offset >= 0)
+				{
+					if(!bv.Read(source_bit_offset, buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size)) return false;
+					source_bit_offset += dw_data_object_bit_size;
+					if(!mem_if->WriteMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
+				}
+				else
+				{
+					if(!bv.Read(source_bit_offset, buffer, 8 + (dw_data_object_bit_offset % 8), dw_data_object_bit_size)) return false;
+					source_bit_offset += dw_data_object_bit_size;
+					if(!mem_if->WriteMemory(dw_addr + (dw_data_object_bit_offset / 8) - 1, buffer, dw_byte_size)) return false;
+				}
 			}
 			return true;
 		case DW_LOC_SIMPLE_REGISTER:

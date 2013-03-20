@@ -1899,7 +1899,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(uint64_t& array_element_bit_
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetBitOffset(uint64_t& bit_offset) const
+bool DWARF_DIE<MEMORY_ADDR>::GetBitOffset(int64_t& bit_offset) const
 {
 	return GetAttributeStaticDynamicValue(DW_AT_bit_offset, bit_offset);
 }
@@ -1911,7 +1911,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitStride(uint64_t& bit_stride) const
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_DIE<MEMORY_ADDR>::GetDataBitOffset(uint64_t& data_bit_offset) const
+bool DWARF_DIE<MEMORY_ADDR>::GetDataBitOffset(int64_t& data_bit_offset) const
 {
 	return GetAttributeStaticDynamicValue(DW_AT_data_bit_offset, data_bit_offset);
 }

@@ -2585,14 +2585,22 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 				}
 				if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
 				{
+					std::ios::fmtflags std_output_stream_saved_flags(std_output_stream->flags());
+					
 					(*std_output_stream) << data_object_name << " = [ ";
 					ADDRESS byte_offset;
+					(*std_output_stream).fill('0');
+
 					for(byte_offset = 0; byte_offset < data_object_byte_size; byte_offset++)
 					{
 						if(byte_offset) (*std_output_stream) << " ";
-						(*std_output_stream) << "0x" << std::hex << (unsigned int) data_object_raw_value[byte_offset] << std::dec;
+						(*std_output_stream) << "0x" << std::hex;
+						(*std_output_stream).width(2);
+						(*std_output_stream) << (unsigned int) data_object_raw_value[byte_offset] << std::dec;
 					}
 					(*std_output_stream) << " ]" << endl;
+					
+					std_output_stream->flags(std_output_stream_saved_flags);
 				}
 				else
 				{

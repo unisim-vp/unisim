@@ -76,7 +76,7 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, MEMORY_ADDR dw_data_object_byte_size, MEMORY_ADDR dw_data_object_bit_offset, MEMORY_ADDR dw_data_object_bit_size);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, uint64_t dw_data_object_byte_size, int64_t dw_data_object_bit_offset, uint64_t dw_data_object_bit_size);
 	virtual ~DWARF_DataObject();
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
@@ -88,9 +88,9 @@ public:
 	virtual bool Write(MEMORY_ADDR obj_bit_offset, const void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size);
 private:
 	const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
-	MEMORY_ADDR dw_data_object_byte_size;
-	MEMORY_ADDR dw_data_object_bit_offset;
-	MEMORY_ADDR dw_data_object_bit_size;
+	uint64_t dw_data_object_byte_size;
+	int64_t dw_data_object_bit_offset;
+	uint64_t dw_data_object_bit_size;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int arch_address_size;
 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;

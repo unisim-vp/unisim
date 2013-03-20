@@ -2702,11 +2702,12 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							return 0;
 						}
 						
-						uint64_t dw_data_member_data_bit_offset = 0;
-						uint64_t dw_data_member_bit_offset = 0;
+						int64_t dw_data_member_data_bit_offset = 0;
+						int64_t dw_data_member_bit_offset = 0;
 						if(dw_die_data_member->GetBitOffset(dw_data_member_bit_offset))
 						{
-							dw_data_member_data_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : dw_data_member_bit_size - dw_data_member_bit_offset;
+							//dw_data_member_data_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : dw_data_member_bit_size - dw_data_member_bit_offset;
+							dw_data_member_data_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_data_member_byte_size) - dw_data_member_bit_size - dw_data_member_bit_offset;
 						}
 						else if(!dw_die_data_member->GetDataBitOffset(dw_data_member_data_bit_offset))
 						{
