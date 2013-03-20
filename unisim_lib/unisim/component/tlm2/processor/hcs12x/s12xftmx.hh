@@ -279,26 +279,18 @@ private:
 	double erase_fail_ratio;
 	Parameter<double> param_erase_fail_ratio;
 
-	struct {
-		physical_address_t	start_address;
-		uint16_t			size;	// unit is K-Bytes
-	} blockDescriptorArray[5];
+	string			pflash_blocks_description_string;
+	Parameter<string> param_pflash_blocks_description_string;
+	struct BlockDescription {
+		physical_address_t start_address;
+		physical_address_t end_address;
+	};
+	vector<BlockDescription*> pflash_blocks_description;
 
 	physical_address_t	pflash_start_address;
 	Parameter<physical_address_t> param_pflash_start_address;
 	physical_address_t	pflash_end_address;
 	Parameter<physical_address_t> param_pflash_end_address;
-
-	Parameter<physical_address_t> param_pflash_blobk_0_address;
-	Parameter<uint16_t> param_pflash_blobk_0_size;		// 256 K
-	Parameter<physical_address_t> param_pflash_blobk_1N_address;
-	Parameter<uint16_t> param_pflash_blobk_1N_size;		// 128 K
-	Parameter<physical_address_t> param_pflash_blobk_1S_address;
-	Parameter<uint16_t> param_pflash_blobk_1S_size;		// 128 K
-	Parameter<physical_address_t> param_pflash_blobk_2_address;
-	Parameter<uint16_t> param_pflash_blobk_2_size;		// 256 K
-	Parameter<physical_address_t> param_pflash_blobk_3_address;
-	Parameter<uint16_t> param_pflash_blobk_3_size;		// 256 K
 
 	physical_address_t	blackdoor_comparison_key_address;	// 8 bytes
 	Parameter<physical_address_t> param_blackdoor_comparison_key_address;
@@ -350,14 +342,6 @@ private:
 	uint16_t			min_ratio_dflash_buffer_ram;
 	Parameter<uint16_t>	param_min_ratio_dflash_buffer_ram;
 
-	string			pflash_blocks_description_string;
-	Parameter<string> param_pflash_blocks_description_string;
-	struct BlockDescription {
-		physical_address_t start_address;
-		physical_address_t end_address;
-	};
-	vector<BlockDescription*> pflash_blocks_description;
-
 	// Registers map
 	map<string, Register *> registers_registry;
 
@@ -366,7 +350,11 @@ private:
 	uint8_t  fclkdiv_reg, fsec_reg, fccobix_reg, feccrix_reg, fcnfg_reg, fercnfg_reg, fstat_reg, ferstat_reg, fprot_reg, eprot_reg, fopt_reg, frsv0_reg, frsv1_reg, frsv2_reg;
 	uint16_t fccob_reg[6], etag_reg, feccr_reg[8];
 
-	bool loadDataFieldCommandSequenceActive;
+	vector <uint16_t*> loadDataFieldBuffer;
+	bool partitionDFlashCmd_Launched;
+	bool fullPartitionDFlashCmd_Launched;
+	bool eepromEmulationEnabled;
+
 	uint16_t sector_erased_count;
 	uint8_t dead_sector_count;
 	uint8_t ready_sector_count;
@@ -420,32 +408,19 @@ private:
 	}
 
 	inline bool isLoadDataFieldCommandSequenceActive() {
-		return (loadDataFieldCommandSequenceActive);
+		return (loadDataFieldBuffer.size() > 0);
 	}
 
-	void split( string str, vector<string> result, const char * delimiters ) {
-		vector<string> vec_String;
-		char * cstr = new char [str.length()+1];
-		std::strcpy (cstr, str.c_str());
-		char *token = strtok( cstr, delimiters );
+	inline bool isPartitionDFlashCmd_Launched() {
+		return (partitionDFlashCmd_Launched);
+	}
 
-		cout << "Extracting and storing data in a vector..\n\n\n";
+	inline bool isFullPartitionDFlashCmd_Launched() {
+		return (fullPartitionDFlashCmd_Launched);
+	}
 
-		while( token != NULL )
-		{
-			vec_String.push_back(token);
-			token = strtok( NULL, delimiters );
-		}
-
-//		cout << "Displaying end result in  vector line storage..\n\n";
-//
-//		for ( int i = 0; i < vec_String.size(); ++i) {
-//			cout << vec_String[i] << "\n";
-//		}
-//
-//		cout << "\n\n\n";
-
-		delete[] cstr;
+	inline bool isEepromEmulationEnabled() {
+		return (eepromEmulationEnabled);
 	}
 };
 

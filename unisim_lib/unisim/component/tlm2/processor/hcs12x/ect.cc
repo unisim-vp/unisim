@@ -92,7 +92,7 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	, portt_pin_reg("ioc", this, portt_pin, 8, "ECT pins")
 
-	, builtin_signal_generator(true)
+	, builtin_signal_generator(false)
 	, param_builtin_signal_generator("built-in-signal-generator-enable", this, builtin_signal_generator, "Use built-in signal generator or external instrument")
 	, signal_generator_period_int(500000)
 	, param_signal_generator_period("built-in-signal-generator-period", this, signal_generator_period_int, "Built-in Signal generator period in pico-seconds. Default 25000ps.")
