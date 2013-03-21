@@ -2498,20 +2498,24 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObjectDIE(cons
 template <class MEMORY_ADDR>
 unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
 {
+	DWARF_Location<MEMORY_ADDR> *dw_data_object_loc = 0;
+	uint64_t dw_data_object_byte_size = 0;
+	int64_t dw_data_object_bit_offset = 0;
+	uint64_t dw_data_object_bit_size = 0;
+	
+	// Extract base name of data object: for example base name of object is "abc" if object name is "abc[0]", "abc.x", "abc->x", "abc"
 	std::string matched_data_object_name;
 	std::string data_object_base_name;
 	const char *p = data_object_name;
-	while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != ' ')) data_object_base_name += *p++;
+	while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != '-') && (*p != ' ')) data_object_base_name += *p++;
 
+	// Find DIE of data object
+	// (1) Find DIE from the current scope i.e. current PC
 	const DWARF_DIE<MEMORY_ADDR> *dw_die_data_object = FindDataObjectDIE(data_object_base_name.c_str(), pc);
 	
 	if(!dw_die_data_object)
 	{
-		if(debug)
-		{
-			logger << DebugInfo << "In File \"" << GetFilename() << "\", DIE of data Object \"" << data_object_base_name << "\" for PC=0x" << std::hex << pc << std::dec << " not found" << EndDebugInfo;
-		}
-
+		// (2) if not found, find DIE from the global scope
 		dw_die_data_object = FindDIEByPubName(data_object_base_name.c_str());
 	
 		if(!dw_die_data_object)
@@ -2524,11 +2528,13 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	bool has_frame_base = false;
 	MEMORY_ADDR frame_base = 0;
 	
+	// Determine whether it's a global data object
 	bool data_object_external_flag = false;
 	dw_die_data_object->GetExternalFlag(data_object_external_flag);
 	
 	if(!data_object_external_flag)
 	{
+		// Determine the frame base of the current scope (i.e. the current PC)
 		has_frame_base = dw_die_data_object->GetFrameBase(pc, frame_base);
 		
 		if(!has_frame_base)
@@ -2540,58 +2546,51 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 		}
 	}
 	
-	DWARF_Location<MEMORY_ADDR> *dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+	// Get the data object location
+	dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
 	if(!dw_die_data_object->GetLocation(pc, has_frame_base, frame_base, *dw_data_object_loc))
 	{
 		if(debug)
 		{
 			logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine location of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
 		}
-		delete dw_data_object_loc;
+		if(dw_data_object_loc) delete dw_data_object_loc;
 		return 0;
 	}
 
 	while(*p == ' ') p++; // skip spaces
 	
+	// Determine the size in bytes (including padding bits) of the data object
+	if(!dw_die_data_object->GetByteSize(dw_data_object_byte_size))
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
+		}
+		if(dw_data_object_loc) delete dw_data_object_loc;
+		return 0;
+	}
+
+	// Determine the actual size in bits (excluding padding bits) of the data object
+	if(!dw_die_data_object->GetBitSize(dw_data_object_bit_size))
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
+		}
+		if(dw_data_object_loc) delete dw_data_object_loc;
+		return 0;
+	}
+	
 	if(*p == 0)
 	{
 		// match
-		uint64_t dw_data_object_byte_size;
-		if(!dw_die_data_object->GetByteSize(dw_data_object_byte_size))
-		{
-			if(debug)
-			{
-				logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
-			}
-			delete dw_data_object_loc;
-			return 0;
-		}
-
-		uint64_t dw_data_object_bit_size;
-		if(!dw_die_data_object->GetBitSize(dw_data_object_bit_size))
-		{
-			if(debug)
-			{
-				logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
-			}
-			delete dw_data_object_loc;
-			return 0;
-		}
-		
-		return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, 0, dw_data_object_bit_size);
+		return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, dw_data_object_bit_offset, dw_data_object_bit_size);
 	}
 	
 	matched_data_object_name += data_object_base_name;
 
-	MEMORY_ADDR object_addr = 0;
-	bool has_object_addr = false;
-	if(dw_data_object_loc->GetType() == DW_LOC_SIMPLE_MEMORY)
-	{
-		object_addr = dw_data_object_loc->GetAddress();
-		has_object_addr = true;
-	}
-	//delete dw_data_object_loc;
-	
+	// Determine the reference to the DIE that describes the type of the data object
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
 	if(!dw_die_data_object->GetAttributeValue(DW_AT_type, dw_type_ref))
@@ -2600,15 +2599,27 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 		{
 			logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine type of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
 		}
-		return false;
+		if(dw_data_object_loc) delete dw_data_object_loc;
+		return 0;
 	}
 	
+	DWARF_DataObject<MEMORY_ADDR> *dw_data_object = 0;
+	bool following_pointer = false;
 	bool status = true;
-	
+	bool match = false;
+
+	// Explore the imbricated type definitions
 	do
 	{
+		// Determine the DIE that describes the type of the data object
 		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
 		
+		// Several cases for type:
+		// (1) base type
+		// (2) structure
+		// (3) multidimensional arrays
+		// (4) pointers
+		// (5) typedefs
 		switch(dw_die_type->GetTag())
 		{
 			case DW_TAG_base_type:
@@ -2621,28 +2632,42 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						}
 						status = false;
 					}
+					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, dw_data_object_bit_offset, dw_data_object_bit_size);
+					match = true;
 				}
 				break;
 			case DW_TAG_structure_type:
 				{
-					delete dw_data_object_loc;
-					dw_data_object_loc = 0;
-					
-					if(*p != '.')
+					if(following_pointer)
 					{
-						if(debug)
+						if((*p != '-') && (*(p + 1) != '>'))
 						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" would match if it was a structure" << EndDebugInfo;
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" would match if it was a pointer to a structure" << EndDebugInfo;
+							}
+							status = false;
+							break;
 						}
-						status = false;
-						break;
+						p += 2;
 					}
-					p++;
+					else
+					{
+						if(*p != '.')
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" would match if it was a structure" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+						p++;
+					}
 					while(*p == ' ') p++; // skip spaces
 					
 					std::string data_member_name;
-					while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != ' ')) data_member_name += *p++;
-//					std::cerr << "data_member_name=\"" << data_member_name << "\"" << std::endl;
+					while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != '-') && (*p != ' ')) data_member_name += *p++;
 					
 					const DWARF_DIE<MEMORY_ADDR> *dw_die_data_member = dw_die_type->FindDataMember(data_member_name.c_str());
 					if(!dw_die_data_member)
@@ -2651,86 +2676,72 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						{
 							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't find data member \"" << data_member_name << "\" in data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
 						}
-						return 0;
+						status = false;
+						break;
 					}
 					
-					if(!has_object_addr)
+					if(dw_data_object_loc->GetType() != DW_LOC_SIMPLE_MEMORY)
 					{
 						if(debug)
 						{
 							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" relative to data Object \"" << matched_data_object_name << "\" because data Object \"" << matched_data_object_name << "\" has no address" << EndDebugInfo;
 						}
-						return 0;
+						status = false;
+						break;
 					}
-					
-					DWARF_Location<MEMORY_ADDR> *dw_data_member_loc = new DWARF_Location<MEMORY_ADDR>();
-					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_member_loc))
+					MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
+					if(dw_data_object_loc) delete dw_data_object_loc;
+					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
 					{
 						if(debug)
 						{
 							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
 						}
-						delete dw_data_member_loc;
-						return 0;
+						status = false;
+						break;
 					}
 
 					while(*p == ' ') p++; // skip spaces
 
+					if(!dw_die_data_member->GetByteSize(dw_data_object_byte_size))
+					{
+						if(debug)
+						{
+							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
+						}
+						status = false;
+						break;
+					}
+
+					if(!dw_die_data_member->GetBitSize(dw_data_object_bit_size))
+					{
+						if(debug)
+						{
+							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
+						}
+						status = false;
+						break;
+					}
+					
+					int64_t dw_data_member_bit_offset = 0;
+					if(dw_die_data_member->GetBitOffset(dw_data_member_bit_offset))
+					{
+						dw_data_object_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_data_object_byte_size) - dw_data_object_bit_size - dw_data_member_bit_offset;
+					}
+					else if(!dw_die_data_member->GetDataBitOffset(dw_data_object_bit_offset))
+					{
+						dw_data_object_bit_offset = 0;
+					}
+
 					if(*p == 0)
 					{
 						// match
-//						std::cerr << "dw_die_data_member:" << std::endl << *dw_die_data_member << std::endl;
-						uint64_t dw_data_member_byte_size;
-						if(!dw_die_data_member->GetByteSize(dw_data_member_byte_size))
-						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-							}
-							delete dw_data_member_loc;
-							return 0;
-						}
-
-						uint64_t dw_data_member_bit_size;
-						if(!dw_die_data_member->GetBitSize(dw_data_member_bit_size))
-						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-							}
-							delete dw_data_member_loc;
-							return 0;
-						}
-						
-						int64_t dw_data_member_data_bit_offset = 0;
-						int64_t dw_data_member_bit_offset = 0;
-						if(dw_die_data_member->GetBitOffset(dw_data_member_bit_offset))
-						{
-							//dw_data_member_data_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : dw_data_member_bit_size - dw_data_member_bit_offset;
-							dw_data_member_data_bit_offset = (arch_endianness == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_data_member_byte_size) - dw_data_member_bit_size - dw_data_member_bit_offset;
-						}
-						else if(!dw_die_data_member->GetDataBitOffset(dw_data_member_data_bit_offset))
-						{
-							dw_data_member_data_bit_offset = 0;
-						}
-
-//						std::cerr << "dw_data_member_byte_size=" << dw_data_member_byte_size << std::endl;
-//						std::cerr << "dw_data_member_bit_size=" << dw_data_member_bit_size << std::endl;
-//						std::cerr << "dw_data_member_bit_offset=" << dw_data_member_bit_offset << std::endl;
-						return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_member_loc, dw_data_member_byte_size, dw_data_member_data_bit_offset, dw_data_member_bit_size);
+						dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, dw_data_object_bit_offset, dw_data_object_bit_size);
+						match = true;
+						break;
 					}
 
-					if(dw_data_member_loc->GetType() == DW_LOC_SIMPLE_MEMORY)
-					{
-						object_addr = dw_data_member_loc->GetAddress();
-						has_object_addr = true;
-					}
-					else
-					{
-						has_object_addr = false;
-					}
-					dw_data_object_loc = dw_data_member_loc;
-					
 					if(!dw_die_data_member->GetAttributeValue(DW_AT_type, dw_type_ref))
 					{
 						if(debug)
@@ -2740,7 +2751,16 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						status = false;
 						break;
 					}
-					matched_data_object_name += '.';
+					
+					if(following_pointer)
+					{
+						matched_data_object_name += "->";
+						following_pointer = false;
+					}
+					else
+					{
+						matched_data_object_name += '.';
+					}
 					matched_data_object_name += data_member_name;
 				}
 				break;
@@ -2777,7 +2797,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						break;
 					}
 					
-					uint64_t array_bit_offset = 0;
+					dw_data_object_bit_offset = 0;
 					unsigned int dim = 0;
 					unsigned int i = 0;
 					
@@ -2809,7 +2829,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							while(*p && (*p == ' ')) p++; // skip spaces
 							
 							std::string subscript_str;
-							while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != ' ')) subscript_str += *p++;
+							while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != '-') && (*p != ' ')) subscript_str += *p++;
 							
 							while(*p && (*p == ' ')) p++; // skip spaces
 
@@ -2875,57 +2895,35 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							
 							while(*p == ' ') p++; // skip spaces
 
+							uint64_t array_element_count = 0;
+							if(!dw_die_type->GetArrayElementCount(dim + 1, array_element_count))
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << GetFilename() << "\", can't get element count of data array \"" << matched_data_object_name << "\"" << EndDebugError;
+								}
+								status = false;
+								break;
+							}
+							
+							dw_data_object_bit_size = array_element_count * array_element_bitsize;
+							
+							dw_data_object_bit_offset += normalized_subscript * dw_data_object_bit_size;
+							
+							dw_data_object_byte_size = (dw_data_object_bit_size + 7) / 8;
+								
 							if(*p == 0)
 							{
 								// match
-								uint64_t array_element_count = 0;
-								if(!dw_die_type->GetArrayElementCount(dim + 1, array_element_count))
-								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << GetFilename() << "\", can't get element count of data array \"" << matched_data_object_name << "\"" << EndDebugError;
-									}
-									status = false;
-									break;
-								}
-								
-								MEMORY_ADDR array_bitsize = array_element_count * array_element_bitsize;
-								//std::cerr << "array_bitsize=" << array_bitsize << std::endl;
-								
-								array_bit_offset += normalized_subscript * array_bitsize;
-								//std::cerr << "array_bit_offset=" << array_bit_offset << std::endl;
-								
-								uint64_t array_byte_size = (array_bitsize + 7) / 8;
-								
-								return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, array_byte_size, array_bit_offset, array_bitsize);
+								dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, dw_data_object_bit_offset, dw_data_object_bit_size);
+								match = true;
+								break;
 							}
 
-							if(status)
-							{
-								uint64_t array_bit_stride = 0;
-								
-								uint64_t array_element_count = 0;
-								if(!dw_die_type->GetArrayElementCount(dim + 1, array_element_count))
-								{
-									if(debug)
-									{
-										logger << DebugError << "In File \"" << GetFilename() << "\", can't get element count of data array \"" << matched_data_object_name << "\"" << EndDebugError;
-									}
-									status = false;
-									break;
-								}
-								
-								array_bit_stride = array_element_bitsize * array_element_count;
-								//std::cerr << "next array_bit_stride=" << array_bit_stride << std::endl;
-								
-								array_bit_offset += normalized_subscript * array_bit_stride;
-								//std::cerr << "next array_bit_offset=" << array_bit_offset << std::endl;
-								
-								dim++;
-								matched_data_object_name += '[';
-								matched_data_object_name += subscript_str;
-								matched_data_object_name += ']';
-							}
+							dim++;
+							matched_data_object_name += '[';
+							matched_data_object_name += subscript_str;
+							matched_data_object_name += ']';
 						}
 						
 						switch(dw_array_ordering)
@@ -2939,35 +2937,196 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						}
 						break;
 					}
-					while(status);
+					while(status && !match);
 					
-					if(has_object_addr)
+					if(status && !match)
 					{
-						object_addr += array_bit_offset / 8;
+						MEMORY_ADDR object_addr = dw_data_object_loc->GetAddress();
+						dw_data_object_loc->Clear();
+						dw_data_object_loc->SetAddress(object_addr + (dw_data_object_bit_offset / 8));
+						
+						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data element type of data array \"" << matched_data_object_name << "\"" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
 					}
+				}
+				break;
+			case DW_TAG_pointer_type:
+				{
+					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, dw_data_object_bit_offset, dw_data_object_bit_size);
 					
-					if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+					if(!dw_data_object->Fetch())
 					{
 						if(debug)
 						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data element type of data array \"" << matched_data_object_name << "\"" << EndDebugInfo;
+							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't get value of Pointer \"" << matched_data_object_name << "\"" << EndDebugInfo;
 						}
 						status = false;
 						break;
 					}
-					break;
+					
+					MEMORY_ADDR pointer_bit_size = dw_data_object_bit_size;
+					
+					uint64_t pointer_value = 0;
+					if(pointer_bit_size > (8 * sizeof(pointer_value))) pointer_bit_size = 8 * sizeof(pointer_value);
+					if(!dw_data_object->Read(0, pointer_value, pointer_bit_size))
+					{
+						if(debug)
+						{
+							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't read value of Pointer \"" << matched_data_object_name << "\"" << EndDebugInfo;
+						}
+						status = false;
+						break;
+					}
+					
+					delete dw_data_object;
+					// Note: dw_data_object_loc is also deleted with dw_data_object
+					
+					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
+					dw_data_object_loc->SetAddress(pointer_value);
+
+					dw_data_object_bit_size = 0;
+					dw_data_object_bit_offset = 0;
+					dw_data_object_byte_size = 0;
+					
+					if(*p == '[')
+					{
+						p++;
+						while(*p && (*p == ' ')) p++; // skip spaces
+						
+						std::string subscript_str;
+						while(*p && (*p != '.') && (*p != '[') && (*p != ']') && (*p != '-') && (*p != ' ')) subscript_str += *p++;
+						
+						while(*p && (*p == ' ')) p++; // skip spaces
+
+						if(*p != ']')
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" would match if it was a pointer (expected closing ']')" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+						p++;
+
+						int64_t subscript = 0;
+						std::stringstream subscript_sstr;
+						subscript_sstr << subscript_str;
+						subscript_sstr >> subscript;
+						if(!subscript_sstr.eof())
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", bad subscript \"" << subscript_str << "\" for indexing pointer \"" << matched_data_object_name << "\" " << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+						
+						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+						
+						const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+						
+						if(!dw_die_type->GetByteSize(dw_data_object_byte_size))
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+
+						if(!dw_die_type->GetBitSize(dw_data_object_bit_size))
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+						
+						int64_t lower_bound = 0;
+						
+						if(!dw_die_type->GetCompilationUnit()->GetDefaultLowerBound(lower_bound))
+						{
+							if(debug)
+							{
+								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine subscript lower bound for data array \"" << matched_data_object_name << "\" " << EndDebugError;
+							}
+							status = false;
+							break;
+						}
+						
+						int64_t normalized_subscript = subscript - lower_bound;
+
+						dw_data_object_bit_offset = normalized_subscript * dw_data_object_bit_size;
+						
+						while(*p && (*p == ' ')) p++; // skip spaces
+
+						if(*p == 0)
+						{
+							// match
+							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, dw_data_object_byte_size, dw_data_object_bit_offset, dw_data_object_bit_size);
+							match = true;
+							break;
+						}
+						
+						matched_data_object_name += '[';
+						matched_data_object_name += subscript_str;
+						matched_data_object_name += ']';
+						
+						following_pointer = false;
+					}
+					else
+					{
+						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << EndDebugInfo;
+							}
+							status = false;
+							break;
+						}
+						following_pointer = true;
+					}
 				}
 				break;
 			case DW_TAG_typedef:
-				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					if(debug)
+					{
+						logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data type defined by a typedef for \"" << matched_data_object_name << "\"" << EndDebugInfo;
+					}
+					status = false;
+					break;
+				}
 				break;
 		}
 	}
-	while(status && dw_type_ref);
+	while(status && !match && dw_type_ref);
 	
-	if(dw_data_object_loc) delete dw_data_object_loc;
+	if(!match && dw_data_object_loc) delete dw_data_object_loc;
 	
-	return 0;
+	return match ? dw_data_object : 0;
 }
 
 template <class MEMORY_ADDR>

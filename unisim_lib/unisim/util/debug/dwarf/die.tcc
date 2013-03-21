@@ -1628,41 +1628,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLowerBound(int64_t& lower_bound) const
 		return true;
 	}
 
-	// If the lower bound value is missing, the value is assumed to be a language-dependent default
-	// constant. The default lower bound is 0 for C, C++, D, Java, Objective C, Objective C++, Python,
-	// and UPC. The default lower bound is 1 for Ada, COBOL, Fortran, Modula-2, Pascal and PL/I.
-
-	uint16_t dw_at_language = dw_cu->GetLanguage();
-	switch(dw_at_language)
-	{
-		case DW_LANG_C89:
-		case DW_LANG_C:
-		case DW_LANG_C_plus_plus:
-		case DW_LANG_Java:
-		case DW_LANG_C99:
-		case DW_LANG_ObjC:
-		case DW_LANG_ObjC_plus_plus:
-		case DW_LANG_UPC:
-		case DW_LANG_Upc:
-		case DW_LANG_D:
-		case DW_LANG_python:
-		case DW_LANG_Mips_Assembler:
-			lower_bound = 0;
-			return true;
-		case DW_LANG_Ada83:
-		case DW_LANG_Cobol74:
-		case DW_LANG_Cobol85:
-		case DW_LANG_Fortran77:
-		case DW_LANG_Fortran90:
-		case DW_LANG_Pascal83:
-		case DW_LANG_Modula2:
-		case DW_LANG_Ada95:
-		case DW_LANG_Fortran95:
-		case DW_LANG_PLI:
-			lower_bound = 1;
-			return true;
-	}
-	return false;
+	return dw_cu->GetDefaultLowerBound(lower_bound);
 }
 
 template <class MEMORY_ADDR>
@@ -1843,22 +1809,27 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(uint64_t& bit_size) const
 				}
 			}
 			return false;
-	}
-	
-	// follow typedefs
-	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
-	
-	if(GetAttributeValue(DW_AT_type, dw_type_ref))
-	{
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
-		
-		while(dw_die_type->GetTag() == DW_TAG_typedef)
-		{
-			if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
-			dw_die_type = dw_type_ref->GetValue();
-		}
-		
-		if(dw_die_type->GetBitSize(bit_size)) return true;
+		case DW_TAG_pointer_type:
+			break;
+		default:
+			{
+				// follow typedefs (but pointer)
+				const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+				
+				if(GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+					
+					while(dw_die_type->GetTag() == DW_TAG_typedef)
+					{
+						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+						dw_die_type = dw_type_ref->GetValue();
+					}
+					
+					if(dw_die_type->GetBitSize(bit_size)) return true;
+				}
+			}
+			break;
 	}
 
 	// fallback

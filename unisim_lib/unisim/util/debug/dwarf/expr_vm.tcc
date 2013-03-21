@@ -170,6 +170,25 @@ DWARF_Location<MEMORY_ADDR>::~DWARF_Location()
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::Clear()
+{
+	dw_loc_type = DW_LOC_NULL;
+	dw_reg_num = 0;
+	dw_addr = 0;
+	
+	unsigned int num_location_pieces = dw_location_pieces.size();
+	unsigned int i;
+	
+	for(i = 0; i < num_location_pieces; i++)
+	{
+		DWARF_LocationPiece<MEMORY_ADDR> *dw_location_piece = dw_location_pieces[i];
+		
+		delete dw_location_piece;
+	}
+	dw_location_pieces.clear();
+}
+
+template <class MEMORY_ADDR>
 unsigned int DWARF_Location<MEMORY_ADDR>::GetType() const
 {
 	return dw_loc_type;

@@ -119,7 +119,9 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value,
 {
 	dest_value = 0;
 
-	while(dest_bit_size)
+	unsigned int remaining_bits = dest_bit_size;
+	
+	while(remaining_bits)
 	{
 		unsigned int source_byte_index = source_bit_offset / 8;
 		
@@ -137,7 +139,7 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value,
 
 		dest_bit_offset = dest_bit_offset + bit_sz;
 		source_bit_offset = source_bit_offset + bit_sz;
-		dest_bit_size = dest_bit_size - bit_sz;
+		remaining_bits = remaining_bits - bit_sz;
 	}
 	return true;
 }

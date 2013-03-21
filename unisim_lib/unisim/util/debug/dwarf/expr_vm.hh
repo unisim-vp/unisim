@@ -103,6 +103,7 @@ class DWARF_Location
 public:
 	DWARF_Location();
 	~DWARF_Location();
+	void Clear();
 	unsigned int GetType() const;
 	void Add(DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece);
 	const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& GetLocationPieces() const;

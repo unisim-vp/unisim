@@ -430,25 +430,13 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Read(MEMORY_ADDR obj_bit_offset, uint64_t& value, MEMORY_ADDR bit_size) const
 {
-	MEMORY_ADDR dest_bit_offset = 0;
-	if(arch_endianness == unisim::util::endian::E_BIG_ENDIAN)
-	{
-		MEMORY_ADDR l_bit_size = bit_size % 8;
-		dest_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-	}
-	return bv.Read(obj_bit_offset, value, dest_bit_offset, bit_size);
+	return bv.Read(obj_bit_offset, value, 0, bit_size);
 }
 
 template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Write(MEMORY_ADDR obj_bit_offset, uint64_t value, MEMORY_ADDR bit_size)
 {
-	MEMORY_ADDR source_bit_offset = 0;
-	if(arch_endianness == unisim::util::endian::E_BIG_ENDIAN)
-	{
-		MEMORY_ADDR l_bit_size = bit_size % 8;
-		source_bit_offset = l_bit_size ? 8 - l_bit_size : 0;
-	}
-	return bv.Write(obj_bit_offset, value, source_bit_offset, bit_size);
+	return bv.Write(obj_bit_offset, value, 0, bit_size);
 }
 
 template <class MEMORY_ADDR>
