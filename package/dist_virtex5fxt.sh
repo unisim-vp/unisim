@@ -130,6 +130,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
 unisim/util/debug/dwarf/data_object.cc \
+unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -148,6 +149,7 @@ unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/os/linux_os/environment.cc \
 unisim/util/os/linux_os/linux.cc \
+unisim/util/lexer/lexer.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -293,6 +295,7 @@ unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
@@ -323,6 +326,9 @@ unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
+unisim/util/dictionary/dictionary.hh \
+unisim/util/lexer/lexer.hh \
+unisim/util/parser/parser.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -458,6 +464,9 @@ unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/util/os/linux_os/calls.tcc \
 unisim/util/os/linux_os/linux.tcc \
+unisim/util/dictionary/dictionary.tcc \
+unisim/util/lexer/lexer.tcc \
+unisim/util/parser/parser.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \

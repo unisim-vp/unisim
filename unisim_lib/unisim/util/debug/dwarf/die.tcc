@@ -1870,6 +1870,17 @@ bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(uint64_t& array_element_bit_
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementEncoding(uint8_t& encoding) const
+{
+	const DWARF_Reference<MEMORY_ADDR> *dw_array_element_type_ref = 0;
+	if(!GetAttributeValue(DW_AT_type, dw_array_element_type_ref)) return false;
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_array_element_type = dw_array_element_type_ref->GetValue();
+	
+	return dw_array_element_type->GetEncoding(encoding);
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetBitOffset(int64_t& bit_offset) const
 {
 	return GetAttributeStaticDynamicValue(DW_AT_bit_offset, bit_offset);
@@ -1981,11 +1992,54 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
 	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
 	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
-	if(!dw_loc_expr_vm_status && debug)
+	if(!dw_loc_expr_vm_status)
 	{
-		logger << DebugInfo << "evaluation of DIE location expression failed" << EndDebugInfo;
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of DIE location expression failed" << EndDebugInfo;
+		}
+		return false;
 	}
-	return dw_loc_expr_vm_status;
+	
+	// Determine the size in bytes (including padding bits)
+	uint64_t dw_byte_size;
+	if(!GetByteSize(dw_byte_size))
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data object" << EndDebugInfo;
+		}
+		return false;
+	}
+	loc.SetByteSize(dw_byte_size);
+	
+	// Determine the actual size in bits (excluding padding bits)
+	uint64_t dw_bit_size = 0;
+	if(!GetBitSize(dw_bit_size))
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data object" << EndDebugInfo;
+		}
+		return false;
+	}
+	loc.SetBitSize(dw_bit_size);
+	
+	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	
+	if(GetAttributeValue(DW_AT_type, dw_type_ref))
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+
+		uint8_t dw_at_encoding = 0;
+		if(!dw_die_type->GetEncoding(dw_at_encoding))
+		{
+			dw_at_encoding = 0;
+		}
+		loc.SetEncoding(dw_at_encoding);
+	}
+
+	return true;
 }
 
 template <class MEMORY_ADDR>
@@ -2008,11 +2062,62 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	dw_loc_expr_vm.SetObjectAddress(object_addr);
 	dw_loc_expr_vm.Push(object_addr);
 	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
-	if(!dw_loc_expr_vm_status && debug)
+	if(!dw_loc_expr_vm_status)
 	{
-		logger << DebugInfo << "evaluation of data member DIE location expression failed" << EndDebugInfo;
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE location expression failed" << EndDebugInfo;
+		}
 	}
-	return dw_loc_expr_vm_status;
+	
+	uint64_t dw_byte_size = 0;
+	if(!GetByteSize(dw_byte_size))
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data member" << EndDebugInfo;
+		}
+		return false;
+	}
+	loc.SetByteSize(dw_byte_size);
+
+	uint64_t dw_bit_size = 0;
+	if(!GetBitSize(dw_bit_size))
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data member" << EndDebugInfo;
+		}
+		return false;
+	}
+	loc.SetBitSize(dw_bit_size);
+	
+	int64_t dw_bit_offset = 0;
+	int64_t dw_data_member_bit_offset = 0;
+	if(GetBitOffset(dw_data_member_bit_offset))
+	{
+		dw_bit_offset = (dw_handler->GetArchEndianness() == unisim::util::endian::E_BIG_ENDIAN) ? dw_data_member_bit_offset : (8 * dw_byte_size) - dw_bit_size - dw_data_member_bit_offset;
+	}
+	else if(!GetDataBitOffset(dw_bit_offset))
+	{
+		dw_bit_offset = 0;
+	}
+	loc.SetBitOffset(dw_bit_offset);
+	
+	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+	
+	if(GetAttributeValue(DW_AT_type, dw_type_ref))
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+		
+		uint8_t dw_at_encoding = 0;
+		if(!dw_die_type->GetEncoding(dw_at_encoding))
+		{
+			dw_at_encoding = 0;
+		}
+		loc.SetEncoding(dw_at_encoding);
+	}
+	return true;
 }
 
 template <class MEMORY_ADDR>
@@ -2036,6 +2141,34 @@ bool DWARF_DIE<MEMORY_ADDR>::GetOrdering(uint8_t& ordering) const
 		ordering = dw_at_ordering_value->to_uint();
 		return true;
 	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetEncoding(uint8_t& encoding) const
+{
+	if(GetTag() == DW_TAG_base_type)
+	{
+		const DWARF_Constant<MEMORY_ADDR> *dw_at_encoding_value = 0;
+		if(GetAttributeValue(DW_AT_encoding, dw_at_encoding_value))
+		{
+			encoding = dw_at_encoding_value->to_uint();
+			return true;
+		}
+	}
+	
+	if(GetTag() == DW_TAG_typedef)
+	{
+		const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+		
+		if(GetAttributeValue(DW_AT_type, dw_type_ref))
+		{
+			const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+			
+			return dw_die_type->GetEncoding(encoding);
+		}
+	}
+	
 	return false;
 }
 

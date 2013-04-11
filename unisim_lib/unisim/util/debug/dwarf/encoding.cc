@@ -280,6 +280,29 @@ const char *DWARF_GetATEName(uint8_t dw_ate)
 	return (const char *) buf;
 }
 
+const char *DWARF_GetFriendlyATEName(uint8_t dw_ate)
+{
+	switch(dw_ate)
+	{
+		case DW_ATE_address: return "an address";
+		case DW_ATE_boolean: return "a boolean";
+		case DW_ATE_complex_float: return "a complex float";
+		case DW_ATE_float: return "a float";
+		case DW_ATE_signed: return "a signed integer";
+		case DW_ATE_signed_char: return "a signed char";
+		case DW_ATE_unsigned: return "an unsigned integer";
+		case DW_ATE_unsigned_char: return "an unsigned char";
+		case DW_ATE_imaginary_float: return "an imaginary float";
+		case DW_ATE_packed_decimal: return "a packed decimal";
+		case DW_ATE_numeric_string: return "a numeric string";
+		case DW_ATE_edited: return "a edited";
+		case DW_ATE_signed_fixed: return "a signed fixed";
+		case DW_ATE_unsigned_fixed: return "an unsigned fixed";
+		case DW_ATE_decimal_float: return "a decimal float";
+	}
+	return "an unknown type";
+}
+
 const char *DWARF_GetLANGName(uint16_t dw_lang)
 {
 	static char buf[23];

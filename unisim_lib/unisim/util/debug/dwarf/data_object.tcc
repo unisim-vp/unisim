@@ -44,11 +44,8 @@ namespace dwarf {
 
 	
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, uint64_t _dw_data_object_byte_size, int64_t _dw_data_object_bit_offset, uint64_t _dw_data_object_bit_size)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc)
 	: dw_data_object_loc(_dw_data_object_loc)
-	, dw_data_object_byte_size(_dw_data_object_byte_size)
-	, dw_data_object_bit_offset(_dw_data_object_bit_offset)
-	, dw_data_object_bit_size(_dw_data_object_bit_size)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
 	, dw_reg_num_mapping(dw_handler->GetRegisterNumberMapping())
@@ -66,7 +63,28 @@ DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 template <class MEMORY_ADDR>
 MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetBitSize() const
 {
-	return dw_data_object_bit_size;
+	return dw_data_object_loc->GetBitSize();
+}
+
+template <class MEMORY_ADDR>
+unisim::util::debug::DataObjectType DWARF_DataObject<MEMORY_ADDR>::GetType() const
+{
+	switch(dw_data_object_loc->GetEncoding())
+	{
+		case DW_ATE_boolean:
+			return unisim::util::debug::DOT_BOOL;
+		case DW_ATE_float:
+			return unisim::util::debug::DOT_FLOAT;
+		case DW_ATE_signed:
+			return unisim::util::debug::DOT_SIGNED_INT;
+		case DW_ATE_signed_char:
+			return unisim::util::debug::DOT_SIGNED_CHAR;
+		case DW_ATE_unsigned:
+			return unisim::util::debug::DOT_UNSIGNED_INT;
+		case DW_ATE_unsigned_char:
+			return unisim::util::debug::DOT_UNSIGNED_CHAR;
+	}
+	return DOT_UNKNOWN;
 }
 
 template <class MEMORY_ADDR>
@@ -85,6 +103,9 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 		case DW_LOC_SIMPLE_MEMORY:
 			{
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
+				uint64_t dw_data_object_byte_size = dw_data_object_loc->GetByteSize();
+				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				std::cerr << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
 				uint8_t buffer[dw_byte_size];
@@ -105,6 +126,9 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 			return true;
 		case DW_LOC_SIMPLE_REGISTER:
 			{
+				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+
 				unsigned int dw_reg_num = dw_data_object_loc->GetRegisterNumber();
 				const unisim::util::debug::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 				std::cerr << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;
@@ -247,6 +271,10 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 	{
 		case DW_LOC_SIMPLE_MEMORY:
 			{
+				uint64_t dw_data_object_byte_size = dw_data_object_loc->GetByteSize();
+				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+
 				MEMORY_ADDR dw_addr = dw_data_object_loc->GetAddress();
 				MEMORY_ADDR dw_byte_size = dw_data_object_byte_size;
 				std::cerr << "DW_LOC_SIMPLE_MEMORY: addr=0x" << std::hex << dw_addr << std::dec << ", bit_offset=" << dw_data_object_bit_offset << ", bit_size=" << dw_data_object_bit_size << ", byte_size=" << dw_data_object_byte_size << std::endl;
@@ -268,6 +296,9 @@ bool DWARF_DataObject<MEMORY_ADDR>::Commit()
 			return true;
 		case DW_LOC_SIMPLE_REGISTER:
 			{
+				int64_t dw_data_object_bit_offset = dw_data_object_loc->GetBitOffset();
+				uint64_t dw_data_object_bit_size = dw_data_object_loc->GetBitSize();
+
 				unsigned int dw_reg_num = dw_data_object_loc->GetRegisterNumber();
 				unisim::util::debug::Register *arch_reg = dw_reg_num_mapping->GetArchReg(dw_reg_num);
 				std::cerr << "DW_LOC_SIMPLE_REGISTER: dw_reg_num=" << dw_reg_num << std::endl;

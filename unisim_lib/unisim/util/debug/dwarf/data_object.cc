@@ -129,7 +129,7 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value,
 		unsigned int l_source_bit_offset = source_bit_offset % 8;
 		unsigned int bit_size_to_byte_boundary = 8 - l_source_bit_offset;
 		unsigned int bit_sz = bit_size_to_byte_boundary;
-		if(bit_sz > dest_bit_size) bit_sz = dest_bit_size;
+		if(bit_sz > remaining_bits) bit_sz = remaining_bits;
 		
 		unsigned source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? 8 - l_source_bit_offset - bit_sz : l_source_bit_offset;
 		unsigned dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? dest_bit_size - dest_bit_offset - bit_sz : dest_bit_offset;

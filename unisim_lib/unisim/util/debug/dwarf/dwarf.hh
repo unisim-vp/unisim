@@ -70,6 +70,7 @@
 #include <unisim/util/debug/dwarf/ml.hh>
 #include <unisim/util/debug/dwarf/range.hh>
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
+#include <unisim/util/debug/dwarf/c_loc_expr_parser.hh>
 
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -124,6 +125,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindSubProgram(MEMORY_ADDR pc) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;

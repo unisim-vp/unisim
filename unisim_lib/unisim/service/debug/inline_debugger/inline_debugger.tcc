@@ -42,6 +42,7 @@
 #include <list>
 #include <set>
 #include <stdexcept>
+#include <unisim/util/arithmetic/arithmetic.hh>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -2598,9 +2599,89 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 						(*std_output_stream).width(2);
 						(*std_output_stream) << (unsigned int) data_object_raw_value[byte_offset] << std::dec;
 					}
-					(*std_output_stream) << " ]" << endl;
+					(*std_output_stream) << " ]";
 					
 					std_output_stream->flags(std_output_stream_saved_flags);
+					
+					unisim::util::debug::DataObjectType data_object_type = data_object->GetType();
+					if(data_object_type != unisim::util::debug::DOT_UNKNOWN)
+					{
+						uint64_t data_object_value = 0;
+						if(data_object->Read(0, data_object_value, data_object_bit_size))
+						{
+							(*std_output_stream) << " : " << data_object_bit_size << "-bit ";
+							switch(data_object_type)
+							{
+								case unisim::util::debug::DOT_BOOL:
+									(*std_output_stream) << "boolean";
+									break;
+								case unisim::util::debug::DOT_SIGNED_CHAR:
+									(*std_output_stream) << "signed character";
+									break;
+								case unisim::util::debug::DOT_UNSIGNED_CHAR:
+									(*std_output_stream) << "unsigned character"; break;
+								case unisim::util::debug::DOT_SIGNED_INT:
+									(*std_output_stream) << "signed integer";
+									break;
+								case unisim::util::debug::DOT_UNSIGNED_INT:
+									(*std_output_stream) << "unsigned integer"; break;
+								case unisim::util::debug::DOT_FLOAT:
+									(*std_output_stream) << "floating-point";
+									break;
+								default:
+									(*std_output_stream) << "unknown type";
+									break;
+							}
+							(*std_output_stream) << " = ";
+							switch(data_object_type)
+							{
+								case unisim::util::debug::DOT_BOOL:
+									(*std_output_stream) << (data_object_value ? "true" : "false");
+									break;
+								case unisim::util::debug::DOT_SIGNED_CHAR:
+									(*std_output_stream) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
+									(*std_output_stream) << " ('";
+									if((data_object_value >= 32) && (data_object_value < 128))
+									{
+										(*std_output_stream) << (char) data_object_value;
+									}
+									else
+									{
+										(*std_output_stream) << "\\0x" << std::hex << data_object_value << std::dec;
+									}
+									(*std_output_stream) << "')";
+									break;
+								case unisim::util::debug::DOT_UNSIGNED_CHAR:
+									(*std_output_stream) << data_object_value;
+									(*std_output_stream) << " ('";
+									if((data_object_value >= 32) && (data_object_value < 128))
+									{
+										(*std_output_stream) << (unsigned char) data_object_value;
+									}
+									else
+									{
+										(*std_output_stream) << "\\0x" << std::hex << data_object_value << std::dec;
+									}
+									(*std_output_stream) << "')";
+									break;
+								case unisim::util::debug::DOT_SIGNED_INT:
+									(*std_output_stream) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
+									break;
+								case unisim::util::debug::DOT_UNSIGNED_INT:
+									(*std_output_stream) << data_object_value;
+									break;
+								default:
+									(*std_output_stream) << "?";
+									break;
+							}
+						}
+						else
+						{
+							(*std_output_stream) << "Data object \"" << data_object_name << "\" can't be read" << endl;
+						}
+					}
+					
+					(*std_output_stream) << endl;
 				}
 				else
 				{

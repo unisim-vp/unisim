@@ -161,6 +161,10 @@ DWARF_Location<MEMORY_ADDR>::DWARF_Location()
 	: dw_loc_type(DW_LOC_NULL)
 	, dw_reg_num(0)
 	, dw_addr(0)
+	, dw_byte_size(0)
+	, dw_bit_offset(0)
+	, dw_bit_size(0)
+	, dw_encoding(0)
 {
 }
 
@@ -175,6 +179,10 @@ void DWARF_Location<MEMORY_ADDR>::Clear()
 	dw_loc_type = DW_LOC_NULL;
 	dw_reg_num = 0;
 	dw_addr = 0;
+	dw_byte_size = 0;
+	dw_bit_offset = 0;
+	dw_bit_size = 0;
+	dw_encoding = 0;
 	
 	unsigned int num_location_pieces = dw_location_pieces.size();
 	unsigned int i;
@@ -234,6 +242,54 @@ template <class MEMORY_ADDR>
 MEMORY_ADDR DWARF_Location<MEMORY_ADDR>::GetAddress() const
 {
 	return dw_addr;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetByteSize(uint64_t _dw_byte_size)
+{
+	dw_byte_size = _dw_byte_size;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetBitOffset(int64_t _dw_bit_offset)
+{
+	dw_bit_offset = _dw_bit_offset;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetBitSize(uint64_t _dw_bit_size)
+{
+	dw_bit_size = _dw_bit_size;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Location<MEMORY_ADDR>::SetEncoding(uint8_t _dw_encoding)
+{
+	dw_encoding = _dw_encoding;
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_Location<MEMORY_ADDR>::GetByteSize() const
+{
+	return dw_byte_size;
+}
+
+template <class MEMORY_ADDR>
+int64_t DWARF_Location<MEMORY_ADDR>::GetBitOffset() const
+{
+	return dw_bit_offset;
+}
+
+template <class MEMORY_ADDR>
+uint64_t DWARF_Location<MEMORY_ADDR>::GetBitSize() const
+{
+	return dw_bit_size;
+}
+
+template <class MEMORY_ADDR>
+uint8_t DWARF_Location<MEMORY_ADDR>::GetEncoding() const
+{
+	return dw_encoding;
 }
 
 template <class MEMORY_ADDR>
