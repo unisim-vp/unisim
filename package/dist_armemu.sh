@@ -152,6 +152,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/dwarf32.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
+unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/blob/section32.cc \
 unisim/util/debug/blob/blob32.cc \
@@ -296,10 +297,12 @@ unisim/service/interfaces/loader.hh \
 unisim/service/interfaces/registers.hh \
 unisim/service/interfaces/memory.hh \
 unisim/service/interfaces/symbol_table_lookup.hh \
+unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/time/sc_time/time.hh \
 unisim/util/likely/likely.hh \
 unisim/util/debug/symbol.hh \
+unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/fwd.hh \
 unisim/util/debug/dwarf/addr_range.hh \
 unisim/util/debug/dwarf/fmt.hh \
@@ -326,6 +329,10 @@ unisim/util/debug/dwarf/loc.hh \
 unisim/util/debug/dwarf/class.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
+unisim/util/debug/dwarf/util.hh \
+unisim/util/debug/dwarf/version.hh \
+unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/symbol_table.hh \
 unisim/util/debug/blob/segment.hh \
@@ -342,6 +349,7 @@ unisim/util/debug/simple_register.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/profile.hh \
 unisim/util/debug/watchpoint_registry.hh \
+unisim/util/debug/data_object.hh \
 unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
@@ -410,6 +418,7 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/loc.tcc \
 unisim/util/debug/dwarf/dwarf.tcc \
 unisim/util/debug/dwarf/frame.tcc \
+unisim/util/debug/dwarf/data_object.tcc \
 unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/breakpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \

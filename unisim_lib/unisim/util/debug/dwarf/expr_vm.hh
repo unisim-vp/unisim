@@ -103,6 +103,7 @@ class DWARF_Location
 public:
 	DWARF_Location();
 	~DWARF_Location();
+	void Clear();
 	unsigned int GetType() const;
 	void Add(DWARF_LocationPiece<MEMORY_ADDR> *dw_loc_piece);
 	const std::vector<DWARF_LocationPiece<MEMORY_ADDR> *>& GetLocationPieces() const;
@@ -110,10 +111,22 @@ public:
 	void SetAddress(MEMORY_ADDR dw_addr);
 	unsigned int GetRegisterNumber() const;
 	MEMORY_ADDR GetAddress() const;
+	void SetByteSize(uint64_t byte_size);
+	void SetBitOffset(int64_t bit_offset);
+	void SetBitSize(uint64_t bit_size);
+	void SetEncoding(uint8_t encoding);
+	uint64_t GetByteSize() const;
+	int64_t GetBitOffset() const;
+	uint64_t GetBitSize() const;
+	uint8_t GetEncoding() const;
 private:
 	unsigned int dw_loc_type;
 	unsigned int dw_reg_num;
 	MEMORY_ADDR dw_addr;
+	uint64_t dw_byte_size;
+	int64_t dw_bit_offset;
+	uint64_t dw_bit_size;
+	uint8_t dw_encoding;
 	std::vector<DWARF_LocationPiece<MEMORY_ADDR> *> dw_location_pieces;
 };
 

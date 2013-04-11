@@ -1,5 +1,5 @@
-/*
- *  Copyright (c) 2012,
+ /*
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -32,46 +32,69 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
-#ifndef __UNISIM_UTIL_DEBUG_DATA_OBJECT_HH__
-#define __UNISIM_UTIL_DEBUG_DATA_OBJECT_HH__
-
-#include <unisim/util/endian/endian.hh>
+#include <unisim/util/lexer/lexer.hh>
+#include <unisim/util/dictionary/dictionary.tcc>
+#include <iostream>
 
 namespace unisim {
 namespace util {
-namespace debug {
+namespace dictionary {
 
-typedef enum
+template class DictionaryEntry<unsigned int>;
+template class Dictionary<unsigned int>;
+
+} // end of namespace lexer
+} // end of namespace util
+} // end of namespace dictionary
+
+namespace unisim {
+namespace util {
+namespace lexer {
+
+Location::Location()
+	: filename()
+	, lineno(1)
+	, colno(1)
 {
-	DOT_UNKNOWN = 0,   // unknown or composite
-	DOT_BOOL,          // boolean
-	DOT_SIGNED_CHAR,   // signed character
-	DOT_UNSIGNED_CHAR, // unsigned character
-	DOT_SIGNED_INT,    // signed integer
-	DOT_UNSIGNED_INT,  // unsigned integer
-	DOT_FLOAT,         // floating-point
 }
-DataObjectType;
 
-template <class ADDRESS>
-class DataObject
+void Location::IncLineNo(unsigned int delta)
 {
-public:
-	virtual ~DataObject() {}
-	virtual ADDRESS GetBitSize() const = 0;
-	virtual DataObjectType GetType() const = 0;
-	virtual unisim::util::endian::endian_type GetEndian() const = 0;
-	virtual bool Fetch() = 0;
-	virtual bool Commit() = 0;
-	virtual bool Read(ADDRESS obj_bit_offset, uint64_t& value, ADDRESS bit_size) const = 0;
-	virtual bool Write(ADDRESS obj_bit_offset, uint64_t value, ADDRESS bit_size) = 0;
-	virtual bool Read(ADDRESS obj_bit_offset, void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) const = 0;
-	virtual bool Write(ADDRESS obj_bit_offset, const void *buffer, ADDRESS buf_bit_offset, ADDRESS bit_size) = 0;
-};
+	lineno += delta;
+	colno = 1;
+}
 
+void Location::IncColNo(unsigned int delta)
+{
+	colno += delta;
+}
 
-} // end of namespace debug
+void Location::SetFilename(const char *_filename)
+{
+	filename = _filename;
+}
+
+const char *Location::GetFilename() const
+{
+	return filename.c_str();
+}
+
+unsigned int Location::GetLineNo() const
+{
+	return lineno;
+}
+
+unsigned int Location::GetColNo() const
+{
+	return colno;
+}
+
+std::ostream& operator << (std::ostream& os, const Location& loc)
+{
+	if(!loc.filename.empty()) os << "File \"" << loc.filename << "\", ";
+	return os << "line #" << loc.lineno << ", col #" << loc.colno;
+}
+
+} // end of namespace lexer
 } // end of namespace util
 } // end of namespace unisim
-
-#endif // __UNISIM_UTIL_DEBUG_DATA_OBJECT_HH__

@@ -86,7 +86,8 @@ public:
 	uint16_t GetLanguage() const;
 	const char *GetProducer() const;
 	uint8_t GetDefaultOrdering() const;
-	
+	bool GetDefaultLowerBound(int64_t& lower_bound) const;
+
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;

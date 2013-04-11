@@ -423,6 +423,46 @@ uint8_t DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultOrdering() const
 	return DW_ORD_row_major;
 }
 
+template <class MEMORY_ADDR>
+bool DWARF_CompilationUnit<MEMORY_ADDR>::GetDefaultLowerBound(int64_t& lower_bound) const
+{
+	// If the lower bound value is missing, the value is assumed to be a language-dependent default
+	// constant. The default lower bound is 0 for C, C++, D, Java, Objective C, Objective C++, Python,
+	// and UPC. The default lower bound is 1 for Ada, COBOL, Fortran, Modula-2, Pascal and PL/I.
+
+	uint16_t dw_at_language = GetLanguage();
+	switch(dw_at_language)
+	{
+		case DW_LANG_C89:
+		case DW_LANG_C:
+		case DW_LANG_C_plus_plus:
+		case DW_LANG_Java:
+		case DW_LANG_C99:
+		case DW_LANG_ObjC:
+		case DW_LANG_ObjC_plus_plus:
+		case DW_LANG_UPC:
+		case DW_LANG_Upc:
+		case DW_LANG_D:
+		case DW_LANG_python:
+		case DW_LANG_Mips_Assembler:
+			lower_bound = 0;
+			return true;
+		case DW_LANG_Ada83:
+		case DW_LANG_Cobol74:
+		case DW_LANG_Cobol85:
+		case DW_LANG_Fortran77:
+		case DW_LANG_Fortran90:
+		case DW_LANG_Pascal83:
+		case DW_LANG_Modula2:
+		case DW_LANG_Ada95:
+		case DW_LANG_Fortran95:
+		case DW_LANG_PLI:
+			lower_bound = 1;
+			return true;
+	}
+	return false;
+}
+
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util

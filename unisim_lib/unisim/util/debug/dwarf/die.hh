@@ -708,9 +708,9 @@ public:
 	bool GetByteSize(uint64_t& byte_size) const;
 	bool GetBitSize(uint64_t& bit_size) const;
 	bool GetArrayElementBitSize(uint64_t& bit_size) const;
-	bool GetBitOffset(uint64_t& bit_offset) const;
+	bool GetBitOffset(int64_t& bit_offset) const;
 	bool GetBitStride(uint64_t& bit_stride) const;
-	bool GetDataBitOffset(uint64_t& data_bit_offset) const;
+	bool GetDataBitOffset(int64_t& data_bit_offset) const;
 	bool GetObjectBitSize(uint64_t& bit_size) const;
 	bool GetLocationExpression(uint16_t dw_at, MEMORY_ADDR pc, const DWARF_Expression<MEMORY_ADDR> * & p_dw_loc_expr, std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
 	bool GetLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, DWARF_Location<MEMORY_ADDR>& loc) const;
@@ -718,6 +718,8 @@ public:
 	bool GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
 	bool GetOrdering(uint8_t& ordering) const;
+	bool GetEncoding(uint8_t& encoding) const;
+	bool GetArrayElementEncoding(uint8_t& encoding) const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

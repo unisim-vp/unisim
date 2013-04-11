@@ -556,6 +556,7 @@ const char *DWARF_GetTagName(uint16_t dw_tag);
 const char *DWARF_GetATName(uint16_t dw_at);
 const char *DWARF_GetFORMName(uint16_t dw_form);
 const char *DWARF_GetATEName(uint8_t dw_ate);
+const char *DWARF_GetFriendlyATEName(uint8_t dw_ate);
 const char *DWARF_GetLANGName(uint16_t dw_lang);
 const char *DWARF_GetFriendlyLANGName(uint16_t dw_lang);
 const char *DWARF_GetVIRTUALITYName(uint8_t dw_virtuality);
