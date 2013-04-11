@@ -35,6 +35,7 @@
 #ifndef __UNISIM_UTIL_DEBUG_DWARF_DATA_OBJECT_HH__
 #define __UNISIM_UTIL_DEBUG_DWARF_DATA_OBJECT_HH__
 
+#include <unisim/kernel/logger/logger.hh>
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/dwarf/expr_vm.hh>
 #include <unisim/util/endian/endian.hh>
@@ -76,7 +77,7 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, bool debug);
 	virtual ~DWARF_DataObject();
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
@@ -94,6 +95,8 @@ private:
 	DWARF_RegisterNumberMapping *dw_reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	DWARF_BitVector bv;
+	bool debug;
+	unisim::kernel::logger::Logger& logger;
 };
 
 } // end of namespace dwarf
