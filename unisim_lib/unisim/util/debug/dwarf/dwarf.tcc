@@ -2522,21 +2522,9 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	std::string data_object_base_name;
 
 	const CLocOperation *c_loc_op = c_loc_operation_stream.Pop();
-	if(!c_loc_op)
+	if(!c_loc_op || (c_loc_op->GetOpcode() != OP_LIT_IDENT))
 	{
-		if(debug)
-		{
-			logger << DebugError << "In File \"" << GetFilename() << "\", can't determine object name" << EndDebugError;
-		}
-		return 0;
-	}
-	
-	if(c_loc_op->GetOpcode() != OP_LIT_IDENT)
-	{
-		if(debug)
-		{
-			logger << DebugError << "In File \"" << GetFilename() << "\", not a data object name" << EndDebugError;
-		}
+		logger << DebugError << "internal error, can't determine object name (missing OP_LIT_IDENT in stream)" << EndDebugError;
 		delete c_loc_op;
 		return 0;
 	}
@@ -2556,7 +2544,10 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	
 		if(!dw_die_data_object)
 		{
-			logger << DebugInfo << "In File \"" << GetFilename() << "\", DIE of data Object \"" << data_object_base_name << "\" not found" << EndDebugInfo;
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", DIE of data Object \"" << data_object_base_name << "\" not found" << EndDebugInfo;
+			}
 			return 0;
 		}
 	}
@@ -2616,7 +2607,8 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	}
 
 	DWARF_DataObject<MEMORY_ADDR> *dw_data_object = 0;
-	bool is_dereferencing_a_structure = false;
+	bool is_dereferencing_a_structure = false; // Note: when it is "true", we have one operation speculatively fetched (OP_STRUCT_DEREF)
+	                                           // if it is set, we check that the following DIE is really a DW_TAG_structure_type
 	bool status = true;
 	bool match = false;
 
@@ -2640,7 +2632,8 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						c_loc_op = c_loc_operation_stream.Pop();
 						if(!c_loc_op)
 						{
-							logger << DebugError << "In File \"" << GetFilename() << "\", expected '.' after \"" << matched_data_object_name << "\"" << EndDebugError;
+							// not supposed to reach this point
+							logger << DebugError << "internal error (missing OP_STRUCT_REF in stream)" << EndDebugError;
 							status = false;
 							break;
 						}
@@ -2648,7 +2641,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						{
 							if(debug)
 							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is a structure";
+								logger << DebugError << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is a structure";
 								switch(c_loc_op->GetOpcode())
 								{
 									case OP_DEREF:
@@ -2663,7 +2656,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 									default:
 										break;
 								}
-								logger << EndDebugInfo;
+								logger << EndDebugError;
 							}
 							status = false;
 							break;
@@ -2674,10 +2667,8 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					c_loc_op = c_loc_operation_stream.Pop();
 					if(!c_loc_op || (c_loc_op->GetOpcode() != OP_LIT_IDENT))
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", no data member name specified for data structure \"" << matched_data_object_name << "\"" << EndDebugInfo;
-						}
+						// not supposed to reach this point too
+						logger << DebugError << "internal error (missing OP_LIT_IDENT in stream)" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2689,20 +2680,14 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					const DWARF_DIE<MEMORY_ADDR> *dw_die_data_member = dw_die_type->FindDataMember(data_member_name.c_str());
 					if(!dw_die_data_member)
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't find data member \"" << data_member_name << "\" in data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't find data member \"" << data_member_name << "\" in data Object \"" << matched_data_object_name << "\"" << EndDebugError;
 						status = false;
 						break;
 					}
 					
 					if(dw_data_object_loc->GetType() != DW_LOC_SIMPLE_MEMORY)
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" relative to data Object \"" << matched_data_object_name << "\" because data Object \"" << matched_data_object_name << "\" has no address" << EndDebugInfo;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" relative to data Object \"" << matched_data_object_name << "\" because data Object \"" << matched_data_object_name << "\" has no address" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2711,10 +2696,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					dw_data_object_loc = new DWARF_Location<MEMORY_ADDR>();
 					if(!dw_die_data_member->GetDataMemberLocation(pc, has_frame_base, frame_base, object_addr, *dw_data_object_loc))
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine location of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2729,10 +2711,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 					if(!dw_die_data_member->GetAttributeValue(DW_AT_type, dw_type_ref))
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine type of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine type of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2747,17 +2726,22 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						matched_data_object_name += '.';
 					}
 					matched_data_object_name += data_member_name;
+					
+					is_dereferencing_a_structure = false;
 				}
 				break;
 			case DW_TAG_array_type:
 				{
+					if(is_dereferencing_a_structure)
+					{
+						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is an array not a pointer to a structure" << EndDebugError;
+						status = false;
+						break;
+					}
 					uint64_t array_element_bitsize = 0;
 					if(!dw_die_type->GetArrayElementBitSize(array_element_bitsize))
 					{
-						if(debug)
-						{
-							logger << DebugError << "In File \"" << GetFilename() << "\", can't get element bit size of data array \"" << matched_data_object_name << "\"" << EndDebugError;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't get element bit size of data array \"" << matched_data_object_name << "\"" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2774,10 +2758,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					
 					if(!num_children)
 					{
-						if(debug)
-						{
-							logger << DebugError << "In File \"" << GetFilename() << "\", DWARF DIE for data array \"" << matched_data_object_name << "\" has no subrange type DIE" << EndDebugError;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", DWARF DIE for data array \"" << matched_data_object_name << "\" has no subrange type DIE" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2805,30 +2786,30 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							c_loc_op = c_loc_operation_stream.Pop();
 							if(!c_loc_op)
 							{
-								logger << DebugError << "In File \"" << GetFilename() << "\", expected '[' after \"" << matched_data_object_name << "\"" << EndDebugError;
+								// not supposed to reach this point
+								logger << DebugError << "internal error (missing OP_ARRAY_SUBSCRIPT in stream)" << EndDebugError;
+								status = false;
+								break;
 							}
 							
 							if(c_loc_op->GetOpcode() != OP_ARRAY_SUBSCRIPT)
 							{
-								if(debug)
+								logger << DebugError << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is an array";
+								switch(c_loc_op->GetOpcode())
 								{
-									logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is an array";
-									switch(c_loc_op->GetOpcode())
-									{
-										case OP_DEREF:
-											logger << " not a pointer";
-											break;
-										case OP_STRUCT_DEREF:
-											logger << " not a pointer to a structure";
-											break;
-										case OP_STRUCT_REF:
-											logger << " not a structure";
-											break;
-										default:
-											break;
-									}
-									logger << EndDebugInfo;
+									case OP_DEREF:
+										logger << " not a pointer";
+										break;
+									case OP_STRUCT_DEREF:
+										logger << " not a pointer to a structure";
+										break;
+									case OP_STRUCT_REF:
+										logger << " not a structure";
+										break;
+									default:
+										break;
 								}
+								logger << EndDebugError;
 								status = false;
 								break;
 							}
@@ -2838,10 +2819,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							
 							if(!c_loc_op || (c_loc_op->GetOpcode() != OP_LIT_INT))
 							{
-								if(debug)
-								{
-									logger << DebugInfo << "In File \"" << GetFilename() << "\", missing array subscript in indexing of data array \"" << matched_data_object_name << "\"" << EndDebugInfo;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", missing array subscript in indexing of data array \"" << matched_data_object_name << "\"" << EndDebugError;
 								status = false;
 								break;
 							}
@@ -2855,30 +2833,21 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 							if(!child->GetLowerBound(lower_bound))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << GetFilename() << "\", can't determine subscript lower bound for data array \"" << matched_data_object_name << "\" " << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine subscript lower bound for data array \"" << matched_data_object_name << "\" " << EndDebugError;
 								status = false;
 								break;
 							}
 							
 							if(!child->GetUpperBound(upper_bound))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << GetFilename() << "\", can't determine subscript upper bound for data array \"" << matched_data_object_name << "\" " << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine subscript upper bound for data array \"" << matched_data_object_name << "\" " << EndDebugError;
 								status = false;
 								break;
 							}
 							
 							if((subscript < lower_bound) || (subscript > upper_bound))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << GetFilename() << "\", subscript (" << subscript << ") is out of range for data array \"" << matched_data_object_name << "\" " << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", subscript (" << subscript << ") is out of range for data array \"" << matched_data_object_name << "\" " << EndDebugError;
 								status = false;
 								break;
 							}
@@ -2888,10 +2857,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							uint64_t array_element_count = 0;
 							if(!dw_die_type->GetArrayElementCount(dim + 1, array_element_count))
 							{
-								if(debug)
-								{
-									logger << DebugError << "In File \"" << GetFilename() << "\", can't get element count of data array \"" << matched_data_object_name << "\"" << EndDebugError;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", can't get element count of data array \"" << matched_data_object_name << "\"" << EndDebugError;
 								status = false;
 								break;
 							}
@@ -2947,10 +2913,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						
 						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
 						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data element type of data array \"" << matched_data_object_name << "\"" << EndDebugInfo;
-							}
+							logger << DebugError << "In File \"" << GetFilename() << "\", can't determine data element type of data array \"" << matched_data_object_name << "\"" << EndDebugError;
 							status = false;
 							break;
 						}
@@ -2959,22 +2922,34 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 				break;
 			case DW_TAG_pointer_type:
 				{
-					c_loc_op = c_loc_operation_stream.Pop();
-					if(!c_loc_op || ((c_loc_op->GetOpcode() != OP_DEREF) && (c_loc_op->GetOpcode() != OP_ARRAY_SUBSCRIPT) && (c_loc_op->GetOpcode() != OP_STRUCT_DEREF)))
+					if(is_dereferencing_a_structure)
 					{
-						if(debug)
+						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is not a pointer to a structure" << EndDebugError;
+						status = false;
+						break;
+					}
+
+					c_loc_op = c_loc_operation_stream.Pop();
+					if(!c_loc_op)
+					{
+						// not supposed to reach this point
+						logger << DebugError << "internal error (missing OP_DEREF/OP_ARRAY_SUBSCRIPT/OP_STRUCT_DEREF in stream)" << EndDebugError;
+						status = false;
+						break;
+					}
+					
+					if(((c_loc_op->GetOpcode() != OP_DEREF) && (c_loc_op->GetOpcode() != OP_ARRAY_SUBSCRIPT) && (c_loc_op->GetOpcode() != OP_STRUCT_DEREF)))
+					{
+						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is a pointer";
+						switch(c_loc_op->GetOpcode())
 						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is a pointer";
-							switch(c_loc_op->GetOpcode())
-							{
-								case OP_STRUCT_REF:
-									logger << " not a structure";
-									break;
-								default:
-									break;
-							}
-							logger << EndDebugInfo;
+							case OP_STRUCT_REF:
+								logger << " not a structure";
+								break;
+							default:
+								break;
 						}
+						logger << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2988,10 +2963,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					
 					if(!dw_data_object->Fetch())
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't get value of Pointer \"" << matched_data_object_name << "\"" << EndDebugInfo;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't get value of Pointer \"" << matched_data_object_name << "\"" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -3002,10 +2974,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					if(pointer_bit_size > (8 * sizeof(pointer_value))) pointer_bit_size = 8 * sizeof(pointer_value);
 					if(!dw_data_object->Read(0, pointer_value, pointer_bit_size))
 					{
-						if(debug)
-						{
-							logger << DebugInfo << "In File \"" << GetFilename() << "\", can't read value of Pointer \"" << matched_data_object_name << "\"" << EndDebugInfo;
-						}
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't read value of Pointer \"" << matched_data_object_name << "\"" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -3018,14 +2987,11 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 					if(is_indexing_a_pointer)
 					{
-						c_loc_op = c_loc_operation_stream.Empty() ? 0 : c_loc_operation_stream.Pop();
-						
+						c_loc_op = c_loc_operation_stream.Pop();
 						if(!c_loc_op || (c_loc_op->GetOpcode() != OP_LIT_INT))
 						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", missing or invalid array subscript while indexing of data pointer \"" << matched_data_object_name << "\"" << EndDebugInfo;
-							}
+							// not supposed to reach this point
+							logger << DebugError << "internal error (missing OP_LIT_INT in stream)" << EndDebugError;
 							status = false;
 							break;
 						}
@@ -3036,10 +3002,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						
 						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
 						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << EndDebugInfo;
-							}
+							logger << DebugError << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << EndDebugError;
 							status = false;
 							break;
 						}
@@ -3049,10 +3012,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						uint64_t dw_data_object_byte_size = 0;
 						if(!dw_die_type->GetByteSize(dw_data_object_byte_size))
 						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
-							}
+							logger << DebugError << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << data_object_base_name << "\"" << EndDebugError;
 							status = false;
 							break;
 						}
@@ -3061,10 +3021,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						uint64_t dw_data_object_bit_size = 0;
 						if(!dw_die_type->GetBitSize(dw_data_object_bit_size))
 						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
-							}
+							logger << DebugError << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << data_object_base_name << "\"" << EndDebugError;
 							status = false;
 							break;
 						}
@@ -3100,15 +3057,15 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					{
 						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
 						{
-							if(debug)
-							{
-								logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << EndDebugInfo;
-							}
+							logger << DebugError << "In File \"" << GetFilename() << "\", can't determine data type of element pointed by \"" << matched_data_object_name << "\"" << EndDebugError;
 							status = false;
 							break;
 						}
 						
-						if(is_dereferencing_a_structure) break;
+						if(is_dereferencing_a_structure)
+						{
+							break;
+						}
 
 						matched_data_object_name = std::string("(*") + matched_data_object_name + ")";
 						
@@ -3122,10 +3079,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							uint64_t dw_data_object_byte_size = 0;
 							if(!dw_die_pointed_type->GetByteSize(dw_data_object_byte_size))
 							{
-								if(debug)
-								{
-									logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
 								status = false;
 								break;
 							}
@@ -3135,10 +3089,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							uint64_t dw_data_object_bit_size = 0;
 							if(!dw_die_pointed_type->GetBitSize(dw_data_object_bit_size))
 							{
-								if(debug)
-								{
-									logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-								}
+								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
 								status = false;
 								break;
 							}
@@ -3162,56 +3113,56 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 			case DW_TAG_typedef:
 				if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref))
 				{
-					if(debug)
-					{
-						logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine data type defined by a typedef for \"" << matched_data_object_name << "\"" << EndDebugInfo;
-					}
+					logger << DebugError << "In File \"" << GetFilename() << "\", can't determine data type defined by a typedef for \"" << matched_data_object_name << "\"" << EndDebugError;
 					status = false;
 					break;
 				}
 				break;
 				
 			case DW_TAG_base_type:
+				if(is_dereferencing_a_structure)
+				{
+					logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is not a pointer to a structure" << EndDebugError;
+					status = false;
+					break;
+				}
+				
 				c_loc_op = c_loc_operation_stream.Pop();
 				if(!c_loc_op)
 				{
 					// not supposed to reach this point
+					logger << DebugError << "internal error (missing operator in stream)" << EndDebugError;
 					status = false;
 					break;
 				}
-				if(debug)
+
+				logger << DebugError << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is not ";
+				switch(c_loc_op->GetOpcode())
 				{
-					logger << DebugInfo << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is not ";
-					switch(c_loc_op->GetOpcode())
-					{
-						case OP_DEREF:
-							logger << "a pointer";
-							break;
-						case OP_STRUCT_REF:
-							logger << "a structure";
-							break;
-						case OP_STRUCT_DEREF:
-							logger << "a pointer to a structure";
-							break;
-						case OP_ARRAY_SUBSCRIPT:
-							logger << "an array";
-							break;
-						default:
-							logger << "handled";
-							break;
-					}
-					logger << EndDebugInfo;
+					case OP_DEREF:
+						logger << "a pointer";
+						break;
+					case OP_STRUCT_REF:
+						logger << "a structure";
+						break;
+					case OP_STRUCT_DEREF:
+						logger << "a pointer to a structure";
+						break;
+					case OP_ARRAY_SUBSCRIPT:
+						logger << "an array";
+						break;
+					default:
+						logger << "handled (" << (unsigned int) c_loc_op->GetOpcode() << ")";
+						break;
 				}
+				logger << EndDebugError;
 				status = false;
 				delete c_loc_op;
 				c_loc_op = 0;
 				break;
 				
 			default:
-				if(debug)
-				{
-					logger << DebugInfo << "In File \"" << GetFilename() << "\", don't know how to handle type (" << DWARF_GetTagName(dw_die_type->GetTag()) << ") of data Object \"" << matched_data_object_name << "\"" << EndDebugInfo;
-				}
+				logger << DebugError << "In File \"" << GetFilename() << "\", don't know how to handle type (" << DWARF_GetTagName(dw_die_type->GetTag()) << ") of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
 				status = false;
 				break;
 		}
