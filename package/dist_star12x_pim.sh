@@ -148,6 +148,7 @@ unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/data_object.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
+unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -163,6 +164,7 @@ unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/endian/endian.cc \
+unisim/util/lexer/lexer.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
 unisim/service/debug/gdb_server/gdb_server_64.cc \
 unisim/service/debug/gdb_server/gdb_server.cc \
@@ -292,6 +294,7 @@ unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/memory_access_type.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/event.hh \
@@ -314,6 +317,9 @@ unisim/util/loader/coff_loader/ti/ti.hh \
 unisim/util/singleton/singleton.hh \
 unisim/util/xml/xml.hh \
 unisim/util/likely/likely.hh \
+unisim/util/dictionary/dictionary.hh \
+unisim/util/lexer/lexer.hh \
+unisim/util/parser/parser.hh \
 unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/char_io.hh \
@@ -423,6 +429,9 @@ unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/debug/coff_symtab/coff_symtab.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/dictionary/dictionary.tcc \
+unisim/util/lexer/lexer.tcc \
+unisim/util/parser/parser.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/debugger/debugger.tcc \
