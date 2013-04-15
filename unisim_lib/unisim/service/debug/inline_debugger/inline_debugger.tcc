@@ -1372,9 +1372,15 @@ void InlineDebugger<ADDRESS>::DumpMemory(ADDRESS addr)
 		for(j = 0; j < 16; j++, addr++)
 		{
 			uint8_t value = 0;
-			memory_import->ReadMemory(addr, &value, 1);
-			(*std_output_stream) << (uint32_t)(value >> 4);
-			(*std_output_stream) << (uint32_t)(value & 15);
+			if(memory_import->ReadMemory(addr, &value, 1))
+			{
+				(*std_output_stream) << (uint32_t)(value >> 4);
+				(*std_output_stream) << (uint32_t)(value & 15);
+			}
+			else
+			{
+				(*std_output_stream) << "??";
+			}
 			if(j < 15) (*std_output_stream) << " ";
 		}
 		addr -= 16;

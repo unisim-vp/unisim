@@ -1024,6 +1024,13 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 					os << "<a href=\"../../" << dw_stmt_prog->GetHREF() << "\">stmt-prog-" << dw_stmt_prog->GetId() << "</a>" << std::endl;
 				}
 				break;
+			case DW_CLASS_RANGELISTPTR:
+				{
+					DWARF_RangeListPtr<MEMORY_ADDR> *dw_rangelistptr = (DWARF_RangeListPtr<MEMORY_ADDR> *) dw_value;
+					const DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = dw_rangelistptr->GetValue();
+					os << "<a href=\"../../" << dw_range_list_entry->GetHREF() << "\">range-" << dw_range_list_entry->GetId() << "</a>" << std::endl;
+				}
+				break;
 			default:
 				c_string_to_HTML(os, dw_value->to_string().c_str());
 				break;

@@ -123,7 +123,12 @@ bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 				memset(buffer, 0, dw_byte_size);
 				if(dw_data_object_bit_offset >= 0)
 				{
-					if(!mem_if->ReadMemory(dw_addr + (dw_data_object_bit_offset / 8), buffer, dw_byte_size)) return false;
+					MEMORY_ADDR addr = dw_addr + (dw_data_object_bit_offset / 8);
+					if(!mem_if->ReadMemory(addr, buffer, dw_byte_size))
+					{
+						logger << DebugError << "Can't read memory at 0x" << std::hex << addr << std::dec << " (" << dw_byte_size << " bytes)" << EndDebugError;
+						return false;
+					}
 					
 					bv.Append(buffer, dw_data_object_bit_offset % 8, dw_data_object_bit_size);
 				}

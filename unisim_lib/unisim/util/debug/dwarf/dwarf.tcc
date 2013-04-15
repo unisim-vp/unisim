@@ -2458,7 +2458,15 @@ const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompil
 	for(i = 0; i < num_aranges; i++)
 	{
 		DWARF_AddressRanges<MEMORY_ADDR> *dw_address_ranges = dw_aranges[i];
-		if(dw_address_ranges->HasOverlap(addr, length)) return dw_address_ranges->GetCompilationUnit();
+		if(dw_address_ranges->HasOverlap(addr, length))
+		{
+			const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = dw_address_ranges->GetCompilationUnit();
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", found CU #" << dw_cu->GetId() << " for address range 0x" << std::hex << addr << "-" << (addr + length) << std::dec << EndDebugInfo;
+			}
+			return dw_cu;
+		}
 	}
 	return 0;
 }
@@ -2619,13 +2627,16 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
 		
 		// Several cases for type:
-		// (1) structure
+		// (1) structure/class/union
 		// (2) multidimensional arrays
 		// (3) pointers
 		// (4) typedefs
+		// (5) basic types
 		switch(dw_die_type->GetTag())
 		{
 			case DW_TAG_structure_type:
+			case DW_TAG_class_type:
+			case DW_TAG_union_type:
 				{
 					if(!is_dereferencing_a_structure)
 					{
@@ -2641,14 +2652,14 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						{
 							if(debug)
 							{
-								logger << DebugError << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is a structure";
+								logger << DebugError << "In File \"" << GetFilename() << "\", data Object \"" << matched_data_object_name << "\" is a structure/class/union";
 								switch(c_loc_op->GetOpcode())
 								{
 									case OP_DEREF:
 										 logger << " not a pointer";
 										 break;
 									case OP_STRUCT_DEREF:
-										 logger << " not a pointer to a structure";
+										 logger << " not a pointer to a structure/class/union";
 										 break;
 									case OP_ARRAY_SUBSCRIPT:
 										 logger << " not an array";
@@ -2734,7 +2745,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 				{
 					if(is_dereferencing_a_structure)
 					{
-						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is an array not a pointer to a structure" << EndDebugError;
+						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is an array not a pointer to a structure/class/union" << EndDebugError;
 						status = false;
 						break;
 					}
@@ -2801,10 +2812,10 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 										logger << " not a pointer";
 										break;
 									case OP_STRUCT_DEREF:
-										logger << " not a pointer to a structure";
+										logger << " not a pointer to a structure/class/union";
 										break;
 									case OP_STRUCT_REF:
-										logger << " not a structure";
+										logger << " not a structure/class/union";
 										break;
 									default:
 										break;
@@ -2924,7 +2935,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 				{
 					if(is_dereferencing_a_structure)
 					{
-						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is not a pointer to a structure" << EndDebugError;
+						logger << DebugError << "In File \"" << GetFilename() << "\", \"" << matched_data_object_name << "\" is not a pointer to a structure/class/union" << EndDebugError;
 						status = false;
 						break;
 					}

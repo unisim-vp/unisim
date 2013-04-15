@@ -717,6 +717,7 @@ public:
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
 	bool GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
+	bool GetDeclarationFlag(bool& declaration_flag) const;
 	bool GetOrdering(uint8_t& ordering) const;
 	bool GetEncoding(uint8_t& encoding) const;
 	bool GetArrayElementEncoding(uint8_t& encoding) const;

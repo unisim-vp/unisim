@@ -1267,6 +1267,30 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDIEByAddrRange(unsigne
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char *name) const
 {
+	if(GetTag() == DW_TAG_inlined_subroutine)
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " is an inlined subroutine" << EndDebugInfo;
+		}
+
+		const DWARF_Reference<MEMORY_ADDR> *dw_at_abstract_origin_ref = 0;
+		if(!GetAttributeValue(DW_AT_abstract_origin, dw_at_abstract_origin_ref))
+		{
+			logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " representing an inline subroutine doesn't have an abstract origin" << EndDebugError;
+			return 0;
+		}
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = dw_at_abstract_origin_ref->GetValue();
+		
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << EndDebugInfo;
+		}
+
+		return dw_at_abstract_origin->FindDataObject(name);
+	}
+	
 	unsigned int num_children = children.size();
 	unsigned int i;
 	for(i = 0; i < num_children; i++)
@@ -1282,7 +1306,14 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char 
 					const char *child_name = dw_child->GetName();
 					if(child_name)
 					{
-						if(strcmp(child_name, name) == 0) return dw_child;
+						if(strcmp(child_name, name) == 0)
+						{
+							if(debug)
+							{
+								logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", found DIE #" << dw_child->GetId() << " for data Object \"" << name << "\"" << EndDebugInfo;
+							}
+							return dw_child;
+						}
 					}
 				}
 				break;
@@ -1650,7 +1681,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCount(uint64_t& count) const
 		{
 			if(debug)
 			{
-				logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", can't determine count because can't determine lower bound" << EndDebugWarning;
+				logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", can't determine count because can't determine lower bound of DIE #" << id << EndDebugWarning;
 			}
 			return false;
 		}
@@ -1676,7 +1707,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetCount(uint64_t& count) const
 
 	if(debug)
 	{
-		logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", can't determine count because can't determine upper bound" << EndDebugWarning;
+		logger << DebugWarning << "In File \"" << dw_handler->GetFilename() << "\", can't determine count because can't determine upper bound of DIE #" << id << EndDebugWarning;
 	}
 	return false;
 }
@@ -1908,7 +1939,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocationExpression(uint16_t dw_at, MEMORY_ADDR p
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find either a simple location expression or location list for DIE" << EndDebugInfo; 
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find either a simple location expression or location list of DIE #" << id << EndDebugInfo; 
 		}
 		return false;
 	}
@@ -1949,7 +1980,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocationExpression(uint16_t dw_at, MEMORY_ADDR p
 	
 	if(debug)
 	{
-		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", no location expression from DIE location list match PC=0x" << std::hex << pc << std::dec << EndDebugInfo; 
+		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", no location expression from DIE #" << id << " location list match PC=0x" << std::hex << pc << std::dec << EndDebugInfo; 
 	}
 	return false;
 }
@@ -1979,11 +2010,45 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 {
 	const DWARF_Expression<MEMORY_ADDR> *dw_loc_expr = 0;
 	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
+	
+	bool declaration_flag = false;
+	if(!GetDeclarationFlag(declaration_flag))
+	{
+		declaration_flag = false;
+	}
+	if(declaration_flag)
+	{
+		// non-defining DIE
+		const char *name = GetName();
+		
+		if(!name)
+		{
+			if(debug)
+			{
+				logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", non-defining DIE #" << id << " don't have a name" << EndDebugError;
+			}
+			return false;
+		}
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_defining_die = dw_handler->FindDIEByPubName(name);
+		
+		if(!dw_defining_die)
+		{
+			if(debug)
+			{
+				logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", can't get defining DIE of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugError;
+			}
+			return false;
+		}
+		
+		return dw_defining_die->GetLocation(pc, has_frame_base, frame_base, loc);
+	}
+
 	if(!GetLocationExpression(DW_AT_location, pc, dw_loc_expr, ranges))
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't get location expression of DIE for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't get location expression of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 		}
 		return false;
 	}
@@ -1996,7 +2061,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of DIE location expression failed" << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of DIE #" << id << " location expression failed" << EndDebugInfo;
 		}
 		return false;
 	}
@@ -2007,7 +2072,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data object" << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data object for DIE #" << id << EndDebugInfo;
 		}
 		return false;
 	}
@@ -2019,7 +2084,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data object" << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data object for DIE #" << id << EndDebugInfo;
 		}
 		return false;
 	}
@@ -2051,7 +2116,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine data member location expression of DIE for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine data member location expression of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 		}
 		return false;
 	}
@@ -2066,7 +2131,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE location expression failed" << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugInfo;
 		}
 	}
 	
@@ -2075,7 +2140,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data member" << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data member for DIE #" << id << EndDebugInfo;
 		}
 		return false;
 	}
@@ -2086,7 +2151,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data member" << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data member for DIE #" << id << EndDebugInfo;
 		}
 		return false;
 	}
@@ -2127,6 +2192,18 @@ bool DWARF_DIE<MEMORY_ADDR>::GetExternalFlag(bool& external_flag) const
 	if(GetAttributeValue(DW_AT_external, dw_at_external_value))
 	{
 		external_flag = dw_at_external_value->GetValue();
+		return true;
+	}
+	return false;
+}
+
+template <class MEMORY_ADDR>
+bool DWARF_DIE<MEMORY_ADDR>::GetDeclarationFlag(bool& declaration_flag) const
+{
+	const DWARF_Flag<MEMORY_ADDR> *dw_at_declaration_value = 0;
+	if(GetAttributeValue(DW_AT_declaration, dw_at_declaration_value))
+	{
+		declaration_flag = dw_at_declaration_value->GetValue();
 		return true;
 	}
 	return false;
