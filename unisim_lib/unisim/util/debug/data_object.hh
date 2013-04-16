@@ -58,6 +58,7 @@ class DataObject
 {
 public:
 	virtual ~DataObject() {}
+	virtual const char *GetName() const = 0;
 	virtual ADDRESS GetBitSize() const = 0;
 	virtual DataObjectType GetType() const = 0;
 	virtual unisim::util::endian::endian_type GetEndian() const = 0;

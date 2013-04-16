@@ -50,8 +50,9 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, bool _debug)
-	: dw_data_object_loc(_dw_data_object_loc)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *_data_object_name, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, bool _debug)
+	: data_object_name(_data_object_name)
+	, dw_data_object_loc(_dw_data_object_loc)
 	, arch_endianness(dw_handler->GetArchEndianness())
 	, arch_address_size(dw_handler->GetArchAddressSize())
 	, dw_reg_num_mapping(dw_handler->GetRegisterNumberMapping())
@@ -66,6 +67,12 @@ template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
 	if(dw_data_object_loc) delete dw_data_object_loc;
+}
+
+template <class MEMORY_ADDR>
+const char *DWARF_DataObject<MEMORY_ADDR>::GetName() const
+{
+	return data_object_name.c_str();
 }
 
 template <class MEMORY_ADDR>

@@ -77,8 +77,9 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, bool debug);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *data_object_name, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, bool debug);
 	virtual ~DWARF_DataObject();
+	virtual const char *GetName() const;
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
 	virtual unisim::util::debug::DataObjectType GetType() const;
@@ -89,6 +90,7 @@ public:
 	virtual bool Read(MEMORY_ADDR obj_bit_offset, void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size) const;
 	virtual bool Write(MEMORY_ADDR obj_bit_offset, const void *buffer, MEMORY_ADDR buf_bit_offset, MEMORY_ADDR bit_size);
 private:
+	std::string data_object_name;
 	const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int arch_address_size;

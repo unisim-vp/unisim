@@ -43,8 +43,9 @@ namespace debug {
 namespace dwarf {
 
 template <class MEMORY_ADDR>
-DWARF_FDE<MEMORY_ADDR>::DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+DWARF_FDE<MEMORY_ADDR>::DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *_dw_handler, DWARF_FrameSectionType _dw_fst)
 	: dw_handler(_dw_handler)
+	, dw_fst(_dw_fst)
 	, dw_fmt(FMT_DWARF32)
 	, offset(0)
 	, id(0)
@@ -52,6 +53,8 @@ DWARF_FDE<MEMORY_ADDR>::DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 	, cie_pointer(0)
 	, initial_location(0)
 	, address_range(0)
+	, augmentation_length()
+	, augmentation_data(0)
 	, dw_call_frame_prog(0)
 	, dw_cie(0)
 {
@@ -60,6 +63,11 @@ DWARF_FDE<MEMORY_ADDR>::DWARF_FDE(DWARF_Handler<MEMORY_ADDR> *_dw_handler)
 template <class MEMORY_ADDR>
 DWARF_FDE<MEMORY_ADDR>::~DWARF_FDE()
 {
+	if(augmentation_data)
+	{
+		delete augmentation_data;
+	}
+
 	if(dw_call_frame_prog)
 	{
 		delete dw_call_frame_prog;
@@ -67,7 +75,13 @@ DWARF_FDE<MEMORY_ADDR>::~DWARF_FDE()
 }
 
 template <class MEMORY_ADDR>
-int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, uint64_t _offset)
+bool DWARF_FDE<MEMORY_ADDR>::IsTerminator() const
+{
+	return length == 0;
+}
+
+template <class MEMORY_ADDR>
+int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, MEMORY_ADDR _section_addr, uint64_t _offset)
 {
 	offset = _offset;
 	endian_type file_endianness = dw_handler->GetFileEndianness();
@@ -80,6 +94,12 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 	rawdata += sizeof(length32);
 	max_size -= sizeof(length32);
 	size += sizeof(length32);
+	
+	if((dw_fst == FST_EH_FRAME) && (length32 == 0))
+	{
+		length = 0;
+		return size;
+	}
 	
 	dw_fmt = (length32 == 0xffffffffUL) ? FMT_DWARF64 : FMT_DWARF32;
 	
@@ -108,7 +128,17 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		rawdata += sizeof(cie_pointer64);
 		max_size -= sizeof(cie_pointer64);
 		size += sizeof(cie_pointer64);
-		if(cie_pointer64 == 0xffffffffffffffffULL) return -1;
+		switch(dw_fst)
+		{
+			case FST_DEBUG_FRAME:
+				if(cie_pointer64 == 0xffffffffffffffffULL) return -1;
+				break;
+			case FST_EH_FRAME:
+				if(cie_pointer64 == 0x0000000000000000ULL) return -1;
+				break;
+			default:
+				return -1;
+		}
 		cie_pointer = cie_pointer64;
 	}
 	else
@@ -120,11 +150,23 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 		rawdata += sizeof(cie_pointer32);
 		max_size -= sizeof(cie_pointer32);
 		size += sizeof(cie_pointer32);
-		if(cie_pointer32 == 0xffffffffULL) return -1;
+		switch(dw_fst)
+		{
+			case FST_DEBUG_FRAME:
+				if(cie_pointer32 == 0xffffffffULL) return -1;
+				break;
+			case FST_EH_FRAME:
+				if(cie_pointer32 == 0x00000000ULL) return -1;
+				cie_pointer32 = offset - cie_pointer32 + ((dw_fmt == FMT_DWARF64) ? sizeof(uint32_t) + sizeof(uint64_t) : sizeof(uint32_t));
+				break;
+			default:
+				return -1;
+		}
 		cie_pointer = cie_pointer32;
 	}
 
 	uint8_t address_size = (dw_fmt == FMT_DWARF64) ? 8 : 4;
+	uint64_t initial_location_pc = _section_addr + _offset + size;
 
 	switch(address_size)
 	{
@@ -180,6 +222,32 @@ int64_t DWARF_FDE<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64_t max_size, 
 			break;
 		default:
 			return -1;
+	}
+	
+	if(dw_fst == FST_EH_FRAME)
+	{
+		const DWARF_CIE<MEMORY_ADDR> *_dw_cie = dw_handler->FindCIE(cie_pointer, dw_fst);
+		if(!_dw_cie) return -1;
+		
+		if(*_dw_cie->GetAugmentation() == 'z')
+		{
+			int64_t sz;
+			if((sz = augmentation_length.Load(rawdata, max_size)) < 0) return -1;
+			rawdata += sz;
+			max_size -= sz;
+			size += sz;
+			
+			uint64_t block_length = (uint64_t) augmentation_length;
+			if(max_size < block_length) return -1;
+			
+			augmentation_data = new DWARF_Block<MEMORY_ADDR>(block_length, rawdata);
+			
+			rawdata += block_length;
+			size += block_length;
+			max_size -= block_length;
+		}
+		
+		initial_location = _dw_cie->DecodePointer(initial_location_pc, initial_location);
 	}
 	
 	uint64_t instructions_length;
@@ -206,10 +274,20 @@ template <class MEMORY_ADDR>
 void DWARF_FDE<MEMORY_ADDR>::Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int _id)
 {
 	id = _id;
-	dw_cie = dw_handler->FindCIE(cie_pointer);
+	dw_cie = dw_handler->FindCIE(cie_pointer, dw_fst);
 	if(!dw_cie)
 	{
-		std::cerr << "Can't find CIE at offset " << cie_pointer << std::endl;
+		std::cerr << "Can't find CIE at offset " << cie_pointer << " in section ";
+		switch(dw_fst)
+		{
+			case FST_DEBUG_FRAME:
+				std::cerr << ".debug_frame";
+				break;
+			case FST_EH_FRAME:
+				std::cerr << ".eh_frame";
+				break;
+		}
+		std::cerr << std::endl;
 	}
 	else
 	{
@@ -271,7 +349,17 @@ std::ostream& DWARF_FDE<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 {
 	os << "<tr>" << std::endl;
 	os << "<td>" << offset << "</td><td><a href=\"../../" << dw_cie->GetHREF() << "\">cie-" << dw_cie->GetId() << "</a></td>";
-	os << "<td>0x" << std::hex << initial_location << std::dec << "</td><td>0x" << std::hex << address_range << std::dec << "</td><td>";
+	os << "<td>0x" << std::hex << initial_location << std::dec << "</td><td>0x" << std::hex << address_range << std::dec << "</td>";
+	if(dw_fst == FST_EH_FRAME)
+	{
+		os << "<td>";
+		if(dw_cie && (*dw_cie->GetAugmentation() == 'z'))
+		{
+			c_string_to_HTML(os, augmentation_data->to_string().c_str());
+		}
+		os << "</td>";
+	}
+	os << "<td>";
 	std::stringstream sstr_call_frame_prog;
 	sstr_call_frame_prog << *dw_call_frame_prog;
 	std::stringstream sstr_cfi;

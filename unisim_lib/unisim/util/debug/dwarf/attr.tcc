@@ -110,7 +110,10 @@ std::string DWARF_Block<MEMORY_ADDR>::to_string() const
 	for(i = 0; i < length; i++)
 	{
 		if(i != 0) sstr << " ";
-		sstr << std::hex << (unsigned int) value[i] << std::dec;
+		sstr << std::hex;
+		sstr.width(2);
+		sstr.fill('0');
+		sstr << (unsigned int) value[i] << std::dec;
 	}
 	return std::string(sstr.str());
 }

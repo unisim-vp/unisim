@@ -80,6 +80,7 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 	, debug_pubtypes_section(_blob->FindSection(".debug_pubtypes", false))
 	, debug_macinfo_section(_blob->FindSection(".debug_macinfo", false))
 	, debug_frame_section(_blob->FindSection(".debug_frame", false))
+	, eh_frame_section(_blob->FindSection(".eh_frame", false))
 	, debug_str_section(_blob->FindSection(".debug_str", false))
 	, debug_loc_section(_blob->FindSection(".debug_loc", false))
 	, debug_ranges_section(_blob->FindSection(".debug_ranges", false))
@@ -112,6 +113,7 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 	if(debug_pubtypes_section) debug_pubtypes_section->Catch();
 	if(debug_macinfo_section) debug_macinfo_section->Catch();
 	if(debug_frame_section) debug_frame_section->Catch();
+	if(eh_frame_section) eh_frame_section->Catch();
 	if(debug_str_section) debug_str_section->Catch();
 	if(debug_loc_section) debug_loc_section->Catch();
 	if(debug_ranges_section) debug_ranges_section->Catch();
@@ -126,6 +128,7 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 	}
 
 	unsigned int i;
+	unsigned int j;
 
 	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
 
@@ -164,18 +167,24 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 		}
 	}
 
-	unsigned int num_fdes = dw_fdes.size();
-	for(i = 0; i < num_fdes; i++)
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		delete dw_fdes[i];
+		unsigned int num_fdes = dw_fdes[j].size();
+		for(i = 0; i < num_fdes; i++)
+		{
+			delete dw_fdes[j][i];
+		}
 	}
 
-	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter;
-	for(dw_cie_iter = dw_cies.begin(); dw_cie_iter != dw_cies.end(); dw_cie_iter++)
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		if((*dw_cie_iter).second)
+		typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter;
+		for(dw_cie_iter = dw_cies[j].begin(); dw_cie_iter != dw_cies[j].end(); dw_cie_iter++)
 		{
-			delete (*dw_cie_iter).second;
+			if((*dw_cie_iter).second)
+			{
+				delete (*dw_cie_iter).second;
+			}
 		}
 	}
 
@@ -232,6 +241,7 @@ DWARF_Handler<MEMORY_ADDR>::~DWARF_Handler()
 	if(debug_pubtypes_section) debug_pubtypes_section->Release();
 	if(debug_macinfo_section) debug_macinfo_section->Release();
 	if(debug_frame_section) debug_frame_section->Release();
+	if(eh_frame_section) eh_frame_section->Release();
 	if(debug_str_section) debug_str_section->Release();
 	if(debug_loc_section) debug_loc_section->Release();
 	if(debug_ranges_section) debug_ranges_section->Release();
@@ -324,6 +334,7 @@ template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::Parse()
 {
 	unsigned int i;
+	unsigned int j;
 	
 	if(debug_abbrev_section)
 	{
@@ -424,12 +435,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 		int64_t sz;
 		do
 		{
-			DWARF_FDE<MEMORY_ADDR> *dw_fde = new DWARF_FDE<MEMORY_ADDR>(this);
+			DWARF_FDE<MEMORY_ADDR> *dw_fde = new DWARF_FDE<MEMORY_ADDR>(this, FST_DEBUG_FRAME);
 			
-			if((sz = dw_fde->Load((const uint8_t *) debug_frame_section->GetData() + debug_frame_offset, debug_frame_section->GetSize() - debug_frame_offset, debug_frame_offset)) < 0)
+			if((sz = dw_fde->Load((const uint8_t *) debug_frame_section->GetData() + debug_frame_offset, debug_frame_section->GetSize() - debug_frame_offset, debug_frame_section->GetAddr(), debug_frame_offset)) < 0)
 			{
 				delete dw_fde;
-				DWARF_CIE<MEMORY_ADDR> *dw_cie = new DWARF_CIE<MEMORY_ADDR>(this);
+				DWARF_CIE<MEMORY_ADDR> *dw_cie = new DWARF_CIE<MEMORY_ADDR>(this, FST_DEBUG_FRAME);
 			
 				if((sz = dw_cie->Load((const uint8_t *) debug_frame_section->GetData() + debug_frame_offset, debug_frame_section->GetSize() - debug_frame_offset, debug_frame_offset)) < 0)
 				{
@@ -445,12 +456,12 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 				}
 				
 				//std::cerr << *dw_cie << std::endl;
-				dw_cies.insert(std::pair<uint64_t, DWARF_CIE<MEMORY_ADDR> *>(debug_frame_offset, dw_cie));
+				dw_cies[FST_DEBUG_FRAME].insert(std::pair<uint64_t, DWARF_CIE<MEMORY_ADDR> *>(debug_frame_offset, dw_cie));
 			}
 			else
 			{
 				//std::cerr << *dw_fde << std::endl;
-				dw_fdes.push_back(dw_fde);
+				dw_fdes[FST_DEBUG_FRAME].push_back(dw_fde);
 			}
 			
 			debug_frame_offset += sz;
@@ -465,6 +476,60 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 			logger << "In File \"" << GetFilename() << "\", ";
 		}
 		logger << "no DWARF v2/v3 .debug_frame section found" << EndDebugWarning;
+	}
+
+	if(eh_frame_section)
+	{
+		if(verbose)
+		{
+			logger << DebugInfo << "Parsing Section .eh_frame" << EndDebugInfo;
+		}
+		uint64_t eh_frame_offset = 0;
+		int64_t sz;
+		do
+		{
+			DWARF_FDE<MEMORY_ADDR> *dw_fde = new DWARF_FDE<MEMORY_ADDR>(this, FST_EH_FRAME);
+			
+			if((sz = dw_fde->Load((const uint8_t *) eh_frame_section->GetData() + eh_frame_offset, eh_frame_section->GetSize() - eh_frame_offset, eh_frame_section->GetAddr(), eh_frame_offset)) < 0)
+			{
+				delete dw_fde;
+				DWARF_CIE<MEMORY_ADDR> *dw_cie = new DWARF_CIE<MEMORY_ADDR>(this, FST_EH_FRAME);
+			
+				if((sz = dw_cie->Load((const uint8_t *) eh_frame_section->GetData() + eh_frame_offset, eh_frame_section->GetSize() - eh_frame_offset, eh_frame_offset)) < 0)
+				{
+					delete dw_cie;
+					
+					logger << DebugWarning;
+					if(blob->GetCapability() & unisim::util::debug::blob::CAP_FILENAME)
+					{
+						logger << "In File \"" << GetFilename() << "\", ";
+					}
+					logger << "invalid DWARF v2/v3 eh frame at offset 0x" << std::hex << eh_frame_offset << std::dec << EndDebugWarning;
+					break;
+				}
+				
+				if(dw_cie->IsTerminator())
+				{
+					delete dw_cie;
+					break;
+				}
+				//std::cerr << *dw_cie << std::endl;
+				dw_cies[FST_EH_FRAME].insert(std::pair<uint64_t, DWARF_CIE<MEMORY_ADDR> *>(eh_frame_offset, dw_cie));
+			}
+			else
+			{
+				if(dw_fde->IsTerminator())
+				{
+					delete dw_fde;
+					break;
+				}
+				//std::cerr << *dw_fde << std::endl;
+				dw_fdes[FST_EH_FRAME].push_back(dw_fde);
+			}
+			
+			eh_frame_offset += sz;
+		}
+		while(eh_frame_offset < eh_frame_section->GetSize());
 	}
 
 	if(debug_aranges_section)
@@ -635,16 +700,23 @@ void DWARF_Handler<MEMORY_ADDR>::Parse()
 	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter;
 	
 	unsigned int dw_cie_id = 0;
-	for(dw_cie_iter = dw_cies.begin(); dw_cie_iter != dw_cies.end(); dw_cie_iter++, dw_cie_id++)
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
-		dw_cie->Fix(this, dw_cie_id);
+		for(dw_cie_iter = dw_cies[j].begin(); dw_cie_iter != dw_cies[j].end(); dw_cie_iter++, dw_cie_id++)
+		{
+			DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+			dw_cie->Fix(this, dw_cie_id);
+		}
 	}
 
-	unsigned int num_fdes = dw_fdes.size();
-	for(i = 0; i < num_fdes; i++)
+	unsigned int dw_fde_id = 0;
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		dw_fdes[i]->Fix(this, i);
+		unsigned int num_fdes = dw_fdes[j].size();
+		for(i = 0; i < num_fdes; i++, dw_fde_id++)
+		{
+			dw_fdes[j][i]->Fix(this, dw_fde_id);
+		}
 	}
 
 	unsigned int num_aranges = dw_aranges.size();
@@ -739,6 +811,7 @@ template <class MEMORY_ADDR>
 void DWARF_Handler<MEMORY_ADDR>::to_XML(const char *output_filename)
 {
 	unsigned int i;
+	unsigned int j;
 	std::ofstream of(output_filename, std::ios::out);
 	
 	of << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
@@ -805,21 +878,40 @@ void DWARF_Handler<MEMORY_ADDR>::to_XML(const char *output_filename)
 		dw_loc_list_entry->to_XML(of) << std::endl;
 	}
 	of << "</DW_DEBUG_LOC>" << std::endl;
-	of << "<DW_DEBUG_FRAME>" << std::endl;
-	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter;
-	for(dw_cie_iter = dw_cies.begin(); dw_cie_iter != dw_cies.end(); dw_cie_iter++)
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
-		
-		dw_cie->to_XML(of) << std::endl;
-	}
+		switch(j)
+		{
+			case FST_DEBUG_FRAME:
+				of << "<DW_DEBUG_FRAME>" << std::endl;
+				break;
+			case FST_EH_FRAME:
+				of << "<GNU_EH_FRAME>" << std::endl;
+				break;
+		}
+		typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter;
+		for(dw_cie_iter = dw_cies[j].begin(); dw_cie_iter != dw_cies[j].end(); dw_cie_iter++)
+		{
+			DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+			
+			dw_cie->to_XML(of) << std::endl;
+		}
 
-	unsigned int num_fdes = dw_fdes.size();
-	for(i = 0; i < num_fdes; i++)
-	{
-		dw_fdes[i]->to_XML(of) << std::endl;
+		unsigned int num_fdes = dw_fdes[j].size();
+		for(i = 0; i < num_fdes; i++)
+		{
+			dw_fdes[j][i]->to_XML(of) << std::endl;
+		}
+		switch(j)
+		{
+			case FST_DEBUG_FRAME:
+				of << "</DW_DEBUG_FRAME>" << std::endl;
+				break;
+			case FST_EH_FRAME:
+				of << "</GNU_EH_FRAME>" << std::endl;
+				break;
+		}
 	}
-	of << "</DW_DEBUG_FRAME>" << std::endl;
 	of << "<DW_DEBUG_LINE>" << std::endl;
 	typename std::map<uint64_t, DWARF_StatementProgram<MEMORY_ADDR> *>::iterator dw_stmt_prog_iter;
 	for(dw_stmt_prog_iter = dw_stmt_progs.begin(); dw_stmt_prog_iter != dw_stmt_progs.end(); dw_stmt_prog_iter++)
@@ -846,10 +938,10 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	index << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
 	index << "<html>" << std::endl;
 	index << "<head>" << std::endl;
-	index << "<meta name=\"description\" content=\"DWARF v2/v3 navigation\">" << std::endl;
+	index << "<meta name=\"description\" content=\"DWARF v2+ navigation\">" << std::endl;
 	index << "<meta name=\"keywords\" content=\"DWARF\">" << std::endl;
 	index << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-	index << "<title>DWARF v2/v3 navigation</title>" << std::endl;
+	index << "<title>DWARF v2+ navigation</title>" << std::endl;
 	index << "<style type=\"text/css\">" << std::endl;
 	index << "<!--" << std::endl;
 	index << "table th { text-align:center; }" << std::endl;
@@ -864,7 +956,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	index << "</style>" << std::endl;
 	index << "</head>" << std::endl;
 	index << "<body>" << std::endl;
-	index << "<h1><a href=\"http://dwarfstd.org\"/>DWARF</a> v2/v3 navigation</h1>" << std::endl;
+	index << "<h1><a href=\"http://dwarfstd.org\"/>DWARF</a> v2+ navigation</h1>" << std::endl;
 	index << "<table>" << std::endl;
 	index << "<tr><th>Section</th><th>Description</th></tr>" << std::endl;
 	index << "<tr>" << std::endl;
@@ -888,7 +980,7 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	index << "<td> Non-Contiguous Address Ranges</td>" << std::endl;
 	index << "</tr>" << std::endl;
 	index << "<tr>" << std::endl;
-	index << "<td><a href=\"debug_frame/fdes/0.html\">.debug_frame</a></td>" << std::endl;
+	index << "<td><a href=\"debug_frame/fdes/0.html\">.debug_frame</a>&nbsp;<a href=\"eh_frame/fdes/0.html\">.eh_frame</a></td>" << std::endl;
 	index << "<td>Call Frame Information</td>" << std::endl;
 	index << "</tr>" << std::endl;
 	index << "<tr>" << std::endl;
@@ -1574,210 +1666,254 @@ void DWARF_Handler<MEMORY_ADDR>::to_HTML(const char *output_dir)
 	while(dw_loc_list_iter != dw_loc_list.end());
 
 	// Call Frame Information
-	std::stringstream debug_frame_ouput_dir_sstr;
-	debug_frame_ouput_dir_sstr << output_dir << "/debug_frame";
-	std::string debug_frame_output_dir(debug_frame_ouput_dir_sstr.str());
-#if defined(WIN32)
-	mkdir(debug_frame_output_dir.c_str());
-#else
-	mkdir(debug_frame_output_dir.c_str(), S_IRWXU);
-#endif
-
-	std::stringstream debug_frame_cies_ouput_dir_sstr;
-	debug_frame_cies_ouput_dir_sstr << debug_frame_output_dir << "/cies";
-	std::string debug_frame_cies_output_dir(debug_frame_cies_ouput_dir_sstr.str());
-#if defined(WIN32)
-	mkdir(debug_frame_cies_output_dir.c_str());
-#else
-	mkdir(debug_frame_cies_output_dir.c_str(), S_IRWXU);
-#endif
-
-	std::stringstream debug_frame_fdes_ouput_dir_sstr;
-	debug_frame_fdes_ouput_dir_sstr << debug_frame_output_dir << "/fdes";
-	std::string debug_frame_fdes_output_dir(debug_frame_fdes_ouput_dir_sstr.str());
-#if defined(WIN32)
-	mkdir(debug_frame_fdes_output_dir.c_str());
-#else
-	mkdir(debug_frame_fdes_output_dir.c_str(), S_IRWXU);
-#endif
-
-	unsigned int debug_frame_cies_filename_idx = 0;
-	unsigned int cies_per_file = 2048;
-	unsigned int num_debug_cies = dw_cies.size();
-	unsigned int num_debug_frame_cies_filenames = ((num_debug_cies + cies_per_file - 1) /cies_per_file);
-	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter = dw_cies.begin();
-	do
+	unsigned int j;
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		std::stringstream debug_frame_cies_filename_sstr;
-		debug_frame_cies_filename_sstr << debug_frame_cies_output_dir << "/" << debug_frame_cies_filename_idx << ".html";
-		std::string debug_frame_cies_filename = debug_frame_cies_filename_sstr.str().c_str();
-		std::ofstream debug_frame_cies(debug_frame_cies_filename.c_str(), std::ios::out);
-		debug_frame_cies << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
-		debug_frame_cies << "<html>" << std::endl;
-		debug_frame_cies << "<head>" << std::endl;
-		debug_frame_cies << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		debug_frame_cies << "<style type=\"text/css\">" << std::endl;
-		debug_frame_cies << "<!--" << std::endl;
-		debug_frame_cies << "table th { text-align:center; }" << std::endl;
-		debug_frame_cies << "table th { font-weight:bold; }" << std::endl;
-		debug_frame_cies << "table td { text-align:left; }" << std::endl;
-		debug_frame_cies << "table { border-style:solid; }" << std::endl;
-		debug_frame_cies << "table { border-width:1px; }" << std::endl;
-		debug_frame_cies << "th, td { border-style:solid; }" << std::endl;
-		debug_frame_cies << "th, td { border-width:1px; }" << std::endl;
-		debug_frame_cies << "th, td { border-width:1px; }" << std::endl;
-		debug_frame_cies << "-->" << std::endl;
-		debug_frame_cies << "</style>" << std::endl;
-		debug_frame_cies << "</head>" << std::endl;
-		debug_frame_cies << "<body>" << std::endl;
-		debug_frame_cies << "<h1>Call Frame Information/Common Information Entries (CIE) (.debug_frame)</h1>" << std::endl;
-		debug_frame_cies << "<a href=\"../../index.html\">Index</a>&nbsp;" << std::endl;
-		unsigned int i;
-		for(i = 0; i < num_debug_frame_cies_filenames; i++)
+		std::stringstream debug_frame_ouput_dir_sstr;
+		debug_frame_ouput_dir_sstr << output_dir;
+		switch(j)
 		{
-			if(i != 0) debug_frame_cies << "&nbsp;";
-			if(i == debug_frame_cies_filename_idx)
-			{
-				debug_frame_cies << i << std::endl;
-			}
-			else
-			{
-				std::stringstream sstr;
-				sstr << i << ".html";
-				debug_frame_cies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
-			}
+			case FST_DEBUG_FRAME:
+				debug_frame_ouput_dir_sstr << "/debug_frame";
+				break;
+			case FST_EH_FRAME:
+				debug_frame_ouput_dir_sstr << "/eh_frame";
+				break;
 		}
-		debug_frame_cies << "<hr>" << std::endl;
-		debug_frame_cies << "<table>" << std::endl;
-		debug_frame_cies << "<tr>" << std::endl;
-		debug_frame_cies << "<th>Id</th>" << std::endl;
-		debug_frame_cies << "<th>Offset</th>" << std::endl;
-		debug_frame_cies << "<th>Version</th>" << std::endl;
-		debug_frame_cies << "<th>Augmentation</th>" << std::endl;
-		debug_frame_cies << "<th>Code alignment factor</th>" << std::endl;
-		debug_frame_cies << "<th>Data alignment factor</th>" << std::endl;
-		debug_frame_cies << "<th>Return address register</th>" << std::endl;
-		debug_frame_cies << "<th>Initial call frame program</th>" << std::endl;
-		debug_frame_cies << "</tr>" << std::endl;
-		unsigned int count = 0;
-		while(count < cies_per_file && dw_cie_iter != dw_cies.end())
-		{
-			DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+		std::string debug_frame_output_dir(debug_frame_ouput_dir_sstr.str());
+#if defined(WIN32)
+		mkdir(debug_frame_output_dir.c_str());
+#else
+		mkdir(debug_frame_output_dir.c_str(), S_IRWXU);
+#endif
 
-			dw_cie->to_HTML(debug_frame_cies) << std::endl;
-			
-			dw_cie_iter++;
-			count++;
-		}
-		debug_frame_cies << "</table>" << std::endl;
-		debug_frame_cies << "<hr>" << std::endl;
-		for(i = 0; i < num_debug_frame_cies_filenames; i++)
-		{
-			if(i != 0) debug_frame_cies << "&nbsp;";
-			if(i == debug_frame_cies_filename_idx)
-			{
-				debug_frame_cies << i << std::endl;
-			}
-			else
-			{
-				std::stringstream sstr;
-				sstr << i << ".html";
-				debug_frame_cies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
-			}
-		}
-		debug_frame_cies << "</body>" << std::endl;
-		debug_frame_cies << "</html>" << std::endl;
-		debug_frame_cies_filename_idx++;
-	}
-	while(dw_cie_iter != dw_cies.end());
-	
-	unsigned int debug_frame_fdes_filename_idx = 0;
-	unsigned int fdes_per_file = 2048;
-	unsigned int num_debug_fdes = dw_fdes.size();
-	unsigned int num_debug_frame_fdes_filenames = ((num_debug_fdes + fdes_per_file - 1) /fdes_per_file);
-	typename std::vector<DWARF_FDE<MEMORY_ADDR> *>::iterator dw_fde_iter = dw_fdes.begin();
-	do
-	{
-		std::stringstream debug_frame_fdes_filename_sstr;
-		debug_frame_fdes_filename_sstr << debug_frame_fdes_output_dir << "/" << debug_frame_fdes_filename_idx << ".html";
-		std::string debug_frame_fdes_filename = debug_frame_fdes_filename_sstr.str().c_str();
-		std::ofstream debug_frame_fdes(debug_frame_fdes_filename.c_str(), std::ios::out);
-		debug_frame_fdes << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
-		debug_frame_fdes << "<html>" << std::endl;
-		debug_frame_fdes << "<head>" << std::endl;
-		debug_frame_fdes << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
-		debug_frame_fdes << "<style type=\"text/css\">" << std::endl;
-		debug_frame_fdes << "<!--" << std::endl;
-		debug_frame_fdes << "table th { text-align:center; }" << std::endl;
-		debug_frame_fdes << "table th { font-weight:bold; }" << std::endl;
-		debug_frame_fdes << "table td { text-align:left; }" << std::endl;
-		debug_frame_fdes << "table { border-style:solid; }" << std::endl;
-		debug_frame_fdes << "table { border-width:1px; }" << std::endl;
-		debug_frame_fdes << "th, td { border-style:solid; }" << std::endl;
-		debug_frame_fdes << "th, td { border-width:1px; }" << std::endl;
-		debug_frame_fdes << "th, td { border-width:1px; }" << std::endl;
-		debug_frame_fdes << "-->" << std::endl;
-		debug_frame_fdes << "</style>" << std::endl;
-		debug_frame_fdes << "</head>" << std::endl;
-		debug_frame_fdes << "<body>" << std::endl;
-		debug_frame_fdes << "<h1>Call Frame Information/Frame Description Entries (FDE) (.debug_frame)</h1>" << std::endl;
-		debug_frame_fdes << "<a href=\"../../index.html\">Index</a>&nbsp;" << std::endl;
-		unsigned int i;
-		for(i = 0; i < num_debug_frame_fdes_filenames; i++)
-		{
-			if(i != 0) debug_frame_fdes << "&nbsp;";
-			if(i == debug_frame_fdes_filename_idx)
-			{
-				debug_frame_fdes << i << std::endl;
-			}
-			else
-			{
-				std::stringstream sstr;
-				sstr << i << ".html";
-				debug_frame_fdes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
-			}
-		}
-		debug_frame_fdes << "<hr>" << std::endl;
-		debug_frame_fdes << "<table>" << std::endl;
-		debug_frame_fdes << "<tr>" << std::endl;
-		debug_frame_fdes << "<th>Offset</th>" << std::endl;
-		debug_frame_fdes << "<th>CIE</th>" << std::endl;
-		debug_frame_fdes << "<th>Initial location</th>" << std::endl;
-		debug_frame_fdes << "<th>Address range</th>" << std::endl;
-		debug_frame_fdes << "<th>Call frame program/Computed call frame information</th>" << std::endl;
-		debug_frame_fdes << "</tr>" << std::endl;
-		unsigned int count = 0;
-		while(count < fdes_per_file && dw_fde_iter != dw_fdes.end())
-		{
-			DWARF_FDE<MEMORY_ADDR> *dw_fde = (*dw_fde_iter);
+		std::stringstream debug_frame_cies_ouput_dir_sstr;
+		debug_frame_cies_ouput_dir_sstr << debug_frame_output_dir << "/cies";
+		std::string debug_frame_cies_output_dir(debug_frame_cies_ouput_dir_sstr.str());
+#if defined(WIN32)
+		mkdir(debug_frame_cies_output_dir.c_str());
+#else
+		mkdir(debug_frame_cies_output_dir.c_str(), S_IRWXU);
+#endif
 
-			dw_fde->to_HTML(debug_frame_fdes) << std::endl;
-			
-			dw_fde_iter++;
-			count++;
-		}
-		debug_frame_fdes << "</table>" << std::endl;
-		debug_frame_fdes << "<hr>" << std::endl;
-		for(i = 0; i < num_debug_frame_fdes_filenames; i++)
+		std::stringstream debug_frame_fdes_ouput_dir_sstr;
+		debug_frame_fdes_ouput_dir_sstr << debug_frame_output_dir << "/fdes";
+		std::string debug_frame_fdes_output_dir(debug_frame_fdes_ouput_dir_sstr.str());
+#if defined(WIN32)
+		mkdir(debug_frame_fdes_output_dir.c_str());
+#else
+		mkdir(debug_frame_fdes_output_dir.c_str(), S_IRWXU);
+#endif
+
+		unsigned int debug_frame_cies_filename_idx = 0;
+		unsigned int cies_per_file = 2048;
+		unsigned int num_debug_cies = dw_cies[j].size();
+		unsigned int num_debug_frame_cies_filenames = ((num_debug_cies + cies_per_file - 1) /cies_per_file);
+		typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::iterator dw_cie_iter = dw_cies[j].begin();
+		do
 		{
-			if(i != 0) debug_frame_fdes << "&nbsp;";
-			if(i == debug_frame_fdes_filename_idx)
+			std::stringstream debug_frame_cies_filename_sstr;
+			debug_frame_cies_filename_sstr << debug_frame_cies_output_dir << "/" << debug_frame_cies_filename_idx << ".html";
+			std::string debug_frame_cies_filename = debug_frame_cies_filename_sstr.str().c_str();
+			std::ofstream debug_frame_cies(debug_frame_cies_filename.c_str(), std::ios::out);
+			debug_frame_cies << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+			debug_frame_cies << "<html>" << std::endl;
+			debug_frame_cies << "<head>" << std::endl;
+			debug_frame_cies << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+			debug_frame_cies << "<style type=\"text/css\">" << std::endl;
+			debug_frame_cies << "<!--" << std::endl;
+			debug_frame_cies << "table th { text-align:center; }" << std::endl;
+			debug_frame_cies << "table th { font-weight:bold; }" << std::endl;
+			debug_frame_cies << "table td { text-align:left; }" << std::endl;
+			debug_frame_cies << "table { border-style:solid; }" << std::endl;
+			debug_frame_cies << "table { border-width:1px; }" << std::endl;
+			debug_frame_cies << "th, td { border-style:solid; }" << std::endl;
+			debug_frame_cies << "th, td { border-width:1px; }" << std::endl;
+			debug_frame_cies << "th, td { border-width:1px; }" << std::endl;
+			debug_frame_cies << "-->" << std::endl;
+			debug_frame_cies << "</style>" << std::endl;
+			debug_frame_cies << "</head>" << std::endl;
+			debug_frame_cies << "<body>" << std::endl;
+			debug_frame_cies << "<h1>Call Frame Information/Common Information Entries (CIE) (";
+			switch(j)
 			{
-				debug_frame_fdes << i << std::endl;
+				case FST_DEBUG_FRAME:
+					debug_frame_cies << ".debug_frame";
+					break;
+				case FST_EH_FRAME:
+					debug_frame_cies << ".eh_frame";
+					break;
 			}
-			else
+			debug_frame_cies << ")</h1>" << std::endl;
+			debug_frame_cies << "<a href=\"../../index.html\">Index</a>&nbsp;" << std::endl;
+			unsigned int i;
+			for(i = 0; i < num_debug_frame_cies_filenames; i++)
 			{
-				std::stringstream sstr;
-				sstr << i << ".html";
-				debug_frame_fdes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+				if(i != 0) debug_frame_cies << "&nbsp;";
+				if(i == debug_frame_cies_filename_idx)
+				{
+					debug_frame_cies << i << std::endl;
+				}
+				else
+				{
+					std::stringstream sstr;
+					sstr << i << ".html";
+					debug_frame_cies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+				}
 			}
+			debug_frame_cies << "<hr>" << std::endl;
+			debug_frame_cies << "<table>" << std::endl;
+			debug_frame_cies << "<tr>" << std::endl;
+			debug_frame_cies << "<th>Id</th>" << std::endl;
+			debug_frame_cies << "<th>Offset</th>" << std::endl;
+			debug_frame_cies << "<th>Version</th>" << std::endl;
+			debug_frame_cies << "<th>Augmentation</th>" << std::endl;
+			if(j == FST_EH_FRAME)
+			{
+				debug_frame_cies << "<th>EH Data (Optional)</th>" << std::endl;
+			}
+			debug_frame_cies << "<th>Code alignment factor</th>" << std::endl;
+			debug_frame_cies << "<th>Data alignment factor</th>" << std::endl;
+			debug_frame_cies << "<th>Return address register</th>" << std::endl;
+			if(j == FST_EH_FRAME)
+			{
+				debug_frame_cies << "<th>Augmentation Data (Optional)</th>" << std::endl;
+			}
+			debug_frame_cies << "<th>Initial call frame program</th>" << std::endl;
+			debug_frame_cies << "</tr>" << std::endl;
+			unsigned int count = 0;
+			while(count < cies_per_file && dw_cie_iter != dw_cies[j].end())
+			{
+				DWARF_CIE<MEMORY_ADDR> *dw_cie = (*dw_cie_iter).second;
+
+				dw_cie->to_HTML(debug_frame_cies) << std::endl;
+				
+				dw_cie_iter++;
+				count++;
+			}
+			debug_frame_cies << "</table>" << std::endl;
+			debug_frame_cies << "<hr>" << std::endl;
+			for(i = 0; i < num_debug_frame_cies_filenames; i++)
+			{
+				if(i != 0) debug_frame_cies << "&nbsp;";
+				if(i == debug_frame_cies_filename_idx)
+				{
+					debug_frame_cies << i << std::endl;
+				}
+				else
+				{
+					std::stringstream sstr;
+					sstr << i << ".html";
+					debug_frame_cies << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+				}
+			}
+			debug_frame_cies << "</body>" << std::endl;
+			debug_frame_cies << "</html>" << std::endl;
+			debug_frame_cies_filename_idx++;
 		}
-		debug_frame_fdes << "</body>" << std::endl;
-		debug_frame_fdes << "</html>" << std::endl;
-		debug_frame_fdes_filename_idx++;
+		while(dw_cie_iter != dw_cies[j].end());
+		
+		unsigned int debug_frame_fdes_filename_idx = 0;
+		unsigned int fdes_per_file = 2048;
+		unsigned int num_debug_fdes = dw_fdes[j].size();
+		unsigned int num_debug_frame_fdes_filenames = ((num_debug_fdes + fdes_per_file - 1) /fdes_per_file);
+		typename std::vector<DWARF_FDE<MEMORY_ADDR> *>::iterator dw_fde_iter = dw_fdes[j].begin();
+		do
+		{
+			std::stringstream debug_frame_fdes_filename_sstr;
+			debug_frame_fdes_filename_sstr << debug_frame_fdes_output_dir << "/" << debug_frame_fdes_filename_idx << ".html";
+			std::string debug_frame_fdes_filename = debug_frame_fdes_filename_sstr.str().c_str();
+			std::ofstream debug_frame_fdes(debug_frame_fdes_filename.c_str(), std::ios::out);
+			debug_frame_fdes << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">" << std::endl;
+			debug_frame_fdes << "<html>" << std::endl;
+			debug_frame_fdes << "<head>" << std::endl;
+			debug_frame_fdes << "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">" << std::endl;
+			debug_frame_fdes << "<style type=\"text/css\">" << std::endl;
+			debug_frame_fdes << "<!--" << std::endl;
+			debug_frame_fdes << "table th { text-align:center; }" << std::endl;
+			debug_frame_fdes << "table th { font-weight:bold; }" << std::endl;
+			debug_frame_fdes << "table td { text-align:left; }" << std::endl;
+			debug_frame_fdes << "table { border-style:solid; }" << std::endl;
+			debug_frame_fdes << "table { border-width:1px; }" << std::endl;
+			debug_frame_fdes << "th, td { border-style:solid; }" << std::endl;
+			debug_frame_fdes << "th, td { border-width:1px; }" << std::endl;
+			debug_frame_fdes << "th, td { border-width:1px; }" << std::endl;
+			debug_frame_fdes << "-->" << std::endl;
+			debug_frame_fdes << "</style>" << std::endl;
+			debug_frame_fdes << "</head>" << std::endl;
+			debug_frame_fdes << "<body>" << std::endl;
+			debug_frame_fdes << "<h1>Call Frame Information/Frame Description Entries (FDE) (";
+			switch(j)
+			{
+				case FST_DEBUG_FRAME:
+					debug_frame_fdes << ".debug_frame";
+					break;
+				case FST_EH_FRAME:
+					debug_frame_fdes << ".eh_frame";
+					break;
+			}
+			debug_frame_fdes << ")</h1>" << std::endl;
+			debug_frame_fdes << "<a href=\"../../index.html\">Index</a>&nbsp;" << std::endl;
+			unsigned int i;
+			for(i = 0; i < num_debug_frame_fdes_filenames; i++)
+			{
+				if(i != 0) debug_frame_fdes << "&nbsp;";
+				if(i == debug_frame_fdes_filename_idx)
+				{
+					debug_frame_fdes << i << std::endl;
+				}
+				else
+				{
+					std::stringstream sstr;
+					sstr << i << ".html";
+					debug_frame_fdes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+				}
+			}
+			debug_frame_fdes << "<hr>" << std::endl;
+			debug_frame_fdes << "<table>" << std::endl;
+			debug_frame_fdes << "<tr>" << std::endl;
+			debug_frame_fdes << "<th>Offset</th>" << std::endl;
+			debug_frame_fdes << "<th>CIE</th>" << std::endl;
+			debug_frame_fdes << "<th>Initial location</th>" << std::endl;
+			debug_frame_fdes << "<th>Address range</th>" << std::endl;
+			if(j == FST_EH_FRAME)
+			{
+				debug_frame_fdes << "<th>Augmentation Data (Optional)</th>" << std::endl;
+			}
+			debug_frame_fdes << "<th>Call frame program/Computed call frame information</th>" << std::endl;
+			debug_frame_fdes << "</tr>" << std::endl;
+			unsigned int count = 0;
+			while(count < fdes_per_file && dw_fde_iter != dw_fdes[j].end())
+			{
+				DWARF_FDE<MEMORY_ADDR> *dw_fde = (*dw_fde_iter);
+
+				dw_fde->to_HTML(debug_frame_fdes) << std::endl;
+				
+				dw_fde_iter++;
+				count++;
+			}
+			debug_frame_fdes << "</table>" << std::endl;
+			debug_frame_fdes << "<hr>" << std::endl;
+			for(i = 0; i < num_debug_frame_fdes_filenames; i++)
+			{
+				if(i != 0) debug_frame_fdes << "&nbsp;";
+				if(i == debug_frame_fdes_filename_idx)
+				{
+					debug_frame_fdes << i << std::endl;
+				}
+				else
+				{
+					std::stringstream sstr;
+					sstr << i << ".html";
+					debug_frame_fdes << "<a href=\"" << sstr.str() << "\">" << i << "</a>" << std::endl;
+				}
+			}
+			debug_frame_fdes << "</body>" << std::endl;
+			debug_frame_fdes << "</html>" << std::endl;
+			debug_frame_fdes_filename_idx++;
+		}
+		while(dw_fde_iter != dw_fdes[j].end());
 	}
-	while(dw_fde_iter != dw_fdes.end());
-	
 	// Debugging Information
 	std::stringstream debug_info_ouput_dir_sstr;
 	debug_info_ouput_dir_sstr << output_dir << "/debug_info";
@@ -2369,11 +2505,11 @@ const DWARF_LocListEntry<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindLocListEn
 }
 
 template <class MEMORY_ADDR>
-const DWARF_CIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCIE(uint64_t debug_frame_offset) const
+const DWARF_CIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst) const
 {
-	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter = dw_cies.find(debug_frame_offset);
+	typename std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *>::const_iterator dw_cie_iter = dw_cies[fst].find(debug_frame_offset);
 	
-	return dw_cie_iter != dw_cies.end() ? (*dw_cie_iter).second : 0;
+	return dw_cie_iter != dw_cies[fst].end() ? (*dw_cie_iter).second : 0;
 }
 
 template <class MEMORY_ADDR>
@@ -2393,17 +2529,21 @@ template <class MEMORY_ADDR>
 const DWARF_FDE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindFDEByAddr(MEMORY_ADDR pc) const
 {
 	unsigned int i;
-	unsigned int num_fdes = dw_fdes.size();
-	for(i = 0; i < num_fdes; i++)
+	unsigned int j;
+	for(j = FST_DEBUG_FRAME; j <= FST_EH_FRAME; j++)
 	{
-		DWARF_FDE<MEMORY_ADDR> *dw_fde = dw_fdes[i];
-		MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
-		MEMORY_ADDR address_range = dw_fde->GetAddressRange();
-		
-		if((pc >= initial_location) && (pc < (initial_location + address_range)))
+		unsigned int num_fdes = dw_fdes[j].size();
+		for(i = 0; i < num_fdes; i++)
 		{
-			// found FDE
-			return dw_fde;
+			DWARF_FDE<MEMORY_ADDR> *dw_fde = dw_fdes[j][i];
+			MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
+			MEMORY_ADDR address_range = dw_fde->GetAddressRange();
+			
+			if((pc >= initial_location) && (pc < (initial_location + address_range)))
+			{
+				// found FDE
+				return dw_fde;
+			}
 		}
 	}
 	
@@ -2611,7 +2751,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	if(c_loc_operation_stream.Empty())
 	{
 		// match
-		return new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, debug);
+		return new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 	}
 
 	DWARF_DataObject<MEMORY_ADDR> *dw_data_object = 0;
@@ -2712,21 +2852,6 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						break;
 					}
 
-					if(c_loc_operation_stream.Empty())
-					{
-						// match
-						dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, debug);
-						match = true;
-						break;
-					}
-
-					if(!dw_die_data_member->GetAttributeValue(DW_AT_type, dw_type_ref))
-					{
-						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine type of data Member \"" << data_member_name << "\" of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
-						status = false;
-						break;
-					}
-					
 					if(is_dereferencing_a_structure)
 					{
 						matched_data_object_name += "->";
@@ -2737,6 +2862,21 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						matched_data_object_name += '.';
 					}
 					matched_data_object_name += data_member_name;
+
+					if(c_loc_operation_stream.Empty())
+					{
+						// match
+						dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+						match = true;
+						break;
+					}
+
+					if(!dw_die_data_member->GetAttributeValue(DW_AT_type, dw_type_ref))
+					{
+						logger << DebugError << "In File \"" << GetFilename() << "\", can't determine type of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
+						status = false;
+						break;
+					}
 					
 					is_dereferencing_a_structure = false;
 				}
@@ -2877,6 +3017,12 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							dw_data_object_loc->SetBitOffset(dw_data_object_loc->GetBitOffset() + (normalized_subscript * dw_data_object_loc->GetBitSize()));
 							dw_data_object_loc->SetByteSize((dw_data_object_loc->GetBitSize() + 7) / 8);
 							
+							matched_data_object_name += '[';
+							std::stringstream subscript_sstr;
+							subscript_sstr << subscript;
+							matched_data_object_name += subscript_sstr.str();
+							matched_data_object_name += ']';
+
 							if(c_loc_operation_stream.Empty())
 							{
 								// match
@@ -2889,17 +3035,12 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 									}
 									dw_data_object_loc->SetEncoding(array_element_encoding);
 								}
-								dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, debug);
+								dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 								match = true;
 								break;
 							}
 
 							dim++;
-							matched_data_object_name += '[';
-							std::stringstream subscript_sstr;
-							subscript_sstr << subscript;
-							matched_data_object_name += subscript_sstr.str();
-							matched_data_object_name += ']';
 						}
 						
 						switch(dw_array_ordering)
@@ -2970,7 +3111,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					delete c_loc_op;
 					c_loc_op = 0;
 					
-					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, debug);
+					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 					
 					if(!dw_data_object->Fetch())
 					{
@@ -3042,6 +3183,12 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 						dw_data_object_loc->SetBitOffset(normalized_subscript * dw_data_object_loc->GetBitSize());
 						
+						matched_data_object_name += '[';
+						std::stringstream subscript_sstr;
+						subscript_sstr << subscript;
+						matched_data_object_name += subscript_sstr.str();
+						matched_data_object_name += ']';
+
 						if(c_loc_operation_stream.Empty())
 						{
 							// match
@@ -3053,16 +3200,10 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							}
 							dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 							
-							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, debug);
+							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 							match = true;
 							break;
 						}
-						
-						matched_data_object_name += '[';
-						std::stringstream subscript_sstr;
-						subscript_sstr << subscript;
-						matched_data_object_name += subscript_sstr.str();
-						matched_data_object_name += ']';
 					}
 					else
 					{
@@ -3114,7 +3255,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							}
 							dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 
-							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, dw_data_object_loc, debug);
+							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 							match = true;
 							break;
 						}
