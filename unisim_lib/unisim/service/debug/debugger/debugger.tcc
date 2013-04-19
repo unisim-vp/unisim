@@ -912,6 +912,39 @@ const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatement(
 }
 
 template <class ADDRESS>
+const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	const typename unisim::util::debug::Statement<ADDRESS> *ret = 0;
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, filename, lineno, colno);
+			
+			if(!ret) ret = stmt;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, filename, lineno, colno);
+			
+			if(!ret) ret = stmt;
+		}
+	}
+	
+	return ret;
+}
+
+template <class ADDRESS>
 std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
 {
 	unsigned int i;
@@ -1183,6 +1216,32 @@ unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(cons
 	}
 	
 	return 0;
+}
+
+template <class ADDRESS>
+void Debugger<ADDRESS>::EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			elf32_loader->EnumerateDataObjectNames(name_set, pc, scope);
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			elf64_loader->EnumerateDataObjectNames(name_set, pc, scope);
+		}
+	}
 }
 
 } // end of namespace debugger

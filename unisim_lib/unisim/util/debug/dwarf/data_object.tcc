@@ -78,12 +78,14 @@ const char *DWARF_DataObject<MEMORY_ADDR>::GetName() const
 template <class MEMORY_ADDR>
 MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetBitSize() const
 {
-	return dw_data_object_loc->GetBitSize();
+	return dw_data_object_loc ? dw_data_object_loc->GetBitSize() : 0;
 }
 
 template <class MEMORY_ADDR>
 unisim::util::debug::DataObjectType DWARF_DataObject<MEMORY_ADDR>::GetType() const
 {
+	if(!dw_data_object_loc) return DOT_UNKNOWN;
+
 	switch(dw_data_object_loc->GetEncoding())
 	{
 		case DW_ATE_boolean:
@@ -109,8 +111,16 @@ unisim::util::endian::endian_type DWARF_DataObject<MEMORY_ADDR>::GetEndian() con
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_DataObject<MEMORY_ADDR>::IsOptimizedOut() const
+{
+	return dw_data_object_loc ? dw_data_object_loc->GetType() == DW_LOC_NULL : true;
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_DataObject<MEMORY_ADDR>::Fetch()
 {
+	if(!dw_data_object_loc) return false;
+	
 	bv.Clear();
 	
 	switch(dw_data_object_loc->GetType())

@@ -256,6 +256,7 @@ private:
 	bool IsListBinariesCommand(const char *cmd) const;
 	bool IsDumpDataObject(const char *cmd) const;
 	bool IsEditDataObject(const char *cmd) const;
+	bool IsListDataObjects(const char *cmd) const;
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -312,6 +313,7 @@ private:
 	void ListBinaryFiles();
 	void DumpDataObject(const char *data_object_name, ADDRESS cia);
 	bool EditDataObject(const char *data_object_name, ADDRESS cia);
+	void ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
 };
 
 } // end of namespace inline_debugger

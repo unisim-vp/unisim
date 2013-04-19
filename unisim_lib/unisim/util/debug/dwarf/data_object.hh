@@ -83,6 +83,7 @@ public:
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
 	virtual unisim::util::debug::DataObjectType GetType() const;
+	virtual bool IsOptimizedOut() const;
 	virtual bool Fetch();
 	virtual bool Commit();
 	virtual bool Read(MEMORY_ADDR obj_bit_offset, uint64_t& value, MEMORY_ADDR bit_size) const;

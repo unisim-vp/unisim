@@ -62,6 +62,7 @@ public:
 	virtual ADDRESS GetBitSize() const = 0;
 	virtual DataObjectType GetType() const = 0;
 	virtual unisim::util::endian::endian_type GetEndian() const = 0;
+	virtual bool IsOptimizedOut() const = 0;
 	virtual bool Fetch() = 0;
 	virtual bool Commit() = 0;
 	virtual bool Read(ADDRESS obj_bit_offset, uint64_t& value, ADDRESS bit_size) const = 0;

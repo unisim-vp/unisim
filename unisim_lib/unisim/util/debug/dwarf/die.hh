@@ -41,6 +41,7 @@
 #include <list>
 #include <vector>
 #include <set>
+#include <string>
 
 namespace unisim {
 namespace util {
@@ -692,6 +693,8 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
 	
+	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
+	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
 	bool GetHighPC(MEMORY_ADDR& high_pc) const;
@@ -721,6 +724,7 @@ public:
 	bool GetOrdering(uint8_t& ordering) const;
 	bool GetEncoding(uint8_t& encoding) const;
 	bool GetArrayElementEncoding(uint8_t& encoding) const;
+	const DWARF_DIE<MEMORY_ADDR> *GetAbstractOrigin() const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

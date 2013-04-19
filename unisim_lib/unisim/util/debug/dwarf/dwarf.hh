@@ -75,6 +75,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 
 namespace unisim {
 namespace util {
@@ -126,6 +127,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc) const;
+	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;
@@ -138,6 +140,7 @@ public:
 	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 	
 	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
 	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
@@ -196,6 +199,7 @@ private:
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
 	void BuildStatementMatrix();
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 };
 
 } // end of namespace dwarf

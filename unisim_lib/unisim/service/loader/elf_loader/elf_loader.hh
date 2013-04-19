@@ -122,7 +122,8 @@ public:
 	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+
 	// unisim::service::interfaces::BackTrace
 	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;

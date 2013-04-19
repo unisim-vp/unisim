@@ -638,6 +638,12 @@ uint64_t DWARF_Expression<MEMORY_ADDR>::GetLength() const
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_Expression<MEMORY_ADDR>::IsEmpty() const
+{
+	return length == 0;
+}
+
+template <class MEMORY_ADDR>
 const uint8_t *DWARF_Expression<MEMORY_ADDR>::GetValue() const
 {
 	return value;

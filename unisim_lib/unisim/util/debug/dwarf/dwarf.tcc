@@ -2188,6 +2188,100 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 }
 
 template <class MEMORY_ADDR>
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	const unisim::util::debug::Statement<MEMORY_ADDR> *ret = 0;
+	bool requested_filename_is_absolute = IsAbsolutePath(filename);
+	std::vector<std::string> hierarchical_requested_filename;
+	
+	std::string s;
+	const char *p = filename;
+	do
+	{
+		if(*p == 0 || *p == '/' || *p == '\\')
+		{
+			hierarchical_requested_filename.push_back(s);
+			s.clear();
+		}
+		else
+		{
+			s += *p;
+		}
+	} while(*(p++));
+	int hierarchical_requested_filename_depth = hierarchical_requested_filename.size();
+
+	typename std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>::const_iterator stmt_iter;
+	
+	for(stmt_iter = stmt_matrix.begin(); stmt_iter != stmt_matrix.end(); stmt_iter++)
+	{
+		const Statement<MEMORY_ADDR> *stmt = (*stmt_iter).second;
+		
+		if(stmt)
+		{
+			if(stmt->GetLineNo() == lineno && (!colno || (stmt->GetColNo() == colno)))
+			{
+				std::string source_path;
+				const char *source_filename = stmt->GetSourceFilename();
+				if(source_filename)
+				{
+					const char *source_dirname = stmt->GetSourceDirname();
+					if(source_dirname)
+					{
+						source_path += source_dirname;
+						source_path += '/';
+					}
+					source_path += source_filename;
+
+					std::vector<std::string> hierarchical_source_path;
+					
+					s.clear();
+					p = source_path.c_str();
+					do
+					{
+						if(*p == 0 || *p == '/' || *p == '\\')
+						{
+							hierarchical_source_path.push_back(s);
+							s.clear();
+						}
+						else
+						{
+							s += *p;
+						}
+					} while(*(p++));
+
+					int hierarchical_source_path_depth = hierarchical_source_path.size();
+					
+					if((!requested_filename_is_absolute && hierarchical_source_path_depth >= hierarchical_requested_filename_depth) ||
+					   (requested_filename_is_absolute && hierarchical_source_path_depth == hierarchical_requested_filename_depth))
+					{
+						int i;
+						bool match = true;
+						
+						for(i = 0; i < hierarchical_requested_filename_depth; i++)
+						{
+							if(hierarchical_source_path[hierarchical_source_path_depth - 1 - i] != hierarchical_requested_filename[hierarchical_requested_filename_depth - 1 - i])
+							{
+								match = false;
+								break;
+							}
+						}
+						
+						if(match)
+						{
+							if(!stmts) return stmt;
+							if(!ret) ret = stmt;
+							stmts->push_back(stmt);
+						}
+					}
+				}
+			}
+		}
+	}
+	return ret;
+}
+
+#if 0
+template <class MEMORY_ADDR>
 const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
 {
 	bool requested_filename_is_absolute = IsAbsolutePath(filename);
@@ -2272,6 +2366,19 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::F
 		}
 	}
 	return 0;
+}
+#endif
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	return FindStatements(0, filename, lineno, colno);
+}
+
+template <class MEMORY_ADDR>
+const unisim::util::debug::Statement<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	return FindStatements(&stmts, filename, lineno, colno);
 }
 
 template <class MEMORY_ADDR>
@@ -2603,7 +2710,7 @@ const DWARF_CompilationUnit<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindCompil
 			const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = dw_address_ranges->GetCompilationUnit();
 			if(debug)
 			{
-				logger << DebugInfo << "In File \"" << GetFilename() << "\", found CU #" << dw_cu->GetId() << " for address range 0x" << std::hex << addr << "-" << (addr + length) << std::dec << EndDebugInfo;
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", found CU #" << dw_cu->GetId() << " for address range 0x" << std::hex << addr << "-0x" << (addr + length) << std::dec << EndDebugInfo;
 			}
 			return dw_cu;
 		}
@@ -2735,6 +2842,12 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 	matched_data_object_name += data_object_base_name;
 
+	if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
+	{
+		// match or optimized out
+		return new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+	}
+
 	// Determine the reference to the DIE that describes the type of the data object
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
@@ -2746,12 +2859,6 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 		}
 		if(dw_data_object_loc) delete dw_data_object_loc;
 		return 0;
-	}
-
-	if(c_loc_operation_stream.Empty())
-	{
-		// match
-		return new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 	}
 
 	DWARF_DataObject<MEMORY_ADDR> *dw_data_object = 0;
@@ -2863,9 +2970,9 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					}
 					matched_data_object_name += data_member_name;
 
-					if(c_loc_operation_stream.Empty())
+					if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 					{
-						// match
+						// match or optimized out
 						dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 						match = true;
 						break;
@@ -3023,7 +3130,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 							matched_data_object_name += subscript_sstr.str();
 							matched_data_object_name += ']';
 
-							if(c_loc_operation_stream.Empty())
+							if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 							{
 								// match
 								if(array_element_count == 1)
@@ -3189,16 +3296,19 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 						matched_data_object_name += subscript_sstr.str();
 						matched_data_object_name += ']';
 
-						if(c_loc_operation_stream.Empty())
+						if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 						{
-							// match
-							// Determine the encoding of the data object
-							uint8_t dw_data_object_encoding = 0;
-							if(!dw_die_type->GetEncoding(dw_data_object_encoding))
+							// match or optimized out
+							if(dw_data_object_loc->GetType() != DW_LOC_NULL)
 							{
-								dw_data_object_encoding = 0;
+								// Determine the encoding of the data object
+								uint8_t dw_data_object_encoding = 0;
+								if(!dw_die_type->GetEncoding(dw_data_object_encoding))
+								{
+									dw_data_object_encoding = 0;
+								}
+								dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 							}
-							dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 							
 							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 							match = true;
@@ -3221,39 +3331,42 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 
 						matched_data_object_name = std::string("(*") + matched_data_object_name + ")";
 						
-						if(c_loc_operation_stream.Empty())
+						if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 						{
-							// match
-							// Determine the DIE that describes the type of the pointed data object
-							const DWARF_DIE<MEMORY_ADDR> *dw_die_pointed_type = dw_type_ref->GetValue();
-							
-							// Determine the size in bytes (including padding bits) of the pointed data object
-							uint64_t dw_data_object_byte_size = 0;
-							if(!dw_die_pointed_type->GetByteSize(dw_data_object_byte_size))
+							// match or optimized out
+							if(dw_data_object_loc->GetType() != DW_LOC_NULL)
 							{
-								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
-								status = false;
-								break;
+								// Determine the DIE that describes the type of the pointed data object
+								const DWARF_DIE<MEMORY_ADDR> *dw_die_pointed_type = dw_type_ref->GetValue();
+								
+								// Determine the size in bytes (including padding bits) of the pointed data object
+								uint64_t dw_data_object_byte_size = 0;
+								if(!dw_die_pointed_type->GetByteSize(dw_data_object_byte_size))
+								{
+									logger << DebugError << "In File \"" << GetFilename() << "\", can't determine byte size (with padding) of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
+									status = false;
+									break;
+								}
+								dw_data_object_loc->SetByteSize(dw_data_object_byte_size);
+								
+								// Determine the actual size in bits (excluding padding bits) of the pointed data object
+								uint64_t dw_data_object_bit_size = 0;
+								if(!dw_die_pointed_type->GetBitSize(dw_data_object_bit_size))
+								{
+									logger << DebugError << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
+									status = false;
+									break;
+								}
+								dw_data_object_loc->SetBitSize(dw_data_object_bit_size);
+								
+								// Determine the encoding of the pointed data object
+								uint8_t dw_data_object_encoding = 0;
+								if(!dw_die_pointed_type->GetEncoding(dw_data_object_encoding))
+								{
+									dw_data_object_encoding = 0;
+								}
+								dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 							}
-							dw_data_object_loc->SetByteSize(dw_data_object_byte_size);
-							
-							// Determine the actual size in bits (excluding padding bits) of the pointed data object
-							uint64_t dw_data_object_bit_size = 0;
-							if(!dw_die_pointed_type->GetBitSize(dw_data_object_bit_size))
-							{
-								logger << DebugError << "In File \"" << GetFilename() << "\", can't determine bit size of data Object \"" << matched_data_object_name << "\"" << EndDebugError;
-								status = false;
-								break;
-							}
-							dw_data_object_loc->SetBitSize(dw_data_object_bit_size);
-							
-							// Determine the encoding of the pointed data object
-							uint8_t dw_data_object_encoding = 0;
-							if(!dw_die_pointed_type->GetEncoding(dw_data_object_encoding))
-							{
-								dw_data_object_encoding = 0;
-							}
-							dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 
 							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
 							match = true;
@@ -3326,6 +3439,34 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	if(c_loc_op) delete c_loc_op;
 	
 	return match ? dw_data_object : 0;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Handler<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const
+{
+	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = FindCompilationUnitByAddrRange(pc, 1);
+	
+	if(dw_cu)
+	{
+		dw_cu->EnumerateDataObjectNames(name_set, pc, (scope & unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_LOCAL_ONLY) != 0);
+	}
+	else
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << GetFilename() << "\", compilation unit for PC=0x" << std::hex << pc << std::dec << " not found" << EndDebugInfo;
+		}
+	}
+	
+	if(scope & unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_GLOBAL_ONLY)
+	{
+		unsigned int num_pubnames = dw_pubnames.size();
+		unsigned int i;
+		for(i = 0; i < num_pubnames; i++)
+		{
+			dw_pubnames[i]->EnumerateDataObjectNames(name_set);
+		}
+	}
 }
 
 #if 0

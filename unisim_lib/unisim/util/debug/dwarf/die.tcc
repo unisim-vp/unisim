@@ -1274,21 +1274,24 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataObject(const char 
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " is an inlined subroutine" << EndDebugInfo;
 		}
 
-		const DWARF_Reference<MEMORY_ADDR> *dw_at_abstract_origin_ref = 0;
-		if(!GetAttributeValue(DW_AT_abstract_origin, dw_at_abstract_origin_ref))
-		{
-			logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " representing an inline subroutine doesn't have an abstract origin" << EndDebugError;
-			return 0;
-		}
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 		
-		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = dw_at_abstract_origin_ref->GetValue();
+		if(dw_at_abstract_origin)
+		{
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << EndDebugInfo;
+			}
+
+			return dw_at_abstract_origin->FindDataObject(name);
+		}
 		
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << EndDebugInfo;
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " which represents an inlined subroutine doesn't have an abstract origin" << EndDebugInfo;
 		}
-
-		return dw_at_abstract_origin->FindDataObject(name);
+		
+		return 0;
 	}
 	
 	unsigned int num_children = children.size();
@@ -1347,6 +1350,54 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::FindDataMember(const char 
 	}
 	
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_DIE<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set) const
+{
+	if(GetTag() == DW_TAG_inlined_subroutine)
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", DIE #" << id << " is an inlined subroutine" << EndDebugInfo;
+		}
+
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+		
+		if(dw_at_abstract_origin)
+		{
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << EndDebugInfo;
+			}
+
+			dw_at_abstract_origin->EnumerateDataObjectNames(name_set);
+		}
+		
+		return;
+	}
+	
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+
+		switch(dw_child->GetTag())
+		{
+			case DW_TAG_variable:
+			case DW_TAG_formal_parameter:
+			case DW_TAG_constant:
+				{
+					const char *child_name = dw_child->GetName();
+					if(child_name)
+					{
+						name_set.insert(child_name);
+					}
+				}
+				break;
+		}
+	}
 }
 
 template <class MEMORY_ADDR>
@@ -1814,6 +1865,13 @@ bool DWARF_DIE<MEMORY_ADDR>::GetByteSize(uint64_t& byte_size) const
 		return dw_die_type->GetByteSize(byte_size);
 	}
 	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	if(dw_at_abstract_origin)
+	{
+		return dw_at_abstract_origin->GetByteSize(byte_size);
+	}
+
 	return false;
 }
 
@@ -1863,6 +1921,13 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitSize(uint64_t& bit_size) const
 			break;
 	}
 
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	if(dw_at_abstract_origin)
+	{
+		return dw_at_abstract_origin->GetBitSize(bit_size);
+	}
+	
 	// fallback
 	uint64_t byte_size = 0;
 	if(GetByteSize(byte_size))
@@ -1878,7 +1943,16 @@ template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementBitSize(uint64_t& array_element_bit_size) const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_array_element_type_ref = 0;
-	if(!GetAttributeValue(DW_AT_type, dw_array_element_type_ref)) return false;
+	if(!GetAttributeValue(DW_AT_type, dw_array_element_type_ref))
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+		
+		if(dw_at_abstract_origin)
+		{
+			return dw_at_abstract_origin->GetArrayElementBitSize(array_element_bit_size);
+		}
+		return false;
+	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_array_element_type = dw_array_element_type_ref->GetValue();
 	
@@ -1904,7 +1978,16 @@ template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetArrayElementEncoding(uint8_t& encoding) const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_array_element_type_ref = 0;
-	if(!GetAttributeValue(DW_AT_type, dw_array_element_type_ref)) return false;
+	if(!GetAttributeValue(DW_AT_type, dw_array_element_type_ref))
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+		
+		if(dw_at_abstract_origin)
+		{
+			return dw_at_abstract_origin->GetArrayElementEncoding(encoding);
+		}
+		return false;
+	}
 	
 	const DWARF_DIE<MEMORY_ADDR> *dw_array_element_type = dw_array_element_type_ref->GetValue();
 	
@@ -1920,7 +2003,11 @@ bool DWARF_DIE<MEMORY_ADDR>::GetBitOffset(int64_t& bit_offset) const
 template <class MEMORY_ADDR>
 bool DWARF_DIE<MEMORY_ADDR>::GetBitStride(uint64_t& bit_stride) const
 {
-	return GetAttributeStaticDynamicValue(DW_AT_bit_stride /* = DW_AT_stride_size */, bit_stride);
+	if(GetAttributeStaticDynamicValue(DW_AT_bit_stride /* = DW_AT_stride_size */, bit_stride)) return true;
+
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetBitStride(bit_stride) : false;
 }
 
 template <class MEMORY_ADDR>
@@ -1941,7 +2028,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocationExpression(uint16_t dw_at, MEMORY_ADDR p
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find either a simple location expression or location list of DIE #" << id << EndDebugInfo; 
 		}
-		return false;
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+		
+		return dw_at_abstract_origin ? dw_at_abstract_origin->GetLocationExpression(dw_at, pc, p_dw_loc_expr, ranges) : false;
 	}
 	const DWARF_LocListEntry<MEMORY_ADDR> *dw_loc_list_entry;
 	
@@ -1990,19 +2080,27 @@ bool DWARF_DIE<MEMORY_ADDR>::GetObjectBitSize(uint64_t& bit_size) const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
-	if(GetAttributeValue(DW_AT_type, dw_type_ref))
+	if(!GetAttributeValue(DW_AT_type, dw_type_ref))
 	{
-		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+		const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
 		
-		while(dw_die_type->GetTag() == DW_TAG_typedef)
+		if(dw_at_abstract_origin)
 		{
-			if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
-			dw_die_type = dw_type_ref->GetValue();
+			return dw_at_abstract_origin->GetObjectBitSize(bit_size);
 		}
 		
-		return dw_die_type->GetBitSize(bit_size);
+		return GetBitSize(bit_size);
 	}
-	return GetBitSize(bit_size);
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+	
+	while(dw_die_type->GetTag() == DW_TAG_typedef)
+	{
+		if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return false;
+		dw_die_type = dw_type_ref->GetValue();
+	}
+	
+	return dw_die_type->GetBitSize(bit_size);
 }
 
 template <class MEMORY_ADDR>
@@ -2046,13 +2144,22 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 
 	if(!GetLocationExpression(DW_AT_location, pc, dw_loc_expr, ranges))
 	{
+		// optimized out
+		loc.Clear();
+
 		if(debug)
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't get location expression of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 		}
-		return false;
+		return true;
 	}
 
+	if(dw_loc_expr->IsEmpty())
+	{
+		loc.Clear();
+		return true; // optimized out
+	}
+	
 	MEMORY_ADDR addr;
 	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
 	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
@@ -2089,7 +2196,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 		return false;
 	}
 	loc.SetBitSize(dw_bit_size);
-	
+
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
 	if(GetAttributeValue(DW_AT_type, dw_type_ref))
@@ -2114,13 +2221,22 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> > ranges;
 	if(!GetLocationExpression(DW_AT_data_member_location, pc, dw_loc_expr, ranges))
 	{
+		// optimized out
+		loc.Clear();
 		if(debug)
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine data member location expression of DIE #" << id << " for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 		}
-		return false;
+		return true;
 	}
 
+	if(dw_loc_expr->IsEmpty())
+	{
+		// optimized out
+		loc.Clear();
+		return true;
+	}
+	
 	MEMORY_ADDR addr;
 	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
 	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
@@ -2168,7 +2284,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 		dw_bit_offset = 0;
 	}
 	loc.SetBitOffset(dw_bit_offset);
-	
+
 	const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
 	
 	if(GetAttributeValue(DW_AT_type, dw_type_ref))
@@ -2182,6 +2298,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 		}
 		loc.SetEncoding(dw_at_encoding);
 	}
+
 	return true;
 }
 
@@ -2194,7 +2311,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetExternalFlag(bool& external_flag) const
 		external_flag = dw_at_external_value->GetValue();
 		return true;
 	}
-	return false;
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetExternalFlag(external_flag) : false;
 }
 
 template <class MEMORY_ADDR>
@@ -2206,7 +2326,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDeclarationFlag(bool& declaration_flag) const
 		declaration_flag = dw_at_declaration_value->GetValue();
 		return true;
 	}
-	return false;
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetDeclarationFlag(declaration_flag) : false;
 }
 
 template <class MEMORY_ADDR>
@@ -2218,7 +2341,10 @@ bool DWARF_DIE<MEMORY_ADDR>::GetOrdering(uint8_t& ordering) const
 		ordering = dw_at_ordering_value->to_uint();
 		return true;
 	}
-	return false;
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetOrdering(ordering) : false;
 }
 
 template <class MEMORY_ADDR>
@@ -2246,7 +2372,25 @@ bool DWARF_DIE<MEMORY_ADDR>::GetEncoding(uint8_t& encoding) const
 		}
 	}
 	
-	return false;
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = GetAbstractOrigin();
+	
+	return dw_at_abstract_origin ? dw_at_abstract_origin->GetEncoding(encoding) : false;
+}
+
+template <class MEMORY_ADDR>
+const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetAbstractOrigin() const
+{
+	const DWARF_Reference<MEMORY_ADDR> *dw_at_abstract_origin_ref = 0;
+	if(!GetAttributeValue(DW_AT_abstract_origin, dw_at_abstract_origin_ref)) return 0;
+	
+	const DWARF_DIE<MEMORY_ADDR> *dw_at_abstract_origin = dw_at_abstract_origin_ref->GetValue();
+	
+	if(debug)
+	{
+		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", abstract origin of DIE #" << id << " is DIE #" << dw_at_abstract_origin->GetId() << EndDebugInfo;
+	}
+	
+	return dw_at_abstract_origin;
 }
 
 template <class MEMORY_ADDR>
