@@ -16,7 +16,7 @@
  *   (at your option) any later version.                                   *
  *                                                                         *
  ***************************************************************************/
-#include <parser.hh>
+#include <parser_defs.hh>
 #include <vect.hh>
 #include <isa.hh>
 #include <sourcecode.hh>

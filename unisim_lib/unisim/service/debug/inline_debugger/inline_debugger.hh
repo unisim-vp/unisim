@@ -220,6 +220,7 @@ private:
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
+	bool ParseValue(const char *s, uint64_t& value);
 	bool GetLine(const char *prompt, std::string& line, bool& interactive);
 	bool IsBlankLine(const std::string& line) const;
 	bool IsQuitCommand(const char *cmd) const;
@@ -254,9 +255,11 @@ private:
 	bool IsEnableBinaryCommand(const char *cmd) const;
 	bool IsDisableBinaryCommand(const char *cmd) const;
 	bool IsListBinariesCommand(const char *cmd) const;
-	bool IsDumpDataObject(const char *cmd) const;
-	bool IsEditDataObject(const char *cmd) const;
-	bool IsListDataObjects(const char *cmd) const;
+	bool IsDumpDataObjectCommand(const char *cmd) const;
+	bool IsPrintDataObjectCommand(const char *cmd) const;
+	bool IsEditDataObjectCommand(const char *cmd) const;
+	bool IsSetDataObjectCommand(const char *cmd) const;
+	bool IsListDataObjectsCommand(const char *cmd) const;
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -312,7 +315,9 @@ private:
 	void EnableBinary(const char *filename, bool enable);
 	void ListBinaryFiles();
 	void DumpDataObject(const char *data_object_name, ADDRESS cia);
+	void PrintDataObject(const char *data_object_name, ADDRESS cia);
 	bool EditDataObject(const char *data_object_name, ADDRESS cia);
+	bool SetDataObject(const char *data_object_name, ADDRESS cia, uint64_t value);
 	void ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
 };
 

@@ -50,7 +50,7 @@ using unisim::kernel::logger::DebugError;
 using unisim::kernel::logger::EndDebugError;
 
 template <class MEMORY_ADDR>
-DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *_data_object_name, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, bool _debug)
+DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *_data_object_name, const DWARF_Location<MEMORY_ADDR> *_dw_data_object_loc, const unisim::util::debug::Type *_type, bool _debug)
 	: data_object_name(_data_object_name)
 	, dw_data_object_loc(_dw_data_object_loc)
 	, arch_endianness(dw_handler->GetArchEndianness())
@@ -60,6 +60,7 @@ DWARF_DataObject<MEMORY_ADDR>::DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR>
 	, bv(arch_endianness)
 	, debug(_debug)
 	, logger(dw_handler->GetLogger())
+	, type(_type)
 {
 }
 	
@@ -67,6 +68,7 @@ template <class MEMORY_ADDR>
 DWARF_DataObject<MEMORY_ADDR>::~DWARF_DataObject()
 {
 	if(dw_data_object_loc) delete dw_data_object_loc;
+	if(type) delete type;
 }
 
 template <class MEMORY_ADDR>
@@ -82,26 +84,9 @@ MEMORY_ADDR DWARF_DataObject<MEMORY_ADDR>::GetBitSize() const
 }
 
 template <class MEMORY_ADDR>
-unisim::util::debug::DataObjectType DWARF_DataObject<MEMORY_ADDR>::GetType() const
+const unisim::util::debug::Type *DWARF_DataObject<MEMORY_ADDR>::GetType() const
 {
-	if(!dw_data_object_loc) return DOT_UNKNOWN;
-
-	switch(dw_data_object_loc->GetEncoding())
-	{
-		case DW_ATE_boolean:
-			return unisim::util::debug::DOT_BOOL;
-		case DW_ATE_float:
-			return unisim::util::debug::DOT_FLOAT;
-		case DW_ATE_signed:
-			return unisim::util::debug::DOT_SIGNED_INT;
-		case DW_ATE_signed_char:
-			return unisim::util::debug::DOT_SIGNED_CHAR;
-		case DW_ATE_unsigned:
-			return unisim::util::debug::DOT_UNSIGNED_INT;
-		case DW_ATE_unsigned_char:
-			return unisim::util::debug::DOT_UNSIGNED_CHAR;
-	}
-	return DOT_UNKNOWN;
+	return type;
 }
 
 template <class MEMORY_ADDR>
