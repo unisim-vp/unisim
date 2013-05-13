@@ -35,10 +35,7 @@
 #include <unisim/util/debug/data_object.hh>
 #include <iostream>
 #include <sstream>
-<<<<<<< HEAD
-=======
 #include <queue>
->>>>>>> origin/virtex5fxt
 
 namespace unisim {
 namespace util {
@@ -222,10 +219,7 @@ uint64_t Member::GetBitSize() const
 
 void Member::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
 {
-<<<<<<< HEAD
-=======
 	visitor->Visit(this);
->>>>>>> origin/virtex5fxt
 	std::string member_path = path + '.' + name;
 	type->DFS(member_path, visitor, follow_pointer);
 }
@@ -367,9 +361,6 @@ void ArrayType::DFS(const std::string& path, const TypeVisitor *visitor, bool fo
 
 std::ostream& operator << (std::ostream& os, const ArrayType& array_type)
 {
-<<<<<<< HEAD
-	return os << "array[" << array_type.lower_bound << ".." << array_type.upper_bound << "] of " << *array_type.type_of_element;
-=======
 	std::queue<const ArrayType *> fifo;
 	
 	const ArrayType *a = 0;
@@ -392,7 +383,6 @@ std::ostream& operator << (std::ostream& os, const ArrayType& array_type)
 	}
 	
 	return os;
->>>>>>> origin/virtex5fxt
 }
 
 PointerType::PointerType(const Type *_type_of_dereferenced_object)
