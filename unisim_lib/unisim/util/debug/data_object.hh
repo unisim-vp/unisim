@@ -241,6 +241,7 @@ class TypeVisitor
 public:
 	virtual ~TypeVisitor() {}
 	virtual void Visit(const char *path, const Type *type, TypeInitializerToken tok = TINIT_TOK_LITERAL) const = 0;
+	virtual void Visit(const Member *member) const = 0;
 private:
 };
 
@@ -273,6 +274,7 @@ public:
 	virtual ~DataObjectInitializer();
 	
 	virtual void Visit(const char *data_object_name, const Type *type, TypeInitializerToken tok) const;
+	virtual void Visit(const Member *member) const;
 private:
 	const DataObject<ADDRESS> *data_object;
 	ADDRESS pc;

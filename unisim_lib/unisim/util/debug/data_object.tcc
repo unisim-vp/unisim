@@ -192,6 +192,12 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 }
 
 template <class ADDRESS>
+void DataObjectInitializer<ADDRESS>::Visit(const Member *member) const
+{
+	(*os) << '.' << member->GetName() << '=';
+}
+
+template <class ADDRESS>
 std::ostream& operator << (std::ostream& os, const DataObjectInitializer<ADDRESS>& data_object_initializer)
 {
 	const Type *data_object_type = data_object_initializer.data_object->GetType();

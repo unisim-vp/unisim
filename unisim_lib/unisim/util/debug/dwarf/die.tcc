@@ -2376,6 +2376,20 @@ bool DWARF_DIE<MEMORY_ADDR>::GetEncoding(uint8_t& encoding) const
 }
 
 template <class MEMORY_ADDR>
+unsigned int DWARF_DIE<MEMORY_ADDR>::GetSubRangeCount() const
+{
+	unsigned int subrange_count = 0;
+	unsigned int num_children = children.size();
+	unsigned int i;
+	for(i = 0; i < num_children; i++)
+	{
+		if(children[i]->GetTag() == DW_TAG_subrange_type) subrange_count++;
+	}
+	
+	return subrange_count;
+}
+
+template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetAbstractOrigin() const
 {
 	const DWARF_Reference<MEMORY_ADDR> *dw_at_abstract_origin_ref = 0;
@@ -2520,9 +2534,11 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 					{
 						dw_array_ordering = dw_cu->GetDefaultOrdering();
 					}
+					
+					unsigned int subrange_count = GetSubRangeCount();
 
 					unsigned int num_children = children.size();
-					unsigned int dim = 0;
+					unsigned int dim = subrange_count - 1;
 					unsigned int i = 0;
 					
 					switch(dw_array_ordering)
@@ -2574,7 +2590,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 											array_type = new unisim::util::debug::ArrayType(dw_die_element_type->BuildType(), lower_bound, upper_bound);
 										}
 									}
-									dim++;
+									dim--;
 								}
 								break;
 						}
@@ -2592,7 +2608,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 					}
 					while(1);
 					
-					return array_type ? array_type : new unisim::util::debug::Type();
+					return array_type ? array_type : dw_die_element_type->BuildType();
 				}
 			}
 			break;
