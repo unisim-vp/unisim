@@ -20,7 +20,7 @@
 #include <strtools.hh>
 #include <subdecoder.hh>
 #include <scanner.hh>
-#include <parser.hh>
+#include <parser_defs.hh>
 #include <cassert>
 
 using namespace std;

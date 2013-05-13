@@ -2745,7 +2745,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDataObjectDIE(cons
 		{
 			logger << DebugInfo << "In File \"" << GetFilename() << "\", compilation unit for PC=0x" << std::hex << pc << std::dec << " not found" << EndDebugInfo;
 		}
-		return false;
+		return 0;
 	}
 	
 	return dw_cu->FindDataObject(name, pc);
@@ -2807,6 +2807,26 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 		}
 	}
 
+#if 0
+	{
+		const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+		
+		if(!dw_die_data_object->GetAttributeValue(DW_AT_type, dw_type_ref))
+		{
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", can't determine type of data Object \"" << data_object_base_name << "\"" << EndDebugInfo;
+			}
+			if(dw_data_object_loc) delete dw_data_object_loc;
+			return 0;
+		}
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
+		const unisim::util::debug::Type *data_object_type = dw_die_type->BuildType();
+		std::cerr << *data_object_type << " " << data_object_base_name << ";" << std::endl;
+		delete data_object_type;
+	}
+#endif
+
 	bool has_frame_base = false;
 	MEMORY_ADDR frame_base = 0;
 	
@@ -2845,7 +2865,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 	if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 	{
 		// match or optimized out
-		return new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+		return new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, dw_die_data_object->BuildTypeOf(), debug);
 	}
 
 	// Determine the reference to the DIE that describes the type of the data object
@@ -2973,7 +2993,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					if(c_loc_operation_stream.Empty() || (dw_data_object_loc->GetType() == DW_LOC_NULL))
 					{
 						// match or optimized out
-						dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+						dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, dw_die_data_member->BuildTypeOf(), debug);
 						match = true;
 						break;
 					}
@@ -3142,7 +3162,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 									}
 									dw_data_object_loc->SetEncoding(array_element_encoding);
 								}
-								dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+								dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, dw_die_type->BuildType(dim + 1), debug);
 								match = true;
 								break;
 							}
@@ -3218,7 +3238,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 					delete c_loc_op;
 					c_loc_op = 0;
 					
-					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+					dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, new unisim::util::debug::Type(), debug);
 					
 					if(!dw_data_object->Fetch())
 					{
@@ -3310,7 +3330,7 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 								dw_data_object_loc->SetEncoding(dw_data_object_encoding);
 							}
 							
-							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, dw_die_type->BuildType(), debug);
 							match = true;
 							break;
 						}
@@ -3366,9 +3386,10 @@ unisim::util::debug::DataObject<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindDa
 									dw_data_object_encoding = 0;
 								}
 								dw_data_object_loc->SetEncoding(dw_data_object_encoding);
+								//std::cerr << "dereferenced object type is \"" << *dw_die_pointed_type->BuildType() << "\"" << std::endl;
 							}
-
-							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, debug);
+							//std::cerr << "creating dereferenced object of type \"" << *dw_die_type->BuildTypeOf() << "\"" << std::endl;
+							dw_data_object = new DWARF_DataObject<MEMORY_ADDR>(this, matched_data_object_name.c_str(), dw_data_object_loc, dw_die_type->BuildTypeOf(), debug);
 							match = true;
 							break;
 						}

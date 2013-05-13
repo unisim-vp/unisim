@@ -77,12 +77,12 @@ template <class MEMORY_ADDR>
 class DWARF_DataObject : public unisim::util::debug::DataObject<MEMORY_ADDR>
 {
 public:
-	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *data_object_name, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, bool debug);
+	DWARF_DataObject(const DWARF_Handler<MEMORY_ADDR> *dw_handler, const char *data_object_name, const DWARF_Location<MEMORY_ADDR> *dw_data_object_loc, const unisim::util::debug::Type *type, bool debug);
 	virtual ~DWARF_DataObject();
 	virtual const char *GetName() const;
 	virtual MEMORY_ADDR GetBitSize() const;
 	virtual unisim::util::endian::endian_type GetEndian() const;
-	virtual unisim::util::debug::DataObjectType GetType() const;
+	virtual const unisim::util::debug::Type *GetType() const;
 	virtual bool IsOptimizedOut() const;
 	virtual bool Fetch();
 	virtual bool Commit();
@@ -100,6 +100,7 @@ private:
 	DWARF_BitVector bv;
 	bool debug;
 	unisim::kernel::logger::Logger& logger;
+	const unisim::util::debug::Type *type;
 };
 
 } // end of namespace dwarf

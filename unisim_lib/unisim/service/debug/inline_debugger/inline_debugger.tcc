@@ -43,6 +43,7 @@
 #include <set>
 #include <stdexcept>
 #include <unisim/util/arithmetic/arithmetic.hh>
+#include <unisim/util/debug/data_object.tcc>
 
 #if defined(HAVE_CONFIG_H)
 //#include "unisim/service/debug/inline_debugger/config.h"
@@ -2621,6 +2622,15 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 					{
 						std::ios::fmtflags std_output_stream_saved_flags(std_output_stream->flags());
 						
+						const unisim::util::debug::Type *data_object_type = data_object->GetType();
+						
+						unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
+						(*std_output_stream) << *data_object_type;
+						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
+						(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
+						
+						(*std_output_stream) << *data_object_type;
+						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
 						(*std_output_stream) << data_object_name << " = [ ";
 						ADDRESS byte_offset;
 						(*std_output_stream).fill('0');
@@ -2636,43 +2646,26 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 						
 						std_output_stream->flags(std_output_stream_saved_flags);
 						
-						unisim::util::debug::DataObjectType data_object_type = data_object->GetType();
-						if(data_object_type != unisim::util::debug::DOT_UNKNOWN)
+						if(data_object_type->GetClass() != unisim::util::debug::T_UNKNOWN)
 						{
 							uint64_t data_object_value = 0;
 							if(data_object->Read(0, data_object_value, data_object_bit_size))
 							{
-								(*std_output_stream) << " : " << data_object_bit_size << "-bit ";
-								switch(data_object_type)
-								{
-									case unisim::util::debug::DOT_BOOL:
-										(*std_output_stream) << "boolean";
-										break;
-									case unisim::util::debug::DOT_SIGNED_CHAR:
-										(*std_output_stream) << "signed character";
-										break;
-									case unisim::util::debug::DOT_UNSIGNED_CHAR:
-										(*std_output_stream) << "unsigned character"; break;
-									case unisim::util::debug::DOT_SIGNED_INT:
-										(*std_output_stream) << "signed integer";
-										break;
-									case unisim::util::debug::DOT_UNSIGNED_INT:
-										(*std_output_stream) << "unsigned integer"; break;
-									case unisim::util::debug::DOT_FLOAT:
-										(*std_output_stream) << "floating-point";
-										break;
-									default:
-										(*std_output_stream) << "unknown type";
-										break;
-								}
 								(*std_output_stream) << " = ";
-								switch(data_object_type)
+								switch(data_object_type->GetClass())
 								{
-									case unisim::util::debug::DOT_BOOL:
+									case unisim::util::debug::T_BOOL:
 										(*std_output_stream) << (data_object_value ? "true" : "false");
 										break;
-									case unisim::util::debug::DOT_SIGNED_CHAR:
-										(*std_output_stream) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
+									case unisim::util::debug::T_CHAR:
+										if(((const unisim::util::debug::CharType *) data_object_type)->IsSigned())
+										{
+											(*std_output_stream) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
+										}
+										else
+										{
+											(*std_output_stream) << data_object_value;
+										}
 										(*std_output_stream) << " ('";
 										if((data_object_value >= 32) && (data_object_value < 128))
 										{
@@ -2684,24 +2677,15 @@ void InlineDebugger<ADDRESS>::DumpDataObject(const char *data_object_name, ADDRE
 										}
 										(*std_output_stream) << "')";
 										break;
-									case unisim::util::debug::DOT_UNSIGNED_CHAR:
-										(*std_output_stream) << data_object_value;
-										(*std_output_stream) << " ('";
-										if((data_object_value >= 32) && (data_object_value < 128))
+									case unisim::util::debug::T_INTEGER:
+										if(((const unisim::util::debug::IntegerType *) data_object_type)->IsSigned())
 										{
-											(*std_output_stream) << (unsigned char) data_object_value;
+											(*std_output_stream) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
 										}
 										else
 										{
-											(*std_output_stream) << "\\0x" << std::hex << data_object_value << std::dec;
+											(*std_output_stream) << data_object_value;
 										}
-										(*std_output_stream) << "')";
-										break;
-									case unisim::util::debug::DOT_SIGNED_INT:
-										(*std_output_stream) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
-										break;
-									case unisim::util::debug::DOT_UNSIGNED_INT:
-										(*std_output_stream) << data_object_value;
 										break;
 									default:
 										(*std_output_stream) << "?";

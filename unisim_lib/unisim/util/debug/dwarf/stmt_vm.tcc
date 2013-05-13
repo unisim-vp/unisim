@@ -164,7 +164,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				if(opcode < dw_stmt_prog->opcode_base)
 				{
 					unsigned int num_args = dw_stmt_prog->standard_opcode_lengths[opcode - 1];
-					unsigned int i;
+					unsigned int i = 0;
 					DWARF_LEB128 args[num_args];
 					uint16_t uhalf_arg = 0;
 					
