@@ -2168,7 +2168,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of DIE #" << id << " location expression failed" << EndDebugInfo;
 		}
-		return false;
 	}
 	
 	// Determine the size in bytes (including padding bits)
@@ -2179,7 +2178,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data object for DIE #" << id << EndDebugInfo;
 		}
-		return false;
 	}
 	loc.SetByteSize(dw_byte_size);
 	
@@ -2191,7 +2189,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data object for DIE #" << id << EndDebugInfo;
 		}
-		return false;
 	}
 	loc.SetBitSize(dw_bit_size);
 
@@ -2245,8 +2242,9 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	{
 		if(debug)
 		{
-			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugInfo;
+			logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", evaluation of data member DIE #" << id << " location expression failed" << EndDebugError;
 		}
+		return false;
 	}
 	
 	uint64_t dw_byte_size = 0;
@@ -2256,7 +2254,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine byte size (with padding) of data member for DIE #" << id << EndDebugInfo;
 		}
-		return false;
 	}
 	loc.SetByteSize(dw_byte_size);
 
@@ -2267,7 +2264,6 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 		{
 			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't determine bit size of data member for DIE #" << id << EndDebugInfo;
 		}
-		return false;
 	}
 	loc.SetBitSize(dw_bit_size);
 	
@@ -2406,7 +2402,7 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_DIE<MEMORY_ADDR>::GetAbstractOrigin() const
 }
 
 template <class MEMORY_ADDR>
-const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int array_dim) const
+const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool following_pointer, unsigned int array_dim) const
 {
 	uint16_t dw_tag = GetTag();
 	switch(dw_tag)
@@ -2463,51 +2459,45 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 						type_class = unisim::util::debug::T_INTERFACE;
 						break;
 				}
-				unisim::util::debug::StructureType *struct_type = new unisim::util::debug::StructureType(type_class);
-				unsigned int num_children = children.size();
-				unsigned int i;
-				for(i = 0; i < num_children; i++)
+				unisim::util::debug::StructureType *struct_type = new unisim::util::debug::StructureType(type_class, GetName());
+				
+				if(!following_pointer)
 				{
-					DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
-
-					switch(dw_child->GetTag())
+					unsigned int num_children = children.size();
+					unsigned int i;
+					for(i = 0; i < num_children; i++)
 					{
-						case DW_TAG_member:
-							{
-								const DWARF_DIE<MEMORY_ADDR> *dw_die_member = dw_child;
-								const char *member_name = dw_die_member->GetName();
-								if(member_name)
+						DWARF_DIE<MEMORY_ADDR> *dw_child = children[i];
+
+						switch(dw_child->GetTag())
+						{
+							case DW_TAG_member:
 								{
-									const DWARF_Reference<MEMORY_ADDR> *dw_member_type_ref = 0;
-									
-									if(dw_die_member->GetAttributeValue(DW_AT_type, dw_member_type_ref))
+									const DWARF_DIE<MEMORY_ADDR> *dw_die_member = dw_child;
+									const char *member_name = dw_die_member->GetName();
+									if(member_name)
 									{
-										const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type = dw_member_type_ref->GetValue();
+										const DWARF_Reference<MEMORY_ADDR> *dw_member_type_ref = 0;
 										
-										while(dw_die_member_type->GetTag() == DW_TAG_typedef)
+										if(dw_die_member->GetAttributeValue(DW_AT_type, dw_member_type_ref))
 										{
-											if(!dw_die_member_type->GetAttributeValue(DW_AT_type, dw_member_type_ref))
+											const DWARF_DIE<MEMORY_ADDR> *dw_die_member_type = dw_member_type_ref->GetValue();
+											
+											uint64_t bit_size = 0;
+											if(dw_die_member_type)
 											{
-												dw_die_member_type = 0;
-												break;
+												if(!dw_die_member->GetAttributeStaticDynamicValue(DW_AT_bit_size, bit_size))
+												{
+													bit_size = 0;
+												}
 											}
-											dw_die_member_type = dw_member_type_ref->GetValue();
+											
+											struct_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->BuildType() : new unisim::util::debug::Type(), bit_size));
 										}
-										
-										uint64_t bit_size = 0;
-										if(dw_die_member_type)
-										{
-											if(!dw_die_member->GetAttributeStaticDynamicValue(DW_AT_bit_size, bit_size))
-											{
-												bit_size = 0;
-											}
-										}
-										
-										struct_type->Add(new unisim::util::debug::Member(member_name, dw_die_member_type ? dw_die_member_type->BuildType() : new unisim::util::debug::Type(), bit_size));
 									}
 								}
-							}
-							break;
+								break;
+						}
 					}
 				}
 				return struct_type;
@@ -2520,12 +2510,6 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 				if(GetAttributeValue(DW_AT_type, dw_element_type_ref))
 				{
 					const DWARF_DIE<MEMORY_ADDR> *dw_die_element_type = dw_element_type_ref->GetValue();
-					
-					while(dw_die_element_type->GetTag() == DW_TAG_typedef)
-					{
-						if(!dw_die_element_type->GetAttributeValue(DW_AT_type, dw_element_type_ref)) return new unisim::util::debug::Type();
-						dw_die_element_type = dw_element_type_ref->GetValue();
-					}
 					
 					unisim::util::debug::ArrayType *array_type = 0;
 				
@@ -2564,7 +2548,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 										int64_t lower_bound = 0;
 										if(!dw_die_subrange_type->GetLowerBound(lower_bound))
 										{
-											break;
+											lower_bound = 0;
 										}
 										
 										int64_t upper_bound = 0;
@@ -2577,7 +2561,7 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 											}
 											else
 											{
-												break;
+												upper_bound = lower_bound - 1; // null array
 											}
 										}
 										
@@ -2615,41 +2599,103 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(unsigned int 
 		case DW_TAG_pointer_type:
 			{
 				const DWARF_Reference<MEMORY_ADDR> *dw_dereferenced_object_type_ref = 0;
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_dereferenced_object_type = 0;
 				
 				if(GetAttributeValue(DW_AT_type, dw_dereferenced_object_type_ref))
 				{
-					const DWARF_DIE<MEMORY_ADDR> *dw_die_dereferenced_object_type = dw_dereferenced_object_type_ref->GetValue();
-					
-					while(dw_die_dereferenced_object_type->GetTag() == DW_TAG_typedef)
-					{
-						if(!dw_die_dereferenced_object_type->GetAttributeValue(DW_AT_type, dw_dereferenced_object_type_ref)) return new unisim::util::debug::Type();
-						dw_die_dereferenced_object_type = dw_dereferenced_object_type_ref->GetValue();
-					}
-					
-					return new unisim::util::debug::PointerType(dw_die_dereferenced_object_type->BuildType());
+					dw_die_dereferenced_object_type = dw_dereferenced_object_type_ref->GetValue();
 				}
+					
+				return new unisim::util::debug::PointerType(dw_die_dereferenced_object_type ? dw_die_dereferenced_object_type->BuildType(true) : new unisim::util::debug::UnspecifiedType());
 			}
 			break;
 		case DW_TAG_typedef:
 			{
 				const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_type = 0;
 				
 				if(GetAttributeValue(DW_AT_type, dw_type_ref))
 				{
-					const DWARF_DIE<MEMORY_ADDR> *dw_die_type = dw_type_ref->GetValue();
-					
-					while(dw_die_type->GetTag() == DW_TAG_typedef)
-					{
-						if(!dw_die_type->GetAttributeValue(DW_AT_type, dw_type_ref)) return new unisim::util::debug::Type();
-						dw_die_type = dw_type_ref->GetValue();
-					}
-					
-					return dw_die_type->BuildType();
+					dw_die_type = dw_type_ref->GetValue();
 				}
+				
+				const char *typedef_name = GetName();
+				return new unisim::util::debug::Typedef(dw_die_type ? dw_die_type->BuildType(following_pointer) : new unisim::util::debug::UnspecifiedType(), typedef_name);
 			}
 			break;
+		case DW_TAG_subroutine_type:
+			{
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_return_type = 0;
+				
+				const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+				if(GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					dw_die_return_type = dw_type_ref->GetValue();
+				}
+
+				unisim::util::debug::FunctionType *func_type = new unisim::util::debug::FunctionType(dw_die_return_type ? dw_die_return_type->BuildType() : new unisim::util::debug::UnspecifiedType());
+				
+				unsigned int num_children = children.size();
+				unsigned int i;
+				for(i = 0; i < num_children; i++)
+				{
+					const DWARF_DIE<MEMORY_ADDR> *child = children[i];
+					
+					if(child->GetTag() == DW_TAG_formal_parameter)
+					{
+						const char *formal_param_name = child->GetName();
+						
+						if(formal_param_name)
+						{
+							func_type->Add(new unisim::util::debug::FormalParameter(formal_param_name, child->BuildType()));
+						}
+					}
+				}
+				return func_type;
+			}
+			break;
+		case DW_TAG_const_type:
+			{
+				const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_type = 0;
+				
+				if(GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					dw_die_type = dw_type_ref->GetValue();
+				}
+					
+				return new unisim::util::debug::ConstType(dw_die_type ? dw_die_type->BuildType(following_pointer) : new unisim::util::debug::UnspecifiedType());
+			}
+			break;
+		case DW_TAG_enumeration_type:
+			{
+				const char *enum_name = GetName();
+				unisim::util::debug::EnumType *enum_type = new unisim::util::debug::EnumType(enum_name);
+				
+				unsigned int num_children = children.size();
+				unsigned int i;
+				for(i = 0; i < num_children; i++)
+				{
+					const DWARF_DIE<MEMORY_ADDR> *child = children[i];
+					
+					if(child->GetTag() == DW_TAG_enumerator)
+					{
+						const char *enumerator_name = child->GetName();
+						
+						if(enumerator_name)
+						{
+							enum_type->Add(new unisim::util::debug::Enumerator(enumerator_name));
+						}
+					}
+				}
+				return enum_type;
+			}
+			break;
+		case DW_TAG_unspecified_type:
+			return new unisim::util::debug::UnspecifiedType();
+			break;
 		default:
-			std::cerr << "Unknown tag " << DWARF_GetTagName(dw_tag) << std::endl;
+			logger << DebugWarning << "Don't know how to handle tag " << DWARF_GetTagName(dw_tag) << EndDebugWarning;
 			break;
 	}
 	

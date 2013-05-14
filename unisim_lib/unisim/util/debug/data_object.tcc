@@ -69,23 +69,38 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
 				if(data_object)
 				{
-					if(data_object->Fetch())
+					if(!data_object->IsOptimizedOut())
 					{
-						uint64_t data_object_bit_size = data_object->GetBitSize();
-						uint64_t data_object_value = 0;
-						if(data_object->Read(0, data_object_value, data_object_bit_size))
+						if(data_object->Fetch())
 						{
-							if((data_object_value >= 32) && (data_object_value < 128))
+							uint64_t data_object_bit_size = data_object->GetBitSize();
+							uint64_t data_object_value = 0;
+							if(data_object->Read(0, data_object_value, data_object_bit_size))
 							{
-								(*os) << "'" << (char) data_object_value << "'";
-							}
-							else
-							{
-								(*os) << "'\\0x" << std::hex << data_object_value << std::dec << "'";
+								if((data_object_value >= 32) && (data_object_value < 128))
+								{
+									(*os) << "'" << (char) data_object_value << "'";
+								}
+								else
+								{
+									(*os) << "'\\0x" << std::hex << data_object_value << std::dec << "'";
+								}
 							}
 						}
+						else
+						{
+							(*os) << "<unreadable>";
+						}
+					}
+					else
+					{
+						(*os) << "<optimized out>";
 					}
 					delete data_object;
+				}
+				else
+				{
+					(*os) << "<not found>";
 				}
 			}
 			break;
@@ -94,23 +109,38 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
 				if(data_object)
 				{
-					if(data_object->Fetch())
+					if(!data_object->IsOptimizedOut())
 					{
-						uint64_t data_object_bit_size = data_object->GetBitSize();
-						uint64_t data_object_value = 0;
-						if(data_object->Read(0, data_object_value, data_object_bit_size))
+						if(data_object->Fetch())
 						{
-							if(((const IntegerType *) type)->IsSigned())
+							uint64_t data_object_bit_size = data_object->GetBitSize();
+							uint64_t data_object_value = 0;
+							if(data_object->Read(0, data_object_value, data_object_bit_size))
 							{
-								(*os) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
-							}
-							else
-							{
-								(*os) << data_object_value;
+								if(((const IntegerType *) type)->IsSigned())
+								{
+									(*os) << unisim::util::arithmetic::SignExtend(data_object_value, data_object_bit_size);
+								}
+								else
+								{
+									(*os) << data_object_value;
+								}
 							}
 						}
+						else
+						{
+							(*os) << "<unreadable>";
+						}
+					}
+					else
+					{
+						(*os) << "<optimized out>";
 					}
 					delete data_object;
+				}
+				else
+				{
+					(*os) << "<not found>";
 				}
 			}
 			break;
@@ -122,16 +152,35 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
 				if(data_object)
 				{
-					if(data_object->Fetch())
+					if(!data_object->IsOptimizedOut())
 					{
-						uint64_t data_object_bit_size = data_object->GetBitSize();
-						uint64_t data_object_value = 0;
-						if(data_object->Read(0, data_object_value, data_object_bit_size))
+						if(data_object->Fetch())
 						{
-							(*os) << (data_object_value ? "true" : "false");
+							uint64_t data_object_bit_size = data_object->GetBitSize();
+							uint64_t data_object_value = 0;
+							if(data_object->Read(0, data_object_value, data_object_bit_size))
+							{
+								(*os) << (data_object_value ? "true" : "false");
+							}
+							else
+							{
+								(*os) << "<unreadable>";
+							}
+						}
+						else
+						{
+							(*os) << "<unfetchable>";
 						}
 					}
+					else
+					{
+						(*os) << "<optimized out>";
+					}
 					delete data_object;
+				}
+				else
+				{
+					(*os) << "<not found>";
 				}
 			}
 			break;
@@ -175,18 +224,43 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
 				if(data_object)
 				{
-					if(data_object->Fetch())
+					if(!data_object->IsOptimizedOut())
 					{
-						uint64_t data_object_bit_size = data_object->GetBitSize();
-						uint64_t data_object_value = 0;
-						if(data_object->Read(0, data_object_value, data_object_bit_size))
+						if(data_object->Fetch())
 						{
-							(*os) << "@0x" << std::hex << data_object_value << std::dec;
+							uint64_t data_object_bit_size = data_object->GetBitSize();
+							uint64_t data_object_value = 0;
+							if(data_object->Read(0, data_object_value, data_object_bit_size))
+							{
+								(*os) << "@0x" << std::hex << data_object_value << std::dec;
+							}
 						}
+						else
+						{
+							(*os) << "<unreadable>";
+						}
+					}
+					else
+					{
+						(*os) << "<optimized out>";
 					}
 					delete data_object;
 				}
+				else
+				{
+					(*os) << "<not found>";
+				}
 			}
+			break;
+		case T_TYPEDEF:
+			break;
+		case T_FUNCTION:
+			break;
+		case T_CONST:
+			break;
+		case T_ENUM:
+			break;
+		case T_VOID:
 			break;
 	}
 }

@@ -1115,11 +1115,17 @@ void InlineDebugger<ADDRESS>::Help()
 	(*std_output_stream) << "<dumpobject | dumobj | dob> <data object name>" << endl;
 	(*std_output_stream) << "    dump data object bytes" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<printobject | printobj | pob> <data object name>" << endl;
+	(*std_output_stream) << "    print data object in a programmer friendly manner" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<listobjects | lsobj | lob> [<local>|<global>]" << endl;
 	(*std_output_stream) << "    list data objects" << endl;
 	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
 	(*std_output_stream) << "<editobject | editobj | eob> <data object name>" << endl;
 	(*std_output_stream) << "    edit data object bytes" << endl;
+	(*std_output_stream) << "--------------------------------------------------------------------------------" << endl;
+	(*std_output_stream) << "<setobject | setobj | sob> <data object name>" << endl;
+	(*std_output_stream) << "    set data object value in a programmer friendly manner" << endl;
 	(*std_output_stream) << "========================= BREAKPOINTS/WATCHPOINTS ==============================" << endl;
 	(*std_output_stream) << "<b | break> [<symbol | *address | filename:lineno>]" << endl;
 	(*std_output_stream) << "    set a breakpoint at 'symbol', 'address', or 'filename:lineno'. If 'symbol', 'address'," << endl;
@@ -2729,6 +2735,8 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 		
 		if(data_object)
 		{
+			const unisim::util::debug::Type *data_object_type = data_object->GetType();
+			
 			if(!data_object->IsOptimizedOut())
 			{
 				if(data_object->Fetch())
@@ -2747,8 +2755,6 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 					}
 					if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
 					{
-						const unisim::util::debug::Type *data_object_type = data_object->GetType();
-						
 						unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
 						(*std_output_stream) << *data_object_type;
 						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
@@ -2766,7 +2772,9 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 			}
 			else
 			{
-				(*std_output_stream) << "Data object \"" << data_object_name << "\" is optimized out" << endl;
+				(*std_output_stream) << *data_object_type;
+				if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
+				(*std_output_stream) << data_object_name << " = <optimized out>" << endl;
 			}
 			
 			delete data_object;

@@ -728,7 +728,7 @@ public:
 	unsigned int GetSubRangeCount() const;
 	const DWARF_DIE<MEMORY_ADDR> *GetAbstractOrigin() const;
 	
-	const unisim::util::debug::Type *BuildType(unsigned int array_dim = 0) const;
+	const unisim::util::debug::Type *BuildType(bool following_pointer = false, unsigned int array_dim = 0) const;
 	const unisim::util::debug::Type *BuildTypeOf() const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;

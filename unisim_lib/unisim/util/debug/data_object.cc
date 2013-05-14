@@ -91,6 +91,16 @@ std::ostream& operator << (std::ostream& os, const Type& type)
 			return os << *((const ArrayType *) &type);
 		case T_POINTER:
 			return os << *((const PointerType *) &type);
+		case T_TYPEDEF:
+			return os << *((const Typedef *) &type);
+		case T_FUNCTION:
+			return os << *((const FunctionType *) &type);
+		case T_CONST:
+			return os << *((const ConstType *) &type);
+		case T_ENUM:
+			return os << *((const EnumType *) &type);
+		case T_VOID:
+			return os << *((const UnspecifiedType *) &type);
 	}
 	return os;
 }
@@ -236,8 +246,9 @@ std::ostream& operator << (std::ostream& os, const Member& member)
 	return os;
 }
 
-StructureType::StructureType(TYPE_CLASS _type_class)
+StructureType::StructureType(TYPE_CLASS _type_class, const char *_name)
 	: Type(_type_class)
+	, name(_name ? _name : "__anonymous__")
 {
 }
 
@@ -304,14 +315,19 @@ std::ostream& operator << (std::ostream& os, const StructureType& structure_type
 		default:
 			return os;
 	}
-	os << " { ";
+	os << " " << structure_type.name;
 	unsigned int member_count = structure_type.members.size();
-	unsigned int i;
-	for(i = 0; i < member_count; i++)
+	if(member_count)
 	{
-		os << *structure_type.members[i] << "; ";
+		os << " { ";
+		unsigned int i;
+		for(i = 0; i < member_count; i++)
+		{
+			os << *structure_type.members[i] << "; ";
+		}
+		os << "}";
 	}
-	return os << "}";
+	return os;
 }
 
 ArrayType::ArrayType(const Type *_type_of_element, int64_t _lower_bound, int64_t _upper_bound)
@@ -379,7 +395,14 @@ std::ostream& operator << (std::ostream& os, const ArrayType& array_type)
 		a = fifo.front();
 		fifo.pop();
 		
-		os << '[' << a->lower_bound << ".." << a->upper_bound << ']';
+		if(a->lower_bound <= a->upper_bound)
+		{
+			os << '[' << a->lower_bound << ".." << a->upper_bound << ']';
+		}
+		else
+		{
+			os << "[]";
+		}
 	}
 	
 	return os;
@@ -418,6 +441,186 @@ void PointerType::DFS(const std::string& path, const TypeVisitor *visitor, bool 
 std::ostream& operator << (std::ostream& os, const PointerType& pointer_type)
 {
 	return os << *pointer_type.type_of_dereferenced_object << " *";
+}
+
+Typedef::Typedef(const Type *_type, const char *_name)
+	: Type(T_TYPEDEF)
+	, type(_type)
+	, name(_name ? _name : "__anonymous__")
+{
+}
+
+Typedef::~Typedef()
+{
+}
+
+const Type *Typedef::GetType() const
+{
+	return type;
+}
+
+const char *Typedef::GetName() const
+{
+	return name.c_str();
+}
+
+void Typedef::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
+{
+	type->DFS(path, visitor, follow_pointer);
+}
+
+std::ostream& operator << (std::ostream& os, const Typedef& _typedef)
+{
+	return os << _typedef.name;
+}
+
+FormalParameter::FormalParameter(const char *_name, const Type *_type)
+	: name(_name)
+	, type(_type)
+{
+}
+
+FormalParameter::~FormalParameter()
+{
+}
+
+const char *FormalParameter::GetName() const
+{
+	return name.c_str();
+}
+
+const Type *FormalParameter::GetType() const
+{
+	return type;
+}
+
+std::ostream& operator << (std::ostream& os, const FormalParameter& formal_param)
+{
+	os << *formal_param.type;
+	if(formal_param.type->GetClass() != T_POINTER) os << " ";
+	os << formal_param.name;
+	return os;
+}
+
+FunctionType::FunctionType(const Type *_return_type)
+	: Type(T_FUNCTION)
+	, return_type(_return_type)
+{
+}
+
+FunctionType::~FunctionType()
+{
+	unsigned int formal_param_count = formal_params.size();
+	unsigned int i;
+	for(i = 0; i < formal_param_count; i++)
+	{
+		delete formal_params[i];
+	}
+}
+
+void FunctionType::Add(const FormalParameter *formal_param)
+{
+	formal_params.push_back(formal_param);
+}
+
+std::ostream& operator << (std::ostream& os, const FunctionType& func_type)
+{
+	if(func_type.return_type)
+	{
+		os << *func_type.return_type;
+	}
+	else
+	{
+		os << "void";
+	}
+	os << " (";
+	unsigned int formal_param_count = func_type.formal_params.size();
+	if(formal_param_count)
+	{
+		unsigned int i;
+		for(i = 0; i < formal_param_count; i++)
+		{
+			os << *func_type.formal_params[i];
+			if(i != (formal_param_count - 1)) os << ",";
+		}
+	}
+	os << ")";
+	return os;
+}
+
+ConstType::ConstType(const Type *_type)
+	: Type(T_CONST)
+	, type(_type)
+{
+}
+
+ConstType::~ConstType()
+{
+}
+
+void ConstType::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
+{
+	type->DFS(path, visitor, follow_pointer);
+}
+
+std::ostream& operator << (std::ostream& os, const ConstType& const_type)
+{
+	return os << *const_type.type << " const";
+}
+
+Enumerator::Enumerator(const char *_name)
+	: name(_name)
+{
+}
+
+Enumerator::~Enumerator()
+{
+}
+
+std::ostream& operator << (std::ostream& os, const Enumerator& enumerator)
+{
+	return os << enumerator.name;
+}
+
+EnumType::EnumType(const char *_name)
+	: Type(T_ENUM)
+	, name(_name ? _name : "__anonymous__")
+{
+}
+
+EnumType::~EnumType()
+{
+	unsigned int enumerator_count = enumerators.size();
+	unsigned int i;
+	for(i = 0; i < enumerator_count; i++)
+	{
+		delete enumerators[i];
+	}
+}
+
+void EnumType::Add(const Enumerator *enumerator)
+{
+	enumerators.push_back(enumerator);
+}
+
+std::ostream& operator << (std::ostream& os, const EnumType& enum_type)
+{
+	os << "enum " << enum_type.name;
+	return os;
+}
+
+UnspecifiedType::UnspecifiedType()
+	: Type(T_VOID)
+{
+}
+
+UnspecifiedType::~UnspecifiedType()
+{
+}
+
+std::ostream& operator << (std::ostream& os, const UnspecifiedType& unspecified_type)
+{
+	return os << "void";
 }
 
 } // end of namespace debug

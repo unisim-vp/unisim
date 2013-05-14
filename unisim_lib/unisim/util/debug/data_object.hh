@@ -66,7 +66,12 @@ typedef enum
 	T_CLASS = 7,
 	T_INTERFACE = 8,
 	T_ARRAY = 9,
-	T_POINTER = 10
+	T_POINTER = 10,
+	T_TYPEDEF = 11,
+	T_FUNCTION = 12,
+	T_CONST = 13,
+	T_ENUM = 14,
+	T_VOID = 15
 } TYPE_CLASS;
 
 typedef enum
@@ -91,6 +96,12 @@ class StructureType;
 class ArraySubRange;
 class ArrayType;
 class PointerType;
+class Typedef;
+class FormalParameter;
+class FunctionType;
+class ConstType;
+class EnumType;
+class UnspecifiedType;
 class TypeVisitor;
 template <class ADDRESS> class DataObject;
 template <class ADDRESS> class DataObjectInitializer;
@@ -105,6 +116,12 @@ std::ostream& operator << (std::ostream& os, const StructureType& structure_type
 std::ostream& operator << (std::ostream& os, const ArraySubRange& array_sub_range);
 std::ostream& operator << (std::ostream& os, const ArrayType& array_type);
 std::ostream& operator << (std::ostream& os, const PointerType& pointer_type);
+std::ostream& operator << (std::ostream& os, const Typedef& _typedef);
+std::ostream& operator << (std::ostream& os, const FormalParameter& formal_param);
+std::ostream& operator << (std::ostream& os, const FunctionType& func_type);
+std::ostream& operator << (std::ostream& os, const ConstType& const_type);
+std::ostream& operator << (std::ostream& os, const EnumType& enum_type);
+std::ostream& operator << (std::ostream& os, const UnspecifiedType& unspecified_type);
 
 class Type
 {
@@ -193,7 +210,7 @@ private:
 class StructureType : public Type
 {
 public:
-	StructureType(TYPE_CLASS type_class);
+	StructureType(TYPE_CLASS type_class, const char *name);
 	virtual ~StructureType();
 	
 	void Add(const Member *member);
@@ -201,6 +218,7 @@ public:
 	const Member *GetMember(unsigned int idx) const;
 	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
 private:
+	std::string name;
 	std::vector<const Member *> members;
 	
 	friend std::ostream& operator << (std::ostream& os, const StructureType& structure_type);
@@ -234,6 +252,92 @@ private:
 	const Type *type_of_dereferenced_object;
 	
 	friend std::ostream& operator << (std::ostream& os, const PointerType& pointer_type);
+};
+
+class Typedef : public Type
+{
+public:
+	Typedef(const Type *type, const char *name);
+	virtual ~Typedef();
+	const Type *GetType() const;
+	const char *GetName() const;
+	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
+private:
+	const Type *type;
+	std::string name;
+	
+	friend std::ostream& operator << (std::ostream& os, const Typedef& _typedef);
+};
+
+class FormalParameter
+{
+public:
+	FormalParameter(const char *name, const Type *type);
+	virtual ~FormalParameter();
+	const char *GetName() const;
+	const Type *GetType() const;
+private:
+	std::string name;
+	const Type *type;
+	
+	friend std::ostream& operator << (std::ostream& os, const FormalParameter& formal_param);
+};
+
+class FunctionType : public Type
+{
+public:
+	FunctionType(const Type *return_type);
+	virtual ~FunctionType();
+	
+	void Add(const FormalParameter *formal_param);
+private:
+	const Type *return_type;
+	std::vector<const FormalParameter *> formal_params;
+	
+	friend std::ostream& operator << (std::ostream& os, const FunctionType& func_type);
+};
+
+class ConstType : public Type
+{
+public:
+	ConstType(const Type *type);
+	virtual ~ConstType();
+	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
+private:
+	const Type *type;
+	friend std::ostream& operator << (std::ostream& os, const ConstType& const_type);
+};
+
+class Enumerator
+{
+public:
+	Enumerator(const char *name);
+	virtual ~Enumerator();
+private:
+	std::string name;
+	friend std::ostream& operator << (std::ostream& os, const Enumerator& enumerator);
+};
+
+class EnumType : public Type
+{
+public:
+	EnumType(const char *name);
+	virtual ~EnumType();
+	void Add(const Enumerator *enumerator);
+private:
+	std::string name;
+	std::vector<const Enumerator *> enumerators;
+	
+	friend std::ostream& operator << (std::ostream& os, const EnumType& enum_type);
+};
+
+class UnspecifiedType : public Type
+{
+public:
+	UnspecifiedType();
+	virtual ~UnspecifiedType();
+private:
+	friend std::ostream& operator << (std::ostream& os, const UnspecifiedType& unspecified_type);
 };
 
 class TypeVisitor
