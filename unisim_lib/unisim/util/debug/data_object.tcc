@@ -86,10 +86,14 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 									(*os) << "'\\0x" << std::hex << data_object_value << std::dec << "'";
 								}
 							}
+							else
+							{
+								(*os) << "<unreadable>";
+							}
 						}
 						else
 						{
-							(*os) << "<unreadable>";
+							(*os) << "<unfetchable>";
 						}
 					}
 					else
@@ -126,10 +130,14 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 									(*os) << data_object_value;
 								}
 							}
+							else
+							{
+								(*os) << "<unreadable>";
+							}
 						}
 						else
 						{
-							(*os) << "<unreadable>";
+							(*os) << "<unfetchable>";
 						}
 					}
 					else
@@ -191,13 +199,13 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			switch(tok)
 			{
 				case TINIT_TOK_BEGIN_OF_STRUCT:
-					(*os) << "{";
+					(*os) << "{ ";
 					break;
 				case TINIT_TOK_END_OF_STRUCT:
-					(*os) << "}";
+					(*os) << " }";
 					break;
 				case TINIT_TOK_STRUCT_MEMBER_SEPARATOR:
-					(*os) << ",";
+					(*os) << ", ";
 					break;
 				default:
 					break;
@@ -207,13 +215,13 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 			switch(tok)
 			{
 				case TINIT_TOK_BEGIN_OF_ARRAY:
-					(*os) << "{";
+					(*os) << "{ ";
 					break;
 				case TINIT_TOK_END_OF_ARRAY:
-					(*os) << "}";
+					(*os) << " }";
 					break;
 				case TINIT_TOK_ARRAY_ELEMENT_SEPARATOR:
-					(*os) << ",";
+					(*os) << ", ";
 					break;
 				default:
 					break;
@@ -234,10 +242,14 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 							{
 								(*os) << "@0x" << std::hex << data_object_value << std::dec;
 							}
+							else
+							{
+								(*os) << "<unreadable>";
+							}
 						}
 						else
 						{
-							(*os) << "<unreadable>";
+							(*os) << "<unfetchable>";
 						}
 					}
 					else
@@ -259,8 +271,45 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 		case T_CONST:
 			break;
 		case T_ENUM:
+			{
+				DataObject<ADDRESS> *data_object = data_object_lookup_if->FindDataObject(data_object_name, pc);
+				if(data_object)
+				{
+					if(!data_object->IsOptimizedOut())
+					{
+						if(data_object->Fetch())
+						{
+							uint64_t data_object_bit_size = data_object->GetBitSize();
+							uint64_t data_object_value = 0;
+							if(data_object->Read(0, data_object_value, data_object_bit_size))
+							{
+								(*os) << data_object_value;
+							}
+							else
+							{
+								(*os) << "<unreadable>";
+							}
+						}
+						else
+						{
+							(*os) << "<unfetchable>";
+						}
+					}
+					else
+					{
+						(*os) << "<optimized out>";
+					}
+					delete data_object;
+				}
+				else
+				{
+					(*os) << "<not found>";
+				}
+			}
 			break;
 		case T_VOID:
+			break;
+		case T_VOLATILE:
 			break;
 	}
 }
@@ -268,7 +317,7 @@ void DataObjectInitializer<ADDRESS>::Visit(const char *data_object_name, const T
 template <class ADDRESS>
 void DataObjectInitializer<ADDRESS>::Visit(const Member *member) const
 {
-	(*os) << '.' << member->GetName() << '=';
+	(*os) << '.' << member->GetName() << " = ";
 }
 
 template <class ADDRESS>

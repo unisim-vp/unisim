@@ -101,6 +101,8 @@ std::ostream& operator << (std::ostream& os, const Type& type)
 			return os << *((const EnumType *) &type);
 		case T_VOID:
 			return os << *((const UnspecifiedType *) &type);
+		case T_VOLATILE:
+			return os << *((const VolatileType *) &type);
 	}
 	return os;
 }
@@ -541,7 +543,7 @@ std::ostream& operator << (std::ostream& os, const FunctionType& func_type)
 		for(i = 0; i < formal_param_count; i++)
 		{
 			os << *func_type.formal_params[i];
-			if(i != (formal_param_count - 1)) os << ",";
+			if(i != (formal_param_count - 1)) os << ", ";
 		}
 	}
 	os << ")";
@@ -621,6 +623,26 @@ UnspecifiedType::~UnspecifiedType()
 std::ostream& operator << (std::ostream& os, const UnspecifiedType& unspecified_type)
 {
 	return os << "void";
+}
+
+VolatileType::VolatileType(const Type *_type)
+	: Type(T_CONST)
+	, type(_type)
+{
+}
+
+VolatileType::~VolatileType()
+{
+}
+
+void VolatileType::DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const
+{
+	type->DFS(path, visitor, follow_pointer);
+}
+
+std::ostream& operator << (std::ostream& os, const VolatileType& volatile_type)
+{
+	return os << "volatile " << *volatile_type.type;
 }
 
 } // end of namespace debug

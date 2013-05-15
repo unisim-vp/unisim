@@ -71,7 +71,8 @@ typedef enum
 	T_FUNCTION = 12,
 	T_CONST = 13,
 	T_ENUM = 14,
-	T_VOID = 15
+	T_VOID = 15,
+	T_VOLATILE = 16
 } TYPE_CLASS;
 
 typedef enum
@@ -102,6 +103,7 @@ class FunctionType;
 class ConstType;
 class EnumType;
 class UnspecifiedType;
+class VolatileType;
 class TypeVisitor;
 template <class ADDRESS> class DataObject;
 template <class ADDRESS> class DataObjectInitializer;
@@ -122,6 +124,7 @@ std::ostream& operator << (std::ostream& os, const FunctionType& func_type);
 std::ostream& operator << (std::ostream& os, const ConstType& const_type);
 std::ostream& operator << (std::ostream& os, const EnumType& enum_type);
 std::ostream& operator << (std::ostream& os, const UnspecifiedType& unspecified_type);
+std::ostream& operator << (std::ostream& os, const VolatileType& volatile_type);
 
 class Type
 {
@@ -313,6 +316,7 @@ class Enumerator
 public:
 	Enumerator(const char *name);
 	virtual ~Enumerator();
+	const char *GetName() const;
 private:
 	std::string name;
 	friend std::ostream& operator << (std::ostream& os, const Enumerator& enumerator);
@@ -338,6 +342,17 @@ public:
 	virtual ~UnspecifiedType();
 private:
 	friend std::ostream& operator << (std::ostream& os, const UnspecifiedType& unspecified_type);
+};
+
+class VolatileType : public Type
+{
+public:
+	VolatileType(const Type *type);
+	virtual ~VolatileType();
+	virtual void DFS(const std::string& path, const TypeVisitor *visitor, bool follow_pointer) const;
+private:
+	const Type *type;
+	friend std::ostream& operator << (std::ostream& os, const VolatileType& volatile_type);
 };
 
 class TypeVisitor

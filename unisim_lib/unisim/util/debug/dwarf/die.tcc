@@ -2694,6 +2694,19 @@ const unisim::util::debug::Type *DWARF_DIE<MEMORY_ADDR>::BuildType(bool followin
 		case DW_TAG_unspecified_type:
 			return new unisim::util::debug::UnspecifiedType();
 			break;
+		case DW_TAG_volatile_type:
+			{
+				const DWARF_Reference<MEMORY_ADDR> *dw_type_ref = 0;
+				const DWARF_DIE<MEMORY_ADDR> *dw_die_type = 0;
+				
+				if(GetAttributeValue(DW_AT_type, dw_type_ref))
+				{
+					dw_die_type = dw_type_ref->GetValue();
+				}
+					
+				return new unisim::util::debug::VolatileType(dw_die_type ? dw_die_type->BuildType(following_pointer) : new unisim::util::debug::UnspecifiedType());
+			}
+			break;
 		default:
 			logger << DebugWarning << "Don't know how to handle tag " << DWARF_GetTagName(dw_tag) << EndDebugWarning;
 			break;

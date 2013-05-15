@@ -2756,8 +2756,9 @@ void InlineDebugger<ADDRESS>::PrintDataObject(const char *data_object_name, ADDR
 					if(data_object->Read(0, data_object_raw_value, buf_bit_offset, data_object_bit_size))
 					{
 						unisim::util::debug::DataObjectInitializer<ADDRESS> data_object_initializer = unisim::util::debug::DataObjectInitializer<ADDRESS>(data_object, cia, data_object_lookup_import);
-						(*std_output_stream) << *data_object_type;
+						(*std_output_stream) << *data_object_type; 
 						if(data_object_type->GetClass() != unisim::util::debug::T_POINTER) (*std_output_stream) << " ";
+						(*std_output_stream) << data_object_name << ";" << std::endl;
 						(*std_output_stream) << data_object_name << " = " << data_object_initializer << std::endl;
 					}
 					else
