@@ -136,6 +136,28 @@ unsigned int DWARF_Pub<MEMORY_ADDR>::GetId() const
 }
 
 template <class MEMORY_ADDR>
+void DWARF_Pub<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set) const
+{
+	if(dw_die)
+	{
+		switch(dw_die->GetTag())
+		{
+			case DW_TAG_variable:
+			case DW_TAG_formal_parameter:
+			case DW_TAG_constant:
+				{
+					const char *name = dw_die->GetName();
+					if(name)
+					{
+						name_set.insert(std::string(name));
+					}
+				}
+				break;
+		}
+	}
+}
+
+template <class MEMORY_ADDR>
 std::ostream& DWARF_Pub<MEMORY_ADDR>::to_XML(std::ostream& os) const
 {
 	uint64_t cu_debug_info_offset = dw_pubs->GetDebugInfoOffset();
@@ -215,6 +237,19 @@ const DWARF_Pub<MEMORY_ADDR> *DWARF_Pubs<MEMORY_ADDR>::FindPub(const char *name)
 {
 	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter = dw_pubs.find(name);
 	return (dw_pub_iter != dw_pubs.end()) ? (*dw_pub_iter).second : 0;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_Pubs<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set) const
+{
+	typename std::map<std::string, DWARF_Pub<MEMORY_ADDR> *>::const_iterator dw_pub_iter;
+	
+	for(dw_pub_iter = dw_pubs.begin(); dw_pub_iter != dw_pubs.end(); dw_pub_iter++)
+	{
+		const DWARF_Pub<MEMORY_ADDR> *dw_pub = (*dw_pub_iter).second;
+		
+		dw_pub->EnumerateDataObjectNames(name_set);
+	}
 }
 
 template <class MEMORY_ADDR>

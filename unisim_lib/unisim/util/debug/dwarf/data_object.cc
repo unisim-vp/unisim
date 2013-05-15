@@ -63,14 +63,16 @@ void DWARF_BitVector::Clear()
 
 void DWARF_BitVector::Append(uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
-	while(source_bit_size)
+	unsigned int remaining_bits = source_bit_size;
+	
+	while(remaining_bits)
 	{
 		unsigned int dest_byte_index = bit_size / 8;
 		if(dest_byte_index >= storage.size()) storage.resize(dest_byte_index + 1);
 		unsigned int dest_bit_offset = bit_size % 8;
 		unsigned int bit_size_to_byte_boundary = 8 - dest_bit_offset;
 		unsigned int bit_sz = bit_size_to_byte_boundary;
-		if(bit_sz > source_bit_size) bit_sz = source_bit_size;
+		if(bit_sz > remaining_bits) bit_sz = remaining_bits;
 		
 		unsigned int source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_size - source_bit_offset - bit_sz : source_bit_offset;
 		unsigned int dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? 8 - dest_bit_offset - bit_sz : dest_bit_offset;
@@ -80,13 +82,15 @@ void DWARF_BitVector::Append(uint64_t source_value, unsigned int source_bit_offs
 		source_bit_offset = source_bit_offset + bit_sz;
 
 		bit_size += bit_sz;
-		source_bit_size = source_bit_size - bit_sz;
+		remaining_bits = remaining_bits - bit_sz;
 	}
 }
 
 void DWARF_BitVector::Append(uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
-	while(source_bit_size)
+	unsigned int remaining_bits = source_bit_size;
+	
+	while(remaining_bits)
 	{
 		unsigned int source_byte_index = source_bit_offset / 8;
 		
@@ -99,7 +103,7 @@ void DWARF_BitVector::Append(uint8_t *source_buffer, unsigned int source_bit_off
 		unsigned int l_dest_bit_offset = bit_size % 8;
 		unsigned int dest_bit_size_to_byte_boundary = 8 - l_dest_bit_offset;
 		
-		unsigned int bit_sz = source_bit_size;
+		unsigned int bit_sz = remaining_bits;
 		if(bit_sz > source_bit_size_to_byte_boundary) bit_sz = source_bit_size_to_byte_boundary;
 		if(bit_sz > dest_bit_size_to_byte_boundary) bit_sz = dest_bit_size_to_byte_boundary;
 		
@@ -111,7 +115,7 @@ void DWARF_BitVector::Append(uint8_t *source_buffer, unsigned int source_bit_off
 		
 		bit_size += bit_sz;
 		source_bit_offset += bit_sz;
-		source_bit_size = source_bit_size - bit_sz;
+		remaining_bits = remaining_bits - bit_sz;
 	}
 }
 
@@ -146,9 +150,9 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint64_t& dest_value,
 
 bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint64_t source_value, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
-	source_value = 0;
-
-	while(source_bit_size)
+	unsigned int remaining_bits = source_bit_size;
+	
+	while(remaining_bits)
 	{
 		unsigned int dest_byte_index = dest_bit_offset / 8;
 		
@@ -156,7 +160,7 @@ bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint64_t source_value,
 		unsigned int l_dest_bit_offset = dest_bit_offset % 8;
 		unsigned int bit_size_to_byte_boundary = 8 - l_dest_bit_offset;
 		unsigned int bit_sz = bit_size_to_byte_boundary;
-		if(bit_sz > source_bit_size) bit_sz = source_bit_size;
+		if(bit_sz > remaining_bits) bit_sz = remaining_bits;
 		
 		unsigned int source_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? source_bit_size - source_bit_offset - bit_sz : source_bit_offset;
 		unsigned int dest_shift = (target_endian == unisim::util::endian::E_BIG_ENDIAN) ? 8 - l_dest_bit_offset - bit_sz : l_dest_bit_offset;
@@ -166,14 +170,16 @@ bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint64_t source_value,
 		
 		source_bit_offset = source_bit_offset + bit_sz;
 		dest_bit_offset = dest_bit_offset + bit_sz;
-		source_bit_size = source_bit_size - bit_sz;
+		remaining_bits = remaining_bits - bit_sz;
 	}
 	return true;
 }
 
 bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint8_t *dest_buffer, unsigned int dest_bit_offset, unsigned int dest_bit_size) const
 {
-	while(dest_bit_size)
+	unsigned int remaining_bits = dest_bit_size;
+	
+	while(remaining_bits)
 	{
 		unsigned int dest_byte_index = dest_bit_offset / 8;
 		
@@ -186,7 +192,7 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint8_t *dest_buffer,
 		unsigned int l_source_bit_offset = source_bit_offset % 8;
 		unsigned int source_bit_size_to_byte_boundary = 8 - l_source_bit_offset;
 		
-		unsigned int bit_sz = dest_bit_size;
+		unsigned int bit_sz = remaining_bits;
 		if(bit_sz > source_bit_size_to_byte_boundary) bit_sz = source_bit_size_to_byte_boundary;
 		if(bit_sz > dest_bit_size_to_byte_boundary) bit_sz = dest_bit_size_to_byte_boundary;
 
@@ -198,14 +204,16 @@ bool DWARF_BitVector::Read(unsigned int source_bit_offset, uint8_t *dest_buffer,
 		
 		source_bit_offset += bit_sz;
 		dest_bit_offset += bit_sz;
-		dest_bit_size = dest_bit_size - bit_sz;
+		remaining_bits = remaining_bits - bit_sz;
 	}
 	return true;
 }
 
 bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint8_t *source_buffer, unsigned int source_bit_offset, unsigned int source_bit_size)
 {
-	while(source_bit_size)
+	unsigned int remaining_bits = source_bit_size;
+	
+	while(remaining_bits)
 	{
 		unsigned int source_byte_index = source_bit_offset / 8;
 		
@@ -218,7 +226,7 @@ bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint8_t *source_buffer
 		unsigned int l_dest_bit_offset = dest_bit_offset % 8;
 		unsigned int dest_bit_size_to_byte_boundary = 8 - l_dest_bit_offset;
 		
-		unsigned int bit_sz = source_bit_size;
+		unsigned int bit_sz = remaining_bits;
 		if(bit_sz > dest_bit_size_to_byte_boundary) bit_sz = dest_bit_size_to_byte_boundary;
 		if(bit_sz > source_bit_size_to_byte_boundary) bit_sz = source_bit_size_to_byte_boundary;
 
@@ -230,7 +238,7 @@ bool DWARF_BitVector::Write(unsigned int dest_bit_offset, uint8_t *source_buffer
 
 		dest_bit_offset += bit_sz;
 		source_bit_offset += bit_sz;
-		source_bit_size = source_bit_size - bit_sz;
+		remaining_bits = remaining_bits - bit_sz;
 	}
 	return true;
 }

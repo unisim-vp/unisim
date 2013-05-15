@@ -149,6 +149,26 @@ const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindSt
 	return 0;
 }
 
+template <class ADDRESS, unsigned int MAX_IMPORTS>
+const unisim::util::debug::Statement<ADDRESS> *Tee<ADDRESS, MAX_IMPORTS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	const unisim::util::debug::Statement<ADDRESS> *ret = 0;
+	unsigned int i;
+	for(i = 0; i < MAX_IMPORTS; i++)
+	{
+		if(stmt_lookup_import[i])
+		{
+			if(*stmt_lookup_import[i])
+			{
+				const unisim::util::debug::Statement<ADDRESS> *stmt = (*stmt_lookup_import[i])->FindStatements(stmts, filename, lineno, colno);
+				if(!ret) ret = stmt;
+			}
+		}
+	}
+
+	return ret;
+}
+
 } // end of namespace memory_access_reporting
 } // end of namespace tee
 } // end of namespace service

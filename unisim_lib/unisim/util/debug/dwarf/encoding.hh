@@ -552,6 +552,33 @@ const uint8_t DW_CFA_val_expression = 0x16;     // DWARF v3
 const uint8_t DW_CFA_lo_user = 0x1c;
 const uint8_t DW_CFA_hi_user = 0x3f;
 
+
+// GNU .eh_frame pointer encoding
+// see: http://refspecs.linuxfoundation.org/LSB_3.2.0/LSB-Core-generic/LSB-Core-generic/dwarfext.html
+const uint8_t DW_EH_PE_absptr = 0x00; // the Value is a literal pointer whose size is determined by the architecture
+const uint8_t DW_EH_PE_omit = 0xff;   // special encoding, shall be used to indicate that no value is present
+
+// lower 4 bits (basic encodings)
+const uint8_t DW_EH_PE_uleb128 = 0x01; // unsigned LEB128 value
+const uint8_t DW_EH_PE_udata2 = 0x02;  // 2 bytes unsigned value
+const uint8_t DW_EH_PE_udata4 = 0x03;  // 4 bytes unsigned value
+const uint8_t DW_EH_PE_udata8 = 0x04;  // 8 bytes unsigned value
+const uint8_t DW_EH_PE_sleb128 = 0x09; // Signed LEB128 value
+const uint8_t DW_EH_PE_sdata2 = 0x0a;  // 2 bytes signed value
+const uint8_t DW_EH_PE_sdata4 = 0x0b;  // 4 bytes signed value
+const uint8_t DW_EH_PE_sdata8 = 0x0c;  // 8 bytes signed value
+
+const uint8_t DW_EH_PE_signed = 0x08;  // binary mask for a signed value
+
+// upper 4 bits (modifiers)
+const uint8_t DW_EH_PE_pcrel = 0x10;   // value is relative to the current program counter
+const uint8_t DW_EH_PE_textrel = 0x20; // value is relative to the beginning of the .text section
+const uint8_t DW_EH_PE_datarel = 0x30; // value is relative to the beginning of the .got or .eh_frame_hdr section
+const uint8_t DW_EH_PE_funcrel = 0x40; // value is relative to the beginning of the function
+const uint8_t DW_EH_PE_aligned = 0x50; // value is aligned to an address unit sized boundary
+
+const uint8_t DW_EH_PE_indirect = 0x80;
+
 const char *DWARF_GetTagName(uint16_t dw_tag);
 const char *DWARF_GetATName(uint16_t dw_at);
 const char *DWARF_GetFORMName(uint16_t dw_form);

@@ -110,7 +110,10 @@ std::string DWARF_Block<MEMORY_ADDR>::to_string() const
 	for(i = 0; i < length; i++)
 	{
 		if(i != 0) sstr << " ";
-		sstr << std::hex << (unsigned int) value[i] << std::dec;
+		sstr << std::hex;
+		sstr.width(2);
+		sstr.fill('0');
+		sstr << (unsigned int) value[i] << std::dec;
 	}
 	return std::string(sstr.str());
 }
@@ -635,6 +638,12 @@ uint64_t DWARF_Expression<MEMORY_ADDR>::GetLength() const
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_Expression<MEMORY_ADDR>::IsEmpty() const
+{
+	return length == 0;
+}
+
+template <class MEMORY_ADDR>
 const uint8_t *DWARF_Expression<MEMORY_ADDR>::GetValue() const
 {
 	return value;
@@ -1022,6 +1031,13 @@ std::ostream& DWARF_Attribute<MEMORY_ADDR>::to_HTML(std::ostream& os) const
 					DWARF_LinePtr<MEMORY_ADDR> *dw_lineptr = (DWARF_LinePtr<MEMORY_ADDR> *) dw_value;
 					const DWARF_StatementProgram<MEMORY_ADDR> *dw_stmt_prog = dw_lineptr->GetValue();
 					os << "<a href=\"../../" << dw_stmt_prog->GetHREF() << "\">stmt-prog-" << dw_stmt_prog->GetId() << "</a>" << std::endl;
+				}
+				break;
+			case DW_CLASS_RANGELISTPTR:
+				{
+					DWARF_RangeListPtr<MEMORY_ADDR> *dw_rangelistptr = (DWARF_RangeListPtr<MEMORY_ADDR> *) dw_value;
+					const DWARF_RangeListEntry<MEMORY_ADDR> *dw_range_list_entry = dw_rangelistptr->GetValue();
+					os << "<a href=\"../../" << dw_range_list_entry->GetHREF() << "\">range-" << dw_range_list_entry->GetId() << "</a>" << std::endl;
 				}
 				break;
 			default:

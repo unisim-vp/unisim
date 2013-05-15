@@ -331,6 +331,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Execute(const DWARF_Expression<MEMORY_ADDR
 template <class MEMORY_ADDR>
 bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location)
 {
+	if(dw_location) dw_location->Clear();
+	
 	bool executing = (result_addr != 0) || (dw_location != 0);
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu = dw_expr->GetCompilationUnit();
 	const DWARF_CallFrameProgram<MEMORY_ADDR> *dw_cfp = dw_expr->GetCallFrameProgram();

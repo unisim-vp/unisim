@@ -6,14 +6,14 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met:
  *
- * //  - Redistributions of source code must retain the above copyright notice, this
+ *   - Redistributions of source code must retain the above copyright notice, this
  *     list of conditions and the following disclaimer.
  *
- * //  - Redistributions in binary form must reproduce the above copyright notice,
+ *   - Redistributions in binary form must reproduce the above copyright notice,
  *     this list of conditions and the following disclaimer in the documentation
  *     and/or other materials provided with the distribution.
  *
- * //  - Neither the name of CEA nor the names of its contributors may be used to
+ *   - Neither the name of CEA nor the names of its contributors may be used to
  *     endorse or promote products derived from this software without specific prior
  *     written permission.
  *
@@ -38,9 +38,11 @@
 #include <unisim/util/debug/dwarf/fwd.hh>
 #include <unisim/util/debug/stmt.hh>
 #include <unisim/kernel/logger/logger.hh>
+#include <unisim/util/debug/data_object.hh>
 #include <list>
 #include <vector>
 #include <set>
+#include <string>
 
 namespace unisim {
 namespace util {
@@ -692,6 +694,8 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name) const;
 	const DWARF_DIE<MEMORY_ADDR> *FindDataMember(const char *name) const;
 	
+	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
+	
 	const char *GetName() const;
 	bool GetLowPC(MEMORY_ADDR& low_pc) const;
 	bool GetHighPC(MEMORY_ADDR& high_pc) const;
@@ -717,9 +721,15 @@ public:
 	void GetRanges(std::set<std::pair<MEMORY_ADDR, MEMORY_ADDR> >& ranges) const;
 	bool GetDataMemberLocation(MEMORY_ADDR pc, bool has_frame_base, MEMORY_ADDR frame_base, MEMORY_ADDR object_addr, DWARF_Location<MEMORY_ADDR>& loc) const;
 	bool GetExternalFlag(bool& external_flag) const;
+	bool GetDeclarationFlag(bool& declaration_flag) const;
 	bool GetOrdering(uint8_t& ordering) const;
 	bool GetEncoding(uint8_t& encoding) const;
 	bool GetArrayElementEncoding(uint8_t& encoding) const;
+	unsigned int GetSubRangeCount() const;
+	const DWARF_DIE<MEMORY_ADDR> *GetAbstractOrigin() const;
+	
+	const unisim::util::debug::Type *BuildType(bool following_pointer = false, unsigned int array_dim = 0) const;
+	const unisim::util::debug::Type *BuildTypeOf() const;
 	
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Address<MEMORY_ADDR> * & p_dw_addr_attr) const;
 	bool GetAttributeValue(uint16_t dw_at, const DWARF_Block<MEMORY_ADDR> * & p_dw_block_attr) const;

@@ -75,6 +75,7 @@
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
 #include <unisim/service/interfaces/stmt_lookup.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 
 namespace unisim {
 namespace util {
@@ -114,7 +115,7 @@ public:
 	const DWARF_MacInfoListEntry<MEMORY_ADDR> *FindMacInfoListEntry(uint64_t debug_macinfo_offset);
 	const DWARF_CompilationUnit<MEMORY_ADDR> *FindCompilationUnit(uint64_t debug_info_offset) const;
 	const DWARF_LocListEntry<MEMORY_ADDR> *FindLocListEntry(const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu, uint64_t debug_loc_offset);
-	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset) const;
+	const DWARF_CIE<MEMORY_ADDR> *FindCIE(uint64_t debug_frame_offset, DWARF_FrameSectionType fst) const;
 	
 	const DWARF_Pub<MEMORY_ADDR> *FindPubName(const char *name) const;
 	const DWARF_Pub<MEMORY_ADDR> *FindPubType(const char *name) const;
@@ -126,6 +127,7 @@ public:
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObjectDIE(const char *name, MEMORY_ADDR pc) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
 	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(CLocOperationStream& c_loc_operation_stream, MEMORY_ADDR pc) const;
+	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 	
 	endian_type GetFileEndianness() const;
 	endian_type GetArchEndianness() const;
@@ -138,6 +140,7 @@ public:
 	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 	
 	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
 	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
@@ -165,6 +168,7 @@ private:
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_pubtypes_section; // .debug_pubtypes section (raw data)
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_macinfo_section;  // .debug_macinfo section (raw data)
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_frame_section;    // .debug_frame section (raw data)
+	const unisim::util::debug::blob::Section<MEMORY_ADDR> *eh_frame_section;       // .eh_frame section (raw data)
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_str_section;      // .debug_str section (raw data)
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_loc_section;      // .debug_loc section (raw data)
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_ranges_section;   // .debug_ranges section (raw data)
@@ -174,8 +178,8 @@ private:
 	std::map<uint64_t, DWARF_CompilationUnit<MEMORY_ADDR> *> dw_cus;           // compilation units contributions to section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_DIE<MEMORY_ADDR> *> dw_dies;                      // debug info entries in section .debug_info indexed by .debug_info section offset
 	std::map<uint64_t, DWARF_Abbrev *> dw_abbrevs;                             // from section .debug_abbrev indexed by .debug_abbrev section offset
-	std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *> dw_cies;                      // from section .debug_frame indexed by .debug_frame section offset
-	std::vector<DWARF_FDE<MEMORY_ADDR> *> dw_fdes;                             // from section .debug_frame
+	std::map<uint64_t, DWARF_CIE<MEMORY_ADDR> *> dw_cies[2];                   // from section .debug_frame/.eh_frame indexed by .debug_frame/.eh_frame section offset
+	std::vector<DWARF_FDE<MEMORY_ADDR> *> dw_fdes[2];                          // from section .debug_frame/.eh_frame
 	std::map<uint64_t, DWARF_RangeListEntry<MEMORY_ADDR> *> dw_range_list;     // range list entries in section .debug_ranges indexed by .debug_ranges section offset
 	std::map<uint64_t, DWARF_MacInfoListEntry<MEMORY_ADDR> *> dw_macinfo_list; // macinfo list entries in section .debug_macinfo indexed by .debug_macinfo section offset
 	std::vector<DWARF_AddressRanges<MEMORY_ADDR> *> dw_aranges;                // from section .debug_aranges
@@ -195,6 +199,7 @@ private:
 	void DumpStatementMatrix();
 	bool IsAbsolutePath(const char *filename) const;
 	void BuildStatementMatrix();
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> *stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 };
 
 } // end of namespace dwarf

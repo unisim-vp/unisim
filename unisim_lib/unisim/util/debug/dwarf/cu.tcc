@@ -320,7 +320,16 @@ void DWARF_CompilationUnit<MEMORY_ADDR>::BuildStatementMatrix(std::map<MEMORY_AD
 template <class MEMORY_ADDR>
 const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDIEByAddrRange(unsigned int dw_tag, MEMORY_ADDR addr, MEMORY_ADDR length) const
 {
-	return dw_die ? dw_die->FindDIEByAddrRange(dw_tag, addr, length) : 0;
+	if(dw_die)
+	{
+		const DWARF_DIE<MEMORY_ADDR> *dw_found_die = dw_die->FindDIEByAddrRange(dw_tag, addr, length);
+		if(debug && dw_found_die)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", found DIE #" << dw_found_die->GetId() << " for address range 0x" << std::hex << addr << "-0x" << (addr + length) << std::dec << EndDebugInfo;
+		}
+		return dw_found_die;
+	}
+	return 0;
 }
 
 template <class MEMORY_ADDR>
@@ -365,13 +374,54 @@ const DWARF_DIE<MEMORY_ADDR> *DWARF_CompilationUnit<MEMORY_ADDR>::FindDataObject
 		{
 			return dw_die_data_object;
 		}
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion_parent = dw_die_code_portion->GetParentDIE();
+		
+		if(dw_die_code_portion_parent && debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << EndDebugInfo;
+		}
+		
+		dw_die_code_portion = dw_die_code_portion_parent;
 	}
-	while((dw_die_code_portion = dw_die_code_portion->GetParentDIE()) != 0);
+	while(dw_die_code_portion);
+	
 	if(debug)
 	{
 		logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching data object name \"" << name << "\" and PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
 	}
 	return 0;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_CompilationUnit<MEMORY_ADDR>::EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, bool local_only) const
+{
+	const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion = FindDIEByAddrRange(0 /* any tag */, pc, 1);
+	if(!dw_die_code_portion)
+	{
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", can't find any DIE matching PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+		}
+		return;
+	}
+	
+	do
+	{
+		dw_die_code_portion->EnumerateDataObjectNames(name_set);
+		
+		const DWARF_DIE<MEMORY_ADDR> *dw_die_code_portion_parent = dw_die_code_portion->GetParentDIE();
+		
+		if(dw_die_code_portion_parent && debug)
+		{
+			logger << DebugInfo << "In File \"" << dw_handler->GetFilename() << "\", parent of DIE #" << dw_die_code_portion->GetId() << " is DIE #" << dw_die_code_portion_parent->GetId() << EndDebugInfo;
+		}
+		
+		if(local_only && (dw_die_code_portion->GetTag() == DW_TAG_subprogram)) break;
+		
+		dw_die_code_portion = dw_die_code_portion_parent;
+	}
+	while(dw_die_code_portion);
 }
 
 template <class MEMORY_ADDR>

@@ -45,6 +45,7 @@
 
 #include <list>
 #include <set>
+#include <string>
 
 namespace unisim {
 namespace util {
@@ -89,6 +90,7 @@ public:
 	bool GetDefaultLowerBound(int64_t& lower_bound) const;
 
 	const DWARF_DIE<MEMORY_ADDR> *FindDataObject(const char *name, MEMORY_ADDR pc) const;
+	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, bool local_only) const;
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unisim::kernel::logger::Logger& logger;

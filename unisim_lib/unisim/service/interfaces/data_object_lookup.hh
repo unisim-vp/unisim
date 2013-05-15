@@ -37,6 +37,8 @@
 
 #include <unisim/kernel/service/service.hh>
 #include <unisim/util/debug/data_object.hh>
+#include <set>
+#include <string>
 
 namespace unisim {
 namespace service {
@@ -46,7 +48,15 @@ template <class ADDRESS>
 class DataObjectLookup : public unisim::kernel::service::ServiceInterface
 {
 public:
+	typedef enum
+	{
+		SCOPE_GLOBAL_ONLY = 1,
+		SCOPE_LOCAL_ONLY = 2,
+		SCOPE_BOTH_GLOBAL_AND_LOCAL = 3
+	} Scope;
+	
 	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const = 0;
+	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, Scope scope = SCOPE_BOTH_GLOBAL_AND_LOCAL) const = 0;
 };
 
 } // end of namespace interfaces

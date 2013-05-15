@@ -15,8 +15,8 @@
  *                                                                         *
  ***************************************************************************/
 
-#ifndef __PARSER_HH__
-#define __PARSER_HH__
+#ifndef __PARSER_STYPE_HH__
+#define __PARSER_STYPE_HH__
 
 #include <fwd.hh>
 
@@ -50,6 +50,6 @@ union  yylval_t {
 #define YYSTYPE yylval_t
 
 /* include token definitions */
-#include <parser.h>
+#include <parser.hh>
 
-#endif // __PARSER_HH__
+#endif // __PARSER_STYPE_HH__

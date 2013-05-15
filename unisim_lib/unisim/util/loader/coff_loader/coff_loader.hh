@@ -97,6 +97,7 @@ template <class MEMORY_ADDR>
 class FileHandler
 {
 public:
+	virtual ~FileHandler() {}
 	virtual uint16_t GetMagic() const = 0;
 	virtual const char *What() const = 0;
 	virtual File<MEMORY_ADDR> *GetFile() const = 0;

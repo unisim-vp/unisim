@@ -47,6 +47,12 @@ typedef enum
 	FMT_DWARF64  // 64-bit DWARF (version 3 or 4 only)
 } DWARF_Format;
 
+typedef enum
+{
+	FST_DEBUG_FRAME = 0,  // standard .debug_frame
+	FST_EH_FRAME = 1      // GNU .eh_frame
+} DWARF_FrameSectionType;
+
 } // end of namespace dwarf
 } // end of namespace debug
 } // end of namespace util
