@@ -2,7 +2,7 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory>"
+	echo "  $0 <destination directory> [<unisim repository>]"
 }
 
 if [ -z "$1" ]; then
@@ -10,15 +10,19 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+
+if [ -z "$2" ]; then
+    # Guessing unisim repos directory from the script location
+    UNISIM_REPOS=`dirname $0`/..
+else
+    UNISIM_REPOS=$2
+fi
+
+# Making unisim repository path absolute
+UNISIM_REPOS=`cd ${UNISIM_REPOS}; pwd`
+UNISIM_TOOLS_DIR=${UNISIM_REPOS}/unisim_tools
+
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)
 
 if test -z ${DISTCOPY}; then

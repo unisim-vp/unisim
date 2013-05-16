@@ -284,7 +284,20 @@ CiscGenerator::finalize() {
 
       switch( opcode1.locate( opcode2 ) ) {
       case OpCode_t::Outside: break; // No problem
-      case OpCode_t::Overlaps: case OpCode_t::Equal:
+      case OpCode_t::Overlaps:
+        if      (isa().m_user_orderings.count( std::make_pair( *op1, *op2 ) ) > 0)
+          {
+            opcode1.setupper( &opcode2 );
+            cerr << "operation `" << (**op1).m_symbol << "' is a forced specialization of operation `" << (**op2).m_symbol << "'" << endl;
+            break;
+          }
+        else if (isa().m_user_orderings.count( std::make_pair( *op2, *op1 ) ) > 0)
+          {
+            opcode2.setupper( &opcode1 );
+            cerr << "operation `" << (**op2).m_symbol << "' is a forced specialization of operation `" << (**op1).m_symbol << "'" << endl;
+            break;
+          }
+      case OpCode_t::Equal:
         (**op1).m_fileloc.err( "error: operation `%s' conflicts with operation `%s'", (**op1).m_symbol.str(), (**op2).m_symbol.str() );
         (**op2).m_fileloc.err( "operation `%s' was declared here", (**op2).m_symbol.str() );
         cerr << (**op1).m_symbol << ": " << opcode1 << endl;
