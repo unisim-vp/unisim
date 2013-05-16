@@ -25,12 +25,16 @@ UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm/ppcemu_system
 PPCEMU_SYSTEM_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-ppcemu_system-${PPCEMU_SYSTEM_VERSION}
 
+if test -z "${DISTCOPY}"; then
+    DISTCOPY=cp
+fi
+
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
 cli.hh \
 errtools.hh \
 isa.hh \
-parser.hh \
+parser_defs.hh \
 riscgenerator.hh \
 specialization.hh \
 variable.hh \
@@ -53,7 +57,7 @@ subdecoder.hh"
 UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
 scanner.cc \
 parser.cc \
-parser.h"
+parser_tokens.hh"
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 parser.yy \
@@ -122,6 +126,7 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
+unisim/util/debug/data_object.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
 unisim/util/debug/dwarf/abbrev.cc \
@@ -134,6 +139,8 @@ unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
+unisim/util/debug/dwarf/data_object.cc \
+unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -149,6 +156,7 @@ unisim/util/garbage_collector/garbage_collector.cc \
 unisim/util/loader/elf_loader/elf32_loader.cc \
 unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
+unisim/util/lexer/lexer.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -202,6 +210,7 @@ unisim/component/cxx/chipset/mpc107/epic/register.cc \
 unisim/component/cxx/pci/ide/disk_image.cc \
 unisim/component/cxx/pci/ide/ide_ctrl.cc \
 unisim/component/cxx/pci/ide/ide_disk.cc \
+unisim/component/cxx/pci/ide/pcidev.cc \
 unisim/component/cxx/pci/types.cc \
 unisim/component/tlm/isa/i8042/i8042.cc \
 unisim/component/tlm/processor/powerpc/mpc7447a/cpu.cc \
@@ -269,6 +278,7 @@ unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
+unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -277,6 +287,9 @@ unisim/util/debug/dwarf/class.hh \
 unisim/util/debug/dwarf/cu.hh \
 unisim/util/debug/dwarf/dwarf.hh \
 unisim/util/debug/dwarf/fde.hh \
+unisim/util/debug/dwarf/fmt.hh \
+unisim/util/debug/dwarf/version.hh \
+unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/filename.hh \
 unisim/util/debug/dwarf/fmt.hh \
 unisim/util/debug/dwarf/leb128.hh \
@@ -295,6 +308,9 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
+unisim/util/debug/dwarf/util.hh \
+unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
@@ -317,6 +333,9 @@ unisim/util/loader/elf_loader/elf32_loader.hh \
 unisim/util/loader/elf_loader/elf64_loader.hh \
 unisim/util/loader/coff_loader/coff_loader.hh \
 unisim/util/loader/coff_loader/ti/ti.hh \
+unisim/util/dictionary/dictionary.hh \
+unisim/util/lexer/lexer.hh \
+unisim/util/parser/parser.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -341,6 +360,7 @@ unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/video.hh \
 unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/mouse.hh \
+unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -427,6 +447,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
+unisim/util/debug/data_object.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \
@@ -444,6 +465,7 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
+unisim/util/debug/dwarf/data_object.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
@@ -456,6 +478,9 @@ unisim/util/simfloat/host_floating.tcc \
 unisim/util/loader/elf_loader/elf_loader.tcc \
 unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
+unisim/util/dictionary/dictionary.tcc \
+unisim/util/lexer/lexer.tcc \
+unisim/util/parser/parser.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -611,7 +636,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${DISTCOPY} "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 	fi
 done
 
@@ -629,7 +654,7 @@ for file in ${UNISIM_LIB_PPCEMU_SYSTEM_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/ppcemu_system/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/ppcemu_system/${file}" || exit
+		${DISTCOPY} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/ppcemu_system/${file}" || exit
 	fi
 done
 
@@ -646,7 +671,7 @@ for file in ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/ppcemu_system/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/ppcemu_system/${file}" || exit
+		${DISTCOPY} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/ppcemu_system/${file}" || exit
 	fi
 done
 
@@ -661,7 +686,7 @@ for file in ${UNISIM_SIMULATORS_PPCEMU_SYSTEM_DATA_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		${DISTCOPY} "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
@@ -683,7 +708,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${DISTCOPY} "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 		has_to_build_genisslib_configure=yes
 	fi
 done
@@ -699,7 +724,7 @@ for file in ${UNISIM_LIB_PPCEMU_SYSTEM_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/ppcemu_system/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/ppcemu_system/${file}" || exit
+		${DISTCOPY} "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/ppcemu_system/${file}" || exit
 		has_to_build_ppcemu_system_configure=yes
 	fi
 done
@@ -839,12 +864,21 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
+# Note that parser_tokens.hh has been added to BUILT_SOURCES above
+# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
+    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
@@ -915,7 +949,7 @@ if [ "${has_to_build_ppcemu_system_configure}" = "yes" ]; then
 	AM_PPCEMU_SYSTEM_VERSION=`printf ${PPCEMU_SYSTEM_VERSION} | sed -e 's/\./_/g'`
 	echo "Generating ppcemu_system Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${PPCEMU_SYSTEM_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libppcemu-system-${PPCEMU_SYSTEM_VERSION}.a" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "libppcemu_system_${AM_PPCEMU_SYSTEM_VERSION}_a_SOURCES = ${UNISIM_LIB_PPCEMU_SYSTEM_SOURCE_FILES}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-ppcemu-system-${PPCEMU_SYSTEM_VERSION} unisim-ppcemu-system-debug-${PPCEMU_SYSTEM_VERSION}" >> "${PPCEMU_SYSTEM_MAKEFILE_AM}"

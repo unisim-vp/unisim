@@ -113,7 +113,7 @@ Send(const PMsgType &message) {
 					<< LOCATION
 					<< "Read received at address 0x" << std::hex << req->addr << std::dec
 					<< std::endl << EndDebugInfo;
-			data = ReadRegister(req->addr, req->size);
+			data = inherited::ReadRegister(req->addr, req->size);
 			PRspType rsp = new(rsp) RspType();
 			for(unsigned int i = 0; i < req->size; i ++) {
 				rsp->read_data[i] = (uint8_t)((data >> (i * 8)) & (uint32_t)0x0ff);
@@ -132,7 +132,7 @@ Send(const PMsgType &message) {
 		for(unsigned int i = 0; i < req->size; i++) {
 			data = data + (((uint32_t)(req->write_data[i])) << (i * 8));
 		}
-		WriteRegister(req->addr, data, req->size);
+		inherited::WriteRegister(req->addr, data, req->size);
 		return true;
 		break;
 	}

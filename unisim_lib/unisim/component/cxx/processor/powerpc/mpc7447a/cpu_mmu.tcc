@@ -537,7 +537,7 @@ void CPU<CONFIG>::LookupDTLB(MMUAccess<CONFIG>& mmu_access)
 				// DTLB Hit
 				if(unlikely(IsVerboseDTLB()))
 				{
-					logger << DebugInfo << "DTLB hit: tlb_way=" << tlb_way << ", base_physical_addr=0x" << std::hex << tlb_entry->pte.base_physical_addr << std::dec << endl << EndDebugInfo;
+					logger << DebugInfo << "DTLB hit: tlb_way=" << tlb_entry->status.way << ", base_physical_addr=0x" << std::hex << tlb_entry->pte.base_physical_addr << std::dec << endl << EndDebugInfo;
 				}
 				mmu_access.tlb_way = tlb_entry->status.way;
 				mmu_access.dtlb_entry = tlb_entry;

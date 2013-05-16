@@ -113,7 +113,7 @@ void Bridge<ADDRESS_TYPE, MAX_DATA_SIZE>::ISAMaster()
 					unisim::component::cxx::isa::TransactionType isa_transaction_type;
 					unisim::component::cxx::isa::isa_address_t isa_addr;
 					// Translate PCI address to ISA address
-					bool legal_access = TranslatePCItoISA(pci_space, pci_transaction_type, pci_addr, pci_req_size, isa_space, isa_transaction_type, isa_addr);
+					bool legal_access = inherited::TranslatePCItoISA(pci_space, pci_transaction_type, pci_addr, pci_req_size, isa_space, isa_transaction_type, isa_addr);
 					
 					if(inherited::verbose)
 					{

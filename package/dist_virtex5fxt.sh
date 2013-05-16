@@ -124,7 +124,6 @@ unisim/util/debug/breakpoint_registry_64.cc \
 unisim/util/debug/data_object.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
-unisim/util/debug/data_object.cc \
 unisim/util/debug/dwarf/abbrev.cc \
 unisim/util/debug/dwarf/attr.cc \
 unisim/util/debug/dwarf/class.cc \

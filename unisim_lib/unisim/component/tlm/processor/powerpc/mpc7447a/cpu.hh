@@ -105,7 +105,9 @@ public:
 	;
 
 	void Run();
+#if 0
 	void BusMaster();
+#endif
 	virtual bool Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message);
 	virtual void Reset();
 	virtual void Idle();
