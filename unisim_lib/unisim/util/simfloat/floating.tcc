@@ -1876,12 +1876,15 @@ TBuiltDouble<TypeTraits>::addExtension(const thisType& bdSource,
 
    if (bdMult.isNegative() == bdAdd.isNegative())
       bdMult.plusAssignSureNN(bdAdd, scfFlags);
-   else if (bdMult.isNegative() ? (bdMult <= bdAdd.opposite()) : (bdMult >= bdAdd.opposite()))
-      bdMult.minusAssignSureNN(bdAdd, scfFlags);
    else {
-      bdAdd.opposite();
-      bdAdd.minusAssignSureNN(bdMult, scfFlags);
-      bdMult = bdAdd;
+	  bdAdd.opposite();
+	  if (bdMult.isNegative() ? (bdMult <= bdAdd) : (bdMult >= bdAdd))
+         bdMult.minusAssignSureNN(bdAdd, scfFlags);
+      else {
+         bdAdd.opposite();
+         bdAdd.minusAssignSureNN(bdMult, scfFlags);
+         bdMult = bdAdd;
+	  };
    };
 LSetResult:
    fNegative = bdMult.isNegative();
