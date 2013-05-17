@@ -653,7 +653,7 @@ mkdir -p ${DEST_DIR}/virtex5fxt
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
 for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	mkdir -p "${DEST_DIR}/`dirname ${file}`"
+	mkdir -p "${DEST_DIR}/$(dirname ${file})"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
 		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
@@ -671,7 +671,7 @@ done
 UNISIM_LIB_VIRTEX5FXT_FILES="${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES} ${UNISIM_LIB_VIRTEX5FXT_HEADER_FILES} ${UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES} ${UNISIM_LIB_VIRTEX5FXT_DATA_FILES}"
 
 for file in ${UNISIM_LIB_VIRTEX5FXT_FILES}; do
-	mkdir -p "${DEST_DIR}/virtex5fxt/`dirname ${file}`"
+	mkdir -p "${DEST_DIR}/virtex5fxt/$(dirname ${file})"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/virtex5fxt/${file}" ]; then
 		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/virtex5fxt/${file}" ]; then
@@ -1012,7 +1012,7 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
-	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
+	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
@@ -1102,7 +1102,7 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 
-	AM_VIRTEX5FXT_VERSION=`printf ${VIRTEX5FXT_VERSION} | sed -e 's/\./_/g'`
+	AM_VIRTEX5FXT_VERSION=$(printf ${VIRTEX5FXT_VERSION} | sed -e 's/\./_/g')
 	echo "Generating virtex5fxt Makefile.am"
 	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
