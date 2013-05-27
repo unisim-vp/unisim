@@ -6,6 +6,7 @@
  */
 
 #include <unisim/service/pim/pim_thread.hh>
+#include <unistd.h>
 
 namespace unisim {
 namespace service {
