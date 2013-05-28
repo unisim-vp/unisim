@@ -43,6 +43,7 @@
 #include <stdexcept>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/debug/debug.hh>
 #include <unisim/component/cxx/processor/tms320/config.hh>
 #include <unisim/component/cxx/processor/tms320/cpu.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
@@ -88,7 +89,7 @@ public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
 	void Run();
-	virtual void Stop(Object *object, int _exit_status);
+	virtual void Stop(Object *object, int _exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
 private:
@@ -141,7 +142,7 @@ private:
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 
 Simulator::Simulator(int argc, char **argv)
@@ -265,6 +266,7 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -371,13 +373,17 @@ void Simulator::Run()
 	cerr << "Insn cache miss rate: " << ((double) *stat_insn_cache_misses / (double) ((uint64_t) *stat_insn_cache_hits + (uint64_t) *stat_insn_cache_misses)) << endl;
 }
 
-void Simulator::Stop(Object *object, int _exit_status)
+void Simulator::Stop(Object *object, int _exit_status, bool _asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
+#ifdef DEBUG_TMS320C3X
+	std::cerr << "Call stack:" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+#endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	simulating = false;
 }

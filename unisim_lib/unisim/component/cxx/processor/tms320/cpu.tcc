@@ -50,6 +50,7 @@
 
 #include "unisim/util/debug/simple_register.hh"
 #include <iomanip>
+#include <sstream>
 
 #define LOCATION "Location: " << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__
 
@@ -72,6 +73,8 @@ using unisim::util::arithmetic::BitScanForward;
 using std::endl;
 using std::hex;
 using std::dec;
+using std::stringstream;
+using std::map;
 
 using unisim::util::debug::Symbol;
 using namespace unisim::kernel::logger;
@@ -366,7 +369,7 @@ InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, 4);
 	}
 
 	return true;
@@ -385,7 +388,7 @@ InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, 4);
 	}
 
 	return true;
@@ -1585,7 +1588,7 @@ IntStore(address_t ea, uint32_t value, bool interlocked)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_WRITE, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, 4);
 	}
 }
 
@@ -1606,7 +1609,7 @@ IntLoad(address_t ea, bool interlocked)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_DATA, addr, 4);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, 4);
 	}
 
 	return LittleEndian2Host(value);
@@ -1652,7 +1655,7 @@ Fetch(address_t addr)
 	// Memory access reporting
 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
 	{
-		memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, MemoryAccessReporting<uint64_t>::MT_INSN, 4 * addr, 4);
+		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, 4 * addr, 4);
 	}
 
 	uint32_t insn;
