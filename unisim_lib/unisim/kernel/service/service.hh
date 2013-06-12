@@ -909,7 +909,7 @@ public:
 	virtual void Dump(ostream& os) const = 0;
 	virtual Object *GetService() const = 0;
 	virtual ServiceExportBase *GetServiceExport() = 0;
-private:
+protected:
 	string name;
 	Object *owner;
 };
@@ -934,7 +934,7 @@ public:
 
 	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
 	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
-private:
+protected:
 	string name;
 	Object *owner;
 	list<ServiceImportBase *> setup_dependencies;
@@ -1052,6 +1052,13 @@ inline ServiceImport<SERVICE_IF>::operator SERVICE_IF * () const
 template <class SERVICE_IF>
 inline SERVICE_IF *ServiceImport<SERVICE_IF>::operator -> () const
 {
+#ifdef DEBUG_SERVICE
+	if(!service)
+	{
+		cerr << "ERROR! " << GetName() << " interface can't be used because it is not bound to a service." << endl;
+		owner->Object::Stop(-1);
+	}
+#endif
 	return (service);
 }
 

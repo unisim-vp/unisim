@@ -1,4 +1,4 @@
-/*
+ /*
  *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
@@ -56,6 +56,7 @@ DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADD
 	, logger(_dw_handler->GetLogger())
 	, debug(false)
 	, address(0)
+	, op_index(0)
 	, file(1)
 	, line(1)
 	, column(0)
@@ -65,6 +66,7 @@ DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADD
 	, prologue_end(false)
 	, prologue_begin(false)
 	, isa(0)
+	, discriminator(0)
 	, filenames()
 {
 	dw_handler->GetOption(OPT_DEBUG, debug);
@@ -126,7 +128,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
-	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
+	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column, isa, discriminator);
 	stmt_matrix.insert(std::pair<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>(address, stmt));
 }
 
@@ -135,6 +137,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 {
 	// Initialize machine state
 	address = 0;
+	op_index = 0;
 	file = 1;
 	line = 1;
 	column = 0;
@@ -144,6 +147,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 	prologue_end = false;
 	prologue_begin = false;
 	isa = 0;
+	discriminator = 0;
 	filenames = dw_stmt_prog->filenames;
 
 	// Run the program
@@ -209,13 +213,23 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							// Copy
 							if(os) (*os) << "Copy" << std::endl;
 							if(matrix) AddRow(dw_stmt_prog, *matrix);
+							// Reset basic_block
+							basic_block = false;
+							// Reset prologue_end
+							prologue_end = false;
+							// Reset prologue_begin
+							prologue_begin = false;
+							// Reset discriminator
+							discriminator = 0;
 							break;
 						case DW_LNS_advance_pc:
 							{
-								unsigned int pc_increment = (unsigned int) args[0] * dw_stmt_prog->minimum_instruction_length;
-								// Advance PC by 'pc_increment'
-								address += pc_increment;
-								if(os) (*os) << "Advance PC by " << pc_increment << " to 0x" << std::hex << address << std::dec << std::endl;
+								unsigned int operation_advance = (unsigned int) args[0];
+								unsigned int address_increment = ((op_index + operation_advance) / dw_stmt_prog->maximum_operations_per_instruction) * dw_stmt_prog->minimum_instruction_length;
+								// Advance PC by 'address_increment'
+								address += address_increment;
+								op_index = (op_index + operation_advance) % dw_stmt_prog->maximum_operations_per_instruction;
+								if(os) (*os) << "Advance PC by " << address_increment << " to 0x" << std::hex << address << std::dec << std::endl;
 							}
 							break;
 						case DW_LNS_advance_line:
@@ -257,7 +271,9 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							break;
 						case DW_LNS_const_add_pc:
 							{
-								int address_increment = ((255 - dw_stmt_prog->opcode_base) / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
+								unsigned int operation_advance = (255 - dw_stmt_prog->opcode_base) / dw_stmt_prog->line_range;
+								unsigned int address_increment = ((op_index + operation_advance) / dw_stmt_prog->maximum_operations_per_instruction) * dw_stmt_prog->minimum_instruction_length;
+								//int address_increment = ((255 - dw_stmt_prog->opcode_base) / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
 								// Advance PC by constant 'address_increment'
 								address += address_increment;
 								if(os) (*os) << "Advance PC by constant " << address_increment << " to 0x" << std::hex << address << std::dec << std::endl;
@@ -266,6 +282,8 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						case DW_LNS_fixed_advance_pc:
 							// Advance PC by fixed 'uhalf_arg'
 							address += uhalf_arg;
+							// Reset op_index
+							op_index = 0;
 							if(os) (*os) << "Advance PC by fixed " << uhalf_arg << " to 0x" << std::hex << address << std::dec << std::endl;
 							break;
 						case DW_LNS_set_prologue_end:
@@ -296,9 +314,13 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					// Special opcode
 					uint8_t adjusted_opcode = opcode - dw_stmt_prog->opcode_base;
 					int line_increment = dw_stmt_prog->line_base + (adjusted_opcode % dw_stmt_prog->line_range);
-					unsigned int address_increment = (adjusted_opcode / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
+		
+					unsigned int operation_advance = adjusted_opcode / dw_stmt_prog->line_range;
+					unsigned int address_increment = ((op_index + operation_advance) / dw_stmt_prog->maximum_operations_per_instruction) * dw_stmt_prog->minimum_instruction_length;
+					// unsigned int address_increment = (adjusted_opcode / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
 					// Special opcode 'adjusted_opcode': advance Address by 'address_increment' and Line by 'line_increment'
 					address += address_increment;
+					op_index = (op_index + operation_advance) % dw_stmt_prog->maximum_operations_per_instruction;
 					line += line_increment;
 					// Add a row to matrix
 					if(matrix) AddRow(dw_stmt_prog, *matrix);
@@ -308,6 +330,8 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					prologue_end = false;
 					// Reset prologue_begin
 					prologue_begin = false;
+					// Reset discriminator
+					discriminator = 0;
 					if(os) (*os) << "   - Special opcode " << (unsigned int) adjusted_opcode << ": advance Address by " << address_increment << " to 0x" << std::hex << address << std::dec << " and Line by " << line_increment << " to " << line << std::endl;
 				}
 			}
@@ -384,6 +408,8 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 									}
 									return false;
 							}
+							// Reset op_index
+							op_index = 0;
 							if(os) (*os) << std::hex << "0x" << address << std::dec;
 						}
 						break;
@@ -402,7 +428,23 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							}
 							// Define File 'dw_filename'
 							filenames.push_back(dw_filename);
-							if(os) (*os) << "Define File " << dw_filename << std::endl;
+							if(os) (*os) << "Define File " << dw_filename;
+						}
+						break;
+					case DW_LNE_set_discriminator:
+						{
+							DWARF_LEB128 discriminator_val;
+							int64_t sz;
+							if((sz = discriminator_val.Load(prg, count)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << EndDebugError;
+								}
+								return false;
+							}
+							discriminator = (unsigned int) discriminator_val;
+							if(os) (*os) << "Set Discriminator to " << discriminator;
 						}
 						break;
 					default:

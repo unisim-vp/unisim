@@ -87,6 +87,12 @@ private:
 	uint8_t minimum_instruction_length;   // The size in bytes of the smallest target machine instruction. Statement program opcodes
 	                                      // that alter the address register first multiply their operands by this value.
 
+	uint8_t maximum_operations_per_instruction;   // The maximum number of individual operations that may be encoded in an instruction. Line
+	                                              // number program opcodes that alter the address and op_index registers use this and
+	                                              // minimum_instruction_length in their calculations.
+	                                              // For non-VLIW architectures, this field is 1, the op_index register is always 0, and the
+	                                              // operation pointer is simply the address register.
+
 	uint8_t default_is_stmt;              // The initial value of the is_stmt register.
 	                                      // A simple code generator that emits machine instructions in the order implied by the source
 	                                      // program would set this to "true", and every entry in the matrix would represent a
