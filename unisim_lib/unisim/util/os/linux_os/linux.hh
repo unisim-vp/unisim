@@ -106,6 +106,8 @@ class Linux {
                 char const * const utsname_version,
                 char const * const utsname_machine,
                 char const * const utsname_domainname);
+  
+  void SetHWCap(const char *hwcap);
 
   // TODO: Remove
   // // Sets the registers to be used
@@ -200,6 +202,9 @@ class Linux {
   std::string utsname_version_;
   std::string utsname_machine_;
   std::string utsname_domainname_;
+  
+  // HWCAP
+  std::string hwcap_;
 
   // the structure to keep all the loaded information
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;

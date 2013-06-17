@@ -147,6 +147,8 @@ class Linux :
   unisim::kernel::service::Parameter<std::string> param_utsname_machine_;
   std::string utsname_domainname_;
   unisim::kernel::service::Parameter<std::string> param_utsname_domainname_;
+  std::string hwcap_;
+  unisim::kernel::service::Parameter<std::string> param_hwcap_;
 };
 
 } // end of linux_os namespace

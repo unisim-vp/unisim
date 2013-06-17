@@ -33,6 +33,7 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
 #include "unisim/component/cxx/processor/arm/armemu/cpu.hh"
+#include <unisim/kernel/debug/debug.hh>
 
 #include <string.h>
 #include <assert.h>
@@ -461,7 +462,9 @@ StepInstruction()
 				 *   implementation.
 				 */
 				insn_size = 2;
-				assert("Thumb mode not supported" != 0);
+				logger << DebugError << "Thumb mode not supported in" << endl
+				       << unisim::kernel::debug::BackTrace() << EndDebugError;
+				Stop(-1);
 			}
 			else
 				insn_size = 4;
@@ -886,7 +889,9 @@ Disasm(uint32_t addr, uint32_t &next_addr)
 	stringstream buffer;
 	if (GetCPSR_T()) 
 	{
-		assert("Thumb instructions not supported" != 0);
+		logger << DebugError << "Thumb instructions not supported in" << endl
+		       << unisim::kernel::debug::BackTrace() << EndDebugError;
+		Stop(-1);
 	} 
 	else 
 	{
@@ -1409,7 +1414,9 @@ bool
 CPU::
 CoprocessorLoad(uint32_t cp_num, uint32_t address)
 {
-	assert("CoprocessorLoad not implemented" != 0);
+	logger << DebugError << "CoprocessorLoad not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 	return false;
 }
 
@@ -1429,7 +1436,9 @@ bool
 CPU::
 CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	assert("CoprocessorLoad not implemented" != 0);
+	logger << DebugError << "CoprocessorLoad not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 	return false;
 }
 
@@ -1447,7 +1456,9 @@ bool
 CPU::
 CoprocessorStore(uint32_t cp_num, uint32_t address)
 {
-	assert("CoprocessorStore not implemented" != 0);
+	logger << DebugError << "CoprocessorStore not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 	return false;
 }
 
@@ -1467,7 +1478,9 @@ bool
 CPU::
 CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	assert("CoprocessorStore not implemented" != 0);
+	logger << DebugError << "CoprocessorStore not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 	return false;
 }
 
@@ -1485,7 +1498,9 @@ CPU::
 CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		uint32_t crd, uint32_t crn, uint32_t crm)
 {
-	assert("CoprocessorDataProcess not implemented" != 0);
+	logger << DebugError << "CoprocessorDataProcess not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 }
 
 /** Move to Coprocessor from ARM register
@@ -1504,7 +1519,9 @@ CPU::
 MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	assert("MoveToCoprocessor not implemented" != 0);
+	logger << DebugError << "MoveToCoprocessor not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 }
 
 /**
@@ -1526,7 +1543,9 @@ CPU::
 MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	assert("MoveFromCoprocessor not implemented" != 0);
+	logger << DebugError << "MoveFromCoprocessor not implemented in" << endl
+	       << unisim::kernel::debug::BackTrace() << EndDebugError;
+	Stop(-1);
 }
 
 /** Unpredictable Instruction Behaviour.
@@ -1576,7 +1595,9 @@ PerformLoadStoreAccesses()
 				PerformReadToPCAccess(memop);
 				break;
 			case MemoryOp::USER_READ:
-				assert("Not permitted operation with armemu" != 0);
+				logger << DebugError << "Not permitted operation with armemu in" <<endl
+				       << unisim::kernel::debug::BackTrace() << EndDebugError;
+				Stop(-1);
 				break;
 		}
 		free_ls_queue.push(memop);
