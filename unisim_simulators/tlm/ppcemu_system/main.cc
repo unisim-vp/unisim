@@ -1003,7 +1003,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 
 	//  - Debugger run-time configuration
-	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	//  - SDL run-time configuration
@@ -1111,7 +1111,18 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	// Build the kernel parameters string from the command line arguments
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+	if(enable_inline_debugger)
+	{
+		SetVariable("debugger.parse-dwarf", true);
+	}
+
+  // Build the kernel parameters string from the command line arguments
 	string filename;
 	string kernel_params;
 	
