@@ -40,6 +40,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <signal.h>
+#include <unistd.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -112,8 +113,8 @@ SDL<ADDRESS>::SDL(const char *name, Object *parent)
 	, host_key(SDLK_RCTRL)
 	, mode_set(false)
 	, alive(false)
-	, video_subsystem_initialized_cond(false)
-	, video_subsystem_initialized_mutex(false)
+	, video_subsystem_initialized_cond(0)
+	, video_subsystem_initialized_mutex(0)
 	, refresh(false)
 	, force_refresh(false)
 	, typematic_delay_us(0)

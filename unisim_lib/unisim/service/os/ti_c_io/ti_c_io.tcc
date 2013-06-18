@@ -53,6 +53,7 @@
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/memory_injection.hh"
 #include "unisim/util/endian/endian.hh"
+#include "unisim/util/likely/likely.hh"
 
 namespace unisim {
 namespace service {

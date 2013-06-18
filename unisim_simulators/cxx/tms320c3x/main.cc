@@ -43,6 +43,7 @@
 #include <stdexcept>
 
 #include <unisim/kernel/service/service.hh>
+#include <unisim/kernel/debug/debug.hh>
 #include <unisim/component/cxx/processor/tms320/config.hh>
 #include <unisim/component/cxx/processor/tms320/cpu.hh>
 #include <unisim/component/cxx/memory/ram/memory.hh>
@@ -87,8 +88,9 @@ class Simulator : public unisim::kernel::service::Simulator
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
+	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	void Run();
-	virtual void Stop(Object *object, int _exit_status);
+	virtual void Stop(Object *object, int _exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
 protected:
 private:
@@ -141,7 +143,7 @@ private:
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	unisim::kernel::service::Simulator::simulator->Stop(0, 0);
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 
 Simulator::Simulator(int argc, char **argv)
@@ -265,6 +267,7 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
 	}
 	else if(enable_gdb_server)
 	{
@@ -315,6 +318,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("cpu.mimic-dev-board", "true");
 	simulator->SetVariable("ti-c-io.enable", "true");
 	
+	//  - Debugger run-time configuration
+	simulator->SetVariable("debugger.parse-dwarf", false);
+
 	// inline-debugger
 	simulator->SetVariable("inline-debugger.num-loaders", 1);
 }
@@ -371,13 +377,29 @@ void Simulator::Run()
 	cerr << "Insn cache miss rate: " << ((double) *stat_insn_cache_misses / (double) ((uint64_t) *stat_insn_cache_hits + (uint64_t) *stat_insn_cache_misses)) << endl;
 }
 
-void Simulator::Stop(Object *object, int _exit_status)
+unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+{
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+
+	return unisim::kernel::service::Simulator::Setup();
+}
+
+void Simulator::Stop(Object *object, int _exit_status, bool _asynchronous)
 {
 	exit_status = _exit_status;
 	if(object)
 	{
 		std::cerr << object->GetName() << " has requested simulation stop" << std::endl << std::endl;
 	}
+#ifdef DEBUG_TMS320C3X
+	std::cerr << "Call stack:" << std::endl;
+	std::cerr << unisim::kernel::debug::BackTrace() << std::endl;
+#endif
 	std::cerr << "Program exited with status " << exit_status << std::endl;
 	simulating = false;
 }

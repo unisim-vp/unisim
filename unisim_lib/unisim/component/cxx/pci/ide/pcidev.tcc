@@ -52,15 +52,6 @@ namespace cxx {
 namespace pci {
 namespace ide {
 
-PciConfigData::PciConfigData(const std::string &name)
-        : _name(name)
-{
-	memset(config.data, 0, sizeof(config.data));
-	memset(BARSize, 0, sizeof(BARSize));    
-}
-
-const std::string PciConfigData::name() const { return _name; }
-
 template<class ADDRESS_TYPE>
 void PciDev<ADDRESS_TYPE>::SetPCIMaster(PCIMaster<ADDRESS_TYPE> *p) {
 	pciMaster = p;

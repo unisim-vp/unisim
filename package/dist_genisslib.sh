@@ -2,7 +2,7 @@
 function Usage
 {
 	echo "Usage:"
-	echo "  $0 <destination directory>"
+	echo "  $0 <destination directory> [<unisim repository>]"
 }
 
 if [ -z "$1" ]; then
@@ -10,15 +10,19 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
+
+if [ -z "$2" ]; then
+    # Guessing unisim repos directory from the script location
+    UNISIM_REPOS=`dirname $0`/..
+else
+    UNISIM_REPOS=$2
+fi
+
+# Making unisim repository path absolute
+UNISIM_REPOS=`cd ${UNISIM_REPOS}; pwd`
+UNISIM_TOOLS_DIR=${UNISIM_REPOS}/unisim_tools
+
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)
 
 if test -z ${DISTCOPY}; then
@@ -30,7 +34,7 @@ action.hh \
 cli.hh \
 errtools.hh \
 isa.hh \
-parser.hh \
+parser_defs.hh \
 riscgenerator.hh \
 specialization.hh \
 variable.hh \
@@ -53,7 +57,7 @@ subdecoder.hh"
 UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
 scanner.cc \
 parser.cc \
-parser.h"
+parser_tokens.hh"
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 parser.yy \
@@ -192,12 +196,21 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-genisslib-${GENISSLIB_VERSION}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "unisim_genisslib_${AM_GENISSLIB_VERSION}_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "unisim_genisslib_${AM_GENISSLIB_VERSION}_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
+# Note that parser_tokens.hh has been added to BUILT_SOURCES above
+# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
+    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
 
 	echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR} && aclocal -I m4 && autoconf --force && autoheader && automake -ac"

@@ -64,28 +64,25 @@ static const unsigned int AT_IGNOREPPC = 22; /* Entry should be ignored.  */
 static const unsigned int AT_SECURE = 23; /* Boolean, was exec setuid-like?  */
 static const unsigned int AT_EXECFN = 31; /* Filename of executable.  */
 
-static const unsigned int ARM_HWCAP_ARM_SWP       = 1 << 0;
-static const unsigned int ARM_HWCAP_ARM_HALF      = 1 << 1;
-static const unsigned int ARM_HWCAP_ARM_THUMB     = 1 << 2;
-static const unsigned int ARM_HWCAP_ARM_26BIT     = 1 << 3;
-static const unsigned int ARM_HWCAP_ARM_FAST_MULT = 1 << 4;
-static const unsigned int ARM_HWCAP_ARM_FPA       = 1 << 5;
-static const unsigned int ARM_HWCAP_ARM_VFP       = 1 << 6;
-static const unsigned int ARM_HWCAP_ARM_EDSP      = 1 << 7;
-static const unsigned int ARM_HWCAP_ARM_JAVA      = 1 << 8;
-static const unsigned int ARM_HWCAP_ARM_IWMMXT    = 1 << 9;
-static const unsigned int ARM_HWCAP_ARM_THUMBEE   = 1 << 10;
-static const unsigned int ARM_HWCAP_ARM_NEON      = 1 << 11;
-static const unsigned int ARM_HWCAP_ARM_VFPv3     = 1 << 12;
-static const unsigned int ARM_HWCAP_ARM_VFPv3D16  = 1 << 13;
-static const unsigned int ARM_ELF_HWCAP = ARM_HWCAP_ARM_SWP
-    | ARM_HWCAP_ARM_HALF
-    | ARM_HWCAP_ARM_THUMB
-    | ARM_HWCAP_ARM_FAST_MULT
-    | ARM_HWCAP_ARM_FPA
-    | ARM_HWCAP_ARM_VFP
-    | ARM_HWCAP_ARM_NEON
-    | ARM_HWCAP_ARM_VFPv3;
+static const uint32_t ARM_HWCAP_ARM_SWP       = 1 << 0;
+static const uint32_t ARM_HWCAP_ARM_HALF      = 1 << 1;
+static const uint32_t ARM_HWCAP_ARM_THUMB     = 1 << 2;
+static const uint32_t ARM_HWCAP_ARM_26BIT     = 1 << 3;
+static const uint32_t ARM_HWCAP_ARM_FAST_MULT = 1 << 4;
+static const uint32_t ARM_HWCAP_ARM_FPA       = 1 << 5;
+static const uint32_t ARM_HWCAP_ARM_VFP       = 1 << 6;
+static const uint32_t ARM_HWCAP_ARM_EDSP      = 1 << 7;
+static const uint32_t ARM_HWCAP_ARM_JAVA      = 1 << 8;
+static const uint32_t ARM_HWCAP_ARM_IWMMXT    = 1 << 9;
+static const uint32_t ARM_HWCAP_ARM_CRUNCH    = 1 << 10;
+static const uint32_t ARM_HWCAP_ARM_THUMBEE   = 1 << 11;
+static const uint32_t ARM_HWCAP_ARM_NEON      = 1 << 12;
+static const uint32_t ARM_HWCAP_ARM_VFPv3     = 1 << 13;
+static const uint32_t ARM_HWCAP_ARM_VFPv3D16  = 1 << 14;
+static const uint32_t ARM_HWCAP_ARM_TLS       = 1 << 15;
+static const uint32_t ARM_HWCAP_ARM_VFPv4     = 1 << 16;
+static const uint32_t ARM_HWCAP_ARM_IDIVA     = 1 << 17;
+static const uint32_t ARM_HWCAP_ARM_IDIVT     = 1 << 18;
 
 } // end of namespace
 } // end of namespace

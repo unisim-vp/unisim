@@ -504,18 +504,20 @@ void DWARF_CFIRow<MEMORY_ADDR>::SetCFARule(DWARF_CFARule<MEMORY_ADDR> *_cfa_rule
 template <class MEMORY_ADDR>
 void DWARF_CFIRow<MEMORY_ADDR>::SetRegisterRule(unsigned int reg_num, DWARF_RegisterRule<MEMORY_ADDR> *reg_rule)
 {
+	if(!reg_rule)
+	{
+		reg_rule = new DWARF_RegisterRuleUndefined<MEMORY_ADDR>();
+	}
+	
 	typename std::map<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>::iterator it = reg_rules.find(reg_num);
 	
 	if(it != reg_rules.end())
 	{
 		DWARF_RegisterRule<MEMORY_ADDR> *old_reg_rule = (*it).second;
+		reg_rules.erase(it);
 		if(old_reg_rule) delete old_reg_rule;
-		(*it).second = reg_rule;
 	}
-	else
-	{
-		reg_rules.insert(std::pair<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>(reg_num, reg_rule));
-	}
+	reg_rules.insert(std::pair<unsigned int, DWARF_RegisterRule<MEMORY_ADDR> *>(reg_num, reg_rule));
 }
 
 template <class MEMORY_ADDR>
@@ -575,7 +577,7 @@ std::ostream& operator << (std::ostream& os, const DWARF_CFIRow<MEMORY_ADDR>& cf
 		}
 		else
 		{
-			os << "r" << reg_num << "=u";
+			os << "r" << reg_num << "=undefined";
 		}
 		os << ">";
 	}
@@ -670,7 +672,9 @@ void DWARF_CFI<MEMORY_ADDR>::InsertRow(DWARF_CFIRow<MEMORY_ADDR> *cfi_row)
 	
 	if(iter != cfi_rows.end())
 	{
+		DWARF_CFIRow<MEMORY_ADDR> *old_cfi_row = (*iter).second;
 		cfi_rows.erase(iter);
+		delete old_cfi_row;
 	}
 	
 	if(cfi_row)
@@ -734,7 +738,6 @@ template <class MEMORY_ADDR>
 bool DWARF_CallFrameVM<MEMORY_ADDR>::Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_CFI<MEMORY_ADDR> *cfi)
 {
 	return Run(dw_call_frame_prog, 0, &location, cfi);
-//	return Run(dw_call_frame_prog, &std::cerr, &location, cfi);
 }
 
 template <class MEMORY_ADDR>
@@ -751,7 +754,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::RememberState(DWARF_CFI<MEMORY_ADDR> *cfi, 
 		return false;
 	}
 
-	DWARF_CFIRow<MEMORY_ADDR> *row_copy = new DWARF_CFIRow<MEMORY_ADDR>(loc, *row);
+	DWARF_CFIRow<MEMORY_ADDR> *row_copy = new DWARF_CFIRow<MEMORY_ADDR>(*row);
 	row_stack.push(row_copy);
 	return true;
 }
@@ -768,8 +771,10 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::RestoreState(DWARF_CFI<MEMORY_ADDR> *cfi, M
 		return false;
 	}
 
-	DWARF_CFIRow<MEMORY_ADDR> *row_copy = row_stack.top();
+	DWARF_CFIRow<MEMORY_ADDR> *row = row_stack.top();
+	DWARF_CFIRow<MEMORY_ADDR> *row_copy = new DWARF_CFIRow<MEMORY_ADDR>(loc, *row);
 	row_stack.pop();
+	delete row;
 	cfi->InsertRow(row_copy);
 	return true;
 }
@@ -820,8 +825,6 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 
 	if(program_length)
 	{
-		DWARF_CFI<MEMORY_ADDR> *initial_cfi = cfi ? new DWARF_CFI<MEMORY_ADDR>(*cfi) : 0;
-		
 		do
 		{
 			uint8_t opcode = *program;
@@ -917,7 +920,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 						{
 							if(cfi)
 							{
-								DWARF_CFIRow<MEMORY_ADDR> *initial_row = initial_cfi->GetRow(cur_location);
+								const DWARF_CFIRow<MEMORY_ADDR> *initial_row = cfi->GetInitialRow();
 								
 								if(!initial_row)
 								{
@@ -943,7 +946,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								
 								DWARF_RegisterRule<MEMORY_ADDR> *initial_reg_rule = initial_row->GetRegisterRule(reg_num);
 								
-								DWARF_RegisterRule<MEMORY_ADDR> *reg_rule_copy = initial_reg_rule ? initial_reg_rule->Clone() : 0;
+								DWARF_RegisterRule<MEMORY_ADDR> *reg_rule_copy = initial_reg_rule ? initial_reg_rule->Clone() : new DWARF_RegisterRuleUndefined<MEMORY_ADDR>();
 								
 								cur_row->SetRegisterRule(reg_num, reg_rule_copy);
 							}
@@ -1204,7 +1207,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 								{
 									if(cfi)
 									{
-										DWARF_CFIRow<MEMORY_ADDR> *initial_row = initial_cfi->GetRow(cur_location);
+										const DWARF_CFIRow<MEMORY_ADDR> *initial_row = cfi->GetInitialRow();
 										
 										if(!initial_row)
 										{
@@ -1230,7 +1233,7 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 										
 										DWARF_RegisterRule<MEMORY_ADDR> *initial_reg_rule = initial_row->GetRegisterRule(reg_num);
 										
-										DWARF_RegisterRule<MEMORY_ADDR> *reg_rule_copy = initial_reg_rule ? initial_reg_rule->Clone() : 0;
+										DWARF_RegisterRule<MEMORY_ADDR> *reg_rule_copy = initial_reg_rule ? initial_reg_rule->Clone() : new DWARF_RegisterRuleUndefined<MEMORY_ADDR>();
 										
 										cur_row->SetRegisterRule(reg_num, reg_rule_copy);
 									}
@@ -2057,8 +2060,6 @@ bool DWARF_CallFrameVM<MEMORY_ADDR>::Run(const DWARF_CallFrameProgram<MEMORY_ADD
 			if(os && program_length) *os << std::endl;
 		}
 		while(status && program_length);
-		
-		if(initial_cfi) delete initial_cfi;
 	}
 
 	return status;

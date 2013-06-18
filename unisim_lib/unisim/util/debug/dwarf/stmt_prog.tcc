@@ -51,6 +51,7 @@ DWARF_StatementProgram<MEMORY_ADDR>::DWARF_StatementProgram(DWARF_Handler<MEMORY
 	, version(0)
 	, header_length(0)
 	, minimum_instruction_length(0)
+	, maximum_operations_per_instruction(1)
 	, default_is_stmt(0)
 	, line_base(0)
 	, line_range(0)
@@ -174,6 +175,16 @@ int64_t DWARF_StatementProgram<MEMORY_ADDR>::Load(const uint8_t *rawdata, uint64
 	max_size -= sizeof(minimum_instruction_length);
 	size += sizeof(minimum_instruction_length);
 
+	if(dw_ver == DW_VER4)
+	{
+		if(max_size < sizeof(maximum_operations_per_instruction)) return -1;
+		memcpy(&maximum_operations_per_instruction, rawdata, sizeof(maximum_operations_per_instruction));
+		maximum_operations_per_instruction = Target2Host(file_endianness, maximum_operations_per_instruction);
+		rawdata += sizeof(maximum_operations_per_instruction);
+		max_size -= sizeof(maximum_operations_per_instruction);
+		size += sizeof(maximum_operations_per_instruction);
+	}
+	
 	if(max_size < sizeof(default_is_stmt)) return -1;
 	memcpy(&default_is_stmt, rawdata, sizeof(default_is_stmt));
 	default_is_stmt = Target2Host(file_endianness, default_is_stmt);

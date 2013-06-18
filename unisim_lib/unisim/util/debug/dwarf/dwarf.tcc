@@ -4152,7 +4152,7 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 	std::vector<MEMORY_ADDR> *backtrace = 0;
 	unsigned int id = 1;
 	DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(this, pc);
-	frame->Load(dw_reg_num_mapping);
+	frame->LoadArchRegs();
 	
 	MEMORY_ADDR caller_pc = pc;
 
@@ -4227,18 +4227,18 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 				logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << *frame << EndDebugInfo;
 			}
 
-			
-			MEMORY_ADDR ret_addr = frame->GetPC();
-			
-			if(debug)
-			{
-				logger << DebugInfo << "In File \"" << GetFilename() << "\", return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
-			}
-			
 			if(!backtrace)
 			{
 				backtrace = new std::vector<MEMORY_ADDR>();
 				backtrace->push_back(pc);
+			}
+
+			MEMORY_ADDR ret_addr = 0;
+			if(!frame->GetPC(ret_addr)) break;
+			
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", return address: 0x" << std::hex << ret_addr << std::dec << EndDebugInfo;
 			}
 
 			caller_pc = ret_addr - 1; // we take return address - 1 in the hope it is in the same context as the caller
@@ -4267,7 +4267,7 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 	if(dw_reg_num_mapping)
 	{
 		DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(this, pc);
-		frame->Load(dw_reg_num_mapping);
+		frame->LoadArchRegs();
 		
 		if(debug)
 		{
@@ -4319,7 +4319,8 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 						logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << *next_frame << EndDebugInfo;
 					}
 
-					ret_addr = next_frame->GetPC();
+					ret_addr = 0;
+					if(!next_frame->GetPC(ret_addr)) return false;
 					found = true;
 				
 					if(debug)

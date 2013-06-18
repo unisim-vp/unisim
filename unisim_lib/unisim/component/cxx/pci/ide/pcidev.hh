@@ -83,6 +83,7 @@ class PciConfigData //: public SimObjectAbstract
      * Constructor to initialize the devices config space to 0.
      */
     PciConfigData(const std::string &name);
+	virtual ~PciConfigData();
 
 	virtual const std::string name() const;
 

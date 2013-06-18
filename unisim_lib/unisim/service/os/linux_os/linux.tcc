@@ -171,8 +171,10 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
     , utsname_domainname_("localhost")
     , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
                                "The domain name information that the uname"
-                               " system call should return.") {
-
+                               " system call should return.")
+    , hwcap_("hwcap")
+    , param_hwcap_("hwcap", this, hwcap_,
+                   "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".") {
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);
@@ -341,6 +343,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   linuxlib_->SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
                      utsname_release_.c_str(), utsname_version_.c_str(),
                      utsname_machine_.c_str(), utsname_domainname_.c_str());
+  linuxlib_->SetHWCap(hwcap_.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
   {

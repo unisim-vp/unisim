@@ -3219,6 +3219,8 @@ Simulator::SetupStatus Simulator::Setup()
 
 void Simulator::Stop(Object *object, int exit_status, bool asynchronous)
 {
+	cerr << "WARNING! Stop is not cleanly implemented" << endl;
+	exit(exit_status);
 }
 
 const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const

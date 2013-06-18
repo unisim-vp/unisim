@@ -50,13 +50,15 @@ template <class MEMORY_ADDR>
 class Statement
 {
 public:
-	Statement(MEMORY_ADDR addr, bool is_beginning_of_basic_block, const char *source_dirname, const char *source_filename, unsigned int lineno, unsigned int colno);
+	Statement(MEMORY_ADDR addr, bool is_beginning_of_basic_block, const char *source_dirname, const char *source_filename, unsigned int lineno, unsigned int colno, unsigned int isa, unsigned int discriminator);
 	MEMORY_ADDR GetAddress() const;
 	bool IsBeginningOfBasicBlock() const;
 	const char *GetSourceDirname() const;
 	const char *GetSourceFilename() const;
 	unsigned int GetLineNo() const;
 	unsigned int GetColNo() const;
+	unsigned int GetISA() const;
+	unsigned int GetDiscriminator() const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const Statement<MEMORY_ADDR>& stmt);
 private:
 	MEMORY_ADDR addr;
@@ -65,6 +67,8 @@ private:
 	const char *source_filename;
 	unsigned int lineno;
 	unsigned int colno;
+	unsigned int isa;
+	unsigned int discriminator;
 };
 
 } // end of namespace debug

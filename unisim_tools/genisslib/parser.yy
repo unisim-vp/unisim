@@ -366,6 +366,7 @@ declaration:
 {
   Scanner::isa().m_specializations.push_back( $1 );
 }
+  | user_specialization TOK_ENDL {}
 ;
 
 namespace_declaration: TOK_NAMESPACE namespace_list
@@ -771,6 +772,24 @@ specialization: TOK_SPECIALIZE TOK_IDENT '(' constraint_list ')'
   
   $$ = new Specialization_t( operation, *constraint_list );
   delete constraint_list;
+}
+;
+
+user_specialization: TOK_IDENT '.' TOK_SPECIALIZE '(' operation_list ')'
+{
+  typedef Vect_t<Operation_t> vecop;
+  
+  vecop* above_ops = new vecop;
+  if( not extend_oplist( above_ops, ConstStr_t( $1, Scanner::symbols ) ) ) { YYABORT; }
+  vecop* below_ops = $5;
+  
+  for( vecop::const_iterator abv = above_ops->begin(); abv < above_ops->end(); ++ abv ) {
+    for( vecop::const_iterator blw = below_ops->begin(); blw < below_ops->end(); ++ blw ) {
+      Scanner::isa().m_user_orderings.insert( std::make_pair( *abv, *blw ) );
+    }
+  }
+  delete above_ops;
+  delete below_ops;
 }
 ;
 
