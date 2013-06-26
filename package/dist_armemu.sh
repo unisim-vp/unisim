@@ -871,6 +871,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	SIM_LICENSE="BSD (See file COPYING)"
 	SIM_COPYRIGHT="Copyright (C) 2007-2010, Commissariat a l'Energie Atomique"
 	SIM_DESCRIPTION="UNISIM ARMv5 User Level Simulator"
+	SIM_SCHEMATIC="armemu/fig_schematic.pdf"
 	echo "AC_DEFINE([SIM_VERSION_MAJOR], [${SIM_VERSION_MAJOR}], [Version major number])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([SIM_VERSION_MINOR], [${SIM_VERSION_MINOR}], [Version minor number])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([SIM_VERSION_PATCH], [${SIM_VERSION_PATCH}], [Version patch number])" >> "${ARMEMU_CONFIGURE_AC}"
@@ -881,6 +882,7 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "AC_DEFINE([SIM_COPYRIGHT], [\"${SIM_COPYRIGHT}\"], [Copyright])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([SIM_LICENSE], [\"${SIM_LICENSE}\"], [License])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_DEFINE([SIM_DESCRIPTION], [\"${SIM_DESCRIPTION}\"], [Description])" >> "${ARMEMU_CONFIGURE_AC}"
+	echo "AC_DEFINE([SIM_SCHEMATIC], [\"${SIM_SCHEMATIC}\"], [Schematic])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${ARMEMU_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${ARMEMU_CONFIGURE_AC}"
 

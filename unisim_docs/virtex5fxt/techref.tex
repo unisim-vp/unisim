@@ -1,4 +1,4 @@
-This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta9 on Sep 12 2012.
+This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta10 on Jun 18 2013.
 \subsection{Introduction}
 UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs.\\
 Section \ref{UNISIM Virtex 5 FXT_licensing} gives licensing informations about the simulator.
@@ -9,7 +9,7 @@ Section \ref{UNISIM Virtex 5 FXT_statistics} gives the simulator statistic count
 Section \ref{UNISIM Virtex 5 FXT_formulas} gives the simulator statistic formulas.
 \subsection{Licensing}
 \label{UNISIM Virtex 5 FXT_licensing}
-UNISIM Virtex 5 FXT 1.0beta9\\
+UNISIM Virtex 5 FXT 1.0beta10\\
 Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)\\
 License: BSD (see file COPYING)\\
 Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
@@ -234,7 +234,7 @@ Parity: odd\\
 \label{UNISIM Virtex 5 FXT_using}
 The UNISIM Virtex 5 FXT simulator has the following command line options:\\
 ~\\
-\noindent Usage: \texttt{unisim-virtex5fxt-wfpu-1.0beta9 [<options>] [...]}
+\noindent Usage: \texttt{unisim-virtex5fxt-wfpu-1.0beta10 [<options>] [...]}
 
 \noindent Options:
 \begin{itemize}
@@ -758,6 +758,12 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.debug-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debugging of DWARF.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large dip-switches-8bit}}\\
@@ -2440,7 +2446,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.architecture-description-} \newline$\hookrightarrow$\texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{gdb\_powerpc.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{gdb\_ppc440fp.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
@@ -2615,12 +2621,6 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline path to output file where to redirect the debugger outputs.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.architecture-} \newline$\hookrightarrow$\texttt{description-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large input-interrupt-stub0}}\\
@@ -3474,6 +3474,12 @@ Simulation statistic counters are listed below:\\
 \begin{supertabular}{|p{7.5cm}|p{7.5cm}|}
 \multicolumn{2}{|l|}{\textbf{\Large bram}}\\
 \hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bram.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
+\hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{bram.read-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
 \multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
 \multicolumn{2}{|l|}{}\\
@@ -3581,6 +3587,12 @@ Simulation statistic counters are listed below:\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large ram}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ram.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{ram.read-counter}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
 \multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\

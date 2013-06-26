@@ -747,7 +747,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM ppcemu-system is a full system simulator of a board including a MPC7447A PowerPC processor, a MPC107 chipset, and supporting Linux boot. The simulated board is very similar to a PowerMac G4 PCI machine. Computations on IEEE 754 floating point numbers are emulated using Simfloat++. Altivec instructions are currently decoded but not implemented. The running PowerPC application is a PowerMac Linux Kernel and all the applications installed on the hard disk image and/or the initial RAM disk image. Software running on the simulated hardware can be debugged by connecting a GDB client to the simulator through the GDB serial remote protocol. The GDB client can be either the standard text based client (i.e. command gdb), a graphical front-end to GDB (e.g. ddd), or even Eclipse CDT.");
-
+	simulator->SetVariable("schematic", "ppcemu_system/fig_schematic.pdf");
 
 	// Default run-time configuration
 	int gdb_server_tcp_port = 1234;
@@ -1111,12 +1111,6 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-		return unisim::kernel::service::Simulator::ST_ERROR;
-	}
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);
@@ -1150,7 +1144,16 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		SetVariable("pmac-linux-kernel-loader.pmac-bootx.kernel-params", kernel_params.c_str());
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+	
+	return setup_status;
 }
 
 int Simulator::GetExitStatus() const

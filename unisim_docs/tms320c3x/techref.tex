@@ -1,4 +1,4 @@
-This documentation has been automatically generated from the simulator \texttt{UNISIM tms320c3x} version 1.1beta1 on Oct  6 2011.
+This documentation has been automatically generated from the simulator \texttt{UNISIM tms320c3x} version 1.1beta2 on Jun 18 2013.
 \subsection{Introduction}
 UNISIM tms320c3x, a TMS320C3X DSP simulator with support of TI COFF binaries, and TI C I/O (RTS run-time).\\
 Section \ref{UNISIM tms320c3x_licensing} gives licensing informations about the simulator.
@@ -9,8 +9,8 @@ Section \ref{UNISIM tms320c3x_statistics} gives the simulator statistic counters
 Section \ref{UNISIM tms320c3x_formulas} gives the simulator statistic formulas.
 \subsection{Licensing}
 \label{UNISIM tms320c3x_licensing}
-UNISIM tms320c3x 1.1beta1\\
-Copyright (C) 2009-2010, Commissariat a l'Energie Atomique (CEA)\\
+UNISIM tms320c3x 1.1beta2\\
+Copyright (C) 2009-2012, Commissariat a l'Energie Atomique (CEA)\\
 License: BSD (see file COPYING)\\
 Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
 \subsection{Simulated configuration}
@@ -18,19 +18,38 @@ Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$
 \noindent The UNISIM tms320c3x simulator is composed of the following modules and services:
 \begin{itemize}\addtolength{\itemsep}{-0.40\baselineskip}
 \item \textbf{cpu}
+\item \textbf{debugger}
 \item \textbf{gdb-server}: this service implements the GDB server remote serial protocol over TCP/IP. Standards GDB clients (e.g. gdb, eclipse, ddd) can connect to the simulator to debug the target application that runs within the simulator.
 \item \textbf{host-time}: this service is an abstraction layer for the host machine time
 \item \textbf{inline-debugger}: this service implements a built-in debugger in the terminal console
 \item \textbf{loader}
 \item \textbf{memory}: this module implements a memory
+\item \textbf{profiler}
 \item \textbf{rom-loader}
+\item \textbf{tee-memory-access-reporting}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[0]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[10]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[11]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[12]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[13]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[14]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[15]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[1]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[2]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[3]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[4]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[5]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[6]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[7]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[8]}
+\item \textbf{tee-memory-access-reporting.tee-memory-access-reporting.control\_selector[9]}
 \item \textbf{ti-c-io}
 \end{itemize}
 \subsection{Using the UNISIM tms320c3x simulator}
 \label{UNISIM tms320c3x_using}
 The UNISIM tms320c3x simulator has the following command line options:\\
 ~\\
-\noindent Usage: \texttt{unisim-tms320c3x-1.1beta1 [<options>] [...]}
+\noindent Usage: \texttt{unisim-tms320c3x-1.1beta2 [<options>] [...]}
 
 \noindent Options:
 \begin{itemize}
@@ -81,7 +100,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{logger\_output.txt}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output (the option file must be activated).}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger output \_(the option file must be activated).}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_err}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{true}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
@@ -93,7 +112,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard error output (only works if std\_err is active).}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard error output \_(only works if std\_err is active).}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.std\_out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
@@ -105,7 +124,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard output (only works if std\_out is active).}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Colorize logger output through the standard output \_(only works if std\_out is active).}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{kernel\_logger.xml\_file}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
@@ -123,7 +142,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{logger\_output.xml}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger xml output (the option xml\_file must be activated).}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Filename to keep logger xml output \_(the option xml\_file must be activated).}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large cpu}}\\
@@ -173,6 +192,39 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \hline
 \hline
+\multicolumn{2}{|l|}{\textbf{\Large debugger}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.dwarf-to-html-output-} \newline$\hookrightarrow$\texttt{directory}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline DWARF v2/v3 to HTML output directory.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.dwarf-register-number-} \newline$\hookrightarrow$\texttt{mapping-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline DWARF register number mapping filename.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.parse-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.debug-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debugging of DWARF.}\\
+\hline
+\hline
 \multicolumn{2}{|l|}{\textbf{\Large gdb-server}}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.memory-atom-size}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
@@ -182,7 +234,7 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the smallest addressable element in memory.}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{gdb-server.tcp-port}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x00003039}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{signed 32-bit integer}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{12345}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{signed 32-bit integer}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline TCP/IP port to listen waiting for a GDB client connection.}\\
@@ -208,12 +260,6 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline size of the smallest addressable element in memory.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.num-loaders}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{1}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of loaders.}\\
-\hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.search-path}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
@@ -238,14 +284,20 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline the COFF filename to load.}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable dump of COFF file headers while loading.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.verbose-write}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{loader.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large memory}}\\
@@ -262,20 +314,111 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline memory size in bytes.}\\
 \hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.initial-byte-value}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x00}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 8-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large profiler}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.min-data-read-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0000000000000000}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Minimum address for data read profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.max-data-read-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0xffffffffffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum address for data read profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.min-data-write-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0000000000000000}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Minimum address for data write profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.max-data-write-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0xffffffffffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum address for data write profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.min-insn-fetch-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0000000000000000}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Minimum address for instruction fetch profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.max-insn-fetch-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0xffffffffffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum address for instruction fetch profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.min-insn-exec-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0x0000000000000000}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Minimum address for instruction execution profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.max-insn-exec-prof-} \newline$\hookrightarrow$\texttt{addr}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{0xffffffffffffffff}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Maximum address for instruction execution profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.enable-data-read-} \newline$\hookrightarrow$\texttt{prof}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable data read profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.enable-data-write-} \newline$\hookrightarrow$\texttt{prof}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable data write profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.enable-insn-fetch-} \newline$\hookrightarrow$\texttt{prof}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable instruction fetch profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.enable-insn-exec-} \newline$\hookrightarrow$\texttt{prof}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable instruction execution profiling.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{profiler.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
+\hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large rom-loader}}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{c31boot.out}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline the COFF filename to load.}\\
 \hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.dump-headers}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable dump of COFF file headers while loading.}\\
 \hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.verbose-write}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{rom-loader.verbose}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable verbosity.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large ti-c-io}}\\
@@ -370,7 +513,7 @@ Simulation statistic counters are listed below:\\
 \multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 64-bit integer}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline host memory usage in bytes of simulated memory.}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
 \hline
 \hline
 \end{supertabular}

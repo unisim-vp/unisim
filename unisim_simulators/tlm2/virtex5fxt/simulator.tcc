@@ -958,12 +958,6 @@ void Simulator<CONFIG>::Run()
 template <class CONFIG>
 unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 {
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-		return unisim::kernel::service::Simulator::ST_ERROR;
-	}
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);
@@ -1003,7 +997,16 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 		}
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+	
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+	
+	return setup_status;
 }
 
 template <class CONFIG>
