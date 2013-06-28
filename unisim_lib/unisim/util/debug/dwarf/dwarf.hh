@@ -144,6 +144,7 @@ public:
 	
 	bool GetCallingConvention(MEMORY_ADDR pc, uint8_t& calling_convention) const;
 	unsigned int GetReturnAddressSize(MEMORY_ADDR pc) const;
+	bool ComputeCFA(MEMORY_ADDR pc, MEMORY_ADDR& cfa) const;
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;

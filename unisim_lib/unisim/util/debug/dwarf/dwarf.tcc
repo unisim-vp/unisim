@@ -4146,6 +4146,91 @@ unsigned int DWARF_Handler<MEMORY_ADDR>::GetReturnAddressSize(MEMORY_ADDR pc) co
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_Handler<MEMORY_ADDR>::ComputeCFA(MEMORY_ADDR pc, MEMORY_ADDR& cfa) const
+{
+	bool found = false;
+	
+	if(dw_reg_num_mapping)
+	{
+		DWARF_Frame<MEMORY_ADDR> *frame = new DWARF_Frame<MEMORY_ADDR>(this, pc);
+		frame->LoadArchRegs();
+		
+		if(debug)
+		{
+			logger << DebugInfo << "In File \"" << GetFilename() << "\", searching FDE for PC=0x" << std::hex << pc << std::dec << EndDebugInfo;
+		}
+		const DWARF_FDE<MEMORY_ADDR> *dw_fde = FindFDEByAddr(pc);
+			
+		if(dw_fde)
+		{
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", found FDE:" << std::endl << *dw_fde << EndDebugInfo;
+			}
+			
+			const DWARF_CIE<MEMORY_ADDR> *dw_cie = dw_fde->GetCIE();
+				
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", CIE is:" << std::endl << *dw_cie << EndDebugInfo;
+			}
+
+			DWARF_CallFrameVM<MEMORY_ADDR> dw_call_frame_vm = DWARF_CallFrameVM<MEMORY_ADDR>(this);
+			const DWARF_CFI<MEMORY_ADDR> *cfi = dw_call_frame_vm.ComputeCFI(dw_fde);
+
+			if(cfi)
+			{
+				if(debug)
+				{
+					logger << DebugInfo << "In File \"" << GetFilename() << "\", computed call frame information:" << std::endl << *cfi << EndDebugInfo;
+				}
+				
+				typename unisim::util::debug::dwarf::DWARF_CFIRow<MEMORY_ADDR> *cfi_row = cfi->GetLowestRow(pc);
+				
+				if(debug)
+				{
+					logger << DebugInfo << "In File \"" << GetFilename() << "\", lowest Rule Matrix Row:" << *cfi_row << EndDebugInfo;
+					
+					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << *frame << EndDebugInfo;
+				}
+				
+				DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(this);
+				
+				if(next_frame->ComputeCFA(cfi_row, frame))
+				{
+					cfa = next_frame->ReadCFA();
+					found = true;
+				}
+				else
+				{
+					if(debug)
+					{
+						logger << DebugInfo << "In File \"" << GetFilename() << "\", can't compute CFA" << EndDebugInfo;
+					}
+				}
+				
+				delete next_frame;
+				delete cfi;
+			}
+			else
+			{
+				logger << DebugWarning << "In File \"" << GetFilename() << "\", something goes wrong while interpreting call frame information" << EndDebugWarning;
+			}
+		}
+		else
+		{
+			if(debug)
+			{
+				logger << DebugInfo << "In File \"" << GetFilename() << "\", no FDE found" << EndDebugInfo;
+			}
+		}
+		delete frame;
+	}
+	
+	return found;
+}
+
+template <class MEMORY_ADDR>
 std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR pc) const
 {
 	if(!dw_reg_num_mapping) return 0;

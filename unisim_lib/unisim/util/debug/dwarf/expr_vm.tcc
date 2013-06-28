@@ -297,6 +297,7 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	: dw_handler(_dw_handler)
 	, reg_num_mapping(_dw_handler->GetRegisterNumberMapping())
 	, mem_if(_dw_handler->GetMemoryInterface())
+	, dw_frame(0)
 	, file_endianness(_dw_handler->GetFileEndianness())
 	, arch_endianness(_dw_handler->GetArchEndianness())
 	, file_address_size(_dw_handler->GetFileAddressSize())
@@ -305,11 +306,36 @@ DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_A
 	, has_frame_base(false)
 	, object_addr(0)
 	, has_object_addr(false)
+	, pc(0)
+	, has_pc(false)
 	, debug(false)
 	, logger(_dw_handler->GetLogger())
 {
 	dw_handler->GetOption(OPT_DEBUG, debug);
 }
+
+template <class MEMORY_ADDR>
+DWARF_ExpressionVM<MEMORY_ADDR>::DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler, DWARF_Frame<MEMORY_ADDR> *_dw_frame)
+	: dw_handler(_dw_handler)
+	, reg_num_mapping(_dw_handler->GetRegisterNumberMapping())
+	, mem_if(_dw_handler->GetMemoryInterface())
+	, dw_frame(_dw_frame)
+	, file_endianness(_dw_handler->GetFileEndianness())
+	, arch_endianness(_dw_handler->GetArchEndianness())
+	, file_address_size(_dw_handler->GetFileAddressSize())
+	, arch_address_size(_dw_handler->GetArchAddressSize())
+	, frame_base(0)
+	, has_frame_base(false)
+	, object_addr(0)
+	, has_object_addr(false)
+	, pc(0)
+	, has_pc(false)
+	, debug(false)
+	, logger(_dw_handler->GetLogger())
+{
+	dw_handler->GetOption(OPT_DEBUG, debug);
+}
+
 
 template <class MEMORY_ADDR>
 DWARF_ExpressionVM<MEMORY_ADDR>::~DWARF_ExpressionVM()
@@ -751,7 +777,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							if(os) *os << "DW_OP_breg" << (unsigned int) dw_reg_num << " " << offset;
 							if(executing)
 							{
-								MEMORY_ADDR reg_value = ReadRegister(dw_reg_num);
+								MEMORY_ADDR reg_value = 0;
+								if(!ReadRegister(dw_reg_num, reg_value)) return false;
 								// push onto the stack reg value + offset
 								dw_stack.push_back(reg_value + offset);
 							}
@@ -789,7 +816,8 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 							if(os) *os << "DW_OP_bregx " << dw_reg_num;
 							if(executing)
 							{
-								MEMORY_ADDR reg_value = ReadRegister(dw_reg_num);
+								MEMORY_ADDR reg_value = 0;
+								if(!ReadRegister(dw_reg_num, reg_value)) return false;
 								// push onto the stack reg value + offset
 								dw_stack.push_back(reg_value + offset);
 							}
@@ -1122,12 +1150,27 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 								return false;
 							}
 							
-							// Currently unimplemented. I don't understand the specification !
-							if(debug)
+							if(!has_pc)
 							{
-								logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: currently unimplemented" << EndDebugError;
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: don't know PC" << EndDebugError;
+								}
+								return false;
 							}
-							return false;
+							
+							MEMORY_ADDR cfa = 0;
+							if(!dw_handler->ComputeCFA(pc, cfa))
+							{
+								if(debug)
+								{
+									logger << DebugError << "In File \"" << dw_handler->GetFilename() << "\", DW_OP_call_frame_cfa: computing of CFA failed" << EndDebugError;
+								}
+								return false;
+							}
+							// Push CFA
+							dw_stack.push_back(cfa);
+							return true;
 						}
 						break;
 					case DW_OP_abs:
@@ -2217,9 +2260,10 @@ bool DWARF_ExpressionVM<MEMORY_ADDR>::Run(const DWARF_Expression<MEMORY_ADDR> *d
 }
 
 template <class MEMORY_ADDR>
-MEMORY_ADDR DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_num) const
+bool DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_num, MEMORY_ADDR& reg_value) const
 {
-	MEMORY_ADDR reg_value = 0;
+	if(dw_frame) return dw_frame->ReadRegister(dw_reg_num, reg_value);
+	
 	const unisim::util::debug::Register *arch_reg = reg_num_mapping->GetArchReg(dw_reg_num);
 	
 	if(arch_reg)
@@ -2233,28 +2277,28 @@ MEMORY_ADDR DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_nu
 					arch_reg->GetValue(&arch_reg_value);
 					reg_value = arch_reg_value;
 				}
-				break;
+				return true;
 			case 2:
 				{
 					uint16_t arch_reg_value;
 					arch_reg->GetValue(&arch_reg_value);
 					reg_value = arch_reg_value;
 				}
-				break;
+				return true;
 			case 4:
 				{
 					uint32_t arch_reg_value;
 					arch_reg->GetValue(&arch_reg_value);
 					reg_value = arch_reg_value;
 				}
-				break;
+				return true;
 			case 8:
 				{
 					uint64_t arch_reg_value;
 					arch_reg->GetValue(&arch_reg_value);
 					reg_value = arch_reg_value;
 				}
-				break;
+				return true;
 			default:
 				if(debug)
 				{
@@ -2263,7 +2307,7 @@ MEMORY_ADDR DWARF_ExpressionVM<MEMORY_ADDR>::ReadRegister(unsigned int dw_reg_nu
 				return false;
 		}
 	}
-	return reg_value;
+	return false;
 }
 
 template <class MEMORY_ADDR>
@@ -2404,6 +2448,13 @@ void DWARF_ExpressionVM<MEMORY_ADDR>::SetObjectAddress(MEMORY_ADDR _object_addr)
 {
 	object_addr = _object_addr;
 	has_object_addr = true;
+}
+
+template <class MEMORY_ADDR>
+void DWARF_ExpressionVM<MEMORY_ADDR>::SetPC(MEMORY_ADDR _pc)
+{
+	pc = _pc;
+	has_pc = true;
 }
 
 template <class MEMORY_ADDR>

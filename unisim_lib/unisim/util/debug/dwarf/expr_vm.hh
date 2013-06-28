@@ -135,17 +135,20 @@ class DWARF_ExpressionVM
 {
 public:
 	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	DWARF_ExpressionVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler, DWARF_Frame<MEMORY_ADDR> *dw_frame);
 	~DWARF_ExpressionVM();
 	
 	bool Disasm(std::ostream& os, const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	bool Execute(const DWARF_Expression<MEMORY_ADDR> *dw_expr, MEMORY_ADDR& result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 	void SetFrameBase(MEMORY_ADDR frame_base);
 	void SetObjectAddress(MEMORY_ADDR object_addr);
+	void SetPC(MEMORY_ADDR pc);
 	void Push(MEMORY_ADDR addr);
 private:
 	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	const DWARF_RegisterNumberMapping *reg_num_mapping;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+	DWARF_Frame<MEMORY_ADDR> *dw_frame;
 	unisim::util::endian::endian_type file_endianness;
 	unisim::util::endian::endian_type arch_endianness;
 	unsigned int file_address_size;
@@ -155,12 +158,14 @@ private:
 	bool has_frame_base;
 	MEMORY_ADDR object_addr;
 	bool has_object_addr;
+	MEMORY_ADDR pc;
+	bool has_pc;
 	bool debug;
 	unisim::kernel::logger::Logger& logger;
 
 	bool Run(const DWARF_Expression<MEMORY_ADDR> *dw_expr, std::ostream *os, MEMORY_ADDR *result_addr, DWARF_Location<MEMORY_ADDR> *dw_location);
 
-	MEMORY_ADDR ReadRegister(unsigned int dw_reg_num) const;
+	bool ReadRegister(unsigned int dw_reg_num, MEMORY_ADDR& reg_value) const;
 	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size = 0, MEMORY_ADDR addr_space = 0) const;
 };
 
