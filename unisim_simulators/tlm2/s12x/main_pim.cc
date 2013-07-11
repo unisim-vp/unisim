@@ -56,6 +56,7 @@ int sc_main(int argc, char *argv[])
 			break;
 		case unisim::kernel::service::Simulator::ST_WARNING:
 			cerr << "Some warnings occurred during setup" << endl;
+			break;
 		case unisim::kernel::service::Simulator::ST_OK_TO_START:
 			cerr << "Starting simulation at supervisor privilege level (kernel mode)" << endl;
 			simulator->Run();
@@ -71,5 +72,5 @@ int sc_main(int argc, char *argv[])
 	WSACleanup();
 #endif
 
-	return 0;
+	return (0);
 }

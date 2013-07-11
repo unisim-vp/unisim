@@ -44,7 +44,7 @@
 #include <cmath>
 #include <map>
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -73,6 +73,7 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -106,7 +107,7 @@ using unisim::util::debug::Register;
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::service::Object;
@@ -117,9 +118,9 @@ class ECT :
 	, public CallBackObject
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 	, public Client<TrapReporting >
-	, public Service<Memory<service_address_t> >
+	, public Service<Memory<physical_address_t> >
 	, public Service<Registers>
-	, public Client<Memory<service_address_t> >
+	, public Client<Memory<physical_address_t> >
 
 {
 public:
@@ -151,8 +152,8 @@ public:
 
 	tlm_utils::simple_target_socket<ECT> bus_clock_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
 	// the kernel logger
@@ -161,22 +162,22 @@ public:
 	ECT(const sc_module_name& name, Object *parent = 0);
 	virtual ~ECT();
 
-	void RunBuildinSignalGenerator();
+	void runBuildinSignalGenerator();
 
-	void RunMainTimerCounter();
+	void runMainTimerCounter();
 	inline void main_timer_enable();
 	inline void main_timer_disable();
 
-	void RunOutputCompare();
+	void runOutputCompare();
 
-	void RunDownCounter();
+	void runDownCounter();
 	inline void down_counter_enable() { down_counter_enabled = true; down_counter_enable_event.notify(); }
 	inline void down_counter_disable() {down_counter_enabled = false; }
 
 	inline void delay_counter_enable() { delay_counter_enabled = true; delay_counter_enable_event.notify(); }
 	inline void delay_counter_disable() { delay_counter_enabled = false; }
-	inline bool isDelayCounterEnabled() { return delay_counter_enabled; }
-	sc_time getEdgeDelayCounter() { return edge_delay_counter_time; }
+	inline bool isDelayCounterEnabled() { return (delay_counter_enabled); }
+	sc_time getEdgeDelayCounter() { return (edge_delay_counter_time); }
 
 	inline void enterWaitMode();
 	inline void exitWaitMode();
@@ -213,8 +214,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             Registers Interface interface methods               =
@@ -239,7 +240,7 @@ protected:
     inline bool isInputCapture(uint8_t channel_index);
     inline void setTimerInterruptFlag(uint8_t ioc_index) { tflg1_register = tflg1_register | (1 << ioc_index); }
     bool isNoInputCaptureOverWrite(uint8_t ioc_index) { return ((icovw_register & (1 << ioc_index)) != 0);  }
-    uint16_t getMainTimerValue() { return tcnt_register; }
+    uint16_t getMainTimerValue() { return (tcnt_register); }
     bool isLatchMode() { return ((icsys_register & 0x01) != 0); }
 
     bool isBufferEnabled() { return ((icsys_register & 0x02) != 0); }
@@ -252,39 +253,39 @@ protected:
 	 */
 
     bool isPulseAccumulatorAEnabled() {
-    	return ((pactl_register & 0x40) != 0) &&
+    	return (((pactl_register & 0x40) != 0) &&
     			((tios_register & 0x0C) != 0) &&
     			((tctl12_register & 0x00F0) == 0) &&
-    			((oc7m_register & 0x80) == 0);
+    			((oc7m_register & 0x80) == 0));
     }
 
     bool isPulseAccumulatorBEnabled() {
-    	return ((pbctl_register & 0x40) != 0) &&
+    	return (((pbctl_register & 0x40) != 0) &&
     			((tios_register & 0x03) != 0) &&
     			((tctl12_register & 0x000F) == 0) &&
-    			((oc7m_register & 0x01) == 0);
+    			((oc7m_register & 0x01) == 0));
     }
 
     bool isPulseAccumulators8BitEnabled(uint8_t pac_index) {
 		if ((icpar_register & (1 << pac_index)) != 0) {
 	    	if (pac_index < 2) {
 	    		if ((pactl_register & 0x40) == 0) {
-	    			return true;
+	    			return (true);
 	    		}
 	    	} else {
 	    		if ((pbctl_register & 0x40) == 0) {
-	    			return true;
+	    			return (true);
 	    		}
 	    	}
 		}
 
-    	return false;
+    	return (false);
     }
 
     bool isOutputCompareMaskSet(uint8_t ioc_index) { return ((oc7m_register & (1 << ioc_index)) != 0); }
-    uint8_t getInterruptOffsetChannel0() { return offset_channel0_interrupt; }
-    uint8_t getInterruptPulseAccumulatorAOverflow() { return pulse_accumulatorA_overflow_interrupt; }
-    uint8_t getInterruptPulseAccumulatorBOverflow() { return pulse_accumulatorB_overflow_interrupt; }
+    uint8_t getInterruptOffsetChannel0() { return (offset_channel0_interrupt); }
+    uint8_t getInterruptPulseAccumulatorAOverflow() { return (pulse_accumulatorA_overflow_interrupt); }
+    uint8_t getInterruptPulseAccumulatorBOverflow() { return (pulse_accumulatorB_overflow_interrupt); }
     bool isInputOutputInterruptEnabled(uint8_t ioc_index) { return ((tie_register & (1 << ioc_index)) != 0); }
     bool isTimerOverflowinterruptEnabled() { return ((tscr2_register & 0x80) != 0); }
     bool isTimerCounterResetEnabled() { return ((tscr2_register & 0x08) != 0); }
@@ -302,9 +303,9 @@ protected:
 
 	bool getOC7Dx(uint8_t ioc_index) { return ((oc7d_register & (1 << ioc_index)) != 0); }
 
-    uint8_t getClockSelection() { return (pactl_register & 0x0C) >> 2; }
+    uint8_t getClockSelection() { return ((pactl_register & 0x0C) >> 2); }
 
-    bool isBuildin_edge_generator() { return builtin_signal_generator; }
+    bool isBuildin_edge_generator() { return (builtin_signal_generator); }
 
     void notify_paclk_event() { paclk_event.notify(); }
 
@@ -331,16 +332,16 @@ protected:
 	}
 
 	bool isTimerEnabled() { return ((tscr1_register & 0x80) != 0); }
-	sc_time getBusClock() { return bus_cycle_time; }
+	sc_time getBusClock() { return (bus_cycle_time); }
 
 	void resetTimerCounter() { tcnt_register = 0x0000; }
 
-	void RunChannelOutputCompareAction(uint8_t ioc_index);
+	void runChannelOutputCompareAction(uint8_t ioc_index);
 
 private:
-	inline void ComputeInternalTime();
-	inline void ComputeModulusCounterClock();
-	inline void ComputeTimerPrescaledClock();
+	inline void computeInternalTime();
+	inline void computeModulusCounterClock();
+	inline void computeTimerPrescaledClock();
 	inline void configureEdgeDetector();
     inline void configureOutputAction();
 
@@ -456,7 +457,7 @@ private:
 		void latchToHoldingRegisters();
 		bool countEdge8Bit();
 		void clearPACN() {	*pacn_register_ptr = 0x00;}
-		uint8_t getIndex() { return pacn_index; }
+		uint8_t getIndex() { return (pacn_index); }
 
 	protected:
 
@@ -481,13 +482,13 @@ private:
 
 		IOC_Channel_t(const sc_module_name& name, ECT *parent, const uint8_t index, bool* pinLogic, uint16_t *tc_ptr, uint16_t* tch_ptr, PulseAccumulator8Bit* pc8bit);
 
-		void RunOutputCompare();
+		void runOutputCompare();
 		void latchToHoldingRegisters();
-		void RunInputCapture();
+		void runInputCapture();
 		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
-		uint8_t getValideEdge() { return valideEdge; }
+		uint8_t getValideEdge() { return (valideEdge); }
 		void setOutputAction(uint8_t outputAction) { this->outputAction = outputAction; };
-		uint8_t getOutputAction() { return outputAction; };
+		uint8_t getOutputAction() { return (outputAction); };
 
 		void notifyEdge() { edge_event.notify(); }
 
@@ -528,7 +529,7 @@ private:
 		void process();
 		void latchToHoldingRegisters();
 
-		virtual void RunPulseAccumulator() = 0;
+		virtual void runPulseAccumulator() = 0;
 		virtual void wakeup() = 0;
 		void notifyEdge() { edge_event.notify(); }
 
@@ -552,7 +553,7 @@ private:
 	public:
 		PulseAccumulatorA(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low);
 
-		virtual void RunPulseAccumulator();
+		virtual void runPulseAccumulator();
 		virtual void wakeup() {
 			 if (ectParent->isPulseAccumulatorAEnabled()) {
 				 pulse_accumulator_enable_event.notify();
@@ -560,11 +561,11 @@ private:
 		}
 
 		void setMode(bool mode) { isGatedTimeMode = mode; }
-		bool isGatedTimeModeEnabled() { return isGatedTimeMode; }
+		bool isGatedTimeModeEnabled() { return (isGatedTimeMode); }
 		void setGateTime(sc_time bus_cycle_time) { gate_time = bus_cycle_time * 64; }
 
 		void setValideEdge(uint8_t edgeConfig) { valideEdge = edgeConfig; }
-		uint8_t getValideEdge() { return valideEdge; }
+		uint8_t getValideEdge() { return (valideEdge); }
 
 		virtual void VariableBaseNotify(const VariableBase *var) {
 			// check pulse accumulator A enable
@@ -588,7 +589,7 @@ private:
 	public:
 		PulseAccumulatorB(const sc_module_name& name, ECT *parent, bool* pinLogic, PulseAccumulator8Bit *pacn_high, PulseAccumulator8Bit *pacn_low);
 
-		virtual void RunPulseAccumulator();
+		virtual void runPulseAccumulator();
 		virtual void wakeup() {
 			 if (ectParent->isPulseAccumulatorBEnabled()) {
 				 pulse_accumulator_enable_event.notify();
@@ -613,9 +614,9 @@ private:
 
 bool ECT::isInputCapture(uint8_t channel_index) {
 	if ((tios_register & (1 << channel_index)) == 0) {
-		return true;
+		return (true);
 	} else {
-		return false;
+		return (false);
 	}
 }
 

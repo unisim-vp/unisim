@@ -21,13 +21,18 @@
 
 #include <unisim/kernel/service/service.hh>
 
+#include <unisim/service/debug/debugger/debugger.hh>
 #include <unisim/service/debug/gdb_server/gdb_server.hh>
+
+#include <unisim/service/profiling/addr_profiler/profiler.hh>
 
 #include <unisim/service/interfaces/loader.hh>
 
 #include <unisim/service/loader/elf_loader/elf_loader.hh>
 #include <unisim/service/loader/elf_loader/elf_loader.tcc>
 #include <unisim/service/loader/s19_loader/s19_loader.hh>
+
+#include <unisim/service/tee/memory_access_reporting/tee.hh>
 
 #include <unisim/service/tee/registers/registers_tee.hh>
 #include <unisim/service/tee/memory_import_export/memory_import_export_tee.hh>
@@ -36,8 +41,10 @@
 #include <unisim/service/time/host_time/time.hh>
 
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
+#include <unisim/component/cxx/processor/hcs12x/s12mpu_if.hh>
 
 #include <unisim/component/tlm2/processor/hcs12x/hcs12x.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12xgate.hh>
 #include <unisim/component/tlm2/processor/hcs12x/xint.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 #include <unisim/component/tlm2/processor/hcs12x/atd10b.hh>
@@ -45,10 +52,11 @@
 #include <unisim/component/tlm2/processor/hcs12x/crg.hh>
 #include <unisim/component/tlm2/processor/hcs12x/ect.hh>
 #include <unisim/component/tlm2/processor/hcs12x/s12xeetx.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12pit24b.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12sci.hh>
+#include <unisim/component/tlm2/processor/hcs12x/s12spi.hh>
 
 #include <unisim/component/tlm2/memory/ram/memory.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.hh>
-#include <unisim/component/tlm2/interconnect/generic_router/router.tcc>
 
 #include <unisim/util/garbage_collector/garbage_collector.hh>
 
@@ -76,18 +84,26 @@ using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::address_t;
+using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
 
 using unisim::component::tlm2::processor::hcs12x::XINT;
 using unisim::component::tlm2::processor::hcs12x::CRG;
 using unisim::component::tlm2::processor::hcs12x::ECT;
 using unisim::component::tlm2::processor::hcs12x::S12XEETX;
+using unisim::component::tlm2::processor::hcs12x::S12PIT24B;
+using unisim::component::tlm2::processor::hcs12x::S12SCI;
+using unisim::component::tlm2::processor::hcs12x::S12SPI;
 
+using unisim::service::debug::debugger::Debugger;
 using unisim::service::debug::gdb_server::GDBServer;
 using unisim::service::debug::inline_debugger::InlineDebugger;
+
 using unisim::service::interfaces::Loader;
 using unisim::service::loader::s19_loader::S19_Loader;
 using unisim::service::pim::PIM;
 using unisim::service::pim::PIMServer;
+
+using unisim::service::profiling::addr_profiler::Profiler;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::Client;
@@ -118,18 +134,19 @@ private:
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
-	virtual void Stop(Object *object, int _exit_status);
+	virtual void Stop(Object *object, int _exit_status, bool asynchronous);
 
 	void Run();
 
-	virtual double GetSimTime()	{ if (sim_time) { return sim_time->GetTime(); } else { return 0; }	}
-	virtual double GetHostTime()	{ if (host_time) { return host_time->GetTime(); } else { return 0; }	}
-	virtual long   GetStructuredAddress(long logicalAddress) { return mmc->getPagedAddress(logicalAddress); }
-	virtual long   GetPhysicalAddress(long logicalAddress) { return mmc->getPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00); }
+	virtual double GetSimTime()	{ if (sim_time) { return (sim_time->GetTime()); } else { return (0); }	}
+	virtual double GetHostTime()	{ if (host_time) { return (host_time->GetTime()); } else { return (0); }	}
+
+	virtual long   GetStructuredAddress(long logicalAddress) { return (mmc->getCPU12XPagedAddress(logicalAddress)); }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return (mmc->getCPU12XPhysicalAddress(logicalAddress, ADDRESS::EXTENDED, false, false, 0x00)); }
 
 	void GeneratePim() {
 		PIM *pim = new PIM("pim");
-		pim->GeneratePimFile();
+		pim->generatePimFile();
 		if (pim) { delete pim; pim = NULL; }
 	};
 
@@ -142,36 +159,29 @@ private:
 	//===                     Aliases for components classes                ===
 	//=========================================================================
 
-//	typedef unisim::component::tlm2::memory::ram::Memory<> MEMORY;
-	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
-	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
+//	typedef unisim::component::tlm2::memory::ram::Memory<> RAM;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  RAM;
+//	typedef unisim::component::tlm2::memory::ram::Memory<> FLASH;
+	typedef unisim::component::tlm2::memory::ram::Memory<32, physical_address_t, 8, 1024*1024, false>  FLASH;
+//	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
+	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<2, 32, physical_address_t, 8, 1024*1024, false>  EEPROM;
 
 	typedef unisim::component::tlm2::processor::hcs12x::HCS12X CPU;
-
-	class GlobalRouterConfig {
-	public:
-		static const unsigned int INPUT_SOCKETS = 1;
-		static const unsigned int OUTPUT_SOCKETS = 10;
-		static const unsigned int MAX_NUM_MAPPINGS = 10; //256;
-		static const unsigned int BUSWIDTH = 32;
-		typedef tlm::tlm_base_protocol_types TYPES;
-		static const bool VERBOSE = false;
-	};
-	typedef unisim::component::tlm2::interconnect::generic_router::Router<GlobalRouterConfig> GLOBAL_ROUTER;
+	typedef unisim::component::tlm2::processor::s12xgate::S12XGATE XGATE;
 
 	typedef unisim::component::tlm2::processor::hcs12x::S12XMMC MMC;
 
 	typedef unisim::component::tlm2::processor::hcs12x::PWM<8> PWM;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<16> ATD1;
 	typedef unisim::component::tlm2::processor::hcs12x::ATD10B<8> ATD0;
-
-	typedef unisim::component::tlm2::processor::hcs12x::S12XEETX<> EEPROM;
+	typedef unisim::component::tlm2::processor::hcs12x::S12PIT24B<4> PIT;
 
 // ******* REGARDE Interface ElfLoader pour le typedef ci-dessous
-	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<uint64_t, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
+	typedef unisim::service::loader::elf_loader::ElfLoaderImpl<CPU_ADDRESS_TYPE, ELFCLASS32, Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym> Elf32Loader;
 
-	typedef unisim::service::tee::registers::RegistersTee<> RegistersTee;
-	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<service_address_t> MemoryImportExportTee;
+	typedef unisim::service::tee::registers::RegistersTee<32> RegistersTee;
+	typedef unisim::service::tee::memory_import_export::MemoryImportExportTee<physical_address_t, 32> MemoryImportExportTee;
+	typedef unisim::service::tee::memory_access_reporting::Tee<CPU_ADDRESS_TYPE> MemoryAccessReportingTee;
 
 	//=========================================================================
 	//===                     Component instantiations                      ===
@@ -179,6 +189,7 @@ private:
 	//  - 68HCS12X processor
 
 	CPU *cpu;
+	XGATE *xgate;
 
 	MMC *mmc;
 
@@ -190,14 +201,15 @@ private:
 
 	PWM *pwm;
 
-	//  - tlm2 router
-	GLOBAL_ROUTER	*global_router;
+	PIT *pit;
+
+	S12SCI *sci0, *sci1, *sci2, *sci3, *sci4, *sci5;
+
+	S12SPI *spi0, *spi1, *spi2;
 
 	//  - Memories
-//	MEMORY *global_memory;
 	RAM *global_ram;
 	FLASH *global_flash;
-
 	EEPROM *global_eeprom;
 
 	// - Interrupt controller
@@ -206,6 +218,9 @@ private:
 	RegistersTee* registersTee;
 
 	MemoryImportExportTee* memoryImportExportTee;
+
+	//  - Tee Memory Access Reporting
+	MemoryAccessReportingTee *tee_memory_access_reporting;
 
 #ifdef HAVE_RTBCOB
 	RTBStub *rtbStub;
@@ -217,18 +232,24 @@ private:
 	//===                         Service instantiations                    ===
 	//=========================================================================
 
-	Service<Loader > *loaderS19;
-	Service<Loader > *loaderELF;
+	S19_Loader<CPU_ADDRESS_TYPE> *loaderS19;
+	Elf32Loader *loaderELF;
 
+	//  - profiler
+	Profiler<CPU_ADDRESS_TYPE> *profiler;
+
+	//  - Debugger
+	Debugger<CPU_ADDRESS_TYPE> *debugger;
 
 	//  - GDB server
-	GDBServer<SERVICE_ADDRESS_TYPE> *gdb_server;
+	GDBServer<CPU_ADDRESS_TYPE> *gdb_server;
 
 	// PIM server
-	PIMServer<SERVICE_ADDRESS_TYPE> *pim_server;
+	PIMServer<CPU_ADDRESS_TYPE> *pim_server;
 
 	//  - Inline debugger
-	InlineDebugger<SERVICE_ADDRESS_TYPE> *inline_debugger;
+	InlineDebugger<CPU_ADDRESS_TYPE> *inline_debugger;
+
 	//  - SystemC Time
 	unisim::service::time::sc_time::ScTime *sim_time;
 	//  - Host Time

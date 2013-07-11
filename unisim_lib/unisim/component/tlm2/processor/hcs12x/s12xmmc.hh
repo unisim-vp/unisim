@@ -43,11 +43,13 @@
 #include <iostream>
 #include <cmath>
 
-#include <systemc.h>
+#include <systemc>
+#include <tlm.h>
 
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
 #include "tlm_utils/multi_passthrough_target_socket.h"
+#include "tlm_utils/multi_passthrough_initiator_socket.h"
 
 #include "unisim/service/interfaces/trap_reporting.hh"
 #include <unisim/kernel/service/service.hh>
@@ -63,6 +65,10 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using namespace sc_core;
+using namespace sc_dt;
+using tlm_utils::simple_initiator_socket;
+
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::TrapReporting;
@@ -70,13 +76,17 @@ using unisim::service::interfaces::TrapReporting;
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::MMC;
 using unisim::component::cxx::processor::hcs12x::MMC_DATA;
+using unisim::component::cxx::processor::hcs12x::S12MPU_IF;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::service_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
+using unisim::component::cxx::processor::hcs12x::TSemaphore;
+using unisim::component::cxx::processor::hcs12x::TOWNER;
 
 using unisim::kernel::service::Object;
 using unisim::kernel::tlm2::PayloadFabric;
+
 
 class S12XMMC :
 	public sc_module,
@@ -85,33 +95,31 @@ class S12XMMC :
 
 {
 public:
+
 	typedef MMC inherited;
 
 	ServiceImport<TrapReporting > trap_reporting_import;
 	
 	tlm_utils::simple_target_socket<S12XMMC> cpu_socket;
-//	tlm_utils::simple_initiator_socket<S12XMMC> local_socket;
-//	tlm_utils::simple_initiator_socket<S12XMMC> external_socket;
-	tlm_utils::simple_initiator_socket<S12XMMC> memory_socket;
+	tlm_utils::simple_target_socket<S12XMMC> xgate_socket;
 
-	S12XMMC(const sc_module_name& name, Object *parent = 0);
+	tlm_utils::multi_passthrough_initiator_socket<S12XMMC> init_socket;
+
+	S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu = 0, Object *parent = 0);
 	virtual ~S12XMMC();
 
-	void Run();
-
-	virtual void b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	virtual void cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
+	virtual void xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
 private:
 
 	sc_time tlm2_btrans_time;
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	// TODO: complete by integrating the routing functionality to the MMC
-	static const uint8_t DEVICE_MAP_SIZE = 7;
-	struct {
-		address_t	start_address;
-		address_t	end_address;
-	} deviceMap[DEVICE_MAP_SIZE];
+	TSemaphore busSemaphore;
+	sc_event   busSemaphore_event;
+
+	bool accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd);
 
 }; /* end class S12XMMC */
 

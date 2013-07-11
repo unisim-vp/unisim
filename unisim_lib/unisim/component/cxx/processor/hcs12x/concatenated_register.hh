@@ -85,7 +85,7 @@ ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::~ConcatenatedRegister()
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 const char *ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetName() const
 {
-	return name.c_str();
+	return (name.c_str());
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -111,7 +111,7 @@ void ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::SetValue(const void
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 int ConcatenatedRegister<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetSize() const
 {
-	return sizeof(REGISTER_TYPE);
+	return (sizeof(REGISTER_TYPE));
 }
 
 // ***********************************************
@@ -159,42 +159,42 @@ template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 const char *ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetDataTypeName() const {
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return "16-bit concatenated register";
-	case 2: return "32-bit concatenated register";
-	case 4: return "64-bit concatenated register";
+	case 1: return ("16-bit concatenated register");
+	case 2: return ("32-bit concatenated register");
+	case 4: return ("64-bit concatenated register");
 	default: throw std::runtime_error("Internal error");
 	}
-	return "?";
+	return ("?");
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
-unsigned int ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetBitSize() const { return sizeof(REGISTER_TYPE) * 8; }
+unsigned int ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::GetBitSize() const { return (sizeof(REGISTER_TYPE) * 8); }
 
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>:: operator bool () const {
-	return *regHigh || *regLow;
+	return (*regHigh || *regLow);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator long long () const {
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return (long long) (int16_t) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow);
-	case 2: return (long long) (int32_t) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow);
-	case 4: return (long long) (int64_t) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow);
+	case 1: return ((long long) (int16_t) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
+	case 2: return ((long long) (int32_t) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
+	case 4: return ((long long) (int64_t) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
 	default: throw std::runtime_error("Internal error");
 	}
-	return 0;
+	return (0);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator unsigned long long () const {
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return (unsigned long long) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow);
-	case 2: return (unsigned long long) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow);
-	case 4: return (unsigned long long) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow);
+	case 1: return ((unsigned long long) (((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
+	case 2: return ((unsigned long long) (((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
+	case 4: return ((unsigned long long) (((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
 	default: throw std::runtime_error("Internal error");
 	}
 }
@@ -203,12 +203,12 @@ template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
 ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator double () const {
 	switch(sizeof(SUB_REGISTER_TYPE))
 	{
-	case 1: return (double) (int16_t) ((((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow));
-	case 2: return (double) (int32_t) ((((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow));
-	case 4: return (double) (int64_t) ((((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow));
+	case 1: return ((double) (int16_t) ((((uint16_t) *regHigh) << 8) | ((uint16_t) *regLow)));
+	case 2: return ((double) (int32_t) ((((uint32_t) *regHigh) << 16) | ((uint32_t) *regLow)));
+	case 4: return ((double) (int64_t) ((((uint64_t) *regHigh) << 32) | ((uint64_t) *regLow)));
 	default: throw std::runtime_error("Internal error");
 	}
-	return 0;
+	return (0);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -220,7 +220,7 @@ ConcatenatedRegisterView<REGISTER_TYPE, SUB_REGISTER_TYPE>::operator std::string
 	sstr << (uint64_t) *regHigh;
 	sstr.width(2 * sizeof(SUB_REGISTER_TYPE));
 	sstr << (uint64_t) *regLow;
-	return sstr.str();
+	return (sstr.str());
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -231,7 +231,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 		*regLow = value ? 1 : 0;
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -242,7 +242,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 		*regLow = value;
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -253,7 +253,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 		*regLow = value;
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -264,7 +264,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 		*regLow = (int64_t) value;
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 template <class REGISTER_TYPE, class SUB_REGISTER_TYPE>
@@ -276,7 +276,7 @@ unisim::kernel::service::VariableBase& ConcatenatedRegisterView<REGISTER_TYPE, S
 		*regLow = v;
 		NotifyListeners();
 	}
-	return *this;
+	return (*this);
 }
 
 

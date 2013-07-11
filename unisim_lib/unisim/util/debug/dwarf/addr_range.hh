@@ -36,6 +36,7 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_ADDR_RANGE_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/version.hh>
 
 namespace unisim {
 namespace util {
@@ -55,6 +56,7 @@ public:
 	MEMORY_ADDR GetAddress() const;
 	MEMORY_ADDR GetLength() const;
 	bool IsNull() const;
+	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_AddressRangeDescriptor<MEMORY_ADDR>& dw_addr_range_desc);
@@ -73,12 +75,15 @@ class DWARF_AddressRanges
 public:
 	DWARF_AddressRanges(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_AddressRanges();
-	endian_type GetEndianness() const;
+	endian_type GetFileEndianness() const;
 	uint8_t GetSegmentSize() const;
 	uint8_t GetAddressSize() const;
+	DWARF_Version GetDWARFVersion() const;
 	const std::vector<DWARF_AddressRangeDescriptor<MEMORY_ADDR> *>& GetDescriptors() const;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *GetCompilationUnit() const;
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	bool HasOverlap(MEMORY_ADDR addr, MEMORY_ADDR length) const;
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
@@ -86,6 +91,8 @@ public:
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
+	unsigned int id;
+	DWARF_Version dw_ver;
 	
 	uint64_t unit_length;        // The length of the entries for that set, not including the length field itself (see Section 7.2.2).
 	

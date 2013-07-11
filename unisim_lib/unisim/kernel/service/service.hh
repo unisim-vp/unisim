@@ -289,10 +289,13 @@ public:
 
 	void GenerateLatexDocumentation(ostream& os) const;
 	
-	virtual double GetSimTime()	{ return 0;	}
-	virtual double GetHostTime()	{ return 0;	}
-	virtual long   GetStructuredAddress(long logicalAddress) { return logicalAddress; }
-	virtual long   GetPhysicalAddress(long logicalAddress) { return logicalAddress; }
+	virtual double GetSimTime()	{ return (0);	}
+	virtual double GetHostTime()	{ return (0);	}
+
+	// ********** The following methods are added by Reda and used by PIMServer *****
+	virtual long   GetStructuredAddress(long logicalAddress) { return (logicalAddress); }
+	virtual long   GetPhysicalAddress(long logicalAddress) { return (logicalAddress); }
+	// *******************************************************************************
 
 	bool IsWarningEnabled() const;
 
@@ -403,7 +406,7 @@ private:
 	{
 		bool operator() (const char *s1, const char *s2) const
 		{
-			return strcmp(s1, s2) < 0;
+			return (strcmp(s1, s2) < 0);
 		}
 	};
 
@@ -444,11 +447,11 @@ public:
 	virtual ~CallBackObject() {}
 
 	virtual bool read(unsigned int offset, const void *buffer, unsigned int data_length) {
-		return false;
+		return (false);
 	}
 
 	virtual bool write(unsigned int offset, const void *buffer, unsigned int data_length) {
-		return false;
+		return (false);
 	}
 
 	typedef bool (CallBackObject::*cbwrite)(unsigned int offset, const void*, unsigned int size);
@@ -512,24 +515,24 @@ protected:
 
 		CallBackObject *cb = m_callback.get();
 		if (cb != NULL) {
-			return ((TCallBack<TYPE>&) *m_callback).Write(storage);
+			return (((TCallBack<TYPE>&) *m_callback).Write(storage));
 		}
 
-		return false;
+		return (false);
 	}
 
 	bool ReadBack(TYPE& storage) const {
 
 		CallBackObject *cb = m_callback.get();
 		if (cb != NULL) {
-			return ((TCallBack<TYPE>&) *m_callback).Read(storage);
+			return (((TCallBack<TYPE>&) *m_callback).Read(storage));
 		}
 
-		return false;
+		return (false);
 	}
 
-	const CallBackObject& callback() const { return *m_callback; }
-	CallBackObject& scallback() { return *m_callback; }
+	const CallBackObject& callback() const { return (*m_callback); }
+	CallBackObject& scallback() { return (*m_callback); }
 
 private:
 	TYPE *storage;
@@ -676,9 +679,9 @@ VariableBase& VariableArray<TYPE>::operator [] (unsigned int index)
 	if(index >= variables.size())
 	{
 		cerr << "Subscript out of range" << endl;
-		return *Simulator::simulator->void_variable;
+		return (*Simulator::simulator->void_variable);
 	}
-	return *variables[index];
+	return (*variables[index]);
 }
 
 template <class TYPE>
@@ -687,15 +690,15 @@ const VariableBase& VariableArray<TYPE>::operator [] (unsigned int index) const
 	if(index >= variables.size())
 	{
 		cerr << "Subscript out of range" << endl;
-		return *Simulator::simulator->void_variable;
+		return (*Simulator::simulator->void_variable);
 	}
-	return *variables[index];
+	return (*variables[index]);
 }
 
 template <class TYPE>
 unsigned int VariableArray<TYPE>::GetLength() const
 {
-	return variables.size();
+	return (variables.size());
 }
 
 template <class TYPE>
@@ -707,7 +710,7 @@ VariableBase& VariableArray<TYPE>::operator = (const VariableBase& variable)
 	{
 		*variables[index] = variable[index];
 	}
-	return *this;
+	return (*this);
 }
 
 template <class TYPE>
@@ -724,7 +727,7 @@ void VariableArray<TYPE>::SetFormat(Format fmt)
 template <class TYPE>
 const char *VariableArray<TYPE>::GetDataTypeName() const
 {
-	return "array";
+	return ("array");
 }
 
 template <class TYPE>
@@ -906,7 +909,7 @@ public:
 	virtual void Dump(ostream& os) const = 0;
 	virtual Object *GetService() const = 0;
 	virtual ServiceExportBase *GetServiceExport() = 0;
-private:
+protected:
 	string name;
 	Object *owner;
 };
@@ -931,7 +934,7 @@ public:
 
 	friend void operator >> (ServiceExportBase& lhs, ServiceImportBase& rhs);
 	friend void operator << (ServiceImportBase& lhs, ServiceExportBase& rhs);
-private:
+protected:
 	string name;
 	Object *owner;
 	list<ServiceImportBase *> setup_dependencies;
@@ -1043,13 +1046,20 @@ ServiceImport<SERVICE_IF>::~ServiceImport()
 template <class SERVICE_IF>
 inline ServiceImport<SERVICE_IF>::operator SERVICE_IF * () const
 {
-	return service;
+	return (service);
 }
 
 template <class SERVICE_IF>
 inline SERVICE_IF *ServiceImport<SERVICE_IF>::operator -> () const
 {
-	return service;
+#ifdef DEBUG_SERVICE
+	if(!service)
+	{
+		cerr << "ERROR! " << GetName() << " interface can't be used because it is not bound to a service." << endl;
+		owner->Object::Stop(-1);
+	}
+#endif
+	return (service);
 }
 
 template <class SERVICE_IF>
@@ -1117,31 +1127,31 @@ template <class SERVICE_IF>
 Service<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveService(Client<SERVICE_IF> *_client)
 {
 	if(alias_import)
-		return alias_import->ResolveService(_client);
+		return (alias_import->ResolveService(_client));
 	else
-		if(srv_export) return srv_export->ResolveService(_client);
+		if(srv_export) return (srv_export->ResolveService(_client));
 
 #ifdef DEBUG_SERVICE
 	cerr << GetName() << ".ResolveService(" << _client->GetName() << ") failed" << endl;
 #endif
-	return 0;
+	return (0);
 }
 
 template <class SERVICE_IF>
 ServiceExport<SERVICE_IF> *ServiceImport<SERVICE_IF>::ResolveServiceExport()
 {
 	if(alias_import)
-		return alias_import->ResolveServiceExport();
+		return (alias_import->ResolveServiceExport());
 	else
-		if(srv_export) return srv_export->ResolveServiceExport();
+		if(srv_export) return (srv_export->ResolveServiceExport());
 
-	return 0;
+	return (0);
 }
 
 template <class SERVICE_IF>
 ServiceExportBase *ServiceImport<SERVICE_IF>::GetServiceExport()
 {
-	return ResolveServiceExport();
+	return (ResolveServiceExport());
 }
 
 template <class SERVICE_IF>
@@ -1283,7 +1293,7 @@ void ServiceImport<SERVICE_IF>::Dump(ostream& os) const
 template <class SERVICE_IF>
 Object *ServiceImport<SERVICE_IF>::GetService() const
 {
-	return service;
+	return (service);
 }
 
 //=============================================================================
@@ -1377,7 +1387,7 @@ ServiceExport<SERVICE_IF>::~ServiceExport()
 template <class SERVICE_IF>
 inline bool ServiceExport<SERVICE_IF>::IsConnected() const
 {
-	return client != 0;
+	return (client != 0);
 }
 
 template <class SERVICE_IF>
@@ -1529,15 +1539,15 @@ Service<SERVICE_IF> *ServiceExport<SERVICE_IF>::ResolveService(Client<SERVICE_IF
 {
 	if(actual_export)
 	{
-		return actual_export->ResolveService(_client);
+		return (actual_export->ResolveService(_client));
 	}
 
 	if(service)
 	{
 		client = _client;
-		return service;
+		return (service);
 	}
-	return 0;
+	return (0);
 }
 
 template <class SERVICE_IF>
@@ -1545,10 +1555,10 @@ ServiceExport<SERVICE_IF> *ServiceExport<SERVICE_IF>::ResolveServiceExport()
 {
 	if(actual_export)
 	{
-		return actual_export->ResolveServiceExport();
+		return (actual_export->ResolveServiceExport());
 	}
 
-	return this;
+	return (this);
 }
 
 template <class SERVICE_IF>
@@ -1561,7 +1571,7 @@ void ServiceExport<SERVICE_IF>::UnresolveClient()
 	if(actual_export)
 	{
 		client = 0;
-		return actual_export->UnresolveClient();
+		return (actual_export->UnresolveClient());
 	}
 
 	if(client)
@@ -1593,13 +1603,13 @@ void ServiceExport<SERVICE_IF>::Dump(ostream& os) const
 template <class SERVICE_IF>
 Object *ServiceExport<SERVICE_IF>::GetClient() const
 {
-	return client;
+	return (client);
 }
 
 template <class SERVICE_IF>
 Object *ServiceExport<SERVICE_IF>::GetService() const
 {
-	return service;
+	return (service);
 }
 
 //=============================================================================
@@ -1613,7 +1623,7 @@ ServiceExport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceE
 	lhs.Bind(rhs);
 	rhs.Bind(lhs);
 	lhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (export <- import) ==> import
@@ -1623,7 +1633,7 @@ ServiceImport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceI
 	rhs.Bind(lhs);
 	lhs.Bind(rhs);
 	rhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (import1 -> import2) ==> import2
@@ -1632,7 +1642,7 @@ ServiceImport<SERVICE_IF>& operator >> (ServiceImport<SERVICE_IF>& lhs, ServiceI
 {
 	lhs.Bind(rhs);
 	lhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (import1 <- import2) ==> import2
@@ -1641,7 +1651,7 @@ ServiceImport<SERVICE_IF>& operator << (ServiceImport<SERVICE_IF>& lhs, ServiceI
 {
 	rhs.Bind(lhs);
 	rhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (export1 -> export2) ==> export2
@@ -1650,7 +1660,7 @@ ServiceExport<SERVICE_IF>& operator >> (ServiceExport<SERVICE_IF>& lhs, ServiceE
 {
 	rhs.Bind(lhs);
 	lhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 // (export1 <- export2) ==> export2
@@ -1659,11 +1669,11 @@ ServiceExport<SERVICE_IF>& operator << (ServiceExport<SERVICE_IF>& lhs, ServiceE
 {
 	lhs.Bind(rhs);
 	rhs.ResolveClient();
-	return rhs;
+	return (rhs);
 }
 
 } // end of namespace service
 } // end of namespace kernel
 } // end of namespace unisim
 
-#endif
+#endif // __UNISIM_KERNEL_SERVICE_SERVICE_HH__

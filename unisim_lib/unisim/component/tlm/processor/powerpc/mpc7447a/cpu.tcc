@@ -89,7 +89,9 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent) :
 
 	SC_THREAD(Run);
 	
+#if 0
 	SC_THREAD(BusMaster);
+#endif
 }
 
 template <class CONFIG>
@@ -210,6 +212,7 @@ void CPU<CONFIG>::Run()
 #endif
 }
 
+#if 0
 template <class CONFIG>
 void CPU<CONFIG>::BusMaster()
 {
@@ -236,7 +239,7 @@ void CPU<CONFIG>::BusMaster()
 		}
 	}
 }
-
+#endif
 	
 template <class CONFIG>
 bool CPU<CONFIG>::Send(const Pointer<TlmMessage<FSBReq, FSBRsp> >& message)

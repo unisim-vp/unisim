@@ -50,9 +50,9 @@ public:
 	XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent = 0);
 	~XML_ATD_PWM_STUB();
 
-	void ProcessATD0();
-	void ProcessATD1();
-	void ProcessPWM();
+	void processATD0();
+	void processATD1();
+	void processPWM();
 
 	template <int ATD_SIZE>
 	struct data_t {

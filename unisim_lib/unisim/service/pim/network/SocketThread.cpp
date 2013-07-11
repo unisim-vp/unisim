@@ -115,21 +115,20 @@ SocketThread::~SocketThread() {
 
 }
 
-void SocketThread::Start(int sockfd, bool _blocking) {
+void SocketThread::startSocketThread(int sockfd, bool _blocking) {
 
 	this->blocking = _blocking;
-	SetSockfd(sockfd);
+	setSockfd(sockfd);
 
 	this->start();
 }
 
-void SocketThread::SetSockfd(int sockfd) {
+void SocketThread::setSockfd(int sockfd) {
 
     pthread_mutex_lock( &sockfd_mutex );
 
 	this->sockfd = sockfd;
 
-//    pthread_cond_signal( &sockfd_condition_cond );
     pthread_cond_broadcast( &sockfd_condition_cond );
 
     pthread_mutex_unlock( &sockfd_mutex );
@@ -155,10 +154,12 @@ bool SocketThread::PutChar(char c) {
 
 	output_buffer_strm << c;
 
-	return true;
+	return (true);
 }
 
-bool SocketThread::PutPacket(const string& data, bool blocking) {
+bool SocketThread::PutPacket(const string& data) {
+
+	char c;
 
 	int data_size = data.size();
 
@@ -171,9 +172,27 @@ bool SocketThread::PutPacket(const string& data, bool blocking) {
 		checksum += (uint8_t) data[pos];
 	}
 
-	output_buffer_strm << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf);
+	output_buffer_strm << nibble2HexChar(checksum >> 4) << nibble2HexChar(checksum & 0xf);
 
-	return true;
+	do
+	{
+		if (!FlushOutput()) {
+			if (blocking) {
+				cerr << "SocketThread unable to send !" << endl;
+				return (false);
+			} else {
+#ifdef WIN32
+				Sleep(1);
+#else
+				usleep(1000);
+#endif
+				continue;
+			}
+		}
+
+	} while(GetChar(c, true) && c != '+');
+
+	return (true);
 
 }
 
@@ -187,11 +206,11 @@ bool SocketThread::OutputText(const char *s, int count)
 	p++;
 	for(i = 0; i < count; i++, p += 2)
 	{
-		p[0] = Nibble2HexChar((uint8_t) s[i] >> 4);
-		p[1] = Nibble2HexChar((uint8_t) s[i] & 0xf);
+		p[0] = nibble2HexChar((uint8_t) s[i] >> 4);
+		p[1] = nibble2HexChar((uint8_t) s[i] & 0xf);
 	}
 	*p = 0;
-	return PutPacket((const char *) packet, blocking);
+	return (PutPacket((const char *) packet));
 }
 
 bool SocketThread::FlushOutput() {
@@ -272,10 +291,10 @@ bool SocketThread::FlushOutput() {
 	}
 
 	if (output_buffer_size > 0) {
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 bool SocketThread::GetPacket(string& str, bool blocking) {
@@ -317,26 +336,39 @@ bool SocketThread::GetPacket(string& str, bool blocking) {
     			}
 
     			GetChar(c, blocking);
-    			pchk = HexChar2Nibble(c) << 4;
+    			pchk = hexChar2Nibble(c) << 4;
     			GetChar(c, blocking);
-    			pchk = pchk + HexChar2Nibble(c);
+    			pchk = pchk + hexChar2Nibble(c);
 
-    			if (checkSum != pchk) {
-    				cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
-    				return false;
-    			} else {
+				if (checkSum != pchk) {
+					cerr << "receive_packet: wrong checksum checkSum= " << checkSum << " pchk= " << pchk << endl;
+    				if(!PutChar('-')) return (false);
+    				if(!FlushOutput()) return (false);
+    			}
+    			else
+    			{
+    				if(!PutChar('+')) return (false);
+    				if(!FlushOutput()) return (false);
 
-    				return true;
+    				if(str.length() >= 3 && str[2] == ':')
+    				{
+    					if(!PutChar(str[0])) return (false);
+    					if(!PutChar(str[1])) return (false);
+    					if(!FlushOutput()) return (false);
+    					str.erase(0, 3);
+    				}
+    				return (true);
     			}
 
     			break;
     		default:
-    			cerr << "receive_packet: protocol error (0x" << Nibble2HexChar(c) << ":" << c << ")";
+    			cerr << "receive_packet: protocol error (0x" << nibble2HexChar(c) << ":" << c << ")";
+    			break;
     	}
 
 	}
 
-	return false;
+	return (false);
 
 }
 
@@ -417,10 +449,10 @@ bool SocketThread::GetChar(char& c, bool blocking) {
 		c = input_buffer[input_buffer_index];
 		input_buffer_size--;
 		input_buffer_index++;
-		return true;
+		return (true);
 	} else {
 		c = 0;
-		return false;
+		return (false);
 	}
 
 }

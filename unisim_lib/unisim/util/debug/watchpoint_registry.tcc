@@ -142,9 +142,10 @@ bool WatchpointMapPage<ADDRESS>::HasWatchpoint(unisim::util::debug::MemoryAccess
 					if(map[offset / 16] & (mask << (2 * (offset % 16)))) return true;
 				} while(++offset, --size);
 			}
+			break;
 	}
 
-	return false;
+	return (false);
 }
 
 template <class ADDRESS>

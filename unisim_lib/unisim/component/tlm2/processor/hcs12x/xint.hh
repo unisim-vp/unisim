@@ -44,7 +44,7 @@
 #include <cmath>
 #include <map>
 
-#include <systemc.h>
+#include <systemc>
 #include "tlm_utils/tlm_quantumkeeper.h"
 #include "tlm_utils/simple_initiator_socket.h"
 #include "tlm_utils/simple_target_socket.h"
@@ -69,11 +69,14 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
+using unisim::component::cxx::processor::hcs12x::TOWNER;
 using unisim::component::cxx::processor::hcs12x::address_t;
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Parameter;
@@ -98,9 +101,9 @@ using unisim::kernel::tlm2::PayloadFabric;
 class XINT :
 	public sc_module
 	, public CallBackObject
-	, public Service<Memory<service_address_t> >
+	, public Service<Memory<physical_address_t> >
 	, public Service<Registers>
-	, public Client<Memory<service_address_t> >
+	, public Client<Memory<physical_address_t> >
 	, virtual public tlm_fw_transport_if<XINT_REQ_ProtocolTypes >
 
 {
@@ -127,7 +130,8 @@ public:
 	static const uint8_t	INT_SWI_OFFSET					= 0xF6;
 	static const uint8_t	INT_XIRQ_OFFSET					= 0xF4;
 	static const uint8_t	INT_IRQ_OFFSET					= 0xF2;
-	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;
+	static const uint8_t	INT_RAM_ACCESS_VIOLATION_OFFSET	= 0x60;	// used for 68HCS12XD only
+	static const uint8_t	INT_MPU_ACCESS_ERROR_OFFSET		= 0x14;	// used for 68HCS12XE only
 	static const uint8_t	INT_SYSCALL_OFFSET				= 0x12;
 	static const uint8_t	INT_SPURIOUS_OFFSET				= 0x10;
 
@@ -149,24 +153,20 @@ public:
 
 
 	// to connect to CPU
-	tlm_utils::simple_initiator_socket<XINT> toCPU_Initiator;
-
-	// from CPU
-	tlm_utils::simple_target_socket<XINT> fromCPU_Target;
+	tlm_utils::simple_initiator_socket<XINT> toCPU12X_request;
+	tlm_utils::simple_initiator_socket<XINT> toXGATE_request;
 
 	// interface with bus
 	tlm_utils::simple_target_socket<XINT> slave_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
 	XINT(const sc_module_name& name, Object *parent = 0);
 	virtual ~XINT();
 
-	void Run(); // Priority Decoder and Interrupt selection
-
-	virtual void getVectorAddress( tlm::tlm_generic_payload& trans, sc_time& delay );
+	void run(); // Priority Decoder and Interrupt selection
 
 	virtual void Reset();
 
@@ -174,17 +174,25 @@ public:
 	virtual bool Setup(ServiceExportBase *srv_export);
 	virtual bool EndSetup();
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
     //================================================================
     //=                    tlm2 Interface                            =
     //================================================================
+
+	// interrupt request from peripherals
     virtual void invalidate_direct_mem_ptr(sc_dt::uint64 start_range, sc_dt::uint64 end_range);
 	virtual unsigned int transport_dbg(XINT_Payload& payload);
 	virtual tlm_sync_enum nb_transport_fw(XINT_Payload& payload, tlm_phase& phase, sc_core::sc_time& t);
 	virtual void b_transport(XINT_Payload& payload, sc_core::sc_time& t);
 	virtual bool get_direct_mem_ptr(XINT_Payload& payload, tlm_dmi&  dmi_data);
+
+	// backward method for interrupts handling by CPU and XGATE
+//	virtual tlm_sync_enum nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	tlm_sync_enum cpu_nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+	tlm_sync_enum xgate_nb_transport_bw( tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t);
+
 
 	virtual void read_write( tlm::tlm_generic_payload& trans, sc_time& delay );
 
@@ -226,29 +234,46 @@ private:
 
 	PayloadFabric<tlm::tlm_generic_payload> payloadFabric;
 
-	bool	interrupt_flags[XINT_SIZE];
+	class PendingInterrupt {
+	public:
+		PendingInterrupt() : state(false), payload(0) {}
+		~PendingInterrupt() { /*releasePayload();*/ }
+
+		void setState(bool _state) { state = _state; }
+		bool getState() { return (state); }
+		void setPayload(XINT_Payload* _payload) { payload = _payload; }
+		XINT_Payload getPayload() { return (*payload); }
+		void releasePayload() { if (payload) {payload->release(); payload = NULL; } }
+
+	private:
+		bool state;
+		XINT_Payload* payload;
+
+	} interrupt_flags[XINT_SIZE];
 
 	sc_time zeroTime;
 
 	peq_with_get<XINT_Payload> input_payload_queue;
 
-//	sc_event interrupt_request_event;
-
 	uint8_t ivbr;
 	uint8_t	int_xgprio;
 	uint8_t	int_cfaddr;
-//	uint8_t	int_cfwdata[XINT_SIZE];
 	uint8_t	*int_cfwdata;
 
-	bool isHardwareInterrupt;
+	sc_event retry_event;
 
 	bool	debug_enabled;
 	Parameter<bool>	param_debug_enabled;
+
+	address_t	baseAddress;
+	Parameter<address_t>   param_baseAddress;
 
 	// Registers map
 	map<string, Register *> registers_registry;
 
 	std::vector<unisim::kernel::service::VariableBase*> extended_registers_registry;
+
+	bool selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer);
 
 public:
 
@@ -256,13 +281,14 @@ public:
 	//=              Interrupt Vectors             =
 	//==============================================
 
-	address_t get_SysReset_Vector() { return 0xFFFE; }
-	address_t get_IllegalAccessReset_Vector() { return 0xFFFE; }
-	address_t get_ClockMonitorReset_Vector() { return 0xFFFC; }
-	address_t get_COPWatchdogReset_Vector() { return 0xFFFA; }
-	address_t get_XIRQ_Vector() { return ((address_t) getIVBR() << 8) + INT_XIRQ_OFFSET; }
+	address_t get_SysReset_Vector() { return (0xFFFE); }
+	address_t get_IllegalAccessReset_Vector() { return (0xFFFE); }
+	address_t get_ClockMonitorReset_Vector() { return (0xFFFC); }
+	address_t get_COPWatchdogReset_Vector() { return (0xFFFA); }
+	address_t get_XIRQ_Vector() { return (((address_t) getIVBR() << 8) + INT_XIRQ_OFFSET); }
+	address_t get_MPUACCESSERROR_Vector() { return (((address_t) getIVBR() << 8) + INT_MPU_ACCESS_ERROR_OFFSET); }
 
-	address_t get_Spurious_Vector() { return ((address_t) getIVBR() << 8) + INT_SPURIOUS_OFFSET; } // Spurious interrupt
+	address_t get_Spurious_Vector() { return (((address_t) getIVBR() << 8) + INT_SPURIOUS_OFFSET); } // Spurious interrupt
 
 /*
 	address_t get_Trap_Vector() { return ((address_t) getIVBR() << 8) + 0xF8; } // Shared interrupt vector for traps ($FFF8:$FFF9)

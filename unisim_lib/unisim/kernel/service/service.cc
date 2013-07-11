@@ -53,8 +53,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <limits.h>
-#include <limits>
+//#include <limits.h>
+//#include <limits>
 #if defined(__APPLE_CC__) || defined (linux) 
 #include <dlfcn.h>
 #endif
@@ -253,7 +253,8 @@ bool ResolvePath(const std::string& prefix_dir,
 	std::string unresolved_dir = prefix_dir;
 	unresolved_dir += '/';
 	unresolved_dir += suffix_dir;
-	char resolved_dir_buf[PATH_MAX + 1];
+//	char resolved_dir_buf[PATH_MAX + 1];
+	char resolved_dir_buf[FILENAME_MAX + 1];
 
 #if defined(linux) || defined(__APPLE_CC__)
 	if ( realpath(unresolved_dir.c_str(), 
@@ -2068,7 +2069,7 @@ const char *ServiceExportBase::GetName() const
 
 void ServiceExportBase::SetupDependsOn(ServiceImportBase& srv_import)
 {
-	return setup_dependencies.push_back(&srv_import);
+	setup_dependencies.push_back(&srv_import);
 }
 
 list<ServiceImportBase *>& ServiceExportBase::GetSetupDependencies()
@@ -2342,6 +2343,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			default:
 				cerr << "Internal error while parsing command line arguments" << endl;
 				state = -1;
+				break;
 		}
 	}
 
@@ -2532,6 +2534,7 @@ Simulator::Simulator(int argc, char **argv, void (*LoadBuiltInConfig)(Simulator 
 			default:
 				cerr << "Internal error while parsing command line arguments" << endl;
 				state = -1;
+				break;
 		}
 	}
 	
@@ -3216,6 +3219,8 @@ Simulator::SetupStatus Simulator::Setup()
 
 void Simulator::Stop(Object *object, int exit_status, bool asynchronous)
 {
+	cerr << "WARNING! Stop is not cleanly implemented" << endl;
+	exit(exit_status);
 }
 
 const VariableBase *Simulator::FindVariable(const char *name, VariableBase::Type type) const
@@ -3361,7 +3366,8 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 	Dl_info info;
 	if ( dladdr((void *)unisim::kernel::service::FindMyself, &info) != 0 )
 	{
-		char bin_path_buf[PATH_MAX + 1];
+//		char bin_path_buf[PATH_MAX + 1];
+		char bin_path_buf[FILENAME_MAX + 1];
 		char *bin_path_pointer = realpath(info.dli_fname, bin_path_buf);
 		if(bin_path_pointer == bin_path_buf)
 		{
@@ -3407,7 +3413,8 @@ bool Simulator::GetExecutablePath(const char *argv0, std::string& out_executable
 			}
 		} while(next_pos != std::string::npos);
 		
-		char cwd_path_buf[PATH_MAX];
+//		char cwd_path_buf[PATH_MAX];
+		char cwd_path_buf[FILENAME_MAX];
 		if(getcwd(cwd_path_buf, sizeof(cwd_path_buf)))
 		{
 			out_executable_path = std::string(cwd_path_buf) + "/" + argv0;

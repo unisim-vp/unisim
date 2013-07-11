@@ -50,6 +50,12 @@ typedef uint64_t service_address_t;
 typedef uint8_t	 page_t;
 typedef double clock_t;
 
+class TOWNER {
+public:
+	enum OWNER { UNKNOWN, CPU12X, XGATE, MASTER3 };
+
+};
+
 class ADDRESS {
 	public:
 		enum MODE {DIRECT=0, EXTENDED=1};
@@ -58,10 +64,48 @@ class ADDRESS {
 
 class MMC_DATA {
 public:
+	MMC_DATA() : type(ADDRESS::EXTENDED), isGlobal(false), buffer(0), data_size(0), isExecute(false) {}
+
 	ADDRESS::MODE type;
 	bool isGlobal;
 	void *buffer;
 	uint32_t data_size;
+	bool isExecute;
+};
+
+
+class TSemaphore {
+public:
+
+	TSemaphore() : locked(false), who(TOWNER::UNKNOWN) {}
+	~TSemaphore() { }
+
+	bool isLocked() { return (locked); }
+	TOWNER::OWNER getLocker() { return (who); }
+
+	bool lock(TOWNER::OWNER who) {
+		if (!locked) {
+			locked = true;
+			this->who = who;
+			return (true);
+		}
+
+		return (false);
+	}
+
+	bool unlock(TOWNER::OWNER who)  {
+		if (locked && (this->who == who)) {
+			locked = false;
+			this->who = TOWNER::UNKNOWN;
+			return (true);
+		}
+
+		return (false);
+	}
+
+private:
+	bool  locked;
+	TOWNER::OWNER who;
 };
 
 } // end hcs12x namespace

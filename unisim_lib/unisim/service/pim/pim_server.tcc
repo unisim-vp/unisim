@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007, 2010
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -36,6 +36,10 @@
 
 #ifndef __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
 #define __UNISIM_SERVICE_PIM_PIM_SERVER_TCC__
+
+#include <unisim/service/pim/pim_server.hh>
+
+#include <unisim/util/xml/xml.hh>
 
 #include <iostream>
 #include <sstream>
@@ -94,16 +98,18 @@ template <class ADDRESS>
 PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	: Object(_name, _parent, "PIM Server")
 	, Service<DebugControl<ADDRESS> >(_name, _parent)
-	, Service<MemoryAccessReporting<ADDRESS> >(_name, _parent)
 	, Service<TrapReporting>(_name, _parent)
-	, Client<MemoryAccessReportingControl>(_name, _parent)
-	, Client<Memory<ADDRESS> >(_name, _parent)
-	, Client<Disassembly<ADDRESS> >(_name, _parent)
-	, Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
-	, Client<StatementLookup<ADDRESS> >(_name, _parent)
-	, Client<Registers>(_name, _parent)
+	, Service<DebugEventListener<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<Memory<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<Disassembly<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<SymbolTableLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<StatementLookup<ADDRESS> >(_name, _parent)
+	, unisim::kernel::service::Client<Registers>(_name, _parent)
+	, unisim::kernel::service::Client<DebugEventTrigger<ADDRESS> >(_name, _parent)
 	, SocketThread()
 	, debug_control_export("debug-control-export", this)
+	, debug_event_listener_export("debug-event-listener-export", this)
+	, debug_event_trigger_import("debug-event-trigger-import", this)
 	, memory_access_reporting_export("memory-access-reporting-export", this)
 	, trap_reporting_export("trap-reporting-export", this)
 	, memory_access_reporting_control_import("memory_access_reporting_control_import", this)
@@ -116,8 +122,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, logger(*this)
 	, tcp_port(12345)
 	, architecture_description_filename()
-//	, gdb_registers()
-//	, gdb_pc(0)
 	, pc_reg(0)
 	, endian (GDB_BIG_ENDIAN)
 	, killed(false)
@@ -125,9 +129,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, synched(false)
 
 	, watchpoint_hit(NULL)
-	, watchpoint_hit_addr(-1)
-	, watchpoint_hit_size(0)
-
 
 	, breakpoint_registry()
 	, watchpoint_registry()
@@ -136,9 +137,6 @@ PIMServer<ADDRESS>::PIMServer(const char *_name, Object *_parent)
 	, counter(0)
 	, period(50)
 	, disasm_addr(0)
-	, input_buffer_size(0)
-	, input_buffer_index(0)
-	, output_buffer_size(0)
 	, memory_atom_size(1)
 	, verbose(false)
 	, param_memory_atom_size("memory-atom-size", this, memory_atom_size, "size of the smallest addressable element in memory")
@@ -176,22 +174,41 @@ PIMServer<ADDRESS>::~PIMServer()
 	if (target) { delete target; target = NULL; }
 	if (pimServerThread) { delete pimServerThread; pimServerThread = NULL; }
 
-//	pim_trace_file.close();
-
 }
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetSimTime() {
-	return Object::GetSimulator()->GetSimTime();
+	return (Object::GetSimulator()->GetSimTime());
 }
 
 template <class ADDRESS>
 double PIMServer<ADDRESS>::GetHostTime() {
-	return Object::GetSimulator()->GetHostTime();
+	return (Object::GetSimulator()->GetHostTime());
 }
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::BeginSetup() {
+
+	return (true);
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
+
+	if(memory_access_reporting_control_import)
+	{
+		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
+				false);
+		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
+				false);
+	}
+
+
+	return (true);
+}
+
+template <class ADDRESS>
+bool PIMServer<ADDRESS>::EndSetup() {
 
 	if(memory_atom_size != 1 &&
 	   memory_atom_size != 2 &&
@@ -200,7 +217,7 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	   memory_atom_size != 16)
 	{
 		cerr << Object::GetName() << "ERROR! memory-atom-size must be either 1, 2, 4, 8 or 16" << endl;
-		return false;
+		return (false);
 	}
 
 	// Open Socket Stream
@@ -223,7 +240,7 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 	if(!has_architecture_name)
 	{
 		logger << DebugError << "architecture has no property 'name'" << std::endl << EndDebugError;
-		return false;
+		return (false);
 	}
 
 	VariableBase* architecture_endian = Simulator::simulator->FindParameter("endian");
@@ -281,30 +298,7 @@ bool PIMServer<ADDRESS>::BeginSetup() {
 
 	lst.clear();
 
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::Setup(ServiceExportBase *srv_export) {
-
-	if(memory_access_reporting_control_import)
-	{
-		memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-				false);
-		memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-				false);
-	}
-
-
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::EndSetup() {
-
-//	pim_trace_file.open ("pim_trace.xls");
-
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -331,39 +325,33 @@ bool PIMServer<ADDRESS>::ParseHex(const string& s, unsigned int& pos, ADDRESS& v
 	while(pos < len && n < 2 * sizeof(ADDRESS))
 	{
 		uint8_t nibble;
-		if(!IsHexChar(s[pos])) break;
-		nibble = HexChar2Nibble(s[pos]);
+		if(!isHexChar(s[pos])) break;
+		nibble = hexChar2Nibble(s[pos]);
 		value <<= 4;
 		value |= nibble;
 		pos++;
 		n++;
 	}
-	return n > 0;
+	return (n > 0);
 }
 
 template <class ADDRESS>
-void PIMServer<ADDRESS>::ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size)
+void PIMServer<ADDRESS>::OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event)
 {
-
-	if(watchpoint_registry.HasWatchpoint(mat, mt, addr, size))
+	switch(event.GetType())
 	{
-		watchpoint_hit = watchpoint_registry.FindWatchpoint(mat, mt, addr, size);
-		watchpoint_hit_addr = addr;
-		watchpoint_hit_size = size;
-
-		trap = true;
-		synched = false;
+		case unisim::util::debug::Event<ADDRESS>::EV_BREAKPOINT:
+			break;
+		case unisim::util::debug::Event<ADDRESS>::EV_WATCHPOINT:
+			watchpoint_hit = dynamic_cast<const Watchpoint<ADDRESS> *> (&event);
+			break;
+		default:
+			// ignore event
+			return;
 	}
-}
 
-template <class ADDRESS>
-void PIMServer<ADDRESS>::ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr)
-{
-	if(breakpoint_registry.HasBreakpoint(next_addr))
-	{
-		trap = true;
-		synched = false;
-	}
+	trap = true;
+	synched = true;
 }
 
 template <class ADDRESS>
@@ -407,29 +395,11 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 	ADDRESS reg_num;
 	ADDRESS type;
 
-/*
-	- add a time_ratio = HotsTime/SimulatedTime response
-	- the time_ratio is used by timed/periodic operations
-*/
-
-
-//	double new_time_ratio = last_time_ratio;
-//	double sim_time = GetSimTime();
-//	double host_time = GetHostTime();
-//	if (sim_time > 0) {
-//		new_time_ratio = host_time / sim_time;
-//	}
-//	if ((sim_time == 0) || (fabs(last_time_ratio - new_time_ratio) > 0.1)) {
-//		pim_trace_file << (sim_time * 1000) << " \t" << (new_time_ratio) << endl;
-//		last_time_ratio = new_time_ratio;
-//	}
-
-
 	if(running_mode == GDBSERVER_MODE_CONTINUE && !trap)
 	{
 		if(--counter > 0)
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
+			return (DebugControl<ADDRESS>::DBG_STEP);
 		}
 
 		counter = period;
@@ -446,14 +416,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		}
 		else
 		{
-			return DebugControl<ADDRESS>::DBG_STEP;
+			return (DebugControl<ADDRESS>::DBG_STEP);
 		}
 	}
 
 	if((trap || running_mode == GDBSERVER_MODE_STEP) && !synched)
 	{
 		synched = true;
-		return DebugControl<ADDRESS>::DBG_SYNC;
+		return (DebugControl<ADDRESS>::DBG_SYNC);
 	}
 
 	if(trap || running_mode == GDBSERVER_MODE_STEP)
@@ -470,7 +440,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 		if(!GetPacket(packet, true))
 		{
 			Object::Stop(0);
-			return DebugControl<ADDRESS>::DBG_KILL;
+			return (DebugControl<ADDRESS>::DBG_KILL);
 		}
 
 		unsigned int pos = 0;
@@ -482,7 +452,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ReadRegisters())
 				{
 					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					return (DebugControl<ADDRESS>::DBG_KILL);
 				}
 				break;
 
@@ -491,16 +461,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ReadRegister(reg_num))
 				{
 					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					return (DebugControl<ADDRESS>::DBG_KILL);
 				}
 				break;
 
 			case 'G':
 				if(WriteRegisters(packet.substr(1)))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -508,10 +476,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, reg_num)) break;
 				if(packet[pos++] != '=') break;
 				if(WriteRegister(reg_num, packet.substr(pos)))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -523,7 +489,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ReadMemory(addr, size))
 				{
 					Object::Stop(0);
-					return DebugControl<ADDRESS>::DBG_KILL;
+					return (DebugControl<ADDRESS>::DBG_KILL);
 				}
 				break;
 
@@ -533,10 +499,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
 				if(WriteMemory(addr, packet.substr(pos), size))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -545,7 +509,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				{
 					running_mode = GDBSERVER_MODE_STEP;
 					synched = false;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				if (pc_reg) {
 					*pc_reg = addr;
@@ -559,14 +523,14 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				}
 				running_mode = GDBSERVER_MODE_STEP;
 				synched = false;
-				return DebugControl<ADDRESS>::DBG_STEP;
+				return (DebugControl<ADDRESS>::DBG_STEP);
 				break;
 
 			case 'c':
 				if(!ParseHex(packet, pos, addr))
 				{
 					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				if (pc_reg) {
 					*pc_reg = addr;
@@ -579,7 +543,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					}
 				}
 				running_mode = GDBSERVER_MODE_CONTINUE;
-				return DebugControl<ADDRESS>::DBG_STEP;
+				return (DebugControl<ADDRESS>::DBG_STEP);
 				break;
 
 			case 'H':
@@ -596,7 +560,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				break;
 
 			case 'R':
-				return DebugControl<ADDRESS>::DBG_RESET;
+				return (DebugControl<ADDRESS>::DBG_RESET);
 				break;
 
 			case '?':
@@ -605,7 +569,6 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 			case '!':
 				extended_mode = true;
-//				PutPacket("OK");
 				OutputText("OK", 2);
 				break;
 
@@ -616,10 +579,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(SetBreakpointWatchpoint(type, addr, size))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -630,10 +591,8 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(RemoveBreakpointWatchpoint(type, addr, size))
-//					PutPacket("OK");
 					OutputText("OK", 2);
 				else
-//					PutPacket("E00");
 					OutputText("E00", 3);
 				break;
 
@@ -645,7 +604,7 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 
 					if (!HandleSymbolLookup()) {
 						Object::Stop(0);
-						return DebugControl<ADDRESS>::DBG_KILL;
+						return (DebugControl<ADDRESS>::DBG_KILL);
 					}
 				}
 				else if(packet == "vCont?")
@@ -655,13 +614,13 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 				else if(packet.substr(0, 7) == "vCont;c")
 				{
 					running_mode = GDBSERVER_MODE_CONTINUE;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				else if(packet.substr(0, 7) == "vCont;s")
 				{
 					running_mode = GDBSERVER_MODE_STEP;
 					synched = false;
-					return DebugControl<ADDRESS>::DBG_STEP;
+					return (DebugControl<ADDRESS>::DBG_STEP);
 				}
 				else if(packet.substr(0, 6) == "qRcmd,")
 				{
@@ -675,174 +634,16 @@ typename DebugControl<ADDRESS>::DebugCommand PIMServer<ADDRESS>::FetchDebugComma
 					}
 					PutPacket("");
 				}
+
+				break;
+
 		} // end of switch
 
 	}
 	Object::Stop(0);
-	return DebugControl<ADDRESS>::DBG_KILL;
+	return (DebugControl<ADDRESS>::DBG_KILL);
 }
 
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::FlushOutput()
-{
-	if(output_buffer_size > 0)
-	{
-		unsigned int index = 0;
-		do
-		{
-#ifdef WIN32
-			int r = send(sockfd, output_buffer + index, output_buffer_size, 0);
-			if(r == 0 || r == SOCKET_ERROR)
-#else
-			ssize_t r = write(sockfd, output_buffer + index, output_buffer_size);
-			if(r <= 0)
-#endif
-			{
-				logger << DebugError << "can't write into socket" << EndDebugError;
-				return false;
-			}
-
-			index += r;
-			output_buffer_size -= r;
-		}
-		while(output_buffer_size > 0);
-	}
-
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::PutChar(char c)
-{
-	if(output_buffer_size >= sizeof(output_buffer))
-	{
-		if(!FlushOutput()) return false;
-	}
-
-	output_buffer[output_buffer_size++] = c;
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::GetPacket(string& s, bool blocking)
-{
-	uint8_t checksum;
-	uint8_t received_checksum;
-	char c;
-	char ch[2];
-	ch[1] = 0;
-	s.erase();
-
-	while(1)
-	{
-		while(1)
-		{
-			if(!GetChar(c, blocking)) return false;
-			if(c == '$') break;
-		}
-
-		checksum = 0;
-
-		while(1)
-		{
-			if(!GetChar(c, true)) return false;
-			if(c == '$')
-			{
-				checksum = 0;
-				s.erase();
-				continue;
-			}
-
-			if(c == '#') break;
-			checksum = checksum + (uint8_t ) c;
-			ch[0] = c;
-			s += ch;
-		}
-
-		if(c == '#')
-		{
-			if(!GetChar(c, true)) break;
-			received_checksum = HexChar2Nibble(c) << 4;
-			if(!GetChar(c, true)) break;
-			received_checksum += HexChar2Nibble(c);
-
-			if(verbose)
-			{
-				logger << DebugInfo << "receiving $" << s << "#" << Nibble2HexChar((received_checksum >> 4) & 0xf) << Nibble2HexChar(received_checksum & 0xf) << EndDebugInfo;
-			}
-			if(checksum != received_checksum)
-			{
-				if(!PutChar('-')) return false;
-				if(!FlushOutput()) return false;
-			}
-			else
-			{
-				if(!PutChar('+')) return false;
-				if(!FlushOutput()) return false;
-
-				if(s.length() >= 3 && s[2] == ':')
-				{
-					if(!PutChar(s[0])) return false;
-					if(!PutChar(s[1])) return false;
-					if(!FlushOutput()) return false;
-					s.erase(0, 3);
-				}
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::PutPacket(const string& s)
-{
-	uint8_t checksum;
-	unsigned int pos;
-	unsigned int len;
-	char c;
-
-	do
-	{
-		if(!PutChar('$')) return false;
-		checksum = 0;
-		pos = 0;
-		len = s.length();
-
-		while(pos < len)
-		{
-			c = s[pos];
-			if(!PutChar(c)) return false;
-			checksum += (uint8_t) c;
-			pos++;
-		}
-		if(!PutChar('#')) return false;
-		if(!PutChar(Nibble2HexChar(checksum >> 4))) return false;
-		if(!PutChar(Nibble2HexChar(checksum & 0xf))) return false;
-		if(verbose)
-		{
-			logger << DebugInfo << "sending $" << s << "#" << Nibble2HexChar(checksum >> 4) << Nibble2HexChar(checksum & 0xf) << EndDebugInfo;
-		}
-		if(!FlushOutput()) return false;
-	} while(GetChar(c, true) && c != '+');
-	return true;
-}
-
-template <class ADDRESS>
-bool PIMServer<ADDRESS>::OutputText(const char *s, int count)
-{
-	string packet = "";
-	string tmpPacket;
-
-	TextToHex(s, count, tmpPacket);
-
-	packet.append("O");
-
-	packet.append(tmpPacket);
-
-	return PutPacket(packet);
-}
 
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReadRegisters()
@@ -854,12 +655,12 @@ bool PIMServer<ADDRESS>::ReadRegisters()
 		ADDRESS val = **it;
 		string hex;
 
-		Number2HexString((uint8_t*) &val, ((VariableBase *) *it)->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+		number2HexString((uint8_t*) &val, ((VariableBase *) *it)->GetBitSize()/8, hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 		packet += hex;
 	}
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 
 }
 
@@ -873,15 +674,15 @@ bool PIMServer<ADDRESS>::WriteRegisters(const string& hex)
 	{
 		ADDRESS val = 0;
 		string subhex = hex.substr(pos, 2 * (*it)->GetBitSize()/8);
-		if (HexString2Number(subhex, &val, (*it)->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
+		if (hexString2Number(subhex, &val, (*it)->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
 			*(*it) = val;
 		} else {
-			return false;
+			return (false);
 		}
 
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -891,9 +692,9 @@ bool PIMServer<ADDRESS>::ReadRegister(unsigned int regnum)
 	string packet;
 	string endianstr;
 	ADDRESS val = *(simulator_registers[regnum]);
-	Number2HexString((uint8_t*) &val, (simulator_registers[regnum])->GetBitSize()/8, packet, (endian == GDB_BIG_ENDIAN)? "big":"little");
+	number2HexString((uint8_t*) &val, (simulator_registers[regnum])->GetBitSize()/8, packet, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 
 }
 
@@ -905,13 +706,13 @@ bool PIMServer<ADDRESS>::WriteRegister(unsigned int regnum, const string& hex)
 	ADDRESS val = 0;
 	unsigned int pos = 0;
 
-	if (HexString2Number(hex, &val, (simulator_registers[regnum])->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
+	if (hexString2Number(hex, &val, (simulator_registers[regnum])->GetBitSize()/8, (endian == GDB_BIG_ENDIAN)? "big":"little")) {
 		*(simulator_registers[regnum]) = val;
 	} else {
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -924,7 +725,7 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 
 		if(!GetPacket(packet, true))
 		{
-			return false;
+			return (false);
 		}
 
 		if (packet.compare("OK") == 0) {
@@ -932,21 +733,21 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 		} else if (packet.substr(0, 8).compare("qSymbol:") == 0) {
 			vector<string> segments;
 
-			StringSplit(packet, ":", segments);
+			stringSplit(packet, ":", segments);
 
 			string name;
 			string value;
 
 			if (segments.size() == 2) // read request
 			{
-				HexToText(segments[1].c_str(), segments[1].size(), name);
+				hexToText(segments[1].c_str(), segments[1].size(), name);
 
 				ReadSymbol(name);
 
 			}
 			else if (segments.size() == 3) // write_symbol request
 			{
-				HexToText(segments[2].c_str(), segments[2].size(), name);
+				hexToText(segments[2].c_str(), segments[2].size(), name);
 
 				WriteSymbol(name, segments[1]);
 			}
@@ -966,7 +767,7 @@ bool PIMServer<ADDRESS>::HandleSymbolLookup() {
 		}
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -999,10 +800,10 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 			} else {
 				hex_index = 1;
 				value_index = size - (hexValue.length() / 2) - 1;
-				value[value_index++] = HexChar2Nibble(hexValue[0]);
+				value[value_index++] = hexChar2Nibble(hexValue[0]);
 			}
 			for (; (hex_index < hexValue.length()); hex_index = hex_index+2) {
-				val = (HexChar2Nibble(hexValue[hex_index]) << 4) | HexChar2Nibble(hexValue[hex_index+1]);
+				val = (hexChar2Nibble(hexValue[hex_index]) << 4) | hexChar2Nibble(hexValue[hex_index+1]);
 				value[value_index++] = val;
 			}
 
@@ -1012,11 +813,9 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 					logger << DebugWarning << memory_import.GetName() << "->WriteSymbol has reported an error" << EndDebugWarning;
 				}
 
-//				PutPacket("NOK");
 				OutputText("NOK", 3);
-				return false;
+				return (false);
 			} else {
-//				PutPacket("OK");
 				OutputText("OK", 2);
 			}
 
@@ -1025,7 +824,7 @@ bool PIMServer<ADDRESS>::WriteSymbol(const string name, const string& hexValue) 
 
 	}
 
-	return true;
+	return (true);
 
 }
 
@@ -1061,7 +860,7 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 
 			string hexName;
 
-			TextToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
+			textToHex((*symbol_iter)->GetName(), strlen((*symbol_iter)->GetName()), hexName);
 
 			packet.append("qSymbol:");
 			packet.append(value);
@@ -1092,7 +891,7 @@ bool PIMServer<ADDRESS>::ReadSymbol(const string name)
 	}
 
 
-	return true;
+	return (true);
 
 }
 
@@ -1118,9 +917,9 @@ bool PIMServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string&
 					value = 0;
 				}
 			}
-			ch[0] = Nibble2HexChar(value >> 4);
+			ch[0] = nibble2HexChar(value >> 4);
 			packet += ch;
-			ch[0] = Nibble2HexChar(value & 0xf);
+			ch[0] = nibble2HexChar(value & 0xf);
 			packet += ch;
 			if((addr + 1) == 0) overwrapping = true;
 		} while(++addr, --size);
@@ -1128,10 +927,10 @@ bool PIMServer<ADDRESS>::InternalReadMemory(ADDRESS addr, uint32_t size, string&
 
 	if(read_error)
 	{
-		return false;
+		return (false);
 	}
 
-	return true;
+	return (true);
 }
 
 
@@ -1148,7 +947,7 @@ bool PIMServer<ADDRESS>::ReadMemory(ADDRESS addr, uint32_t size)
 		}
 	}
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1164,7 +963,7 @@ bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		do
 		{
 			uint8_t value;
-			value = (HexChar2Nibble(hex[pos]) << 4) | HexChar2Nibble(hex[pos + 1]);
+			value = (hexChar2Nibble(hex[pos]) << 4) | hexChar2Nibble(hex[pos + 1]);
 			if(!overwrapping)
 			{
 				if(!memory_import->WriteMemory(addr, &value, 1))
@@ -1184,7 +983,7 @@ bool PIMServer<ADDRESS>::WriteMemory(ADDRESS addr, const string& hex, uint32_t s
 		}
 	}
 
-	return true;
+	return (true);
 }
 
 template <class ADDRESS>
@@ -1204,7 +1003,7 @@ void PIMServer<ADDRESS>::Kill()
 template <class ADDRESS>
 bool PIMServer<ADDRESS>::ReportProgramExit()
 {
-	return PutPacket("W00");
+	return (PutPacket("W00"));
 }
 
 template <class ADDRESS>
@@ -1212,7 +1011,7 @@ bool PIMServer<ADDRESS>::ReportSignal(unsigned int signum)
 {
 	char packet[4];
 	sprintf(packet, "S%02x", signum);
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1228,8 +1027,9 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		} else {
 			sstr << "watch";
 		}
+
 		sstr << ":" << std::hex;
-		sstr << watchpoint_hit_addr;
+		sstr << watchpoint_hit->GetAddress();
 
 		packet += sstr.str();
 		packet += ";";
@@ -1237,7 +1037,7 @@ bool PIMServer<ADDRESS>::ReportTracePointTrap()
 		watchpoint_hit = NULL;
 	}
 
-	return PutPacket(packet);
+	return (PutPacket(packet));
 }
 
 template <class ADDRESS>
@@ -1256,53 +1056,49 @@ bool PIMServer<ADDRESS>::SetBreakpointWatchpoint(uint32_t type, ADDRESS addr, ui
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.SetBreakpoint(addr + i)) return false;
+				if(!debug_event_trigger_import->Listen(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
 			}
-			if(memory_access_reporting_control_import)
-				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-						breakpoint_registry.HasBreakpoints());
-			return true;
+			return (true);
+
 		case 2:
-			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+			{
+				return (false);
+			}
+
 		case 3:
-			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+			{
+				return (false);
+			}
+
 
 		case 4:
-			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+			if(!debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
+				return (false);
+			}
+
+			if(debug_event_trigger_import->Listen(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
+			{
+				return (true);
 			}
 			else
-				return false;
-			if(watchpoint_registry.SetWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							watchpoint_registry.HasWatchpoints());
-				return true;
+				debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size));
+				return (false);
 			}
-			else
-				return false;
+
 	}
-	return false;
+	return (false);
 }
 
 template <class ADDRESS>
@@ -1321,56 +1117,40 @@ bool PIMServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 		case 1:
 			for(i = 0; i < size; i++)
 			{
-				if(!breakpoint_registry.RemoveBreakpoint(addr + i)) return false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Breakpoint<ADDRESS>(addr + i))) return (false);
 			}
-			if(memory_access_reporting_control_import)
-				memory_access_reporting_control_import->RequiresFinishedInstructionReporting(
-						breakpoint_registry.HasBreakpoints());
-			return true;
+			return (true);
 
 		case 2:
-			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size)))
 			{
-
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
-				return true;
+				return (true);
 			}
-			else {
-
-				return false;
+			else
+			{
+				return (false);
 			}
+
 		case 3:
-			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
+			if(debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size)))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
-				return true;
+				return (true);
 			}
 			else
-				return false;
+			{
+				return (false);
+			}
+
 		case 4:
-			if(watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))
 			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
+				bool status = true;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size))) status = false;
+				if(!debug_event_trigger_import->Unlisten(unisim::util::debug::Watchpoint<ADDRESS>(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))) status = false;
+				return (status);
 			}
-			else
-				return false;
-			if(!watchpoint_registry.RemoveWatchpoint(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size))
-			{
-				if(memory_access_reporting_control_import)
-					memory_access_reporting_control_import->RequiresMemoryAccessReporting(
-							breakpoint_registry.HasBreakpoints());
-				return true;
-			}
-			else
-				return false;
+
 	}
-	return false;
+	return (false);
 }
 
 // *** Start ************ REDA ADDED CODE ****************
@@ -1407,7 +1187,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			switch (((VariableBase *) *it)->GetFormat()) {
 				case VariableBase::FMT_HEX: format = "HEX"; break;
 				case VariableBase::FMT_DEC: format = "DEC"; break;
-				default: format = "Default";
+				default: format = "Default"; break;
 			}
 
 			const char *description = ((VariableBase *) *it)->GetDescription();
@@ -1622,7 +1402,7 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 
 			if (!((VariableBase *) *it)->IsVisible()) continue;
 
-			sstr << ((VariableBase *) *it)->GetName() << ":" << ((VariableBase *) *it)->GetBitSize() << ";";
+			sstr << ((VariableBase *) *it)->GetName() << ":" << ((VariableBase *) *it)->GetBitSize()/8 << ";";
 
 		}
 
@@ -1644,14 +1424,13 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 			ADDRESS addr = *pc_reg;
 			long mcuAddress = Object::GetSimulator()->GetStructuredAddress(addr);
 
-			Number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+			number2HexString((uint8_t*) &mcuAddress, sizeof(mcuAddress), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 			sstr << hex << ":";
 
 			unsigned int i;
 			if(stmt_lookup_import)
 			{
-//				stmt = stmt_lookup_import->FindStatement(addr);
 				stmt = stmt_lookup_import->FindStatement(mcuAddress);
 			}
 
@@ -1704,14 +1483,14 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				string hex = command.substr(start_index);
 				start_index = end_index+1;
 
-				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				hexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				string packet("T05");
 				std::stringstream sstr;
 
 				uint64_t physicalAddress = Object::GetSimulator()->GetPhysicalAddress(logical_address);
 
-				Number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &physicalAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				packet += hex;
 
@@ -1742,14 +1521,14 @@ void PIMServer<ADDRESS>::HandleQRcmd(string command) {
 				string hex = command.substr(start_index);
 				start_index = end_index+1;
 
-				HexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				hexString2Number(hex, &logical_address, hex.size()/2, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				string packet("T05");
 				std::stringstream sstr;
 
 				uint64_t mcuAddress = Object::GetSimulator()->GetStructuredAddress(logical_address);
 
-				Number2HexString((uint8_t*) &mcuAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
+				number2HexString((uint8_t*) &mcuAddress, sizeof(uint64_t), hex, (endian == GDB_BIG_ENDIAN)? "big":"little");
 
 				packet += hex;
 

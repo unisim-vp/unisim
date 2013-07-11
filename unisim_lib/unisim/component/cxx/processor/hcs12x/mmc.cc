@@ -32,12 +32,19 @@
  * Authors: Reda   Nouacer  (reda.nouacer@cea.fr)
  */
 
-#include "unisim/util/debug/simple_register.hh"
-
 #include <unisim/component/cxx/processor/hcs12x/mmc.hh>
 
 #include <stdio.h>
 #include <assert.h>
+
+namespace unisim {
+namespace util {
+
+template class Singleton <unisim::component::cxx::processor::hcs12x::MMC>;
+
+}
+}
+
 
 namespace unisim {
 namespace component {
@@ -45,52 +52,37 @@ namespace cxx {
 namespace processor {
 namespace hcs12x {
 
-using unisim::util::debug::SimpleRegister;
 
 address_t MMC::MMC_REGS_ADDRESSES[MMC::MMC_MEMMAP_SIZE];
 
-uint8_t MMC::gpage;
-uint8_t MMC::direct;
-uint8_t MMC::mmcctl1;
-uint8_t MMC::rpage;
-uint8_t MMC::epage;
-uint8_t MMC::ppage;
+MMC::MMC(const char *name, S12MPU_IF *_mpu, Object *parent):
+	Object(name, parent)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, Client<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, memory_export("memory_export", this)
+	, memory_import("memory_import", this)
+	, registers_export("registers_export", this)
 
-MMC::MMC(const char *name, Object *parent):
-	Object(name, parent),
-	Service<Memory<service_address_t> >(name, parent),
-	Client<Memory<service_address_t> >(name, parent),
-	Service<Registers>(name, parent),
-	memory_export("memory_export", this),
-	memory_import("memory_import", this),
-	registers_export("registers_export", this),
-	debug_enabled(false),
-	param_debug_enabled("debug-enabled", this, debug_enabled),
-	mode_int(MMC_MODE_RESET),
-	mmcctl1_int(MMCCTL1_RESET),
-	param_mode("mode", this, mode_int),
-	param_mmcctl1("mmcctl1", this, mmcctl1_int),
-	address_encoding(ADDRESS::BANKED),
-	param_address_encoding("address-encoding",this,address_encoding)
+	, mpu(_mpu)
+	, version("V3")
+	, param_version("version", this, version, "MMC version. Supported are V3 and V4. Default is V3")
+
+	, debug_enabled(false)
+	, param_debug_enabled("debug-enabled", this, debug_enabled)
+	, mode_int(MMC_MODE_RESET)
+	, mmcctl1_int(MMCCTL1_RESET)
+	, param_mode("mode", this, mode_int)
+	, param_mmcctl1("mmcctl1", this, mmcctl1_int)
+	, address_encoding(ADDRESS::BANKED)
+	, param_address_encoding("address-encoding",this,address_encoding)
+	, ppage_address(0x30)
+	, param_ppage_address("ppage-address", this, ppage_address)
 
 {
 
-	MMC_REGS_ADDRESSES[MMCCTL0] = 0x000A;
-	MMC_REGS_ADDRESSES[MODE] = 0x000B;
-	MMC_REGS_ADDRESSES[GPAGE] = 0x0010;
-	MMC_REGS_ADDRESSES[DIRECT] = 0x0011;
-	MMC_REGS_ADDRESSES[MMCCTL1] = 0x0013;
-	MMC_REGS_ADDRESSES[RPAGE] = 0x0016;
-	MMC_REGS_ADDRESSES[EPAGE] = 0x0017;
-	MMC_REGS_ADDRESSES[PPAGE] = 0x0030;
-	MMC_REGS_ADDRESSES[RAMWPC] = 0x011C;
-	MMC_REGS_ADDRESSES[RAMXGU] = 0x011D;
-	MMC_REGS_ADDRESSES[RAMSHL] = 0x011E;
-	MMC_REGS_ADDRESSES[RAMSHU] = 0x011F;
-
-
-	Reset();
 }
+
 
 MMC::~MMC() {
 
@@ -113,6 +105,7 @@ MMC::~MMC() {
 
 }
 
+
 void MMC::Reset() {
 
 	directSet = false;
@@ -133,6 +126,7 @@ void MMC::Reset() {
 	ramshu = RAMSHU_RESET;
 
 }
+
 
 bool MMC::BeginSetup() {
 
@@ -195,58 +189,81 @@ bool MMC::BeginSetup() {
 	extended_registers_registry.push_back(ppage_var);
 	ppage_var->setCallBack(this, PPAGE, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMWPC", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramwpc);
+	if (version.compare("V3") == 0) {
+		sprintf(buf, "%s.RAMWPC", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramwpc);
 
-	unisim::kernel::service::Register<uint8_t> *ramwpc_var = new unisim::kernel::service::Register<uint8_t>("RAMWPC", this, ramwpc, "RAM Write Protection Control Register (RAMWPC)");
-	extended_registers_registry.push_back(ramwpc_var);
-	ramwpc_var->setCallBack(this, RAMWPC, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramwpc_var = new unisim::kernel::service::Register<uint8_t>("RAMWPC", this, ramwpc, "RAM Write Protection Control Register (RAMWPC)");
+		extended_registers_registry.push_back(ramwpc_var);
+		ramwpc_var->setCallBack(this, RAMWPC, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMXGU", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramxgu);
+		sprintf(buf, "%s.RAMXGU", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramxgu);
 
-	unisim::kernel::service::Register<uint8_t> *ramxgu_var = new unisim::kernel::service::Register<uint8_t>("RAMXGU", this, ramxgu, "RAM XGATE Upper Boundary Register (RAMXGU)");
-	extended_registers_registry.push_back(ramxgu_var);
-	ramxgu_var->setCallBack(this, RAMXGU, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramxgu_var = new unisim::kernel::service::Register<uint8_t>("RAMXGU", this, ramxgu, "RAM XGATE Upper Boundary Register (RAMXGU)");
+		extended_registers_registry.push_back(ramxgu_var);
+		ramxgu_var->setCallBack(this, RAMXGU, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMSHL", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshl);
+		sprintf(buf, "%s.RAMSHL", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshl);
 
-	unisim::kernel::service::Register<uint8_t> *ramshl_var = new unisim::kernel::service::Register<uint8_t>("RAMSHL", this, ramshl, "RAM Shared Region Lower Boundary Register (RAMSHL)");
-	extended_registers_registry.push_back(ramshl_var);
-	ramshl_var->setCallBack(this, RAMSHL, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramshl_var = new unisim::kernel::service::Register<uint8_t>("RAMSHL", this, ramshl, "RAM Shared Region Lower Boundary Register (RAMSHL)");
+		extended_registers_registry.push_back(ramshl_var);
+		ramshl_var->setCallBack(this, RAMSHL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.RAMSHU", GetName());
-	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
+		sprintf(buf, "%s.RAMSHU", GetName());
+		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ramshu);
 
-	unisim::kernel::service::Register<uint8_t> *ramshu_var = new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)");
-	extended_registers_registry.push_back(ramshu_var);
-	ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
+		unisim::kernel::service::Register<uint8_t> *ramshu_var = new unisim::kernel::service::Register<uint8_t>("RAMSHU", this, ramshu, "RAM Shared Region Upper Boundary Register (RAMSHU)");
+		extended_registers_registry.push_back(ramshu_var);
+		ramshu_var->setCallBack(this, RAMSHU, &CallBackObject::write, NULL);
+	}
 
-	return true;
+	MMC_REGS_ADDRESSES[MMCCTL0] = 0x000A;
+	MMC_REGS_ADDRESSES[MODE] = 0x000B;
+	MMC_REGS_ADDRESSES[GPAGE] = 0x0010;
+	MMC_REGS_ADDRESSES[DIRECT] = 0x0011;
+	MMC_REGS_ADDRESSES[MMCCTL1] = 0x0013;
+	MMC_REGS_ADDRESSES[RPAGE] = 0x0016;
+	MMC_REGS_ADDRESSES[EPAGE] = 0x0017;
+//	MMC_REGS_ADDRESSES[PPAGE] = 0x0030;
+	MMC_REGS_ADDRESSES[PPAGE] = ppage_address;
+	MMC_REGS_ADDRESSES[RAMWPC] = 0x011C;
+	MMC_REGS_ADDRESSES[RAMXGU] = 0x011D;
+	MMC_REGS_ADDRESSES[RAMSHL] = 0x011E;
+	MMC_REGS_ADDRESSES[RAMSHU] = 0x011F;
+
+	Reset();
+
+	return (true);
 }
+
 
 bool MMC::Setup(ServiceExportBase *srv_export) {
-	return true;
+	return (true);
 }
 
+
 bool MMC::EndSetup() {
-	return true;
+	return (true);
 }
+
 
 Register* MMC::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
+
 
 void MMC::OnDisconnect() {
 }
 
-void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address)
+
+void MMC::splitPagedAddress(physical_address_t paged_addr, page_t &page, address_t &cpu_address)
 {
 	if (address_encoding == ADDRESS::GNUGCC)
 	{
@@ -271,21 +288,21 @@ void MMC::SplitPagedAddress(physical_address_t paged_addr, page_t &page, address
 
 }
 
-// TODO: review this methods for dump and disassemble commands
-bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) {
+
+bool MMC::ReadMemory(physical_address_t paged_addr, void *buffer, uint32_t size) {
 
 	page_t page;
 	address_t cpu_address;
 	physical_address_t addr;
 
 
-	SplitPagedAddress(paged_addr, page, cpu_address);
-	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
+	splitPagedAddress(paged_addr, page, cpu_address);
+	addr = getCPU12XPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
 		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
 			if (MMC_REGS_ADDRESSES[i] == addr) {
-				return read(addr, buffer, 1);
+				return (read(addr, buffer, 1));
 			}
 		}
 
@@ -293,45 +310,45 @@ bool MMC::ReadMemory(service_address_t paged_addr, void *buffer, uint32_t size) 
 
 
 	if (memory_import) {
-		return memory_import->ReadMemory(addr, (uint8_t *) buffer, size);
+		return (memory_import->ReadMemory(addr, (uint8_t *) buffer, size));
 	}
 
-	return false;
+	return (false);
 }
 
-// TODO: review this methods for dump and disassemble commands
-bool MMC::WriteMemory(service_address_t paged_addr, const void *buffer, uint32_t size) {
+
+bool MMC::WriteMemory(physical_address_t paged_addr, const void *buffer, uint32_t size) {
 
 	page_t page;
 	address_t cpu_address;
 	physical_address_t addr;
 
 	if (size == 0) {
-		return true;
+		return (true);
 	}
 
-	SplitPagedAddress(paged_addr, page, cpu_address);
-	addr = getPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
+	splitPagedAddress(paged_addr, page, cpu_address);
+	addr = getCPU12XPhysicalAddress(cpu_address, ADDRESS::EXTENDED, false, true, page);
 
 	if (addr <= REG_HIGH_OFFSET) {
 		for (uint8_t i=0; i<MMC_MEMMAP_SIZE; i++) {
 			if (MMC_REGS_ADDRESSES[i] == addr) {
-				return write(addr, buffer, 1);
+				return (write(addr, buffer, 1));
 			}
 		}
 	}
 
 
 	if (memory_import) {
-		return memory_import->WriteMemory(addr, (uint8_t *) buffer, size);
+		return (memory_import->WriteMemory(addr, (uint8_t *) buffer, size));
 	}
 
-	return false;
+	return (false);
 }
 
-}
-}
-}
-}
-} // end namespace hcs12x
+} // end of namespace hcs12x
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
 

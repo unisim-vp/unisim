@@ -46,6 +46,7 @@
 #include <stdexcept>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -118,15 +119,19 @@ Linux(unisim::kernel::logger::Logger& logger,
     , utsname_machine_()
     , utsname_domainname_()
     , blob_(NULL)
-	, regs_if_(regs_if)
-	, mem_if_(mem_if)
-	, mem_inject_if_(mem_inject_if)
+    , regs_if_(regs_if)
+    , mem_if_(mem_if)
+    , mem_inject_if_(mem_inject_if)
     , syscall_name_map_()
     , syscall_name_assoc_map_()
     , syscall_impl_assoc_map_()
     , current_syscall_id_(0)
     , current_syscall_name_("(NONE)")
     , verbose_(false)
+    , parse_dwarf_(false)
+	, debug_dwarf_(false)
+    , dwarf_to_html_output_directory_()
+    , dwarf_to_xml_output_filename_()
     , logger_(logger)
     , terminated_(false)
     , return_status_(0) {
@@ -151,6 +156,28 @@ Linux<ADDRESS_TYPE, PARAMETER_TYPE>::~Linux() {
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetVerbose(bool verbose) {
   verbose_ = verbose;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetParseDWARF(bool parse_dwarf) {
+  parse_dwarf_ = parse_dwarf;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDebugDWARF(bool debug_dwarf) {
+  debug_dwarf_ = debug_dwarf;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory)
+{
+	dwarf_to_html_output_directory_ = dwarf_to_html_output_directory;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename)
+{
+	dwarf_to_xml_output_filename_ = dwarf_to_xml_output_filename;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -220,6 +247,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::AddLoadFile(
 
   loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose_);
   loader->SetOption(unisim::util::loader::elf_loader::OPT_FILENAME, filename);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf_);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf_);
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY, dwarf_to_html_output_directory_.c_str());
+  loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_TO_XML_OUTPUT_FILENAME, dwarf_to_xml_output_filename_.c_str());
 
   if (!loader->Load()) {
     logger_ << DebugError
@@ -290,6 +321,12 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetUname(
   utsname_version_    = utsname_version;
   utsname_machine_    = utsname_machine;
   utsname_domainname_ = utsname_domainname;
+}
+
+template <class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetHWCap(const char *hwcap)
+{
+  hwcap_ = hwcap;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1082,6 +1119,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::CreateStack(
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
     uint8_t* stack_data, ADDRESS_TYPE &sp) const {
+
   ADDRESS_TYPE aux_table_symbol;
   ADDRESS_TYPE aux_table_value;
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const main_blob =
@@ -1168,8 +1206,98 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetAuxTable(
 
   if ((system_type_.compare("arm") == 0) ||
         (system_type_.compare("arm-eabi") == 0)) {
+    uint32_t arm_hwcap = 0;
+    std::string hwcap_token;
+    std::stringstream sstr(hwcap_);
+    while(sstr >> hwcap_token)
+    {
+      if(hwcap_token.compare("swp") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_SWP;
+      }
+      else if(hwcap_token.compare("half") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_HALF;
+      }
+      else if(hwcap_token.compare("thumb") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_THUMB;
+      }
+      else if(hwcap_token.compare("26bit") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_26BIT;
+      }
+      else if(hwcap_token.compare("fastmult") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_FAST_MULT;
+      }
+      else if(hwcap_token.compare("fpa") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_FPA;
+      }
+      else if(hwcap_token.compare("vfp") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_VFP;
+      }
+      else if(hwcap_token.compare("edsp") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_EDSP;
+      }
+      else if(hwcap_token.compare("edsp") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_JAVA;
+      }
+      else if(hwcap_token.compare("java") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_JAVA;
+      }
+      else if(hwcap_token.compare("iwmmxt") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_IWMMXT;
+      }
+      else if(hwcap_token.compare("crunch") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_CRUNCH;
+      }
+      else if(hwcap_token.compare("thumbee") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_THUMBEE;
+      }
+      else if(hwcap_token.compare("neon") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_NEON;
+      }
+      else if(hwcap_token.compare("vfpv3") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_VFPv3;
+      }
+      else if(hwcap_token.compare("vfpv3d16") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_VFPv3D16;
+      }
+      else if(hwcap_token.compare("tls") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_TLS;
+      }
+      else if(hwcap_token.compare("vfpv4") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_VFPv4;
+      }
+      else if(hwcap_token.compare("idiva") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_IDIVA;
+      }
+      else if(hwcap_token.compare("idivt") == 0)
+      {
+        arm_hwcap |= ARM_HWCAP_ARM_IDIVT;
+      }
+      else
+      {
+        logger_ << DebugWarning << "unknown hardware capability \"" << hwcap_token << "\"" << EndDebugWarning;
+      }
+    }
     aux_table_symbol = AT_HWCAP;
-    aux_table_value = ARM_ELF_HWCAP;
+    aux_table_value = arm_hwcap;
     sp = SetAuxTableEntry(stack_data, sp, aux_table_symbol, aux_table_value);
   }
 

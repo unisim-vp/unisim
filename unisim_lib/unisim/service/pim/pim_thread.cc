@@ -6,6 +6,7 @@
  */
 
 #include <unisim/service/pim/pim_thread.hh>
+#include <unistd.h>
 
 namespace unisim {
 namespace service {
@@ -26,13 +27,17 @@ PIMThread::PIMThread(const char *_name, Object *_parent) :
 
 PIMThread::~PIMThread() {
 
+	pim_trace_file.close();
 }
 
 double PIMThread::GetSimTime() {
 	return Object::GetSimulator()->GetSimTime();
 }
 
-void PIMThread::Run(){
+void PIMThread::run(){
+
+	pim_trace_file.open ("pim_trace.xls");
+
 
 	cerr << "PIM::TargetThread start RUN " << std::endl;
 
@@ -105,11 +110,6 @@ void PIMThread::Run(){
 
 							os << simulator_variables[i]->GetName() << ":";
 
-//							double val = *(simulator_variables[i]);
-//							os << stringify(val);
-
-// **********************
-
 							if (strcmp(simulator_variables[i]->GetDataTypeName(), "double precision floating-point") == 0) {
 								double val = *(simulator_variables[i]);
 								os << stringify(val);
@@ -127,9 +127,6 @@ void PIMThread::Run(){
 								os << stringify(val);
 							}
 
-// ***********************
-
-
 							os << ";";
 
 							break;
@@ -144,23 +141,7 @@ void PIMThread::Run(){
 
 				std::string str = os.str();
 
-				while (true) {
-					PutPacket(str, blocking);
-					if (!FlushOutput()) {
-						if (blocking) {
-							cerr << "PIM-Target unable to send !" << endl;
-						} else {
-#ifdef WIN32
-							Sleep(1);
-#else
-							usleep(1000);
-#endif
-							continue;
-						}
-
-					}
-					break;
-				}
+				PutPacket(str);
 
 				os.str(std::string());
 

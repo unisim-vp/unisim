@@ -57,9 +57,9 @@ XML_ATD_PWM_STUB::XML_ATD_PWM_STUB(const sc_module_name& name, Object *parent) :
 {
 	SC_HAS_PROCESS(XML_ATD_PWM_STUB);
 
-	SC_THREAD(ProcessATD0);
-	SC_THREAD(ProcessATD1);
-	SC_THREAD(ProcessPWM);
+	SC_THREAD(processATD0);
+	SC_THREAD(processATD1);
+	SC_THREAD(processPWM);
 	
 }
 
@@ -135,7 +135,7 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	xmlXPathObjectPtr xmlobject;
 	int result = 0;
 
-	cout << name() << " Parsing " << filename << endl;
+	cout << sc_object::name() << " Parsing " << filename << endl;
 
 	doc = xmlParseFile (GetSimulator()->SearchSharedDataFile(filename).c_str());
 	if (!doc)
@@ -171,29 +171,30 @@ template <int SIZE> int XML_ATD_PWM_STUB::LoadXmlData(const char *filename, std:
 	return (result);
 }
 
-void XML_ATD_PWM_STUB::ProcessATD0()
+void XML_ATD_PWM_STUB::processATD0()
 {
 	srand(12345);
 
 	int atd0_data_size, atd0_data_index = 0;
 
-	if (enabled) {
+	if (atd0_stub_enabled) {
 		LoadXmlData<ATD0_SIZE>(atd0_anx_stimulus_file.c_str(), atd0_vect);
 
 
 		atd0_data_size = atd0_vect.size();
 
 		if (atd0_data_size == 0) {
-			cerr << name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
+			cerr << sc_object::name() << " Warning: ATD0 random inputs values will be used during simulation !" << endl;
 		}
 
 		/**
-		 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+		 * Note: The Software sample the ATDDRx every 1024us.
+		 * The injected trace file start at 20ms. The interval between two sample is 80us
 		 */
 		atd0_quantumkeeper.set(sc_time(20, SC_MS));
 		if (atd0_quantumkeeper.need_sync()) atd0_quantumkeeper.sync();
 
-		while(enabled)
+		while(atd0_stub_enabled)
 		{
 			double atd0_anValue[ATD0_SIZE];
 
@@ -229,7 +230,7 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 				}
 			}
 
-			Output_ATD0(atd0_anValue);
+			output_ATD0(atd0_anValue);
 
 		}
 
@@ -238,28 +239,29 @@ void XML_ATD_PWM_STUB::ProcessATD0()
 }
 
 
-void XML_ATD_PWM_STUB::ProcessATD1()
+void XML_ATD_PWM_STUB::processATD1()
 {
 	srand(12345);
 
 	int atd1_data_size, atd1_data_index = 0;
 
-	if (enabled) {
+	if (atd1_stub_enabled) {
 		LoadXmlData<ATD1_SIZE>(atd1_anx_stimulus_file.c_str(), atd1_vect);
 
 		atd1_data_size = atd1_vect.size();
 
 		if (atd1_data_size == 0) {
-			cerr << name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
+			cerr << sc_object::name() << " Warning: ATD1 random inputs values will be used during simulation !" << endl;
 		}
 
 		/**
-		 * Note: The Software sample the ATDDRx every 20ms. As well as for the first sampling
+		 * Note: The Software sample the ATDDRx every 1024us.
+		 * The injected trace file start at 20ms. The interval between two sample is 80us
 		 */
 		atd1_quantumkeeper.set(sc_time(20, SC_MS));
 		if (atd1_quantumkeeper.need_sync()) atd1_quantumkeeper.sync();
 
-		while(enabled)
+		while(atd1_stub_enabled)
 		{
 			double atd1_anValue[ATD1_SIZE];
 			uint8_t atd1_wrap_around;
@@ -294,14 +296,14 @@ void XML_ATD_PWM_STUB::ProcessATD1()
 				}
 			}
 
-			Output_ATD1(atd1_anValue);
+			output_ATD1(atd1_anValue);
 
 		}
 	}
 
 }
 
-void XML_ATD_PWM_STUB::ProcessPWM()
+void XML_ATD_PWM_STUB::processPWM()
 {
 
 	bool pwmValue[PWM_SIZE];
@@ -313,7 +315,7 @@ void XML_ATD_PWM_STUB::ProcessPWM()
 
 	while(true)
 	{
-		Input(pwmValue);
+		input(pwmValue);
 	}
 
 }

@@ -94,7 +94,15 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
     , logger_(*this)
     , verbose_(false)
     , param_verbose_("verbose", this, verbose_)
-	, linuxlib_(0)
+    , parse_dwarf_(false)
+	, debug_dwarf_(false)
+    , dwarf_to_html_output_directory_()
+    , dwarf_to_xml_output_filename_()
+    , param_parse_dwarf_("parse-dwarf", this, parse_dwarf_)
+	, param_debug_dwarf_("debug-dwarf", this, debug_dwarf_)
+    , param_dwarf_to_html_output_directory_("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory_)
+    , param_dwarf_to_xml_output_filename_("dwarf-to-xml-output-filename", this, dwarf_to_xml_output_filename_)
+    , linuxlib_(0)
     , system_("")
     , param_system_("system", this, system_, "Emulated system architecture "
                    "available values are \"arm\", \"arm-eabi\" and \"powerpc\"")
@@ -163,8 +171,10 @@ Linux(const char *name, unisim::kernel::service::Object *parent)
     , utsname_domainname_("localhost")
     , param_utsname_domainname_("utsname-domainname", this, utsname_domainname_,
                                "The domain name information that the uname"
-                               " system call should return.") {
-
+                               " system call should return.")
+    , hwcap_("hwcap")
+    , param_hwcap_("hwcap", this, hwcap_,
+                   "CPU Hardware capabilities to enable (e.g. \"swp thumb fastmult vfp\".") {
   param_argc_.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
   
   linux_os_export_.SetupDependsOn(memory_import_);
@@ -258,6 +268,10 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   
   // set up the different linuxlib parameters
   linuxlib_->SetVerbose(verbose_);
+  linuxlib_->SetParseDWARF(parse_dwarf_);
+  linuxlib_->SetDebugDWARF(debug_dwarf_);
+  linuxlib_->SetDWARFToHTMLOutputDirectory(dwarf_to_html_output_directory_.c_str());
+  linuxlib_->SetDWARFToXMLOutputFilename(dwarf_to_xml_output_filename_.c_str());
 
   // set the linuxlib command line
   if (argc_ != 0) {
@@ -329,6 +343,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::BeginSetup() {
   linuxlib_->SetUname(utsname_sysname_.c_str(), utsname_nodename_.c_str(),
                      utsname_release_.c_str(), utsname_version_.c_str(),
                      utsname_machine_.c_str(), utsname_domainname_.c_str());
+  linuxlib_->SetHWCap(hwcap_.c_str());
 
   // now it is time to try to run the initialization of the linuxlib
   {

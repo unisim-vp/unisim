@@ -1,4 +1,4 @@
-/*
+ /*
  *  Copyright (c) 2010,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
@@ -32,16 +32,31 @@
  * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
 
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__
+#define __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__
+
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
+#include <unisim/util/debug/dwarf/option.hh>
 
 namespace unisim {
 namespace util {
 namespace debug {
 namespace dwarf {
 
+using unisim::kernel::logger::DebugInfo;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::DebugError;
+using unisim::kernel::logger::EndDebugInfo;
+using unisim::kernel::logger::EndDebugWarning;
+using unisim::kernel::logger::EndDebugError;
+
 template <class MEMORY_ADDR>
-DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM()
-	: address(0)
+DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM(const DWARF_Handler<MEMORY_ADDR> *_dw_handler)
+	: dw_handler(_dw_handler)
+	, logger(_dw_handler->GetLogger())
+	, debug(false)
+	, address(0)
+	, op_index(0)
 	, file(1)
 	, line(1)
 	, column(0)
@@ -51,8 +66,10 @@ DWARF_StatementVM<MEMORY_ADDR>::DWARF_StatementVM()
 	, prologue_end(false)
 	, prologue_begin(false)
 	, isa(0)
+	, discriminator(0)
 	, filenames()
 {
+	dw_handler->GetOption(OPT_DEBUG, debug);
 }
 
 template <class MEMORY_ADDR>
@@ -89,7 +106,11 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 				dirname = (dir <= dw_stmt_prog->include_directories.size()) ? dw_stmt_prog->include_directories[dir - 1] : 0;
 				if(!dirname)
 				{
-					std::cerr << "WARNING! Invalid directory index in statement program" << std::endl;
+					if(debug)
+					{
+						logger << DebugWarning << "Directory index is out of range in line number program" << EndDebugInfo;
+					}
+					
 					return;
 				}
 			}
@@ -107,7 +128,7 @@ void DWARF_StatementVM<MEMORY_ADDR>::AddRow(const DWARF_StatementProgram<MEMORY_
 		stmt_matrix.erase(stmt_matrix_iter);
 	}
 	
-	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column);
+	Statement<MEMORY_ADDR> *stmt = new Statement<MEMORY_ADDR>(address, basic_block, dirname, filename, line, column, isa, discriminator);
 	stmt_matrix.insert(std::pair<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>(address, stmt));
 }
 
@@ -116,6 +137,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 {
 	// Initialize machine state
 	address = 0;
+	op_index = 0;
 	file = 1;
 	line = 1;
 	column = 0;
@@ -125,10 +147,11 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 	prologue_end = false;
 	prologue_begin = false;
 	isa = 0;
+	discriminator = 0;
 	filenames = dw_stmt_prog->filenames;
 
 	// Run the program
-	endian_type endianness = dw_stmt_prog->GetEndianness();
+	endian_type file_endianness = dw_stmt_prog->GetHandler()->GetFileEndianness();
 	const uint8_t *prg = dw_stmt_prog->program;
 	unsigned int count = dw_stmt_prog->program_length;
 	uint8_t opcode;
@@ -145,7 +168,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				if(opcode < dw_stmt_prog->opcode_base)
 				{
 					unsigned int num_args = dw_stmt_prog->standard_opcode_lengths[opcode - 1];
-					unsigned int i;
+					unsigned int i = 0;
 					DWARF_LEB128 args[num_args];
 					uint16_t uhalf_arg = 0;
 					
@@ -156,7 +179,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							int64_t sz;
 							if((sz = args[i].Load(prg, count)) < 0)
 							{
-								std::cerr << "Bad LEB128" << std::endl;
+								if(debug)
+								{
+									logger << DebugError << "LEB128 argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+								}
 								return false;
 							}
 							prg += sz;
@@ -167,11 +193,14 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					{
 						if(count < sizeof(uhalf_arg))
 						{
-							std::cerr << "Bad uhalf operand" << std::endl;
+							if(debug)
+							{
+								logger << DebugError << "uhalf argument #" << i << " of standard Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << " is bad or missing in line number program" << std::endl;
+							}
 							return false;
 						}
 						memcpy(&uhalf_arg, prg, sizeof(uhalf_arg));
-						uhalf_arg = Target2Host(endianness, uhalf_arg);
+						uhalf_arg = Target2Host(file_endianness, uhalf_arg);
 						prg += sizeof(uhalf_arg);
 						count -= sizeof(uhalf_arg);
 					}
@@ -184,13 +213,23 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							// Copy
 							if(os) (*os) << "Copy" << std::endl;
 							if(matrix) AddRow(dw_stmt_prog, *matrix);
+							// Reset basic_block
+							basic_block = false;
+							// Reset prologue_end
+							prologue_end = false;
+							// Reset prologue_begin
+							prologue_begin = false;
+							// Reset discriminator
+							discriminator = 0;
 							break;
 						case DW_LNS_advance_pc:
 							{
-								unsigned int pc_increment = (unsigned int) args[0] * dw_stmt_prog->minimum_instruction_length;
-								// Advance PC by 'pc_increment'
-								address += pc_increment;
-								if(os) (*os) << "Advance PC by " << pc_increment << " to 0x" << std::hex << address << std::dec << std::endl;
+								unsigned int operation_advance = (unsigned int) args[0];
+								unsigned int address_increment = ((op_index + operation_advance) / dw_stmt_prog->maximum_operations_per_instruction) * dw_stmt_prog->minimum_instruction_length;
+								// Advance PC by 'address_increment'
+								address += address_increment;
+								op_index = (op_index + operation_advance) % dw_stmt_prog->maximum_operations_per_instruction;
+								if(os) (*os) << "Advance PC by " << address_increment << " to 0x" << std::hex << address << std::dec << std::endl;
 							}
 							break;
 						case DW_LNS_advance_line:
@@ -232,7 +271,9 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							break;
 						case DW_LNS_const_add_pc:
 							{
-								int address_increment = ((255 - dw_stmt_prog->opcode_base) / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
+								unsigned int operation_advance = (255 - dw_stmt_prog->opcode_base) / dw_stmt_prog->line_range;
+								unsigned int address_increment = ((op_index + operation_advance) / dw_stmt_prog->maximum_operations_per_instruction) * dw_stmt_prog->minimum_instruction_length;
+								//int address_increment = ((255 - dw_stmt_prog->opcode_base) / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
 								// Advance PC by constant 'address_increment'
 								address += address_increment;
 								if(os) (*os) << "Advance PC by constant " << address_increment << " to 0x" << std::hex << address << std::dec << std::endl;
@@ -241,6 +282,8 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 						case DW_LNS_fixed_advance_pc:
 							// Advance PC by fixed 'uhalf_arg'
 							address += uhalf_arg;
+							// Reset op_index
+							op_index = 0;
 							if(os) (*os) << "Advance PC by fixed " << uhalf_arg << " to 0x" << std::hex << address << std::dec << std::endl;
 							break;
 						case DW_LNS_set_prologue_end:
@@ -271,9 +314,13 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					// Special opcode
 					uint8_t adjusted_opcode = opcode - dw_stmt_prog->opcode_base;
 					int line_increment = dw_stmt_prog->line_base + (adjusted_opcode % dw_stmt_prog->line_range);
-					unsigned int address_increment = (adjusted_opcode / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
+		
+					unsigned int operation_advance = adjusted_opcode / dw_stmt_prog->line_range;
+					unsigned int address_increment = ((op_index + operation_advance) / dw_stmt_prog->maximum_operations_per_instruction) * dw_stmt_prog->minimum_instruction_length;
+					// unsigned int address_increment = (adjusted_opcode / dw_stmt_prog->line_range) * dw_stmt_prog->minimum_instruction_length;
 					// Special opcode 'adjusted_opcode': advance Address by 'address_increment' and Line by 'line_increment'
 					address += address_increment;
+					op_index = (op_index + operation_advance) % dw_stmt_prog->maximum_operations_per_instruction;
 					line += line_increment;
 					// Add a row to matrix
 					if(matrix) AddRow(dw_stmt_prog, *matrix);
@@ -283,6 +330,8 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 					prologue_end = false;
 					// Reset prologue_begin
 					prologue_begin = false;
+					// Reset discriminator
+					discriminator = 0;
 					if(os) (*os) << "   - Special opcode " << (unsigned int) adjusted_opcode << ": advance Address by " << address_increment << " to 0x" << std::hex << address << std::dec << " and Line by " << line_increment << " to " << line << std::endl;
 				}
 			}
@@ -293,7 +342,10 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 				int64_t sz;
 				if((sz = leb128_insn_length.Load(prg, count)) < 0)
 				{
-					std::cerr << "Bad LEB128" << std::endl;
+					if(debug)
+					{
+						logger << DebugError << "Length (encoded as a LEB128) of an instruction (with an extended opcode) is bad or missing in line number program" << EndDebugError;
+					}
 					return false;
 				}
 				prg += sz;
@@ -335,7 +387,7 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 									{
 										uint32_t addr;
 										memcpy(&addr, prg, sizeof(uint32_t));
-										addr = Target2Host(endianness, addr);
+										addr = Target2Host(file_endianness, addr);
 										// Set Address to 'addr'
 										address = addr;
 									}
@@ -344,15 +396,20 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 									{
 										uint64_t addr;
 										memcpy(&addr, prg, sizeof(uint64_t));
-										addr = Target2Host(endianness, addr);
+										addr = Target2Host(file_endianness, addr);
 										// Set Address to 'addr'
 										address = addr;
 									}
 									break;
 								default:
-									std::cerr << "Bad address" << std::endl;
+									if(debug)
+									{
+										logger << DebugError << "DW_LNE_set_address: unsupported address size" << EndDebugError;
+									}
 									return false;
 							}
+							// Reset op_index
+							op_index = 0;
 							if(os) (*os) << std::hex << "0x" << address << std::dec;
 						}
 						break;
@@ -363,16 +420,38 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 							int64_t sz;
 							if((sz = dw_filename.Load(prg, count)) < 0)
 							{
-								std::cerr << "Bad DWARF filename entry" << std::endl;
+								if(debug)
+								{
+									logger << DebugError << "DW_LNE_define_file: bad DWARF filename entry" << EndDebugError;
+								}
 								return false;
 							}
 							// Define File 'dw_filename'
 							filenames.push_back(dw_filename);
-							if(os) (*os) << "Define File " << dw_filename << std::endl;
+							if(os) (*os) << "Define File " << dw_filename;
+						}
+						break;
+					case DW_LNE_set_discriminator:
+						{
+							DWARF_LEB128 discriminator_val;
+							int64_t sz;
+							if((sz = discriminator_val.Load(prg, count)) < 0)
+							{
+								if(debug)
+								{
+									logger << DebugError << "DW_LNE_set_discriminator: discriminator is bad or missing in line number program" << EndDebugError;
+								}
+								return false;
+							}
+							discriminator = (unsigned int) discriminator_val;
+							if(os) (*os) << "Set Discriminator to " << discriminator;
 						}
 						break;
 					default:
-						std::cerr << "Unknown extended opcode " << (unsigned int) opcode << std::endl;
+						if(debug)
+						{
+							logger << DebugError << "unknown extended Opcode 0x" << std::hex << (unsigned int) opcode << std::dec << EndDebugError;
+						}
 						return false;
 				}
 				prg += insn_length - 1;
@@ -389,3 +468,5 @@ bool DWARF_StatementVM<MEMORY_ADDR>::Run(const DWARF_StatementProgram<MEMORY_ADD
 } // end of namespace debug
 } // end of namespace util
 } // end of namespace unisim
+
+#endif // __UNISIM_UTIL_DEBUG_DWARF_STMT_VM_TCC__

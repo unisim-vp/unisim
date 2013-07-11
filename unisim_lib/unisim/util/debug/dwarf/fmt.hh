@@ -42,9 +42,16 @@ namespace dwarf {
 
 typedef enum
 {
-	FMT_DWARF32, // 32-bit DWARF (either version 2 or 3)
-	FMT_DWARF64  // 64-bit DWARF (version 3 only)
+	FMT_DWARF_UNKNOWN,
+	FMT_DWARF32, // 32-bit DWARF (either version 2, 3, or 4)
+	FMT_DWARF64  // 64-bit DWARF (version 3 or 4 only)
 } DWARF_Format;
+
+typedef enum
+{
+	FST_DEBUG_FRAME = 0,  // standard .debug_frame
+	FST_EH_FRAME = 1      // GNU .eh_frame
+} DWARF_FrameSectionType;
 
 } // end of namespace dwarf
 } // end of namespace debug

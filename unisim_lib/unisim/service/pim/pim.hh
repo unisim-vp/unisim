@@ -64,9 +64,9 @@ public:
 
 	~PIM();
 	virtual bool Setup();
-	virtual void Run();
-	void GeneratePimFile();
-	int LoadPimFile();
+	virtual void run();
+	void generatePimFile();
+	int loadPimFile();
 	void getAllVariables(vector<VariableBase*> *variables);
 
 private:
@@ -82,7 +82,7 @@ private:
 	string				filename;
 	Parameter<string>	param_filename;
 
-	component_t* FindComponent(const string name);
+	component_t* findComponent(const string name);
 
 	SocketServerThread *socketfd;
 //	SocketClientThread *socketfd;

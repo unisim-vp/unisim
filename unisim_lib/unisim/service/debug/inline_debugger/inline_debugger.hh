@@ -48,6 +48,7 @@
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 
 #include <unisim/util/debug/profile.hh>
 #include <unisim/util/debug/breakpoint.hh>
@@ -89,12 +90,14 @@ using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::Profiling;
 using unisim::service::interfaces::DebugInfoLoading;
+using unisim::service::interfaces::DataObjectLookup;
 
 using unisim::util::debug::Event;
 using unisim::util::debug::Breakpoint;
 using unisim::util::debug::Watchpoint;
 using unisim::util::debug::Symbol;
 using unisim::util::debug::Statement;
+using unisim::util::debug::DataObject;
 
 using unisim::kernel::service::Service;
 using unisim::kernel::service::ServiceExport;
@@ -148,7 +151,8 @@ class InlineDebugger
 	, public Client<BackTrace<ADDRESS> >
 	, public Client<Profiling<ADDRESS> >
 	, public Client<DebugInfoLoading>
-	,public InlineDebuggerBase
+	, public Client<DataObjectLookup<ADDRESS> >
+	, public InlineDebuggerBase
 {
 public:
 	ServiceExport<DebugControl<ADDRESS> > debug_control_export;
@@ -163,6 +167,7 @@ public:
 	ServiceImport<BackTrace<ADDRESS> > backtrace_import;
 	ServiceImport<Profiling<ADDRESS> > profiling_import;
 	ServiceImport<DebugInfoLoading> debug_info_loading_import;
+	ServiceImport<DataObjectLookup<ADDRESS> > data_object_lookup_import;
 	
 	InlineDebugger(const char *name, Object *parent = 0);
 	virtual ~InlineDebugger();
@@ -207,6 +212,7 @@ private:
 	char *int_addr_fmt;
 	std::string last_line;
 	std::string line;
+	std::vector<std::string> parm;
 	std::ostream *output_stream;
 	std::ostream *std_output_stream;
 	std::ostream *std_error_stream;
@@ -214,6 +220,7 @@ private:
 	void Tokenize(const std::string& str, std::vector<std::string>& tokens);
 	bool ParseAddr(const char *s, ADDRESS& addr);
 	bool ParseAddrRange(const char *s, ADDRESS& addr, unsigned int& size);
+	bool ParseValue(const char *s, uint64_t& value);
 	bool GetLine(const char *prompt, std::string& line, bool& interactive);
 	bool IsBlankLine(const std::string& line) const;
 	bool IsQuitCommand(const char *cmd) const;
@@ -248,6 +255,11 @@ private:
 	bool IsEnableBinaryCommand(const char *cmd) const;
 	bool IsDisableBinaryCommand(const char *cmd) const;
 	bool IsListBinariesCommand(const char *cmd) const;
+	bool IsDumpDataObjectCommand(const char *cmd) const;
+	bool IsPrintDataObjectCommand(const char *cmd) const;
+	bool IsEditDataObjectCommand(const char *cmd) const;
+	bool IsSetDataObjectCommand(const char *cmd) const;
+	bool IsListDataObjectsCommand(const char *cmd) const;
 
 	void Help();
 	void Disasm(ADDRESS addr, int count);
@@ -261,6 +273,7 @@ private:
 	void DumpBreakpoints();
 	void DumpWatchpoints();
 	void DumpMemory(ADDRESS addr);
+	bool EditBuffer(ADDRESS addr, std::vector<uint8_t>& buffer);
 	bool EditMemory(ADDRESS addr);
 	void DumpSymbols(const typename std::list<const unisim::util::debug::Symbol<ADDRESS> *>& symbols, const char *name = 0);
 	void DumpSymbols(const char *name = 0);
@@ -301,6 +314,11 @@ private:
 	void ListSourceFiles();
 	void EnableBinary(const char *filename, bool enable);
 	void ListBinaryFiles();
+	void DumpDataObject(const char *data_object_name, ADDRESS cia);
+	void PrintDataObject(const char *data_object_name, ADDRESS cia);
+	bool EditDataObject(const char *data_object_name, ADDRESS cia);
+	bool SetDataObject(const char *data_object_name, ADDRESS cia, uint64_t value);
+	void ListDataObjects(ADDRESS cia, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL);
 };
 
 } // end of namespace inline_debugger

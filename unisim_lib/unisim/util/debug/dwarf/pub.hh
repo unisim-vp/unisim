@@ -36,6 +36,9 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_PUB_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/util/debug/dwarf/version.hh>
+#include <map>
+#include <string>
 
 namespace unisim {
 namespace util {
@@ -54,13 +57,17 @@ public:
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
 	const DWARF_DIE<MEMORY_ADDR> *GetDIE() const;
 	bool IsNull() const;
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	const char *GetName() const;
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
+	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Pub<MEMORY_ADDR>& dw_pub);
 private:
 	const DWARF_Pubs<MEMORY_ADDR> *dw_pubs;
 	const DWARF_DIE<MEMORY_ADDR> *dw_die;
+	unsigned int id;
 	uint64_t debug_info_offset;
 	const char *name;
 };
@@ -75,17 +82,24 @@ public:
 	DWARF_Pubs(DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_Pubs();
 	uint64_t GetDebugInfoOffset() const;
-	endian_type GetEndianness() const;
+	DWARF_Handler<MEMORY_ADDR> *GetHandler() const;
 	DWARF_Format GetFormat() const;
+	DWARF_Version GetDWARFVersion() const;
+	const DWARF_Pub<MEMORY_ADDR> *FindPub(const char *name) const;
+	void EnumerateDataObjectNames(std::set<std::string>& name_set) const;
 	int64_t Load(const uint8_t *rawdata, uint64_t max_size);
-	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	void Fix(DWARF_Handler<MEMORY_ADDR> *dw_handler, unsigned int id);
+	unsigned int GetId() const;
 	std::ostream& to_XML(std::ostream& os) const;
 	std::ostream& to_HTML(std::ostream& os) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Pubs<MEMORY_ADDR>& dw_pubs);
 private:
 	DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	DWARF_Format dw_fmt;
+	DWARF_Version dw_ver;
+	
 	uint64_t offset;
+	unsigned int id;
 	const DWARF_CompilationUnit<MEMORY_ADDR> *dw_cu;
 	
 	uint64_t unit_length;        // The length of the entries for that set, not including the length field itself (see Section 7.2.2).
@@ -99,7 +113,7 @@ private:
 	uint64_t debug_info_length;  // The size in bytes of the contents of the .debug_info section generated to represent that
 	                             // compilation unit.
 
-	std::vector<DWARF_Pub<MEMORY_ADDR> *> dw_pubs;
+	std::map<std::string, DWARF_Pub<MEMORY_ADDR> *> dw_pubs;
 };
 
 } // end of namespace dwarf

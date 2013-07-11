@@ -10,13 +10,8 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=`pwd`
-MY_DIR=`dirname $0`
-if test ${MY_DIR} = "."; then
-	MY_DIR=${HERE}
-elif test ${MY_DIR} = ".."; then
-	MY_DIR=${HERE}/..
-fi
+HERE=$(pwd)
+MY_DIR=$(cd $(dirname $0); pwd)
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
@@ -25,12 +20,16 @@ UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/virtex5fxt
 VIRTEX5FXT_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-virtex5fxt-${VIRTEX5FXT_VERSION}
 
+if test -z "${DISTCOPY}"; then
+    DISTCOPY=cp
+fi
+
 UNISIM_TOOLS_GENISSLIB_HEADER_FILES="\
 action.hh \
 cli.hh \
 errtools.hh \
 isa.hh \
-parser.hh \
+parser_defs.hh \
 riscgenerator.hh \
 specialization.hh \
 variable.hh \
@@ -53,7 +52,7 @@ subdecoder.hh"
 UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES="\
 scanner.cc \
 parser.cc \
-parser.h"
+parser_tokens.hh"
 
 UNISIM_TOOLS_GENISSLIB_SOURCE_FILES="\
 parser.yy \
@@ -122,6 +121,7 @@ unisim/util/debug/watchpoint_registry_32.cc \
 unisim/util/debug/watchpoint_registry_64.cc \
 unisim/util/debug/breakpoint_registry_32.cc \
 unisim/util/debug/breakpoint_registry_64.cc \
+unisim/util/debug/data_object.cc \
 unisim/util/debug/stmt_32.cc \
 unisim/util/debug/stmt_64.cc \
 unisim/util/debug/dwarf/abbrev.cc \
@@ -134,6 +134,8 @@ unisim/util/debug/dwarf/filename.cc \
 unisim/util/debug/dwarf/leb128.cc \
 unisim/util/debug/dwarf/ml.cc \
 unisim/util/debug/dwarf/register_number_mapping.cc \
+unisim/util/debug/dwarf/data_object.cc \
+unisim/util/debug/dwarf/c_loc_expr_parser.cc \
 unisim/util/debug/blob/blob32.cc \
 unisim/util/debug/blob/blob64.cc \
 unisim/util/debug/blob/section32.cc \
@@ -152,6 +154,7 @@ unisim/util/loader/elf_loader/elf64_loader.cc \
 unisim/util/loader/coff_loader/coff_loader32.cc \
 unisim/util/os/linux_os/environment.cc \
 unisim/util/os/linux_os/linux.cc \
+unisim/util/lexer/lexer.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/gdb_server/gdb_server_32.cc \
@@ -266,6 +269,7 @@ unisim/util/debug/watchpoint_registry.hh \
 unisim/util/debug/watchpoint.hh \
 unisim/util/debug/breakpoint_registry.hh \
 unisim/util/debug/symbol_table.hh \
+unisim/util/debug/data_object.hh \
 unisim/util/debug/dwarf/abbrev.hh \
 unisim/util/debug/dwarf/attr.hh \
 unisim/util/debug/dwarf/call_frame_vm.hh \
@@ -274,6 +278,8 @@ unisim/util/debug/dwarf/die.hh \
 unisim/util/debug/dwarf/encoding.hh \
 unisim/util/debug/dwarf/fde.hh \
 unisim/util/debug/dwarf/fmt.hh \
+unisim/util/debug/dwarf/version.hh \
+unisim/util/debug/dwarf/option.hh \
 unisim/util/debug/dwarf/leb128.hh \
 unisim/util/debug/dwarf/macinfo.hh \
 unisim/util/debug/dwarf/pub.hh \
@@ -292,6 +298,9 @@ unisim/util/debug/dwarf/range.hh \
 unisim/util/debug/dwarf/stmt_vm.hh \
 unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/frame.hh \
+unisim/util/debug/dwarf/util.hh \
+unisim/util/debug/dwarf/data_object.hh \
+unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/blob/blob.hh \
 unisim/util/debug/blob/section.hh \
 unisim/util/debug/blob/segment.hh \
@@ -322,6 +331,9 @@ unisim/util/os/linux_os/environment.hh \
 unisim/util/os/linux_os/files_flags.hh \
 unisim/util/os/linux_os/linux.hh \
 unisim/util/os/linux_os/ppc.hh \
+unisim/util/dictionary/dictionary.hh \
+unisim/util/lexer/lexer.hh \
+unisim/util/parser/parser.hh \
 unisim/service/interfaces/debug_control.hh \
 unisim/service/interfaces/debug_event.hh \
 unisim/service/interfaces/debug_info_loading.hh \
@@ -345,6 +357,7 @@ unisim/service/interfaces/char_io.hh \
 unisim/service/interfaces/keyboard.hh \
 unisim/service/interfaces/led_board.hh \
 unisim/service/interfaces/backtrace.hh \
+unisim/service/interfaces/data_object_lookup.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -424,6 +437,7 @@ unisim/util/debug/watchpoint_registry.tcc \
 unisim/util/debug/symbol_table.tcc \
 unisim/util/debug/symbol.tcc \
 unisim/util/debug/stmt.tcc \
+unisim/util/debug/data_object.tcc \
 unisim/util/debug/dwarf/addr_range.tcc \
 unisim/util/debug/dwarf/call_frame_prog.tcc \
 unisim/util/debug/dwarf/cie.tcc \
@@ -441,6 +455,7 @@ unisim/util/debug/dwarf/macinfo.tcc \
 unisim/util/debug/dwarf/range.tcc \
 unisim/util/debug/dwarf/stmt_vm.tcc \
 unisim/util/debug/dwarf/frame.tcc \
+unisim/util/debug/dwarf/data_object.tcc \
 unisim/util/debug/blob/blob.tcc \
 unisim/util/debug/blob/section.tcc \
 unisim/util/debug/blob/segment.tcc \
@@ -455,6 +470,9 @@ unisim/util/loader/coff_loader/coff_loader.tcc \
 unisim/util/loader/coff_loader/ti/ti.tcc \
 unisim/util/os/linux_os/calls.tcc \
 unisim/util/os/linux_os/linux.tcc \
+unisim/util/dictionary/dictionary.tcc \
+unisim/util/lexer/lexer.tcc \
+unisim/util/parser/parser.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
@@ -530,7 +548,8 @@ m4/get_exec_path.m4 \
 m4/real_path.m4"
 
 UNISIM_LIB_VIRTEX5FXT_DATA_FILES="\
-unisim/service/debug/gdb_server/gdb_powerpc.xml \
+unisim/service/debug/gdb_server/gdb_ppc440.xml \
+unisim/service/debug/gdb_server/gdb_ppc440fp.xml \
 unisim/util/debug/dwarf/powerpc_eabi_dwarf_register_number_mapping.xml \
 unisim/util/debug/dwarf/powerpc_eabi_gcc_dwarf_register_number_mapping.xml"
 
@@ -634,7 +653,7 @@ mkdir -p ${DEST_DIR}/virtex5fxt
 UNISIM_TOOLS_GENISSLIB_FILES="${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES} ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES} ${UNISIM_TOOLS_GENISSLIB_DATA_FILES}"
 
 for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
-	mkdir -p "${DEST_DIR}/`dirname ${file}`"
+	mkdir -p "${DEST_DIR}/$(dirname ${file})"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/genisslib/${file}" ]; then
 		if [ "${UNISIM_TOOLS_DIR}/genisslib/${file}" -nt "${DEST_DIR}/genisslib/${file}" ]; then
@@ -645,14 +664,14 @@ for file in ${UNISIM_TOOLS_GENISSLIB_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/genisslib/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/genisslib/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 	fi
 done
 
 UNISIM_LIB_VIRTEX5FXT_FILES="${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES} ${UNISIM_LIB_VIRTEX5FXT_HEADER_FILES} ${UNISIM_LIB_VIRTEX5FXT_TEMPLATE_FILES} ${UNISIM_LIB_VIRTEX5FXT_DATA_FILES}"
 
 for file in ${UNISIM_LIB_VIRTEX5FXT_FILES}; do
-	mkdir -p "${DEST_DIR}/virtex5fxt/`dirname ${file}`"
+	mkdir -p "${DEST_DIR}/virtex5fxt/$(dirname ${file})"
 	has_to_copy=no
 	if [ -e "${DEST_DIR}/virtex5fxt/${file}" ]; then
 		if [ "${UNISIM_LIB_DIR}/${file}" -nt "${DEST_DIR}/virtex5fxt/${file}" ]; then
@@ -663,7 +682,7 @@ for file in ${UNISIM_LIB_VIRTEX5FXT_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/virtex5fxt/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/virtex5fxt/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/virtex5fxt/${file}" || exit
 	fi
 done
 
@@ -680,7 +699,7 @@ for file in ${UNISIM_SIMULATORS_VIRTEX5FXT_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/virtex5fxt/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/virtex5fxt/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/virtex5fxt/${file}" || exit
 	fi
 done
 
@@ -695,7 +714,7 @@ for file in ${UNISIM_SIMULATORS_VIRTEX5FXT_DATA_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_SIMULATORS_DIR}/${file} ==> ${DEST_DIR}/${file}"
-		cp -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_SIMULATORS_DIR}/${file}" "${DEST_DIR}/${file}" || exit
 	fi
 done
 
@@ -717,7 +736,7 @@ for file in ${UNISIM_TOOLS_GENISSLIB_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_TOOLS_DIR}/${file} ==> ${DEST_DIR}/genisslib/${file}"
-		cp -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_TOOLS_DIR}/${file}" "${DEST_DIR}/genisslib/${file}" || exit
 		has_to_build_genisslib_configure=yes
 	fi
 done
@@ -733,7 +752,7 @@ for file in ${UNISIM_LIB_VIRTEX5FXT_M4_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/virtex5fxt/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/virtex5fxt/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/virtex5fxt/${file}" || exit
 		has_to_build_virtex5fxt_configure=yes
 	fi
 done
@@ -993,21 +1012,30 @@ if [ "${has_to_build_genisslib_configure}" = "yes" ]; then
 	echo "AC_CONFIG_FILES([Makefile])" >> "${GENISSLIB_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${GENISSLIB_CONFIGURE_AC}"
 
-	AM_GENISSLIB_VERSION=`printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g'`
+	AM_GENISSLIB_VERSION=$(printf ${GENISSLIB_VERSION} | sed -e 's/\./_/g')
 	echo "Generating GENISSLIB Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${GENISSLIB_MAKEFILE_AM}"
 	echo "BUILT_SOURCES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "CLEANFILES = ${UNISIM_TOOLS_GENISSLIB_BUILT_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_YFLAGS = -d -p yy" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "AM_LFLAGS = -l" >> "${GENISSLIB_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_PROGRAMS = genisslib" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_SOURCES = ${UNISIM_TOOLS_GENISSLIB_SOURCE_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "genisslib_CPPFLAGS = -DGENISSLIB_VERSION=\\\"${GENISSLIB_VERSION}\\\"" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "noinst_HEADERS= ${UNISIM_TOOLS_GENISSLIB_HEADER_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
 	echo "EXTRA_DIST = ${UNISIM_TOOLS_GENISSLIB_M4_FILES}" >> "${GENISSLIB_MAKEFILE_AM}"
+# The following lines are a workaround caused by a bugFix in AUTOMAKE 1.12
+# Note that parser_tokens.hh has been added to BUILT_SOURCES above
+# assumption: parser.cc and either parser.h or parser.hh are generated at the same time
+    echo "\$(top_builddir)/parser_tokens.hh: \$(top_builddir)/parser.cc" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\tif test -f \"\$(top_builddir)/parser.h\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\t\tcp -f \"\$(top_builddir)/parser.h\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\telif test -f \"\$(top_builddir)/parser.hh\"; then \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\t\tcp -f \"\$(top_builddir)/parser.hh\" \"\$(top_builddir)/parser_tokens.hh\"; \\\\\n" >> "${GENISSLIB_MAKEFILE_AM}"
+    printf "\tfi\n" >> "${GENISSLIB_MAKEFILE_AM}"
 
-	echo "Building GENISSLIB configure"
+    echo "Building GENISSLIB configure"
 	${SHELL} -c "cd ${DEST_DIR}/genisslib && aclocal -I m4 && autoconf --force && autoheader && automake -ac"
 fi
 
@@ -1068,16 +1096,16 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_BOOST_GRAPH(main)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_SYSTEMC" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_TLM20" >> "${VIRTEX5FXT_CONFIGURE_AC}"
-	echo "GENISSLIB_PATH=\`pwd\`/../genisslib/genisslib" >> "${VIRTEX5FXT_CONFIGURE_AC}"
+	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}\"], [path of shared data relative to bin directory])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_CONFIG_FILES([Makefile])" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 	echo "AC_OUTPUT" >> "${VIRTEX5FXT_CONFIGURE_AC}"
 
-	AM_VIRTEX5FXT_VERSION=`printf ${VIRTEX5FXT_VERSION} | sed -e 's/\./_/g'`
+	AM_VIRTEX5FXT_VERSION=$(printf ${VIRTEX5FXT_VERSION} | sed -e 's/\./_/g')
 	echo "Generating virtex5fxt Makefile.am"
-	echo "ACLOCAL_AMFLAGS=-I \$(abs_top_srcdir)/m4" > "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "INCLUDES=-I\$(abs_top_srcdir) -I\$(abs_top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "ACLOCAL_AMFLAGS=-I \$(top_srcdir)/m4" > "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "AM_CPPFLAGS=-I\$(top_srcdir) -I\$(top_builddir)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "noinst_LIBRARIES = libvirtex5fxt-${VIRTEX5FXT_VERSION}.a" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "libvirtex5fxt_${AM_VIRTEX5FXT_VERSION}_a_SOURCES = ${UNISIM_LIB_VIRTEX5FXT_SOURCE_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "bin_PROGRAMS = unisim-virtex5fxt-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-debug-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-${VIRTEX5FXT_VERSION} unisim-virtex5fxt-wfpu-debug-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
@@ -1095,36 +1123,36 @@ if [ "${has_to_build_virtex5fxt_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_VIRTEX5FXT_DATA_FILES} ${UNISIM_SIMULATORS_VIRTEX5FXT_DATA_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc: \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "\$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh: ${UNISIM_LIB_VIRTEX5FXT_ISA_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.tcc: \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa.hh: ${UNISIM_LIB_VIRTEX5FXT_ISA_FILES}" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	echo "\$(GENISSLIB_PATH) -o \$(abs_top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa -w 8 -I \$(abs_top_srcdir) \$(abs_top_srcdir)/unisim/component/cxx/processor/powerpc/ppc440/isa/ppc440.isa" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/powerpc/ppc440/isa -w 8 -I \$(top_srcdir) \$(top_srcdir)/unisim/component/cxx/processor/powerpc/ppc440/isa/ppc440.isa" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "all-local-bin: \$(bin_PROGRAMS)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@PROGRAMS='\$(bin_PROGRAMS)'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfor PROGRAM in \$\${PROGRAMS}; do \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -f \"\$(abs_top_builddir)/bin/\`basename \$\${PROGRAM}\`\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(abs_top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\t(cd '\$(abs_top_builddir)/bin' && cp -f \"\$(abs_top_builddir)/\$\${PROGRAM}\" \`basename \"\$\${PROGRAM}\"\`); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/bin/\$\$(basename \$\${PROGRAM})\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_builddir)/\$\${PROGRAM}\" \$(top_builddir)/bin/\$\$(basename \"\$\${PROGRAM}\"); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "clean-local-bin:" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(bin_PROGRAMS)' ]; then \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -rf '\$(abs_top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/bin'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "all-local-share: \$(dist_share_DATA)" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@SHARED_DATAS='\$(dist_share_DATA)'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfor SHARED_DATA in \$\${SHARED_DATAS}; do \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -f \"\$(abs_top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}/\`basename \$\${SHARED_DATA}\`\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\tmkdir -p '\$(abs_top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\t(cd '\$(abs_top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}' && cp -f \"\$(abs_top_srcdir)/\$\${SHARED_DATA}\" \`basename \"\$\${SHARED_DATA}\"\`); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -f \"\$(top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}/\$\$(basename \$\${SHARED_DATA})\"; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tmkdir -p '\$(top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\tcp -f \"\$(top_srcdir)/\$\${SHARED_DATA}\" \$(top_builddir)/share/unisim-virtex5fxt-${VIRTEX5FXT_VERSION}/\$\$(basename \"\$\${SHARED_DATA}\"); \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tdone\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	echo "clean-local-share:" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\t@if [ ! -z '\$(dist_share_DATA)' ]; then \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
-	printf "\trm -rf '\$(abs_top_builddir)/share'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
+	printf "\trm -rf '\$(top_builddir)/share'; \\\\\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 	printf "\tfi\n" >> "${VIRTEX5FXT_MAKEFILE_AM}"
 
 	echo "Building powerpc configure"

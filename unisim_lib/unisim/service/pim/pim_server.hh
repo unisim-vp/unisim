@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007, 2010
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,6 +39,7 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/service/interfaces/memory_access_reporting.hh>
 #include <unisim/service/interfaces/debug_control.hh>
+#include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/disassembly.hh>
 #include <unisim/service/interfaces/symbol_table_lookup.hh>
 #include <unisim/service/interfaces/registers.hh>
@@ -74,6 +75,8 @@ using std::string;
 using std::vector;
 
 using unisim::service::interfaces::DebugControl;
+using unisim::service::interfaces::DebugEventListener;
+using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::Disassembly;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -112,9 +115,9 @@ typedef enum { GDB_LITTLE_ENDIAN, GDB_BIG_ENDIAN } GDBEndian;
 template <class ADDRESS>
 class PIMServer :
 	public Service<DebugControl<ADDRESS> >,
-	public Service<MemoryAccessReporting<ADDRESS> >,
+	public Service<DebugEventListener<ADDRESS> >,
 	public Service<TrapReporting>,
-	public Client<MemoryAccessReportingControl>,
+	public Client<DebugEventTrigger<ADDRESS> >,
 	public Client<Memory<ADDRESS> >,
 	public Client<Disassembly<ADDRESS> >,
 	public Client<SymbolTableLookup<ADDRESS> >,
@@ -127,6 +130,9 @@ public:
 	ServiceExport<MemoryAccessReporting<ADDRESS> > memory_access_reporting_export;
 	ServiceExport<TrapReporting> trap_reporting_export;
 
+	ServiceExport<DebugEventListener<ADDRESS> > debug_event_listener_export;
+	ServiceImport<DebugEventTrigger<ADDRESS> > debug_event_trigger_import;
+
 	ServiceImport<MemoryAccessReportingControl> memory_access_reporting_control_import;
 	ServiceImport<Memory<ADDRESS> > memory_import;
 	ServiceImport<Registers> registers_import;
@@ -137,8 +143,6 @@ public:
 	PIMServer(const char *name, Object *parent = 0);
 	virtual ~PIMServer();
 
-	virtual void ReportMemoryAccess(typename MemoryAccessReporting<ADDRESS>::MemoryAccessType mat, typename MemoryAccessReporting<ADDRESS>::MemoryType mt, ADDRESS addr, uint32_t size);
-	virtual void ReportFinishedInstruction(ADDRESS addr, ADDRESS next_addr);
 	virtual typename DebugControl<ADDRESS>::DebugCommand FetchDebugCommand(ADDRESS cia);
 	virtual void ReportTrap();
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj);
@@ -147,6 +151,9 @@ public:
 	virtual void ReportTrap(const unisim::kernel::service::Object &obj,
 							const char *c_str);
 
+	// DebugEventListener
+	virtual void OnDebugEvent(const unisim::util::debug::Event<ADDRESS>& event);
+
 	virtual void OnDisconnect();
 	virtual bool BeginSetup();
 	virtual bool Setup(ServiceExportBase *srv_export);
@@ -154,15 +161,15 @@ public:
 
 	virtual void Stop(int exit_status);
 
-	virtual void Run() { cerr << "PIM-Server:: start RUN " << std::endl; }
+	virtual void run() { cerr << "PIM-Server:: start RUN " << std::endl; }
 
-	uint16_t GetTCPPort() { return tcp_port;}
-	string GetHost() { return fHost; }
+	uint16_t GetTCPPort() { return (tcp_port);}
+	string GetHost() { return (fHost); }
 
 	double GetSimTime();
 	double GetHostTime();
 
-	inline GDBEndian GetEndian() const { return endian; }
+	inline GDBEndian GetEndian() const { return (endian); }
 
 protected:
 	vector<SocketThread*> protocolHandlers;
@@ -175,12 +182,6 @@ protected:
 private:
 	static const unsigned int MAX_BUFFER_SIZE = 256;
 	bool ParseHex(const string& s, unsigned int& pos, ADDRESS& value);
-
-	bool PutChar(char c);
-	bool GetPacket(string& s, bool blocking);
-	bool PutPacket(const string& s);
-	bool FlushOutput();
-	bool OutputText(const char *s, int count);
 
 	bool InternalReadMemory(ADDRESS addr, uint32_t size, string& packet);
 
@@ -219,8 +220,6 @@ private:
 	bool trap;
 	bool synched;
 	const Watchpoint<ADDRESS> *watchpoint_hit;
-	ADDRESS watchpoint_hit_addr;
-	uint32_t watchpoint_hit_size;
 
 	BreakpointRegistry<ADDRESS> breakpoint_registry;
 	WatchpointRegistry<ADDRESS> watchpoint_registry;
@@ -230,13 +229,6 @@ private:
 	int32_t period;
 
 	ADDRESS disasm_addr;
-
-	unsigned int input_buffer_size;
-	unsigned int input_buffer_index;
-	char input_buffer[MAX_BUFFER_SIZE];
-
-	unsigned int output_buffer_size;
-	char output_buffer[MAX_BUFFER_SIZE];
 
 	unsigned int memory_atom_size;
 	bool verbose;
@@ -249,8 +241,6 @@ private:
 	Parameter<bool> param_verbose;
 	Parameter<string> param_host;
 
-//	ofstream pim_trace_file;
-//	double last_time_ratio;
 
 };
 

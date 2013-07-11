@@ -53,10 +53,10 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 	Object(name, parent)
 	, sc_module(name)
 
-	, Client<TrapReporting>(name, parent)
-	, Service<Memory<service_address_t> >(name, parent)
-	, Service<Registers>(name, parent)
-	, Client<Memory<service_address_t> >(name, parent)
+	, unisim::kernel::service::Client<TrapReporting>(name, parent)
+	, unisim::kernel::service::Service<Memory<physical_address_t> >(name, parent)
+	, unisim::kernel::service::Service<Registers>(name, parent)
+	, unisim::kernel::service::Client<Memory<physical_address_t> >(name, parent)
 
 	, trap_reporting_import("trap_reporting_import", this)
 
@@ -142,11 +142,11 @@ ECT::ECT(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(ECT);
 
-	SC_THREAD(RunMainTimerCounter);
+	SC_THREAD(runMainTimerCounter);
 
-	SC_THREAD(RunDownCounter);
+	SC_THREAD(runDownCounter);
 
-	SC_THREAD(RunBuildinSignalGenerator);
+	SC_THREAD(runBuildinSignalGenerator);
 
 	pacA = new PulseAccumulatorA("PACA", this, &portt_pin[7], pc8bit[3], pc8bit[2]);
 	portt_pin_reg[7].AddListener(pacA);
@@ -181,7 +181,7 @@ ECT::~ECT() {
 
 }
 
-void ECT::RunBuildinSignalGenerator() {
+void ECT::runBuildinSignalGenerator() {
 
 	/* initialize random seed: */
 	srand (12345);
@@ -249,14 +249,14 @@ void ECT::exitFreezeMode() {
 	main_timer_enable();
 }
 
-void ECT::RunMainTimerCounter() {
+void ECT::runMainTimerCounter() {
 
 	while (true) {
 		while (!main_timer_enabled || ((tscr1_register & 0x80) == 0)) {
 			wait(main_timer_enable_event);
 		}
 
-		ComputeTimerPrescaledClock();
+		computeTimerPrescaledClock();
 		while (main_timer_enabled && ((tscr1_register & 0x80) != 0)) {
 			/**
 			 * If the pulse accumulator is disabled (PACTL::PAEN=0) then
@@ -282,11 +282,11 @@ void ECT::RunMainTimerCounter() {
 			if (tcnt_register == 0xFFFF) {
 				// Timer overflow
 				tcnt_register = 0x0000;
-				ComputeTimerPrescaledClock();
+				computeTimerPrescaledClock();
 
 				for (uint8_t i=0; i<8; i++) {
 					if (!isInputCapture(i) && ((ttov_register & (1 << i)) != 0)) {
-						RunChannelOutputCompareAction(i);
+						runChannelOutputCompareAction(i);
 					}
 				}
 
@@ -303,12 +303,12 @@ void ECT::RunMainTimerCounter() {
 				}
 			}
 
-			RunOutputCompare();
+			runOutputCompare();
 		}
 	}
 }
 
-void ECT::RunDownCounter() {
+void ECT::runDownCounter() {
 
 	/**
 	 * The 16-bit modulus down-counter can control the transfer of the IC registers and the pulse accumulators
@@ -323,7 +323,7 @@ void ECT::RunDownCounter() {
 		}
 
 		mccnt_register = mccnt_load_register;
-		ComputeModulusCounterClock();
+		computeModulusCounterClock();
 
 		while ((down_counter_enabled) && ((mcctl_register & 0x04) != 0)) {
 
@@ -340,7 +340,7 @@ void ECT::RunDownCounter() {
 
 				if ((mcctl_register & 0x40) != 0) {
 					mccnt_register = mccnt_load_register;
-					ComputeModulusCounterClock();
+					computeModulusCounterClock();
 				}
 			}
 		}
@@ -348,10 +348,10 @@ void ECT::RunDownCounter() {
 	}
 }
 
-void ECT::RunOutputCompare() {
+void ECT::runOutputCompare() {
 	for (uint8_t i=0; i<8; i++) {
 		if (!isInputCapture(i)) {
-			ioc_channel[i]->RunOutputCompare();
+			ioc_channel[i]->runOutputCompare();
 		}
 	}
 }
@@ -368,7 +368,7 @@ void ECT::assertInterrupt(uint8_t interrupt_offset) {
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
-	payload->interrupt_offset = interrupt_offset;
+	payload->setInterruptOffset(interrupt_offset);
 
 	sc_time local_time = quantumkeeper.get_local_time();
 
@@ -407,9 +407,9 @@ tlm_sync_enum ECT::nb_transport_bw( XINT_Payload& payload, tlm_phase& phase, sc_
 	if(phase == BEGIN_RESP)
 	{
 		payload.release();
-		return TLM_COMPLETED;
+		return (TLM_COMPLETED);
 	}
-	return TLM_ACCEPTED;
+	return (TLM_ACCEPTED);
 }
 
 
@@ -417,19 +417,24 @@ void ECT::read_write( tlm::tlm_generic_payload& trans, sc_time& delay )
 {
 	tlm::tlm_command cmd = trans.get_command();
 	sc_dt::uint64 address = trans.get_address();
-	unsigned char* data_ptr = trans.get_data_ptr();
+	uint8_t* data_ptr = (uint8_t *)trans.get_data_ptr();
 	unsigned int data_length = trans.get_data_length();
 
-	assert(address >= baseAddress);
+	if ((address >= baseAddress) && (address < (baseAddress + 64))) {
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		memset(data_ptr, 0, data_length);
-		read(address - baseAddress, data_ptr, data_length);
-	} else if (cmd == tlm::TLM_WRITE_COMMAND) {
-		write(address - baseAddress, data_ptr, data_length);
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			memset(data_ptr, 0, data_length);
+			read(address - baseAddress, data_ptr, data_length);
+		} else if (cmd == tlm::TLM_WRITE_COMMAND) {
+			write(address - baseAddress, data_ptr, data_length);
+		}
+
+		trans.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	} else {
+		trans.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
 
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
 }
 
 bool ECT::read(unsigned int offset, const void *buffer, unsigned int data_length) {
@@ -659,13 +664,14 @@ bool ECT::read(unsigned int offset, const void *buffer, unsigned int data_length
 				}
 
 			} else {
-				return false;
+				return (false);
 			}
 
 		}
+		break;
 	}
 
-	return true;
+	return (true);
 }
 
 bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_length) {
@@ -679,7 +685,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 
 			for (uint8_t i=0; i<8; i++) {
 				if (!isInputCapture(i) && ((cforc_register & (1 << i)) != 0)) {
-					RunChannelOutputCompareAction(i);
+					runChannelOutputCompareAction(i);
 				}
 			}
 
@@ -770,7 +776,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 		} break;
 		case TSCR2: {
 			tscr2_register = (tscr2_register & 0x70) | (*((uint8_t *)buffer) & 0x8F);
-			ComputeTimerPrescaledClock();
+			computeTimerPrescaledClock();
 
 		} break;
 		case TFLG1: {
@@ -989,7 +995,7 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 
 				if (((mcctl_register & 0x44) != 0x44) || ((mcctl_register & 0x08) != 0)) {
 					mccnt_register = mccnt_load_register;
-					ComputeModulusCounterClock();
+					computeModulusCounterClock();
 
 					if ((mcctl_register & 0x40) == 0) {
 						mcctl_register = mcctl_register & 0xFC;
@@ -1044,13 +1050,14 @@ bool ECT::write(unsigned int offset, const void *buffer, unsigned int data_lengt
 			else if ((offset >= TC0H_HIGH) && (offset <= TC3H_LOW)) {
 				/* don't accept write */;
 			} else {
-				return false;
+				return (false);
 			}
 		}
+		break;
 
 	}
 
-	return true;
+	return (true);
 }
 
 inline void ECT::configureOutputAction() {
@@ -1080,7 +1087,7 @@ inline void ECT::computeDelayCounter() {
 			delay_counter_disable();
 
 		} else {
-			edge_delay_counter = 32 * pow(2, dly10) * 4;
+			edge_delay_counter = 32 * pow((double)2, dly10) * 4;
 			edge_delay_counter_time = bus_cycle_time * edge_delay_counter;
 			delay_counter_enable();
 		}
@@ -1125,7 +1132,7 @@ bool ECT::PulseAccumulator8Bit::countEdge8Bit() {
 		*pacn_register_ptr = *pacn_register_ptr + 1;
 	}
 
-	return overflow;
+	return (overflow);
 }
 
 void ECT::PulseAccumulator8Bit::latchToHoldingRegisters() {
@@ -1151,7 +1158,7 @@ ECT::PulseAccumulator16Bit::PulseAccumulator16Bit(const sc_module_name& name, EC
 }
 
 void ECT::PulseAccumulator16Bit::process() {
-	RunPulseAccumulator();
+	runPulseAccumulator();
 }
 
 void ECT::PulseAccumulator16Bit::latchToHoldingRegisters() {
@@ -1167,7 +1174,7 @@ ECT::PulseAccumulatorA::PulseAccumulatorA(const sc_module_name& name, ECT *paren
 
 }
 
-void ECT::PulseAccumulatorA::RunPulseAccumulator() {
+void ECT::PulseAccumulatorA::runPulseAccumulator() {
 
 	while (true) {
 
@@ -1257,7 +1264,7 @@ ECT::PulseAccumulatorB::PulseAccumulatorB(const sc_module_name& name, ECT *paren
 
 }
 
-void ECT::PulseAccumulatorB::RunPulseAccumulator() {
+void ECT::PulseAccumulatorB::runPulseAccumulator() {
 	while (true) {
 
 		while (!ectParent->isPulseAccumulatorBEnabled()) {
@@ -1319,7 +1326,7 @@ ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const
 
 	SC_HAS_PROCESS(IOC_Channel_t);
 
-	SC_THREAD(RunInputCapture);
+	SC_THREAD(runInputCapture);
 	sensitive << edge_event;
 
 }
@@ -1336,7 +1343,7 @@ ECT::IOC_Channel_t::IOC_Channel_t(const sc_module_name& name, ECT *parent, const
  * 3: Capture on any edge (rising or falling)
  */
 
-void ECT::IOC_Channel_t::RunInputCapture() {
+void ECT::IOC_Channel_t::runInputCapture() {
 
 	while (true) {
 
@@ -1450,12 +1457,12 @@ void ECT::IOC_Channel_t::latchToHoldingRegisters() {
 	pulseAccumulator->latchToHoldingRegisters();
 }
 
-void ECT::IOC_Channel_t::RunOutputCompare() {
+void ECT::IOC_Channel_t::runOutputCompare() {
 
 	bool result = (*tc_register_ptr == ectParent->getMainTimerValue());
 	ectParent->setOC7Dx(ioc_index, result);
 	if (result) {
-		ectParent->RunChannelOutputCompareAction(ioc_index);
+		ectParent->runChannelOutputCompareAction(ioc_index);
 		// set the TFLG1::CxF to show that output compare is detected
 		ectParent->setTimerInterruptFlag(ioc_index);
 		ectParent->assertInterrupt(ectParent->getInterruptOffsetChannel0() - (ioc_index * 2));
@@ -1471,7 +1478,7 @@ void ECT::IOC_Channel_t::RunOutputCompare() {
 
 }
 
-void ECT::RunChannelOutputCompareAction(uint8_t ioc_index) {
+void ECT::runChannelOutputCompareAction(uint8_t ioc_index) {
 	/**
 	 * This method is called by writing to "CFORC" register or by starting output compare thread or by main timer overflow.
 	 * 1. Run the action which is programmed for output compare "x" to occur immediately.
@@ -1530,161 +1537,161 @@ bool ECT::BeginSetup() {
 
 	char buf[80];
 
-	sprintf(buf, "%s.TIOS",name());
+	sprintf(buf, "%s.TIOS",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tios_register);
 
 	unisim::kernel::service::Register<uint8_t> *tios_var = new unisim::kernel::service::Register<uint8_t>("TIOS", this, tios_register, "Timer Input Capture/Output Compare Select");
 	extended_registers_registry.push_back(tios_var);
 	tios_var->setCallBack(this, TIOS, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.CFORC",name());
+	sprintf(buf, "%s.CFORC",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &cforc_register);
 
 	unisim::kernel::service::Register<uint8_t> *cforc_var = new unisim::kernel::service::Register<uint8_t>("CFORC", this, cforc_register, "Timer Compare Force Register");
 	extended_registers_registry.push_back(cforc_var);
 	cforc_var->setCallBack(this, CFORC, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.OC7M",name());
+	sprintf(buf, "%s.OC7M",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7m_register);
 
 	unisim::kernel::service::Register<uint8_t> *oc7m_var = new unisim::kernel::service::Register<uint8_t>("OC7M", this, oc7m_register, "Output Compare 7 Mask Register");
 	extended_registers_registry.push_back(oc7m_var);
 	oc7m_var->setCallBack(this, OC7M, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.OC7D",name());
+	sprintf(buf, "%s.OC7D",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &oc7d_register);
 
 	unisim::kernel::service::Register<uint8_t> *oc7d_var = new unisim::kernel::service::Register<uint8_t>("OC7D", this, oc7d_register, "Output Compare 7 Data Register");
 	extended_registers_registry.push_back(oc7d_var);
 	oc7d_var->setCallBack(this, OC7D, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TCNT",name());
+	sprintf(buf, "%s.TCNT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcnt_register);
 
 	unisim::kernel::service::Register<uint16_t> *tcnt_var = new unisim::kernel::service::Register<uint16_t>("TCNT", this, tcnt_register, "Timer Count Register");
 	extended_registers_registry.push_back(tcnt_var);
 	tcnt_var->setCallBack(this, TCNT_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TSCR1",name());
+	sprintf(buf, "%s.TSCR1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr1_register);
 
 	unisim::kernel::service::Register<uint8_t> *tscr1_var = new unisim::kernel::service::Register<uint8_t>("TSCR1", this, tscr1_register, "Timer System Control Register 1");
 	extended_registers_registry.push_back(tscr1_var);
 	tscr1_var->setCallBack(this, TSCR1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TTOV",name());
+	sprintf(buf, "%s.TTOV",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &ttov_register);
 
 	unisim::kernel::service::Register<uint16_t> *ttov_var = new unisim::kernel::service::Register<uint16_t>("TTOV", this, ttov_register, "Timer Toggle Overflow Register");
 	extended_registers_registry.push_back(ttov_var);
 	ttov_var->setCallBack(this, TTOV, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TCTL12",name());
+	sprintf(buf, "%s.TCTL12",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl12_register);
 
 	unisim::kernel::service::Register<uint16_t> *tctl12_var = new unisim::kernel::service::Register<uint16_t>("TCTL12", this, tctl12_register, "Timer Control Register 1-2");
 	extended_registers_registry.push_back(tctl12_var);
 	tctl12_var->setCallBack(this, TCTL1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TCTL34",name());
+	sprintf(buf, "%s.TCTL34",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tctl34_register);
 
 	unisim::kernel::service::Register<uint16_t> *tctl34_var = new unisim::kernel::service::Register<uint16_t>("TCTL34", this, tctl34_register, "Timer Control Register 3-4");
 	extended_registers_registry.push_back(tctl34_var);
 	tctl34_var->setCallBack(this, TCTL3, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TIE",name());
+	sprintf(buf, "%s.TIE",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tie_register);
 
 	unisim::kernel::service::Register<uint8_t> *tie_var = new unisim::kernel::service::Register<uint8_t>("TIE", this, tie_register, "Timer Interrupt Enable Register");
 	extended_registers_registry.push_back(tie_var);
 	tie_var->setCallBack(this, TIE, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TSCR2",name());
+	sprintf(buf, "%s.TSCR2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tscr2_register);
 
 	unisim::kernel::service::Register<uint8_t> *tscr2_var = new unisim::kernel::service::Register<uint8_t>("TSCR2", this, tscr2_register, "Timer System Control Register 2");
 	extended_registers_registry.push_back(tscr2_var);
 	tscr2_var->setCallBack(this, TSCR2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TFLG1",name());
+	sprintf(buf, "%s.TFLG1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg1_register);
 
 	unisim::kernel::service::Register<uint8_t> *tflg1_var = new unisim::kernel::service::Register<uint8_t>("TFLG1", this, tflg1_register, "Main Timer Interrupt Flag 1");
 	extended_registers_registry.push_back(tflg1_var);
 	tflg1_var->setCallBack(this, TFLG1, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TFLG2",name());
+	sprintf(buf, "%s.TFLG2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &tflg2_register);
 
 	unisim::kernel::service::Register<uint8_t> *tflg2_var = new unisim::kernel::service::Register<uint8_t>("TFLG2", this, tflg2_register, "Main Timer Interrupt Flag 2");
 	extended_registers_registry.push_back(tflg2_var);
 	tflg2_var->setCallBack(this, TFLG2, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC0",name());
+	sprintf(buf, "%s.TC0",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[0]);
 
 	unisim::kernel::service::Register<uint16_t> *tc0_var = new unisim::kernel::service::Register<uint16_t>("TC0", this, tc_registers[0], "Timer Input Capture/Output Compare Register 0");
 	extended_registers_registry.push_back(tc0_var);
 	tc0_var->setCallBack(this, TC0_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC1",name());
+	sprintf(buf, "%s.TC1",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[1]);
 
 	unisim::kernel::service::Register<uint16_t> *tc1_var = new unisim::kernel::service::Register<uint16_t>("TC1", this, tc_registers[1], "Timer Input Capture/Output Compare Register 1");
 	extended_registers_registry.push_back(tc1_var);
 	tc1_var->setCallBack(this, TC1_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC2",name());
+	sprintf(buf, "%s.TC2",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[2]);
 
 	unisim::kernel::service::Register<uint16_t> *tc2_var = new unisim::kernel::service::Register<uint16_t>("TC2", this, tc_registers[2], "Timer Input Capture/Output Compare Register 2");
 	extended_registers_registry.push_back(tc2_var);
 	tc2_var->setCallBack(this, TC2_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC3",name());
+	sprintf(buf, "%s.TC3",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[3]);
 
 	unisim::kernel::service::Register<uint16_t> *tc3_var = new unisim::kernel::service::Register<uint16_t>("TC3", this, tc_registers[3], "Timer Input Capture/Output Compare Register 3");
 	extended_registers_registry.push_back(tc3_var);
 	tc3_var->setCallBack(this, TC3_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC4",name());
+	sprintf(buf, "%s.TC4",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[4]);
 
 	unisim::kernel::service::Register<uint16_t> *tc4_var = new unisim::kernel::service::Register<uint16_t>("TC4", this, tc_registers[4], "Timer Input Capture/Output Compare Register 4");
 	extended_registers_registry.push_back(tc4_var);
 	tc4_var->setCallBack(this, TC4_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC5",name());
+	sprintf(buf, "%s.TC5",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[5]);
 
 	unisim::kernel::service::Register<uint16_t> *tc5_var = new unisim::kernel::service::Register<uint16_t>("TC5", this, tc_registers[5], "Timer Input Capture/Output Compare Register 5");
 	extended_registers_registry.push_back(tc5_var);
 	tc5_var->setCallBack(this, TC5_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC6",name());
+	sprintf(buf, "%s.TC6",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[6]);
 
 	unisim::kernel::service::Register<uint16_t> *tc6_var = new unisim::kernel::service::Register<uint16_t>("TC6", this, tc_registers[6], "Timer Input Capture/Output Compare Register 6");
 	extended_registers_registry.push_back(tc6_var);
 	tc6_var->setCallBack(this, TC6_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC7",name());
+	sprintf(buf, "%s.TC7",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tc_registers[7]);
 
 	unisim::kernel::service::Register<uint16_t> *tc7_var = new unisim::kernel::service::Register<uint16_t>("TC7", this, tc_registers[7], "Timer Input Capture/Output Compare Register 7");
 	extended_registers_registry.push_back(tc7_var);
 	tc7_var->setCallBack(this, TC7_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PACTL",name());
+	sprintf(buf, "%s.PACTL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pactl_register);
 
 	unisim::kernel::service::Register<uint8_t> *pactl_var = new unisim::kernel::service::Register<uint8_t>("PACTL", this, pactl_register, "16-Bit Pulse Accumulator A Control Register");
 	extended_registers_registry.push_back(pactl_var);
 	pactl_var->setCallBack(this, PACTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PAFLG",name());
+	sprintf(buf, "%s.PAFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &paflg_register);
 
 	unisim::kernel::service::Register<uint8_t> *paflg_var = new unisim::kernel::service::Register<uint8_t>("PAFLG", this, paflg_register, "Pulse Accumulator A Flag Register");
@@ -1694,7 +1701,7 @@ bool ECT::BeginSetup() {
 	uint8_t pacn_number;
 
 	for (uint8_t i=0; i<4; i++) {
-		sprintf(buf, "%s.PACN%d",name(), i);
+		sprintf(buf, "%s.PACN%d",sc_object::name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &pacn_register[i]));
 		sprintf(buf, "PACN%d", i);
 
@@ -1702,7 +1709,7 @@ bool ECT::BeginSetup() {
 		extended_registers_registry.push_back(pacn_var);
 		pacn_var->setCallBack(this, PACN0-i, &CallBackObject::write, NULL);
 
-		sprintf(buf, "%s.PA%dH",name(), i);
+		sprintf(buf, "%s.PA%dH",sc_object::name(), i);
 		registers_registry[buf] = new SimpleRegister<uint8_t>(buf, ((uint8_t*) &paxh_registers[i]));
 		sprintf(buf, "PA%dH", i);
 
@@ -1712,112 +1719,112 @@ bool ECT::BeginSetup() {
 
 	}
 
-	sprintf(buf, "%s.MCCTL",name());
+	sprintf(buf, "%s.MCCTL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcctl_register);
 
 	unisim::kernel::service::Register<uint8_t> *mcctl_var = new unisim::kernel::service::Register<uint8_t>("MCCTL", this, mcctl_register, "16-Bit Modulus Down Counter Register");
 	extended_registers_registry.push_back(mcctl_var);
 	mcctl_var->setCallBack(this, MCCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.MCFLG",name());
+	sprintf(buf, "%s.MCFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &mcflg_register);
 
 	unisim::kernel::service::Register<uint8_t> *mcflg_var = new unisim::kernel::service::Register<uint8_t>("MCFLG", this, mcflg_register, "16-Bit Modulus Down Counter Flag Register");
 	extended_registers_registry.push_back(mcflg_var);
 	mcflg_var->setCallBack(this, MCFLG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ICPAR",name());
+	sprintf(buf, "%s.ICPAR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icpar_register);
 
 	unisim::kernel::service::Register<uint8_t> *icpar_var = new unisim::kernel::service::Register<uint8_t>("ICPAR", this, icpar_register, "Input Control Pulse Accumulator Register");
 	extended_registers_registry.push_back(icpar_var);
 	icpar_var->setCallBack(this, ICPAR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.DLYCT",name());
+	sprintf(buf, "%s.DLYCT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &dlyct_register);
 
 	unisim::kernel::service::Register<uint8_t> *dlyct_var = new unisim::kernel::service::Register<uint8_t>("DLYCT", this, dlyct_register, "Delay Counter Control Register");
 	extended_registers_registry.push_back(dlyct_var);
 	dlyct_var->setCallBack(this, DLYCT, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ICOVW",name());
+	sprintf(buf, "%s.ICOVW",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icovw_register);
 
 	unisim::kernel::service::Register<uint8_t> *icovw_var = new unisim::kernel::service::Register<uint8_t>("ICOVW", this, icovw_register, "Input Control Overwrite Register");
 	extended_registers_registry.push_back(icovw_var);
 	icovw_var->setCallBack(this, ICOVW, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.ICSYS",name());
+	sprintf(buf, "%s.ICSYS",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &icsys_register);
 
 	unisim::kernel::service::Register<uint8_t> *icsys_var = new unisim::kernel::service::Register<uint8_t>("ICSYS", this, icsys_register, "Input Control System Control Register");
 	extended_registers_registry.push_back(icsys_var);
 	icsys_var->setCallBack(this, ICSYS, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TIMTST",name());
+	sprintf(buf, "%s.TIMTST",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &timtst_register);
 
 	unisim::kernel::service::Register<uint8_t> *timtst_var = new unisim::kernel::service::Register<uint8_t>("TIMTST", this, timtst_register, "Timer Test Register");
 	extended_registers_registry.push_back(timtst_var);
 	timtst_var->setCallBack(this, TIMTST, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PTPSR",name());
+	sprintf(buf, "%s.PTPSR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptpsr_register);
 
 	unisim::kernel::service::Register<uint8_t> *ptpsr_var = new unisim::kernel::service::Register<uint8_t>("PTPSR", this, ptpsr_register, "Precision Timer Prescaler Select Register");
 	extended_registers_registry.push_back(ptpsr_var);
 	ptpsr_var->setCallBack(this, PTPSR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PTMCPSR",name());
+	sprintf(buf, "%s.PTMCPSR",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &ptmcpsr_register);
 
 	unisim::kernel::service::Register<uint8_t> *ptmcpsr_var = new unisim::kernel::service::Register<uint8_t>("PTMCPSR", this, ptmcpsr_register, "Precision Timer Modulus Counter Prescaler Select Register");
 	extended_registers_registry.push_back(ptmcpsr_var);
 	ptmcpsr_var->setCallBack(this, PTMCPSR, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PBCTL",name());
+	sprintf(buf, "%s.PBCTL",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbctl_register);
 
 	unisim::kernel::service::Register<uint8_t> *pbctl_var = new unisim::kernel::service::Register<uint8_t>("PBCTL", this, pbctl_register, "16-Bit Pulse Accumulator B Control Register");
 	extended_registers_registry.push_back(pbctl_var);
 	pbctl_var->setCallBack(this, PBCTL, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.PBFLG",name());
+	sprintf(buf, "%s.PBFLG",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint8_t>(buf, &pbflg_register);
 
 	unisim::kernel::service::Register<uint8_t> *pbflg_var = new unisim::kernel::service::Register<uint8_t>("PBFLG", this, pbflg_register, "16-Bit Pulse Accumulator B Flag Register");
 	extended_registers_registry.push_back(pbflg_var);
 	pbflg_var->setCallBack(this, PBFLG, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.MCCNT",name());
+	sprintf(buf, "%s.MCCNT",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &mccnt_register);
 
 	unisim::kernel::service::Register<uint16_t> *mccnt_var = new unisim::kernel::service::Register<uint16_t>("MCCNT", this, mccnt_register, "Modulus Down-Counter Count Register");
 	extended_registers_registry.push_back(mccnt_var);
 	mccnt_var->setCallBack(this, MCCNT_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC0H",name());
+	sprintf(buf, "%s.TC0H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[0]);
 
 	unisim::kernel::service::Register<uint16_t> *tc0h_var = new unisim::kernel::service::Register<uint16_t>("TC0H", this, tcxh_registers[0], "Timer Input Capture Holding Register 0");
 	extended_registers_registry.push_back(tc0h_var);
 	tc0h_var->setCallBack(this, TC0H_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC1H",name());
+	sprintf(buf, "%s.TC1H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[1]);
 
 	unisim::kernel::service::Register<uint16_t> *tc1h_var = new unisim::kernel::service::Register<uint16_t>("TC1H", this, tcxh_registers[1], "Timer Input Capture Holding Register 1");
 	extended_registers_registry.push_back(tc1h_var);
 	tc1h_var->setCallBack(this, TC1H_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC2H",name());
+	sprintf(buf, "%s.TC2H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[2]);
 
 	unisim::kernel::service::Register<uint16_t> *tc2h_var = new unisim::kernel::service::Register<uint16_t>("TC2H", this, tcxh_registers[2], "Timer Input Capture Holding Register 2");
 	extended_registers_registry.push_back(tc2h_var);
 	tc2h_var->setCallBack(this, TC2H_HIGH, &CallBackObject::write, NULL);
 
-	sprintf(buf, "%s.TC3H",name());
+	sprintf(buf, "%s.TC3H",sc_object::name());
 	registers_registry[buf] = new SimpleRegister<uint16_t>(buf, &tcxh_registers[3]);
 
 	unisim::kernel::service::Register<uint16_t> *tc3h_var = new unisim::kernel::service::Register<uint16_t>("TC3H", this, tcxh_registers[3], "Timer Input Capture Holding Register 3");
@@ -1825,17 +1832,17 @@ bool ECT::BeginSetup() {
 	tc3h_var->setCallBack(this, TC3H_HIGH, &CallBackObject::write, NULL);
 
 
-	ComputeInternalTime();
+	computeInternalTime();
 
-	return true;
+	return (true);
 }
 
 bool ECT::Setup(ServiceExportBase *srv_export) {
-	return true;
+	return (true);
 }
 
 bool ECT::EndSetup() {
-	return true;
+	return (true);
 }
 
 /**
@@ -1847,9 +1854,9 @@ bool ECT::EndSetup() {
 Register* ECT::GetRegister(const char *name)
 {
 	if(registers_registry.find(string(name)) != registers_registry.end())
-		return registers_registry[string(name)];
+		return (registers_registry[string(name)]);
 	else
-		return NULL;
+		return (NULL);
 
 }
 
@@ -1900,7 +1907,7 @@ void ECT::Reset() {
 
 }
 
-void ECT::ComputeInternalTime() {
+void ECT::computeInternalTime() {
 
 	bus_cycle_time = sc_time((double)bus_cycle_time_int, SC_PS);
 
@@ -1910,11 +1917,11 @@ void ECT::ComputeInternalTime() {
 
 }
 
-void ECT::ComputeTimerPrescaledClock() {
+void ECT::computeTimerPrescaledClock() {
 
 	// is TSCR1::PRNT=0 ?
 	if ((tscr1_register & 0x08) == 0) {
-		prescaled_clock = pow(2, (tscr2_register & 0x07)) * bus_cycle_time;
+		prescaled_clock = pow((double) 2, (tscr2_register & 0x07)) * bus_cycle_time;
 	} else {
 		prescaled_clock = (ptpsr_register + 1) * bus_cycle_time;
 	}
@@ -1922,7 +1929,7 @@ void ECT::ComputeTimerPrescaledClock() {
 }
 
 
-void ECT::ComputeModulusCounterClock() {
+void ECT::computeModulusCounterClock() {
 
 	mccnt_clock = bus_cycle_time;
 
@@ -1932,7 +1939,7 @@ void ECT::ComputeModulusCounterClock() {
 	} else {
 		uint8_t mccnt_prescaler = mcctl_register & 0x03;
 		if (mccnt_prescaler > 0) {
-			mccnt_clock = bus_cycle_time * pow(2, mccnt_prescaler+1);
+			mccnt_clock = bus_cycle_time * pow((double) 2, mccnt_prescaler+1);
 		}
 	}
 
@@ -1945,18 +1952,18 @@ void ECT::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	bus_cycle_time_int = *external_bus_clock;
 
-	ComputeInternalTime();
+	computeInternalTime();
 }
 
 //=====================================================================
 //=             memory interface methods                              =
 //=====================================================================
 
-bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
+bool ECT::ReadMemory(physical_address_t addr, void *buffer, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
 
-		service_address_t offset = addr-baseAddress;
+		physical_address_t offset = addr-baseAddress;
 
 		memset(buffer, 0, size);
 
@@ -2134,20 +2141,21 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 						*((uint8_t *)buffer) = tcxh_registers[tcxh_offset_index] & 0x00FF;
 					}
 				} else {
-					return false;
+					return (false);
 				}
 			}
+			break;
 		}
 
-		return true;
+		return (true);
 
 	}
 
-	return false;
+	return (false);
 
 }
 
-//bool ECT::WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
+//bool ECT::WriteMemory(physical_address_t addr, const void *buffer, uint32_t size) {
 //
 //	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
 //
@@ -2155,7 +2163,7 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 //			return true;
 //		}
 //
-//		service_address_t offset = addr-baseAddress;
+//		physical_address_t offset = addr-baseAddress;
 //
 //		return write(offset, (uint8_t *) buffer, size);
 //	}
@@ -2163,15 +2171,15 @@ bool ECT::ReadMemory(service_address_t addr, void *buffer, uint32_t size) {
 //	return false;
 //}
 
-bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) {
+bool ECT::WriteMemory(physical_address_t addr, const void *value, uint32_t size) {
 
 	if ((addr >= baseAddress) && (addr <= (baseAddress+TC3H_LOW))) {
 
 		if (size == 0) {
-			return true;
+			return (true);
 		}
 
-		service_address_t offset = addr-baseAddress;
+		physical_address_t offset = addr-baseAddress;
 
 		switch (offset) {
 			case TIOS: tios_register = *((uint8_t *)value); break;
@@ -2338,16 +2346,17 @@ bool ECT::WriteMemory(service_address_t addr, const void *value, uint32_t size) 
 					}
 
 				} else {
-					return false;
+					return (false);
 				}
 			}
 
+			break;
 		}
 
-		return true;
+		return (true);
 	}
 
-	return false;
+	return (false);
 }
 
 

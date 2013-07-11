@@ -144,11 +144,11 @@ inline void Add8(uint8_t& result, uint8_t& carry_out, uint8_t& overflow, uint8_t
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(carry_in)
 	{
-		__asm__ ("stc\nadcb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");	
+		__asm__ ("stc\nadcb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("addb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");
+		__asm__ ("addb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (carry_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "qQm" (y) : "cc");
 	}
 #else
 	uint8_t res = x + y + carry_in;
@@ -230,11 +230,11 @@ inline void Sub8(uint8_t& result, uint8_t& borrow_out, uint8_t& overflow, uint8_
 #if defined(__GNUC__) && (__GNUC__ >= 3) && (defined(__i386) || defined(__x86_64))
 	if(borrow_in)
 	{
-		__asm__ ("stc\nsbbb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");	
+		__asm__ ("stc\nsbbb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");	
 	}
 	else
 	{
-		__asm__ ("subb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQm" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");
+		__asm__ ("subb %5, %0\nsetc %1\nseto %2\nsets %3" : "=qQ" (result), "=qQm" (borrow_out), "=qQm" (overflow), "=qQm" (sign) : "0" (x), "q" (y) : "cc");
 	}
 #else
 	uint8_t res = x - y - borrow_in;

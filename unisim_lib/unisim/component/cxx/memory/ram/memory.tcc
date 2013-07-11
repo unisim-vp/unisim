@@ -65,6 +65,13 @@ MemoryPage<PHYSICAL_ADDR, PAGE_SIZE>::~MemoryPage()
 	delete[] storage;
 }
 
+inline const std::string u32toa(uint32_t v)
+{
+  std::stringstream sstr;
+  sstr << v;
+  return sstr.str();
+}
+
 template <class PHYSICAL_ADDR, uint32_t PAGE_SIZE>
 Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	: Object(name, parent, "this module implements a memory")
@@ -78,12 +85,11 @@ Memory<PHYSICAL_ADDR, PAGE_SIZE>::Memory(const  char *name, Object *parent)
 	, hash_table()
 	, param_org("org", this, org, "memory origin/base address")
 	, param_bytesize("bytesize", this, bytesize, "memory size in bytes")
-	, stat_memory_usage("memory-usage", this, memory_usage, "host memory usage in bytes of simulated memory")
+	, stat_memory_usage("memory-usage", this, memory_usage, (std::string("target memory usage in bytes (page granularity of ") + u32toa(PAGE_SIZE) + " bytes)").c_str())
 	, initial_byte_value(0x00)
 	, param_initial_byte_value("initial-byte-value", this, initial_byte_value)
 
 {
-	stat_memory_usage.SetVisible(false);
 	stat_memory_usage.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_bytesize.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
 	param_initial_byte_value.SetFormat(unisim::kernel::service::VariableBase::FMT_HEX);

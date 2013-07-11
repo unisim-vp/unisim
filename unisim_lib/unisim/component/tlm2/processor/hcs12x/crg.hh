@@ -44,7 +44,7 @@
 #include <cmath>
 #include <map>
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -75,6 +75,8 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
 using namespace tlm_utils;
 
@@ -98,7 +100,7 @@ using unisim::util::debug::SimpleRegister;
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::address_t;
 using unisim::component::cxx::processor::hcs12x::physical_address_t;
-using unisim::component::cxx::processor::hcs12x::service_address_t;
+using unisim::component::cxx::processor::hcs12x::physical_address_t;
 using unisim::component::cxx::processor::hcs12x::CONFIG;
 
 using unisim::kernel::service::Object;
@@ -110,9 +112,9 @@ class CRG :
 	, public CallBackObject
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 	, public Client<TrapReporting >
-	, public Service<Memory<service_address_t> >
+	, public Service<Memory<physical_address_t> >
 	, public Service<Registers>
-	, public Client<Memory<service_address_t> >
+	, public Client<Memory<physical_address_t> >
 
 {
 public:
@@ -133,16 +135,16 @@ public:
 
 //	tlm_utils::multi_passthrough_target_socket<CRG> reset_socket;
 
-	ServiceExport<Memory<service_address_t> > memory_export;
-	ServiceImport<Memory<service_address_t> > memory_import;
+	ServiceExport<Memory<physical_address_t> > memory_export;
+	ServiceImport<Memory<physical_address_t> > memory_import;
 	ServiceExport<Registers> registers_export;
 
 	CRG(const sc_module_name& name, Object *parent = 0);
 	virtual ~CRG();
 
-	void RunRTI();
-	void RunCOP();
-	void RunClockMonitor();
+	void runRTI();
+	void runCOP();
+	void runClockMonitor();
 
 	void assertInterrupt(uint8_t interrupt_offset);
 
@@ -170,8 +172,8 @@ public:
 	//=             memory interface methods                              =
 	//=====================================================================
 
-	virtual bool ReadMemory(service_address_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(physical_address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(physical_address_t addr, const void *buffer, uint32_t size);
 
 	//=====================================================================
 	//=             XINT Registers Interface interface methods               =
@@ -271,7 +273,7 @@ private:
 	// RTI Frequency Divide Rate
 	double rti_fdr;
 
-	inline void RunPLL_LockTrack_Detector();
+	inline void runPLL_LockTrack_Detector();
 	inline void initialize_rti_counter();
 	inline void updateBusClock();
 

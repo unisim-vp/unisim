@@ -50,6 +50,7 @@
 #include <unisim/util/debug/dwarf/stmt_prog.hh>
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
 #include <unisim/util/debug/dwarf/frame.hh>
+#include <unisim/util/debug/dwarf/data_object.hh>
 
 #include <unisim/util/debug/dwarf/addr_range.tcc>
 #include <unisim/util/debug/dwarf/attr.tcc>
@@ -68,6 +69,7 @@
 #include <unisim/util/debug/dwarf/stmt_prog.tcc>
 #include <unisim/util/debug/dwarf/stmt_vm.tcc>
 #include <unisim/util/debug/dwarf/frame.tcc>
+#include <unisim/util/debug/dwarf/data_object.tcc>
 
 namespace unisim {
 namespace util {
@@ -124,6 +126,7 @@ template class DWARF_Pub<uint32_t>;
 template class DWARF_Pubs<uint32_t>;
 template class DWARF_LocListEntry<uint32_t>;
 template class DWARF_Handler<uint32_t>;
+template class DWARF_DataObject<uint32_t>;
 
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AddressRangeDescriptor<uint32_t>&);
 template std::ostream& operator << <uint32_t>(std::ostream&, const DWARF_AddressRanges<uint32_t>&);

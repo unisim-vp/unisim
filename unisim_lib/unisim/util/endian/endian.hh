@@ -65,6 +65,7 @@ typedef enum
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 inline bool IsHostLittleEndian() __attribute__((always_inline));
 inline bool IsHostBigEndian() __attribute__((always_inline));
+inline endian_type GetHostEndian() __attribute__((always_inline));
 
 inline void BSwap(uint8_t& value) __attribute__((always_inline));
 inline void BSwap(uint16_t& value) __attribute__((always_inline));
@@ -151,6 +152,14 @@ inline bool IsHostBigEndian()
 #endif
 }
 
+inline endian_type GetHostEndian()
+{
+#if BYTE_ORDER == LITTLE_ENDIAN
+	return E_LITTLE_ENDIAN;
+#else
+	return E_BIG_ENDIAN;
+#endif
+}
 
 inline void BSwap(uint8_t& value)
 {

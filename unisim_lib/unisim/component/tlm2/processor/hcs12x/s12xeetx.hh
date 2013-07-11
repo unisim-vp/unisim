@@ -10,7 +10,7 @@
 
 #include <queue>
 
-#include <systemc.h>
+#include <systemc>
 
 #include <tlm.h>
 #include <tlm_utils/tlm_quantumkeeper.h>
@@ -25,6 +25,7 @@
 
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/debug/simple_register.hh"
+#include "unisim/util/endian/endian.hh"
 
 #include <unisim/component/cxx/processor/hcs12x/config.hh>
 #include <unisim/component/cxx/processor/hcs12x/types.hh>
@@ -41,12 +42,17 @@ namespace processor {
 namespace hcs12x {
 
 using namespace std;
+using namespace sc_core;
+using namespace sc_dt;
 using namespace tlm;
-using namespace tlm_utils;
+
+using tlm_utils::tlm_quantumkeeper;
 
 using unisim::kernel::tlm2::PayloadFabric;
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
+using unisim::kernel::service::Service;
+using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
 using unisim::kernel::service::VariableBase;
@@ -65,6 +71,9 @@ using unisim::service::interfaces::Registers;
 
 using unisim::util::debug::Register;
 using unisim::util::debug::SimpleRegister;
+using unisim::util::endian::BigEndian2Host;
+using unisim::util::endian::Host2BigEndian;
+
 
 using unisim::component::tlm2::memory::ram::DEFAULT_BURST_LENGTH;
 using unisim::component::tlm2::memory::ram::DEFAULT_BUSWIDTH;
@@ -84,6 +93,7 @@ template <unsigned int CMD_PIPELINE_SIZE = DEFAULT_CMD_PIPELINE_SIZE, unsigned i
 class S12XEETX :
 	public unisim::component::tlm2::memory::ram::Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>
 	, public CallBackObject
+	, public Service<Registers>
 	, virtual public tlm_bw_transport_if<XINT_REQ_ProtocolTypes>
 
 {
@@ -102,6 +112,8 @@ public:
 
 	// interface with bus
 	tlm_utils::simple_target_socket<S12XEETX> slave_socket;
+
+	ServiceExport<Registers> registers_export;
 
 	/**
 	 * Constructor.
@@ -187,12 +199,12 @@ private:
 		~TCommand() {}
 
 		void setCmd(uint8_t _cmd) { this->cmd = _cmd; cmdWrite = true; }
-		uint8_t getCmd() { return cmd; }
+		uint8_t getCmd() { return (cmd); }
 		void setAddr(uint16_t _addr) { this->addr = _addr; }
-		uint16_t getAddr() { return addr; }
+		uint16_t getAddr() { return (addr); }
 		void setData(uint16_t _data) { this->data = _data; }
-		uint16_t getData() { return data; }
-		bool isCmdWrite() { return cmdWrite; }
+		uint16_t getData() { return (data); }
+		bool isCmdWrite() { return (cmdWrite); }
 		void invalidateCmdWrite() { cmdWrite = false; }
 
 	private:

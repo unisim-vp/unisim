@@ -43,6 +43,8 @@
 #include <unisim/util/endian/endian.hh>
 #include <unisim/util/debug/elf_symtab/elf_symtab.hh>
 #include <unisim/service/interfaces/registers.hh>
+#include <unisim/service/interfaces/stmt_lookup.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 
 #include <iosfwd>
 
@@ -68,7 +70,9 @@ typedef enum
 	OPT_VERBOSE,
 	OPT_PARSE_DWARF,
 	OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY,
-	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME
+	OPT_DWARF_TO_XML_OUTPUT_FILENAME,
+	OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME,
+	OPT_DEBUG_DWARF
 } Option;
 	
 template <class MEMORY_ADDR, unsigned int ElfClass, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
@@ -86,9 +90,9 @@ public:
 	void SetOption(Option opt, const char *s);
 	void SetOption(Option opt, bool flag);
 	
-	void GetOption(Option opt, MEMORY_ADDR& addr);
-	void GetOption(Option opt, std::string& s);
-	void GetOption(Option opt, bool& flag);
+	void GetOption(Option opt, MEMORY_ADDR& addr) const;
+	void GetOption(Option opt, std::string& s) const;
+	void GetOption(Option opt, bool& flag) const;
 	
 	const unisim::util::debug::blob::Blob<MEMORY_ADDR> *GetBlob() const;
 
@@ -102,9 +106,13 @@ public:
 	const std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *>& GetStatements() const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	
+	const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+
 	std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
+	
+	unisim::util::debug::DataObject<MEMORY_ADDR> *FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const;
+	void EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope = unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
 private:
 	unisim::kernel::logger::Logger& logger;
 	string filename;
@@ -119,10 +127,12 @@ private:
 	unisim::service::interfaces::Registers *regs_if;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	string dwarf_to_html_output_directory;
+	string dwarf_to_xml_output_filename;
 	string dwarf_register_number_mapping_filename;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	std::map<MEMORY_ADDR, const Statement<MEMORY_ADDR> *> no_stmts;
 	
 	void SwapElfHeader(Elf_Ehdr *hdr);

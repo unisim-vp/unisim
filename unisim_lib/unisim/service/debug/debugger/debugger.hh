@@ -56,6 +56,7 @@
 #include <unisim/service/interfaces/debug_event.hh>
 #include <unisim/service/interfaces/profiling.hh>
 #include <unisim/service/interfaces/debug_info_loading.hh>
+#include <unisim/service/interfaces/data_object_lookup.hh>
 
 #include <string>
 
@@ -85,6 +86,7 @@ using unisim::service::interfaces::Loader;
 using unisim::service::interfaces::DebugEventTrigger;
 using unisim::service::interfaces::DebugEventListener;
 using unisim::service::interfaces::DebugInfoLoading;
+using unisim::service::interfaces::DataObjectLookup;
 
 template <class ADDRESS>
 class Debugger
@@ -99,6 +101,7 @@ class Debugger
 	, public Service<StatementLookup<ADDRESS> >
 	, public Service<BackTrace<ADDRESS> >
 	, public Service<DebugInfoLoading>
+	, public Service<DataObjectLookup<ADDRESS> >
 	, public Client<DebugEventListener<ADDRESS> >
 	, public Client<DebugControl<ADDRESS> >
 	, public Client<MemoryAccessReportingControl>
@@ -121,6 +124,7 @@ public:
 	ServiceExport<StatementLookup<ADDRESS> > stmt_lookup_export;
 	ServiceExport<BackTrace<ADDRESS> > backtrace_export;
 	ServiceExport<DebugInfoLoading> debug_info_loading_export;
+	ServiceExport<DataObjectLookup<ADDRESS> > data_object_lookup_export;
 	
 	ServiceImport<DebugEventListener<ADDRESS> > debug_event_listener_import;
 	ServiceImport<DebugControl<ADDRESS> > debug_control_import;
@@ -171,6 +175,7 @@ public:
 	virtual void GetStatements(std::map<ADDRESS, const unisim::util::debug::Statement<ADDRESS> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(ADDRESS addr, typename unisim::service::interfaces::StatementLookup<ADDRESS>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
+	virtual const unisim::util::debug::Statement<ADDRESS> *FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
 
 	virtual std::vector<ADDRESS> *GetBackTrace(ADDRESS pc) const;
 	virtual bool GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const;
@@ -179,17 +184,23 @@ public:
 	virtual bool EnableBinary(const char *filename, bool enable);
 	virtual void EnumerateBinaries(std::list<std::string>& lst) const;
 	virtual bool IsBinaryEnabled(const char *filename) const;
+	
+	virtual unisim::util::debug::DataObject<ADDRESS> *FindDataObject(const char *data_object_name, ADDRESS pc) const;
+	virtual void EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope = unisim::service::interfaces::DataObjectLookup<ADDRESS>::SCOPE_BOTH_GLOBAL_AND_LOCAL) const;
+	
 private:
 	bool verbose;
 	std::string dwarf_to_html_output_directory;
 	std::string dwarf_register_number_mapping_filename;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	std::string filename;
 
 	Parameter<bool> param_verbose;
 	Parameter<std::string> param_dwarf_to_html_output_directory;
 	Parameter<std::string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
+	Parameter<bool> param_debug_dwarf;
 
 	unisim::kernel::logger::Logger logger;
 	bool setup_debug_info_done;

@@ -70,6 +70,7 @@ ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::El
 	, verbose(false)
 	, endianness(E_LITTLE_ENDIAN)
 	, parse_dwarf(false)
+	, debug_dwarf(false)
 {
 	if(const_blob)
 	{
@@ -126,6 +127,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			dwarf_to_html_output_directory = s;
 			break;
+		case OPT_DWARF_TO_XML_OUTPUT_FILENAME:
+			dwarf_to_xml_output_filename = s;
+			break;
 		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
 			dwarf_register_number_mapping_filename = s;
 			break;
@@ -154,13 +158,16 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case OPT_PARSE_DWARF:
 			parse_dwarf = flag;
 			break;
+		case OPT_DEBUG_DWARF:
+			debug_dwarf = flag;
+			break;
 		default:
 			break;
 	}
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, MEMORY_ADDR& addr)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, MEMORY_ADDR& addr) const
 {
 	switch(opt)
 	{
@@ -174,7 +181,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, std::string& s)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, std::string& s) const
 {
 	switch(opt)
 	{
@@ -183,6 +190,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_DWARF_TO_HTML_OUTPUT_DIRECTORY:
 			s = dwarf_to_html_output_directory;
+			break;
+		case OPT_DWARF_TO_XML_OUTPUT_FILENAME:
+			s = dwarf_to_xml_output_filename;
 			break;
 		case OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME:
 			s = dwarf_register_number_mapping_filename;
@@ -194,7 +204,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
-void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, bool& flag)
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetOption(Option opt, bool& flag) const
 {
 	switch(opt)
 	{
@@ -212,6 +222,9 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 			break;
 		case OPT_PARSE_DWARF:
 			flag = parse_dwarf;
+			break;
+		case OPT_DEBUG_DWARF:
+			flag = debug_dwarf;
 			break;
 		default:
 			flag = false;
@@ -569,6 +582,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		{
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_REG_NUM_MAPPING_FILENAME, dwarf_register_number_mapping_filename.c_str());
 			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_VERBOSE, verbose);
+			dw_handler->SetOption(unisim::util::debug::dwarf::OPT_DEBUG, debug_dwarf);
 			
 			if(verbose)
 			{
@@ -582,6 +596,14 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 					logger << DebugInfo << "Dumping DWARF debugging informations as HTML into directory " << dwarf_to_html_output_directory << EndDebugInfo;
 				}
 				dw_handler->to_HTML(dwarf_to_html_output_directory.c_str());
+			}
+			if(!dwarf_to_xml_output_filename.empty())
+			{
+				if(unlikely(verbose))
+				{
+					logger << DebugInfo << "Dumping DWARF debugging informations as XML into file " << dwarf_to_xml_output_filename << EndDebugInfo;
+				}
+				dw_handler->to_XML(dwarf_to_xml_output_filename.c_str());
 			}
 		}
 	}
@@ -869,7 +891,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case ELFDATANONE : os << "Invalid data encoding"; break;
 		case ELFDATA2LSB : os << "2's complement, little endian"; break;
 		case ELFDATA2MSB : os << "2's complement, big endian"; break;
-		default: os << "Unknown (" << hdr->e_ident[EI_DATA] << ")";
+		default: os << "Unknown (" << hdr->e_ident[EI_DATA] << ")"; break;
 	}
 
 	os << endl << "Version : " << (unsigned) hdr->e_ident[EI_VERSION];
@@ -890,7 +912,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case ELFOSABI_OPENBSD:os << "OpenBSD"; break;
 		case ELFOSABI_ARM:os << "ARM"; break;
 		case ELFOSABI_STANDALONE:os << "Standalone (embedded) application"; break;
-		default : os << "Unknown (" << hdr->e_ident[EI_OSABI] << ")";
+		default : os << "Unknown (" << hdr->e_ident[EI_OSABI] << ")"; break;
 	}
 
 	os << endl << "Object File Type : ";
@@ -987,7 +1009,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case EM_ARC_A5: os << "ARC Cores Tangent-A5"; break;
 		case EM_XTENSA: os << "Tensilica Xtensa Architecture"; break;
 		case EM_ALPHA: os << "Alpha"; break;
-		default: os << "Unknown (" << hdr->e_machine << ")";
+		default: os << "Unknown (" << hdr->e_machine << ")"; break;
 	}
 	os << endl;
 	os << endl << "Number of program headers : " << hdr->e_phnum;
@@ -1021,7 +1043,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case PT_SUNWBSS: os << "Sun Specific segment"; break;
 		case PT_SUNWSTACK: os << "Stack segment"; break;
 		case PT_HISUNW: os << "HiSUNW"; break;
-		default: os << "Unknown (" << phdr->p_type << ")";
+		default: os << "Unknown (" << phdr->p_type << ")"; break;
 	}
 
 	os << endl << "File offset : " << phdr->p_offset;
@@ -1077,7 +1099,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case SHT_GNU_verdef:os << "Version definition section"; break;
 		case SHT_GNU_verneed:os << "Version needs section"; break;
 		case SHT_GNU_versym:os << "Version symbol table"; break;
-		default : os << "Unknown";
+		default : os << "Unknown"; break;
 	}
 
 	os << endl << "Link to section :" << shdr->sh_link;
@@ -1119,7 +1141,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STB_LOCAL: os << " Local symbol"; break;
 		case STB_GLOBAL: os << " Global symbol"; break;
 		case STB_WEAK: os << " Weak symbol"; break;
-		default: os << "Unknown";
+		default: os << "Unknown"; break;
 	}
 	os << endl << "Type : ";
 	switch(ELF32_ST_TYPE(unisim::util::endian::Target2Host(endianness, sym->st_info)))
@@ -1131,7 +1153,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STT_FILE: os << "Symbol's name is file name"; break;
 		case STT_COMMON: os << "Symbol is a common data object"; break;
 		case STT_TLS: os << "Symbol is thread-local data object"; break;
-		default: os << "Unknown";
+		default: os << "Unknown"; break;
 	}
 	os << endl << "Visibility : ";
 	switch(ELF_ST_VISIBILITY(unisim::util::endian::Target2Host(endianness, sym->st_other)))
@@ -1140,7 +1162,7 @@ void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		case STV_INTERNAL: os << "Processor specific hidden class"; break;
 		case STV_HIDDEN: os << "Sym unavailable in other modules"; break;
 		case STV_PROTECTED: os << "Not preemptible, not exported"; break;
-		default: os << "Unknown";
+		default: os << "Unknown"; break;
 	}
 	os << endl << "Section index : " << unisim::util::endian::Target2Host(endianness, sym->st_shndx);
 	os << endl;
@@ -1329,6 +1351,12 @@ const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, El
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+const unisim::util::debug::Statement<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	return dw_handler ? dw_handler->FindStatements(stmts, filename, lineno, colno) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
 std::vector<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetBackTrace(MEMORY_ADDR pc) const
 {
 	return dw_handler ? dw_handler->GetBackTrace(pc) : 0;
@@ -1338,6 +1366,18 @@ template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_P
 bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const
 {
 	return dw_handler ? dw_handler->GetReturnAddress(pc, ret_addr) : false;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+unisim::util::debug::DataObject<MEMORY_ADDR> *ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::FindDataObject(const char *data_object_name, MEMORY_ADDR pc) const
+{
+	return dw_handler ? dw_handler->FindDataObject(data_object_name, pc) : 0;
+}
+
+template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>
+void ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym>::EnumerateDataObjectNames(std::set<std::string>& name_set, MEMORY_ADDR pc, typename unisim::service::interfaces::DataObjectLookup<MEMORY_ADDR>::Scope scope) const
+{
+	if(dw_handler) dw_handler->EnumerateDataObjectNames(name_set, pc, scope);
 }
 
 template <class MEMORY_ADDR, unsigned int Elf_Class, class Elf_Ehdr, class Elf_Phdr, class Elf_Shdr, class Elf_Sym>

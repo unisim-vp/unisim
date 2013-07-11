@@ -280,24 +280,29 @@ bool GDBServer<ADDRESS>::EndSetup()
 						bool cpu_has_reg = true;
 						bool cpu_has_right_reg_size = true;
 
-						unisim::util::debug::Register *reg = registers_import->GetRegister(reg_name.c_str());
+						unisim::util::debug::Register *reg = 0;
+						
+						if(!reg_name.empty())
+						{
+							reg = registers_import->GetRegister(reg_name.c_str());
 
-						if(!reg)
-						{
-							cpu_has_reg = false;
-							if(verbose)
+							if(!reg)
 							{
-								logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
-							}
-						}
-						else
-						{
-							if(reg->GetSize() != reg_size)
-							{
-								cpu_has_right_reg_size = false;
+								cpu_has_reg = false;
 								if(verbose)
 								{
-									logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+									logger << DebugWarning << "CPU does not support register " << reg_name << EndDebugWarning;
+								}
+							}
+							else
+							{
+								if(reg->GetSize() != reg_size)
+								{
+									cpu_has_right_reg_size = false;
+									if(verbose)
+									{
+										logger << DebugWarning << ": register size (" << 8 * reg_size << " bits) doesn't match with size (" << 8 * reg->GetSize() << " bits) reported by CPU" << EndDebugWarning;
+									}
 								}
 							}
 						}
@@ -836,10 +841,11 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					}
 					PutPacket("");
 				}
+				break;
 		} // end of switch
 	}
 	Object::Stop(0);
-	return DebugControl<ADDRESS>::DBG_KILL;
+	return (DebugControl<ADDRESS>::DBG_KILL);
 }
 
 template <class ADDRESS>
@@ -1355,7 +1361,6 @@ bool GDBServer<ADDRESS>::RemoveBreakpointWatchpoint(uint32_t type, ADDRESS addr,
 template <class ADDRESS>
 void GDBServer<ADDRESS>::HandleQRcmd(string command) {
 
-//	size_t separator_index = command.find_first_of(':');
 	unsigned int separator_index = command.find_first_of(':');
 	string cmdPrefix;
 	if (separator_index == string::npos) {

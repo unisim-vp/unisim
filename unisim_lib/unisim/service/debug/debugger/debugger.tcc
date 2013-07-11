@@ -64,6 +64,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, Service<StatementLookup<ADDRESS> >(name, parent)
 	, Service<BackTrace<ADDRESS> >(name, parent)
 	, Service<DebugInfoLoading>(name, parent)
+	, Service<DataObjectLookup<ADDRESS> >(name, parent)
 	, Client<DebugEventListener<ADDRESS> >(name, parent)
 	, Client<DebugControl<ADDRESS> >(name, parent)
 	, Client<MemoryAccessReportingControl>(name, parent)
@@ -84,6 +85,7 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, stmt_lookup_export("stmt-lookup-export", this)
 	, backtrace_export("backtrace-export", this)
 	, debug_info_loading_export("debug-info-loading-export", this)
+	, data_object_lookup_export("data-object-lookup-export", this)
 	, debug_event_listener_import("debug-event-listener", this)
 	, debug_control_import("debug-control-import", this)
 	, disasm_import("disasm-import", this)
@@ -97,15 +99,19 @@ Debugger<ADDRESS>::Debugger(const char *name, Object *parent)
 	, dwarf_to_html_output_directory()
 	, dwarf_register_number_mapping_filename()
 	, parse_dwarf(false)
+	, debug_dwarf(false)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 	, param_dwarf_to_html_output_directory("dwarf-to-html-output-directory", this, dwarf_to_html_output_directory, "DWARF v2/v3 to HTML output directory")
 	, param_dwarf_register_number_mapping_filename("dwarf-register-number-mapping-filename", this, dwarf_register_number_mapping_filename, "DWARF register number mapping filename")
 	, param_parse_dwarf("parse-dwarf", this, parse_dwarf, "Enable/Disable parsing of DWARF debugging informations")
+	, param_debug_dwarf("debug-dwarf", this, debug_dwarf, "Enable/Disable debugging of DWARF")
 	, logger(*this)
 	, setup_debug_info_done(false)
 {
 	backtrace_export.SetupDependsOn(registers_import);
 	backtrace_export.SetupDependsOn(memory_import);
+	data_object_lookup_export.SetupDependsOn(registers_import);
+	data_object_lookup_export.SetupDependsOn(memory_import);
 }
 
 template <class ADDRESS>
@@ -174,6 +180,7 @@ bool Debugger<ADDRESS>::Setup(unisim::kernel::service::ServiceExportBase *srv_ex
 	if(srv_export == &symbol_table_lookup_export) return SetupDebugInfo();
 	if(srv_export == &stmt_lookup_export) return SetupDebugInfo();
 	if(srv_export == &backtrace_export) return SetupDebugInfo();
+	if(srv_export == &data_object_lookup_export) return SetupDebugInfo();
 
 	logger << DebugError << "Internal Error" << EndDebugError;
 	return false;
@@ -905,6 +912,39 @@ const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatement(
 }
 
 template <class ADDRESS>
+const unisim::util::debug::Statement<ADDRESS> *Debugger<ADDRESS>::FindStatements(std::vector<const unisim::util::debug::Statement<ADDRESS> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const
+{
+	const typename unisim::util::debug::Statement<ADDRESS> *ret = 0;
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf32_loader->FindStatements(stmts, filename, lineno, colno);
+			
+			if(!ret) ret = stmt;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			const typename unisim::util::debug::Statement<ADDRESS> *stmt = elf64_loader->FindStatements(stmts, filename, lineno, colno);
+			
+			if(!ret) ret = stmt;
+		}
+	}
+	
+	return ret;
+}
+
+template <class ADDRESS>
 std::vector<ADDRESS> *Debugger<ADDRESS>::GetBackTrace(ADDRESS pc) const
 {
 	unsigned int i;
@@ -961,6 +1001,7 @@ bool Debugger<ADDRESS>::GetReturnAddress(ADDRESS pc, ADDRESS& ret_addr) const
 	
 	return false;
 }
+
 template <class ADDRESS>
 bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 {
@@ -1035,6 +1076,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+						elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 						
 						if(!elf32_loader->Load())
 						{
@@ -1055,6 +1097,7 @@ bool Debugger<ADDRESS>::LoadDebugInfo(const char *filename)
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+						elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 						if(!elf64_loader->Load())
 						{
@@ -1090,6 +1133,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+				elf32_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 				elf32_loader->ParseSymbols();
 				elf32_loaders.push_back(elf32_loader);
@@ -1103,6 +1147,7 @@ bool Debugger<ADDRESS>::SetupDebugInfo(const unisim::util::debug::blob::Blob<ADD
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_PARSE_DWARF, parse_dwarf);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_VERBOSE, verbose);
 				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DWARF_REGISTER_NUMBER_MAPPING_FILENAME, Object::GetSimulator()->SearchSharedDataFile(dwarf_register_number_mapping_filename.c_str()).c_str());
+				elf64_loader->SetOption(unisim::util::loader::elf_loader::OPT_DEBUG_DWARF, debug_dwarf);
 
 				elf64_loader->ParseSymbols();
 				elf64_loaders.push_back(elf64_loader);
@@ -1141,6 +1186,62 @@ bool Debugger<ADDRESS>::SetupDebugInfo()
 	bool status = SetupDebugInfo(blob);
 	if(status) setup_debug_info_done = true;
 	return setup_debug_info_done;
+}
+
+template <class ADDRESS>
+unisim::util::debug::DataObject<ADDRESS> *Debugger<ADDRESS>::FindDataObject(const char *data_object_name, ADDRESS pc) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf32_loader->FindDataObject(data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			unisim::util::debug::DataObject<ADDRESS> *data_object = elf64_loader->FindDataObject(data_object_name, pc);
+			if(data_object) return data_object;
+		}
+	}
+	
+	return 0;
+}
+
+template <class ADDRESS>
+void Debugger<ADDRESS>::EnumerateDataObjectNames(std::set<std::string>& name_set, ADDRESS pc, typename unisim::service::interfaces::DataObjectLookup<ADDRESS>::Scope scope) const
+{
+	unsigned int i;
+	
+	unsigned int num_elf32_loaders = elf32_loaders.size();
+	for(i = 0; i < num_elf32_loaders; i++)
+	{
+		if(enable_elf32_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf32Loader<ADDRESS> *elf32_loader = elf32_loaders[i];
+			elf32_loader->EnumerateDataObjectNames(name_set, pc, scope);
+		}
+	}
+
+	unsigned int num_elf64_loaders = elf64_loaders.size();
+	for(i = 0; i < num_elf64_loaders; i++)
+	{
+		if(enable_elf64_loaders[i])
+		{
+			typename unisim::util::loader::elf_loader::Elf64Loader<ADDRESS> *elf64_loader = elf64_loaders[i];
+			elf64_loader->EnumerateDataObjectNames(name_set, pc, scope);
+		}
+	}
 }
 
 } // end of namespace debugger

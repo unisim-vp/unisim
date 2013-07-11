@@ -61,6 +61,14 @@ class Linux {
 
   void  SetVerbose(bool verbose);
 
+  void  SetParseDWARF(bool parse_dwarf);
+  
+  void  SetDebugDWARF(bool debug_dwarf);
+
+  void SetDWARFToHTMLOutputDirectory(const char *dwarf_to_html_output_directory);
+  
+  void SetDWARFToXMLOutputFilename(const char *dwarf_to_xml_output_filename);
+
   bool SetCommandLine(std::vector<std::string> const &cmd);
 
   std::vector<std::string> GetCommandLine();
@@ -98,6 +106,8 @@ class Linux {
                 char const * const utsname_version,
                 char const * const utsname_machine,
                 char const * const utsname_domainname);
+  
+  void SetHWCap(const char *hwcap);
 
   // TODO: Remove
   // // Sets the registers to be used
@@ -192,6 +202,9 @@ class Linux {
   std::string utsname_version_;
   std::string utsname_machine_;
   std::string utsname_domainname_;
+  
+  // HWCAP
+  std::string hwcap_;
 
   // the structure to keep all the loaded information
   unisim::util::debug::blob::Blob<ADDRESS_TYPE> *blob_;
@@ -222,6 +235,13 @@ class Linux {
 
   // activate the verbose
   bool verbose_;
+  // activate DWARF parsing
+  bool parse_dwarf_;
+  // activate debugging DWARF
+  bool debug_dwarf_;
+  // DWARF dump parameters
+  std::string dwarf_to_html_output_directory_;
+  std::string dwarf_to_xml_output_filename_;
   // logger stream
   unisim::kernel::logger::Logger& logger_;
 

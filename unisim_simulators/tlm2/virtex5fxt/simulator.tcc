@@ -414,6 +414,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 			inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 			inline_debugger->backtrace_import >> debugger->backtrace_export;
 			inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+			inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
 			inline_debugger->profiling_import >> profiler->profiling_export;
 		}
 		else if(enable_gdb_server)
@@ -509,6 +510,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 			inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 			inline_debugger->backtrace_import >> debugger->backtrace_export;
 			inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+			inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
 			inline_debugger->profiling_import >> profiler->profiling_export;
 		}
 		else if(enable_gdb_server)
@@ -519,6 +521,7 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 			debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
 			gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
 			gdb_server->memory_import >> debugger->memory_export;
+			std::cerr << "!!!!!!!!!!!!!!!!!! Hello world! !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 			gdb_server->registers_import >> debugger->registers_export;
 		}
 
@@ -628,6 +631,7 @@ Simulator<CONFIG>::~Simulator()
 	if(flash_effective_to_physical_address_translator) delete flash_effective_to_physical_address_translator;
 	if(telnet) delete telnet;
 	if(linux_os) delete linux_os;
+	if(tee_memory_access_reporting) delete tee_memory_access_reporting;
 }
 
 template <class CONFIG>
@@ -643,7 +647,7 @@ void Simulator<CONFIG>::LoadBuiltInConfig(unisim::kernel::service::Simulator *si
 	simulator->SetVariable("schematic", "virtex5fxt/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
-	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
+	const char *gdb_server_arch_filename = CONFIG::CPU_CONFIG::HAS_FPU ? "gdb_ppc440fp.xml" : "gdb_ppc440.xml";
 	const char *dwarf_register_number_mapping_filename = "powerpc_eabi_gcc_dwarf_register_number_mapping.xml";
 	uint64_t maxinst = 0xffffffffffffffffULL; // maximum number of instruction to simulate
 	double cpu_frequency = 400.0; // in Mhz
@@ -957,7 +961,8 @@ unisim::kernel::service::Simulator::SetupStatus Simulator<CONFIG>::Setup()
 	// inline-debugger and gdb-server are exclusive
 	if(enable_inline_debugger && enable_gdb_server)
 	{
-		std::cerr << "WARNING! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " should not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
 	}
 	if(enable_inline_debugger)
 	{

@@ -54,24 +54,31 @@ template <class MEMORY_ADDR>
 class DWARF_Frame
 {
 public:
-	DWARF_Frame(const DWARF_Frame<MEMORY_ADDR>& ctx);
-	DWARF_Frame(unisim::util::endian::endian_type endianness, unsigned int address_size, unsigned int sp_reg_num, unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if);
+	DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
+	DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *dw_handler, MEMORY_ADDR pc);
 	~DWARF_Frame();
 	
-	bool Load(const DWARF_RegisterNumberMapping *reg_num_mapping);
-	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame);
+	bool LoadArchRegs();
+	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame, unsigned int dw_ret_addr_reg_num);
 	MEMORY_ADDR ReadCFA() const;
-	MEMORY_ADDR ReadRegister(unsigned int reg_num) const;
+	void UndefRegister(unsigned int reg_num);
+	bool ReadRegister(unsigned int reg_num, MEMORY_ADDR& reg_value) const;
 	void WriteRegister(unsigned int reg_num, const MEMORY_ADDR value);
-	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr) const;
+	bool ReadAddrFromMemory(MEMORY_ADDR addr, MEMORY_ADDR& read_addr, unsigned int read_size) const;
+	bool GetPC(MEMORY_ADDR& pc_value) const;
 	
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_Frame<MEMORY_ADDR>& dw_reg_set);
 private:
+	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
 	unsigned int sp_reg_num;
+	unsigned int dw_ret_addr_reg_num;
 	unisim::util::endian::endian_type endianness;
 	unsigned int address_size;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
+	bool pc_is_defined;
+	MEMORY_ADDR pc;
 	MEMORY_ADDR cfa;
+	std::set<unsigned int> reg_num_set;
 	std::map<unsigned int, MEMORY_ADDR> reg_set;
 	
 };

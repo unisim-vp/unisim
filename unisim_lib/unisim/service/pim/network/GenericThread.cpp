@@ -34,7 +34,7 @@ void TObject::error(const int* fd, const char* msg) {
 
 void* executer(void* param) {
    TObject *obj=(TObject*)param;
-   obj->Run();
+   obj->run();
 
    return NULL;
 }

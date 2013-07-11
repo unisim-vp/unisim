@@ -122,7 +122,8 @@ public:
 	virtual void GetStatements(std::map<MEMORY_ADDR, const unisim::util::debug::Statement<MEMORY_ADDR> *>& stmts) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(MEMORY_ADDR addr, typename unisim::service::interfaces::StatementLookup<MEMORY_ADDR>::FindStatementOption opt) const;
 	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatement(const char *filename, unsigned int lineno, unsigned int colno) const;
-	
+	virtual const unisim::util::debug::Statement<MEMORY_ADDR> *FindStatements(std::vector<const unisim::util::debug::Statement<MEMORY_ADDR> *> &stmts, const char *filename, unsigned int lineno, unsigned int colno) const;
+
 	// unisim::service::interfaces::BackTrace
 	virtual std::vector<MEMORY_ADDR> *GetBackTrace(MEMORY_ADDR pc) const;
 	virtual bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
@@ -135,11 +136,13 @@ private:
 	bool initialize_extra_segment_bytes;
 	bool dump_headers;
 	string dwarf_to_html_output_directory;
+	string dwarf_to_xml_output_filename;
 	string dwarf_register_number_mapping_filename;
 	unisim::kernel::logger::Logger logger;
 	bool verbose;
 	endian_type endianness;
 	bool parse_dwarf;
+	bool debug_dwarf;
 	
 	Parameter<string> param_filename;
 	Parameter<MEMORY_ADDR> param_base_addr;
@@ -149,8 +152,10 @@ private:
 	Parameter<bool> param_dump_headers;
 	Parameter<bool> param_verbose;
 	Parameter<string> param_dwarf_to_html_output_directory;
+	Parameter<string> param_dwarf_to_xml_output_filename;
 	Parameter<string> param_dwarf_register_number_mapping_filename;
 	Parameter<bool> param_parse_dwarf;
+	Parameter<bool> param_debug_dwarf;
 };
 
 } // end of namespace elf_loader

@@ -107,6 +107,7 @@ class Simulator : public unisim::kernel::service::Simulator
 public:
 	Simulator(int argc, char **argv);
 	virtual ~Simulator();
+	virtual unisim::kernel::service::Simulator::SetupStatus Setup();
 	void Run();
 	virtual void Stop(Object *object, int exit_status, bool asynchronous = false);
 	int GetExitStatus() const;
@@ -595,6 +596,7 @@ Simulator::Simulator(int argc, char **argv)
 		inline_debugger->symbol_table_lookup_import >> debugger->symbol_table_lookup_export;
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+		inline_debugger->data_object_lookup_import >> debugger->data_object_lookup_export;
 		inline_debugger->profiling_import >> profiler->profiling_export;
 	}
 	else if(enable_gdb_server)
@@ -820,7 +822,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("gdb-server.architecture-description-filename", gdb_server_arch_filename);
 
 	//  - Debugger run-time configuration
-	simulator->SetVariable("debugger.parse-dwarf", true);
+	simulator->SetVariable("debugger.parse-dwarf", false);
 	simulator->SetVariable("debugger.dwarf-register-number-mapping-filename", dwarf_register_number_mapping_filename);
 
 	// - Loader memory mapper
@@ -944,6 +946,22 @@ void Simulator::Run()
 	cerr << "simulated time : " << sc_time_stamp().to_seconds() << " seconds (exactly " << sc_time_stamp() << ")" << endl;
 	cerr << "host simulation speed: " << ((double) (*cpu)["instruction-counter"] / spent_time / 1000000.0) << " MIPS" << endl;
 	cerr << "time dilatation: " << spent_time / sc_time_stamp().to_seconds() << " times slower than target machine" << endl;
+}
+
+unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
+{
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+	if(enable_inline_debugger)
+	{
+		SetVariable("debugger.parse-dwarf", true);
+	}
+
+	return unisim::kernel::service::Simulator::Setup();
 }
 
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)

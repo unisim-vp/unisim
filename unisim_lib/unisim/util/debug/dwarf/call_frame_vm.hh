@@ -36,9 +36,11 @@
 #define __UNISIM_UTIL_DEBUG_DWARF_CALL_FRAME_VM_HH__
 
 #include <unisim/util/debug/dwarf/fwd.hh>
+#include <unisim/kernel/logger/logger.hh>
 #include <map>
 #include <vector>
 #include <stack>
+#include <set>
 
 namespace unisim {
 namespace util {
@@ -99,6 +101,7 @@ public:
 	DWARF_CFARuleExpression(const DWARF_Expression<MEMORY_ADDR> *dw_expr);
 	DWARF_CFARuleExpression(const DWARF_CFARuleExpression<MEMORY_ADDR>& cfa_rule_expression);
 	virtual ~DWARF_CFARuleExpression();
+	const DWARF_Expression<MEMORY_ADDR> *GetExpression() const;
 protected:
 	virtual std::ostream& Print(std::ostream& os) const;
 private:
@@ -233,6 +236,7 @@ public:
 	MEMORY_ADDR GetLocation() const;
 	DWARF_CFARule<MEMORY_ADDR> *GetCFARule() const;
 	DWARF_RegisterRule<MEMORY_ADDR> *GetRegisterRule(unsigned int reg_num) const;
+	void GetRegisterRulesNumbers(std::set<unsigned int>& reg_rule_nums) const;
 	friend std::ostream& operator << <MEMORY_ADDR>(std::ostream& os, const DWARF_CFIRow<MEMORY_ADDR>& cfi_row);
 private:
 	MEMORY_ADDR location;
@@ -268,12 +272,16 @@ template <class MEMORY_ADDR>
 class DWARF_CallFrameVM
 {
 public:
-	DWARF_CallFrameVM();
+	DWARF_CallFrameVM(const DWARF_Handler<MEMORY_ADDR> *dw_handler);
 	~DWARF_CallFrameVM();
 	bool Disasm(std::ostream& os, const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog);
 	bool Execute(const DWARF_CallFrameProgram<MEMORY_ADDR>& dw_call_frame_prog, MEMORY_ADDR& location, DWARF_CFI<MEMORY_ADDR> *cfi);
 	const DWARF_CFI<MEMORY_ADDR> *ComputeCFI(const DWARF_FDE<MEMORY_ADDR> *dw_fde);
 private:
+	const DWARF_Handler<MEMORY_ADDR> *dw_handler;
+	bool debug;
+	unisim::kernel::logger::Logger& logger;
+	
 	bool RememberState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc);
 	bool RestoreState(DWARF_CFI<MEMORY_ADDR> *cfi, MEMORY_ADDR loc);
 	void ResetState();

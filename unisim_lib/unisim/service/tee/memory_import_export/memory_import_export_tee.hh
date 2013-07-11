@@ -77,7 +77,7 @@ public:
 
 	}
 
-	~MemoryImportExportTee() {
+	virtual ~MemoryImportExportTee() {
 		for (uint8_t i=0; i<width; i++) {
 			if (memory_import[i]) {
 				delete memory_import[i];
@@ -99,7 +99,7 @@ public:
 			}
 		}
 
-		return result;
+		return (result);
 	};
 
 	virtual bool WriteMemory(service_address_t addr, const void *buffer, uint32_t size) {
@@ -112,7 +112,7 @@ public:
 			}
 		}
 
-		return result;
+		return (result);
 	};
 
 };

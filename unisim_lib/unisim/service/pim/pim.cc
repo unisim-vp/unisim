@@ -31,8 +31,8 @@ namespace unisim {
 namespace service {
 namespace pim {
 
-void ParseComponent (xmlDocPtr doc, xmlNodePtr cur, component_t *component);
-xmlChar *ConvertInput(const char *in, const char *encoding);
+void parseComponent (xmlDocPtr doc, xmlNodePtr cur, component_t *component);
+xmlChar *convertInput(const char *in, const char *encoding);
 
 using namespace std;
 
@@ -68,10 +68,10 @@ PIM::~PIM() {
 }
 
 bool PIM::Setup() {
-
+	return (true);
 }
 
-void PIM::Run() {
+void PIM::run() {
 
 	// Start Simulation <-> ToolBox communication
 	target = new PIMThread("pim-thread");
@@ -95,18 +95,18 @@ void PIM::Run() {
 
 // *************************************************************
 
-component_t* PIM::FindComponent(const string name) {
+component_t* PIM::findComponent(const string name) {
 
 	for (int i=0; i < pim_model.size(); i++) {
 		if (pim_model[i]->name.compare(name) == 0) {
-			return pim_model[i];
+			return (pim_model[i]);
 		}
 	}
 
-	return NULL;
+	return (NULL);
 }
 
-void PIM::GeneratePimFile() {
+void PIM::generatePimFile() {
 
 	vector<component_t*> pim;
 
@@ -123,7 +123,7 @@ void PIM::GeneratePimFile() {
 		string component_name = var_name.substr(0, pos);
 		string short_var_name = var_name.substr(pos+1);
 
-		component_t* component = FindComponent(component_name);
+		component_t* component = findComponent(component_name);
 		if (component == NULL) {
 			component = new component_t();
 
@@ -154,7 +154,7 @@ void PIM::GeneratePimFile() {
 
     xmlTextWriterSetIndent(writer, true);
 
-    tmp = ConvertInput("    ", DEFAULT_XML_ENCODING);
+    tmp = convertInput("    ", DEFAULT_XML_ENCODING);
     xmlTextWriterSetIndentString(writer, tmp);
 
     /* Start the document with the xml default for the version,
@@ -178,7 +178,7 @@ void PIM::GeneratePimFile() {
      * Please observe, that the input to the xmlTextWriter functions
      * HAS to be in UTF-8, even if the output XML is encoded
      * in iso-8859-1 */
-    tmp = ConvertInput("This is the PIM of xyz architecture", DEFAULT_XML_ENCODING);
+    tmp = convertInput("This is the PIM of xyz architecture", DEFAULT_XML_ENCODING);
     rc = xmlTextWriterWriteComment(writer, tmp);
     if (rc < 0) {
         printf("SavePimToXml: Error at xmlTextWriterWriteComment\n");
@@ -203,7 +203,7 @@ void PIM::GeneratePimFile() {
 	    }
 
 	    /* Write a comment as child of "component" */
-	    tmp = ConvertInput(pim[i]->name.c_str(), DEFAULT_XML_ENCODING);
+	    tmp = convertInput(pim[i]->name.c_str(), DEFAULT_XML_ENCODING);
 	    rc = xmlTextWriterWriteFormatComment(writer, "%s exported interface", tmp);
 	    if (rc < 0) {
 	        printf
@@ -213,7 +213,7 @@ void PIM::GeneratePimFile() {
 	    if (tmp != NULL) xmlFree(tmp);
 
 	    /* Write an element named "description" as child of "component". */
-	    tmp = ConvertInput(pim[i]->description.c_str(), DEFAULT_XML_ENCODING);
+	    tmp = convertInput(pim[i]->description.c_str(), DEFAULT_XML_ENCODING);
 	    rc = xmlTextWriterWriteFormatElement(writer, BAD_CAST "description", "%s", tmp);
 	    if (rc < 0) {
 	        printf
@@ -253,7 +253,7 @@ void PIM::GeneratePimFile() {
 			string component_name = var_name.substr(0, pos);
 			string short_var_name = var_name.substr(pos+1);
 
-		    tmp = ConvertInput(short_var_name.c_str(), DEFAULT_XML_ENCODING);
+		    tmp = convertInput(short_var_name.c_str(), DEFAULT_XML_ENCODING);
 		    rc = xmlTextWriterWriteString(writer, tmp);
 		    if (rc < 0) {
 		        printf
@@ -314,7 +314,7 @@ void PIM::GeneratePimFile() {
  * Returns the converted UTF-8 string, or NULL in case of error.
  */
 xmlChar *
-ConvertInput(const char *in, const char *encoding)
+convertInput(const char *in, const char *encoding)
 {
     xmlChar *out;
     int ret;
@@ -324,14 +324,14 @@ ConvertInput(const char *in, const char *encoding)
     xmlCharEncodingHandlerPtr handler;
 
     if (in == 0)
-        return 0;
+        return (0);
 
     handler = xmlFindCharEncodingHandler(encoding);
 
     if (!handler) {
         printf("ConvertInput: no encoding handler found for '%s'\n",
                encoding ? encoding : "");
-        return 0;
+        return (0);
     }
 
     size = (int) strlen(in) + 1;
@@ -360,12 +360,12 @@ ConvertInput(const char *in, const char *encoding)
         printf("ConvertInput: no mem\n");
     }
 
-    return out;
+    return (out);
 }
 
 // **************************************************************
 
-int PIM::LoadPimFile() {
+int PIM::loadPimFile() {
 
 	const char *path = "//component";
 
@@ -397,7 +397,7 @@ int PIM::LoadPimFile() {
 			for (int i=0; i<xmlobject->nodesetval->nodeNr; i++) {
 				component = new component_t();
 				node = xmlobject->nodesetval->nodeTab[i];
-				ParseComponent (doc, node, component);
+				parseComponent (doc, node, component);
 				pim_model.push_back(component);
 			}
 		}
@@ -410,7 +410,7 @@ int PIM::LoadPimFile() {
 
 }
 
-void ParseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
+void parseComponent (xmlDocPtr doc, xmlNodePtr componentNode, component_t *component) {
 
 	if ((xmlStrcmp(componentNode->name, (const xmlChar *)"component"))) {
 		cerr << "Error: Can't parse " << componentNode->name << endl;

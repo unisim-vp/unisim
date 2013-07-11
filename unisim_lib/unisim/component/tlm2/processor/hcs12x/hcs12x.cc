@@ -56,29 +56,31 @@ using unisim::kernel::logger::EndDebug;
 
 HCS12X::
 HCS12X(const sc_module_name& name, Object *parent) :
-	Object(name, parent),
+	Object(name, parent)
+	, sc_module(name)
+	, CPU(name, parent)
 
-	sc_module(name),
-	CPU(name, parent),
-	cpu_cycle_time(),
-	bus_cycle_time(),
-	cpu_time(),
-	bus_time(),
-	last_cpu_time(),
-	nice_time(1.0, SC_US),
-	next_nice_time(),
-	core_clock_int(250000),
-	param_nice_time("nice-time", this, nice_time),
-	param_core_clock("core-clock", this, core_clock_int),
-	enable_fine_timing(false),
-	param_enable_fine_timing("enable-fine-timing", this, enable_fine_timing),
-	verbose_tlm_bus_synchronize(false),
-	param_verbose_tlm_bus_synchronize("verbose-tlm-bus-synchronize", this, verbose_tlm_bus_synchronize),
-	verbose_tlm_run_thread(false),
-	param_verbose_tlm_run_thread("verbose-tlm-run-thread", this, verbose_tlm_run_thread),
-	verbose_tlm_commands(false),
-	param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands),
-	last_instruction_counter(0)
+	, xint_interrupt_request("interrupt_request")
+
+	, cpu_cycle_time()
+	, bus_cycle_time()
+	, cpu_time()
+	, bus_time()
+	, last_cpu_time()
+	, nice_time(1.0, SC_US)
+	, next_nice_time()
+	, core_clock_int(250000)
+	, param_nice_time("nice-time", this, nice_time)
+	, param_core_clock("core-clock", this, core_clock_int)
+	, enable_fine_timing(false)
+	, param_enable_fine_timing("enable-fine-timing", this, enable_fine_timing)
+	, verbose_tlm_bus_synchronize(false)
+	, param_verbose_tlm_bus_synchronize("verbose-tlm-bus-synchronize", this, verbose_tlm_bus_synchronize)
+	, verbose_tlm_run_thread(false)
+	, param_verbose_tlm_run_thread("verbose-tlm-run-thread", this, verbose_tlm_run_thread)
+	, verbose_tlm_commands(false)
+	, param_verbose_tlm_commands("verbose-tlm-commands", this, verbose_tlm_commands)
+	, last_instruction_counter(0)
 {
 
 	param_nice_time.SetFormat(unisim::kernel::service::VariableBase::FMT_DEC);
@@ -86,12 +88,11 @@ HCS12X(const sc_module_name& name, Object *parent) :
 
 	SC_HAS_PROCESS(HCS12X);
 
-	interrupt_request.register_b_transport(this, &HCS12X::AsyncIntThread);
+	xint_interrupt_request(*this);
+
 	bus_clock_socket.register_b_transport(this, &HCS12X::updateCRGClock);
 
 	SC_THREAD(Run);
-
-	this->Reset();
 
 }
 
@@ -103,8 +104,8 @@ HCS12X ::
 void
 HCS12X ::
 Stop(int ret) {
-	// Call BusSynchronize to account for the remaining time spent in the cpu core
-	BusSynchronize();
+//	// Call BusSynchronize to account for the remaining time spent in the cpu core
+//	BusSynchronize();
 	Object::Stop(-1);
 }
 
@@ -117,112 +118,36 @@ Sync() {
 	wait(time_spent);
 }
 
-void HCS12X ::Sleep() {
+void HCS12X ::sleep() {
 /* TODO:
  * Stop All Clocks and puts the device in standby mode.
  * Asserting the ~RESET, ~XIRQ, or ~IRQ signals ends standby mode.
  */
 
-	wait(irq_event | reset_event);
+	inherited::setState(STOP);
+
+	/*
+	 * Don't do wait because all clocks are stopped and there is no way to reset/resume the simulation.
+	 * The simulation control is done by the debugger engine.
+	 */
+
+	reportTrap();
+
+//	wait(irq_event | reset_event);
+
 }
 
-void HCS12X ::Wait() {
+void HCS12X ::wai() {
 /* TODO:
  * Enter a wait state for an integer number of bus clock cycle
  * Only CPU12 clocks are stopped
  * Wait for not masked interrupts or non-masquable interrupts
  */
 
-	wait(irq_event);
-}
+	inherited::setState(WAIT);
 
-address_t HCS12X ::GetIntVector(uint8_t &ipl)
-	/*
-	 * The CPU issues a signal that tells the interrupt module to drive
-	 * the vector address of the highest priority pending exception onto the system address bus
-	 * (the CPU12 does not provide this address)
-	 *
-	 * Priority is as follow: reset => sw-interrupt => hw-interrupt => spurious interrupt
-	 *
-	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
-	 * Else return INT_Vector
-	 */
-{
+	wait(irq_event | reset_event);
 
-	address_t address; // get INT_VECTOR from XINT
-
-	// The XINT module need the current IPL as input
-	// The XINT return a newIPL and the interrupt vector (IVBR if there is no Hardware interrupts)
-
-	INT_TRANS_T buffer;
-
-	buffer.ipl = ipl;
-	buffer.vectorAddress = 0;
-
-	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
-
-
-	trans->set_command( tlm::TLM_READ_COMMAND );
-	trans->set_address( 0 );
-	trans->set_data_ptr( (unsigned char *) &buffer );
-
-	trans->set_data_length( sizeof(INT_TRANS_T) );
-	trans->set_streaming_width( sizeof(INT_TRANS_T) );
-
-	trans->set_byte_enable_ptr( 0 );
-	trans->set_dmi_allowed( false );
-	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-	toXINT->b_transport( *trans, tlm2_btrans_time );
-
-	if (trans->is_response_error() )
-		SC_REPORT_ERROR("HCS12X : ", "Unable to compute interrupt vector");
-
-	ipl = buffer.ipl;
-	address = buffer.vectorAddress;
-
-	trans->release();
-
-	/*
-	 * - Set HasReset, HasXIRQ, HasIbit interrupts flag to be used by Handle asynchronous interrupts
-	 * - or compute the interrupt vector if is a Software interrupt
-	 * */
-
-	switch (address & 0x00FF)
-	{
-		case 0x00: { // The CPU is the initiator of the interrupt and only need the value of IVBR (interrupt vector base register)
-			if (HasNonMaskableAccessErrorInterrupt())
-				address = (address & 0xFF00) | XINT::INT_RAM_ACCESS_VIOLATION_OFFSET;
-
-			if (HasNonMaskableSWIInterrupt())
-				address = (address & 0xFF00) | XINT::INT_SWI_OFFSET;
-
-			if (HasTrapInterrupt())
-				address = (address & 0xFF00) | XINT::INT_TRAP_OFFSET;
-
-			if (HasSysCallInterrupt())
-				address = (address & 0xFF00) | XINT::INT_SYSCALL_OFFSET;
-		} break;
-		case XINT::INT_SYS_RESET_OFFSET:
-			/*
-			 * Are mapped to vector 0xFFFE: Pin reset, Power-on reset, low-voltage reset, illegal address reset
-			 */
-			ReqReset();
-			break;
-		case XINT::INT_CLK_MONITOR_RESET_OFFSET:
-			ReqReset();
-			break;
-		case XINT::INT_COP_WATCHDOG_RESET_OFFSET:
-			ReqReset();
-			break;
-		case XINT::INT_XIRQ_OFFSET:
-			ReqXIRQInterrupt();
-			break;
-		default:
-			ReqIbitInterrupt();
-	}
-
-	return address;
 }
 
 bool
@@ -233,7 +158,7 @@ HCS12X ::BeginSetup() {
 			*inherited::logger << DebugError
 				<< "Error while trying to set up the HCS12X cpu"
 				<< std::endl << EndDebugError;
-		return false;
+		return (false);
 	}
 
 	/* check verbose settings */
@@ -251,7 +176,7 @@ HCS12X ::BeginSetup() {
 				<< std::endl << EndDebugInfo;
 	}
 
-	ComputeInternalTime();
+	computeInternalTime();
 
 	if(debug_enabled &&  inherited::verbose_setup) {
 		*inherited::logger << DebugInfo
@@ -262,21 +187,23 @@ HCS12X ::BeginSetup() {
 			<< EndDebugInfo;
 	}
 
-	return true;
+	this->Reset();
+
+	return (true);
 
 }
 
 bool
 HCS12X ::Setup(ServiceExportBase *srv_export) {
-	return inherited::Setup(srv_export);
+	return (inherited::Setup(srv_export));
 }
 
 bool
 HCS12X ::EndSetup() {
-	return inherited::EndSetup();
+	return (inherited::EndSetup());
 }
 
-void HCS12X::ComputeInternalTime() {
+void HCS12X::computeInternalTime() {
 
 	/*
 	 * From CRG specification (page 100) :
@@ -292,69 +219,6 @@ void HCS12X::ComputeInternalTime() {
 	tlm2_btrans_time = sc_time((double)0, SC_PS);
 
 	for (int i=0; i<32; i++) opCyclesArray[i] = cpu_cycle_time * i;
-
-}
-
-
-void
- HCS12X ::
-BusSynchronize() {
-
-	sc_time time_spent = cpu_time - last_cpu_time;
-	last_cpu_time = cpu_time;
-
-	while(cpu_time >= bus_time) {
-		bus_time += bus_cycle_time;
-	}
-
-	sc_time sleep_time = bus_time - sc_time_stamp();
-	wait(sleep_time);
-
-	cpu_time = sc_time_stamp();
-	last_cpu_time = sc_time_stamp();
-	bus_time = sc_time_stamp();
-
-	return;
-
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "Bus synchro START"
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 current_time_tu = sc_time_stamp().value();
-	sc_dt::uint64 time_spent_tu = time_spent.value();
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "time_spent_tu = " << time_spent_tu
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 next_time_tu = current_time_tu + time_spent_tu;
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "next_time_tu = " << next_time_tu
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 bus_cycle_time_tu = bus_cycle_time.value();
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "bus_cycle_time_tu = " << bus_cycle_time_tu
-			<< std::endl << EndDebugInfo;
-	sc_dt::uint64 bus_time_phase_tu = next_time_tu % bus_cycle_time_tu;
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "bus_time_phase_tu = " << bus_time_phase_tu
-			<< std::endl << EndDebugInfo;
-	if(time_spent_tu || bus_time_phase_tu) {
-		sc_dt::uint64 delay_tu = next_time_tu - current_time_tu + (bus_cycle_time_tu - bus_time_phase_tu);
-		if(debug_enabled && verbose_tlm_bus_synchronize)
-			*inherited::logger << DebugInfo
-				<< "delay_tu = " << delay_tu
-				<< std::endl << EndDebugInfo;
-		wait(sc_time(delay_tu, false));
-		cpu_time = sc_time_stamp();
-		bus_time = cpu_time + bus_cycle_time;
-	}
-	if(debug_enabled && verbose_tlm_bus_synchronize)
-		*inherited::logger << DebugInfo
-			<< "Bus synchro END"
-			<< std::endl << EndDebugInfo;
 
 }
 
@@ -386,7 +250,7 @@ Run() {
 				<< "Executing step"
 				<< std::endl << EndDebugInfo;
 
-		opCycles = inherited::Step();
+		opCycles = inherited::step();
 
 		if(debug_enabled && verbose_tlm_run_thread)
 			*inherited::logger << DebugInfo
@@ -395,14 +259,12 @@ Run() {
 
 		sc_time & time_per_instruction = opCyclesArray[opCycles];
 
+		cpu_time += time_per_instruction;
+
 		if (enable_fine_timing) {
-			if (debug_enabled) {
-				std::cerr << "HCS12X: time_per_instruction=" << time_per_instruction << std::endl;
-			}
 			
 			wait(time_per_instruction);
 		} else {
-			cpu_time += time_per_instruction;
 			if(cpu_time >= next_nice_time) {
 				next_nice_time = cpu_time + nice_time;
 				Synchronize();
@@ -412,20 +274,13 @@ Run() {
 	}
 }
 
-double
-HCS12X ::
-GetSimulatedTime() {
-//	return cpu_time.to_seconds();
-	return cpu_time.to_default_time_units()/1e6;
-}
-
 void
 HCS12X ::
 Reset() {
 	inherited::Reset();
 }
 
-void HCS12X::BusWrite(address_t addr, const void *buffer, uint32_t size)
+void HCS12X::busWrite(address_t addr, const void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
@@ -448,7 +303,7 @@ void HCS12X::BusWrite(address_t addr, const void *buffer, uint32_t size)
 	trans->release();
 }
 
-void HCS12X::BusRead(address_t addr, void *buffer, uint32_t size)
+void HCS12X::busRead(address_t addr, void *buffer, uint32_t size)
 {
 	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
 
@@ -471,18 +326,6 @@ void HCS12X::BusRead(address_t addr, void *buffer, uint32_t size)
 	trans->release();
 }
 
-void HCS12X::AsyncIntThread(tlm::tlm_generic_payload& trans, sc_time& delay)
-{
-	// The XINT wake-up the CPU to handle asynchronous interrupt
-
-	irq_event.notify();
-
-	ReqAsynchronousInterrupt();
-
-	trans.set_response_status( tlm::TLM_OK_RESPONSE );
-
-}
-
 void HCS12X::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
 
 	sc_dt::uint64*   external_bus_clock = (sc_dt::uint64*) trans.get_data_ptr();
@@ -491,7 +334,120 @@ void HCS12X::updateCRGClock(tlm::tlm_generic_payload& trans, sc_time& delay) {
     // From CRG specification (page 100) : BusClock = 2 * CoreClock
 	core_clock_int = *external_bus_clock / 2;
 
-	ComputeInternalTime();
+	computeInternalTime();
+}
+
+
+tlm_sync_enum HCS12X::nb_transport_fw(tlm::tlm_generic_payload& payload, tlm_phase& phase, sc_core::sc_time& t) {
+
+	irq_event.notify();
+
+	reqAsynchronousInterrupt();
+
+	payload.set_response_status( tlm::TLM_OK_RESPONSE );
+
+	return (TLM_ACCEPTED);
+}
+
+address_t HCS12X ::getIntVector(uint8_t &ipl)
+	/*
+	 * The CPU issues a signal that tells the interrupt module to drive
+	 * the vector address of the highest priority pending exception onto the system address bus
+	 * (the CPU12 does not provide this address)
+	 *
+	 * Priority is as follow: reset => sw-interrupt => hw-interrupt => spurious interrupt
+	 *
+	 * If (RAM_ACC_VIOL | SYS || SWI || TRAP) return IVBR;
+	 * Else return INT_Vector
+	 */
+{
+
+	address_t address; // get INT_VECTOR from XINT
+
+	INT_TRANS_T *buffer = new INT_TRANS_T(0, 0, ipl);
+
+	tlm::tlm_generic_payload* trans = payloadFabric.allocate();
+
+	trans->set_command( tlm::TLM_READ_COMMAND );
+	trans->set_address( 0 );
+	trans->set_data_ptr( (unsigned char *) buffer );
+
+	trans->set_data_length( sizeof(INT_TRANS_T) );
+	trans->set_streaming_width( sizeof(INT_TRANS_T) );
+
+	trans->set_byte_enable_ptr( 0 );
+	trans->set_dmi_allowed( false );
+	trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+	tlm_phase *phase = new tlm_phase(BEGIN_REQ);
+	xint_interrupt_request->nb_transport_bw(*trans, *phase, tlm2_btrans_time);
+
+	if (trans->is_response_error() )
+		SC_REPORT_ERROR("HCS12X : ", "Unable to compute interrupt vector");
+
+	delete phase;
+	trans->release();
+
+	if (hasNonMaskableAccessErrorInterrupt() || hasNonMaskableSWIInterrupt() || hasTrapInterrupt() || hasSysCallInterrupt())
+	{
+		ipl = buffer->getPriority();
+		address = buffer->getVectorAddress() & 0xFF00;
+
+		if (hasNonMaskableAccessErrorInterrupt()) {
+			address = address | XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET;
+		}
+		else if (hasNonMaskableSWIInterrupt()) {
+			address = address | XINT::INT_SWI_OFFSET;
+		}
+		else if (hasTrapInterrupt()) {
+			address = address | XINT::INT_TRAP_OFFSET;
+		}
+		else if (hasSysCallInterrupt()) {
+			address = address | XINT::INT_SYSCALL_OFFSET;
+		}
+
+	} else { // CPU has AsynchronousInterrupt
+
+		switch (buffer->getVectorAddress() & 0x00FF)
+		{
+			case XINT::INT_SYS_RESET_OFFSET: {
+				/*
+				 * Are mapped to vector 0xFFFE: Pin reset, Power-on reset, low-voltage reset, illegal address reset
+				 */
+				reqReset();
+			}
+			break;
+			case XINT::INT_CLK_MONITOR_RESET_OFFSET: {
+				reqReset();
+			}
+			break;
+			case XINT::INT_COP_WATCHDOG_RESET_OFFSET: {
+				reqReset();
+			}
+			break;
+			case XINT::INT_XIRQ_OFFSET: {
+				reqXIRQInterrupt();
+			}
+			break;
+			case XINT::INT_MPU_ACCESS_ERROR_OFFSET: {
+				reqMPUAccessErrorInterrupt();
+			}
+			break;
+			default: {
+				reqIbitInterrupt();
+			}
+			break;
+		}
+
+		ipl = buffer->getPriority();
+		address = buffer->getVectorAddress();
+	}
+
+
+	delete buffer;
+
+	return (address);
+
 }
 
 } // end of namespace hcs12x
