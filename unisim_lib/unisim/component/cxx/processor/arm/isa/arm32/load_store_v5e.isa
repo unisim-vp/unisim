@@ -542,7 +542,7 @@ group load_store_5e_rn_init(ldrd_imm_post, ldrd_imm_offset, ldrd_imm_pre, \
 load_store_5e_rn_init.initialize_rn_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rn == 15) inherited::rn_init = 8;
+	if(rn == STATE::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }
 
@@ -551,7 +551,7 @@ group load_store_5e_rm_init(ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
 load_store_5e_rm_init.initialize_rm_init = {
 	typedef Operation<STATE> inherited;
 	
-	if(rm == 15) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 
@@ -561,7 +561,7 @@ group load_store_5e_rd_init(ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
 load_store_5e_rd_init.initialize_rd_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rd == 15) inherited::rd_init = 8;
+	if(rd == STATE::PC_reg) inherited::rd_init = 8;
 	else inherited::rd_init = 0;
 }
 

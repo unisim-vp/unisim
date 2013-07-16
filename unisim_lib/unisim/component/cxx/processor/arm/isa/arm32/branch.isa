@@ -211,7 +211,7 @@ bx.execute = {
 bx.initialize_rm_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rm == 15) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 
@@ -301,7 +301,7 @@ blx_2.execute = {
 blx_2.initialize_rm_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rm == 15) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 

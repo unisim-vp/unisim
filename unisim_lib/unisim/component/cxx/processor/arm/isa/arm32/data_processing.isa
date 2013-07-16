@@ -3136,7 +3136,7 @@ group dp_rn_init(and_32imm, and_imm_shift, and_reg_shift, \
 dp_rn_init.initialize_rn_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rn == 15) inherited::rn_init = 8;
+	if(rn == STATE::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }
 
@@ -3171,7 +3171,7 @@ group dp_rm_init(and_imm_shift, and_reg_shift, \
 dp_rm_init.initialize_rm_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rm == 15) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 
@@ -3206,7 +3206,7 @@ group dp_rs_init(and_reg_shift, \
 dp_rs_init.initialize_rs_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rs == 15) inherited::rs_init = 8;
+	if(rs == STATE::PC_reg) inherited::rs_init = 8;
 	else inherited::rs_init = 0;
 }
 

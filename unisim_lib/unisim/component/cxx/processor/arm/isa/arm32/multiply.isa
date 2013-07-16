@@ -326,7 +326,7 @@ group multiply_rn_init(mla)
 multiply_rn_init.initialize_rn_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rn == 15) inherited::rn_init = 8;
+	if(rn == STATE::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }
 
@@ -334,7 +334,7 @@ group multiply_rm_init(mla, mul, smlal, smull, umlal, umull)
 multiply_rm_init.initialize_rm_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rm == 15) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 
@@ -342,7 +342,7 @@ group multiply_rs_init(mla, mul, smlal, smull, umlal, umull)
 multiply_rs_init.initialize_rs_init = {
 	typedef Operation<STATE> inherited;
 	
-	if(rs == 15) inherited::rs_init = 8;
+	if(rs == STATE::PC_reg) inherited::rs_init = 8;
 	else inherited::rs_init = 0;
 }
 
@@ -350,7 +350,7 @@ group multiply_rdhi_init(smlal, umlal)
 multiply_rdhi_init.initialize_rdhi_init = {
 	typedef Operation<STATE> inherited;
 	
-	if(rdhi == 15) inherited::rdhi_init = 8;
+	if(rdhi == STATE::PC_reg) inherited::rdhi_init = 8;
 	else inherited::rdhi_init = 0;
 }
 
@@ -358,7 +358,7 @@ group multiply_rdlo_init(smlal, umlal)
 multiply_rdlo_init.initialize_rdlo_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rdlo == 15) inherited::rdlo_init = 8;
+	if(rdlo == STATE::PC_reg) inherited::rdlo_init = 8;
 	else inherited::rdlo_init = 0;
 }
 

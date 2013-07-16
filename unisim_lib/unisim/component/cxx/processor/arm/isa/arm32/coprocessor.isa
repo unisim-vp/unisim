@@ -720,7 +720,7 @@ group coprocessor_rn_init(ldc_offset_0xxx, ldc_offset_10xx, ldc_offset_110x, ldc
 coprocessor_rn_init.initialize_rn_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rn == 15) inherited::rn_init = 8;
+	if(rn == STATE::PC_reg) inherited::rn_init = 8;
 	else inherited::rn_init = 0;
 }
 

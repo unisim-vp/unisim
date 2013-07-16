@@ -260,7 +260,7 @@ group status_register_access_rm_init(msr_reg)
 status_register_access_rm_init.initialize_rm_init = {
 	typedef Operation<STATE> inherited;
 
-	if(rm == 15) inherited::rm_init = 8;
+	if(rm == STATE::PC_reg) inherited::rm_init = 8;
 	else inherited::rm_init = 0;
 }
 
