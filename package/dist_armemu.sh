@@ -571,7 +571,7 @@ for file in ${UNISIM_LIB_ARMEMU_FILES}; do
 	fi
 	if [ "${has_to_copy}" = "yes" ]; then
 		echo "${UNISIM_LIB_DIR}/${file} ==> ${DEST_DIR}/armemu/${file}"
-		cp -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
+		${DISTCOPY} -f "${UNISIM_LIB_DIR}/${file}" "${DEST_DIR}/armemu/${file}" || exit
 	fi
 done
 
