@@ -10,12 +10,14 @@ if [ -z "$1" ]; then
 	exit -1
 fi
 
-HERE=$(pwd)
 MY_DIR=$(cd $(dirname $0); pwd)
 DEST_DIR=$1
-UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
-UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
-UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/armemu
+mkdir -p ${DEST_DIR}
+DEST_DIR=$(cd $DEST_DIR; pwd)
+UNISIM_DIR=$(cd ${MY_DIR}/..; pwd)
+UNISIM_TOOLS_DIR=${UNISIM_DIR}/unisim_tools
+UNISIM_LIB_DIR=${UNISIM_DIR}/unisim_lib
+UNISIM_SIMULATORS_DIR=${UNISIM_DIR}/unisim_simulators/tlm2/armemu
 
 ARMEMU_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
 GENISSLIB_VERSION=$(cat ${UNISIM_TOOLS_DIR}/genisslib/VERSION)-armemu-${ARMEMU_VERSION}
