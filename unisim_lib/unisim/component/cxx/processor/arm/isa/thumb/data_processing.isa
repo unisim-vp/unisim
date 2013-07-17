@@ -54,7 +54,6 @@ adc.execute = {
 	uint32_t s1, s2;
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
 	s1 = cpu.GetGPR(rd);
@@ -89,7 +88,6 @@ add_1.execute = {
 		uint32_t s1;
 		uint8_t carry_in, carry_out, overflow_out, sign;
 		
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 		
 		s1 = cpu.GetGPR(rn);
 		carry_in = 0;
@@ -122,7 +120,6 @@ add_2.execute = {
 	uint32_t s1;
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	carry_in = 0;
@@ -155,7 +152,6 @@ add_3.execute = {
 	uint32_t s1, s2;
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rm);
 	s2 = cpu.GetGPR(rn);
@@ -193,20 +189,6 @@ add_4.initialize_rd_index = {
 	inherited::rd_index = (h1 << 3) + rd;
 }
 
-add_4.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if((h2 << 3) + rm == STATE::PC_reg)
-		inherited::rm_init = 4;
-}
-
-add_4.initialize_rd_init = {
-	typedef Operation<STATE> inherited;
-
-	if((h1 << 3) + rd == STATE::PC_reg)
-		inherited::rd_init = 4;
-}
-
 add_4.disasm = {
 	typedef Operation<STATE> inherited;
 	
@@ -217,10 +199,9 @@ add_4.execute = {
 	typedef Operation<STATE> inherited;
 
 	uint32_t s1, s2, res;
-	s1 = cpu.GetGPR(inherited::rd_index) + inherited::rd_init;
-	s2 = cpu.GetGPR(inherited::rm_index) + inherited::rm_init;
+	s1 = cpu.GetGPR(inherited::rd_index);
+	s2 = cpu.GetGPR(inherited::rm_index);
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	res = s1 + s2;
 	cpu.SetGPR(inherited::rd_index, res);
@@ -245,7 +226,6 @@ add_5.execute = {
 	uint32_t pc;
 	
 	pc = cpu.GetGPR(cpu.PC_reg);
-	cpu.SetGPR(cpu.PC_reg, pc + 2);
 	
 	s1 = pc & (uint32_t)0xfffffffc;
 	s2 = ((uint32_t)imm) << 2;
@@ -271,7 +251,6 @@ add_6.disasm = {
 add_6.execute = {
 	uint32_t s1, s2, res;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(cpu.SP_reg) & (uint32_t)0xfffffffc;
 	s2 = ((uint32_t)imm) << 2;
@@ -295,7 +274,6 @@ add_7.disasm = {
 }
 
 add_7.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	cpu.SetGPR(cpu.SP_reg, cpu.GetGPR(cpu.SP_reg) + ((uint32_t)imm * 4));
 }
@@ -317,7 +295,6 @@ and.disasm = {
 and.execute = {
 	uint32_t res;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	res = cpu.GetGPR(rd) & cpu.GetGPR(rm);
 	cpu.SetGPR(rd,res);
@@ -343,7 +320,6 @@ asr_1.disasm = {
 asr_1.execute = {
 	uint32_t res, s1;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(rm);
 	if(imm == 0) {
@@ -382,7 +358,6 @@ asr_2.disasm = {
 asr_2.execute = {
 	uint32_t res, s1;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
 	
@@ -424,7 +399,6 @@ bic.disasm = {
 
 bic.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rm);
@@ -451,7 +425,6 @@ cmn.disasm = {
 
 cmn.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	uint8_t carry_in, carry_out, overflow_out, sign;
 	
 	s1 = cpu.GetGPR(rn);
@@ -482,7 +455,6 @@ cmp_1.disasm = {
 
 cmp_1.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rn);
 	s2 = imm;
@@ -510,7 +482,6 @@ cmp_2.disasm = {
 
 cmp_2.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rn);
 	s2 = cpu.GetGPR(rm);
@@ -545,24 +516,6 @@ cmp_3.initialize_rn_index = {
 	inherited::rn_index = (h1 << 3) + rn;
 }
 
-cmp_3.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if((h2 << 3) + rm == STATE::PC_reg)
-		inherited::rm_init = 4;
-	else
-		inherited::rm_init = 0;
-}
-
-cmp_3.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if((h1 << 3) + rn == STATE::PC_reg)
-		inherited::rn_init = 4;
-	else
-		inherited::rn_init = 0;
-}
-
 cmp_3.disasm = {
 	typedef Operation<STATE> inherited;
 
@@ -572,10 +525,9 @@ cmp_3.disasm = {
 cmp_3.execute = {
 	typedef Operation<STATE> inherited;
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
-	s1 = cpu.GetGPR(inherited::rn_index) + inherited::rn_init;
-	s2 = cpu.GetGPR(inherited::rm_index) + inherited::rm_init;
+	s1 = cpu.GetGPR(inherited::rn_index);
+	s2 = cpu.GetGPR(inherited::rm_index);
 	
 	res = s1 - s2;
 
@@ -601,7 +553,6 @@ eor.disasm = {
 
 eor.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rm);
@@ -627,7 +578,6 @@ lsl_1.disasm = {
 
 lsl_1.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rm);
 	s2 = imm;
@@ -658,7 +608,6 @@ lsl_2.disasm = {
 
 lsl_2.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rs) & (uint32_t)0x0ff;
@@ -695,7 +644,6 @@ lsr_1.disasm = {
 
 lsr_1.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rm);
 	s2 = imm;
@@ -727,7 +675,6 @@ lsr_2.disasm = {
 
 lsr_2.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rs) & 0x0ff;
@@ -766,7 +713,6 @@ mov_1.disasm = {
 
 mov_1.execute = {
 	uint32_t res;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	res = imm;
 	
@@ -808,15 +754,6 @@ mov_3.initialize_rd_index = {
 	inherited::rd_index = (h1 << 3) + rd;
 }
 
-mov_3.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-	
-	if((h2 << 3) + rm == STATE::PC_reg)
-		inherited::rm_init = 4;
-	else
-		inherited::rm_init = 0;
-}
-
 mov_3.disasm = {
 	typedef Operation<STATE> inherited;
 
@@ -827,9 +764,8 @@ mov_3.execute = {
 	typedef Operation<STATE> inherited;
 	uint32_t res;
 	
-	res = inherited::rm_init + cpu.GetGPR(inherited::rm_index);
+	res = cpu.GetGPR(inherited::rm_index);
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	cpu.SetGPR(inherited::rd_index, res);
 }
@@ -849,7 +785,6 @@ mul.disasm = {
 
 mul.execute = {
 	uint32_t res;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	res = cpu.GetGPR(rd) * cpu.GetGPR(rm);
 	cpu.SetGPR(rd, res);
@@ -874,7 +809,6 @@ mvn.disasm = {
 
 mvn.execute = {
 	uint32_t res;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	res = ~(cpu.GetGPR(rm));
 	cpu.SetGPR(rd, res);
@@ -899,7 +833,6 @@ neg.disasm = {
 
 neg.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = 0;
 	s2 = cpu.GetGPR(rm);
@@ -928,7 +861,6 @@ orr.disasm = {
 
 orr.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rm);
@@ -955,7 +887,6 @@ ror.disasm = {
 
 ror.execute = {
 	uint32_t res, s1, s2;
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rs) & 0x0ff;
@@ -994,7 +925,6 @@ sbc.execute = {
 	uint32_t res;
 	uint32_t in_neg_carry;
 	  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(rd);
 	s2 = cpu.GetGPR(rm);
@@ -1026,7 +956,6 @@ sub_1.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(rn);
 	s2 = imm;
@@ -1059,7 +988,6 @@ sub_2.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(rd);
 	s2 = imm;
@@ -1090,7 +1018,6 @@ sub_3.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(rn);
 	s2 = cpu.GetGPR(rm);
@@ -1121,7 +1048,6 @@ sub_4.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 
 	s1 = cpu.GetGPR(cpu.SP_reg);
 	s2 = imm * 4;
@@ -1146,7 +1072,6 @@ tst.disasm = {
 tst.execute = {
 	uint32_t res, s1, s2;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	s1 = cpu.GetGPR(rn);
 	s2 = cpu.GetGPR(rm);

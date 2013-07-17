@@ -52,7 +52,6 @@ swi.disasm = {
 }
 
 swi.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if (!cpu.CheckCondition(cond)) return;
 
@@ -91,7 +90,6 @@ bkpt.execute = {
 	
 	immed = limmed + ((uint32_t)himmed << 4);
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	// we are executing on linux emulation mode
 	// what should we do with this kind of call? ignore it

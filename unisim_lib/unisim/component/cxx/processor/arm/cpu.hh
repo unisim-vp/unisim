@@ -286,8 +286,6 @@ public:
 	/* Registers access methods    START                          */
 	/**************************************************************/
 		
-	/** next PC fake register index */
-	const static unsigned int nextPC_reg = 16;
 	/** PC register index */
 	const static unsigned int PC_reg = 15;
 	/** LR register index */
@@ -307,13 +305,42 @@ public:
 	 * @param id the register index
 	 * @return the value contained by the register
 	 */
-	uint32_t GetGPR(uint32_t id) const;
+	uint32_t GetGPR(uint32_t id) const
+	{
+		return gpr[id];
+	}
+
 	/** Set the value contained by a GPR.
 	 *
 	 * @param id the register index
 	 * @param val the value to set
 	 */
-	void SetGPR(uint32_t id, uint32_t val);
+	void SetGPR(uint32_t id, uint32_t val)
+	{
+		if (id != 15) gpr[id] = val;
+		else this->BranchExchange( val );
+	}
+	
+	/** Sets the PC (and potentially exchanges mode ARM<->Thumb)
+	 *
+	 * @param val the value to set PC
+	 */
+	void BranchExchange(uint32_t val)
+	{ this->pc = val; this->SetCPSR_T( val & 1 ); }
+	
+	/** Sets the PC (and preserve mode)
+	 *
+	 * @param val the value to set PC
+	 */
+	void Branch(uint32_t val)
+	{ this->pc = (this->pc & 1) | (val & -2); }
+	
+	/** Gets the updated PC value (next PC as currently computed)
+	 *
+	 */
+	uint32_t GetNPC()
+	{ return this->pc; }
+	
 	/** Get the value contained by a user GPR.
 	 * Returns the value contained by a user GPR. It is the same than GetGPR but
 	 *   restricting the index from 0 to 15 (only the first 16 registers).
@@ -719,6 +746,7 @@ protected:
 	uint32_t phys_gpr[num_phys_gprs]; 
 	/** Storage for the logical registers */
 	uint32_t gpr[num_log_gprs];
+	uint32_t pc;
 	/** The CPSR register.
 	 * All the running modes share the same CPSR register
 	 * CPSR organization:

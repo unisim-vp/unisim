@@ -88,7 +88,6 @@ cdp.disasm = {
 cdp.execute = {
 	typedef Operation<STATE> inherited;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
@@ -278,14 +277,9 @@ ldc_unindexed.disasm = {
 ldc_offset.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
@@ -294,14 +288,9 @@ ldc_offset.execute = {
 ldc_pre.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
-	
-	address = CLSOpDec(u, rn_value, offset);
+        
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
@@ -311,15 +300,10 @@ ldc_pre.execute = {
 ldc_post.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = rn_value;
-	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
+	uint32_t address = cpu.GetGPR(rn);
+	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
@@ -328,14 +312,9 @@ ldc_post.execute = {
 ldc_unindexed.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = rn_value;
+	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorLoad(cp_num, address, option)) {
 		address += 4;
 	}
@@ -395,8 +374,6 @@ mcr.disasm = {
 mcr.execute = {
 	typedef Operation<STATE> inherited;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 
 	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
@@ -455,8 +432,6 @@ mrc.disasm = {
 
 mrc.execute = {
 	typedef Operation<STATE> inherited;
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 
@@ -646,14 +621,9 @@ stc_unindexed.disasm = {
 stc_offset.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
@@ -662,14 +632,9 @@ stc_offset.execute = {
 stc_pre.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
@@ -679,15 +644,10 @@ stc_pre.execute = {
 stc_post.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = rn_value;
-	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
+	uint32_t address = cpu.GetGPR(rn);
+	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
@@ -696,14 +656,9 @@ stc_post.execute = {
 stc_unindexed.execute = {
 	typedef Operation<STATE> inherited;
 
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 	
-	address = rn_value;
+	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorStore(cp_num, address, option)) {
 		address += 4;
 	}
@@ -712,17 +667,6 @@ stc_unindexed.execute = {
 /*
  * end of stc instruction
  *******************************************************************/
-
-group coprocessor_rn_init(ldc_offset_0xxx, ldc_offset_10xx, ldc_offset_110x, ldc_offset_1110, \
-                          ldc_unindexed_0xxx, ldc_unindexed_10xx, ldc_unindexed_110x, ldc_unindexed_1110, \
-                          stc_offset_0xxx, stc_offset_10xx, stc_offset_110x, stc_offset_1110, \
-                          stc_unindexed_0xxx, stc_unindexed_10xx, stc_unindexed_110x, stc_unindexed_1110)
-coprocessor_rn_init.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rn == STATE::PC_reg) inherited::rn_init = 8;
-	else inherited::rn_init = 0;
-}
 
 /*******************************************************************
  * cdp2 instruction
@@ -747,7 +691,6 @@ cdp2.disasm = {
 }
 
 cdp2.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
 }
@@ -829,28 +772,14 @@ ldc2_unindexed.disasm = {
 }
 
 ldc2_offset.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
 }
 
 ldc2_pre.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
@@ -858,29 +787,15 @@ ldc2_pre.execute = {
 }
 
 ldc2_post.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = rn_value;
-	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
+	uint32_t address = cpu.GetGPR(rn);
+	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
 }
 
 ldc2_unindexed.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = rn_value;
+	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorLoad(cp_num, address, option)) {
 		address += 4;
 	}
@@ -913,8 +828,6 @@ mcr2.disasm = {
 }
 
 mcr2.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
 }
 
@@ -945,7 +858,6 @@ mrc2.disasm = {
 }
 
 mrc2.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
 }
@@ -1024,28 +936,14 @@ stc2_unindexed.disasm = {
 }
 
 stc2_offset.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}	
+}
 
 stc2_pre.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = CLSOpDec(u, rn_value, offset);
+	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
@@ -1053,29 +951,15 @@ stc2_pre.execute = {
 }
 
 stc2_post.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = rn_value;
-	cpu.SetGPR(rn, CLSOpDec(u, rn_value, offset));
+	uint32_t address = cpu.GetGPR(rn);
+	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
 }
 
 stc2_unindexed.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	address = rn_value;
+	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorStore(cp_num, address, option)) {
 		address += 4;
 	}
@@ -1083,11 +967,3 @@ stc2_unindexed.execute = {
 /*
  * end of stc2 instruction
  *******************************************************************/
-
-group coprocessor_v5_rn_init(ldc2_offset, ldc2_unindexed, stc2_offset, stc2_unindexed)
-coprocessor_v5_rn_init.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rn == STATE::PC_reg) inherited::rn_init = 8;
-	else inherited::rn_init = 0;
-}

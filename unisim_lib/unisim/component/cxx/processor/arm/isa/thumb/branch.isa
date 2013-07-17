@@ -77,15 +77,11 @@ b_1.disasm = {
 b_1.execute = {
 		typedef Operation<STATE> inherited;
 
-		uint32_t new_PC;
-		  
 		if(!cpu.CheckCondition(inherited::cond_init)) {
-			cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 			return;
 		}
 		
-		new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
-		cpu.SetGPR(cpu.PC_reg, new_PC);
+		cpu.Branch(cpu.GetGPR(cpu.PC_reg) + (imm << 1));
 }
 
 /*
@@ -100,19 +96,12 @@ b_1.execute = {
 op b_2(0b11100[5]:sext<32> imm[11])
 
 b_2.disasm = {
-		typedef Operation<STATE> inherited;
-	
 	buffer << "b";
 	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
 }
 
 b_2.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t new_PC;
-	
-	new_PC = cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1);
-	cpu.SetGPR(cpu.PC_reg, new_PC);
+	cpu.Branch(cpu.GetGPR(cpu.PC_reg) + (imm << 1));
 }
 
 /*
@@ -127,8 +116,6 @@ b_2.execute = {
 op bl(0b111[3]:0b1[1]:h2[1]:offset[11])
 
 bl.disasm = {
-	typedef Operation<STATE> inherited;
-	
 	int32_t bl_soffset;
 
 	buffer << "bl ";
@@ -142,10 +129,6 @@ bl.disasm = {
 }
 
 bl.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t new_PC;
-	
 	int32_t bl_soffset;
 	
 	if(offset & 0x0400)
@@ -154,12 +137,10 @@ bl.execute = {
 		bl_soffset = offset;
 	
 	if(h2) {
-		new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1));
-		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
-		cpu.SetGPR(cpu.PC_reg, new_PC);
+		cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
+		cpu.Branch(cpu.GetGPR(cpu.LR_reg) + (offset << 1));
 	} else {
-		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 4 + (bl_soffset << 12));
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
+		cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + (bl_soffset << 12));
 	}
 }
 
@@ -181,15 +162,6 @@ bx.disasm = {
 		<< "r" << inherited::rm_index << endl;
 }
 
-bx.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if ((h2 << 3) + rm == STATE::PC_reg)
-		inherited::rm_init = 4;
-	else
-		inherited::rm_init = 0;
-}
-
 bx.initialize_rm_index = {
 	typedef Operation<STATE> inherited;
 
@@ -201,15 +173,9 @@ bx.execute = {
 	
 	uint32_t rm_value;
 	
-	rm_value = inherited::rm_init + cpu.GetGPR(inherited::rm_index);
+	rm_value = cpu.GetGPR(inherited::rm_index);
 	
-	if(rm_value & 1) {
-		cpu.SetCPSR_T(true);
-	} else {
-		cpu.SetCPSR_T(false);
-	}
-	
-	cpu.SetGPR(cpu.PC_reg, rm_value & ~(uint32_t)1);
+	cpu.BranchExchange( rm_value );
 }
 
 /*
@@ -240,11 +206,9 @@ blx_1.disasm = {
 }
 
 blx_1.execute = {
-	uint32_t new_PC;
-	
-	new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1)) & (uint32_t)0xFFFFFFFC;
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
-	cpu.SetGPR(cpu.PC_reg, new_PC);
+	uint32_t new_PC = (cpu.GetGPR(cpu.LR_reg) + (offset << 1)) & -4;
+	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
+	cpu.Branch(new_PC);
 }
 
 /*
@@ -257,15 +221,6 @@ blx_1.execute = {
  */
 
 op blx_2(0b010001111[9]:h2[1]:rm[3]:sbz[3])
-
-blx_2.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if((h2 << 3) + rm == STATE::PC_reg)
-		inherited::rm_init = 4;
-	else
-		inherited::rm_init = 0;
-}
 
 blx_2.initialize_rm_index = {
 		typedef Operation<STATE> inherited;
@@ -283,16 +238,10 @@ blx_2.execute = {
 	typedef Operation<STATE> inherited;
 	uint32_t rm_value;
 	
-	rm_value = inherited::rm_init + cpu.GetGPR(inherited::rm_index);
+	rm_value = cpu.GetGPR(inherited::rm_index);
 	
-	cpu.SetGPR(cpu.LR_reg, cpu.GetGPR(cpu.PC_reg) + 3);
-	if(rm_value & 1) {
-		cpu.SetCPSR_T(true);
-	} else {
-		cpu.SetCPSR_T(false);
-	}
-	
-	cpu.SetGPR(cpu.PC_reg, rm_value & ~(uint32_t)1);
+	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
+	cpu.BranchExchange(rm_value);
 }
 
 /*

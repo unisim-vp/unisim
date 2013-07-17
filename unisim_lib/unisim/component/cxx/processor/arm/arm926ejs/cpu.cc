@@ -166,8 +166,8 @@ CPU(const char *name, Object *parent)
 			"The stack pointer (SP) register (alias of GPR[13]).")
 	, reg_lr("LR", this, gpr[14],
 			"The link register (LR) (alias of GPR[14]).")
-	, reg_pc("PC", this, gpr[15],
-			"The program counter (PC) register (alias of GPR[15]).")
+	, reg_pc("PC", this, pc,
+			"The program counter (PC) register (alias of debug logical GPR[15]).")
 	, reg_cpsr("CPSR", this, cpsr,
 			"The CPSR register.")
 	, ls_queue()
@@ -197,7 +197,7 @@ CPU(const char *name, Object *parent)
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
 					this, phys_gpr[i], ss_desc.str().c_str());
 	}
-	for (unsigned int i = 0; i < num_log_gprs; i++)
+	for (unsigned int i = 0; i < (num_log_gprs-1); i++)
 	{
 		stringstream ss;
 		stringstream ss_desc;
@@ -207,6 +207,7 @@ CPU(const char *name, Object *parent)
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
 					this, gpr[i], ss_desc.str().c_str());
 	}
+	reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, pc, "Logical register 15 (PC debug register)");
 	for (unsigned int i = 0; i < num_phys_spsrs; i++)
 	{
 		stringstream ss;
@@ -287,7 +288,7 @@ BeginSetup()
 			<< "Setting initial pc to 0x"
 			<< hex << init_pc << dec
 			<< EndDebugInfo;
-	SetGPR(15, init_pc);
+	BranchExchange( init_pc );
 
 	if ( cpu_cycle_time_ps == 0 )
 	{
@@ -317,7 +318,7 @@ BeginSetup()
 	}
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &gpr[15]);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &pc);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 	/* End TODO */
 
@@ -443,9 +444,8 @@ void
 CPU::
 StepInstruction()
 {
-	uint32_t current_pc;
+	uint32_t current_pc = GetNPC();
 
-	current_pc = GetGPR(PC_reg);
 	cur_instruction_address = current_pc;
 
 	if (debug_control_import) 
@@ -479,47 +479,46 @@ StepInstruction()
 		while(1);
 	}
 
-	if (requires_memory_access_reporting) 
+	if (GetCPSR_T())
 	{
-		if(memory_access_reporting_import)
-		{
-			uint32_t insn_size;
-			if (GetCPSR_T())
-			{
-				/* This implementation should never enter into thumb mode
-				 *   so if we enter this code we have an error in the 
-				 *   implementation.
-				 */
-				insn_size = 2;
-				assert("Thumb mode not supported" == 0);
-			}
-			else
-				insn_size = 4;
-			memory_access_reporting_import->ReportMemoryAccess(
-				MemoryAccessReporting<uint64_t>::MAT_READ, 
-				MemoryAccessReporting<uint64_t>::MT_INSN, 
-				current_pc, insn_size);
-		}
+		/* Thumb state */
+		
+		/* This implementation should never enter into thumb mode */
+		logger << DebugError << "Thumb mode not supported in" << endl
+		       << unisim::kernel::debug::BackTrace() << EndDebugError;
+		Stop(-1);
 	}
 	
-	/* arm32 state */
-	isa::arm32::Operation<unisim::component::cxx::processor::arm::arm926ejs::CPU> *
-		op = NULL;
-	uint32_t insn;
-	
-	ReadInsn(current_pc, insn);
-	/* convert the instruction to host endianness */
-	insn = Target2Host(GetEndianness(), insn);
+	else {
+		/* Arm32 state */
+		if(requires_memory_access_reporting and memory_access_reporting_import) {
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, 
+			                                                   MemoryAccessReporting<uint64_t>::MT_INSN, 
+			                                                   current_pc, 4 /*insn_size*/);
+		}
 		
-	/* Decode current PC */
-	op = arm32_decoder.Decode(current_pc, insn);
-	/* Execute instruction */
-	op->execute(*this);
-	//op->profile(profile);
+                /* fetch instruction word from memory */
+		uint32_t memword;
+		ReadInsn(current_pc, memword);
+		/* convert the instruction to host endianness */
+		isa::arm32::CodeType insn = Target2Host(GetEndianness(), memword);
+			
+		/* Decode current PC */
+		isa::arm32::Operation<unisim::component::cxx::processor::arm::arm926ejs::CPU>* op;
+		op = arm32_decoder.Decode(current_pc, insn);
+		
+		/* update PC registers value before execution */
+		this->gpr[15] = this->pc + 8;
+		this->pc += 4;
+		
+		/* Execute instruction */
+		op->execute(*this);
+		//op->profile(profile);
+		
+		/* perform the memory load/store operations */
+		PerformLoadStoreAccesses();
+	}
 	
-	/* perform the memory load/store operations */
-	PerformLoadStoreAccesses();
-
 	bool exception_occurred = false;
 	if ( unlikely(exception) )
 		exception_occurred = HandleException();
@@ -537,7 +536,7 @@ StepInstruction()
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportFinishedInstruction(
-					GetGPR(PC_reg));
+					GetNPC());
 }
 
 /** Inject an intrusive read memory operation.
@@ -2370,7 +2369,7 @@ NonIntrusiveTranslateVA(bool is_read,
 					<< "Address translated using a small page descriptor"
 					<< " (non intrusive access):"
 					<< std::endl
-					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - current pc = 0x" << std::hex << cur_instruction_address
 					<< std::endl
 					<< " - va  = 0x" << va << std::endl
 					<< " - mva = 0x" << mva << std::endl
@@ -2399,7 +2398,7 @@ NonIntrusiveTranslateVA(bool is_read,
 		if ( verbose & 0x020 )
 			logger << DebugInfo
 				<< "Address translated using a section descriptor:" << std::endl
-				<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< "- current pc = 0x" << std::hex << cur_instruction_address
 				<< std::dec << std::endl
 				<< "- va  = 0x" << std::hex << va << std::endl
 				<< "- mva = 0x" << mva << std::endl
@@ -2609,7 +2608,7 @@ TranslateVA(bool is_read,
 			<< std::endl
 			<< " - first level fetched = 0x" << std::hex
 			<< first_level << std::endl
-			<< " - pc = 0x" << GetGPR(PC_reg) << std::dec
+			<< " - pc = 0x" << cur_instruction_address << std::dec
 			<< EndDebugError;
 		return false;
 	}
@@ -2680,7 +2679,7 @@ TranslateVA(bool is_read,
 				logger << DebugInfo
 					<< "Address translated using a small page descriptor:"
 					<< std::endl
-					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - current pc = 0x" << std::hex << cur_instruction_address
 					<< std::endl
 					<< " - va  = 0x" << va << std::endl
 					<< " - mva = 0x" << mva << std::endl
@@ -2700,7 +2699,7 @@ TranslateVA(bool is_read,
 				logger << DebugError
 					<< "Check access permission and domain"
 					<< std::endl
-					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - current pc = 0x" << std::hex << cur_instruction_address
 					<< " - va  = 0x" << va << std::endl
 					<< " - mva = 0x" << mva << std::endl
 					<< " - pa  = 0x" << pa << std::dec << std::endl
@@ -2737,7 +2736,7 @@ TranslateVA(bool is_read,
 		if ( verbose & 0x010 )
 			logger << DebugInfo
 				<< "Address translated using a section descriptor:" << std::endl
-				<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< "- current pc = 0x" << std::hex << cur_instruction_address
 				<< std::dec << std::endl
 				<< "- va  = 0x" << std::hex << va << std::endl
 				<< "- mva = 0x" << mva << std::endl
@@ -2757,7 +2756,7 @@ TranslateVA(bool is_read,
 			logger << DebugError
 				<< "Check access permission and domain"
 				<< std::endl
-				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< " - current pc = 0x" << std::hex << cur_instruction_address
 				<< " - va  = 0x" << va << std::endl
 				<< " - mva = 0x" << mva << std::endl
 				<< " - pa  = 0x" << pa << std::dec << std::endl
@@ -2829,10 +2828,9 @@ HandleException()
 			<< "Received IRQ interrupt, handling it."
 			<< EndDebugInfo;
 		handled = true;
-		uint32_t cur_pc = GetGPR(15);
 		spsr[3] = cpsr;
 		SetGPRMapping(GetCPSR_Mode(), IRQ_MODE);
-		SetGPR(14, cur_pc + 4);
+		SetGPR(14, GetNPC());
 		SetCPSR_Mode(IRQ_MODE);
 		SetCPSR_T(false);
 		SetCPSR_I(true);
@@ -3128,7 +3126,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 				<< std::endl
 				<< " - va = 0x" << std::hex << va << std::dec << std::endl
 				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
 			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
@@ -3370,7 +3368,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 				<< std::endl
 				<< " - va = 0x" << std::hex << va << std::dec << std::endl
 				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
 			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
@@ -3591,7 +3589,7 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 				<< std::endl
 				<< " - va = 0x" << std::hex << va << std::dec << std::endl
 				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
 			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
@@ -3694,8 +3692,8 @@ PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
 		val32 = val32_l + val32_r;
 	}
 	value = val32;
-
-	SetGPR(PC_reg, value & ~(uint32_t)0x01);
+	
+	Branch(value);
 
 	if ( unlikely(dcache.power_estimator_import != 0) )
 		dcache.power_estimator_import->ReportReadAccess();
@@ -3744,7 +3742,7 @@ PerformReadToPCUpdateTAccess(
 				<< std::endl
 				<< " - va = 0x" << std::hex << va << std::dec << std::endl
 				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
 			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
@@ -3847,10 +3845,9 @@ PerformReadToPCUpdateTAccess(
 		val32 = val32_l + val32_r;
 	}
 	value = val32;
-
-	SetGPR(PC_reg, value & ~(uint32_t)0x01);
-	SetCPSR_T((value & (uint32_t)0x01) == 0x01);
-
+	
+	BranchExchange(value);
+	
 	if ( unlikely(dcache.power_estimator_import != 0) )
 		dcache.power_estimator_import->ReportReadAccess();
 

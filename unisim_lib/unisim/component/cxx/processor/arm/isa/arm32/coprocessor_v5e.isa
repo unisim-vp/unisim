@@ -104,7 +104,6 @@ mcrr.disasm = {
 mcrr.execute = {
 	typedef Operation<STATE> inherited;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 
@@ -182,7 +181,6 @@ mrrc.disasm = {
 mrrc.execute = {
 	typedef Operation<STATE> inherited;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(inherited::cond_init)) return;
 

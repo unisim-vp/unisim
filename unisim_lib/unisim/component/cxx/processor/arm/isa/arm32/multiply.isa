@@ -58,11 +58,10 @@ mla.execute = {
 	typedef Operation<STATE> inherited;
 
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -99,10 +98,9 @@ mul.execute = {
 	typedef Operation<STATE> inherited;
 
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -149,12 +147,11 @@ smlal.execute = {
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	uint32_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
-	uint32_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rdhi_value = cpu.GetGPR(rdhi);
+	uint32_t rdlo_value = cpu.GetGPR(rdlo);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -200,10 +197,9 @@ smull.execute = {
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -248,12 +244,11 @@ umlal.execute = {
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	uint32_t rdhi_value = inherited::rdhi_init + cpu.GetGPR(rdhi);
-	uint32_t rdlo_value = inherited::rdlo_init + cpu.GetGPR(rdlo);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rdhi_value = cpu.GetGPR(rdhi);
+	uint32_t rdlo_value = cpu.GetGPR(rdlo);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -299,10 +294,9 @@ umull.execute = {
 
 	uint64_t res;
 	uint64_t res_lo, res_hi;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -321,44 +315,3 @@ umull.execute = {
 /*
  * end of umull instruction
  *******************************************************************/
-
-group multiply_rn_init(mla)
-multiply_rn_init.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rn == STATE::PC_reg) inherited::rn_init = 8;
-	else inherited::rn_init = 0;
-}
-
-group multiply_rm_init(mla, mul, smlal, smull, umlal, umull)
-multiply_rm_init.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rm == STATE::PC_reg) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
-
-group multiply_rs_init(mla, mul, smlal, smull, umlal, umull)
-multiply_rs_init.initialize_rs_init = {
-	typedef Operation<STATE> inherited;
-	
-	if(rs == STATE::PC_reg) inherited::rs_init = 8;
-	else inherited::rs_init = 0;
-}
-
-group multiply_rdhi_init(smlal, umlal)
-multiply_rdhi_init.initialize_rdhi_init = {
-	typedef Operation<STATE> inherited;
-	
-	if(rdhi == STATE::PC_reg) inherited::rdhi_init = 8;
-	else inherited::rdhi_init = 0;
-}
-
-group multiply_rdlo_init(smlal, umlal)
-multiply_rdlo_init.initialize_rdlo_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rdlo == STATE::PC_reg) inherited::rdlo_init = 8;
-	else inherited::rdlo_init = 0;
-}
-

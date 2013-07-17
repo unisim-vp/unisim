@@ -67,7 +67,6 @@ ldmia.execute = {
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	rn_value = cpu.GetGPR(rn);
 	
@@ -121,7 +120,6 @@ pop.execute = {
 	unsigned int mask = 1;
 	
 	if(r == 0)
-		cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	
@@ -183,7 +181,6 @@ push.execute = {
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 
@@ -245,7 +242,6 @@ stmia.execute = {
 	uint32_t num_regs;
 	unsigned int mask = 1;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
 	
 	rn_value = cpu.GetGPR(rn);
 
