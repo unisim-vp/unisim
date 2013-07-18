@@ -39,7 +39,7 @@
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::tms320::isa::tms320
+namespace unisim::component::cxx::processor::tms320c3x::isa::tms320c3x
 set endianness little
 set addressclass {typename CONFIG::address_t}
 template <{class} {CONFIG}, {bool} {DEBUG}>
@@ -54,12 +54,12 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 template<class CONFIG, bool DEBUG>
 class CPU;
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
@@ -71,13 +71,13 @@ impl {
 /* code to be included at the beginning of the implementation of the library */
 #include <iostream>
 #include <string>
-#include "unisim/component/cxx/processor/tms320/exception.hh"
+#include "unisim/component/cxx/processor/tms320c3x/exception.hh"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 using std::ostream;
 using std::hex;
@@ -138,7 +138,7 @@ using unisim::util::arithmetic::ShiftRight;
 using unisim::util::arithmetic::ShiftArithmeticRight;
 using unisim::util::arithmetic::SignExtend;
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

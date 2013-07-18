@@ -59,7 +59,7 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 	
 	class Register
 	{
@@ -152,7 +152,7 @@ namespace tms320 {
 	class RegisterDebugInterface : public unisim::util::debug::Register
 	{
 	public:
-		RegisterDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, bool extended_precision = false);
+		RegisterDebugInterface(const char *name, unisim::component::cxx::processor::tms320c3x::Register *reg, bool extended_precision = false);
 		virtual ~RegisterDebugInterface();
 		virtual const char *GetName() const;
 		virtual void GetValue(void *buffer) const;
@@ -161,13 +161,13 @@ namespace tms320 {
 	private:
 		std::string name;
 		bool extended_precision;
-		unisim::component::cxx::processor::tms320::Register *reg;
+		unisim::component::cxx::processor::tms320c3x::Register *reg;
 	};
 	
 	class RegisterBitFieldDebugInterface : public unisim::util::debug::Register
 	{
 	public:
-		RegisterBitFieldDebugInterface(const char *name, unisim::component::cxx::processor::tms320::Register *reg, unsigned int bit_offset, unsigned int bit_size = 1);
+		RegisterBitFieldDebugInterface(const char *name, unisim::component::cxx::processor::tms320c3x::Register *reg, unsigned int bit_offset, unsigned int bit_size = 1);
 		virtual ~RegisterBitFieldDebugInterface();
 		virtual const char *GetName() const;
 		virtual void GetValue(void *buffer) const;
@@ -175,7 +175,7 @@ namespace tms320 {
 		virtual int GetSize() const;
 	private:
 		std::string name;
-		unisim::component::cxx::processor::tms320::Register *reg;
+		unisim::component::cxx::processor::tms320c3x::Register *reg;
 		unsigned int bit_offset;
 		unsigned int bit_size;
 	};
@@ -219,7 +219,7 @@ namespace tms320 {
 		return 0;
 	}
 	
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

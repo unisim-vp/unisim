@@ -155,6 +155,13 @@ unisim/util/loader/coff_loader/coff_loader64.cc \
 unisim/util/lexer/lexer.cc \
 unisim/service/loader/coff_loader/coff_loader32.cc \
 unisim/service/loader/coff_loader/coff_loader64.cc \
+unisim/service/loader/elf_loader/elf32_loader.cc \
+unisim/service/loader/elf_loader/elf64_loader.cc \
+unisim/service/loader/raw_loader/raw_loader32.cc \
+unisim/service/loader/raw_loader/raw_loader64.cc \
+unisim/service/loader/s19_loader/s19_loader.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader32.cc \
+unisim/service/loader/multiformat_loader/multiformat_loader64.cc \
 unisim/service/debug/inline_debugger/inline_debugger.cc \
 unisim/service/debug/inline_debugger/inline_debugger_32.cc \
 unisim/service/debug/inline_debugger/inline_debugger_64.cc \
@@ -168,24 +175,33 @@ unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/os/ti_c_io/ti_c_io_32.cc \
 unisim/service/os/ti_c_io/ti_c_io_64.cc \
 unisim/service/time/host_time/time.cc \
+unisim/service/tee/loader/tee.cc \
+unisim/service/tee/symbol_table_lookup/tee_32.cc \
+unisim/service/tee/symbol_table_lookup/tee_64.cc \
+unisim/service/tee/blob/tee_32.cc \
+unisim/service/tee/blob/tee_64.cc \
+unisim/service/tee/stmt_lookup/tee_32.cc \
+unisim/service/tee/stmt_lookup/tee_64.cc \
+unisim/service/tee/backtrace/tee_32.cc \
+unisim/service/tee/backtrace/tee_64.cc \
 unisim/service/tee/memory_access_reporting/tee_32.cc \
 unisim/service/tee/memory_access_reporting/tee_64.cc \
-unisim/component/cxx/processor/tms320/cpu_tms320vc33.cc \
-unisim/component/cxx/processor/tms320/cpu_tms320vc33_debug.cc \
-unisim/component/cxx/processor/tms320/register.cc \
+unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33.cc \
+unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33_debug.cc \
+unisim/component/cxx/processor/tms320c3x/register.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
 unisim/component/cxx/memory/ram/memory_64.cc"
 
 UNISIM_LIB_TMS320C3X_ISA_FILES="\
-unisim/component/cxx/processor/tms320/isa/2op.isa \
-unisim/component/cxx/processor/tms320/isa/3op.isa \
-unisim/component/cxx/processor/tms320/isa/actions_dec.isa \
-unisim/component/cxx/processor/tms320/isa/control.isa \
-unisim/component/cxx/processor/tms320/isa/interlock.isa \
-unisim/component/cxx/processor/tms320/isa/load_store.isa \
-unisim/component/cxx/processor/tms320/isa/parallel.isa \
-unisim/component/cxx/processor/tms320/isa/power.isa \
-unisim/component/cxx/processor/tms320/isa/tms320.isa"
+unisim/component/cxx/processor/tms320c3x/isa/2op.isa \
+unisim/component/cxx/processor/tms320c3x/isa/3op.isa \
+unisim/component/cxx/processor/tms320c3x/isa/actions_dec.isa \
+unisim/component/cxx/processor/tms320c3x/isa/control.isa \
+unisim/component/cxx/processor/tms320c3x/isa/interlock.isa \
+unisim/component/cxx/processor/tms320c3x/isa/load_store.isa \
+unisim/component/cxx/processor/tms320c3x/isa/parallel.isa \
+unisim/component/cxx/processor/tms320c3x/isa/power.isa \
+unisim/component/cxx/processor/tms320c3x/isa/tms320c3x.isa"
 
 UNISIM_LIB_TMS320C3X_HEADER_FILES="${UNISIM_LIB_TMS320C3X_ISA_FILES} \
 unisim/kernel/service/service.hh \
@@ -277,7 +293,13 @@ unisim/service/interfaces/trap_reporting.hh \
 unisim/service/interfaces/blob.hh \
 unisim/service/interfaces/backtrace.hh \
 unisim/service/interfaces/data_object_lookup.hh \
+unisim/service/loader/elf_loader/elf_loader.hh \
+unisim/service/loader/elf_loader/elf32_loader.hh \
+unisim/service/loader/elf_loader/elf64_loader.hh \
+unisim/service/loader/raw_loader/raw_loader.hh \
+unisim/service/loader/s19_loader/s19_loader.hh \
 unisim/service/loader/coff_loader/coff_loader.hh \
+unisim/service/loader/multiformat_loader/multiformat_loader.hh \
 unisim/service/debug/inline_debugger/inline_debugger.hh \
 unisim/service/debug/gdb_server/gdb_server.hh \
 unisim/service/debug/debugger/debugger.hh \
@@ -285,10 +307,15 @@ unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
-unisim/component/cxx/processor/tms320/config.hh \
-unisim/component/cxx/processor/tms320/cpu.hh \
-unisim/component/cxx/processor/tms320/exception.hh \
-unisim/component/cxx/processor/tms320/register.hh \
+unisim/service/tee/loader/tee.hh \
+unisim/service/tee/blob/tee.hh \
+unisim/service/tee/symbol_table_lookup/tee.hh \
+unisim/service/tee/stmt_lookup/tee.hh \
+unisim/service/tee/backtrace/tee.hh \
+unisim/component/cxx/processor/tms320c3x/config.hh \
+unisim/component/cxx/processor/tms320c3x/cpu.hh \
+unisim/component/cxx/processor/tms320c3x/exception.hh \
+unisim/component/cxx/processor/tms320c3x/register.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 
@@ -330,14 +357,25 @@ unisim/util/dictionary/dictionary.tcc \
 unisim/util/lexer/lexer.tcc \
 unisim/util/parser/parser.tcc \
 unisim/service/loader/coff_loader/coff_loader.tcc \
+unisim/service/loader/elf_loader/elf_loader.tcc \
+unisim/service/loader/elf_loader/elf32_loader.tcc \
+unisim/service/loader/elf_loader/elf64_loader.tcc \
+unisim/service/loader/raw_loader/raw_loader.tcc \
+unisim/service/loader/s19_loader/s19_loader.tcc \
+unisim/service/loader/multiformat_loader/multiformat_loader.tcc \
 unisim/service/debug/inline_debugger/inline_debugger.tcc \
 unisim/service/debug/gdb_server/gdb_server.tcc \
 unisim/service/debug/debugger/debugger.tcc \
 unisim/service/profiling/addr_profiler/profiler.tcc \
 unisim/service/os/ti_c_io/ti_c_io.tcc \
+unisim/service/tee/loader/tee.tcc \
+unisim/service/tee/symbol_table_lookup/tee.tcc \
+unisim/service/tee/blob/tee.tcc \
+unisim/service/tee/stmt_lookup/tee.tcc \
+unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
-unisim/component/cxx/processor/tms320/cpu.tcc \
-unisim/component/cxx/processor/tms320/exception.tcc \
+unisim/component/cxx/processor/tms320c3x/cpu.tcc \
+unisim/component/cxx/processor/tms320c3x/exception.tcc \
 unisim/component/cxx/memory/ram/memory.tcc"
 
 UNISIM_LIB_TMS320C3X_M4_FILES="\
@@ -907,12 +945,12 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-tms320c3x-${TMS320C3X_VERSION}" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_TMS320C3X_DATA_FILES} ${UNISIM_SIMULATORS_TMS320C3X_DATA_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.tcc: \$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320/isa_tms320.hh: ${UNISIM_LIB_TMS320C3X_ISA_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "BUILT_SOURCES=\$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "CLEANFILES=\$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh \$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.tcc" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.tcc: \$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "\$(top_srcdir)/unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh: ${UNISIM_LIB_TMS320C3X_ISA_FILES}" >> "${TMS320C3X_MAKEFILE_AM}"
 	printf "\t" >> "${TMS320C3X_MAKEFILE_AM}"
-	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/tms320; \$(GENISSLIB_PATH) -o isa_tms320 -w 32 -I isa isa/tms320.isa" >> "${TMS320C3X_MAKEFILE_AM}"
+	echo "cd \$(top_srcdir)/unisim/component/cxx/processor/tms320c3x; \$(GENISSLIB_PATH) -o isa_tms320c3x -w 32 -I isa isa/tms320c3x.isa" >> "${TMS320C3X_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${TMS320C3X_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${TMS320C3X_MAKEFILE_AM}"

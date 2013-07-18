@@ -341,6 +341,8 @@ MultiFormatLoader<MEMORY_ADDR, MAX_MEMORIES>::MultiFormatLoader(const char *name
 						coff_loaders.push_back(coff_loader);
 						
 						*tee_loader->loader_import[stmt_idx] >> coff_loader->loader_export;
+						*tee_blob->blob_import[stmt_idx] >> coff_loader->blob_export;
+						*tee_symbol_table_lookup->symbol_table_lookup_import[stmt_idx] >> coff_loader->symbol_table_lookup_export;
 						coff_loader->memory_import >> memory_mapper->memory_export;
 					}
 					break;

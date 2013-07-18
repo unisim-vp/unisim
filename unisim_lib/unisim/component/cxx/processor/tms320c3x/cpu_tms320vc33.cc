@@ -33,25 +33,24 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/cxx/processor/tms320/cpu.hh"
-#include "unisim/component/cxx/processor/tms320/cpu.tcc"
-#include "unisim/component/cxx/processor/tms320/config.hh"
-#include "unisim/component/cxx/processor/tms320/exception.hh"
-#include "unisim/component/cxx/processor/tms320/exception.tcc"
+#include "unisim/component/cxx/processor/tms320c3x/cpu.hh"
+#include "unisim/component/cxx/processor/tms320c3x/cpu.tcc"
+#include "unisim/component/cxx/processor/tms320c3x/config.hh"
+#include "unisim/component/cxx/processor/tms320c3x/exception.hh"
+#include "unisim/component/cxx/processor/tms320c3x/exception.tcc"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 template
-class CPU<TMS320VC33_Config, true>;
+class CPU<TMS320VC33_Config, false>;
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
-
 

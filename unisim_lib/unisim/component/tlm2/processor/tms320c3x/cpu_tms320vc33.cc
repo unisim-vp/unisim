@@ -33,22 +33,22 @@
  *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
  
-#include "unisim/component/tlm2/processor/tms320/tms320.hh"
-#include "unisim/component/tlm2/processor/tms320/tms320.tcc"
-#include "unisim/component/cxx/processor/tms320/config.hh"
+#include "unisim/component/tlm2/processor/tms320c3x/cpu.hh"
+#include "unisim/component/tlm2/processor/tms320c3x/cpu.tcc"
+#include "unisim/component/cxx/processor/tms320c3x/config.hh"
 
 namespace unisim {
 namespace component {
 namespace tlm2 {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
-using unisim::component::cxx::processor::tms320::TMS320VC33_Config;
+using unisim::component::cxx::processor::tms320c3x::TMS320VC33_Config;
 
 template
-class TMS320<TMS320VC33_Config, false>;
+class CPU<TMS320VC33_Config, false>;
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace tlm2
 } // end of namespace component

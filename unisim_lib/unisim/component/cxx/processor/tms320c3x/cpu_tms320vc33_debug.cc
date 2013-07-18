@@ -33,46 +33,25 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
-
-#include <inttypes.h>
+#include "unisim/component/cxx/processor/tms320c3x/cpu.hh"
+#include "unisim/component/cxx/processor/tms320c3x/cpu.tcc"
+#include "unisim/component/cxx/processor/tms320c3x/config.hh"
+#include "unisim/component/cxx/processor/tms320c3x/exception.hh"
+#include "unisim/component/cxx/processor/tms320c3x/exception.tcc"
 
 namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
-typedef enum {
-	TMS320C30 = 0,
-	TMS320C31,
-	TMS320C32,
-	TMS320VC33
-} Model;
+template
+class CPU<TMS320VC33_Config, true>;
 
-class TMS320Base {
-public:
-	typedef uint32_t address_t;
-	typedef uint32_t insn_t;
-	static const uint32_t FSB_BURST_SIZE = 32;
-};
-
-class TMS320VC33_Config :
-	public TMS320Base {
-public:
-	static const Model MODEL = TMS320VC33;
-
-	static const bool ENABLE_INSN_CACHE = true;
-	static const uint32_t INSN_CACHE_SIZE = 64;            // 64 32-bit instructions
-	static const uint32_t INSN_CACHE_BLOCKS_PER_LINE = 32;  // 32 32-bit instructions
-	static const uint32_t INSN_CACHE_ASSOCIATIVITY = 2;    // 2-way set associative
-};
-
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
- 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
+
+
