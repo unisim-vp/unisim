@@ -31,59 +31,55 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-
+ 
 /**********************************************
 
-      EXCEPTION-GENERATING INSTRUCTIONS
+        THUMB EXCEPTION INSTRUCTIONS
 
 **********************************************/
 
 /*******************************************************************
- * swi instruction
- * NOTE: this instruction is used to make the system calls
+ * bkpt (breakpoint) instruction
  */
 
-op swi(cond[4]:0b1111[4]:immed[24])
-
-swi.disasm = {
-	buffer << "swi";
-	DisasmCondition(cond, buffer);
-	buffer << " #" << dec << (unsigned int) immed;
-}
-
-swi.execute = {
-	if (!cpu.CheckCondition(cond)) return;
-
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::SWI);
-}
-
-/*
- * end of swi instruction
- *******************************************************************/
-
-/*******************************************************************
- * bkpt instruction
- */
-
-op bkpt(0b1110[4]:0b00010010[8]:himmed[12]:0b0111[4]:limmed[4])
+op bkpt(0b10111110[8]:imm[8])
 
 bkpt.disasm = {
-	uint32_t immed = limmed + ((uint32_t)himmed << 4);
-	buffer << "bkpt";
-	buffer << " #" << dec << (unsigned int) immed;
+	buffer << "bkpt #" << dec << imm;
 }
 
 bkpt.execute = {
-	uint32_t immed = limmed + ((uint32_t)himmed << 4);
-
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
+	// we are executing on linux emulation mode
+	// what should we do with this kind of call? ignore it
 }
 
 /*
- * end of bkpt instruction
+ * end of bkpt (breakpoint) instruction
  *******************************************************************/
 
+/*******************************************************************
+ * swi (software interrupt) instruction
+ */
+
+op swi(0b11011111[8]:imm[8])
+
+swi.disasm = {
+	buffer << "swi #" << dec << imm;
+}
+
+swi.execute = {
+	// we are executing on linux emulation mode
+	// use linux_os_import
+	try
+	{
+		cpu.linux_os_import->ExecuteSystemCall(imm);
+	}
+	catch(std::exception &e)
+	{
+		cerr << e.what() << endl;
+	}
+}
+
+/*
+ * end of swi (software interrupt) instruction
+ *******************************************************************/

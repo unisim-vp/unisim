@@ -193,6 +193,7 @@ unisim/component/cxx/processor/arm/decode_load_store_multiple.cc \
 unisim/component/cxx/processor/arm/armemu/cache.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
+unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
 unisim/component/cxx/processor/arm/decode_copro_load_store.cc \
 unisim/component/cxx/processor/arm/decode_data_processing.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
@@ -205,8 +206,10 @@ unisim/component/cxx/memory/ram/memory_32.cc"
 
 UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
+unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa \
 unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
+unisim/component/cxx/processor/arm/isa/thumb/exception_emu.isa \
 unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
@@ -904,12 +907,29 @@ if [ "${has_to_build_armemu_configure}" = "yes" ]; then
 	echo "sharedir = \$(prefix)/share/unisim-armemu-${ARMEMU_VERSION}" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "dist_share_DATA = ${UNISIM_LIB_ARMEMU_DATA_FILES} ${UNISIM_SIMULATORS_ARMEMU_DATA_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 
-	echo "BUILT_SOURCES=\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc" >> "${ARMEMU_MAKEFILE_AM}"
-	echo "CLEANFILES=\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc" >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "BUILT_SOURCES=" >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo >> "${ARMEMU_MAKEFILE_AM}"
+	
+	echo -n "CLEANFILES=" >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh " >> "${ARMEMU_MAKEFILE_AM}"
+	echo -n "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc " >> "${ARMEMU_MAKEFILE_AM}"
+	echo >> "${ARMEMU_MAKEFILE_AM}"
+	
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32.hh: ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
 	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_arm32 -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32 \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/arm32/arm32_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
+
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.tcc: \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb.hh: ${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES}" >> "${ARMEMU_MAKEFILE_AM}"
+	printf "\t" >> "${ARMEMU_MAKEFILE_AM}"
+	echo "\$(GENISSLIB_PATH) -o \$(top_builddir)/unisim/component/cxx/processor/arm/isa_thumb -w 8 -I \$(top_srcdir) -I \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb \$(top_srcdir)/unisim/component/cxx/processor/arm/isa/thumb/thumb_emu.isa" >> "${ARMEMU_MAKEFILE_AM}"
 
 	echo "all-local: all-local-bin all-local-share" >> "${ARMEMU_MAKEFILE_AM}"
 	echo "clean-local: clean-local-bin clean-local-share" >> "${ARMEMU_MAKEFILE_AM}"

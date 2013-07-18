@@ -31,59 +31,72 @@
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */
-
+ 
 /**********************************************
 
-      EXCEPTION-GENERATING INSTRUCTIONS
+           THUMB ARM EMULATOR ISA
 
 **********************************************/
 
-/*******************************************************************
- * swi instruction
- * NOTE: this instruction is used to make the system calls
- */
+namespace unisim::component::cxx::processor::arm::isa::thumb
+set endianness big
+set addressclass {uint32_t}
+template <{class} {STATE}>
 
-op swi(cond[4]:0b1111[4]:immed[24])
+decl {
+#include <sstream>
+#include <iostream>
 
-swi.disasm = {
-	buffer << "swi";
-	DisasmCondition(cond, buffer);
-	buffer << " #" << dec << (unsigned int) immed;
+namespace unisim {
+namespace component {
+namespace cxx {
+namespace processor {
+namespace arm {
+
+using std::stringstream;
+using std::cerr;
+using std::endl;
+using std::hex;
+using std::dec;
+
+} // end of namespace arm 
+} // end of namespace processor
+} // end of namespace cxx
+} // end of namespace component
+} // end of namespace unisim
+
+} // end of decl
+
+impl {
+#include "unisim/component/cxx/processor/arm/models.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/masks.hh"
+#include "unisim/component/cxx/processor/arm/decode_data_processing.hh"
+#include "unisim/component/cxx/processor/arm/decode_load_store.hh"
+#include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
+#include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
+#include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
+#include "unisim/component/cxx/processor/arm/disasm.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/carry_overflow.hh"
+#include <stdint.h>
+	
+using unisim::util::arithmetic::Add32;
+using unisim::util::arithmetic::RotateRight;
+
 }
 
-swi.execute = {
-	if (!cpu.CheckCondition(cond)) return;
+include "constructors_dec.isa"
+include "actions_dec.isa"
 
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::SWI);
-}
+include "branch.isa"
+include "data_processing.isa"
+include "load_store_reg.isa"
+include "load_store_multiple.isa"
+include "exception_emu.isa"
 
-/*
- * end of swi instruction
- *******************************************************************/
+include "ordering.isa"
 
-/*******************************************************************
- * bkpt instruction
- */
-
-op bkpt(0b1110[4]:0b00010010[8]:himmed[12]:0b0111[4]:limmed[4])
-
-bkpt.disasm = {
-	uint32_t immed = limmed + ((uint32_t)himmed << 4);
-	buffer << "bkpt";
-	buffer << " #" << dec << (unsigned int) immed;
-}
-
-bkpt.execute = {
-	uint32_t immed = limmed + ((uint32_t)himmed << 4);
-
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
-}
-
-/*
- * end of bkpt instruction
- *******************************************************************/
-
+include "profiling.isa"
