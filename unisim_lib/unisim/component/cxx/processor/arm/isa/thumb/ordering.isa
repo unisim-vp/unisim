@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,21 +29,6 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
- */ 
+ * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
+ */
 
-var rm_index : {unsigned int}
-var rn_index : {unsigned int}
-var rd_index : {unsigned int}
-
-constructor action initialize_rm_index() {
-	rm_index = 0;
-}
-
-constructor action initialize_rn_index() {
-	rn_index = 0;
-}
-
-constructor action initialize_rd_index() {
-	rd_index = 0;
-}

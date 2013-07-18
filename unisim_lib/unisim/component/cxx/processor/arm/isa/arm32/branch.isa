@@ -43,49 +43,20 @@
  * op b(cond[4]:0b1010[4]:sext<32> imm[24])
  */
 
-op b_0xxx(0b0[1]:sub_cond[3]:0b1010[4]:sext<32> imm[24])
-op b_10xx(0b10[2]:sub_cond[2]:0b1010[4]:sext<32> imm[24])
-op b_110x(0b110[3]:sub_cond[1]:0b1010[4]:sext<32> imm[24])
-op b_1110(0b1110[4]:0b1010[4]:sext<32> imm[24])
-
-b_0xxx.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = sub_cond;
-}
-
-b_10xx.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = 8 + sub_cond;
-}
-
-b_110x.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = 12 + sub_cond;
-}
-
-b_1110.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = 14;
-}
-
-group b(b_0xxx, b_10xx, b_110x, b_1110)
+op b(cond[4]:0b1010[4]:sext<32> imm[24])
 
 b.disasm = {
 	typedef Operation<STATE> inherited;
 
 	buffer << "b";
-	DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " 0x" << hex << (imm << 2) + cpu.GetGPR(cpu.PC_reg) + 8<< dec;
 }
 
 b.execute = {
 	typedef Operation<STATE> inherited;
 
-	if(!cpu.CheckCondition(inherited::cond_init)) {
+	if(!cpu.CheckCondition(cond)) {
 		return;
 	}
 	
@@ -101,52 +72,17 @@ b.execute = {
  * op bl(cond[4]:0b1011[4]:sext<32> imm[24])
  */
 
-op bl_0xxx(0b0[1]:sub_cond[3]:0b1011[4]:sext<32> imm[24])
-op bl_10xx(0b10[2]:sub_cond[2]:0b1011[4]:sext<32> imm[24])
-op bl_110x(0b110[3]:sub_cond[1]:0b1011[4]:sext<32> imm[24])
-op bl_1110(0b1110[4]:0b1011[4]:sext<32> imm[24])
-
-bl_0xxx.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = sub_cond;
-}
-
-bl_10xx.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = 8 + sub_cond;
-}
-
-bl_110x.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = 12 + sub_cond;
-}
-
-bl_1110.initialize_condition = {
-	typedef Operation<STATE> inherited;
-
-	inherited::cond_init = 14;
-}
-
-group bl(bl_0xxx, bl_10xx, bl_110x, bl_1110)
+op bl(cond[4]:0b1011[4]:sext<32> imm[24])
 
 bl.disasm = {
-	typedef Operation<STATE> inherited;
-
 	buffer << "bl";
-	DisasmCondition(inherited::cond_init, buffer);
+	DisasmCondition(cond, buffer);
 	buffer << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + (imm << 2) + 8 << dec;
 }
 
 bl.execute = {
-	typedef Operation<STATE> inherited;
-
-	if(!cpu.CheckCondition(inherited::cond_init)) {
-		return;
-	}
-
+	if(!cpu.CheckCondition(cond)) return;
+	
 	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
 
 	cpu.Branch(cpu.GetGPR(cpu.PC_reg) + (imm << 2));

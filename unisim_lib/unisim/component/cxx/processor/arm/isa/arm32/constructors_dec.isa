@@ -32,15 +32,10 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */ 
 
-var cond_init : {unsigned int}
-// var cond_res : {bool} // keeps the result of the condition check if necessary
 var msr_unallocmask : {uint32_t}
 var msr_usermask : {uint32_t}
 var msr_privmask : {uint32_t}
 var msr_statemask : {uint32_t}
-
-constructor action initialize_condition() {
-}
 
 constructor action initialize_msr_masks() {
 	msr_unallocmask = 0;

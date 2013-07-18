@@ -211,6 +211,7 @@ unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
+unisim/component/cxx/processor/arm/isa/thumb/ordering.isa \
 unisim/component/cxx/processor/arm/isa/thumb/profiling.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa \
 "
@@ -235,6 +236,7 @@ unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
+unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
