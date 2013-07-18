@@ -99,6 +99,21 @@ using std::ostringstream;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
 
+// class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
+class ProgramCounterRegister : public Register
+{
+public:
+  ProgramCounterRegister(const char* _name, CPU& _cpu) : name(_name), cpu(_cpu) {}
+  virtual ~ProgramCounterRegister() {}
+  virtual const char *GetName() const { return name.c_str(); }
+  virtual void GetValue(void *buffer) const { *((uint32_t*)buffer) = cpu.GetNPC(); }
+  virtual void SetValue(const void *buffer) { uint32_t address = *((uint32_t*)buffer); cpu.BranchExchange( address ); }
+  virtual int GetSize() const { return 4; }
+private:
+  std::string name;
+  CPU&        cpu;
+};
+
 // Constructor
 CPU ::
 CPU(endian_type endianness)
@@ -140,10 +155,10 @@ CPU(endian_type endianness)
 		registers_registry[str.str().c_str()] =
 		new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
 	}
-        registers_registry["r15"] =  new SimpleRegister<uint32_t>("r15", &pc);
+        registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
+	registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
 	registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] =   new SimpleRegister<uint32_t>("pc", &pc);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 
 	// Initialize check condition table
