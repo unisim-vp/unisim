@@ -405,6 +405,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 
 	// - TI C I/O
 	simulator->SetVariable("ti-c-io.enable", "true");
+	simulator->SetVariable("ti-c-io.pc-register-name", "PC");
 	
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);

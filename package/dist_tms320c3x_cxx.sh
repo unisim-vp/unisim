@@ -15,7 +15,7 @@ MY_DIR=$(cd $(dirname $0); pwd)
 DEST_DIR=$1
 UNISIM_TOOLS_DIR=${MY_DIR}/../unisim_tools
 UNISIM_LIB_DIR=${MY_DIR}/../unisim_lib
-UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/tlm2/tms320c3x
+UNISIM_SIMULATORS_DIR=${MY_DIR}/../unisim_simulators/cxx/tms320c3x
 # UNISIM_DOCS_DIR=${MY_DIR}/../unisim_docs
 
 TMS320C3X_VERSION=$(cat ${UNISIM_SIMULATORS_DIR}/VERSION)
@@ -107,7 +107,6 @@ vector"
 UNISIM_LIB_TMS320C3X_SOURCE_FILES="\
 unisim/kernel/service/service.cc \
 unisim/kernel/service/xml_helper.cc \
-unisim/kernel/tlm2/tlm.cc \
 unisim/kernel/logger/logger.cc \
 unisim/kernel/logger/logger_server.cc \
 unisim/kernel/debug/debug.cc \
@@ -176,7 +175,6 @@ unisim/service/profiling/addr_profiler/profiler64.cc \
 unisim/service/os/ti_c_io/ti_c_io_32.cc \
 unisim/service/os/ti_c_io/ti_c_io_64.cc \
 unisim/service/time/host_time/time.cc \
-unisim/service/time/sc_time/time.cc \
 unisim/service/tee/loader/tee.cc \
 unisim/service/tee/symbol_table_lookup/tee_32.cc \
 unisim/service/tee/symbol_table_lookup/tee_64.cc \
@@ -192,11 +190,7 @@ unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33.cc \
 unisim/component/cxx/processor/tms320c3x/cpu_tms320vc33_debug.cc \
 unisim/component/cxx/processor/tms320c3x/register.cc \
 unisim/component/cxx/memory/ram/memory_32.cc \
-unisim/component/cxx/memory/ram/memory_64.cc \
-unisim/component/tlm2/processor/tms320c3x/cpu_tms320vc33.cc \
-unisim/component/tlm2/processor/tms320c3x/cpu_tms320vc33_debug.cc \
-unisim/component/tlm2/memory/ram/memory.cc \
-unisim/component/tlm2/memory/ram/memory_debug.cc"
+unisim/component/cxx/memory/ram/memory_64.cc"
 
 UNISIM_LIB_TMS320C3X_ISA_FILES="\
 unisim/component/cxx/processor/tms320c3x/isa/2op.isa \
@@ -214,7 +208,6 @@ unisim/kernel/service/service.hh \
 unisim/kernel/service/xml_helper.hh \
 unisim/kernel/logger/logger.hh \
 unisim/kernel/logger/logger_server.hh \
-unisim/kernel/tlm2/tlm.hh \
 unisim/kernel/debug/debug.hh \
 unisim/kernel/api/api.hh \
 unisim/util/likely/likely.hh \
@@ -313,7 +306,6 @@ unisim/service/debug/debugger/debugger.hh \
 unisim/service/profiling/addr_profiler/profiler.hh \
 unisim/service/os/ti_c_io/ti_c_io.hh \
 unisim/service/time/host_time/time.hh \
-unisim/service/time/sc_time/time.hh \
 unisim/service/tee/memory_access_reporting/tee.hh \
 unisim/service/tee/loader/tee.hh \
 unisim/service/tee/blob/tee.hh \
@@ -324,10 +316,8 @@ unisim/component/cxx/processor/tms320c3x/config.hh \
 unisim/component/cxx/processor/tms320c3x/cpu.hh \
 unisim/component/cxx/processor/tms320c3x/exception.hh \
 unisim/component/cxx/processor/tms320c3x/register.hh \
-unisim/component/cxx/memory/ram/memory.hh \
-unisim/component/tlm2/interrupt/types.hh \
-unisim/component/tlm2/processor/tms320c3x/cpu.hh \
-unisim/component/tlm2/memory/ram/memory.hh"
+unisim/component/cxx/memory/ram/memory.hh"
+
 
 UNISIM_LIB_TMS320C3X_TEMPLATE_FILES="\
 unisim/util/debug/breakpoint_registry.tcc \
@@ -386,9 +376,7 @@ unisim/service/tee/backtrace/tee.tcc \
 unisim/service/tee/memory_access_reporting/tee.tcc \
 unisim/component/cxx/processor/tms320c3x/cpu.tcc \
 unisim/component/cxx/processor/tms320c3x/exception.tcc \
-unisim/component/cxx/memory/ram/memory.tcc \
-unisim/component/tlm2/processor/tms320c3x/cpu.tcc \
-unisim/component/tlm2/memory/ram/memory.tcc"
+unisim/component/cxx/memory/ram/memory.tcc"
 
 UNISIM_LIB_TMS320C3X_M4_FILES="\
 m4/endian.m4 \
@@ -400,8 +388,6 @@ m4/boost_graph.m4 \
 m4/bsd_sockets.m4 \
 m4/curses.m4 \
 m4/libedit.m4 \
-m4/systemc.m4 \
-m4/tlm20.m4 \
 m4/with_boost.m4 \
 m4/check_lib.m4 \
 m4/get_exec_path.m4 \
@@ -650,26 +636,19 @@ INSTALLATION
 ------------
 
 Requirements:
-  - GNU C++ compiler
-  - GNU C++ standard library
-  - GNU bash
-  - GNU make
-  - GNU autoconf
-  - GNU automake
-  - GNU flex
-  - GNU bison
-  - boost (http://www.boost.org) development package (libboost-devel for Redhat/Mandriva, libboost-graph-dev for Debian/Ubuntu)
-  - libxml2 (http://xmlsoft.org/libxml2) development package (libxml2-devel for Redhat/Mandriva, libxml2-dev for Debian/Ubuntu)
-  - zlib (http://www.zlib.net) development package (zlib1g-devel for Redhat/Mandriva, zlib1g-devel for Debian/Ubuntu)
-  - libedit (http://www.thrysoee.dk/editline) development package (libedit-devel for Redhat/Mandriva, libedit-dev for Debian/Ubuntu)
-  - Core SystemC Language >= 2.1 (http://www.systemc.org)
-  - TLM Transaction Level Modeling Library, Release >= 2.0 (http://www.systemc.org)
+  - GNU bash (bash-3.0-19.3 on RHEL4)
+  - GNU make (make-3.80-6.EL4 on RHEL4)
+  - GNU autoconf (autoconf-2.59-5 on RHEL4)
+  - GNU automake (automake-1.9.2-3 on RHEL4)
+  - GNU flex (flex-2.5.4a-33 on RHEL4)
+  - GNU bison (bison-1.875c-2 on RHEL4)
+  - boost development package (boost-devel-1.32.0-1.rhel4 on RHEL4)
+  - libxml2 development package (libxml2-devel-2.6.16-6 on RHEL4)
+  - zlib development package (zlib-devel-1.2.1.2-1.2 on RHEL4)
 
 Building instructions:
-  $ ./configure --with-systemc=<path-to-systemc-install-dir> --with-tlm20=<path-to-TLM-library-install-dir>
+  $ ./configure
   $ make
-
-Note: Configure option '--with-tlm20' is no longer needed with SystemC >= 2.3
 
 Installing (optional):
   $ make install
@@ -702,7 +681,7 @@ if [ "${has_to_build_configure}" = "yes" ]; then
 	echo "AC_CANONICAL_BUILD" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_HOST" >> "${CONFIGURE_AC}"
 	echo "AC_CANONICAL_TARGET" >> "${CONFIGURE_AC}"
-	echo "AM_INIT_AUTOMAKE([subdir-objects tar-pax])" >> "${CONFIGURE_AC}"
+	echo "AM_INIT_AUTOMAKE" >> "${CONFIGURE_AC}"
 	echo "AC_PATH_PROGS(SH, sh)" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_INSTALL" >> "${CONFIGURE_AC}"
 	echo "AC_PROG_LN_S" >> "${CONFIGURE_AC}"
@@ -944,8 +923,6 @@ if [ "${has_to_build_tms320c3x_configure}" = "yes" ]; then
 	echo "UNISIM_CHECK_CXXABI(main)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_GET_EXECUTABLE_PATH(main)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "UNISIM_CHECK_REAL_PATH(main)" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_SYSTEMC" >> "${TMS320C3X_CONFIGURE_AC}"
-	echo "UNISIM_CHECK_TLM20" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "GENISSLIB_PATH=\$(pwd)/../genisslib/genisslib" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_SUBST(GENISSLIB_PATH)" >> "${TMS320C3X_CONFIGURE_AC}"
 	echo "AC_DEFINE([BIN_TO_SHARED_DATA_PATH], [\"../share/unisim-tms320c3x-${TMS320C3X_VERSION}\"], [path of shared data relative to bin directory])" >> "${TMS320C3X_CONFIGURE_AC}"

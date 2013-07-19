@@ -295,6 +295,9 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	// - Loader
 	simulator->SetVariable("loader.filename", "c31boot.out");
 
+	// - CPU
+	simulator->SetVariable("cpu.mimic-dev-board", "true");
+
 	//  - RAM
 	simulator->SetVariable("memory.org", 0x00000000UL);
 	simulator->SetVariable("memory.bytesize", (uint32_t) -1);
@@ -302,14 +305,19 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	// - Loader memory router
 	simulator->SetVariable("loader.memory-mapper.mapping", "memory=memory:0x0-0xffffffff");
 
-	// - CPU
-	simulator->SetVariable("cpu.mimic-dev-board", "true");
-
 	// - TI C I/O
 	simulator->SetVariable("ti-c-io.enable", "true");
+	simulator->SetVariable("ti-c-io.pc-register-name", "PC");
 
 	//  - Debugger run-time configuration
 	simulator->SetVariable("debugger.parse-dwarf", false);
+
+	//  - Inline debugger
+	simulator->SetVariable("inline-debugger.memory-atom-size", 4);
+	
+	//  - GDB server
+	simulator->SetVariable("gdb-server.architecture-description-filename", "gdb_tms320c3x.xml");
+	simulator->SetVariable("gdb-server.memory-atom-size", 4);
 }
 
 void Simulator::Run()
