@@ -409,6 +409,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("authors", "Gilles Mouchard <gilles.mouchard@cea.fr>, Daniel Gracia Pérez <daniel.gracia-perez@cea.fr>");
 	simulator->SetVariable("version", VERSION);
 	simulator->SetVariable("description", "UNISIM ppcemu, user level PowerPC simulator with support of ELF32 binaries and Linux system call translation");
+	simulator->SetVariable("schematic", "ppcemu/fig_schematic.pdf");
 
 	int gdb_server_tcp_port = 0;
 	const char *gdb_server_arch_filename = "gdb_powerpc.xml";
@@ -589,12 +590,6 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
-	// inline-debugger and gdb-server are exclusive
-	if(enable_inline_debugger && enable_gdb_server)
-	{
-		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
-    return unisim::kernel::service::Simulator::ST_ERROR;
-	}
 	if(enable_inline_debugger)
 	{
 		SetVariable("debugger.parse-dwarf", true);
@@ -618,7 +613,16 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		}
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+
+	// inline-debugger and gdb-server are exclusive
+	if(enable_inline_debugger && enable_gdb_server)
+	{
+		std::cerr << "ERROR! " << inline_debugger->GetName() << " and " << gdb_server->GetName() << " shall not be used together. Use " << param_enable_inline_debugger.GetName() << " and " << param_enable_gdb_server.GetName() << " to enable only one of the two" << std::endl;
+		return unisim::kernel::service::Simulator::ST_ERROR;
+	}
+	
+	return setup_status;
 }
 
 void Simulator::Stop(Object *object, int _exit_status, bool asynchronous)

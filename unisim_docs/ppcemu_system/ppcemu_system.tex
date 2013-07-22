@@ -1,4 +1,4 @@
-This documentation has been automatically generated from the simulator \texttt{UNISIM ppcemu-system} version 1.0beta3 on Sep  5 2012.
+This documentation has been automatically generated from the simulator \texttt{UNISIM ppcemu-system} version 1.0beta4 on Jun 24 2013.
 \subsection{Introduction}
 UNISIM ppcemu-system is a full system simulator of a board including a MPC7447A PowerPC processor, a MPC107 chipset, and supporting Linux boot. The simulated board is very similar to a PowerMac G4 PCI machine. Computations on IEEE 754 floating point numbers are emulated using Simfloat++. Altivec instructions are currently decoded but not implemented. The running PowerPC application is a PowerMac Linux Kernel and all the applications installed on the hard disk image and/or the initial RAM disk image. Software running on the simulated hardware can be debugged by connecting a GDB client to the simulator through the GDB serial remote protocol. The GDB client can be either the standard text based client (i.e. command gdb), a graphical front-end to GDB (e.g. ddd), or even Eclipse CDT..\\
 Section \ref{UNISIM ppcemu-system_licensing} gives licensing informations about the simulator.
@@ -9,12 +9,18 @@ Section \ref{UNISIM ppcemu-system_statistics} gives the simulator statistic coun
 Section \ref{UNISIM ppcemu-system_formulas} gives the simulator statistic formulas.
 \subsection{Licensing}
 \label{UNISIM ppcemu-system_licensing}
-UNISIM ppcemu-system 1.0beta3\\
+UNISIM ppcemu-system 1.0beta4\\
 Copyright (C) 2007-2010, Commissariat a l'Energie Atomique (CEA)\\
 License: BSD (see file COPYING)\\
 Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
 \subsection{Simulated configuration}
 \label{UNISIM ppcemu-system_simulated_configuration}
+\begin{figure}[!ht]
+	\begin{center}
+		\includegraphics[width=\textwidth]{ppcemu_system/fig_schematic.pdf}
+	\end{center}
+	\caption{UNISIM ppcemu-system simulator schematic.}
+\end{figure}
 \noindent The UNISIM ppcemu-system simulator is composed of the following modules and services:
 \begin{itemize}\addtolength{\itemsep}{-0.40\baselineskip}
 \item \textbf{bus}: Front side bus
@@ -82,7 +88,7 @@ Chip erasing time: 14000000000 us\\
 \label{UNISIM ppcemu-system_using}
 The UNISIM ppcemu-system simulator has the following command line options:\\
 ~\\
-\noindent Usage: \texttt{unisim-ppcemu-system-1.0beta3 [<options>] [...]}
+\noindent Usage: \texttt{unisim-ppcemu-system-1.0beta4 [<options>] [...]}
 
 \noindent Options:
 \begin{itemize}
@@ -402,6 +408,12 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
 \hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.debug-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debugging of DWARF.}\\
+\hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large erom}}\\
 \hline
@@ -711,12 +723,6 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline path to output file where to redirect the debugger outputs.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.architecture-} \newline$\hookrightarrow$\texttt{description-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large memory}}\\
@@ -1524,6 +1530,12 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline DWARF v2/v3 to HTML output directory.}\\
 \hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pmac-linux-kernel-loader.elf32-} \newline$\hookrightarrow$\texttt{loader.dwarf-to-xml-output-} \newline$\hookrightarrow$\texttt{filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline DWARF v2/v3 to XML output filename.}\\
+\hline
 \multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pmac-linux-kernel-loader.elf32-} \newline$\hookrightarrow$\texttt{loader.dwarf-register-number-} \newline$\hookrightarrow$\texttt{mapping-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
 \multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
 \multicolumn{2}{|l|}{}\\
@@ -1535,6 +1547,12 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{pmac-linux-kernel-loader.elf32-} \newline$\hookrightarrow$\texttt{loader.debug-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debugging of DWARF.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large pmac-linux-kernel-loader.pmac-bootx}}\\
@@ -1813,6 +1831,24 @@ Simulation statistic counters are listed below:\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to DTLB.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large erom}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{erom.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large memory}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
 \hline
 \hline
 \end{supertabular}

@@ -59,6 +59,7 @@ public:
 	~DWARF_Frame();
 	
 	bool LoadArchRegs();
+	bool ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame);
 	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame, unsigned int dw_ret_addr_reg_num);
 	MEMORY_ADDR ReadCFA() const;
 	void UndefRegister(unsigned int reg_num);

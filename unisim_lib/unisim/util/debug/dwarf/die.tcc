@@ -1546,6 +1546,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_bas
 				{
 					DWARF_ExpressionVM<MEMORY_ADDR> loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
 					DWARF_Location<MEMORY_ADDR> frame_base_loc;
+					loc_expr_vm.SetPC(pc);
 					bool loc_expr_vm_status = loc_expr_vm.Execute(dw_at_frame_base_loc_expr, frame_base, &frame_base_loc);
 					if(!loc_expr_vm_status) return false;
 					
@@ -2161,6 +2162,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetLocation(MEMORY_ADDR pc, bool has_frame_base, ME
 	MEMORY_ADDR addr;
 	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
 	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
+	dw_loc_expr_vm.SetPC(pc);
 	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
 	if(!dw_loc_expr_vm_status)
 	{
@@ -2236,6 +2238,7 @@ bool DWARF_DIE<MEMORY_ADDR>::GetDataMemberLocation(MEMORY_ADDR pc, bool has_fram
 	DWARF_ExpressionVM<MEMORY_ADDR> dw_loc_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_cu->GetHandler());
 	if(has_frame_base) dw_loc_expr_vm.SetFrameBase(frame_base);
 	dw_loc_expr_vm.SetObjectAddress(object_addr);
+	dw_loc_expr_vm.SetPC(pc);
 	dw_loc_expr_vm.Push(object_addr);
 	bool dw_loc_expr_vm_status = dw_loc_expr_vm.Execute(dw_loc_expr, addr, &loc);
 	if(!dw_loc_expr_vm_status)

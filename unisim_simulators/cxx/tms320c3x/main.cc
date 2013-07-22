@@ -379,6 +379,8 @@ void Simulator::Run()
 
 unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 {
+	unisim::kernel::service::Simulator::SetupStatus setup_status = unisim::kernel::service::Simulator::Setup();
+
 	// inline-debugger and gdb-server are exclusive
 	if(enable_inline_debugger && enable_gdb_server)
 	{
@@ -386,7 +388,7 @@ unisim::kernel::service::Simulator::SetupStatus Simulator::Setup()
 		return unisim::kernel::service::Simulator::ST_ERROR;
 	}
 
-	return unisim::kernel::service::Simulator::Setup();
+	return setup_status;
 }
 
 void Simulator::Stop(Object *object, int _exit_status, bool _asynchronous)

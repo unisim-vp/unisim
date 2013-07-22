@@ -1,4 +1,4 @@
-This documentation has been automatically generated from the simulator \texttt{UNISIM embedded-ppc-g4-board} version 1.1beta3 on Sep 12 2012.
+This documentation has been automatically generated from the simulator \texttt{UNISIM embedded-ppc-g4-board} version 1.1beta4 on Jun 24 2013.
 \subsection{Introduction}
 UNISIM embedded-ppc-g4-board simulator is a MPC7447A/MPC107 board simulator with support of ELF32, ELF64, S19, and RAW binaries and targeted for industrial applications.\\
 Section \ref{UNISIM embedded-ppc-g4-board_licensing} gives licensing informations about the simulator.
@@ -9,12 +9,18 @@ Section \ref{UNISIM embedded-ppc-g4-board_statistics} gives the simulator statis
 Section \ref{UNISIM embedded-ppc-g4-board_formulas} gives the simulator statistic formulas.
 \subsection{Licensing}
 \label{UNISIM embedded-ppc-g4-board_licensing}
-UNISIM embedded-ppc-g4-board 1.1beta3\\
+UNISIM embedded-ppc-g4-board 1.1beta4\\
 Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)\\
 License: BSD (see file COPYING)\\
 Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
 \subsection{Simulated configuration}
 \label{UNISIM embedded-ppc-g4-board_simulated_configuration}
+\begin{figure}[!ht]
+	\begin{center}
+		\includegraphics[width=\textwidth]{embedded_ppc_g4_board/fig_schematic.pdf}
+	\end{center}
+	\caption{UNISIM embedded-ppc-g4-board simulator schematic.}
+\end{figure}
 \noindent The UNISIM embedded-ppc-g4-board simulator is composed of the following modules and services:
 \begin{itemize}\addtolength{\itemsep}{-0.40\baselineskip}
 \item \textbf{bus}: Front side bus
@@ -82,7 +88,7 @@ Chip erasing time: 14000000000 us\\
 \label{UNISIM embedded-ppc-g4-board_using}
 The UNISIM embedded-ppc-g4-board simulator has the following command line options:\\
 ~\\
-\noindent Usage: \texttt{unisim-embedded-ppc-g4-board-1.1beta3 [<options>] [...]}
+\noindent Usage: \texttt{unisim-embedded-ppc-g4-board-1.1beta4 [<options>] [...]}
 
 \noindent Options:
 \begin{itemize}
@@ -402,6 +408,12 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable parsing of DWARF debugging informations.}\\
 \hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{debugger.debug-dwarf}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debugging of DWARF.}\\
+\hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large erom}}\\
 \hline
@@ -639,12 +651,6 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline path to output file where to redirect the debugger outputs.}\\
-\hline
-\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{inline-debugger.architecture-} \newline$\hookrightarrow$\texttt{description-filename}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
-\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{string}}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|l|}{}\\
-\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline filename of a XML description of the connected processor.}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large loader}}\\
@@ -1386,6 +1392,24 @@ Simulation statistic counters are listed below:\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline number of misses to DTLB.}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large erom}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{erom.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
+\hline
+\hline
+\multicolumn{2}{|l|}{\textbf{\Large memory}}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{memory.memory-usage}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{statistic}}\\
+\multicolumn{1}{|p{7.5cm}}{} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{unsigned 32-bit integer}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline target memory usage in bytes (page granularity of 1048576 bytes).}\\
 \hline
 \hline
 \end{supertabular}

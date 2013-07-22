@@ -249,6 +249,36 @@ bool DWARF_Frame<MEMORY_ADDR>::LoadArchRegs()
 }
 
 template <class MEMORY_ADDR>
+bool DWARF_Frame<MEMORY_ADDR>::ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame)
+{
+	DWARF_CFARule<MEMORY_ADDR> *cfa_rule = cfi_row->GetCFARule();
+	
+	switch(cfa_rule->GetType())
+	{
+		case DW_CFA_RULE_REGISTER_OFFSET:
+			{
+				DWARF_CFARuleRegisterOffset<MEMORY_ADDR> *cfa_rule_reg_ofs = reinterpret_cast<DWARF_CFARuleRegisterOffset<MEMORY_ADDR> *>(cfa_rule);
+				unsigned int dw_reg_num = cfa_rule_reg_ofs->GetRegisterNumber();
+				int64_t offset = cfa_rule_reg_ofs->GetOffset();
+				MEMORY_ADDR reg_value = 0;
+				if(!prev_frame->ReadRegister(dw_reg_num, reg_value)) return false;
+				cfa = reg_value + offset;
+			}
+			break;
+		case DW_CFA_RULE_EXPRESSION:
+			{
+				DWARF_CFARuleExpression<MEMORY_ADDR> *cfa_rule_expr = reinterpret_cast<DWARF_CFARuleExpression<MEMORY_ADDR> *>(cfa_rule);
+				DWARF_ExpressionVM<MEMORY_ADDR> cfa_rule_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler, this);
+				bool cfa_rule_expr_status = cfa_rule_expr_vm.Execute(cfa_rule_expr->GetExpression(), cfa, 0);
+				if(!cfa_rule_expr_status) return false;
+			}
+			break;
+	}
+	
+	return true;
+}
+
+template <class MEMORY_ADDR>
 bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame, unsigned int dw_ret_addr_reg_num)
 {
 	reg_num_set = prev_frame->reg_num_set;
@@ -282,7 +312,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 		case DW_CFA_RULE_EXPRESSION:
 			{
 				DWARF_CFARuleExpression<MEMORY_ADDR> *cfa_rule_expr = reinterpret_cast<DWARF_CFARuleExpression<MEMORY_ADDR> *>(cfa_rule);
-				DWARF_ExpressionVM<MEMORY_ADDR> cfa_rule_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler);
+				DWARF_ExpressionVM<MEMORY_ADDR> cfa_rule_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler, this);
 				bool cfa_rule_expr_status = cfa_rule_expr_vm.Execute(cfa_rule_expr->GetExpression(), cfa, 0);
 				if(!cfa_rule_expr_status) return false;
 			}
@@ -343,7 +373,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 				case DW_REG_RULE_EXPRESSION:
 					{
 						DWARF_RegisterRuleExpression<MEMORY_ADDR> *reg_rule_expr = reinterpret_cast<DWARF_RegisterRuleExpression<MEMORY_ADDR> *>(reg_rule);
-						DWARF_ExpressionVM<MEMORY_ADDR> reg_rule_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler);
+						DWARF_ExpressionVM<MEMORY_ADDR> reg_rule_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler, this);
 						MEMORY_ADDR prev_reg_value_addr = 0;
 						bool reg_rule_expr_status = reg_rule_expr_vm.Execute(reg_rule_expr->GetExpression(), prev_reg_value_addr, 0);
 						if(!reg_rule_expr_status) return false;
@@ -356,7 +386,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 				case DW_REG_RULE_VAL_EXPRESSION:
 					{
 						DWARF_RegisterRuleValExpression<MEMORY_ADDR> *reg_rule_val_expr = reinterpret_cast<DWARF_RegisterRuleValExpression<MEMORY_ADDR> *>(reg_rule);
-						DWARF_ExpressionVM<MEMORY_ADDR> reg_rule_val_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler);
+						DWARF_ExpressionVM<MEMORY_ADDR> reg_rule_val_expr_vm = DWARF_ExpressionVM<MEMORY_ADDR>(dw_handler, this);
 						MEMORY_ADDR prev_reg_value = 0;
 						bool reg_rule_expr_status = reg_rule_val_expr_vm.Execute(reg_rule_val_expr->GetExpression(), prev_reg_value, 0);
 						if(!reg_rule_expr_status) return false;

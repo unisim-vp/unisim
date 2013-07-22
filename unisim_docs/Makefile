@@ -62,21 +62,21 @@ GENISSLIB_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(GENISSLIB_CPP_SOURCES))
 # ppcemu_system
 PPCEMU_SYSTEM_LATEX_SOURCES=ppcemu_system/ppcemu_system.tex
 PPCEMU_SYSTEM_CPP_SOURCES=
-PPCEMU_SYSTEM_FIGURES=ppcemu_system/fig_ppcemu_system.pdf
+PPCEMU_SYSTEM_FIGURES=ppcemu_system/fig_schematic.pdf
 
 PPCEMU_SYSTEM_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(PPCEMU_SYSTEM_CPP_SOURCES))
 
 # ppcemu
 PPCEMU_LATEX_SOURCES=ppcemu/ppcemu.tex
 PPCEMU_CPP_SOURCES=
-PPCEMU_FIGURES=ppcemu/fig_ppcemu.pdf
+PPCEMU_FIGURES=ppcemu/fig_schematic.pdf
 
 PPCEMU_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(PPCEMU_CPP_SOURCES))
 
 # embedded_ppc_g4_board
 EMBEDDED_PPC_G4_BOARD_LATEX_SOURCES=embedded_ppc_g4_board/embedded_ppc_g4_board.tex
 EMBEDDED_PPC_G4_BOARD_CPP_SOURCES=
-EMBEDDED_PPC_G4_BOARD_FIGURES=embedded_ppc_g4_board/fig_embedded_ppc_g4_board.pdf
+EMBEDDED_PPC_G4_BOARD_FIGURES=embedded_ppc_g4_board/fig_schematic.pdf
 
 EMBEDDED_PPC_G4_BOARD_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(EMBEDDED_PPC_G4_BOARD_CPP_SOURCES))
 
@@ -90,7 +90,7 @@ S12XEMU_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(S12XEMU_CPP_SOURCES))
 # armemu
 ARMEMU_LATEX_SOURCES=armemu/armemu.tex
 ARMEMU_CPP_SOURCES=
-ARMEMU_FIGURES=armemu/fig_armemu.pdf
+ARMEMU_FIGURES=armemu/fig_schematic.pdf
 
 ARMEMU_GENERATED_LATEX=$(patsubst %.cpp,%.tex,$(ARMEMU_CPP_SOURCES))
 
