@@ -167,7 +167,7 @@ ldm_1_ia.execute = {
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.Read32toGPRAligned(cur_address, 15);
 	}
 
 	/* TODO:
@@ -204,7 +204,7 @@ ldm_1_ib.execute = {
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.Read32toGPRAligned(cur_address, 15);
 	}
 
 	/* TODO:
@@ -241,7 +241,7 @@ ldm_1_da.execute = {
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.Read32toGPRAligned(cur_address, 15);
 	}
 
 	/* TODO:
@@ -278,7 +278,7 @@ ldm_1_db.execute = {
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toPC(cur_address);
+		cpu.Read32toGPRAligned(cur_address, 15);
 	}
 
 	/* TODO:
@@ -650,7 +650,7 @@ ldm_3_ia.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.Read32toGPRAligned(cur_address, 15);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -687,7 +687,7 @@ ldm_3_ib.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.Read32toGPRAligned(cur_address, 15);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -724,7 +724,7 @@ ldm_3_da.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.Read32toGPRAligned(cur_address, 15);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -761,7 +761,7 @@ ldm_3_db.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toPC(cur_address);
+	cpu.Read32toGPRAligned(cur_address, 15);
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */

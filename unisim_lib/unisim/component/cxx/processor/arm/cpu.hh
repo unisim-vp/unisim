@@ -106,22 +106,6 @@ namespace arm {
  *
  * void ReadPrefetch(uint32_t address);
  *
- * * 32bits memory read that stores result into the PC
- * This methods reads 32bits from memory and stores the result into
- *   the pc register of the CPU.
- *
- * @param address the base address of the 32bits read
- *
- * void Read32toPCUpdateT(uint32_t address);
- *
- * * 32bits memory read that stores result into the PC and updates thumb state
- * This methods reads 32bits from memory and stores the result into
- *   the pc register of the CPU and updates thumb state if necessary
- *
- * @param address the base address of the 32bits read
- *
- * void Read32toPC(uint32_t address);
- *
  * * 32bits memory read that stores result into one of the general purpose 
  *  registers
  * This method reads 32bits from memory and stores the result into

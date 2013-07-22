@@ -385,20 +385,6 @@ public:
 	 * @param address the address of the prefetch
 	 */
 	void ReadPrefetch(uint32_t address);
-	/** 32bits memory read that stores result into the PC
-	 * This methods reads 32bits from memory and stores the result into
-	 *   the pc register of the CPU.
-	 * 
-	 * @param address the base address of the 32bits read
-	 */
-	void Read32toPCUpdateT(uint32_t address);
-	/** 32bits memory read into the PC and updates thumb state.
-	 * This methods reads 32bits from memory and stores the result into
-	 *   the pc register of the CPU and updates thumb state if necessary
-	 * 
-	 * @param address the base address of the 32bits read
-	 */
-	void Read32toPC(uint32_t address);
 	/** 32bits memory read into one of the general purpose registers.
 	 * This method reads 32bits from memory and stores the result into
 	 *   the general purpose register indicated by the input reg
@@ -748,19 +734,6 @@ protected:
 	 */
 	void PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 			*memop);
-	/** Performs a read access and puts result in the PC register.
-	 * @param memop the memory operation containing the read access
-	 */
-	void PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
-			*memop);
-	/** Performs a read access and puts result in the PC register.
-	 * Performs a read access and puts result in the PC register and updates the
-	 * thumb status if necessary
-	 * 
-	 * @param memop the memory operation containing the read access
-	 */
-	void PerformReadToPCUpdateTAccess(
-			unisim::component::cxx::processor::arm::MemoryOp *memop);
 };
 
 } // end of namespace armemu

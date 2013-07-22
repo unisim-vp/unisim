@@ -42,42 +42,14 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-MemoryOp::
-MemoryOp() 
+MemoryOp::MemoryOp() 
 {}
 
-MemoryOp::
-~MemoryOp() 
+MemoryOp::~MemoryOp() 
 {}
 
 void 
-MemoryOp::
-SetReadToPCUpdateT(uint32_t address) 
-{
-	type = READ_TO_PC_UPDATE_T;
-	this->address = address;
-	this->size = 4;
-	target_reg = 15; // the pc register
-	this->read_signed = false;
-	this->aligned = true;
-}
-
-void 
-MemoryOp::
-SetReadToPC(uint32_t address) 
-{
-	type = READ_TO_PC;
-	this->address = address;
-	this->size = 4;
-	target_reg = 15; // the pc register
-	this->read_signed = false;
-	this->aligned = true;
-}
-
-void 
-MemoryOp::
-SetRead(uint32_t address, uint32_t size, uint32_t dest, 
-		bool aligned, bool read_signed) 
+MemoryOp::SetRead(uint32_t address, uint32_t size, uint32_t dest, bool aligned, bool read_signed) 
 {
 	type = READ;
 	this->address = address;
@@ -88,8 +60,7 @@ SetRead(uint32_t address, uint32_t size, uint32_t dest,
 }
 
 void 
-MemoryOp::
-SetUserRead(uint32_t address, uint32_t size, uint32_t dest, 
+MemoryOp::SetUserRead(uint32_t address, uint32_t size, uint32_t dest, 
 		bool aligned, bool read_signed) 
 {
 	type = USER_READ;
@@ -101,8 +72,7 @@ SetUserRead(uint32_t address, uint32_t size, uint32_t dest,
 }
 
 void 
-MemoryOp::
-SetWrite(uint32_t address, uint32_t size, uint32_t value) 
+MemoryOp::SetWrite(uint32_t address, uint32_t size, uint32_t value) 
 {
 	type = WRITE;
 	this->address = address;
@@ -111,60 +81,10 @@ SetWrite(uint32_t address, uint32_t size, uint32_t value)
 }
 	
 void 
-MemoryOp::
-SetPrefetch(uint32_t address)
+MemoryOp::SetPrefetch(uint32_t address)
 {
 	type = PREFETCH;
 	this->address = address;
-}
-	
-MemoryOp::type_t
-MemoryOp::
-GetType() const 
-{
-	return type;
-}
-
-uint32_t 
-MemoryOp::
-GetAddress() const 
-{
-	return address;
-}
-
-uint32_t 
-MemoryOp::
-GetSize() const 
-{
-	return size;
-}
-
-uint32_t 
-MemoryOp::
-GetTargetReg() const 
-{
-	return target_reg;
-}
-
-uint32_t 
-MemoryOp::
-GetWriteValue() const 
-{
-	return write_value;
-}
-
-bool 
-MemoryOp::
-NeedAlignment() const 
-{
-	return !aligned;
-}
-
-bool 
-MemoryOp::
-IsSigned() const 
-{
-	return read_signed;
 }
 	
 } // end of namespace arm

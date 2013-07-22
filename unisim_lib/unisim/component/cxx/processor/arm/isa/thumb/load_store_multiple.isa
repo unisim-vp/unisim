@@ -137,7 +137,7 @@ pop.execute = {
 	}
 	
 	if(r) {
-		cpu.Read32toPCUpdateT(cur_address);
+		cpu.Read32toGPR(cur_address, 15);
 		cur_address += 4;
 	}
 

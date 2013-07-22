@@ -49,8 +49,6 @@ public:
 	typedef enum {
 		READ,
 		USER_READ,
-		READ_TO_PC_UPDATE_T,
-		READ_TO_PC,
 		WRITE,
 		PREFETCH
 	} type_t;
@@ -58,21 +56,17 @@ public:
 	MemoryOp();
 	~MemoryOp();
 	
-	void SetReadToPCUpdateT(uint32_t address);
-	void SetReadToPC(uint32_t address);
-	void SetRead(uint32_t address, uint32_t size, uint32_t dest, 
-			bool aligned, bool read_signed);
-	void SetUserRead(uint32_t address, uint32_t size, uint32_t dest, 
-			bool aligned, bool read_signed);
+	void SetRead(uint32_t address, uint32_t size, uint32_t dest, bool aligned, bool read_signed);
+	void SetUserRead(uint32_t address, uint32_t size, uint32_t dest, bool aligned, bool read_signed);
 	void SetWrite(uint32_t address, uint32_t size, uint32_t value);
-	void SetPrefetch(uint32_t address); 
-	type_t GetType() const;
-	uint32_t GetAddress() const;
-	uint32_t GetSize() const;
-	uint32_t GetTargetReg() const;
-	uint32_t GetWriteValue() const;
-	bool NeedAlignment() const;
-	bool IsSigned() const;
+	void SetPrefetch(uint32_t address);
+	type_t GetType() const { return type; }
+	uint32_t GetAddress() const { return address; }
+	uint32_t GetSize() const { return size; }
+	uint32_t GetTargetReg() const { return target_reg; }
+	uint32_t GetWriteValue() const { return write_value; }
+	bool NeedAlignment() const { return not aligned; }
+	bool IsSigned() const { return read_signed; }
 	
 private:
 	uint32_t address;
