@@ -383,23 +383,26 @@ public:
 	 * @param address the address of the prefetch
 	 */
 	void ReadPrefetch(uint32_t address);
-	/** 32bits memory read into one of the general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg
+	/** 32bits memory read.
+	 *
+         * This method reads 32bits from memory and returns a
+         * corresponding pending memory operation.
 	 * 
 	 * @param address the base address of the 32bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read32toGPR(uint32_t address, uint32_t reg);
-	/** 32bits aligned memory read into one of the general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. Note that this
-	 *   read methods supposes that the address is 32bits aligned.
+	MemoryOp* Read32toGPR(uint32_t address);
+	/** 32bits memory read (to be stored in a user register).
+	 *
+         * This method reads 32bits from memory and returns a
+         * corresponding pending memory operation, to be stored
+	 * in a user register.
 	 * 
 	 * @param address the base address of the 32bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read32toGPRAligned(uint32_t address, uint32_t reg);
 	/** 32bits memory read into one of the user general purpose registers.
 	 * This method reads 32bits from memory and stores the result into
 	 *   the user general purpose register indicated by the input reg
@@ -407,52 +410,59 @@ public:
 	 * @param address the base address of the 32bits read
 	 * @param reg the user register to store the resulting read
 	 */
-	void Read32toUserGPR(uint32_t address, uint32_t reg);
-	/** 32bits aligned memory read into one of the user general purpose registers.
-	 * This method reads 32bits from memory and stores the result into
-	 *   the user general purpose register indicated by the input reg. Note that
-	 *   this read methods supposes that the address is 32bits aligned.
-	 * 
-	 * @param address the base address of the 32bits read
-	 * @param reg the user register to store the resulting read
-	 */
-	void Read32toUserGPRAligned(uint32_t address, uint32_t reg);
-	/** 16bits aligned memory read into one of the general purpose registers.
-	 * This method reads 16bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. Note that this
-	 *   read methods supposes that the address is 16bits aligned.
+	MemoryOp* Read32toUserGPR(uint32_t address);
+	/** 16bits memory read.
+         * 
+	 * This method reads 16bits from memory and returns a
+         * corresponding pending memory operation.
 	 * 
 	 * @param address the base address of the 16bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read16toGPRAligned(uint32_t address, uint32_t reg);
-	/** Signed 16bits aligned memory read into one of the GPRs.
-	 * This method reads 16bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. Note that this
-	 *   read methods supposes that the address is 16bits aligned. The 16bits
-	 *   value is considered signed and sign extended to the register size.
+	MemoryOp* Read16toGPR(uint32_t address);
+	/** Signed 16bits memory read.
+	 *
+	 * This method reads 16bits from memory and return a
+	 * corresponding signed pending memory operation.
 	 * 
 	 * @param address the base address of the 16bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void ReadS16toGPRAligned(uint32_t address, uint32_t reg);
-	/** 8bits memory read into one of the general purpose registers.
-	 * This method reads 8bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg.
+	MemoryOp* ReadS16toGPR(uint32_t address);
+	/** 8bits memory read.
+	 *
+	 * This method reads 8bits from memory and returns a
+         * corresponding pending memory operation.
 	 * 
 	 * @param address the base address of the 8bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void ReadS8toGPR(uint32_t address, uint32_t reg);
-	/** Signed 8bits memory read into one of the general purpose registers.
-	 * This method reads 8bits from memory and stores the result into
-	 *   the general purpose register indicated by the input reg. The 8bits 
-	 *   value is considered signed and sign extended to the register size.
+	MemoryOp* Read8toGPR(uint32_t address);
+	/** Signed 8bits memory read.
+	 *
+	 * This method reads 8bits from memory and returns a
+         * corresponding signed pending memory operation.
 	 * 
 	 * @param address the base address of the 8bits read
-	 * @param reg the register to store the resulting read
+	 * 
+	 * @return a pointer to the pending memory operation
 	 */
-	void Read8toGPR(uint32_t address, uint32_t reg);
+	MemoryOp* ReadS8toGPR(uint32_t address);
+	/* Prevent hiding base SetGPR */
+	using unisim::component::cxx::processor::arm::CPU::SetGPR;
+	/** Mark a GPR to be updated by a MemoryOp pending memory operation.
+	 *
+	 * @param id the register index
+	 * @param memop the pending memory operation
+	 */
+	void SetGPR(uint32_t id, MemoryOp* memop)
+	{
+		memop->SetDestReg( id );
+		ls_queue.push(memop);		
+	}
 	/** 32bits memory write.
 	 * This method write the giving 32bits value into the memory system.
 	 * 

@@ -49,23 +49,21 @@ MemoryOp::~MemoryOp()
 {}
 
 void 
-MemoryOp::SetRead(uint32_t address, uint32_t size, bool aligned, bool read_signed) 
+MemoryOp::SetRead(uint32_t address, uint32_t size, bool read_signed) 
 {
 	type = READ;
 	this->address = address;
 	this->size = size;
 	this->read_signed = read_signed;
-	this->aligned = aligned;
 }
 
 void 
-MemoryOp::SetUserRead(uint32_t address, uint32_t size, bool aligned, bool read_signed) 
+MemoryOp::SetUserRead(uint32_t address, uint32_t size, bool read_signed) 
 {
 	type = USER_READ;
 	this->address = address;
 	this->size = size;
 	this->read_signed = read_signed;
-	this->aligned = aligned;
 }
 
 void 

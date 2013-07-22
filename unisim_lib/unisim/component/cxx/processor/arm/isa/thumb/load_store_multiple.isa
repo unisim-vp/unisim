@@ -79,7 +79,7 @@ ldmia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
+			cpu.SetGPR(  i, cpu.Read32toGPR( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -130,7 +130,7 @@ pop.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
+			cpu.SetGPR(  i, cpu.Read32toGPR( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;

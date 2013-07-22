@@ -1019,12 +1019,14 @@ CPU::ReadPrefetch(uint32_t address)
 	ls_queue.push(memop);
 }
 
-/** 32bits memory read into one of the general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the general purpose register indicated by the input reg
+/** 32bits memory read.
+ *
+ * This method reads 32bits from memory and returns a
+ * corresponding pending memory operation.
  * 
  * @param address the base address of the 32bits read
- * @param reg the register to store the resulting read
+ * 
+ * @return a pointer to the pending memory operation
  */
 MemoryOp*
 CPU::Read32toGPR(uint32_t address)
@@ -1038,7 +1040,7 @@ CPU::Read32toGPR(uint32_t address)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 4, false, false);
+	memop->SetRead(address, 4, false);
 
 	if (requires_memory_access_reporting and memory_access_reporting_import)
           memory_access_reporting_import->
@@ -1047,46 +1049,17 @@ CPU::Read32toGPR(uint32_t address)
 	return memop;
 }
 
-/** 32bits aligned memory read into one of the general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
- *   read methods supposes that the address is 32bits aligned.
+/** 16bits memory read.
  * 
- * @param address the base address of the 32bits read
- * @param reg the register to store the resulting read
- */
-MemoryOp*
-CPU::Read32toGPRAligned(uint32_t address)
-{
-	address = address & -4;
-	MemoryOp* memop;
-
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 4, true, false);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 4);
-	
-	return memop;
-}
-
-/** 16bits aligned memory read into one of the general purpose registers.
- * This method reads 16bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
- *   read methods supposes that the address is 16bits aligned.
+ * This method reads 16bits from memory and returns a
+ * corresponding pending memory operation.
  * 
  * @param address the base address of the 16bits read
- * @param reg the register to store the resulting read
+ * 
+ * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::Read16toGPRAligned(uint32_t address)
+CPU::Read16toGPR(uint32_t address)
 {
 	address = address & -2;
 	MemoryOp* memop;
@@ -1098,7 +1071,7 @@ CPU::Read16toGPRAligned(uint32_t address)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 2, true, false);
+	memop->SetRead(address, 2, false);
 	
 	if (requires_memory_access_reporting and memory_access_reporting_import)
           memory_access_reporting_import->
@@ -1107,17 +1080,17 @@ CPU::Read16toGPRAligned(uint32_t address)
 	return memop;
 }
 
-/** Signed 16bits aligned memory read into one of the GPRs.
- * This method reads 16bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
- *   read methods supposes that the address is 16bits aligned. The 16bits
- *   value is considered signed and sign extended to the register size.
+/** Signed 16bits memory read.
+ *
+ * This method reads 16bits from memory and return a
+ * corresponding signed pending memory operation.
  * 
  * @param address the base address of the 16bits read
- * @param reg the register to store the resulting read
+ * 
+ * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::ReadS16toGPRAligned(uint32_t address)
+CPU::ReadS16toGPR(uint32_t address)
 {
 	address = address & -2;
 	MemoryOp* memop;
@@ -1129,7 +1102,7 @@ CPU::ReadS16toGPRAligned(uint32_t address)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 2, /* aligned */true, /* signed */true);
+	memop->SetRead(address, 2, true);
 	
 	if (requires_memory_access_reporting and memory_access_reporting_import)
           memory_access_reporting_import->
@@ -1138,41 +1111,14 @@ CPU::ReadS16toGPRAligned(uint32_t address)
 	return memop;
 }
 
-/** 8bits memory read into one of the general purpose registers.
- * This method reads 8bits from memory and stores the result into
- *   the general purpose register indicated by the input reg.
+/** 8bits memory read.
+ *
+ * This method reads 8bits from memory and returns a
+ * corresponding pending memory operation.
  * 
  * @param address the base address of the 8bits read
- * @param reg the register to store the resulting read
- */
-MemoryOp*
-CPU::ReadS8toGPR(uint32_t address)
-{
-	MemoryOp* memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 1, /* aligned */true, /* signed */true);
-	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
-	
-        return memop;
-}
-
-/** signed 8bits memory read into one of the general purpose registers.
- * This method reads 8bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. The 8bits 
- *   value is considered signed and sign extended to the register size.
  * 
- * @param address the base address of the 8bits read
- * @param reg the register to store the resulting read
+ * @return a pointer to the pending memory operation
  */
 MemoryOp*
 CPU::Read8toGPR(uint32_t address)
@@ -1186,12 +1132,42 @@ CPU::Read8toGPR(uint32_t address)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 1, /* aligned */true, /* signed */false);
+	memop->SetRead(address, 1, false);
 	
 	if (requires_memory_access_reporting and memory_access_reporting_import)
           memory_access_reporting_import->
             ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
 
+        return memop;
+}
+
+/** Signed 8bits memory read.
+ *
+ * This method reads 8bits from memory and returns a
+ * corresponding signed pending memory operation.
+ * 
+ * @param address the base address of the 8bits read
+ * 
+ * @return a pointer to the pending memory operation
+ */
+MemoryOp*
+CPU::ReadS8toGPR(uint32_t address)
+{
+	MemoryOp* memop;
+	
+	if ( free_ls_queue.empty() )
+		memop = new MemoryOp();
+	else
+	{
+		memop = free_ls_queue.front();
+		free_ls_queue.pop();
+	}
+	memop->SetRead(address, 1, true);
+	
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
+	
         return memop;
 }
 

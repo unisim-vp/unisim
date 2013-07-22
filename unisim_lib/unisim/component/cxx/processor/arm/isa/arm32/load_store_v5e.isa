@@ -144,8 +144,8 @@ ldrd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( address ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPRAligned( address + 4 ) );
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
+	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
 }
 
 ldrd_imm_offset.execute = {
@@ -164,8 +164,8 @@ ldrd_imm_offset.execute = {
 			(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( address ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPRAligned( address + 4 ) );
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
+	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
 }
 
 ldrd_imm_pre.execute = {
@@ -185,8 +185,8 @@ ldrd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( address ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPRAligned( address + 4 ) );
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
+	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
 }
 
 ldrd_reg_post.execute = {
@@ -208,8 +208,8 @@ ldrd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( address ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPRAligned( address + 4 ) );
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
+	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
 }
 
 ldrd_reg_offset.execute = {
@@ -230,8 +230,8 @@ ldrd_reg_offset.execute = {
 			(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( address ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPRAligned( address + 4 ) );
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
+	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
 }
 
 ldrd_reg_pre.execute = {
@@ -253,8 +253,8 @@ ldrd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
-	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( address ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPRAligned( address + 4 ) );
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
+	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
 }
 
 /*

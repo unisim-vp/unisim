@@ -725,8 +725,7 @@ RequiresFinishedInstructionReporting(bool report)
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-ReadMemory(uint64_t addr, 
+CPU::ReadMemory(uint64_t addr, 
 		void *buffer, 
 		uint32_t size)
 {
@@ -973,8 +972,7 @@ Disasm(uint64_t addr, uint64_t &next_addr)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::
-ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, uint32_t &val)
 {
 	uint32_t size = 4;
 	uint8_t *data;
@@ -1097,8 +1095,7 @@ ReadInsn(uint32_t address, uint32_t &val)
  * @param address the address of the prefetch
  */
 void 
-CPU::
-ReadPrefetch(uint32_t address)
+CPU::ReadPrefetch(uint32_t address)
 {
 	address = address & ~((uint32_t)0x3);
 	MemoryOp *memop;
@@ -1121,9 +1118,8 @@ ReadPrefetch(uint32_t address)
  * @param address the base address of the 32bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read32toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read32toGPR(uint32_t address)
 {
 	MemoryOp *memop;
 	
@@ -1134,49 +1130,15 @@ Read32toGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 4, reg, false, false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 4, false);
 
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<uint64_t>::MAT_READ,
 					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
-}
-
-/** 32bits aligned memory read into one of the general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
- *   read methods supposes that the address is 32bits aligned.
- * 
- * @param address the base address of the 32bits read
- * @param reg the register to store the resulting read
- */
-void 
-CPU::
-Read32toGPRAligned(uint32_t address, uint32_t reg)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 4, reg, true, false);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 4);
+					address & -4, 4);
+	return memop;
 }
 
 /** 32bits memory read into one of the user general purpose registers.
@@ -1186,9 +1148,8 @@ Read32toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 32bits read
  * @param reg the user register to store the resulting read
  */
-void
-CPU::
-Read32toUserGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read32toUserGPR(uint32_t address)
 {
 	MemoryOp *memop;
 	
@@ -1199,49 +1160,15 @@ Read32toUserGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetUserRead(address, 4, reg, false, false);
-	ls_queue.push(memop);
+	memop->SetUserRead(address, 4, false, false);
 
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
 			memory_access_reporting_import->ReportMemoryAccess(
 					MemoryAccessReporting<uint64_t>::MAT_READ,
 					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
-}
-
-/** 32bits aligned memory read into one of the user general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the user general purpose register indicated by the input reg. Note that
- *   this read methods supposes that the address is 32bits aligned.
- * 
- * @param address the base address of the 32bits read
- * @param reg the user register to store the resulting read
- */
-void
-CPU::
-Read32toUserGPRAligned(uint32_t address, uint32_t reg)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetUserRead(address, 4, reg, true, false);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 4);
+					address & -4, 4);
+	return memop;
 }
 
 /** 16bits aligned memory read into one of the general purpose registers.
@@ -1252,13 +1179,10 @@ Read32toUserGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 16bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read16toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read16toGPR(uint32_t address)
 {
 	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x1);
 	
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
@@ -1267,8 +1191,7 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 2, reg, true, false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 2, false);
 	
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
@@ -1276,6 +1199,7 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
 					MemoryAccessReporting<uint64_t>::MAT_READ,
 					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 2);
+	return memop;
 }
 
 /** Signed 16bits aligned memory read into one of the GPRs.
@@ -1287,13 +1211,11 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 16bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-ReadS16toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::ReadS16toGPR(uint32_t address)
 {
 	MemoryOp *memop;
 	
-	address = address & ~((uint32_t)0x1);
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
 	else
@@ -1301,8 +1223,7 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
-	ls_queue.push(memop);
+	memop->SetRead(address, 2, true);
 	
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
@@ -1310,6 +1231,7 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
 					MemoryAccessReporting<uint64_t>::MAT_READ,
 					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 2);
+	return memop;
 }
 
 /** 8bits memory read into one of the general purpose registers.
@@ -1319,9 +1241,8 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 8bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-ReadS8toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::ReadS8toGPR(uint32_t address)
 {
 	MemoryOp *memop;
 	
@@ -1332,8 +1253,7 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
-	ls_queue.push(memop);
+	memop->SetRead(address, 1, true);
 	
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
@@ -1341,6 +1261,7 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
 					MemoryAccessReporting<uint64_t>::MAT_READ,
 					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 1);
+	return memop;
 }
 
 /** signed 8bits memory read into one of the general purpose registers.
@@ -1351,9 +1272,8 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
  * @param address the base address of the 8bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read8toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read8toGPR(uint32_t address)
 {
 	MemoryOp *memop;
 	
@@ -1364,8 +1284,7 @@ Read8toGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 1, false);
 	
 	if ( requires_memory_access_reporting )
 		if ( memory_access_reporting_import )
@@ -1373,6 +1292,7 @@ Read8toGPR(uint32_t address, uint32_t reg)
 					MemoryAccessReporting<uint64_t>::MAT_READ,
 					MemoryAccessReporting<uint64_t>::MT_DATA,
 					address, 1);
+	return memop;
 }
 
 /** 32bits memory write.
@@ -1387,7 +1307,6 @@ Write32(uint32_t address, uint32_t value)
 {
 	MemoryOp *memop;
 	
-	address = address & ~((uint32_t)0x3);
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
 	else
@@ -1416,7 +1335,6 @@ void
 CPU::
 Write16(uint32_t address, uint16_t value)
 {
-	address = address & ~((uint32_t)0x1);
 	MemoryOp *memop;
 	
 	if ( free_ls_queue.empty() )

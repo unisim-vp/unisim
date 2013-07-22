@@ -56,8 +56,8 @@ public:
 	MemoryOp();
 	~MemoryOp();
 	
-	void SetRead(uint32_t address, uint32_t size, bool aligned, bool read_signed);
-	void SetUserRead(uint32_t address, uint32_t size, bool aligned, bool read_signed);
+	void SetRead(uint32_t address, uint32_t size, bool read_signed);
+	void SetUserRead(uint32_t address, uint32_t size, bool read_signed);
 	void SetWrite(uint32_t address, uint32_t size, uint32_t value);
 	void SetPrefetch(uint32_t address);
 	void SetDestReg(uint32_t dst) { this->target_reg = dst; }
@@ -66,7 +66,6 @@ public:
 	uint32_t GetSize() const { return size; }
 	uint32_t GetTargetReg() const { return target_reg; }
 	uint32_t GetWriteValue() const { return write_value; }
-	bool NeedAlignment() const { return not aligned; }
 	bool IsSigned() const { return read_signed; }
 	
 private:
@@ -76,7 +75,6 @@ private:
 	uint32_t target_reg;
 	uint32_t write_value;
 	bool read_signed;
-	bool aligned;
 };
 
 } // end of namespace arm
