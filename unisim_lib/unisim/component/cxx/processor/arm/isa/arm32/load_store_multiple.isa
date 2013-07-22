@@ -160,14 +160,14 @@ ldm_1_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toGPRAligned(cur_address, 15);
+		cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 	}
 
 	/* TODO:
@@ -197,14 +197,14 @@ ldm_1_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toGPRAligned(cur_address, 15);
+		cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 	}
 
 	/* TODO:
@@ -234,14 +234,14 @@ ldm_1_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toGPRAligned(cur_address, 15);
+		cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 	}
 
 	/* TODO:
@@ -271,14 +271,14 @@ ldm_1_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	/*  check PC register */
 	if((reg_list & 0x08000) == 0x08000) {
-		cpu.Read32toGPRAligned(cur_address, 15);
+		cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 	}
 
 	/* TODO:
@@ -415,7 +415,7 @@ ldm_2_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPR(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toUserGPR( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -444,7 +444,7 @@ ldm_2_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toUserGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -473,7 +473,7 @@ ldm_2_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toUserGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -502,7 +502,7 @@ ldm_2_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toUserGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toUserGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -638,7 +638,7 @@ ldm_3_ia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -650,7 +650,7 @@ ldm_3_ia.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toGPRAligned(cur_address, 15);
+	cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -675,7 +675,7 @@ ldm_3_ib.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -687,7 +687,7 @@ ldm_3_ib.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toGPRAligned(cur_address, 15);
+	cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -712,7 +712,7 @@ ldm_3_da.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -724,7 +724,7 @@ ldm_3_da.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toGPRAligned(cur_address, 15);
+	cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */
@@ -749,7 +749,7 @@ ldm_3_db.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.Read32toGPRAligned(cur_address, i);
+			cpu.SetGPR(  i, cpu.Read32toGPRAligned( cur_address ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -761,7 +761,7 @@ ldm_3_db.execute = {
 
 	cpu.MoveSPSRtoCPSR();
 
-	cpu.Read32toGPRAligned(cur_address, 15);
+	cpu.SetGPR(  15, cpu.Read32toGPRAligned( cur_address ) );
 
 	/* TODO:
 	 * cur_address should be checked to be the same as end_address + 4 */

@@ -56,10 +56,11 @@ public:
 	MemoryOp();
 	~MemoryOp();
 	
-	void SetRead(uint32_t address, uint32_t size, uint32_t dest, bool aligned, bool read_signed);
-	void SetUserRead(uint32_t address, uint32_t size, uint32_t dest, bool aligned, bool read_signed);
+	void SetRead(uint32_t address, uint32_t size, bool aligned, bool read_signed);
+	void SetUserRead(uint32_t address, uint32_t size, bool aligned, bool read_signed);
 	void SetWrite(uint32_t address, uint32_t size, uint32_t value);
 	void SetPrefetch(uint32_t address);
+	void SetDestReg(uint32_t dst) { this->target_reg = dst; }
 	type_t GetType() const { return type; }
 	uint32_t GetAddress() const { return address; }
 	uint32_t GetSize() const { return size; }

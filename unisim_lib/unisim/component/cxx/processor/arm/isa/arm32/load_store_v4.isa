@@ -111,7 +111,7 @@ ldrh_imm_post.execute = {
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.Read16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( address ) );
 }
 
 ldrh_imm_offset.execute = {
@@ -125,7 +125,7 @@ ldrh_imm_offset.execute = {
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); 
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
-	cpu.Read16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( address ) );
 }
 
 ldrh_imm_pre.execute = {
@@ -140,7 +140,7 @@ ldrh_imm_pre.execute = {
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.Read16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( address ) );
 }
 
 ldrh_reg_post.execute = {
@@ -157,7 +157,7 @@ ldrh_reg_post.execute = {
 	address = rn_value;
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.Read16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( address ) );
 }
 
 ldrh_reg_offset.execute = {
@@ -173,7 +173,7 @@ ldrh_reg_offset.execute = {
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
-	cpu.Read16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( address ) );
 }
 
 ldrh_reg_pre.execute = {
@@ -190,7 +190,7 @@ ldrh_reg_pre.execute = {
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address);
-	cpu.Read16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( address ) );
 }
 
 /*
@@ -265,7 +265,7 @@ ldrsh_imm_post.execute = {
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.ReadS16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( address ) );
 }
 
 ldrsh_imm_offset.execute = {
@@ -279,7 +279,7 @@ ldrsh_imm_offset.execute = {
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); 
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
-	cpu.ReadS16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( address ) );
 }
 
 ldrsh_imm_pre.execute = {
@@ -294,7 +294,7 @@ ldrsh_imm_pre.execute = {
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.ReadS16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( address ) );
 }
 
 ldrsh_reg_post.execute = {
@@ -311,7 +311,7 @@ ldrsh_reg_post.execute = {
 	address = rn_value;
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.ReadS16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( address ) );
 }
 
 ldrsh_reg_offset.execute = {
@@ -328,7 +328,7 @@ ldrsh_reg_offset.execute = {
 //	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
-	cpu.ReadS16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( address ) );
 }
 
 ldrsh_reg_pre.execute = {
@@ -345,7 +345,7 @@ ldrsh_reg_pre.execute = {
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR(rn, address);
-	cpu.ReadS16toGPRAligned(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( address ) );
 }
 
 /*
@@ -419,7 +419,7 @@ ldrsb_imm_post.execute = {
 	
 	address = rn_value; // address used is the contents of rn
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.ReadS8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( address ) );
 }
 
 ldrsb_imm_offset.execute = {
@@ -432,7 +432,7 @@ ldrsb_imm_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); 
-	cpu.ReadS8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( address ) );
 }
 
 ldrsb_imm_pre.execute = {
@@ -446,7 +446,7 @@ ldrsb_imm_pre.execute = {
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.ReadS8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( address ) );
 }
 
 ldrsb_reg_post.execute = {
@@ -462,7 +462,7 @@ ldrsb_reg_post.execute = {
   
 	address = rn_value;
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.ReadS8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( address ) );
 }
 
 ldrsb_reg_offset.execute = {
@@ -477,7 +477,7 @@ ldrsb_reg_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
-	cpu.ReadS8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( address ) );
 }
 
 ldrsb_reg_pre.execute = {
@@ -493,7 +493,7 @@ ldrsb_reg_pre.execute = {
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.SetGPR(rn, address);
-	cpu.ReadS8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( address ) );
 }
 
 /*

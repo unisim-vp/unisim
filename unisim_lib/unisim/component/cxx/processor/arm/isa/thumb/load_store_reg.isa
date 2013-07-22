@@ -56,7 +56,7 @@ ldr_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 4);
 	value = 0;
-	cpu.Read32toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( addr ) );
 }
 
 /* 
@@ -82,7 +82,7 @@ ldr_2.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	value = 0;
-	cpu.Read32toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( addr ) );
 }
 
 /* 
@@ -108,7 +108,7 @@ ldr_3.execute = {
 	
 	addr = pc_value + (imm * 4);
 	value = 0;
-	cpu.Read32toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( addr ) );
 }
 
 /* 
@@ -133,7 +133,7 @@ ldr_4.execute = {
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	addr = sp_value + (imm * 4);
 	value = 0;
-	cpu.Read32toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPRAligned( addr ) );
 }
 
 /* 
@@ -159,7 +159,7 @@ ldrb_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + imm;
 	val8 = 0;
-	cpu.Read8toGPR(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( addr ) );
 }
 
 /* 
@@ -186,7 +186,7 @@ ldrb_2.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val8 = 0;
-	cpu.Read8toGPR(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( addr ) );
 }
 
 /* 
@@ -212,7 +212,7 @@ ldrh_1.execute = {
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 2);
 	val16 = 0;
-	cpu.Read16toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( addr ) );
 }
 
 /* 
@@ -239,7 +239,7 @@ ldrh_2.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val16 = 0;
-	cpu.Read16toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.Read16toGPRAligned( addr ) );
 }
 
 /* 
@@ -266,7 +266,7 @@ ldrsb.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val8 = 0;
-	cpu.ReadS8toGPR(addr, rd);
+	cpu.SetGPR(  rd, cpu.ReadS8toGPR( addr ) );
 }
 
 /* 
@@ -293,7 +293,7 @@ ldrsh.execute = {
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
 	val16 = 0;
-	cpu.ReadS16toGPRAligned(addr, rd);
+	cpu.SetGPR(  rd, cpu.ReadS16toGPRAligned( addr ) );
 }
 
 /* 

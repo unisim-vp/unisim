@@ -462,11 +462,9 @@ StepInstruction()
 	
 	else {
 		/* Arm32 state */
-		if(requires_memory_access_reporting and memory_access_reporting_import) {
-			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ,
-			                                                   unisim::util::debug::MT_INSN,
-			                                                   current_pc, 4 /*insn_size*/);
-		}
+		if (requires_memory_access_reporting and memory_access_reporting_import)
+                  memory_access_reporting_import->
+                    ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_INSN, current_pc, 4);
 		
                 /* fetch instruction word from memory */
 		uint32_t memword;
@@ -696,8 +694,7 @@ RequiresFinishedInstructionReporting(bool report)
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-ReadMemory(uint32_t addr, 
+CPU::ReadMemory(uint32_t addr, 
 		void *buffer, 
 		uint32_t size)
 {
@@ -933,8 +930,7 @@ PerformExit(int ret)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::
-ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, uint32_t &val)
 {
 	uint32_t size = 4;
 	uint8_t *data;
@@ -1007,10 +1003,9 @@ ReadInsn(uint32_t address, uint32_t &val)
  * @param address the address of the prefetch
  */
 void 
-CPU::
-ReadPrefetch(uint32_t address)
+CPU::ReadPrefetch(uint32_t address)
 {
-	address = address & ~((uint32_t)0x3);
+	address = address & -4;
 	MemoryOp *memop;
 	
 	if ( free_ls_queue.empty() )
@@ -1031,11 +1026,10 @@ ReadPrefetch(uint32_t address)
  * @param address the base address of the 32bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read32toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read32toGPR(uint32_t address)
 {
-	MemoryOp *memop;
+	MemoryOp* memop;
 	
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
@@ -1044,17 +1038,13 @@ Read32toGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 4, reg, false, false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 4, false, false);
 
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address & -4, 4);
+	
+	return memop;
 }
 
 /** 32bits aligned memory read into one of the general purpose registers.
@@ -1065,13 +1055,11 @@ Read32toGPR(uint32_t address, uint32_t reg)
  * @param address the base address of the 32bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read32toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read32toGPRAligned(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
+	address = address & -4;
+	MemoryOp* memop;
 
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
@@ -1080,17 +1068,13 @@ Read32toGPRAligned(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 4, reg, true, false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 4, true, false);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 4);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 4);
+	
+	return memop;
 }
 
 /** 16bits aligned memory read into one of the general purpose registers.
@@ -1101,13 +1085,11 @@ Read32toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 16bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read16toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read16toGPRAligned(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x1);
+	address = address & -2;
+	MemoryOp* memop;
 	
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
@@ -1116,17 +1098,13 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 2, reg, true, false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 2, true, false);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 2);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
+	
+	return memop;
 }
 
 /** Signed 16bits aligned memory read into one of the GPRs.
@@ -1138,13 +1116,12 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 16bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-ReadS16toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::ReadS16toGPRAligned(uint32_t address)
 {
-	MemoryOp *memop;
+	address = address & -2;
+	MemoryOp* memop;
 	
-	address = address & ~((uint32_t)0x1);
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
 	else
@@ -1152,17 +1129,13 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
-	ls_queue.push(memop);
+	memop->SetRead(address, 2, /* aligned */true, /* signed */true);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 2);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
+	
+	return memop;
 }
 
 /** 8bits memory read into one of the general purpose registers.
@@ -1172,11 +1145,10 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 8bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-ReadS8toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::ReadS8toGPR(uint32_t address)
 {
-	MemoryOp *memop;
+	MemoryOp* memop;
 	
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
@@ -1185,17 +1157,13 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
-	ls_queue.push(memop);
+	memop->SetRead(address, 1, /* aligned */true, /* signed */true);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 1);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
+	
+        return memop;
 }
 
 /** signed 8bits memory read into one of the general purpose registers.
@@ -1206,11 +1174,10 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
  * @param address the base address of the 8bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read8toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::Read8toGPR(uint32_t address)
 {
-	MemoryOp *memop;
+	MemoryOp* memop;
 	
 	if ( free_ls_queue.empty() )
 		memop = new MemoryOp();
@@ -1219,17 +1186,13 @@ Read8toGPR(uint32_t address, uint32_t reg)
 		memop = free_ls_queue.front();
 		free_ls_queue.pop();
 	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
-	ls_queue.push(memop);
+	memop->SetRead(address, 1, /* aligned */true, /* signed */false);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 1);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
+
+        return memop;
 }
 
 /** 32bits memory write.
@@ -1255,14 +1218,9 @@ Write32(uint32_t address, uint32_t value)
 	memop->SetWrite(address, 4, value);
 	ls_queue.push(memop);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_WRITE,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 4);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 4);
 }
 
 /** 16bits memory write.
@@ -1288,14 +1246,9 @@ Write16(uint32_t address, uint16_t value)
 	memop->SetWrite(address, 2, value);
 	ls_queue.push(memop);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_WRITE,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 2);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 2);
 }
 
 /** 8bits memory write.
@@ -1320,14 +1273,9 @@ Write8(uint32_t address, uint8_t value)
 	memop->SetWrite(address, 1, value);
 	ls_queue.push(memop);
 	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_WRITE,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					address, 1);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, address, 1);
 }
 
 /** Coprocessor Load
@@ -1697,14 +1645,9 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 	}
 
 	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_WRITE,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_WRITE,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					addr, size);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, size);
 }
 
 /** Performs a read access.
@@ -1844,21 +1787,16 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 		value = val32;
 	}
 
-	SetGPR(memop->GetTargetReg(), value);
+        SetGPR(memop->GetTargetReg(), value);
 
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )
 			dcache.power_estimator_import->ReportReadAccess();
 
 	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-          unisim::util::debug::MAT_READ,
-          unisim::util::debug::MT_DATA,
-					//MemoryAccessReporting<uint32_t>::MAT_READ,
-					//MemoryAccessReporting<uint32_t>::MT_DATA,
-					addr, size);
+	if (requires_memory_access_reporting and memory_access_reporting_import)
+          memory_access_reporting_import->
+            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, size);
 }
 
 

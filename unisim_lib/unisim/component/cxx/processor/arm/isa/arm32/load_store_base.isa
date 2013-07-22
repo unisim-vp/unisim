@@ -115,7 +115,7 @@ ldr_imm_post.execute = {
 	new_rn_value = LSWUBImmOffset(u, rn_value, offset);
 	cpu.SetGPR(rn, new_rn_value); // update rn
 
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 ldr_imm_offset.execute = {
@@ -128,7 +128,7 @@ ldr_imm_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = LSWUBImmOffset(u, rn_value, offset); 
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 ldr_imm_pre.execute = {
@@ -142,7 +142,7 @@ ldr_imm_pre.execute = {
   
 	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 ldr_reg_post.execute = {
@@ -160,7 +160,7 @@ ldr_reg_post.execute = {
 	cpu.SetGPR(rn, 
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 ldr_reg_offset.execute = {
@@ -177,7 +177,7 @@ ldr_reg_offset.execute = {
 	address = 
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 ldr_reg_pre.execute = {
@@ -195,7 +195,7 @@ ldr_reg_pre.execute = {
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 /*
@@ -269,7 +269,7 @@ ldrb_imm_post.execute = {
   
 	address = cpu.GetGPR(rn); // address used is the contents of rn
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 ldrb_imm_offset.execute = {
@@ -282,7 +282,7 @@ ldrb_imm_offset.execute = {
 	if(!cpu.CheckCondition(cond)) return;
   
 	address = LSWUBImmOffset(u, rn_value, offset); 
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 ldrb_imm_pre.execute = {
@@ -296,7 +296,7 @@ ldrb_imm_pre.execute = {
   
 	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 ldrb_reg_post.execute = {
@@ -314,7 +314,7 @@ ldrb_reg_post.execute = {
 	cpu.SetGPR(rn, 
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 ldrb_reg_offset.execute = {
@@ -331,7 +331,7 @@ ldrb_reg_offset.execute = {
 	address = 
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 ldrb_reg_pre.execute = {
@@ -349,7 +349,7 @@ ldrb_reg_pre.execute = {
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 /*
@@ -511,7 +511,7 @@ ldrt_imm.execute = {
 
 	address = rn_value;
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 ldrt_reg.execute = {
@@ -524,7 +524,7 @@ ldrt_reg.execute = {
 	if(!cpu.CheckCondition(cond)) return;
 
 	address = rn_value;
-	cpu.Read32toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read32toGPR( address ) );
 }
 
 /*
@@ -564,7 +564,7 @@ ldrbt_imm.execute = {
 
 	address = rn_value;
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 ldrbt_reg.execute = {
@@ -582,7 +582,7 @@ ldrbt_reg.execute = {
 	cpu.SetGPR(rn, 
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
-	cpu.Read8toGPR(address, rd);
+	cpu.SetGPR(  rd, cpu.Read8toGPR( address ) );
 }
 
 /*
