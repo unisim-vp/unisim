@@ -16,7 +16,7 @@
 
 #include <unisim/service/interfaces/time.hh>
 
-#include <unisim/service/pim/convert.hh>
+#include <unisim/util/converter/convert.hh>
 #include <unisim/service/time/sc_time/time.hh>
 
 #include <unisim/service/pim/network/SocketThread.hpp>

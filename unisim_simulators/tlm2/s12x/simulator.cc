@@ -22,7 +22,8 @@ void DisableDebug()
 void SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
+//	sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 
 Simulator::Simulator(int argc, char **argv)

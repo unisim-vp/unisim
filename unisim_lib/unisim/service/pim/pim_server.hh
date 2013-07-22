@@ -65,7 +65,7 @@
 
 #include <inttypes.h>
 
-#include <unisim/service/pim/convert.hh>
+#include <unisim/util/converter/convert.hh>
 
 namespace unisim {
 namespace service {

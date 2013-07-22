@@ -10,7 +10,7 @@
 
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xftmx.hh>
-#include <unisim/service/pim/convert.hh>
+#include <unisim/util/converter/convert.hh>
 
 #define LOCATION __FUNCTION__ << ":" << __FILE__ << ":" <<  __LINE__ << ": "
 
@@ -126,6 +126,7 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, partitionDFlashCmd_Launched(false)
 	, fullPartitionDFlashCmd_Launched(false)
 	, eepromEmulationEnabled(false)
+	, verifyBackdoorAccessKey_Failed(false)
 
 	, fclkdiv_reg(0x00)
 	, fsec_reg(0x00)
@@ -248,7 +249,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 			case SetUserMarginLevel: setUserMarginLevel_cmd(); break;
 			case SetFieldMarginLevel: setFieldMarginLevel_cmd(); break;
 			case FullPartitionDFlash: fullPartitionDFlash_cmd(); break;
-			case EraseVerifyDFlashSector: eraseVerifyDFlashSector_cmd(); break;
+			case EraseVerifyDFlashSector: eraseVerifyDFlashSection_cmd(); break;
 			case ProgramDFlash: programDFlash_cmd(); break;
 			case EraseDFlashSector: eraseDFlashSector_cmd(); break;
 			case EnableEEPROMEmulation: enableEEPROMEmulation_cmd(); break;
@@ -256,7 +257,8 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 			case EEPROMEmulationQuery: eEPROMEmulationQuery_cmd(); break;
 			case PartitionDFlash: partitionDFlash_cmd(); break;
 			default: {
-				// TODO: Invalid command
+				// Invalid command
+				setACCERR();
 			} break;
 		}
 
@@ -269,7 +271,6 @@ template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint3
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyAllBlocks_cmd()
 {
 	// Erase Verify All Blocks command will verify that all P-Flash and D-Flash blocks have been erased (i.e. all bytes=0xFF)
-	cout << "cmd:: eraseVerifyAllBlocks" << endl;
 
 	if (fccobix_reg != 0) {
 		setACCERR();
@@ -293,7 +294,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyBlo
 {
 	// Erase Verify Block command allows the user to verify that an entire P-Flash or D-Flash block has been erased.
 
-	cout << "cmd:: eraseVerifyBlock" << endl;
 	physical_address_t block_addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16);
 
 	if (fccobix_reg != 0) {
@@ -310,6 +310,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyBlo
 
 	// TODO: I have to emulate erase error
 
+
 	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
 	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
 
@@ -320,7 +321,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyPFl
 {
 	// Erase Verify P-Flash Section command will verify that a section of code in the P-Flash memory is erased
 
-	cout << "cmd:: eraseVerifyPFlashSection" << endl;
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 	uint16_t number_phrases = fccob_reg[2]; // 1 phrase is a group of 8 bytes
 
@@ -355,8 +355,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::readOnce_cmd()
 {
 	// The Read Once command provides read access to a reserved 64 byte field (8 phrases each phrase is 8 bytes)
 	// located in the non-volatile information register of P-Flash block 0.
-
-	cout << "cmd:: readOnce" << endl;
 
 	if (fccobix_reg != 2) {
 		setACCERR();
@@ -398,8 +396,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::loadDataField_
 	 * until you launch the program P-Flash command.
 	 * Used appropriately, this can save time to program the whole flash
 	 */
-
-	cout << "cmd:: loadDataField" << endl;
 
 	if (fccobix_reg != 5) {
 		setACCERR();
@@ -451,8 +447,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programPFlash_
 	 * The Program P-Flash operation will program a previously erased phrase in the P-Flash memory
 	 * using an embedded algorithm.
 	 */
-
-	cout << "cmd:: programPFlash" << endl;
 
 	if (fccobix_reg != 5) {
 		setACCERR();
@@ -525,7 +519,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programOnce_cm
 	 * nonvolatile information register located in P-Flash block 0.
 	 */
 
-	cout << "cmd:: programOnce" << endl;
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
 	if (fccobix_reg != 5) {
@@ -556,65 +549,264 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseAllBlocks
 {
 	/**
 	 * The Erase All Blocks operation will erase the entire P-Flash and D-Flash memory space
-	 * including the EEE nonvolatile information register.
+	 * including the EEE non-volatile information register.
 	 */
-	cout << "cmd:: eraseAllBlocks" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+
+	// TODO: set FERSTAT::EPVIOLIF if any area of the buffer RAM EEE partition is protected
+
+	// Erase All blocks of P-Flash
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+		for (uint16_t j=0; j < nbre_sector; j++) {
+			WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+		}
+	}
+	free(buffer);
+
+	// Erase All blocks of D-Flash
+	buffer = malloc(DFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , DFLASH_SECTOR_SIZE);
+	uint16_t nbre_sector = (dflash_end_address - dflash_start_address + 1) / DFLASH_SECTOR_SIZE;
+	for (uint16_t i=0; i < nbre_sector; i++) {
+		WriteMemory(dflash_start_address + (i * DFLASH_SECTOR_SIZE), buffer, DFLASH_SECTOR_SIZE);
+	}
+	free(buffer);
+
+
+//	// Erase the EEE non-volatile information register
+	buffer = malloc(EEE_NON_VOLATILE_SPACE_SIZE);
+	memset(buffer, 0xFF , EEE_NON_VOLATILE_SPACE_SIZE);
+	WriteMemory(dflash_partition_user_access_address, buffer, EEE_NON_VOLATILE_SPACE_SIZE);
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashBlock_cmd()
 {
-	cout << "cmd:: erasePFlashBlock" << endl;
+
+	// The Erase P-Flash Block operation will erase all addresses in a P-Flash block
+
+	if (fccobix_reg != 1) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSTAT::ACCERR if an invalid global address [22:16] is supplied
+
+	// TODO: set FSTAT::FPVIOL if an area of the selected P-Flash block is protected
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		// Identify the P-Flash block
+		if ((addr >= pflash_blocks_description[i]->start_address)
+				&& (addr <= pflash_blocks_description[i]->end_address))
+		{
+			uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+			for (uint16_t j=0; j < nbre_sector; j++) {
+				WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+			}
+		}
+	}
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashSector_cmd()
 {
-	cout << "cmd:: erasePFlashSector" << endl;
+
+	// The Erase P-Flash sector operation will erase all addresses in a p-Flash sector
+
+	if (fccobix_reg != 1) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSTAT::ACCERR if an invalid global address [22:16] is supplied
+
+	// TODO: set FSTAT::FPVIOL if the selected P-Flash sector is protected
+
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+		for (uint16_t j=0; j < nbre_sector; j++) {
+			// Identify the P-Flash sector
+			if ((addr >= (pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE)))
+					&& (addr <= (pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE) + PFLASH_SECTOR_SIZE - 1)))
+			{
+
+				WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+			}
+		}
+
+	}
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::unsecureFlash_cmd()
 {
-	cout << "cmd:: unsecureFlash" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
+	/**
+	 * The Unsecure Flash command will erase the entire P-Flash and D-Flash memory space and,
+	 * if the erase is successful, will release security.
+	 */
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+
+	// Erase All blocks of P-Flash
+	void *buffer = malloc(PFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
+	for ( int i = 0; i < pflash_blocks_description.size(); ++i) {
+		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
+		for (uint16_t j=0; j < nbre_sector; j++) {
+			WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+		}
+	}
+	free(buffer);
+
+	// Erase All blocks of D-Flash
+	buffer = malloc(DFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , DFLASH_SECTOR_SIZE);
+	uint16_t nbre_sector = (dflash_end_address - dflash_start_address + 1) / DFLASH_SECTOR_SIZE;
+	for (uint16_t i=0; i < nbre_sector; i++) {
+		WriteMemory(dflash_start_address + (i * DFLASH_SECTOR_SIZE), buffer, DFLASH_SECTOR_SIZE);
+	}
+	free(buffer);
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+
+	// If the memory controller verifies that the entire flash memory space was properly erased, security will be released.
+	unsecureFlash();
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::verifyBackdoorAccessKey_cmd()
 {
-	cout << "cmd:: verifyBackdoorAccessKey" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	// The verify Backdoor Access Key command release security
+	// if user supplied keys match those stored in the Flash security bytes of the Flash configuration field.
+
+	if (fccobix_reg != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+
+	if (isBackdoorkeySecurityEnabled() && !verifyBackdoorAccessKey_Failed) {
+		uint16_t buffer[BACKDOOR_ACCESS_KEY_SIZE/2];
+		ReadMemory(blackdoor_comparison_key_address, buffer, BACKDOOR_ACCESS_KEY_SIZE);
+
+		bool success = true;
+		for (uint8_t i=0; (i<4) && success; i++) {
+			success &= (buffer[i] == Host2BigEndian(fccob_reg[1+i]));
+		}
+
+		if (success) {
+			unsecureFlash();
+		} {
+			verifyBackdoorAccessKey_Failed = true;
+		}
+	} else {
+		setACCERR();
+		return;
+	}
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setUserMarginLevel_cmd()
 {
-	cout << "cmd:: setUserMarginLevel" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	/**
+	 * User margin levels can be used to check that Flash memory contents have adequate margin for normal level read operations.
+	 * If unexpected results are encountered when checking Flash memory contents at user margin levels,
+	 * a potential loss of information has been detected.
+	 */
+
+	inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Set User Margin Level Command is not implemented." << std::endl << EndDebugWarning;
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::setFieldMarginLevel_cmd()
 {
-	cout << "cmd:: setFieldMarginLevel" << endl;
-	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	/**
+	 * Field margin levels must only be used during verify of the initial factory programming.
+	 *
+	 * Field margin levels can be used to check that Flash memory contents have adequate margin
+	 * for data retention at the normal level setting.
+	 * If unexpected results are encountered when checking Flash memory contents at field
+	 * margin levels, the Flash memory contents should be erased and reprogrammed.
+	 */
+
+	inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Set Field Margin Level Command is not implemented." << std::endl << EndDebugWarning;
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::fullPartitionDFlash_cmd()
 {
-	cout << "cmd:: fullPartitionDFlash" << endl;
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 	uint16_t nbre_DFlash_user_sector = fccob_reg[1];
@@ -688,33 +880,139 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::fullPartitionD
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
-void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyDFlashSector_cmd()
+void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyDFlashSection_cmd()
 {
-	cout << "cmd:: eraseVerifyDFlashSector" << endl;
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	uint16_t number_words = fccob_reg[2];
+
+	if (fccobix_reg != 2) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	if ((addr & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: Set ACCERR if an invalid global address [22:0] is supplied
+
+	// TODO: Set ACCERR if the global address [22:0] points to an area of the D-Flash EEE partition
+
+	// TODO: Set ACCERR if the requested section breaches the end of the D-Flash block or goes into the D-Flash EEE partition
+
+	// TODO: I have to emulate erase error
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
+
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programDFlash_cmd()
 {
-	cout << "cmd:: programDFlash" << endl;
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	if ((fccobix_reg < 0x2) || (fccobix_reg > 0x5)) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: Set FSTAT::ACCERR if command not available in current mode (Table 29-30)
+
+	// TODO: Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+
+	// Set FSTAT::ACCERR if a misaligned word address is supplied
+	if ((addr & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: Set FSTAT::ACCERR if the global address [22:0] points to an area in the D-Flash EEE partition
+
+	// TODO: Set FSTAT::ACCERR if the requested group of words breaches the end of the D-Flash block
+	//        or goes into the D-Flash EEE partition
+
+	uint8_t number = fccobix_reg - 0x2;
+
+	// execute effective D-Flash program
+	uint16_t word;
+	for (uint8_t i=0; i<number; i++) {
+		word = Host2BigEndian(fccob_reg[0x2 + i]);
+		inherited::WriteMemory(addr + (i*WORD_SIZE), &word, WORD_SIZE);
+		// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+		// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
+	}
+
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseDFlashSector_cmd()
 {
-	cout << "cmd:: eraseDFlashSector" << endl;
+
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	if ((fccobix_reg & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	if (isLoadDataFieldCommandSequenceActive()) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSTAT::ACCERR if command not available in current mode
+
+	// TODO: Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+
+	// Set FSTAT::ACCERR if a misaligned word address is supplied
+	if ((addr & 0x1) != 0) {
+		setACCERR();
+		return;
+	}
+
+	// TODO: set FSAT::ACCERR if the global address [22:0] points to the D-Flash EEE partition
+
+	// execute erase D-Flash sector command
+	void *buffer = malloc(DFLASH_SECTOR_SIZE);
+	memset(buffer, 0xFF , DFLASH_SECTOR_SIZE);
+	uint16_t nbre_sector = (dflash_end_address - dflash_start_address + 1) / DFLASH_SECTOR_SIZE;
+	for (uint16_t j=0; j < nbre_sector; j++) {
+		// Identify the D-Flash sector
+		if ((addr >= (dflash_start_address + (j * DFLASH_SECTOR_SIZE)))
+				&& (addr <= (dflash_start_address + (j * DFLASH_SECTOR_SIZE) + DFLASH_SECTOR_SIZE - 1)))
+		{
+
+			WriteMemory(dflash_start_address + (j * DFLASH_SECTOR_SIZE), buffer, DFLASH_SECTOR_SIZE);
+		}
+	}
+	free(buffer);
+
+
+	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
+	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the verify operation
 
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::enableEEPROMEmulation_cmd()
 {
-	cout << "cmd:: enableEEPROMEmulation" << endl;
 
 	if (fccobix_reg != 0) {
 		setACCERR();
@@ -737,7 +1035,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::enableEEPROMEm
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::disableEEPROMEmulation_cmd()
 {
-	cout << "cmd:: disableEEPROMEmulation" << endl;
 
 	if (fccobix_reg != 0) {
 		setACCERR();
@@ -761,7 +1058,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::disableEEPROME
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eEPROMEmulationQuery_cmd()
 {
-	cout << "cmd:: eEPROMEmulationQuery" << endl;
+
 	if (fccobix_reg != 0) {
 		setACCERR();
 		return;
@@ -795,7 +1092,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eEPROMEmulatio
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>
 void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::partitionDFlash_cmd()
 {
-	cout << "cmd:: partitionDFlash" << endl;
 
 	if (isPartitionDFlashCmd_Launched()) {
 		setACCERR();

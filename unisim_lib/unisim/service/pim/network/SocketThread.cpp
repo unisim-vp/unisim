@@ -27,7 +27,7 @@
 #endif
 
 #include "SocketThread.hpp"
-#include "../convert.hh"
+#include "unisim/util/converter/convert.hh"
 #include <unisim/kernel/debug/debug.hh>
 
 namespace unisim {

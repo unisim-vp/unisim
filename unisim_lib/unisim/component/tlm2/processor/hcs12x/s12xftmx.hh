@@ -132,9 +132,11 @@ public:
 	static const uint8_t PartitionDFlash = 0x20;
 
 	static const uint16_t WORD_SIZE = 2;
-	static const uint16_t DFLASH_SECTOR_SIZE = 64;
+	static const uint16_t DFLASH_SECTOR_SIZE = 256;
 	static const uint16_t PHRASE_SIZE = 8;
 	static const uint16_t PFLASH_SECTOR_SIZE = 1024;
+	static const uint16_t EEE_NON_VOLATILE_SPACE_SIZE = 8;
+	static const uint16_t BACKDOOR_ACCESS_KEY_SIZE = 8;
 
 	tlm_initiator_socket<CONFIG::EXTERNAL2UNISIM_BUS_WIDTH, XINT_REQ_ProtocolTypes> interrupt_request;
 
@@ -180,7 +182,7 @@ public:
 	void setUserMarginLevel_cmd();
 	void setFieldMarginLevel_cmd();
 	void fullPartitionDFlash_cmd();
-	void eraseVerifyDFlashSector_cmd();
+	void eraseVerifyDFlashSection_cmd();
 	void programDFlash_cmd();
 	void eraseDFlashSector_cmd();
 	void enableEEPROMEmulation_cmd();
@@ -354,6 +356,7 @@ private:
 	bool partitionDFlashCmd_Launched;
 	bool fullPartitionDFlashCmd_Launched;
 	bool eepromEmulationEnabled;
+	bool verifyBackdoorAccessKey_Failed;
 
 	uint16_t sector_erased_count;
 	uint8_t dead_sector_count;
@@ -421,6 +424,23 @@ private:
 
 	inline bool isEepromEmulationEnabled() {
 		return (eepromEmulationEnabled);
+	}
+
+	inline void unsecureFlash() {
+		/**
+		 *  FSEC::SEC bits values
+		 *  00, 01, 11 => Flash secured
+		 *  10 => Flash unsecured
+		 */
+		fsec_reg = (fsec_reg & 0xFC) | 0x02;
+	}
+
+	inline bool isFlashSecured() {
+		return ((fsec_reg & 0x03) != 0x02);
+	}
+
+	inline bool isBackdoorkeySecurityEnabled() {
+		return ((fsec_reg & 0x80) == 0x80);
 	}
 };
 

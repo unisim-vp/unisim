@@ -18,7 +18,7 @@
 
 #include <unisim/kernel/service/service.hh>
 
-#include <unisim/service/pim/convert.hh>
+#include <unisim/util/converter/convert.hh>
 
 #include <unisim/service/pim/network/GenericThread.hpp>
 #include <unisim/service/pim/network/SocketThread.hpp>
