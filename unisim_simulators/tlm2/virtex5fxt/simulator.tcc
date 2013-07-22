@@ -1078,7 +1078,7 @@ template <class CONFIG>
 void Simulator<CONFIG>::SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 #endif
 

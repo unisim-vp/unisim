@@ -71,6 +71,7 @@
 #include <unisim/util/debug/dwarf/range.hh>
 #include <unisim/util/debug/dwarf/stmt_vm.hh>
 #include <unisim/util/debug/dwarf/c_loc_expr_parser.hh>
+#include <unisim/util/debug/dwarf/cfa.hh>
 
 #include <unisim/service/interfaces/registers.hh>
 #include <unisim/service/interfaces/memory.hh>
@@ -149,6 +150,8 @@ public:
 	const DWARF_FDE<MEMORY_ADDR> *FindFDEByAddr(MEMORY_ADDR pc) const;
 	bool GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& ret_addr) const;
 	bool GetFrameBase(MEMORY_ADDR pc, MEMORY_ADDR& frame_base) const;
+	DW_CFA_Specification GetCFA_Specification() const;
+	DW_CFA_RegRuleOffsetSpecification GetCFA_RegRuleOffsetSpecification() const;
 	
 	DWARF_RegisterNumberMapping *GetRegisterNumberMapping() const;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *GetMemoryInterface() const;
@@ -159,6 +162,7 @@ private:
 	endian_type arch_endianness;
 	uint8_t file_address_size;
 	uint8_t arch_address_size;
+	bool inclusive_fde_addr_range;
 	
 	// Raw data
 	const unisim::util::debug::blob::Section<MEMORY_ADDR> *debug_line_section;     // .debug_line section (raw data)

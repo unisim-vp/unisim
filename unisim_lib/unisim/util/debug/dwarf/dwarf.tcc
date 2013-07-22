@@ -72,6 +72,7 @@ DWARF_Handler<MEMORY_ADDR>::DWARF_Handler(const unisim::util::debug::blob::Blob<
 	, arch_endianness(_blob->GetEndian())
 	, file_address_size(0)
 	, arch_address_size(_blob->GetAddressSize())
+	, inclusive_fde_addr_range(strcmp(_blob->GetArchitecture(), "68hc12") == 0)
 	, debug_line_section(_blob->FindSection(".debug_line", false))
 	, debug_info_section(_blob->FindSection(".debug_info", false))
 	, debug_abbrev_section(_blob->FindSection(".debug_abbrev", false))
@@ -2646,7 +2647,8 @@ const DWARF_FDE<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::FindFDEByAddr(MEMORY_A
 			MEMORY_ADDR initial_location = dw_fde->GetInitialLocation();
 			MEMORY_ADDR address_range = dw_fde->GetAddressRange();
 			
-			if((pc >= initial_location) && (pc < (initial_location + address_range)))
+			if((pc >= initial_location) &&
+			   ((inclusive_fde_addr_range && (pc <= (initial_location + address_range))) || (!inclusive_fde_addr_range && (pc < (initial_location + address_range)))))
 			{
 				// found FDE
 				return dw_fde;
@@ -4140,9 +4142,23 @@ unsigned int DWARF_Handler<MEMORY_ADDR>::GetReturnAddressSize(MEMORY_ADDR pc) co
 		if(GetCallingConvention(pc, calling_convention))
 		{
 			if(calling_convention == hc12::DW_CC_far) return 3;
+			if(calling_convention == DW_CC_normal) return 2;
+			if(calling_convention == DW_CC_nocall) return 2;
 		}
 	}
 	return arch_address_size;
+}
+
+template <class MEMORY_ADDR>
+DW_CFA_Specification DWARF_Handler<MEMORY_ADDR>::GetCFA_Specification() const
+{
+	return (strcmp(blob->GetArchitecture(), "68hc12") == 0) ? DW_CFA_IS_SP_VALUE_ON_ENTRY_TO_THE_CURRENT_FRAME : DW_CFA_IS_SP_AT_THE_CALL_SITE_IN_THE_PREVIOUS_FRAME;
+}
+
+template <class MEMORY_ADDR>
+DW_CFA_RegRuleOffsetSpecification DWARF_Handler<MEMORY_ADDR>::GetCFA_RegRuleOffsetSpecification() const
+{
+	return (strcmp(blob->GetArchitecture(), "68hc12") == 0) ? DW_CFA_REG_RULE_OFFSET_IS_SP_RELATIVE : DW_CFA_REG_RULE_OFFSET_IS_CFA_RELATIVE;
 }
 
 template <class MEMORY_ADDR>
@@ -4194,11 +4210,11 @@ bool DWARF_Handler<MEMORY_ADDR>::ComputeCFA(MEMORY_ADDR pc, MEMORY_ADDR& cfa) co
 					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << *frame << EndDebugInfo;
 				}
 				
-				DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(this);
+				DWARF_Frame<MEMORY_ADDR> *prev_frame = new DWARF_Frame<MEMORY_ADDR>(this);
 				
-				if(next_frame->ComputeCFA(cfi_row, frame))
+				if(prev_frame->ComputeCFA(cfi_row, frame))
 				{
-					cfa = next_frame->ReadCFA();
+					cfa = prev_frame->ReadCFA();
 					found = true;
 				}
 				else
@@ -4209,7 +4225,7 @@ bool DWARF_Handler<MEMORY_ADDR>::ComputeCFA(MEMORY_ADDR pc, MEMORY_ADDR& cfa) co
 					}
 				}
 				
-				delete next_frame;
+				delete prev_frame;
 				delete cfi;
 			}
 			else
@@ -4292,20 +4308,20 @@ std::vector<MEMORY_ADDR> *DWARF_Handler<MEMORY_ADDR>::GetBackTrace(MEMORY_ADDR p
 			
 			unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
 
-			DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(this);
+			DWARF_Frame<MEMORY_ADDR> *prev_frame = new DWARF_Frame<MEMORY_ADDR>(this);
 			
-			if(!next_frame->Unwind(cfi_row, frame, dw_ret_addr_reg_num))
+			if(!prev_frame->Unwind(cfi_row, frame, dw_ret_addr_reg_num))
 			{
 				if(debug)
 				{
 					logger << DebugInfo << "In File \"" << GetFilename() << "\", no more unwinding context" << EndDebugInfo;
 				}
-				delete next_frame;
+				delete prev_frame;
 				break;
 			}
 			
 			delete frame;
-			frame = next_frame;
+			frame = prev_frame;
 
 			if(debug)
 			{
@@ -4393,19 +4409,19 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 					logger << DebugInfo << "In File \"" << GetFilename() << "\", register set before unwinding:" << *frame << EndDebugInfo;
 				}
 				
-				DWARF_Frame<MEMORY_ADDR> *next_frame = new DWARF_Frame<MEMORY_ADDR>(this);
+				DWARF_Frame<MEMORY_ADDR> *prev_frame = new DWARF_Frame<MEMORY_ADDR>(this);
 				
 				unsigned int dw_ret_addr_reg_num = dw_cie->GetReturnAddressRegister();
 
-				if(next_frame->Unwind(cfi_row, frame, dw_ret_addr_reg_num))
+				if(prev_frame->Unwind(cfi_row, frame, dw_ret_addr_reg_num))
 				{
 					if(debug)
 					{
-						logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << *next_frame << EndDebugInfo;
+						logger << DebugInfo << "In File \"" << GetFilename() << "\", register set after unwinding:" << *prev_frame << EndDebugInfo;
 					}
 
 					ret_addr = 0;
-					if(!next_frame->GetPC(ret_addr)) return false;
+					if(!prev_frame->GetPC(ret_addr)) return false;
 					found = true;
 				
 					if(debug)
@@ -4414,7 +4430,7 @@ bool DWARF_Handler<MEMORY_ADDR>::GetReturnAddress(MEMORY_ADDR pc, MEMORY_ADDR& r
 					}
 				}
 				
-				delete next_frame;
+				delete prev_frame;
 				delete cfi;
 			}
 			else

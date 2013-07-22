@@ -292,6 +292,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 	}
 
 	const char *architecture_name = GetArchitecture(hdr);
+	uint32_t flags = hdr->e_flags; // Architecture specific flags
 	
 	if(unlikely(verbose))
 	{
@@ -393,6 +394,7 @@ bool ElfLoaderImpl<MEMORY_ADDR, Elf_Class, Elf_Ehdr, Elf_Phdr, Elf_Shdr, Elf_Sym
 		blob->SetFileFormat(unisim::util::debug::blob::FFMT_ELF64);
 	blob->SetELF_PHOFF(hdr->e_phoff);
 	blob->SetELF_PHENT(sizeof(Elf_Phdr));
+	blob->SetELF_Flags(flags);
 
 	if(shdr_table && sh_string_table)
 	{
