@@ -159,11 +159,13 @@ void S12XMMC::xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay
 				std::cerr << "WARNING: S12XMMC::XGATE => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				if (cmd == tlm::TLM_WRITE_COMMAND) {
 					std::cerr << "Unable to WRITE size= " << buffer->data_size << "  value= 0x" << std::hex << *((sc_dt::uint64 *) buffer->buffer) << std::endl;
+				} else {
+					memset(buffer->buffer, 0, buffer->data_size);
 				}
 
-				if (trap_reporting_import) {
-					trap_reporting_import->ReportTrap();
-				}
+//				if (trap_reporting_import) {
+//					trap_reporting_import->ReportTrap();
+//				}
 			}
 		}
 
@@ -224,11 +226,13 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 				std::cerr << "WARNING: S12XMMC::CPU12X => Device at 0x" << std::hex << logicalAddress << " Not present in the emulated platform." << std::dec << std::endl;
 				if (cmd == tlm::TLM_WRITE_COMMAND) {
 					std::cerr << "Unable to WRITE size= " << buffer->data_size << "  value= 0x" << std::hex << *((sc_dt::uint64 *) buffer->buffer) << std::endl;
+				} else {
+					memset(buffer->buffer, 0, buffer->data_size);
 				}
 
-				if (trap_reporting_import) {
-					trap_reporting_import->ReportTrap();
-				}
+//				if (trap_reporting_import) {
+//					trap_reporting_import->ReportTrap();
+//				}
 			}
 		}
 

@@ -717,16 +717,19 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		return (inherited::transport_dbg(payload));
+	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
+			return (inherited::transport_dbg(payload));
+		} else {
+			write_to_eeprom( address, data_ptr, data_length);
+
+			payload.set_response_status(tlm::TLM_OK_RESPONSE);
+		}
 	} else {
-		write_to_eeprom( address, data_ptr, data_length);
-
-		payload.set_response_status(tlm::TLM_OK_RESPONSE);
-
-		return (0);
+		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
 
+	return (0);
 
 }
 
@@ -738,23 +741,28 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
+	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
 
-		return (inherited::nb_transport_fw(payload, phase, t));
-	} else {
-
-		write_to_eeprom(address, data_ptr, data_length);
-
-		if (phase == BEGIN_REQ) {
-			phase = END_REQ; // update the phase
-			payload.acquire();
-
-			return (TLM_UPDATED);
+			return (inherited::nb_transport_fw(payload, phase, t));
 		} else {
-			inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
-			Object::Stop(-1);
+
+			write_to_eeprom(address, data_ptr, data_length);
+
+			if (phase == BEGIN_REQ) {
+				phase = END_REQ; // update the phase
+				payload.acquire();
+
+				return (TLM_UPDATED);
+			} else {
+				inherited::logger << DebugError << sc_time_stamp() << ":" << sc_object::name() << ": received an unexpected phase" << std::endl << EndDebugError;
+				Object::Stop(-1);
+			}
+
 		}
 
+	} else {
+		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
 
 }
@@ -768,16 +776,19 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if (cmd == tlm::TLM_READ_COMMAND) {
+	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+		if (cmd == tlm::TLM_READ_COMMAND) {
 
-		inherited::b_transport(payload, t);
+			inherited::b_transport(payload, t);
+		} else {
+
+			write_to_eeprom(address, data_ptr, data_length);
+
+			payload.set_response_status( tlm::TLM_OK_RESPONSE );
+		}
 	} else {
-
-		write_to_eeprom(address, data_ptr, data_length);
-
-		payload.set_response_status( tlm::TLM_OK_RESPONSE );
+		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
-
 
 }
 

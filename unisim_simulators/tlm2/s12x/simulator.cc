@@ -395,6 +395,8 @@ Simulator::Simulator(int argc, char **argv)
 
 		inline_debugger->backtrace_import >> debugger->backtrace_export;
 		inline_debugger->debug_info_loading_import >> debugger->debug_info_loading_export;
+
+		inline_debugger->profiling_import >> profiler->profiling_export;
 	}
 	else if(enable_gdb_server)
 	{

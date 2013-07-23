@@ -298,6 +298,7 @@ unisim/util/debug/dwarf/register_number_mapping.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/event.hh \
 unisim/util/endian/endian.hh \
 unisim/util/debug/dwarf/data_object.hh \
