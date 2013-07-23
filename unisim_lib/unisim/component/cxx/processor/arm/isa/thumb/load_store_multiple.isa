@@ -79,7 +79,7 @@ ldmia.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.SetGPR(  i, cpu.Read32toGPR( cur_address & -4 ) );
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -130,14 +130,14 @@ pop.execute = {
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
-			cpu.SetGPR(  i, cpu.Read32toGPR( cur_address & -4 ) );
+			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
 			cur_address += 4;
 		}
 		mask = mask << 1;
 	}
 	
 	if(r) {
-		cpu.SetGPR(  15, cpu.Read32toGPR( cur_address ) );
+		cpu.SetGPR( 15, cpu.MemRead32( cur_address ) );
 		cur_address += 4;
 	}
 
@@ -194,7 +194,7 @@ push.execute = {
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;
@@ -202,7 +202,7 @@ push.execute = {
 	
 	if(r) {
 		value = cpu.GetGPR(cpu.LR_reg);
-		cpu.Write32(cur_address, value);
+		cpu.MemWrite32(cur_address, value);
 		cur_address += 4;
 	}
 
@@ -253,7 +253,7 @@ stmia.execute = {
 	for(unsigned int i = 0; i < 8; i++) {
 		if((reg_list & mask) == mask) {
 			value = cpu.GetGPR(i);
-			cpu.Write32(cur_address, value);
+			cpu.MemWrite32(cur_address, value);
 			cur_address += 4;
 		}
 		mask = mask << 1;

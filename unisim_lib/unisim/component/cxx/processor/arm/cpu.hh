@@ -113,16 +113,7 @@ namespace arm {
  *
  * @param address the base address of the 32bits read
  *
- * void Read32toGPR(uint32_t address);
- *
- * * 32bits memory read (to be stored in a user register).
- *
- * This method reads 32bits from memory and returns a pending memory
- * operation
- * 
- * @param address the base address of the 32bits read
- *
- * void Read32toUserGPR(uint32_t address);
+ * void MemRead32(uint32_t address);
  *
  * * 16bits aligned memory read that stores result into one of the general 
  *  purpose registers
@@ -132,7 +123,7 @@ namespace arm {
  *
  * @param address the base address of the 16bits read
  *
- * void Read16toGPR(uint32_t address);
+ * void MemRead16(uint32_t address);
  *
  * * signed 16bits aligned memory read that stores result into one of the 
  *  general purpose registers
@@ -143,7 +134,7 @@ namespace arm {
  *
  * @param address the base address of the 16bits read
  *
- * void ReadS16toGPR(uint32_t address);
+ * void MemReadS16(uint32_t address);
  *
  * * 8bits memory read that stores result into one of the general purpose 
  *  registers
@@ -152,7 +143,7 @@ namespace arm {
  *
  * @param address the base address of the 8bits read
  *
- * void ReadS8toGPR(uint32_t address);
+ * void MemReadS8(uint32_t address);
  *
  * * signed 8bits memory read that stores result into one of the general purpose
  *  registers
@@ -162,7 +153,7 @@ namespace arm {
  *
  * @param address the base address of the 8bits read
  *
- * void Read8toGPR(uint32_t address);
+ * void MemRead8(uint32_t address);
  *
  * * 32bits memory write.
  * This method write the giving 32bits value into the memory system.
@@ -170,7 +161,7 @@ namespace arm {
  * @param address the base address of the 32bits write
  * @param value the value to write into memory
  *
- * void Write32(uint32_t address, uint32_t value);
+ * void MemWrite32(uint32_t address, uint32_t value);
  *
  * * 16bits memory write.
  * This method write the giving 16bits value into the memory system.
@@ -178,7 +169,7 @@ namespace arm {
  * @param address the base address of the 16bits write
  * @param value the value to write into memory
  *
- * void Write16(uint32_t address, uint16_t value);
+ * void MemWrite16(uint32_t address, uint16_t value);
  *
  * * 8bits memory write.
  * This method write the giving 8bits value into the memory system.
@@ -186,7 +177,7 @@ namespace arm {
  * @param address the base address of the 8bits write
  * @param value the value to write into memory
  *
- * void Write8(uint32_t address, uint8_t value);
+ * void MemWrite8(uint32_t address, uint8_t value);
  *
  * * Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to

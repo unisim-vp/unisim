@@ -63,8 +63,8 @@ swp.execute = {
         
         uint32_t value = cpu.GetGPR(rm);
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR( rd, cpu.Read32toGPR(address) );
-	cpu.Write32(address, value);
+	cpu.SetGPR( rd, cpu.MemRead32(address) );
+	cpu.MemWrite32(address, value);
 }
 
 /*
@@ -90,8 +90,8 @@ swpb.execute = {
 
 	uint8_t value = cpu.GetGPR(rm) & uint32_t( 0x0ff );
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR( rd, cpu.Read8toGPR(address) );
-	cpu.Write8(address, value);
+	cpu.SetGPR( rd, cpu.MemRead8(address) );
+	cpu.MemWrite8(address, value);
 }
 
 /*

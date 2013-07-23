@@ -166,7 +166,6 @@ CPU(const char *name, Object *parent)
 	, ls_queue()
 	, first_ls(0)
 	, has_sent_first_ls(false)
-	, free_ls_queue()
 {
 	for (unsigned int i = 0; i < num_phys_gprs; i++)
 	{
@@ -1008,13 +1007,7 @@ CPU::ReadPrefetch(uint32_t address)
 	address = address & -4;
 	MemoryOp *memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetPrefetch(address);
 	ls_queue.push(memop);
 }
@@ -1029,22 +1022,16 @@ CPU::ReadPrefetch(uint32_t address)
  * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::Read32toGPR(uint32_t address)
+CPU::MemRead32(uint32_t address)
 {
 	MemoryOp* memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetRead(address, 4, false);
 
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address & -4, 4);
+	// if (requires_memory_access_reporting and memory_access_reporting_import)
+        //   memory_access_reporting_import->
+        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address & -4, 4);
 	
 	return memop;
 }
@@ -1059,23 +1046,16 @@ CPU::Read32toGPR(uint32_t address)
  * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::Read16toGPR(uint32_t address)
+CPU::MemRead16(uint32_t address)
 {
-	address = address & -2;
 	MemoryOp* memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetRead(address, 2, false);
 	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
+	// if (requires_memory_access_reporting and memory_access_reporting_import)
+        //   memory_access_reporting_import->
+        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
 	
 	return memop;
 }
@@ -1090,23 +1070,16 @@ CPU::Read16toGPR(uint32_t address)
  * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::ReadS16toGPR(uint32_t address)
+CPU::MemReadS16(uint32_t address)
 {
-	address = address & -2;
 	MemoryOp* memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetRead(address, 2, true);
 	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
+	// if (requires_memory_access_reporting and memory_access_reporting_import)
+        //   memory_access_reporting_import->
+        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 2);
 	
 	return memop;
 }
@@ -1121,22 +1094,16 @@ CPU::ReadS16toGPR(uint32_t address)
  * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::Read8toGPR(uint32_t address)
+CPU::MemRead8(uint32_t address)
 {
 	MemoryOp* memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetRead(address, 1, false);
 	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
+	// if (requires_memory_access_reporting and memory_access_reporting_import)
+        //   memory_access_reporting_import->
+        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
 
         return memop;
 }
@@ -1151,22 +1118,16 @@ CPU::Read8toGPR(uint32_t address)
  * @return a pointer to the pending memory operation
  */
 MemoryOp*
-CPU::ReadS8toGPR(uint32_t address)
+CPU::MemReadS8(uint32_t address)
 {
 	MemoryOp* memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetRead(address, 1, true);
 	
-	if (requires_memory_access_reporting and memory_access_reporting_import)
-          memory_access_reporting_import->
-            ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
+	// if (requires_memory_access_reporting and memory_access_reporting_import)
+        //   memory_access_reporting_import->
+        //     ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, address, 1);
 	
         return memop;
 }
@@ -1179,18 +1140,12 @@ CPU::ReadS8toGPR(uint32_t address)
  */
 void 
 CPU::
-Write32(uint32_t address, uint32_t value)
+MemWrite32(uint32_t address, uint32_t value)
 {
 	MemoryOp *memop;
 	
 	address = address & ~((uint32_t)0x3);
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetWrite(address, 4, value);
 	ls_queue.push(memop);
 	
@@ -1207,18 +1162,12 @@ Write32(uint32_t address, uint32_t value)
  */
 void 
 CPU::
-Write16(uint32_t address, uint16_t value)
+MemWrite16(uint32_t address, uint16_t value)
 {
 	address = address & ~((uint32_t)0x1);
 	MemoryOp *memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetWrite(address, 2, value);
 	ls_queue.push(memop);
 	
@@ -1235,17 +1184,11 @@ Write16(uint32_t address, uint16_t value)
  */
 void 
 CPU::
-Write8(uint32_t address, uint8_t value)
+MemWrite8(uint32_t address, uint8_t value)
 {
 	MemoryOp *memop;
 	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	memop = MemoryOp::alloc();
 	memop->SetWrite(address, 1, value);
 	ls_queue.push(memop);
 	
@@ -1448,7 +1391,7 @@ PerformLoadStoreAccesses()
 				Stop(-1);
 				break;
 		}
-		free_ls_queue.push(memop);
+		MemoryOp::release(memop);
 	}
 }
 

@@ -144,8 +144,8 @@ ldrd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_imm_offset.execute = {
@@ -164,8 +164,8 @@ ldrd_imm_offset.execute = {
 			(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_imm_pre.execute = {
@@ -185,8 +185,8 @@ ldrd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_reg_post.execute = {
@@ -208,8 +208,8 @@ ldrd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_reg_offset.execute = {
@@ -230,8 +230,8 @@ ldrd_reg_offset.execute = {
 			(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_reg_pre.execute = {
@@ -253,8 +253,8 @@ ldrd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
-	cpu.SetGPR(  rd, cpu.Read32toGPR( address & -4 ) );
-	cpu.SetGPR(  rd + 1, cpu.Read32toGPR( (address + 4) & -4 ) );
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 /*
@@ -363,8 +363,8 @@ strd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_imm_offset.execute = {
@@ -385,8 +385,8 @@ strd_imm_offset.execute = {
 		(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_imm_pre.execute = {
@@ -408,8 +408,8 @@ strd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_reg_post.execute = {
@@ -432,8 +432,8 @@ strd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_reg_offset.execute = {
@@ -455,8 +455,8 @@ strd_reg_offset.execute = {
 		(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_reg_pre.execute = {
@@ -479,8 +479,8 @@ strd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 /*

@@ -394,21 +394,7 @@ public:
 	 * 
 	 * @return a pointer to the pending memory operation
 	 */
-	MemoryOp* Read32toGPR(uint32_t address);
-	/** 32bits memory read (to be stored in a user register).
-         *
-         * This method reads 32bits from memory and returns a
-         * corresponding pending memory operation. For the armemu
-         * version this makes the same as Read32toGPR.
-	 * 
-	 * @param address the base address of the 32bits read
-	 * 
-	 * @return a pointer to the pending memory operation
-	 */
-	MemoryOp* Read32toUserGPR(uint32_t address)
-	{
-		return Read32toGPR(address);
-	}
+	MemoryOp* MemRead32(uint32_t address);
 	/** 16bits memory read.
          * 
 	 * This method reads 16bits from memory and returns a
@@ -418,7 +404,7 @@ public:
 	 * 
 	 * @return a pointer to the pending memory operation
 	 */
-	MemoryOp* Read16toGPR(uint32_t address);
+	MemoryOp* MemRead16(uint32_t address);
 	/** Signed 16bits memory read.
 	 *
 	 * This method reads 16bits from memory and return a
@@ -428,7 +414,7 @@ public:
 	 * 
 	 * @return a pointer to the pending memory operation
 	 */
-	MemoryOp* ReadS16toGPR(uint32_t address);
+	MemoryOp* MemReadS16(uint32_t address);
 	/** 8bits memory read.
 	 *
 	 * This method reads 8bits from memory and returns a
@@ -438,7 +424,7 @@ public:
 	 * 
 	 * @return a pointer to the pending memory operation
 	 */
-	MemoryOp* Read8toGPR(uint32_t address);
+	MemoryOp* MemRead8(uint32_t address);
 	/** Signed 8bits memory read.
 	 *
 	 * This method reads 8bits from memory and returns a
@@ -448,7 +434,7 @@ public:
 	 * 
 	 * @return a pointer to the pending memory operation
 	 */
-	MemoryOp* ReadS8toGPR(uint32_t address);
+	MemoryOp* MemReadS8(uint32_t address);
 	/* Prevent hiding base SetGPR */
 	using unisim::component::cxx::processor::arm::CPU::SetGPR;
 	/** Mark a GPR to be updated by a MemoryOp pending memory operation.
@@ -463,27 +449,41 @@ public:
 		memop->SetDestReg( id );
 		ls_queue.push(memop);		
 	}
+	/* Prevent hiding base SetGPR_usr */
+	using unisim::component::cxx::processor::arm::CPU::SetGPR_usr;
+	/** Mark a user GPR to be updated by a MemoryOp pending memory operation.
+	 *
+	 * @param id the register index
+	 * @param memop the pending memory operation
+	 * 
+	 * @return a pointer to the pending memory operation
+	 */
+	void SetGPR_usr(uint32_t id, MemoryOp* memop)
+	{
+		memop->SetDestUserReg( id );
+		ls_queue.push(memop);		
+	}
 	/** 32bits memory write.
 	 * This method write the giving 32bits value into the memory system.
 	 * 
 	 * @param address the base address of the 32bits write
 	 * @param value the value to write into memory
 	 */
-	void Write32(uint32_t address, uint32_t value);
+	void MemWrite32(uint32_t address, uint32_t value);
 	/** 16bits memory write.
 	 * This method write the giving 16bits value into the memory system.
 	 * 
 	 * @param address the base address of the 16bits write
 	 * @param value the value to write into memory
 	 */
-	void Write16(uint32_t address, uint16_t value);
+	void MemWrite16(uint32_t address, uint16_t value);
 	/** 8bits memory write.
 	 * This method write the giving 8bits value into the memory system.
 	 * 
 	 * @param address the base address of the 8bits write
 	 * @param value the value to write into memory
 	 */
-	void Write8(uint32_t address, uint8_t value);
+	void MemWrite8(uint32_t address, uint8_t value);
 
 	/**************************************************************/
 	/* Memory access methods       END                            */
@@ -709,12 +709,6 @@ protected:
 	/** Indicates if the firstLS item has been sent or not.
 	 */
 	bool has_sent_first_ls;
-	/** Queue of free entries of memory operations.
-	 * Used memory operations are not removed from the system but kept in a 
-	 *   free list for their reuse.
-	 */
-	std::queue<unisim::component::cxx::processor::arm::MemoryOp *> 
-		free_ls_queue;
 	/** Performs the load/stores present in the queue of memory operations.
 	 */
 	void PerformLoadStoreAccesses();

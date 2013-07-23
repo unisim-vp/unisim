@@ -173,7 +173,6 @@ CPU(const char *name, Object *parent)
 	, ls_queue()
 	, first_ls(0)
 	, has_sent_first_ls(false)
-	, free_ls_queue()
 	, num_data_prefetches(0)
 	, num_data_reads(0)
 	, num_data_writes(0)
@@ -1097,17 +1096,8 @@ CPU::ReadInsn(uint32_t address, uint32_t &val)
 void 
 CPU::ReadPrefetch(uint32_t address)
 {
-	address = address & ~((uint32_t)0x3);
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetPrefetch(address);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetPrefetch(address & -4);
 	ls_queue.push(memop);
 }
 
@@ -1119,55 +1109,10 @@ CPU::ReadPrefetch(uint32_t address)
  * @param reg the register to store the resulting read
  */
 MemoryOp*
-CPU::Read32toGPR(uint32_t address)
+CPU::MemRead32(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetRead(address, 4, false);
-
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & -4, 4);
-	return memop;
-}
-
-/** 32bits memory read into one of the user general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the user general purpose register indicated by the input reg
- * 
- * @param address the base address of the 32bits read
- * @param reg the user register to store the resulting read
- */
-MemoryOp*
-CPU::Read32toUserGPR(uint32_t address)
-{
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetUserRead(address, 4, false, false);
-
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & -4, 4);
 	return memop;
 }
 
@@ -1180,25 +1125,10 @@ CPU::Read32toUserGPR(uint32_t address)
  * @param reg the register to store the resulting read
  */
 MemoryOp*
-CPU::Read16toGPR(uint32_t address)
+CPU::MemRead16(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetRead(address, 2, false);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 2);
 	return memop;
 }
 
@@ -1212,25 +1142,10 @@ CPU::Read16toGPR(uint32_t address)
  * @param reg the register to store the resulting read
  */
 MemoryOp*
-CPU::ReadS16toGPR(uint32_t address)
+CPU::MemReadS16(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetRead(address, 2, true);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 2);
 	return memop;
 }
 
@@ -1242,25 +1157,10 @@ CPU::ReadS16toGPR(uint32_t address)
  * @param reg the register to store the resulting read
  */
 MemoryOp*
-CPU::ReadS8toGPR(uint32_t address)
+CPU::MemReadS8(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetRead(address, 1, true);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 1);
 	return memop;
 }
 
@@ -1273,25 +1173,10 @@ CPU::ReadS8toGPR(uint32_t address)
  * @param reg the register to store the resulting read
  */
 MemoryOp*
-CPU::Read8toGPR(uint32_t address)
+CPU::MemRead8(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetRead(address, 1, false);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 1);
 	return memop;
 }
 
@@ -1303,26 +1188,11 @@ CPU::Read8toGPR(uint32_t address)
  */
 void 
 CPU::
-Write32(uint32_t address, uint32_t value)
+MemWrite32(uint32_t address, uint32_t value)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetWrite(address, 4, value);
 	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 4);
 }
 
 /** 16bits memory write.
@@ -1333,26 +1203,11 @@ Write32(uint32_t address, uint32_t value)
  */
 void 
 CPU::
-Write16(uint32_t address, uint16_t value)
+MemWrite16(uint32_t address, uint16_t value)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetWrite(address, 2, value);
 	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 2);
 }
 
 /** 8bits memory write.
@@ -1363,26 +1218,11 @@ Write16(uint32_t address, uint16_t value)
  */
 void 
 CPU::
-Write8(uint32_t address, uint8_t value)
+MemWrite8(uint32_t address, uint8_t value)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetWrite(address, 1, value);
 	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 1);
 }
 
 /** Coprocessor Load
@@ -2775,7 +2615,7 @@ PerformLoadStoreAccesses()
 				PerformReadAccess(memop);
 				break;
 		}
-		free_ls_queue.push(memop);
+                MemoryOp::release(memop);
 	}
 }
 

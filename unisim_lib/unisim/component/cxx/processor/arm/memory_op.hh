@@ -30,12 +30,14 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr),
+ *          Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_MEMORY_OP_HH__
 
+#include <vector>
 #include <inttypes.h>
 
 namespace unisim {
@@ -44,38 +46,51 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-class MemoryOp {
-public:
-	typedef enum {
-		READ,
-		USER_READ,
-		WRITE,
-		PREFETCH
-	} type_t;
+  class MemoryOp {
+  public:
+    typedef enum {
+      READ,
+      USER_READ,
+      WRITE,
+      PREFETCH
+    } type_t;
 	
-	MemoryOp();
-	~MemoryOp();
+    MemoryOp();
+    ~MemoryOp();
 	
-	void SetRead(uint32_t address, uint32_t size, bool read_signed);
-	void SetUserRead(uint32_t address, uint32_t size, bool read_signed);
-	void SetWrite(uint32_t address, uint32_t size, uint32_t value);
-	void SetPrefetch(uint32_t address);
-	void SetDestReg(uint32_t dst) { this->target_reg = dst; }
-	type_t GetType() const { return type; }
-	uint32_t GetAddress() const { return address; }
-	uint32_t GetSize() const { return size; }
-	uint32_t GetTargetReg() const { return target_reg; }
-	uint32_t GetWriteValue() const { return write_value; }
-	bool IsSigned() const { return read_signed; }
+    void SetRead(uint32_t address, uint32_t size, bool read_signed);
+    void SetWrite(uint32_t address, uint32_t size, uint32_t value);
+    void SetPrefetch(uint32_t address);
+    void SetDestReg(uint32_t dst) { target_reg = dst; }
+    void SetDestUserReg(uint32_t dst) { target_reg = dst; type = USER_READ; }
+    type_t GetType() const { return type; }
+    uint32_t GetAddress() const { return address; }
+    uint32_t GetSize() const { return size; }
+    uint32_t GetTargetReg() const { return target_reg; }
+    uint32_t GetWriteValue() const { return write_value; }
+    bool IsSigned() const { return read_signed; }
 	
-private:
-	uint32_t address;
-	type_t type;
-	uint32_t size;
-	uint32_t target_reg;
-	uint32_t write_value;
-	bool read_signed;
-};
+    static MemoryOp* alloc() {
+      if (freepool.empty())
+        return new MemoryOp();
+      MemoryOp* res = freepool.back();
+      freepool.pop_back();
+      return res;
+    }
+    static void release( MemoryOp* memop ) {
+      freepool.push_back( memop );
+    }
+    
+  private:
+    uint32_t  address;
+    type_t    type;
+    uint32_t  size;
+    uint32_t  target_reg;
+    uint32_t  write_value;
+    bool      read_signed;
+    
+    static std::vector<MemoryOp*> freepool;
+  };
 
 } // end of namespace arm
 } // end of namespace processor

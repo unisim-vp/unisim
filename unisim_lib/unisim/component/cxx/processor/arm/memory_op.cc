@@ -42,45 +42,38 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-MemoryOp::MemoryOp() 
-{}
+  std::vector<MemoryOp*> MemoryOp::freepool;
 
-MemoryOp::~MemoryOp() 
-{}
+  MemoryOp::MemoryOp() 
+  {}
 
-void 
-MemoryOp::SetRead(uint32_t address, uint32_t size, bool read_signed) 
-{
-	type = READ;
-	this->address = address;
-	this->size = size;
-	this->read_signed = read_signed;
-}
+  MemoryOp::~MemoryOp() 
+  {}
 
-void 
-MemoryOp::SetUserRead(uint32_t address, uint32_t size, bool read_signed) 
-{
-	type = USER_READ;
-	this->address = address;
-	this->size = size;
-	this->read_signed = read_signed;
-}
+  void 
+  MemoryOp::SetRead(uint32_t address, uint32_t size, bool read_signed) 
+  {
+    type = READ;
+    this->address = address;
+    this->size = size;
+    this->read_signed = read_signed;
+  }
 
-void 
-MemoryOp::SetWrite(uint32_t address, uint32_t size, uint32_t value) 
-{
-	type = WRITE;
-	this->address = address;
-	this->size = size;
-	write_value = value;
-}
+  void
+  MemoryOp::SetWrite(uint32_t address, uint32_t size, uint32_t value) 
+  {
+    type = WRITE;
+    this->address = address;
+    this->size = size;
+    write_value = value;
+  }
 	
-void 
-MemoryOp::SetPrefetch(uint32_t address)
-{
-	type = PREFETCH;
-	this->address = address;
-}
+  void 
+  MemoryOp::SetPrefetch(uint32_t address)
+  {
+    type = PREFETCH;
+    this->address = address;
+  }
 	
 } // end of namespace arm
 } // end of namespace processor
