@@ -116,7 +116,6 @@ void S12PIT24B<PIT_SIZE>::CNT16::process() {
 
 		while ((!isEnabled) || !parent->isPITEnabled()) {
 			wait(start_event);
-			cout << "PIT " << (unsigned int) index << " started" << endl;
 		}
 
 		*counter_register = *load_register;
@@ -342,7 +341,6 @@ void S12PIT24B<PIT_SIZE>::setTimeoutFlag(uint8_t index) {
 	pittf_register = pittf_register | (1 << index);
 
 	if ((pitinte_register & (1 << index)) != 0) {
-		cout << "PIT " << (unsigned int) index << " interrupt @ " << sc_time_stamp() << endl;
 		assertInterrupt(interrupt_offset_channel[index]);
 	}
 }

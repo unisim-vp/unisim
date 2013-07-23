@@ -756,16 +756,48 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("FTM.bytesize", 7*1024*1024); // 7MByte
 	simulator->SetVariable("FTM.initial-byte-value", 0xFF);
 	simulator->SetVariable("FTM.cycle-time", 40000);
+	simulator->SetVariable("FTM.bus-cycle-time", 40000);
 	simulator->SetVariable("FTM.oscillator-cycle-time", 20000);
 	simulator->SetVariable("FTM.base-address", 0x0100);
 	simulator->SetVariable("FTM.erase-fail-ratio", 0.01);
 	simulator->SetVariable("FTM.flash-Security-Byte-Address", 0x7FFF0F);
+	simulator->SetVariable("FTM.blackdoor-comparison-key-address", 0x7FFF00);
 	simulator->SetVariable("FTM.Protection-Byte-Address", 0x7FFF0C);
 	simulator->SetVariable("FTM.EEE-Protection-Byte-Address", 0x7FFF0D);
 	simulator->SetVariable("FTM.Flash-Option-Byte-Address", 0x7FFF0E);
 	simulator->SetVariable("FTM.flash-fault-detect-interrupt", 0xBA);
 	simulator->SetVariable("FTM.flash-interrupt", 0xB8);
 	simulator->SetVariable("FTM.verbose", false);
+	simulator->SetVariable("FTM.dflash-start-address", 0x100000);
+	simulator->SetVariable("FTM.dflash-end-address", 0x107FFF);
+	simulator->SetVariable("FTM.eee-nonvolatile-information-register-start-address", 0x120000);
+	simulator->SetVariable("FTM.eee-nonvolatile-information-register-size", 128);
+	simulator->SetVariable("FTM.eee_tag-ram-start-address", 0x122000);
+	simulator->SetVariable("FTM.EEE-tag-RAM-size", 256);
+	simulator->SetVariable("FTM.eee-protectable-high-address", 0x13FFFF);
+	simulator->SetVariable("FTM.memory-controller-scratch-ram-start-address", 0x124000);
+	simulator->SetVariable("FTM.memory-controller-scratch-ram-size", 1024);
+	simulator->SetVariable("FTM.buffer-ram-start-address", 0x13F000);
+	simulator->SetVariable("FTM.buffer-ram-end-address", 0x13FFFF);
+	simulator->SetVariable("FTM.pflash-start-address", 0x700000);
+	simulator->SetVariable("FTM.pflash-end-address", 0x7FFFFF);
+	simulator->SetVariable("FTM.pflash-protectable-high-address", 0x7FFFFF);
+	simulator->SetVariable("FTM.pflash-protectable-low-address", 0x7F8000);
+	simulator->SetVariable("FTM.pflash-blocks-description", "7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF");
+	simulator->SetVariable("FTM.pflash-protection-byte-address", 0x7FFF0C);
+	simulator->SetVariable("FTM.eee-protection-byte-address", 0x7FFF0D);
+	simulator->SetVariable("FTM.flash-nonvolatile-byte-address", 0x7FFF0E);
+	simulator->SetVariable("FTM.flash-security-byte-address", 0x7FFF0F);
+	simulator->SetVariable("FTM.dflash-partition-user-access-address", 0x120000);
+	simulator->SetVariable("FTM.dflash-partition-user-access-address-duplicate", 0x120002);
+	simulator->SetVariable("FTM.buffer-ram-partition-eee-operation-address", 0x120004);
+	simulator->SetVariable("FTM.buffer-ram-partition-eee-operation-address-duplicate", 0x120006);
+	simulator->SetVariable("FTM.max-number-sectors-dflash", 128);
+	simulator->SetVariable("FTM.max-number-sectors-buffer-ram", 16);
+	simulator->SetVariable("FTM.min-number-sectors-in-dflash-for-eee", 12);
+	simulator->SetVariable("FTM.min-ratio-dflash-buffer-ram", 8);
+	simulator->SetVariable("FTM.min-fclk-time", sc_time(1250000, SC_PS).to_double()); // 0.8 MHz
+	simulator->SetVariable("FTM.max-fclk-time", sc_time(952000, SC_PS).to_double());   // 1.05 MHz
 
 	simulator->SetVariable("kernel_logger.std_err", true);
 	simulator->SetVariable("kernel_logger.std_out", false);

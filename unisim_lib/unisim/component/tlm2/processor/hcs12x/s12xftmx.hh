@@ -135,6 +135,7 @@ public:
 	static const uint16_t DFLASH_SECTOR_SIZE = 256;
 	static const uint16_t PHRASE_SIZE = 8;
 	static const uint16_t PFLASH_SECTOR_SIZE = 1024;
+	static const uint16_t PFLASH_SECTION_SIZE = 128*PFLASH_SECTOR_SIZE;
 	static const uint16_t EEE_NON_VOLATILE_SPACE_SIZE = 8;
 	static const uint16_t BACKDOOR_ACCESS_KEY_SIZE = 8;
 
@@ -294,6 +295,14 @@ private:
 	physical_address_t	pflash_end_address;
 	Parameter<physical_address_t> param_pflash_end_address;
 
+	physical_address_t pflash_protectable_high_address;
+	Parameter<physical_address_t> param_pflash_protectable_high_address;
+	physical_address_t pflash_protectable_low_address;
+	Parameter<physical_address_t> param_pflash_protectable_low_address;
+
+	physical_address_t fprot_high_low_addr;
+	physical_address_t fprot_low_high_addr;
+
 	physical_address_t	blackdoor_comparison_key_address;	// 8 bytes
 	Parameter<physical_address_t> param_blackdoor_comparison_key_address;
 	physical_address_t	pflash_protection_byte_address;		// 1 byte
@@ -309,6 +318,7 @@ private:
 	Parameter<physical_address_t> param_dflash_start_address;
 	physical_address_t	dflash_end_address;
 	Parameter<physical_address_t> param_dflash_end_address;
+
 	physical_address_t	eee_nonvolatile_information_register_start_address;
 	Parameter<physical_address_t> param_eee_nonvolatile_information_register_start_address;
 	uint16_t			eee_nonvolatile_information_register_size;
@@ -317,6 +327,12 @@ private:
 	Parameter<physical_address_t> param_eee_tag_ram_start_address;
 	uint16_t			eee_tag_ram_size;
 	Parameter<uint16_t> param_eee_tag_ram_size;
+
+	physical_address_t eee_protectable_high_address;
+	Parameter<physical_address_t> param_eee_protectable_high_address;
+
+	physical_address_t eprot_low_addr;
+
 	physical_address_t	memory_controller_scratch_ram_start_address;
 	Parameter<physical_address_t> param_memory_controller_scratch_ram_start_address;
 	uint16_t			memory_controller_scratch_ram_size;
@@ -400,6 +416,22 @@ private:
 	inline bool isACCERR() { return ((fstat_reg & 0x20) != 0); }
 	inline void setACCERR() { fstat_reg = fstat_reg | 0x20; }
 	inline bool isFPVIOL() { return ((fstat_reg & 0x10) != 0); }
+	inline void setFPVIOL() { fstat_reg = fstat_reg | 0x10; }
+	inline void setEPVIOLIF() { ferstat_reg =ferstat_reg | 0x10; }
+
+	inline bool isPFlashProtected(physical_address_t low_addr, physical_address_t high_addr) {
+
+		bool find = false;
+		find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x20) == 0)) && (fprot_high_low_addr <= high_addr) && (low_addr <= pflash_protectable_high_address);
+		find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x04) == 0)) && (pflash_protectable_low_address <= high_addr) && (low_addr <= fprot_low_high_addr);
+
+		return find;
+	}
+
+	inline bool isEEEProtected(physical_address_t low_addr, physical_address_t high_addr) {
+
+		return (!((eprot_reg & 0x80) != 0) != !((eprot_reg & 0x08) == 0)) && (eprot_low_addr <= high_addr) && (low_addr <= eee_protectable_high_address);
+	}
 
 	inline void setSFDIF() {
 		ferstat_reg = ferstat_reg | 0x01;

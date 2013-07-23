@@ -75,6 +75,10 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, eee_tag_ram_size(256)
 	, param_eee_tag_ram_size("EEE-tag-RAM-size", this, eee_tag_ram_size)
 
+	, eee_protectable_high_address(0x13FFFF)
+	, param_eee_protectable_high_address("eee-protectable-high-address", this, eee_protectable_high_address)
+
+
 	, memory_controller_scratch_ram_start_address(0x124000)
 	, param_memory_controller_scratch_ram_start_address("memory-controller-scratch-ram-start-address", this, memory_controller_scratch_ram_start_address)
 
@@ -92,9 +96,15 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, pflash_end_address(0x7FFFFF)
 	, param_pflash_end_address("pflash-end-address", this, pflash_end_address)
 
+	, pflash_protectable_high_address(0x7FFFFF)
+	, param_pflash_protectable_high_address("pflash-protectable-high-address", this, pflash_protectable_high_address)
+	, pflash_protectable_low_address(0x7F8000)
+	, param_pflash_protectable_low_address("pflash-protectable-low-address", this, pflash_protectable_low_address)
+
 	, pflash_blocks_description_string("7C0000,7FFFFF;7A0000,7BFFFF;780000,79FFFF;740000,77FFFF;700000,73FFFF")
 	, param_pflash_blocks_description_string("pflash-blocks-description", this, pflash_blocks_description_string)
 
+	, blackdoor_comparison_key_address(0x7FFF00)
 	, param_blackdoor_comparison_key_address("blackdoor-comparison-key-address", this, blackdoor_comparison_key_address)
 	, pflash_protection_byte_address(0x7FFF0C)
 	, param_pflash_protection_byte_address("pflash-protection-byte-address", this, pflash_protection_byte_address)
@@ -258,6 +268,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Process()
 			case PartitionDFlash: partitionDFlash_cmd(); break;
 			default: {
 				// Invalid command
+				inherited::logger << DebugWarning << " : " << sc_object::name() << ":: Invalid command." << std::endl << EndDebugWarning;
 				setACCERR();
 			} break;
 		}
@@ -306,10 +317,19 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyBlo
 		return;
 	}
 
-	// TODO: Set ACCERR if an invalid global address [22:16] is supplied
+	// Set ACCERR if an invalid global address [22:16] is supplied
+	bool find = false;
+	find |= (((dflash_start_address ^ block_addr) & 0xFF0000) == 0);
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= (((pflash_blocks_description[i]->start_address ^ block_addr) & 0xFF0000) == 0);
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
 
 	// TODO: I have to emulate erase error
-
 
 	// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the read
 	// TODO: FSTAT::MGSTAT0 is set if any non-correctable errors have been encountered during the read
@@ -334,14 +354,23 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyPFl
 		return;
 	}
 
-	if ((addr & 0x7) != 0) {
+	// Set ACCERR if an invalid global address [22:0] is supplied
+	// Set ACCERR if the requested section crosses a 256K byte boundary
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= ((pflash_blocks_description[i]->start_address <= addr) && (pflash_blocks_description[i]->end_address >= (addr + PFLASH_SECTION_SIZE -  1)));
+	}
+
+	if (!find) {
 		setACCERR();
 		return;
 	}
 
-	// TODO: Set ACCERR if an invalid global address [22:0] is supplied
-
-	// TODO: Set ACCERR if the requested section crosses a 256K byte boundary
+	// Set ACCERR if a misaligned phrase address is supplied (global_address[2:0] != 000)
+	if ((addr & 0x7) != 0) {
+		setACCERR();
+		return;
+	}
 
 	// TODO: I have to emulate erase error
 
@@ -404,7 +433,16 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::loadDataField_
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
-	// TODO: Set FSAT::ACCERR if an invalid global address [22:0] is supplied
+	// Set FSAT::ACCERR if an invalid global address [22:0] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= ((pflash_blocks_description[i]->start_address <= addr) && (pflash_blocks_description[i]->end_address >= addr));
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
 
 	// Set FSAT::ACCCERR if a misaligned phrase address is supplied (addr[2:0] != 000)
 	if ((addr & 0x7) != 0) {
@@ -430,7 +468,11 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::loadDataField_
 
 	}
 
-	// TODO: set FSAT::FPVIOL if the global address [22:0] points to a protected area
+	// set FSAT::FPVIOL if the global address [22:0] points to a protected area
+	if (isPFlashProtected(addr, addr + PHRASE_SIZE - 1)) {
+		setFPVIOL();
+		return;
+	}
 
 	uint16_t *fccob_data = (uint16_t *) malloc(6*sizeof(uint16_t));
 	memcpy (fccob_data, fccob_reg, 6*sizeof(uint16_t));
@@ -455,7 +497,16 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programPFlash_
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
-	// TODO: Set FSAT::ACCERR if an invalid global address [22:0] is supplied
+	// Set FSAT::ACCERR if an invalid global address [22:0] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= ((pflash_blocks_description[i]->start_address <= addr) && (pflash_blocks_description[i]->end_address >= addr));
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
 
 	// Set FSAT::ACCCERR if a misaligned phrase address is supplied (addr[2:0] != 000)
 	if ((addr & 0x7) != 0) {
@@ -481,7 +532,12 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programPFlash_
 
 	}
 
-	// TODO: set FSAT::FPVIOL if the global address [22:0] points to a protected area
+	// set FSAT::FPVIOL if the global address [22:0] points to a protected area
+	if (isPFlashProtected(addr, addr + PHRASE_SIZE - 1)) {
+		setFPVIOL();
+		return;
+	}
+
 
 	// execute effectif P-Flash program
 	uint16_t word;
@@ -562,9 +618,20 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseAllBlocks
 		return;
 	}
 
-	// TODO: set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+	// set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+	bool find = false;
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x20) == 0));
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x04) == 0));
+	if (find) {
+		setFPVIOL();
+		return;
+	}
 
-	// TODO: set FERSTAT::EPVIOLIF if any area of the buffer RAM EEE partition is protected
+	// set FERSTAT::EPVIOLIF if any area of the buffer RAM EEE partition is protected
+	if (!((eprot_reg & 0x80) != 0) != !((eprot_reg & 0x08) == 0)) {
+		setEPVIOLIF();
+		return;
+	}
 
 	// Erase All blocks of P-Flash
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
@@ -614,11 +681,18 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashBlo
 		return;
 	}
 
-	// TODO: set FSTAT::ACCERR if an invalid global address [22:16] is supplied
-
-	// TODO: set FSTAT::FPVIOL if an area of the selected P-Flash block is protected
-
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	// set FSTAT::ACCERR if an invalid global address [22:16] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= (((pflash_blocks_description[i]->start_address ^ addr) & 0xFF0000) == 0);
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
 
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
 	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
@@ -627,6 +701,12 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashBlo
 		if ((addr >= pflash_blocks_description[i]->start_address)
 				&& (addr <= pflash_blocks_description[i]->end_address))
 		{
+			// set FSTAT::FPVIOL if an area of the selected P-Flash block is protected
+			if (isPFlashProtected(pflash_blocks_description[i]->start_address, pflash_blocks_description[i]->end_address)) {
+				setFPVIOL();
+				break;
+			}
+
 			uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
 			for (uint16_t j=0; j < nbre_sector; j++) {
 				WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
@@ -656,12 +736,18 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashSec
 		return;
 	}
 
-	// TODO: set FSTAT::ACCERR if an invalid global address [22:16] is supplied
-
-	// TODO: set FSTAT::FPVIOL if the selected P-Flash sector is protected
-
-
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
+
+	// Set FSTAT::ACCERR if an invalid global address [22:16] is supplied
+	bool find = false;
+	for (uint8_t i=0; (i < pflash_blocks_description.size()) && !find; i++) {
+		find |= (((pflash_blocks_description[i]->start_address ^ addr) & 0xFF0000) == 0);
+	}
+
+	if (!find) {
+		setACCERR();
+		return;
+	}
 
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
 	memset(buffer, 0xFF , PFLASH_SECTOR_SIZE);
@@ -669,11 +755,17 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::erasePFlashSec
 		uint16_t nbre_sector = (pflash_blocks_description[i]->end_address - pflash_blocks_description[i]->start_address + 1) / PFLASH_SECTOR_SIZE;
 		for (uint16_t j=0; j < nbre_sector; j++) {
 			// Identify the P-Flash sector
-			if ((addr >= (pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE)))
-					&& (addr <= (pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE) + PFLASH_SECTOR_SIZE - 1)))
+			physical_address_t sector_addr = pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE);
+			if ((addr >= sector_addr)
+					&& (addr <= (sector_addr + PFLASH_SECTOR_SIZE - 1)))
 			{
+				// set FSTAT::FPVIOL if the selected P-Flash sector is protected
+				if (isPFlashProtected(sector_addr, sector_addr + PFLASH_SECTOR_SIZE - 1)) {
+					setFPVIOL();
+					break;
+				}
 
-				WriteMemory(pflash_blocks_description[i]->start_address + (j * PFLASH_SECTOR_SIZE), buffer, PFLASH_SECTOR_SIZE);
+				WriteMemory(sector_addr, buffer, PFLASH_SECTOR_SIZE);
 			}
 		}
 
@@ -705,7 +797,14 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::unsecureFlash_
 		return;
 	}
 
-	// TODO: set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+	// set FSTAT::FPVIOL if any area of the P-Flash memory is protected
+	bool find = false;
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x20) == 0));
+	find |= (!((fprot_reg & 0x80) != 0) != !((fprot_reg & 0x04) == 0));
+	if (find) {
+		setFPVIOL();
+		return;
+	}
 
 	// Erase All blocks of P-Flash
 	void *buffer = malloc(PFLASH_SECTOR_SIZE);
@@ -902,11 +1001,24 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseVerifyDFl
 		return;
 	}
 
-	// TODO: Set ACCERR if an invalid global address [22:0] is supplied
+	// Set ACCERR if an invalid global address [22:0] is supplied
+	// Set ACCERR if the requested section breaches the end of the D-Flash block
+	if ((dflash_start_address > addr) || (dflash_end_address < (addr + (number_words * WORD_SIZE) - 1) )) {
+		setACCERR();
+		return;
+	}
 
-	// TODO: Set ACCERR if the global address [22:0] points to an area of the D-Flash EEE partition
+	// Set ACCERR if the global address [22:0] points to an area of the D-Flash EEE partition
+	// Set ACCERR if the requested section goes into the D-Flash EEE partition
 
-	// TODO: Set ACCERR if the requested section breaches the end of the D-Flash block or goes into the D-Flash EEE partition
+	// Get D-Flash user partition size
+	uint16_t nbre_DFlash_user_sector = 0;
+	ReadMemory(dflash_partition_user_access_address, &nbre_DFlash_user_sector, 2);
+
+	if ((dflash_start_address + nbre_DFlash_user_sector * DFLASH_SECTOR_SIZE) < (addr + number_words * WORD_SIZE) ) {
+		setACCERR();
+		return;
+	}
 
 	// TODO: I have to emulate erase error
 
@@ -922,6 +1034,8 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programDFlash_
 
 	physical_address_t addr = ((physical_address_t) (fccob_reg[0] & 0x00FF) << 16) | fccob_reg[1];
 
+	uint8_t number_words = fccobix_reg - 0x2;
+
 	if ((fccobix_reg < 0x2) || (fccobix_reg > 0x5)) {
 		setACCERR();
 		return;
@@ -934,7 +1048,12 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programDFlash_
 
 	// TODO: Set FSTAT::ACCERR if command not available in current mode (Table 29-30)
 
-	// TODO: Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+	// Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+	// Set FSTAT::ACCERR if the requested group of words breaches the end of the D-Flash block
+	if ((dflash_start_address > addr) || (dflash_end_address < (addr + (number_words * WORD_SIZE) - 1) )) {
+		setACCERR();
+		return;
+	}
 
 	// Set FSTAT::ACCERR if a misaligned word address is supplied
 	if ((addr & 0x1) != 0) {
@@ -942,16 +1061,22 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::programDFlash_
 		return;
 	}
 
-	// TODO: Set FSTAT::ACCERR if the global address [22:0] points to an area in the D-Flash EEE partition
+	// Set ACCERR if the global address [22:0] points to an area of the D-Flash EEE partition
+	// Set ACCERR if the requested section goes into the D-Flash EEE partition
 
-	// TODO: Set FSTAT::ACCERR if the requested group of words breaches the end of the D-Flash block
-	//        or goes into the D-Flash EEE partition
+	// Get D-Flash user partition size
+	uint16_t nbre_DFlash_user_sector = 0;
+	ReadMemory(dflash_partition_user_access_address, &nbre_DFlash_user_sector, 2);
 
-	uint8_t number = fccobix_reg - 0x2;
+	if ((dflash_start_address + nbre_DFlash_user_sector * DFLASH_SECTOR_SIZE) < (addr + number_words * WORD_SIZE) ) {
+		setACCERR();
+		return;
+	}
+
 
 	// execute effective D-Flash program
 	uint16_t word;
-	for (uint8_t i=0; i<number; i++) {
+	for (uint8_t i=0; i < number_words; i++) {
 		word = Host2BigEndian(fccob_reg[0x2 + i]);
 		inherited::WriteMemory(addr + (i*WORD_SIZE), &word, WORD_SIZE);
 		// TODO: FSTAT::MGSTAT1 is set if any errors have been encountered during the verify operation
@@ -979,7 +1104,11 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseDFlashSec
 
 	// TODO: set FSTAT::ACCERR if command not available in current mode
 
-	// TODO: Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+	// Set FSTAT::ACCERR if an invalid global address [22:0] is supplied
+	if ((dflash_start_address > addr) || (dflash_end_address < (addr + DFLASH_SECTOR_SIZE - 1) )) {
+		setACCERR();
+		return;
+	}
 
 	// Set FSTAT::ACCERR if a misaligned word address is supplied
 	if ((addr & 0x1) != 0) {
@@ -987,7 +1116,16 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::eraseDFlashSec
 		return;
 	}
 
-	// TODO: set FSAT::ACCERR if the global address [22:0] points to the D-Flash EEE partition
+	// set FSAT::ACCERR if the global address [22:0] points to the D-Flash EEE partition
+
+	// Get D-Flash user partition size
+	uint16_t nbre_DFlash_user_sector = 0;
+	ReadMemory(dflash_partition_user_access_address, &nbre_DFlash_user_sector, 2);
+
+	if ((dflash_start_address + nbre_DFlash_user_sector * DFLASH_SECTOR_SIZE) < (addr + DFLASH_SECTOR_SIZE) ) {
+		setACCERR();
+		return;
+	}
 
 	// execute erase D-Flash sector command
 	void *buffer = malloc(DFLASH_SECTOR_SIZE);
@@ -1487,6 +1625,10 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::Reset() {
 
 	etag_reg = 0x0000;
 
+	fprot_high_low_addr = pflash_protectable_high_address - (pow(2, (((fprot_reg & 0x18) >> 3) + 1)) * 1024) + 1;
+	fprot_low_high_addr = pflash_protectable_low_address - (pow(2, ((fprot_reg & 0x02))) * 1024);
+	eprot_low_addr = eee_protectable_high_address - (((eprot_reg & 0x07) + 1) * 64) + 1;
+
 	partitionDFlashCmd_Launched = false;
 	fullPartitionDFlashCmd_Launched = false;
 	eepromEmulationEnabled = false;
@@ -1904,6 +2046,9 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned
 
 			fprot_reg = ((!newOPEN || oldOPEN ) && (!newHDIS || oldHDIS) && (!newLDIS || oldLDIS))? value : fprot_reg;
 
+			fprot_high_low_addr = pflash_protectable_high_address - (pow(2, (((fprot_reg & 0x18) >> 3) + 1)) * 1024) + 1;
+			fprot_low_high_addr = pflash_protectable_low_address - (pow(2, ((fprot_reg & 0x02))) * 1024);
+
 		} break;
 		case EPROT: {
 
@@ -1915,6 +2060,8 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::write(unsigned
 			bool newDIS = ((value & 0x08) != 0);
 
 			eprot_reg = ((!newOPEN || oldOPEN ) && (!newDIS || oldDIS))? value : eprot_reg;
+
+			eprot_low_addr = eee_protectable_high_address - (((eprot_reg & 0x07) + 1) * 64) + 1;
 
 		} break;
 		case FCCOBHI: {
