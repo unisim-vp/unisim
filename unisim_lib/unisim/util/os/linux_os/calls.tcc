@@ -104,26 +104,33 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unknown()
 {
   if (unlikely(verbose_))
     logger_ << DebugInfo
+        << "Unknown system call #" << current_syscall_id_ << EndDebugInfo;
+  SetSystemCallStatus(-1, true);
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_unimplemented()
+{
+  if (unlikely(verbose_))
+    logger_ << DebugInfo
         << "Unimplemented system call #" << current_syscall_id_ << EndDebugInfo;
   SetSystemCallStatus(-1, true);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_exit() {
-  std::string name = "exit";
-  int ret;
+  int status;
 
-  ret = GetSystemCallParam(0);
+  status = GetSystemCallParam(0);
   if (unlikely(verbose_))
-    logger_ << DebugInfo << "LSC_exit with ret = 0X" << std::hex << ret << std::dec
-        << EndDebugInfo;
-  terminated_=true;
-  return_status_=ret;
+    logger_ << DebugInfo
+        << "exit(status=" << status << EndDebugInfo;
+  terminated_= true;
+  return_status_= status;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_read() {
-  std::string name = "read";
   int fd;
   size_t count;
   ADDRESS_TYPE buf_addr;
@@ -1086,7 +1093,7 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_uname() {
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC_llseek() {
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC__llseek() {
   int fd;
   uint32_t offset_high;
   uint32_t offset_low;
