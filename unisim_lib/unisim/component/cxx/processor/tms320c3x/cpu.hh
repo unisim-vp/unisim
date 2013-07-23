@@ -33,8 +33,8 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_HH__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_HH__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_HH__
 
 #include "unisim/kernel/service/service.hh"
 #include "unisim/kernel/logger/logger.hh"
@@ -48,8 +48,8 @@
 #include "unisim/service/interfaces/symbol_table_lookup.hh"
 #include "unisim/service/interfaces/ti_c_io.hh"
 #include "unisim/service/interfaces/loader.hh"
-#include "unisim/component/cxx/processor/tms320/isa_tms320.hh"
-#include "unisim/component/cxx/processor/tms320/register.hh"
+#include "unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.hh"
+#include "unisim/component/cxx/processor/tms320c3x/register.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include <stdexcept>
@@ -70,7 +70,7 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 using unisim::kernel::service::Object;
 using unisim::kernel::service::Client;
@@ -79,6 +79,7 @@ using unisim::kernel::service::ServiceExport;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Parameter;
 using unisim::kernel::service::Statistic;
+using unisim::kernel::service::Formula;
 using unisim::service::interfaces::DebugControl;
 using unisim::service::interfaces::MemoryAccessReporting;
 using unisim::service::interfaces::MemoryAccessReportingControl;
@@ -126,16 +127,16 @@ static const uint32_t ADDRESS_MASK = 0xffffff; // 24-bit mask
 
 template<class CONFIG, bool DEBUG = false>
 class CPU :
-	public Client<DebugControl<uint64_t> >,
-	public Client<MemoryAccessReporting<uint64_t> >,
+	public Client<DebugControl<typename CONFIG::address_t> >,
+	public Client<MemoryAccessReporting<typename CONFIG::address_t> >,
 	public Client<TrapReporting>,
-	public Client<SymbolTableLookup<uint64_t> >,
-	public Service<MemoryInjection<uint64_t> >,
+	public Client<SymbolTableLookup<typename CONFIG::address_t> >,
+	public Service<MemoryInjection<typename CONFIG::address_t> >,
 	public Service<MemoryAccessReportingControl>,
-	public Service<Disassembly<uint64_t> >,
+	public Service<Disassembly<typename CONFIG::address_t> >,
 	public Service<Registers>,
-	public Service<Memory<uint64_t> >,
-	public Client<Memory<uint64_t> >,
+	public Service<Memory<typename CONFIG::address_t> >,
+	public Client<Memory<typename CONFIG::address_t> >,
 	public Client<TI_C_IO>,
 	public Client<Loader>
 {
@@ -161,17 +162,17 @@ public:
 	//= Public service imports/exports                        START =
 	//===============================================================
 	
-	ServiceExport<Disassembly<uint64_t> > disasm_export;
+	ServiceExport<Disassembly<typename CONFIG::address_t> > disasm_export;
 	ServiceExport<Registers> registers_export;
-	ServiceExport<Memory<uint64_t> > memory_export;
-	ServiceExport<MemoryInjection<uint64_t> > memory_injection_export;
+	ServiceExport<Memory<typename CONFIG::address_t> > memory_export;
+	ServiceExport<MemoryInjection<typename CONFIG::address_t> > memory_injection_export;
 	ServiceExport<MemoryAccessReportingControl> memory_access_reporting_control_export;
 	
-	ServiceImport<DebugControl<uint64_t> > debug_control_import;
-	ServiceImport<MemoryAccessReporting<uint64_t> > memory_access_reporting_import;
+	ServiceImport<DebugControl<typename CONFIG::address_t> > debug_control_import;
+	ServiceImport<MemoryAccessReporting<typename CONFIG::address_t> > memory_access_reporting_import;
 	ServiceImport<TrapReporting> trap_reporting_import;
-	ServiceImport<SymbolTableLookup<uint64_t> > symbol_table_lookup_import;
-	ServiceImport<Memory<uint64_t> > memory_import; // TODO: check for removal
+	ServiceImport<SymbolTableLookup<typename CONFIG::address_t> > symbol_table_lookup_import;
+	ServiceImport<Memory<typename CONFIG::address_t> > memory_import;
 	ServiceImport<TI_C_IO> ti_c_io_import;
 	
 	//===============================================================
@@ -213,10 +214,10 @@ public:
 	//===============================================================
 
 	virtual void Reset();
-	virtual bool ReadMemory(uint64_t addr, void *buffer, uint32_t size);
-	virtual bool WriteMemory(uint64_t addr, const void *buffer, uint32_t size);
-	virtual bool InjectReadMemory(uint64_t addr, void *buffer, uint32_t size);
-	virtual bool InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size);
+	virtual bool ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	virtual bool WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
+	virtual bool InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size);
+	virtual bool InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size);
 
     //===============================================================
 	//= Memory interface methods                               STOP =
@@ -250,7 +251,7 @@ public:
 	 * @param   next_addr  The address following the requested instruction.
 	 * @return             The disassembling of the requested instruction address.
 	 */
-	virtual std::string Disasm(uint64_t addr, uint64_t &next_addr);
+	virtual std::string Disasm(typename CONFIG::address_t addr, typename CONFIG::address_t &next_addr);
 	string DisasmDir(address_t pc, uint32_t direct);
 	bool DisasmIndir(string& s, address_t pc, unsigned int mod, unsigned int ar, uint32_t disp = 1);
 	string DisasmShortFloat(uint16_t x);
@@ -477,7 +478,7 @@ private:
 	//= Instruction set decoder variables                     START =
 	//===============================================================
 
-	typename isa::tms320::Decoder<CONFIG, DEBUG> decoder;
+	typename isa::tms320c3x::Decoder<CONFIG, DEBUG> decoder;
 
     //===============================================================
 	//= Verbose variables, parameters, and methods            START =
@@ -487,10 +488,12 @@ private:
 	uint64_t trap_on_instruction_counter;
 	uint64_t max_inst;                                    //!< Maximum number of instructions to execute
 	bool mimic_dev_board;
+	uint32_t trap_on_trap_instruction;
 	Parameter<uint64_t> param_max_inst;                   //!< linked to member max_inst
 	Parameter<uint64_t> param_trap_on_instruction_counter;
 	Statistic<uint64_t> stat_instruction_counter;
 	Parameter<bool> param_mimic_dev_board;
+	Parameter<uint32_t> param_trap_on_trap_instruction;
 
 	//===============================================================
 	//= Registers                                             START =
@@ -603,10 +606,11 @@ private:
 	//= Instruction cache                                     START =
 	//===============================================================
 
-	uint64_t insn_cache_hits;
+	uint64_t insn_cache_accesses;
 	uint64_t insn_cache_misses;
-	Statistic<uint64_t> stat_insn_cache_hits;
+	Statistic<uint64_t> stat_insn_cache_accesses;
 	Statistic<uint64_t> stat_insn_cache_misses;
+	Formula<double> formula_insn_cache_miss_rate;
 
 	static const uint32_t INSN_CACHE_SIZE = CONFIG::INSN_CACHE_SIZE;
 	static const uint32_t INSN_CACHE_ASSOCIATIVITY = (CONFIG::INSN_CACHE_ASSOCIATIVITY > 2) ? 2 : CONFIG::INSN_CACHE_ASSOCIATIVITY;
@@ -1149,6 +1153,16 @@ public:
 	{
 		return delay_before_branching != 0;
 	}
+	
+	inline bool HasDebuggerTrap(uint32_t encoding) const
+	{
+		if(trap_reporting_import && (encoding == trap_on_trap_instruction))
+		{
+			trap_reporting_import->ReportTrap();
+			return true;
+		}
+		return false;
+	}
 
 	/* Parameters to enable the different bugs */
 protected:
@@ -1173,11 +1187,11 @@ protected:
 	Parameter<bool> param_verbose_all;
 	Parameter<bool> param_verbose_setup;
 	
-	inline INLINE bool VerboseAll();
-	inline INLINE bool VerboseSetup();
+	inline INLINE bool VerboseAll() { return DEBUG && verbose_all; }
+	inline INLINE bool VerboseSetup() { return DEBUG && verbose_setup; }
 }; // end of calss CPU<CONFIG>
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
@@ -1185,5 +1199,5 @@ protected:
 
 #undef INLINE
 
-#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_HH__
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_HH__
 

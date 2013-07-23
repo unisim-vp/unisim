@@ -714,43 +714,40 @@ unisim::util::debug::blob::Blob<ADDRESS_TYPE> const * const Linux<ADDRESS_TYPE,
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ExecuteSystemCall(int id, bool& terminated, int& return_status) {
-  if (!is_load_) {
-    logger_
-        << DebugError
-        << "unisim::util::os::linux_os::Linux.ExecuteSystemCall: "
-        << "Trying to execute system call with id " << id << " while the linux "
-        << "emulation has not been correctly loaded."
-        << EndDebugError;
-    return;
-  }
+	if(!is_load_)
+	{
+		logger_
+			<< DebugError
+			<< "unisim::util::os::linux_os::Linux.ExecuteSystemCall: "
+			<< "Trying to execute system call with id " << id << " while the linux "
+			<< "emulation has not been correctly loaded."
+			<< EndDebugError;
+		return;
+	}
 
-  int translated_id = GetSyscallNumber(id);
+	int translated_id = GetSyscallNumber(id);
 
-  if (HasSyscall(translated_id)) {
-    current_syscall_id_ = translated_id;
-    current_syscall_name_ = syscall_name_assoc_map_[translated_id];
-    if (unlikely(verbose_))
-      logger_
-          << DebugInfo
-          << "Executing syscall(name = " << current_syscall_name_ << ";"
-          << " id = " << translated_id << ";"
-          << " unstranslated id = " << id << ")"
-          << EndDebugInfo;
-    syscall_t y = syscall_impl_assoc_map_[translated_id];
-    (this->*y)();
-  } else {
-    logger_
-        << DebugInfo
-        << "Could not find system call id " << id << " (translated id = "
-        << translated_id << "), aborting system call "
-        << "execution."
-        << EndDebugInfo;
-  }
-  if(terminated_)
-  {
-    terminated = true;
-    return_status = return_status_;
-  }
+	current_syscall_id_ = translated_id;
+	current_syscall_name_ = GetSyscallName(translated_id);
+	
+	if(unlikely(verbose_))
+	{
+		logger_
+			<< DebugInfo
+			<< "Executing syscall(name = " << current_syscall_name_ << ";"
+			<< " id = " << translated_id << ";"
+			<< " unstranslated id = " << id << ")"
+			<< EndDebugInfo;
+	}
+	
+	syscall_t y = GetSyscallImpl(translated_id);
+	(this->*y)();
+
+	if(terminated_)
+	{
+		terminated = true;
+		return_status = return_status_;
+	}
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
@@ -1434,308 +1431,996 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetPPCBlob(
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
-  SetSyscallId(std::string("exit"), 1);
-  SetSyscallId(std::string("read"), 3);
-  SetSyscallId(std::string("write"), 4);
-  SetSyscallId(std::string("open"), 5);
-  SetSyscallId(std::string("close"), 6);
-  SetSyscallId(std::string("unlink"), 10);
-  SetSyscallId(std::string("time"), 13);
-  SetSyscallId(std::string("lseek"), 19);
-  SetSyscallId(std::string("getpid"), 20);
-  SetSyscallId(std::string("getuid"), 24);
-  SetSyscallId(std::string("access"), 33);
-  SetSyscallId(std::string("kill"), 37);
-  SetSyscallId(std::string("rename"), 38);
-  SetSyscallId(std::string("dup"), 41);
-  SetSyscallId(std::string("times"), 43);
-  SetSyscallId(std::string("brk"), 45);
-  SetSyscallId(std::string("getgid"), 47);
-  SetSyscallId(std::string("geteuid"), 49);
-  SetSyscallId(std::string("getegid"), 50);
-  SetSyscallId(std::string("ioctl"), 54);
-  SetSyscallId(std::string("setrlimit"), 75);
-  SetSyscallId(std::string("getrusage"), 77);
-  SetSyscallId(std::string("gettimeofday"), 78);
-  SetSyscallId(std::string("munmap"), 91);
-  SetSyscallId(std::string("ftruncate"), 93);
-  SetSyscallId(std::string("socketcall"), 102);
-  SetSyscallId(std::string("stat"), 106);
-  SetSyscallId(std::string("fstat"), 108);
-  SetSyscallId(std::string("uname"), 122);
-  SetSyscallId(std::string("llseek"), 140);
-  SetSyscallId(std::string("writev"), 146);
-  SetSyscallId(std::string("rt_sigaction"), 174);
-  SetSyscallId(std::string("rt_sigprocmask"), 175);
-  SetSyscallId(std::string("ugetrlimit"), 191);
-  SetSyscallId(std::string("mmap2"), 192);
-  SetSyscallId(std::string("stat64"), 195);
-  SetSyscallId(std::string("fstat64"), 197);
-  SetSyscallId(std::string("getuid32"), 199);
-  SetSyscallId(std::string("getgid32"), 200);
-  SetSyscallId(std::string("geteuid32"), 201);
-  SetSyscallId(std::string("getegid32"), 202);
-  SetSyscallId(std::string("fcntl64"), 221);
-  SetSyscallId(std::string("flistxattr"), 234);
-  SetSyscallId(std::string("exit_group"), 248);
-  // the following are private to the arm
-  SetSyscallId(std::string("breakpoint"), 983041);
-  SetSyscallId(std::string("cacheflush"), 983042);
-  SetSyscallId(std::string("usr26"), 983043);
-  SetSyscallId(std::string("usr32"), 983044);
-  SetSyscallId(std::string("set_tls"), 983045);
+	// see either arch/arm/include/asm/unistd.h or arch/arm/include/uapi/asm/unistd.h in Linux source
+	SetSyscallId("restart_syscall", 0);
+	SetSyscallId("exit", 1);
+	SetSyscallId("fork", 2);
+	SetSyscallId("read", 3);
+	SetSyscallId("write", 4);
+	SetSyscallId("open", 5);
+	SetSyscallId("close", 6);
+	// 7 was "waitpid"
+	SetSyscallId("creat", 8);
+	SetSyscallId("link", 9);
+	SetSyscallId("unlink", 10);
+	SetSyscallId("execve", 11);
+	SetSyscallId("chdir", 12);
+	SetSyscallId("time", 13);
+	SetSyscallId("mknod", 14);
+	SetSyscallId("chmod", 15);
+	SetSyscallId("lchown", 16);
+	// 17 was "break"
+	// 18 was "stat"
+	SetSyscallId("lseek", 19);
+	SetSyscallId("getpid", 20);
+	SetSyscallId("mount", 21);
+	SetSyscallId("umount", 22);
+	SetSyscallId("setuid", 23);
+	SetSyscallId("getuid", 24);
+	SetSyscallId("stime", 25);
+	SetSyscallId("ptrace", 26);
+	SetSyscallId("alarm", 27);
+	// 28 was "fstat"
+	SetSyscallId("pause", 29);
+	SetSyscallId("utime", 30);
+	// 31 was "stty"
+	// 32 was "gtty"
+	SetSyscallId("access", 33);
+	SetSyscallId("nice", 34);
+	// 35 was "ftime"
+	SetSyscallId("sync", 36);
+	SetSyscallId("kill", 37);
+	SetSyscallId("rename", 38);
+	SetSyscallId("mkdir", 39);
+	SetSyscallId("rmdir", 40);
+	SetSyscallId("dup", 41);
+	SetSyscallId("pipe", 42);
+	SetSyscallId("times", 43);
+	// 44 was "prof"
+	SetSyscallId("brk", 45);
+	SetSyscallId("setgid", 46);
+	SetSyscallId("getgid", 47);
+	// 48 was "signal"
+	SetSyscallId("geteuid", 49);
+	SetSyscallId("getegid", 50);
+	SetSyscallId("acct", 51);
+	SetSyscallId("umount2", 52);
+	// 53 was "lock"
+	SetSyscallId("ioctl", 54);
+	SetSyscallId("fcntl", 55);
+	// 56 was "mpx"
+	SetSyscallId("setpgid", 57);
+	// 58 was "ulimit"
+	// 59 was "olduname"
+	SetSyscallId("umask", 60);
+	SetSyscallId("chroot", 61);
+	SetSyscallId("ustat", 62);
+	SetSyscallId("dup2", 63);
+	SetSyscallId("getppid", 64);
+	SetSyscallId("getpgrp", 65);
+	SetSyscallId("setsid", 66);
+	SetSyscallId("sigaction", 67);
+	// 68 was "sgetmask"
+	// 69 was "ssetmask"
+	SetSyscallId("setreuid", 70);
+	SetSyscallId("setregid", 71);
+	SetSyscallId("sigsuspend", 72);
+	SetSyscallId("sigpending", 73);
+	SetSyscallId("sethostname", 74);
+	SetSyscallId("setrlimit", 75);
+	SetSyscallId("getrlimit", 76);
+	SetSyscallId("getrusage", 77);
+	SetSyscallId("gettimeofday", 78);
+	SetSyscallId("settimeofday", 79);
+	SetSyscallId("getgroups", 80);
+	SetSyscallId("setgroups", 81);
+	SetSyscallId("select", 82);
+	SetSyscallId("symlink", 83);
+	// 84 was "lstat"
+	SetSyscallId("readlink", 85);
+	SetSyscallId("uselib", 86);
+	SetSyscallId("swapon", 87);
+	SetSyscallId("reboot", 88);
+	SetSyscallId("readdir", 89);
+	SetSyscallId("mmap", 90);
+	SetSyscallId("munmap", 91);
+	SetSyscallId("truncate", 92);
+	SetSyscallId("ftruncate", 93);
+	SetSyscallId("fchmod", 94);
+	SetSyscallId("fchown", 95);
+	SetSyscallId("getpriority", 96);
+	SetSyscallId("setpriority", 97);
+	// 98 was "profile"
+	SetSyscallId("statfs", 99);
+	SetSyscallId("fstatfs", 100);
+	SetSyscallId("socketcall", 102);
+	SetSyscallId("syslog", 103);
+	SetSyscallId("setitimer", 104);
+	SetSyscallId("getitimer", 105);
+	SetSyscallId("stat", 106);
+	SetSyscallId("lstat", 107);
+	SetSyscallId("fstat", 108);
+	// 109 was "uname"
+	// 110 was "iopl"
+	SetSyscallId("vhangup", 111);
+	// 112 was "idle"
+	SetSyscallId("syscall", 113);
+	SetSyscallId("wait4", 114);
+	SetSyscallId("swapoff", 115);
+	SetSyscallId("sysinfo", 116);
+	SetSyscallId("ipc", 117);
+	SetSyscallId("fsync", 118);
+	SetSyscallId("sigreturn", 119);
+	SetSyscallId("clone", 120);
+	SetSyscallId("setdomainname", 121);
+	SetSyscallId("uname", 122);
+	// 123 was "modify_ldt"
+	SetSyscallId("adjtimex", 124);
+	SetSyscallId("mprotect", 125);
+	SetSyscallId("sigprocmask", 126);
+	// 127 was "create_module"
+	SetSyscallId("init_module", 128);
+	SetSyscallId("delete_module", 129);
+	// 130 was "get_kernel_syms"
+	SetSyscallId("quotactl", 131);
+	SetSyscallId("getpgid", 132);
+	SetSyscallId("fchdir", 133);
+	SetSyscallId("bdflush", 134);
+	SetSyscallId("sysfs", 135);
+	SetSyscallId("personality", 136);
+	// 137 was "afs_syscall"
+	SetSyscallId("setfsuid", 138);
+	SetSyscallId("setfsgid", 139);
+	SetSyscallId("_llseek", 140);
+	SetSyscallId("getdents", 141);
+	SetSyscallId("_newselect", 142);
+	SetSyscallId("flock", 143);
+	SetSyscallId("msync", 144);
+	SetSyscallId("readv", 145);
+	SetSyscallId("writev", 146);
+	SetSyscallId("getsid", 147);
+	SetSyscallId("fdatasync", 148);
+	SetSyscallId("_sysctl", 149);
+	SetSyscallId("mlock", 150);
+	SetSyscallId("munlock", 151);
+	SetSyscallId("mlockall", 152);
+	SetSyscallId("munlockall", 153);
+	SetSyscallId("sched_setparam", 154);
+	SetSyscallId("sched_getparam", 155);
+	SetSyscallId("sched_setscheduler", 156);
+	SetSyscallId("sched_getscheduler", 157);
+	SetSyscallId("sched_yield", 158);
+	SetSyscallId("sched_get_priority_max", 159);
+	SetSyscallId("sched_get_priority_min", 160);
+	SetSyscallId("sched_rr_get_interval", 161);
+	SetSyscallId("nanosleep", 162);
+	SetSyscallId("mremap", 163);
+	SetSyscallId("setresuid", 164);
+	SetSyscallId("getresuid", 165);
+	// 166 was "vm86"
+	// 167 was "query_module"
+	SetSyscallId("poll", 168);
+	SetSyscallId("nfsservctl", 169);
+	SetSyscallId("setresgid", 170);
+	SetSyscallId("getresgid", 171);
+	SetSyscallId("prctl", 172);
+	SetSyscallId("rt_sigreturn", 173);
+	SetSyscallId("rt_sigaction", 174);
+	SetSyscallId("rt_sigprocmask", 175);
+	SetSyscallId("rt_sigpending", 176);
+	SetSyscallId("rt_sigtimedwait", 177);
+	SetSyscallId("rt_sigqueueinfo", 178);
+	SetSyscallId("rt_sigsuspend", 179);
+	SetSyscallId("pread64", 180);
+	SetSyscallId("pwrite64", 181);
+	SetSyscallId("chown", 182);
+	SetSyscallId("getcwd", 183);
+	SetSyscallId("capget", 184);
+	SetSyscallId("capset", 185);
+	SetSyscallId("sigaltstack", 186);
+	SetSyscallId("sendfile", 187);
+	// 188 is reserved
+	// 189 is reserved
+	SetSyscallId("vfork", 190);
+	SetSyscallId("ugetrlimit", 191);
+	SetSyscallId("mmap2", 192);
+	SetSyscallId("truncate64", 193);
+	SetSyscallId("ftruncate64", 194);
+	SetSyscallId("stat64", 195);
+	SetSyscallId("lstat64", 196);
+	SetSyscallId("fstat64", 197);
+	SetSyscallId("lchown32", 198);
+	SetSyscallId("getuid32", 199);
+	SetSyscallId("getgid32", 200);
+	SetSyscallId("geteuid32", 201);
+	SetSyscallId("getegid32", 202);
+	SetSyscallId("setreuid32", 203);
+	SetSyscallId("setregid32", 204);
+	SetSyscallId("getgroups32", 205);
+	SetSyscallId("setgroups32", 206);
+	SetSyscallId("fchown32", 207);
+	SetSyscallId("setresuid32", 208);
+	SetSyscallId("getresuid32", 209);
+	SetSyscallId("setresgid32", 210);
+	SetSyscallId("getresgid32", 211);
+	SetSyscallId("chown32", 212);
+	SetSyscallId("setuid32", 213);
+	SetSyscallId("setgid32", 214);
+	SetSyscallId("setfsuid32", 215);
+	SetSyscallId("setfsgid32", 216);
+	SetSyscallId("getdents64", 217);
+	SetSyscallId("pivot_root", 218);
+	SetSyscallId("mincore", 219);
+	SetSyscallId("madvise", 220);
+	SetSyscallId("fcntl64", 221);
+	// 222 is for tux
+	// 223 is unused
+	SetSyscallId("gettid", 224);
+	SetSyscallId("readahead", 225);
+	SetSyscallId("setxattr", 226);
+	SetSyscallId("lsetxattr", 227);
+	SetSyscallId("fsetxattr", 228);
+	SetSyscallId("getxattr", 229);
+	SetSyscallId("lgetxattr", 230);
+	SetSyscallId("fgetxattr", 231);
+	SetSyscallId("listxattr", 232);
+	SetSyscallId("llistxattr", 233);
+	SetSyscallId("flistxattr", 234);
+	SetSyscallId("removexattr", 235);
+	SetSyscallId("lremovexattr", 236);
+	SetSyscallId("fremovexattr", 237);
+	SetSyscallId("tkill", 238);
+	SetSyscallId("sendfile64", 239);
+	SetSyscallId("futex", 240);
+	SetSyscallId("sched_setaffinity", 241);
+	SetSyscallId("sched_getaffinity", 242);
+	SetSyscallId("io_setup", 243);
+	SetSyscallId("io_destroy", 244);
+	SetSyscallId("io_getevents", 245);
+	SetSyscallId("io_submit", 246);
+	SetSyscallId("io_cancel", 247);
+	SetSyscallId("exit_group", 248);
+	SetSyscallId("lookup_dcookie", 249);
+	SetSyscallId("epoll_create", 250);
+	SetSyscallId("epoll_ctl", 251);
+	SetSyscallId("epoll_wait", 252);
+	SetSyscallId("remap_file_pages", 253);
+	// 254 is for set_thread_area
+	// 255 is for get_thread_area
+	SetSyscallId("set_tid_address", 256);
+	SetSyscallId("timer_create", 257);
+	SetSyscallId("timer_settime", 258);
+	SetSyscallId("timer_gettime", 259);
+	SetSyscallId("timer_getoverrun", 260);
+	SetSyscallId("timer_delete", 261);
+	SetSyscallId("clock_settime", 262);
+	SetSyscallId("clock_gettime", 263);
+	SetSyscallId("clock_getres", 264);
+	SetSyscallId("clock_nanosleep", 265);
+	SetSyscallId("statfs64", 266);
+	SetSyscallId("fstatfs64", 267);
+	SetSyscallId("tgkill", 268);
+	SetSyscallId("utimes", 269);
+	SetSyscallId("arm_fadvise64_64", 270);
+	SetSyscallId("pciconfig_iobase", 271);
+	SetSyscallId("pciconfig_read", 272);
+	SetSyscallId("pciconfig_write", 273);
+	SetSyscallId("mq_open", 274);
+	SetSyscallId("mq_unlink", 275);
+	SetSyscallId("mq_timedsend", 276);
+	SetSyscallId("mq_timedreceive", 277);
+	SetSyscallId("mq_notify", 278);
+	SetSyscallId("mq_getsetattr", 279);
+	SetSyscallId("waitid", 280);
+	SetSyscallId("socket", 281);
+	SetSyscallId("bind", 282);
+	SetSyscallId("connect", 283);
+	SetSyscallId("listen", 284);
+	SetSyscallId("accept", 285);
+	SetSyscallId("getsockname", 286);
+	SetSyscallId("getpeername", 287);
+	SetSyscallId("socketpair", 288);
+	SetSyscallId("send", 289);
+	SetSyscallId("sendto", 290);
+	SetSyscallId("recv", 291);
+	SetSyscallId("recvfrom", 292);
+	SetSyscallId("shutdown", 293);
+	SetSyscallId("setsockopt", 294);
+	SetSyscallId("getsockopt", 295);
+	SetSyscallId("sendmsg", 296);
+	SetSyscallId("recvmsg", 297);
+	SetSyscallId("semop", 298);
+	SetSyscallId("semget", 299);
+	SetSyscallId("semctl", 300);
+	SetSyscallId("msgsnd", 301);
+	SetSyscallId("msgrcv", 302);
+	SetSyscallId("msgget", 303);
+	SetSyscallId("msgctl", 304);
+	SetSyscallId("shmat", 305);
+	SetSyscallId("shmdt", 306);
+	SetSyscallId("shmget", 307);
+	SetSyscallId("shmctl", 308);
+	SetSyscallId("add_key", 309);
+	SetSyscallId("request_key", 310);
+	SetSyscallId("keyctl", 311);
+	SetSyscallId("semtimedop", 312);
+	SetSyscallId("vserver", 313);
+	SetSyscallId("ioprio_set", 314);
+	SetSyscallId("ioprio_get", 315);
+	SetSyscallId("inotify_init", 316);
+	SetSyscallId("inotify_add_watch", 317);
+	SetSyscallId("inotify_rm_watch", 318);
+	SetSyscallId("mbind", 319);
+	SetSyscallId("get_mempolicy", 320);
+	SetSyscallId("set_mempolicy", 321);
+	SetSyscallId("openat", 322);
+	SetSyscallId("mkdirat", 323);
+	SetSyscallId("mknodat", 324);
+	SetSyscallId("fchownat", 325);
+	SetSyscallId("futimesat", 326);
+	SetSyscallId("fstatat64", 327);
+	SetSyscallId("unlinkat", 328);
+	SetSyscallId("renameat", 329);
+	SetSyscallId("linkat", 330);
+	SetSyscallId("symlinkat", 331);
+	SetSyscallId("readlinkat", 332);
+	SetSyscallId("fchmodat", 333);
+	SetSyscallId("faccessat", 334);
+	SetSyscallId("pselect6", 335);
+	SetSyscallId("ppoll", 336);
+	SetSyscallId("unshare", 337);
+	SetSyscallId("set_robust_list", 338);
+	SetSyscallId("get_robust_list", 339);
+	SetSyscallId("splice", 340);
+	SetSyscallId("arm_sync_file_range", 341);
+	SetSyscallId("sync_file_range2", 341);
+	SetSyscallId("tee", 342);
+	SetSyscallId("vmsplice", 343);
+	SetSyscallId("move_pages", 344);
+	SetSyscallId("getcpu", 345);
+	SetSyscallId("epoll_pwait", 346);
+	SetSyscallId("kexec_load", 347);
+	SetSyscallId("utimensat", 348);
+	SetSyscallId("signalfd", 349);
+	SetSyscallId("timerfd_create", 350);
+	SetSyscallId("eventfd", 351);
+	SetSyscallId("fallocate", 352);
+	SetSyscallId("timerfd_settime", 353);
+	SetSyscallId("timerfd_gettime", 354);
+	SetSyscallId("signalfd4", 355);
+	SetSyscallId("eventfd2", 356);
+	SetSyscallId("epoll_create1", 357);
+	SetSyscallId("dup3", 358);
+	SetSyscallId("pipe2", 359);
+	SetSyscallId("inotify_init1", 360);
+	SetSyscallId("preadv", 361);
+	SetSyscallId("pwritev", 362);
+	SetSyscallId("rt_tgsigqueueinfo", 363);
+	SetSyscallId("perf_event_open", 364);
+	SetSyscallId("recvmmsg", 365);
+	SetSyscallId("accept4", 366);
+	SetSyscallId("fanotify_init", 367);
+	SetSyscallId("fanotify_mark", 368);
+	SetSyscallId("prlimit64", 369);
+	SetSyscallId("name_to_handle_at", 370);
+	SetSyscallId("open_by_handle_at", 371);
+	SetSyscallId("clock_adjtime", 372);
+	SetSyscallId("syncfs", 373);
+	SetSyscallId("sendmmsg", 374);
+	SetSyscallId("setns", 375);
+	SetSyscallId("process_vm_readv", 376);
+	SetSyscallId("process_vm_writev", 377);
+	// 378 is for kcmp
+	
+	// the following are private to the arm
+	SetSyscallId("breakpoint", 983041);
+	SetSyscallId("cacheflush", 983042);
+	SetSyscallId("usr26", 983043);
+	SetSyscallId("usr32", 983044);
+	SetSyscallId("set_tls", 983045);
 
-  return true;
+	return true;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC() {
-  SetSyscallId(std::string("exit"), 1);
-  SetSyscallId(std::string("read"), 3);
-  SetSyscallId(std::string("write"), 4);
-  SetSyscallId(std::string("open"), 5);
-  SetSyscallId(std::string("close"), 6);
-  SetSyscallId(std::string("unlink"), 10);
-  SetSyscallId(std::string("time"), 13);
-  SetSyscallId(std::string("lseek"), 19);
-  SetSyscallId(std::string("getpid"), 20);
-  SetSyscallId(std::string("getuid"), 24);
-  SetSyscallId(std::string("access"), 33);
-  SetSyscallId(std::string("kill"), 37);
-  SetSyscallId(std::string("rename"), 38);
-  SetSyscallId(std::string("times"), 43);
-  SetSyscallId(std::string("brk"), 45);
-  SetSyscallId(std::string("getgid"), 47);
-  SetSyscallId(std::string("geteuid"), 49);
-  SetSyscallId(std::string("getegid"), 50);
-  SetSyscallId(std::string("ioctl"), 54);
-  SetSyscallId(std::string("umask"), 60);
-  SetSyscallId(std::string("setrlimit"), 75);
-  SetSyscallId(std::string("getrlimit"), 76);
-  SetSyscallId(std::string("getrusage"), 77);
-  SetSyscallId(std::string("gettimeofday"), 78);
-  SetSyscallId(std::string("mmap"), 90);
-  SetSyscallId(std::string("munmap"), 91);
-  SetSyscallId(std::string("ftruncate"), 93);
-  SetSyscallId(std::string("statfs"), 99);
-  SetSyscallId(std::string("socketcall"), 102);
-  SetSyscallId(std::string("stat"), 106);
-  SetSyscallId(std::string("fstat"), 108);
-  SetSyscallId(std::string("uname"), 122);
-  SetSyscallId(std::string("llseek"), 140);
-  SetSyscallId(std::string("writev"), 146);
-  SetSyscallId(std::string("rt_sigaction"), 173);
-  SetSyscallId(std::string("rt_sigprocmask"), 174);
-  SetSyscallId(std::string("ugetrlimit"), 190);
-  SetSyscallId(std::string("mmap2"), 192);
-  SetSyscallId(std::string("stat64"), 195);
-  SetSyscallId(std::string("fstat64"), 197);
-  SetSyscallId(std::string("fcntl64"), 204);
-  SetSyscallId(std::string("getpid"), 207); // in a mono-thread environment pid=tid
-  SetSyscallId(std::string("tkill"), 208);
-  SetSyscallId(std::string("flistxattr"), 217);
-  SetSyscallId(std::string("exit_group"), 234);
-  SetSyscallId(std::string("tgkill"), 250);
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC()
+{
+	// see either arch/powerpc/include/asm/unistd.h or arch/powerpc/include/uapi/asm/unistd.h in Linux source
+	SetSyscallId("restart_syscall", 0);
+	SetSyscallId("exit", 1);
+	SetSyscallId("fork", 2);
+	SetSyscallId("read", 3);
+	SetSyscallId("write", 4);
+	SetSyscallId("open", 5);
+	SetSyscallId("close", 6);
+	SetSyscallId("waitpid", 7);
+	SetSyscallId("creat", 8);
+	SetSyscallId("link", 9);
+	SetSyscallId("unlink", 10);
+	SetSyscallId("execve", 11);
+	SetSyscallId("chdir", 12);
+	SetSyscallId("time", 13);
+	SetSyscallId("mknod", 14);
+	SetSyscallId("chmod", 15);
+	SetSyscallId("lchown", 16);
+	SetSyscallId("break", 17);
+	SetSyscallId("oldstat", 18);
+	SetSyscallId("lseek", 19);
+	SetSyscallId("getpid", 20);
+	SetSyscallId("mount", 21);
+	SetSyscallId("umount", 22);
+	SetSyscallId("setuid", 23);
+	SetSyscallId("getuid", 24);
+	SetSyscallId("stime", 25);
+	SetSyscallId("ptrace", 26);
+	SetSyscallId("alarm", 27);
+	SetSyscallId("oldfstat", 28);
+	SetSyscallId("pause", 29);
+	SetSyscallId("utime", 30);
+	SetSyscallId("stty", 31);
+	SetSyscallId("gtty", 32);
+	SetSyscallId("access", 33);
+	SetSyscallId("nice", 34);
+	SetSyscallId("ftime", 35);
+	SetSyscallId("sync", 36);
+	SetSyscallId("kill", 37);
+	SetSyscallId("rename", 38);
+	SetSyscallId("mkdir", 39);
+	SetSyscallId("rmdir", 40);
+	SetSyscallId("dup", 41);
+	SetSyscallId("pipe", 42);
+	SetSyscallId("times", 43);
+	SetSyscallId("prof", 44);
+	SetSyscallId("brk", 45);
+	SetSyscallId("setgid", 46);
+	SetSyscallId("getgid", 47);
+	SetSyscallId("signal", 48);
+	SetSyscallId("geteuid", 49);
+	SetSyscallId("getegid", 50);
+	SetSyscallId("acct", 51);
+	SetSyscallId("umount2", 52);
+	SetSyscallId("lock", 53);
+	SetSyscallId("ioctl", 54);
+	SetSyscallId("fcntl", 55);
+	SetSyscallId("mpx", 56);
+	SetSyscallId("setpgid", 57);
+	SetSyscallId("ulimit", 58);
+	SetSyscallId("oldolduname", 59);
+	SetSyscallId("umask", 60);
+	SetSyscallId("chroot", 61);
+	SetSyscallId("ustat", 62);
+	SetSyscallId("dup2", 63);
+	SetSyscallId("getppid", 64);
+	SetSyscallId("getpgrp", 65);
+	SetSyscallId("setsid", 66);
+	SetSyscallId("sigaction", 67);
+	SetSyscallId("sgetmask", 68);
+	SetSyscallId("ssetmask", 69);
+	SetSyscallId("setreuid", 70);
+	SetSyscallId("setregid", 71);
+	SetSyscallId("sigsuspend", 72);
+	SetSyscallId("sigpending", 73);
+	SetSyscallId("sethostname", 74);
+	SetSyscallId("setrlimit", 75);
+	SetSyscallId("getrlimit", 76);
+	SetSyscallId("getrusage", 77);
+	SetSyscallId("gettimeofday", 78);
+	SetSyscallId("settimeofday", 79);
+	SetSyscallId("getgroups", 80);
+	SetSyscallId("setgroups", 81);
+	SetSyscallId("select", 82);
+	SetSyscallId("symlink", 83);
+	SetSyscallId("oldlstat", 84);
+	SetSyscallId("readlink", 85);
+	SetSyscallId("uselib", 86);
+	SetSyscallId("swapon", 87);
+	SetSyscallId("reboot", 88);
+	SetSyscallId("readdir", 89);
+	SetSyscallId("mmap", 90);
+	SetSyscallId("munmap", 91);
+	SetSyscallId("truncate", 92);
+	SetSyscallId("ftruncate", 93);
+	SetSyscallId("fchmod", 94);
+	SetSyscallId("fchown", 95);
+	SetSyscallId("getpriority", 96);
+	SetSyscallId("setpriority", 97);
+	SetSyscallId("profil", 98);
+	SetSyscallId("statfs", 99);
+	SetSyscallId("fstatfs", 100);
+	SetSyscallId("ioperm", 101);
+	SetSyscallId("socketcall", 102);
+	SetSyscallId("syslog", 103);
+	SetSyscallId("setitimer", 104);
+	SetSyscallId("getitimer", 105);
+	SetSyscallId("stat", 106);
+	SetSyscallId("lstat", 107);
+	SetSyscallId("fstat", 108);
+	SetSyscallId("olduname", 109);
+	SetSyscallId("iopl", 110);
+	SetSyscallId("vhangup", 111);
+	SetSyscallId("idle", 112);
+	SetSyscallId("vm86", 113);
+	SetSyscallId("wait4", 114);
+	SetSyscallId("swapoff", 115);
+	SetSyscallId("sysinfo", 116);
+	SetSyscallId("ipc", 117);
+	SetSyscallId("fsync", 118);
+	SetSyscallId("sigreturn", 119);
+	SetSyscallId("clone", 120);
+	SetSyscallId("setdomainname", 121);
+	SetSyscallId("uname", 122);
+	SetSyscallId("modify_ldt", 123);
+	SetSyscallId("adjtimex", 124);
+	SetSyscallId("mprotect", 125);
+	SetSyscallId("sigprocmask", 126);
+	SetSyscallId("create_module", 127);
+	SetSyscallId("init_module", 128);
+	SetSyscallId("delete_module", 129);
+	SetSyscallId("get_kernel_syms", 130);
+	SetSyscallId("quotactl", 131);
+	SetSyscallId("getpgid", 132);
+	SetSyscallId("fchdir", 133);
+	SetSyscallId("bdflush", 134);
+	SetSyscallId("sysfs", 135);
+	SetSyscallId("personality", 136);
+	SetSyscallId("afs_syscall", 137);
+	SetSyscallId("setfsuid", 138);
+	SetSyscallId("setfsgid", 139);
+	SetSyscallId("_llseek", 140);
+	SetSyscallId("getdents", 141);
+	SetSyscallId("_newselect", 142);
+	SetSyscallId("flock", 143);
+	SetSyscallId("msync", 144);
+	SetSyscallId("readv", 145);
+	SetSyscallId("writev", 146);
+	SetSyscallId("getsid", 147);
+	SetSyscallId("fdatasync", 148);
+	SetSyscallId("_sysctl", 149);
+	SetSyscallId("mlock", 150);
+	SetSyscallId("munlock", 151);
+	SetSyscallId("mlockall", 152);
+	SetSyscallId("munlockall", 153);
+	SetSyscallId("sched_setparam", 154);
+	SetSyscallId("sched_getparam", 155);
+	SetSyscallId("sched_get_priority_max", 159);
+	SetSyscallId("sched_set_priority_max", 160);
+	SetSyscallId("sched_rr_get_interval", 161);
+	SetSyscallId("nanosleep", 162);
+	SetSyscallId("mremap", 163);
+	SetSyscallId("setresuid", 164);
+	SetSyscallId("getresuid", 165);
+	SetSyscallId("query_module", 166);
+	SetSyscallId("poll", 167);
+	SetSyscallId("nfsservctl", 168);
+	SetSyscallId("setresgid", 169);
+	SetSyscallId("getresgid", 170);
+	SetSyscallId("prctl", 171);
+	SetSyscallId("rt_sigreturn", 172);
+	SetSyscallId("rt_sigaction", 173);
+	SetSyscallId("rt_sigprocmask", 174);
+	SetSyscallId("rt_sigpending", 175);
+	SetSyscallId("rt_sigtimedwait", 176);
+	SetSyscallId("rt_sigqueueinfo", 177);
+	SetSyscallId("ry_sigsuspend", 178);
+	SetSyscallId("pread64", 179);
+	SetSyscallId("pwrite64", 180);
+	SetSyscallId("chown", 181);
+	SetSyscallId("getcwd", 182);
+	SetSyscallId("capget", 183);
+	SetSyscallId("capset", 184);
+	SetSyscallId("sigaltstack", 185);
+	SetSyscallId("sendfile", 186);
+	SetSyscallId("getpmsg", 187);
+	SetSyscallId("putpmsg", 188);
+	SetSyscallId("vfork", 189);
+	SetSyscallId("ugetrlimit", 190);
+	SetSyscallId("readahead", 191);
+	SetSyscallId("mmap2", 192);
+	SetSyscallId("truncate64", 193);
+	SetSyscallId("ftruncate64", 194);
+	SetSyscallId("stat64", 195);
+	SetSyscallId("lstat64", 196);
+	SetSyscallId("fstat64", 197);
+	SetSyscallId("pciconfig_read", 198);
+	SetSyscallId("pciconfig_write", 199);
+	SetSyscallId("pciconfig_iobase", 200);
+	SetSyscallId("multiplexer", 201);
+	SetSyscallId("getdents64", 202);
+	SetSyscallId("pivot_root", 203);
+	SetSyscallId("fcntl64", 204);
+	SetSyscallId("madvise", 205);
+	SetSyscallId("mincore", 206);
+	SetSyscallId("getpid", 207); // in a mono-thread environment pid=tid
+	SetSyscallId("tkill", 208);
+	SetSyscallId("setxattr", 209);
+	SetSyscallId("lsetxattr", 210);
+	SetSyscallId("fsetxattr", 211);
+	SetSyscallId("getxattr", 212);
+	SetSyscallId("lgetxattr", 213);
+	SetSyscallId("fgetxattr", 214);
+	SetSyscallId("listxattr", 215);
+	SetSyscallId("llistxattr", 216);
+	SetSyscallId("flistxattr", 217);
+	SetSyscallId("removexattr", 218);
+	SetSyscallId("lremovexattr", 219);
+	SetSyscallId("fremovexattr", 220);
+	SetSyscallId("futex", 221);
+	SetSyscallId("sched_setaffinity", 222);
+	SetSyscallId("sched_getaffinity", 223);
+	// 224 currently unused
+	SetSyscallId("tuxcall", 225);
+	SetSyscallId("sendfile64", 226);
+	SetSyscallId("io_setup", 227);
+	SetSyscallId("io_destroy", 228);
+	SetSyscallId("io_getevents", 229);
+	SetSyscallId("io_submit", 230);
+	SetSyscallId("io_cancel", 231);
+	SetSyscallId("set_tid_address", 232);
+	SetSyscallId("fadvise64", 233);
+	SetSyscallId("exit_group", 234);
+	SetSyscallId("lookup_dcookie", 235);
+	SetSyscallId("epoll_create", 236);
+	SetSyscallId("epoll_ctl", 237);
+	SetSyscallId("epoll_wait", 238);
+	SetSyscallId("remap_file_pages", 239);
+	SetSyscallId("timer_create", 240);
+	SetSyscallId("timer_settime", 241);
+	SetSyscallId("timer_gettime", 242);
+	SetSyscallId("timer_getoverrun", 243);
+	SetSyscallId("timer_delete", 244);
+	SetSyscallId("clock_settime", 245);
+	SetSyscallId("clock_gettime", 246);
+	SetSyscallId("clock_getres", 247);
+	SetSyscallId("clock_nanosleep", 248);
+	SetSyscallId("swapcontext", 249);
+	SetSyscallId("tgkill", 250);
+	SetSyscallId("utimes", 251);
+	SetSyscallId("statfs64", 252);
+	SetSyscallId("fstatfs64", 253);
+	SetSyscallId("fadvise64_64", 254);
+	SetSyscallId("rtas", 255);
+	SetSyscallId("sys_debug_setcontext", 256);
+	// 257 is reserved for vserver
+	SetSyscallId("migrate_pages", 258);
+	SetSyscallId("mbind", 259);
+	SetSyscallId("get_mempolicy", 260);
+	SetSyscallId("set_mempolicy", 261);
+	SetSyscallId("mq_open", 262);
+	SetSyscallId("mq_unlink", 263);
+	SetSyscallId("mq_timedsend", 264);
+	SetSyscallId("mq_timedreceive", 265);
+	SetSyscallId("mq_notify", 266);
+	SetSyscallId("mq_getsetattr", 267);
+	SetSyscallId("kexec_load", 268);
+	SetSyscallId("add_key", 269);
+	SetSyscallId("request_key", 270);
+	SetSyscallId("keyctl", 271);
+	SetSyscallId("waitid", 272);
+	SetSyscallId("ioprio_set", 273);
+	SetSyscallId("ioprio_get", 274);
+	SetSyscallId("inotify_init", 275);
+	SetSyscallId("inotify_add_watch", 276);
+	SetSyscallId("inotify_rm_watch", 277);
+	SetSyscallId("spu_run", 278);
+	SetSyscallId("spu_create", 279);
+	SetSyscallId("pselect6", 280);
+	SetSyscallId("ppoll", 281);
+	SetSyscallId("unshare", 282);
+	SetSyscallId("splice", 283);
+	SetSyscallId("tee", 284);
+	SetSyscallId("vmsplice", 285);
+	SetSyscallId("openat", 286);
+	SetSyscallId("mkdirat", 287);
+	SetSyscallId("mknodat", 288);
+	SetSyscallId("fchownat", 289);
+	SetSyscallId("futimesat", 290);
+	SetSyscallId("fstatat64", 291);
+	SetSyscallId("unlinkat", 292);
+	SetSyscallId("renameat", 293);
+	SetSyscallId("linkat", 294);
+	SetSyscallId("symlinkat", 295);
+	SetSyscallId("readlinkat", 296);
+	SetSyscallId("fchmodat", 297);
+	SetSyscallId("faccessat", 298);
+	SetSyscallId("get_robust_list", 299);
+	SetSyscallId("set_robust_list", 300);
+	SetSyscallId("move_pages", 301);
+	SetSyscallId("getcpu", 302);
+	SetSyscallId("epoll_wait", 303);
+	SetSyscallId("utimensat", 304);
+	SetSyscallId("signalfd", 305);
+	SetSyscallId("timerfd_create", 306);
+	SetSyscallId("eventfd", 307);
+	SetSyscallId("sync_file_range2", 308);
+	SetSyscallId("fallocate", 309);
+	SetSyscallId("subpage_prot", 310);
+	SetSyscallId("timerfd_settime", 311);
+	SetSyscallId("timerfd_gettime", 312);
+	SetSyscallId("signalfd4", 313);
+	SetSyscallId("eventfd2", 314);
+	SetSyscallId("epoll_create1", 315);
+	SetSyscallId("dup3", 316);
+	SetSyscallId("pipe2", 317);
+	SetSyscallId("inotify_init1", 318);
+	SetSyscallId("perf_event_open", 319);
+	SetSyscallId("preadv", 320);
+	SetSyscallId("pwritev", 321);
+	SetSyscallId("rt_tsigqueueinfo", 322);
+	SetSyscallId("fanotify_init", 323);
+	SetSyscallId("fanotify_mark", 324);
+	SetSyscallId("prlimit64", 325);
+	SetSyscallId("socket", 326);
+	SetSyscallId("bind", 327);
+	SetSyscallId("connect", 328);
+	SetSyscallId("listen", 329);
+	SetSyscallId("accept", 330);
+	SetSyscallId("getsockname", 331);
+	SetSyscallId("getpeername", 332);
+	SetSyscallId("socketpair", 333);
+	SetSyscallId("send", 334);
+	SetSyscallId("sendto", 335);
+	SetSyscallId("recv", 336);
+	SetSyscallId("recvfrom", 337);
+	SetSyscallId("shutdown", 338);
+	SetSyscallId("setsockopt", 339);
+	SetSyscallId("getsockopt", 340);
+	SetSyscallId("sendmsg", 341);
+	SetSyscallId("recvmsg", 342);
+	SetSyscallId("recvmmsg", 343);
+	SetSyscallId("accept4", 344);
+	SetSyscallId("name_to_handle_at", 345);
+	SetSyscallId("open_by_handle_at", 346);
+	SetSyscallId("clock_adjtime", 347);
+	SetSyscallId("syncfs", 348);
+	SetSyscallId("sendmmsg", 349);
+	SetSyscallId("setns", 350);
+	SetSyscallId("process_vm_readv", 351);
+	SetSyscallId("process_vm_writev", 352);
 
   return true;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
 void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallId(
-    const std::string &syscall_name, int syscall_id) {
-  if(unlikely(verbose_))
-    logger_
-        << DebugInfo
-        << "Associating syscall_name \"" << syscall_name << "\""
-        << "to syscall_id number " << syscall_id
-        << EndDebugInfo;
-  if (HasSyscall(syscall_name)) {
-    if (HasSyscall(syscall_id)) {
-      std::stringstream s;
-      s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
-      s << "syscall_id already associated to syscall \""
-          << syscall_name_assoc_map_[syscall_id] << "\"" << std::endl;
-      s << "  you wanted to associate it to " << syscall_name << std::endl;
-      throw std::runtime_error(s.str().c_str());
-    }
-    syscall_name_assoc_map_[syscall_id] = syscall_name;
-    syscall_impl_assoc_map_[syscall_id] = syscall_name_map_[syscall_name];
-  } else {
-    std::stringstream s;
-    s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
-    s << "Unimplemented system call (" << syscall_name << ")";
-    throw std::runtime_error(s.str().c_str());
-  }
+    const char *syscall_name, int syscall_id)
+{
+	if(unlikely(verbose_))
+	logger_
+		<< DebugInfo
+		<< "Associating syscall_name \"" << syscall_name << "\""
+		<< "to syscall_id number " << syscall_id
+		<< EndDebugInfo;
+		
+	if(HasSyscall(syscall_id))
+	{
+		std::stringstream s;
+		s << __FUNCTION__ << ":" << __FILE__ << ":" << __LINE__ << std::endl;
+		s << "syscall_id already associated to syscall \""
+			<< syscall_name_assoc_map_[syscall_id] << "\"" << std::endl;
+		s << "  you wanted to associate it to " << syscall_name << std::endl;
+		throw std::runtime_error(s.str().c_str());
+	}
+
+	syscall_name_assoc_map_[syscall_id] = syscall_name;
+	syscall_impl_assoc_map_[syscall_id] = GetSyscallImpl(syscall_name);
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap() {
-  syscall_name_map_[std::string("unknown")] = &thistype::LSC_unknown;
-  syscall_name_map_[std::string("exit")] = &thistype::LSC_exit;
-  syscall_name_map_[std::string("read")] = &thistype::LSC_read;
-  syscall_name_map_[std::string("write")] = &thistype::LSC_write;
-  syscall_name_map_[std::string("open")] = &thistype::LSC_open;
-  syscall_name_map_[std::string("close")] = &thistype::LSC_close;
-  syscall_name_map_[std::string("lseek")] = &thistype::LSC_lseek;
-  syscall_name_map_[std::string("getpid")] = &thistype::LSC_getpid;
-  syscall_name_map_[std::string("getuid")] = &thistype::LSC_getuid;
-  syscall_name_map_[std::string("access")] = &thistype::LSC_access;
-  syscall_name_map_[std::string("times")] = &thistype::LSC_times;
-  syscall_name_map_[std::string("brk")] = &thistype::LSC_brk;
-  syscall_name_map_[std::string("getgid")] = &thistype::LSC_getgid;
-  syscall_name_map_[std::string("geteuid")] = &thistype::LSC_geteuid;
-  syscall_name_map_[std::string("getegid")] = &thistype::LSC_getegid;
-  syscall_name_map_[std::string("munmap")] = &thistype::LSC_munmap;
-  syscall_name_map_[std::string("stat")] = &thistype::LSC_stat;
-  syscall_name_map_[std::string("fstat")] = &thistype::LSC_fstat;
-  syscall_name_map_[std::string("uname")] = &thistype::LSC_uname;
-  syscall_name_map_[std::string("llseek")] = &thistype::LSC_llseek;
-  syscall_name_map_[std::string("writev")] = &thistype::LSC_writev;
-  syscall_name_map_[std::string("mmap")] = &thistype::LSC_mmap;
-  syscall_name_map_[std::string("mmap2")] = &thistype::LSC_mmap2;
-  syscall_name_map_[std::string("stat64")] = &thistype::LSC_stat64;
-  syscall_name_map_[std::string("fstat64")] = &thistype::LSC_fstat64;
-  syscall_name_map_[std::string("getuid32")] = &thistype::LSC_getuid32;
-  syscall_name_map_[std::string("getgid32")] = &thistype::LSC_getgid32;
-  syscall_name_map_[std::string("geteuid32")] = &thistype::LSC_geteuid32;
-  syscall_name_map_[std::string("getegid32")] = &thistype::LSC_getegid32;
-  syscall_name_map_[std::string("fcntl64")] = &thistype::LSC_fcntl64;
-  syscall_name_map_[std::string("flistxattr")] = &thistype::LSC_flistxattr;
-  syscall_name_map_[std::string("exit_group")] = &thistype::LSC_exit_group;
-  syscall_name_map_[std::string("fcntl")] = &thistype::LSC_fcntl;
-  syscall_name_map_[std::string("dup")] = &thistype::LSC_dup;
-  syscall_name_map_[std::string("ioctl")] = &thistype::LSC_ioctl;
-  syscall_name_map_[std::string("ugetrlimit")] = &thistype::LSC_ugetrlimit;
-  syscall_name_map_[std::string("getrlimit")] = &thistype::LSC_getrlimit;
-  syscall_name_map_[std::string("setrlimit")] = &thistype::LSC_setrlimit;
-  syscall_name_map_[std::string("rt_sigaction")] = &thistype::LSC_rt_sigaction;
-  syscall_name_map_[std::string("getrusage")] = &thistype::LSC_getrusage;
-  syscall_name_map_[std::string("unlink")] = &thistype::LSC_unlink;
-  syscall_name_map_[std::string("rename")] = &thistype::LSC_rename;
-  syscall_name_map_[std::string("time")] = &thistype::LSC_time;
-  syscall_name_map_[std::string("socketcall")] = &thistype::LSC_socketcall;
-  syscall_name_map_[std::string("rt_sigprocmask")] =
-      &thistype::LSC_rt_sigprocmask;
-  syscall_name_map_[std::string("kill")] = &thistype::LSC_kill;
-  syscall_name_map_[std::string("tkill")] = &thistype::LSC_tkill;
-  syscall_name_map_[std::string("tgkill")] = &thistype::LSC_tgkill;
-  syscall_name_map_[std::string("ftruncate")] = &thistype::LSC_ftruncate;
-  syscall_name_map_[std::string("umask")] = &thistype::LSC_umask;
-  syscall_name_map_[std::string("gettimeofday")] = &thistype::LSC_gettimeofday;
-  syscall_name_map_[std::string("statfs")] = &thistype::LSC_statfs;
-  // the following are arm private system calls
-  if (utsname_machine_.compare("armv5") == 0) {
-    syscall_name_map_[std::string("breakpoint")] =
-        &thistype::LSC_arm_breakpoint;
-    syscall_name_map_[std::string("cacheflush")] =
-        &thistype::LSC_arm_cacheflush;
-    syscall_name_map_[std::string("usr26")] = &thistype::LSC_arm_usr26;
-    syscall_name_map_[std::string("usr32")] = &thistype::LSC_arm_usr32;
-    syscall_name_map_[std::string("set_tls")] = &thistype::LSC_arm_set_tls;
-  }
+void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetSyscallNameMap()
+{
+	syscall_name_map_["exit"] = &thistype::LSC_exit;
+	syscall_name_map_["read"] = &thistype::LSC_read;
+	syscall_name_map_["write"] = &thistype::LSC_write;
+	syscall_name_map_["open"] = &thistype::LSC_open;
+	syscall_name_map_["close"] = &thistype::LSC_close;
+	syscall_name_map_["lseek"] = &thistype::LSC_lseek;
+	syscall_name_map_["getpid"] = &thistype::LSC_getpid;
+	syscall_name_map_["getuid"] = &thistype::LSC_getuid;
+	syscall_name_map_["access"] = &thistype::LSC_access;
+	syscall_name_map_["times"] = &thistype::LSC_times;
+	syscall_name_map_["brk"] = &thistype::LSC_brk;
+	syscall_name_map_["getgid"] = &thistype::LSC_getgid;
+	syscall_name_map_["geteuid"] = &thistype::LSC_geteuid;
+	syscall_name_map_["getegid"] = &thistype::LSC_getegid;
+	syscall_name_map_["munmap"] = &thistype::LSC_munmap;
+	syscall_name_map_["stat"] = &thistype::LSC_stat;
+	syscall_name_map_["fstat"] = &thistype::LSC_fstat;
+	syscall_name_map_["uname"] = &thistype::LSC_uname;
+	syscall_name_map_["_llseek"] = &thistype::LSC__llseek;
+	syscall_name_map_["writev"] = &thistype::LSC_writev;
+	syscall_name_map_["mmap"] = &thistype::LSC_mmap;
+	syscall_name_map_["mmap2"] = &thistype::LSC_mmap2;
+	syscall_name_map_["stat64"] = &thistype::LSC_stat64;
+	syscall_name_map_["fstat64"] = &thistype::LSC_fstat64;
+	syscall_name_map_["getuid32"] = &thistype::LSC_getuid32;
+	syscall_name_map_["getgid32"] = &thistype::LSC_getgid32;
+	syscall_name_map_["geteuid32"] = &thistype::LSC_geteuid32;
+	syscall_name_map_["getegid32"] = &thistype::LSC_getegid32;
+	syscall_name_map_["fcntl64"] = &thistype::LSC_fcntl64;
+	syscall_name_map_["flistxattr"] = &thistype::LSC_flistxattr;
+	syscall_name_map_["exit_group"] = &thistype::LSC_exit_group;
+	syscall_name_map_["fcntl"] = &thistype::LSC_fcntl;
+	syscall_name_map_["dup"] = &thistype::LSC_dup;
+	syscall_name_map_["ioctl"] = &thistype::LSC_ioctl;
+	syscall_name_map_["ugetrlimit"] = &thistype::LSC_ugetrlimit;
+	syscall_name_map_["getrlimit"] = &thistype::LSC_getrlimit;
+	syscall_name_map_["setrlimit"] = &thistype::LSC_setrlimit;
+	syscall_name_map_["rt_sigaction"] = &thistype::LSC_rt_sigaction;
+	syscall_name_map_["getrusage"] = &thistype::LSC_getrusage;
+	syscall_name_map_["unlink"] = &thistype::LSC_unlink;
+	syscall_name_map_["rename"] = &thistype::LSC_rename;
+	syscall_name_map_["time"] = &thistype::LSC_time;
+	syscall_name_map_["socketcall"] = &thistype::LSC_socketcall;
+	syscall_name_map_["rt_sigprocmask"] = &thistype::LSC_rt_sigprocmask;
+	syscall_name_map_["kill"] = &thistype::LSC_kill;
+	syscall_name_map_["tkill"] = &thistype::LSC_tkill;
+	syscall_name_map_["tgkill"] = &thistype::LSC_tgkill;
+	syscall_name_map_["ftruncate"] = &thistype::LSC_ftruncate;
+	syscall_name_map_["umask"] = &thistype::LSC_umask;
+	syscall_name_map_["gettimeofday"] = &thistype::LSC_gettimeofday;
+	syscall_name_map_["statfs"] = &thistype::LSC_statfs;
+	
+	// the following are arm private system calls
+	if (utsname_machine_.compare("armv5") == 0)
+	{
+		syscall_name_map_["breakpoint"] = &thistype::LSC_arm_breakpoint;
+		syscall_name_map_["cacheflush"] = &thistype::LSC_arm_cacheflush;
+		syscall_name_map_["usr26"] = &thistype::LSC_arm_usr26;
+		syscall_name_map_["usr32"] = &thistype::LSC_arm_usr32;
+		syscall_name_map_["set_tls"] = &thistype::LSC_arm_set_tls;
+	}
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(
-    const std::string &syscall_name) {
-  return syscall_name_map_.find(syscall_name) != syscall_name_map_.end();
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(const char *syscall_name)
+{
+	return syscall_name_map_.find(syscall_name) != syscall_name_map_.end();
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(int syscall_id) {
-  return syscall_impl_assoc_map_.find(syscall_id) != 
-      syscall_impl_assoc_map_.end();
+bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::HasSyscall(int syscall_id)
+{
+	return syscall_impl_assoc_map_.find(syscall_id) != 
+	  syscall_impl_assoc_map_.end();
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id) {
-  if ( system_type_.compare("arm") == 0 )
-    return ARMGetSyscallNumber(id);
-  else if ( system_type_.compare("arm-eabi") == 0 )
-    return ARMEABIGetSyscallNumber(id);
-  else if ( system_type_.compare("ppc") == 0 )
-    return PPCGetSyscallNumber(id);
-  logger_ << DebugError
-      << "Could not translate syscall number "
-      << id << " (" << std::hex << id << std::dec << ") for system \""
-      << system_type_ << "\". Returning untranslated id."
-      << EndDebugError;
-  return id;
+typename Linux<ADDRESS_TYPE, PARAMETER_TYPE>::syscall_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallImpl(const char *syscall_name)
+{
+	typename std::map<std::string, syscall_t>::const_iterator it = syscall_name_map_.find(syscall_name);
+	return (it != syscall_name_map_.end()) ? (*it).second : &thistype::LSC_unimplemented;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSyscallNumber(int id) {
-  int translated_id = id - 0x0900000;
-  return translated_id;
+typename Linux<ADDRESS_TYPE, PARAMETER_TYPE>::syscall_t Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallImpl(int syscall_id)
+{
+	typename std::map<int, syscall_t>::const_iterator it = syscall_impl_assoc_map_.find(syscall_id);
+	return (it != syscall_impl_assoc_map_.end()) ? (*it).second : &thistype::LSC_unknown;
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id) {
-  // the arm eabi ignores the given id and uses register 7
-  //   as the id and translated id
-  PARAMETER_TYPE translated_id = 0;
-  if (regs_if_ == NULL) {
-    logger_ << DebugError
-        << "no register interface available." << EndDebugError;
-    return 0;
-  }
-
-  if (GetRegister(kARMEABISyscallNumberReg,
-                               &translated_id))
-    return (int)translated_id;
-  return 0;
+const char *Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallName(int syscall_id)
+{
+	std::map<int, std::string>::const_iterator it = syscall_name_assoc_map_.find(syscall_id);
+	return (it != syscall_name_assoc_map_.end()) ? (*it).second.c_str() : "unknown";
 }
 
 template<class ADDRESS_TYPE, class PARAMETER_TYPE>
-int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id) {
-  return id;
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::GetSyscallNumber(int id)
+{
+	if ( system_type_.compare("arm") == 0 )
+		return ARMGetSyscallNumber(id);
+	else if ( system_type_.compare("arm-eabi") == 0 )
+		return ARMEABIGetSyscallNumber(id);
+	else if ( system_type_.compare("ppc") == 0 )
+		return PPCGetSyscallNumber(id);
+
+	logger_ << DebugError
+		<< "Could not translate syscall number "
+		<< id << " (" << std::hex << id << std::dec << ") for system \""
+		<< system_type_ << "\". Returning untranslated id."
+		<< EndDebugError;
+
+	return id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMGetSyscallNumber(int id)
+{
+	int translated_id = id - 0x0900000;
+	return translated_id;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ARMEABIGetSyscallNumber(int id)
+{
+	// the arm eabi ignores the given id and uses register 7
+	//   as the id and translated id
+	PARAMETER_TYPE translated_id = 0;
+	if (regs_if_ == NULL)
+	{
+		logger_ << DebugError
+			<< "no register interface available." << EndDebugError;
+		return 0;
+	}
+
+	if (GetRegister(kARMEABISyscallNumberReg,
+	                &translated_id))
+	{
+		return (int)translated_id;
+	}
+	
+	return 0;
+}
+
+template<class ADDRESS_TYPE, class PARAMETER_TYPE>
+int Linux<ADDRESS_TYPE, PARAMETER_TYPE>::PPCGetSyscallNumber(int id)
+{
+	return id;
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::ReadMem(
-    ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size) {
-  if (mem_inject_if_ == NULL) return false;
-  if (mem_inject_if_->InjectReadMemory(addr, buffer, size)) {
-    if (unlikely(verbose_)) {
-      logger_
-          << DebugInfo
-          << "OS read memory:" << std::endl
-          << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-          << "\tsize = " << size << std::endl
-          << "\tdata =" << std::hex;
-      for (unsigned int i = 0; i < size; i++)
-        logger_ << " " << (unsigned int)buffer[i];
-      logger_ << std::dec
-              << EndDebugInfo;
-    }
-    return true;
-  } else {
-    logger_
-        << DebugWarning
-        << "failed OS read memory:" << std::endl
-        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size
-        << EndDebugWarning;
-    return false;
-  }
+    ADDRESS_TYPE addr, uint8_t * buffer, uint32_t size)
+{
+	if (mem_inject_if_ == NULL) return false;
+	
+	if (mem_inject_if_->InjectReadMemory(addr, buffer, size))
+	{
+		if (unlikely(verbose_))
+		{
+			logger_
+				<< DebugInfo
+				<< "OS read memory:" << std::endl
+				<< "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+				<< "\tsize = " << size << std::endl
+				<< "\tdata =" << std::hex;
+				
+			for (unsigned int i = 0; i < size; i++)
+			{
+				logger_ << " " << (unsigned int)buffer[i];
+			}
+			
+			logger_ << std::dec
+					<< EndDebugInfo;
+		}
+		return true;
+	}
+	else
+	{
+		logger_
+			<< DebugWarning
+			<< "failed OS read memory:" << std::endl
+			<< "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+			<< "\tsize = " << size
+			<< EndDebugWarning;
+		return false;
+	}
 }
 
 template <class ADDRESS_TYPE, class PARAMETER_TYPE>
 bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::WriteMem(
-    ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size) {
-  if (mem_inject_if_ == NULL) return false;
-  if (unlikely(verbose_)) {
-    logger_ << DebugInfo
-        << "OS write memory:" << std::endl
-        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
-        << "\tsize = " << size << std::endl
-        << "\tdata =" << std::hex;
-    for (unsigned int i = 0; i < size; i++)
-      logger_ << " " << (unsigned int)buffer[i];
-    logger_ << std::dec
-            << EndDebugInfo;
-  }
-  return mem_inject_if_->InjectWriteMemory(addr, buffer, size);
+    ADDRESS_TYPE addr, uint8_t const * const buffer, uint32_t size)
+{
+	if (mem_inject_if_ == NULL) return false;
+	
+	if (unlikely(verbose_))
+	{
+		logger_ << DebugInfo
+		        << "OS write memory:" << std::endl
+		        << "\taddr = 0x" << std::hex << addr << std::dec << std::endl
+		        << "\tsize = " << size << std::endl
+		        << "\tdata =" << std::hex;
+			
+		for (unsigned int i = 0; i < size; i++)
+		{
+			logger_ << " " << (unsigned int)buffer[i];
+		}
+		
+		logger_ << std::dec
+		        << EndDebugInfo;
+	}
+	return mem_inject_if_->InjectWriteMemory(addr, buffer, size);
 }
 
 } // end of namespace linux

@@ -29,27 +29,50 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
- *          Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include "unisim/component/tlm2/processor/tms320/tms320.hh"
-#include "unisim/component/tlm2/processor/tms320/tms320.tcc"
-#include "unisim/component/cxx/processor/tms320/config.hh"
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__
+
+#include <inttypes.h>
 
 namespace unisim {
 namespace component {
-namespace tlm2 {
+namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
-using unisim::component::cxx::processor::tms320::TMS320VC33_Config;
+typedef enum {
+	TMS320C30 = 0,
+	TMS320C31,
+	TMS320C32,
+	TMS320VC33
+} Model;
 
-template
-class TMS320<TMS320VC33_Config, true>;
+class TMS320C3XBase {
+public:
+	typedef uint32_t address_t;
+	typedef uint32_t insn_t;
+	static const uint32_t FSB_BURST_SIZE = 32;
+};
 
-} // end of namespace tms320
+class TMS320VC33_Config :
+	public TMS320C3XBase {
+public:
+	static const Model MODEL = TMS320VC33;
+
+	static const bool ENABLE_INSN_CACHE = true;
+	static const uint32_t INSN_CACHE_SIZE = 64;            // 64 32-bit instructions
+	static const uint32_t INSN_CACHE_BLOCKS_PER_LINE = 32;  // 32 32-bit instructions
+	static const uint32_t INSN_CACHE_ASSOCIATIVITY = 2;    // 2-way set associative
+};
+
+} // end of namespace tms320c3x
 } // end of namespace processor
-} // end of namespace tlm2
+} // end of namespace cxx
 } // end of namespace component
 } // end of namespace unisim
+ 
+#endif // __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CONFIG_HH__

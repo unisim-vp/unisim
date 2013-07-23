@@ -59,8 +59,8 @@ public:
 	~DWARF_Frame();
 	
 	bool LoadArchRegs();
-	bool ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame);
-	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame, unsigned int dw_ret_addr_reg_num);
+	bool ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame);
+	bool Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame, unsigned int dw_ret_addr_reg_num);
 	MEMORY_ADDR ReadCFA() const;
 	void UndefRegister(unsigned int reg_num);
 	bool ReadRegister(unsigned int reg_num, MEMORY_ADDR& reg_value) const;
@@ -75,6 +75,8 @@ private:
 	unsigned int dw_ret_addr_reg_num;
 	unisim::util::endian::endian_type endianness;
 	unsigned int address_size;
+	DW_CFA_Specification dw_cfa_spec;
+	DW_CFA_RegRuleOffsetSpecification dw_cfa_reg_rule_offset_spec;
 	unisim::service::interfaces::Memory<MEMORY_ADDR> *mem_if;
 	bool pc_is_defined;
 	MEMORY_ADDR pc;

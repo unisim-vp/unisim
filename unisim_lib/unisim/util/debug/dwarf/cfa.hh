@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2009,
+ *  Copyright (c) 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,29 +29,34 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
- *          Gilles Mouchard (gilles.mouchard@cea.fr)
+ * Authors: Gilles Mouchard (gilles.mouchard@cea.fr)
  */
- 
-#include "unisim/component/cxx/processor/tms320/cpu.hh"
-#include "unisim/component/cxx/processor/tms320/cpu.tcc"
-#include "unisim/component/cxx/processor/tms320/config.hh"
-#include "unisim/component/cxx/processor/tms320/exception.hh"
-#include "unisim/component/cxx/processor/tms320/exception.tcc"
+
+#ifndef __UNISIM_UTIL_DEBUG_DWARF_CFA_HH__
+#define __UNISIM_UTIL_DEBUG_DWARF_CFA_HH__
 
 namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace tms320 {
+namespace util {
+namespace debug {
+namespace dwarf {
 
-template
-class CPU<TMS320VC33_Config, true>;
+typedef enum
+{
+	DW_CFA_IS_SP_AT_THE_CALL_SITE_IN_THE_PREVIOUS_FRAME = 0, // this is the standard
+	DW_CFA_IS_SP_VALUE_ON_ENTRY_TO_THE_CURRENT_FRAME = 1     // this is not standard
+}
+DW_CFA_Specification;
 
-} // end of namespace tms320
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
+typedef enum
+{
+	DW_CFA_REG_RULE_OFFSET_IS_CFA_RELATIVE = 0, // this is the standard
+	DW_CFA_REG_RULE_OFFSET_IS_SP_RELATIVE = 1,  // this is not standard
+}
+DW_CFA_RegRuleOffsetSpecification;
+
+} // end of namespace dwarf
+} // end of namespace debug
+} // end of namespace util
 } // end of namespace unisim
 
-
+#endif // __UNISIM_UTIL_DEBUG_DWARF_CFA_HH__

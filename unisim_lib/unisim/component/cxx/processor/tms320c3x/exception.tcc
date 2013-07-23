@@ -40,7 +40,7 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 template<class CONFIG, bool DEBUG>
 InternalErrorException<CONFIG, DEBUG>::InternalErrorException(const char *msg)
@@ -62,7 +62,7 @@ const char * InternalErrorException<CONFIG, DEBUG>::what () const throw ()
 }
 
 template<class CONFIG, bool DEBUG>
-UnknownOpcodeException<CONFIG, DEBUG>::UnknownOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+UnknownOpcodeException<CONFIG, DEBUG>::UnknownOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *_operation)
 	: operation(_operation)
 {
 	stringstream sstr;
@@ -86,13 +86,13 @@ const char * UnknownOpcodeException<CONFIG, DEBUG>::what () const throw ()
 }
 
 template<class CONFIG, bool DEBUG>
-isa::tms320::Operation<CONFIG, DEBUG> *UnknownOpcodeException<CONFIG, DEBUG>::GetOperation() const
+isa::tms320c3x::Operation<CONFIG, DEBUG> *UnknownOpcodeException<CONFIG, DEBUG>::GetOperation() const
 {
 	return operation;
 }
 
 template<class CONFIG, bool DEBUG>
-UnimplementedOpcodeException<CONFIG, DEBUG>::UnimplementedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+UnimplementedOpcodeException<CONFIG, DEBUG>::UnimplementedOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *_operation)
 	: operation(_operation)
 {
 	stringstream sstr;
@@ -116,13 +116,13 @@ const char * UnimplementedOpcodeException<CONFIG, DEBUG>::what () const throw ()
 }
 
 template<class CONFIG, bool DEBUG>
-isa::tms320::Operation<CONFIG, DEBUG> *UnimplementedOpcodeException<CONFIG, DEBUG>::GetOperation() const
+isa::tms320c3x::Operation<CONFIG, DEBUG> *UnimplementedOpcodeException<CONFIG, DEBUG>::GetOperation() const
 {
 	return operation;
 }
 
 template<class CONFIG, bool DEBUG>
-BogusOpcodeException<CONFIG, DEBUG>::BogusOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+BogusOpcodeException<CONFIG, DEBUG>::BogusOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *_operation)
 	: operation(_operation)
 {
 	stringstream sstr;
@@ -146,13 +146,13 @@ const char * BogusOpcodeException<CONFIG, DEBUG>::what () const throw ()
 }
 
 template<class CONFIG, bool DEBUG>
-isa::tms320::Operation<CONFIG, DEBUG> *BogusOpcodeException<CONFIG, DEBUG>::GetOperation() const
+isa::tms320c3x::Operation<CONFIG, DEBUG> *BogusOpcodeException<CONFIG, DEBUG>::GetOperation() const
 {
 	return operation;
 }
 
 template<class CONFIG, bool DEBUG>
-MisplacedOpcodeException<CONFIG, DEBUG>::MisplacedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *_operation)
+MisplacedOpcodeException<CONFIG, DEBUG>::MisplacedOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *_operation)
 	: operation(_operation)
 {
 	stringstream sstr;
@@ -176,7 +176,7 @@ const char * MisplacedOpcodeException<CONFIG, DEBUG>::what () const throw ()
 }
 
 template<class CONFIG, bool DEBUG>
-isa::tms320::Operation<CONFIG, DEBUG> *MisplacedOpcodeException<CONFIG, DEBUG>::GetOperation() const
+isa::tms320c3x::Operation<CONFIG, DEBUG> *MisplacedOpcodeException<CONFIG, DEBUG>::GetOperation() const
 {
 	return operation;
 }
@@ -206,7 +206,7 @@ typename CONFIG::address_t BadMemoryAccessException<CONFIG, DEBUG>::GetAddr() co
 	return addr;
 }
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

@@ -1140,6 +1140,13 @@ TRAPcond.execute = {
 		throw MisplacedOpcodeException<CONFIG, DEBUG>(this);
 	}
 
+	// Check whether to trap into debugger or really trapping
+	if(cpu.HasDebuggerTrap(Operation<CONFIG, DEBUG>::GetEncoding()))
+	{
+		cpu.SetNPC(cpu.GetPC()); // force re-execution (debugger should reinstall correct instruction)
+		return;
+	}
+	
 	// Check the condition
 	if(!cpu.CheckCondition(cond)) return;
 

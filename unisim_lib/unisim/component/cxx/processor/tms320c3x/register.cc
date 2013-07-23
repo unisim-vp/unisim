@@ -33,7 +33,7 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#include <unisim/component/cxx/processor/tms320/register.hh>
+#include <unisim/component/cxx/processor/tms320c3x/register.hh>
 #include <unisim/util/arithmetic/arithmetic.hh>
 #include <sstream>
 #include <iostream>
@@ -45,7 +45,7 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 	Register::Register()
 	: lo_write_mask(0xffffffff)
@@ -1176,7 +1176,7 @@ namespace tms320 {
 		this->SetLo(GetLo16(value));
 	}
 	
-	RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, bool _extended_precision)
+	RegisterDebugInterface::RegisterDebugInterface(const char *_name, unisim::component::cxx::processor::tms320c3x::Register *_reg, bool _extended_precision)
 	: name(_name)
 	, extended_precision(_extended_precision)
 	, reg(_reg)
@@ -1244,7 +1244,7 @@ namespace tms320 {
 		return extended_precision ? sizeof(uint32_t) + sizeof(uint8_t) : sizeof(uint32_t);
 	}
 	
-	RegisterBitFieldDebugInterface::RegisterBitFieldDebugInterface(const char *_name, unisim::component::cxx::processor::tms320::Register *_reg, unsigned int _bit_offset, unsigned int _bit_size)
+	RegisterBitFieldDebugInterface::RegisterBitFieldDebugInterface(const char *_name, unisim::component::cxx::processor::tms320c3x::Register *_reg, unsigned int _bit_offset, unsigned int _bit_size)
 	: name(_name)
 	, reg(_reg)
 	, bit_offset(_bit_offset)
@@ -1263,25 +1263,35 @@ namespace tms320 {
 	
 	void RegisterBitFieldDebugInterface::GetValue(void *buffer) const
 	{
-		uint32_t lo = reg->GetLo();
-		uint32_t value = (lo >> bit_offset) & ((1 << bit_size) - 1);
+		uint64_t value40 = ((uint64_t) reg->GetHi() << 32) | reg->GetLo();
+		uint32_t value = (value40 >> bit_offset) & ((1 << bit_size) - 1);
 		
-		if(bit_size <= 8) *(uint8_t *) buffer = value; 
+		if(bit_size <= 8)
+			*(uint8_t *) buffer = value; 
+		else if(bit_size <= 16)
+			*(uint16_t *) buffer = value; 
 		else
-			if(bit_size <= 16) *(uint16_t *) buffer = value; 
-			else *(uint32_t *) buffer = value;
+			*(uint32_t *) buffer = value;
 	}
 	
 	void RegisterBitFieldDebugInterface::SetValue(const void *buffer)
 	{
 		uint32_t value;
 		
-		if(bit_size <= 8) value = *(uint8_t *) buffer; 
+		if(bit_size <= 8)
+			value = *(uint8_t *) buffer; 
+		else if(bit_size <= 16)
+			value = *(uint16_t *) buffer; 
 		else
-			if(bit_size <= 16) value = *(uint16_t *) buffer; 
-			else value = *(uint32_t *) buffer;
+			value = *(uint32_t *) buffer;
+			
+		uint64_t value40 = ((uint64_t) reg->GetHi() << 32) | reg->GetLo();
+		uint64_t mask = (((1 << bit_size) - 1) << bit_offset);
+		value40 = (value40 & ~mask) | ((value << bit_offset) & mask);
+		reg->SetLo(value40);
+		reg->SetHi(value40 >> 32);
 		
-		reg->SetLo((reg->GetLo() & ~(((1 << bit_size) - 1) << bit_offset)) | (value << bit_offset));
+		//reg->SetLo((reg->GetLo() & ~(((1 << bit_size) - 1) << bit_offset)) | (value << bit_offset));
 	}
 	
 	int RegisterBitFieldDebugInterface::GetSize() const
@@ -1289,7 +1299,7 @@ namespace tms320 {
 		return (bit_size + 7) / 8;
 	}
 	
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

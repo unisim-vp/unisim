@@ -697,7 +697,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(pos != len) break;
-				if(!ReadMemory(addr, size))
+				if(!ReadMemory(addr * memory_atom_size, size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -709,7 +709,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
 				if(packet[pos++] != ':') break;
-				if(!WriteMemory(addr, packet.substr(pos), size))
+				if(!WriteMemory(addr * memory_atom_size, packet.substr(pos), size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -743,6 +743,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 					running_mode = GDBSERVER_MODE_CONTINUE;
 					return DebugControl<ADDRESS>::DBG_STEP;
 				}
+				addr *= memory_atom_size;
 				if(gdb_pc)
 					gdb_pc->SetValue(&addr);
 				else
@@ -788,7 +789,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, addr)) break;
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
-				if(!SetBreakpointWatchpoint(type, addr, size))
+				if(!SetBreakpointWatchpoint(type, addr * memory_atom_size, size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;
@@ -801,7 +802,7 @@ typename DebugControl<ADDRESS>::DebugCommand GDBServer<ADDRESS>::FetchDebugComma
 				if(!ParseHex(packet, pos, addr)) break;
 				if(packet[pos++] != ',') break;
 				if(!ParseHex(packet, pos, size)) break;
-				if(!RemoveBreakpointWatchpoint(type, addr, size))
+				if(!RemoveBreakpointWatchpoint(type, addr * memory_atom_size, size))
 				{
 					Object::Stop(0);
 					return DebugControl<ADDRESS>::DBG_KILL;

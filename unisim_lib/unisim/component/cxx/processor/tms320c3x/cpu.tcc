@@ -33,11 +33,11 @@
  *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
-#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_TCC__
-#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320_CPU_TCC__
+#ifndef __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_TCC__
+#define __UNISIM_COMPONENT_CXX_PROCESSOR_TMS320C3X_CPU_TCC__
   
-#include "unisim/component/cxx/processor/tms320/cpu.hh"
-#include "unisim/component/cxx/processor/tms320/config.hh"
+#include "unisim/component/cxx/processor/tms320c3x/cpu.hh"
+#include "unisim/component/cxx/processor/tms320c3x/config.hh"
 
 #if defined(__GNUC__) && (__GNUC__ >= 3)
 #define INLINE __attribute__((always_inline))
@@ -45,7 +45,7 @@
 #define INLINE
 #endif
 
-#include "unisim/component/cxx/processor/tms320/isa_tms320.tcc"
+#include "unisim/component/cxx/processor/tms320c3x/isa_tms320c3x.tcc"
 #include "unisim/util/arithmetic/arithmetic.hh"
 
 #include "unisim/util/debug/simple_register.hh"
@@ -58,7 +58,7 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 using unisim::util::endian::E_BIG_ENDIAN;
 using unisim::util::endian::E_LITTLE_ENDIAN;
@@ -88,16 +88,16 @@ CPU<CONFIG, DEBUG> ::
 CPU(const char *name,
 		Object *parent) :
 	Object(name, parent),
-	Client<DebugControl<uint64_t> >(name, parent),
-	Client<MemoryAccessReporting<uint64_t> >(name, parent),
+	Client<DebugControl<typename CONFIG::address_t> >(name, parent),
+	Client<MemoryAccessReporting<typename CONFIG::address_t> >(name, parent),
 	Client<TrapReporting>(name, parent),
-	Client<SymbolTableLookup<uint64_t> >(name, parent),
-	Service<MemoryInjection<uint64_t> >(name, parent),
+	Client<SymbolTableLookup<typename CONFIG::address_t> >(name, parent),
+	Service<MemoryInjection<typename CONFIG::address_t> >(name, parent),
 	Service<MemoryAccessReportingControl> (name, parent),
-	Service<Disassembly<uint64_t> >(name, parent),
+	Service<Disassembly<typename CONFIG::address_t> >(name, parent),
 	Service<Registers>(name, parent),
-	Service<Memory<uint64_t> >(name, parent),
-	Client<Memory<uint64_t> >(name, parent),
+	Service<Memory<typename CONFIG::address_t> >(name, parent),
+	Client<Memory<typename CONFIG::address_t> >(name, parent),
 	Client<TI_C_IO>(name, parent),
 	Client<Loader>(name, parent),
 	logger(*this),
@@ -120,10 +120,12 @@ CPU(const char *name,
 	trap_on_instruction_counter(0xffffffffffffffffULL),
 	max_inst(0xffffffffffffffffULL),
 	mimic_dev_board(false),
+	trap_on_trap_instruction(0),
 	param_max_inst("max-inst", this, max_inst),
 	param_trap_on_instruction_counter("trap-on-instruction-counter", this, trap_on_instruction_counter),
 	stat_instruction_counter("instruction-counter", this, instruction_counter),
 	param_mimic_dev_board("mimic-dev-board", this, mimic_dev_board),
+	param_trap_on_trap_instruction("trap-on-trap-instruction", this, trap_on_trap_instruction, "if not zero, encoding of trap instruction that should trap into debugger"),
 	delay_before_branching(0),
 	branch_addr(0),
 	repeat_single(false),
@@ -133,10 +135,11 @@ CPU(const char *name,
 	reg_ir(0),
 	reg_pc(0),
 	reg_npc(0),
-	insn_cache_hits(0),
+	insn_cache_accesses(0),
 	insn_cache_misses(0),
-	stat_insn_cache_hits("insn-cache-hits", this, insn_cache_hits),
-	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses),
+	stat_insn_cache_accesses("insn-cache-accesses", this, insn_cache_accesses, "Instruction cache accesses"),
+	stat_insn_cache_misses("insn-cache-misses", this, insn_cache_misses, "Instruction cache misses"),
+	formula_insn_cache_miss_rate("insn-cache-miss-rate", this, Formula<double>::OP_DIV, &stat_insn_cache_misses, &stat_insn_cache_accesses, "instruction cache miss rate"),
 	enable_parallel_load_bug(true),
 	param_enable_parallel_load_bug("enable-parallel-load-bug", this, enable_parallel_load_bug,
 		"When using parallel loads (LDF src2, dst2 || LDF src1, dst1) the src1 load doesn't transform incorrect zero values to valid zero representation, instead they copy the contents of the memory to the register. Set to this parameter to false to transform incorrect zero values."),
@@ -170,6 +173,20 @@ CPU(const char *name,
 		stringstream sstr;
 		sstr << "R" << i;
 		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], true /* extended precision */);
+	}
+
+	for(i = 0; i < 8; i++)
+	{
+		stringstream sstr;
+		sstr << "R" << i << "L";
+		registers_registry[sstr.str().c_str()] = new RegisterDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i]);
+	}
+
+	for(i = 0; i < 8; i++)
+	{
+		stringstream sstr;
+		sstr << "R" << i << "H";
+		registers_registry[sstr.str().c_str()] = new RegisterBitFieldDebugInterface(sstr.str().c_str(), &regs[REG_R0 + i], 32, 8);
 	}
 
 	for(i = 0; i < 8; i++)
@@ -343,7 +360,7 @@ Reset()
 template<class CONFIG, bool DEBUG>
 bool
 CPU<CONFIG, DEBUG> ::
-ReadMemory(uint64_t addr, void *buffer, uint32_t size)
+ReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	return memory_import ? memory_import->ReadMemory(addr, buffer, size) : false;
 }
@@ -351,7 +368,7 @@ ReadMemory(uint64_t addr, void *buffer, uint32_t size)
 template<class CONFIG, bool DEBUG>
 bool
 CPU<CONFIG, DEBUG> ::
-WriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+WriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
 	return memory_import ? memory_import->WriteMemory(addr, buffer, size) : false;
 }
@@ -359,7 +376,7 @@ WriteMemory(uint64_t addr, const void *buffer, uint32_t size)
 template<class CONFIG, bool DEBUG>
 bool
 CPU<CONFIG, DEBUG> ::
-InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
+InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
 	if(unlikely(!PrRead(addr, buffer, size, false)))
 	{
@@ -378,7 +395,7 @@ InjectReadMemory(uint64_t addr, void *buffer, uint32_t size)
 template<class CONFIG, bool DEBUG>
 bool
 CPU<CONFIG, DEBUG> ::
-InjectWriteMemory(uint64_t addr, const void *buffer, uint32_t size)
+InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
 	if(unlikely(!PrWrite(addr, buffer, size, false)))
 	{
@@ -436,10 +453,10 @@ GetRegister(const char *name)
 template<class CONFIG, bool DEBUG>
 string 
 CPU<CONFIG, DEBUG> ::
-Disasm(uint64_t _addr, uint64_t &next_addr) 
+Disasm(typename CONFIG::address_t _addr, typename CONFIG::address_t &next_addr) 
 {
 	address_t addr = (address_t) _addr;
-	typename isa::tms320::Operation<CONFIG, DEBUG> *op = NULL;
+	typename isa::tms320c3x::Operation<CONFIG, DEBUG> *op = NULL;
 	typename CONFIG::insn_t insn;
 	stringstream buffer;
 	
@@ -664,7 +681,7 @@ CPU<CONFIG, DEBUG> ::
 GetObjectFriendlyName(address_t addr)
 {
 	stringstream sstr;
-	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<uint64_t>::SYM_OBJECT) : 0;
+	const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<typename CONFIG::address_t>::SYM_OBJECT) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(4 * addr) << " @0x" << std::hex << addr << std::dec;
 	else
@@ -680,7 +697,7 @@ GetFunctionFriendlyName(address_t addr)
 {
 	stringstream sstr;
 	
-	const Symbol<uint64_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<uint64_t>::SYM_FUNC) : 0;
+	const Symbol<typename CONFIG::address_t> *symbol = symbol_table_lookup_import ? symbol_table_lookup_import->FindSymbolByAddr(4 * addr, Symbol<typename CONFIG::address_t>::SYM_FUNC) : 0;
 	if(symbol)
 		sstr << symbol->GetFriendlyName(4 * addr);
 	else
@@ -1225,12 +1242,12 @@ StepInstruction()
 	{
 		do
 		{
-			typename DebugControl<uint64_t>::DebugCommand dbg_cmd;
+			typename DebugControl<typename CONFIG::address_t>::DebugCommand dbg_cmd;
 
 			dbg_cmd = debug_control_import->FetchDebugCommand(4 * GetPC23_0());
 	
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_STEP) break;
-			if(dbg_cmd == DebugControl<uint64_t>::DBG_KILL)
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_STEP) break;
+			if(dbg_cmd == DebugControl<typename CONFIG::address_t>::DBG_KILL)
 			{
 				Stop(0);
 				return;
@@ -1442,15 +1459,15 @@ StepInstruction()
 
 		// Decode the instruction
 		// Note: GenISSLib generated decoder handle byte address not word address
-		typename isa::tms320::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * GetPC23_0(), GetIR());
+		typename isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = decoder.Decode(4 * GetPC23_0(), GetIR());
 
 		// Execute the instruction
 		operation->execute(*this);
 
 
-// 		stringstream sstr;
-// 		operation->disasm(*this, sstr);
-// 		cerr << "EXECUTE: " << sstr.str() << endl;
+//  		stringstream sstr;
+//  		operation->disasm(*this, sstr);
+//  		std::cerr << "EXECUTE: " << std::hex << GetPC23_0() << std::dec << " " << sstr.str() << endl;
 
 		// Check whether a branch is pending
 		if(unlikely(delay_before_branching))
@@ -1535,24 +1552,6 @@ EnableParallelStoreBug()
 }
 
 template<class CONFIG, bool DEBUG>
-inline INLINE 
-bool
-CPU<CONFIG, DEBUG> ::
-VerboseAll()
-{
-	return DEBUG && verbose_all;
-}
-
-template<class CONFIG, bool DEBUG>
-inline INLINE 
-bool
-CPU<CONFIG, DEBUG> ::
-VerboseSetup()
-{
-	return DEBUG && verbose_setup;
-}
-
-template<class CONFIG, bool DEBUG>
 inline
 bool
 CPU<CONFIG, DEBUG> ::
@@ -1576,7 +1575,7 @@ void
 CPU<CONFIG, DEBUG> ::
 IntStore(address_t ea, uint32_t value, bool interlocked)
 {
-	uint64_t addr = 4 * ea; // convert word effective address to a byte address
+	typename CONFIG::address_t addr = 4 * ea; // convert word effective address to a byte address
 
 	value = Host2LittleEndian(value);
 
@@ -1599,7 +1598,7 @@ CPU<CONFIG, DEBUG> ::
 IntLoad(address_t ea, bool interlocked)
 {
 	uint32_t value;
-	uint64_t addr = 4 * ea; // convert word effective address to a byte address
+	typename CONFIG::address_t addr = 4 * ea; // convert word effective address to a byte address
 
 	if(unlikely(!PrRead(addr, &value, sizeof(value), interlocked)))
 	{
@@ -1676,6 +1675,9 @@ Fetch(address_t addr)
 	// Check wether instruction cache is enabled
 	if(likely(CONFIG::ENABLE_INSN_CACHE && GetST_CE()))
 	{
+		// Instruction Cache Access
+		insn_cache_accesses++;
+		
 		uint32_t insn_cache_index;
 
 		// Decode the address
@@ -1699,9 +1701,6 @@ Fetch(address_t addr)
 				insn_cache_line_hit = true;
 				InsnCacheBlock *insn_cache_block = &insn_cache_line->blocks[insn_cache_sector];
 				if(!insn_cache_block->valid) break;
-
-				// Hit
-				insn_cache_hits++;
 
 				// Read the instruction word from the cache block
 				insn = insn_cache_block->insn;
@@ -1926,7 +1925,7 @@ GenFlags(const Register& result, uint32_t reset_mask, uint32_t or_mask, uint32_t
 //= Verbose variables, parameters, and methods             STOP =
 //===============================================================
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

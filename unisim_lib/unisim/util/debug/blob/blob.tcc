@@ -58,6 +58,7 @@ Blob<MEMORY_ADDR>::Blob()
 	, memory_atom_size(1)
 	, elf_phoff(0)
 	, elf_phent(0)
+	, elf_flags(0)
 	, blobs()
 	, sections()
 	, segments()
@@ -78,6 +79,9 @@ Blob<MEMORY_ADDR>::Blob(const Blob<MEMORY_ADDR>& _blob)
 	, file_endian(_blob.file_endian)
 	, address_size(_blob.address_size)
 	, memory_atom_size(_blob.memory_atom_size)
+	, elf_phoff(_blob.elf_phoff)
+	, elf_phent(_blob.elf_phent)
+	, elf_flags(_blob.elf_flags)
 	, blobs()
 	, sections()
 	, segments()
@@ -213,6 +217,13 @@ void Blob<MEMORY_ADDR>::SetELF_PHENT(unsigned int _elf_phent)
 {
 	elf_phent = _elf_phent;
 	capability = (Capability)(capability | CAP_ELF_PHENT);
+}
+
+template <class MEMORY_ADDR>
+void Blob<MEMORY_ADDR>::SetELF_Flags(uint32_t _elf_flags)
+{
+	elf_flags = _elf_flags;
+	capability = (Capability)(capability | CAP_ELF_FLAGS);
 }
 
 template <class MEMORY_ADDR>
@@ -352,6 +363,12 @@ template <class MEMORY_ADDR>
 unsigned int Blob<MEMORY_ADDR>::GetELF_PHENT() const
 {
 	return (capability & CAP_ELF_PHENT) ? elf_phent : 0;
+}
+
+template <class MEMORY_ADDR>
+unsigned int Blob<MEMORY_ADDR>::GetELF_Flags() const
+{
+	return (capability & CAP_ELF_FLAGS) ? elf_flags : 0;
 }
 
 template <class MEMORY_ADDR>

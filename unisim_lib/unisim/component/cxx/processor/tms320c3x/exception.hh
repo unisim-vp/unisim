@@ -42,7 +42,7 @@ namespace unisim {
 namespace component {
 namespace cxx {
 namespace processor {
-namespace tms320 {
+namespace tms320c3x {
 
 class Exception : public std::exception {};
 
@@ -61,12 +61,12 @@ template <class CONFIG, bool DEBUG>
 class UnknownOpcodeException : public Exception
 {
 public:
-	UnknownOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	UnknownOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = 0);
 	virtual const char * what () const throw ();
 	virtual ~UnknownOpcodeException() throw();
-	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *GetOperation() const;
 private:
-	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *operation;
 	string what_str;
 };
 
@@ -74,12 +74,12 @@ template <class CONFIG, bool DEBUG>
 class UnimplementedOpcodeException : public Exception
 {
 public:
-	UnimplementedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	UnimplementedOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = 0);
 	virtual const char * what () const throw ();
 	virtual ~UnimplementedOpcodeException() throw();
-	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *GetOperation() const;
 private:
-	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *operation;
 	string what_str;
 };
 
@@ -87,12 +87,12 @@ template <class CONFIG, bool DEBUG>
 class BogusOpcodeException : public Exception
 {
 public:
-	BogusOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	BogusOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = 0);
 	virtual const char * what () const throw ();
 	virtual ~BogusOpcodeException() throw();
-	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *GetOperation() const;
 private:
-	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *operation;
 	string what_str;
 };
 
@@ -100,12 +100,12 @@ template <class CONFIG, bool DEBUG>
 class MisplacedOpcodeException : public Exception
 {
 public:
-	MisplacedOpcodeException(isa::tms320::Operation<CONFIG, DEBUG> *operation = 0);
+	MisplacedOpcodeException(isa::tms320c3x::Operation<CONFIG, DEBUG> *operation = 0);
 	virtual const char * what () const throw ();
 	virtual ~MisplacedOpcodeException() throw();
-	isa::tms320::Operation<CONFIG, DEBUG> *GetOperation() const;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *GetOperation() const;
 private:
-	isa::tms320::Operation<CONFIG, DEBUG> *operation;
+	isa::tms320c3x::Operation<CONFIG, DEBUG> *operation;
 	string what_str;
 };
 
@@ -122,7 +122,7 @@ private:
 	string what_str;
 };
 
-} // end of namespace tms320
+} // end of namespace tms320c3x
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

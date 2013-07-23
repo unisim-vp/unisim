@@ -521,7 +521,6 @@ Simulator<CONFIG>::Simulator(int argc, char **argv)
 			debugger->trap_reporting_import >> gdb_server->trap_reporting_export;
 			gdb_server->debug_event_trigger_import >> debugger->debug_event_trigger_export;
 			gdb_server->memory_import >> debugger->memory_export;
-			std::cerr << "!!!!!!!!!!!!!!!!!! Hello world! !!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 			gdb_server->registers_import >> debugger->registers_export;
 		}
 
@@ -1079,7 +1078,7 @@ template <class CONFIG>
 void Simulator<CONFIG>::SigIntHandler(int signum)
 {
 	cerr << "Interrupted by Ctrl-C or SIGINT signal" << endl;
-	sc_stop();
+	unisim::kernel::service::Simulator::simulator->Stop(0, 0, true);
 }
 #endif
 

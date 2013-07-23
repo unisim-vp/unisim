@@ -51,6 +51,8 @@ DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *_dw_hand
 	, sp_reg_num(_dw_handler->GetRegisterNumberMapping()->GetSPRegNum())
 	, endianness(_dw_handler->GetArchEndianness())
 	, address_size(_dw_handler->GetArchAddressSize())
+	, dw_cfa_spec(_dw_handler->GetCFA_Specification())
+	, dw_cfa_reg_rule_offset_spec(_dw_handler->GetCFA_RegRuleOffsetSpecification())
 	, mem_if(_dw_handler->GetMemoryInterface())
 	, pc_is_defined(false)
 	, pc(0)
@@ -67,6 +69,8 @@ DWARF_Frame<MEMORY_ADDR>::DWARF_Frame(const DWARF_Handler<MEMORY_ADDR> *_dw_hand
 	, sp_reg_num(_dw_handler->GetRegisterNumberMapping()->GetSPRegNum())
 	, endianness(_dw_handler->GetArchEndianness())
 	, address_size(_dw_handler->GetArchAddressSize())
+	, dw_cfa_spec(_dw_handler->GetCFA_Specification())
+	, dw_cfa_reg_rule_offset_spec(_dw_handler->GetCFA_RegRuleOffsetSpecification())
 	, mem_if(_dw_handler->GetMemoryInterface())
 	, pc_is_defined(true)
 	, pc(_pc)
@@ -249,7 +253,7 @@ bool DWARF_Frame<MEMORY_ADDR>::LoadArchRegs()
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_Frame<MEMORY_ADDR>::ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame)
+bool DWARF_Frame<MEMORY_ADDR>::ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame)
 {
 	DWARF_CFARule<MEMORY_ADDR> *cfa_rule = cfi_row->GetCFARule();
 	
@@ -261,7 +265,7 @@ bool DWARF_Frame<MEMORY_ADDR>::ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_r
 				unsigned int dw_reg_num = cfa_rule_reg_ofs->GetRegisterNumber();
 				int64_t offset = cfa_rule_reg_ofs->GetOffset();
 				MEMORY_ADDR reg_value = 0;
-				if(!prev_frame->ReadRegister(dw_reg_num, reg_value)) return false;
+				if(!next_frame->ReadRegister(dw_reg_num, reg_value)) return false;
 				cfa = reg_value + offset;
 			}
 			break;
@@ -279,9 +283,9 @@ bool DWARF_Frame<MEMORY_ADDR>::ComputeCFA(const DWARF_CFIRow<MEMORY_ADDR> *cfi_r
 }
 
 template <class MEMORY_ADDR>
-bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *prev_frame, unsigned int dw_ret_addr_reg_num)
+bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, const DWARF_Frame<MEMORY_ADDR> *next_frame, unsigned int dw_ret_addr_reg_num)
 {
-	reg_num_set = prev_frame->reg_num_set;
+	reg_num_set = next_frame->reg_num_set;
 	std::set<unsigned int>::const_iterator iter;
 	
 	for(iter = reg_num_set.begin(); iter != reg_num_set.end(); iter++)
@@ -289,11 +293,14 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 		unsigned int dw_reg_num = *iter;
 		
 		MEMORY_ADDR reg_value = 0;
-		if(prev_frame->ReadRegister(dw_reg_num, reg_value))
+		if(next_frame->ReadRegister(dw_reg_num, reg_value))
 		{
 			WriteRegister(dw_reg_num, reg_value);
 		}
 	}
+	
+	MEMORY_ADDR sp = 0;
+	next_frame->ReadRegister(sp_reg_num, sp);
 	
 	DWARF_CFARule<MEMORY_ADDR> *cfa_rule = cfi_row->GetCFARule();
 	
@@ -305,7 +312,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 				unsigned int dw_reg_num = cfa_rule_reg_ofs->GetRegisterNumber();
 				int64_t offset = cfa_rule_reg_ofs->GetOffset();
 				MEMORY_ADDR reg_value = 0;
-				if(!prev_frame->ReadRegister(dw_reg_num, reg_value)) return false;
+				if(!next_frame->ReadRegister(dw_reg_num, reg_value)) return false;
 				cfa = reg_value + offset;
 			}
 			break;
@@ -339,7 +346,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 				case DW_REG_RULE_SAME_VALUE:
 					{
 						MEMORY_ADDR reg_value;
-						if(!prev_frame->ReadRegister(dw_reg_num, reg_value)) return false;
+						if(!next_frame->ReadRegister(dw_reg_num, reg_value)) return false;
 						WriteRegister(dw_reg_num, reg_value);
 					}
 					break;
@@ -347,9 +354,18 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 					{
 						DWARF_RegisterRuleOffset<MEMORY_ADDR> *reg_rule_offset = reinterpret_cast<DWARF_RegisterRuleOffset<MEMORY_ADDR> *>(reg_rule);
 						int64_t offset = reg_rule_offset->GetOffset();
-						MEMORY_ADDR addr = cfa + offset;
+						MEMORY_ADDR addr = 0;
+						switch(dw_cfa_reg_rule_offset_spec)
+						{
+							case DW_CFA_REG_RULE_OFFSET_IS_CFA_RELATIVE: // standard
+								addr = cfa + offset;
+								break;
+							case DW_CFA_REG_RULE_OFFSET_IS_SP_RELATIVE: // non-standard
+								addr = sp + offset;
+								break;
+						}
 						MEMORY_ADDR prev_reg_value;
-						if(!prev_frame->ReadAddrFromMemory(addr, prev_reg_value, (dw_reg_num == dw_ret_addr_reg_num) ? dw_handler->GetReturnAddressSize(cfi_row->GetLocation()) : address_size)) return false;
+						if(!next_frame->ReadAddrFromMemory(addr, prev_reg_value, (dw_reg_num == dw_ret_addr_reg_num) ? dw_handler->GetReturnAddressSize(cfi_row->GetLocation()) : address_size)) return false;
 						WriteRegister(dw_reg_num, prev_reg_value);
 					}
 					break;
@@ -357,7 +373,16 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 					{
 						DWARF_RegisterRuleValOffset<MEMORY_ADDR> *reg_rule_val_offset = reinterpret_cast<DWARF_RegisterRuleValOffset<MEMORY_ADDR> *>(reg_rule);
 						int64_t offset = reg_rule_val_offset->GetOffset();
-						MEMORY_ADDR prev_reg_value = cfa + offset;
+						MEMORY_ADDR prev_reg_value = 0;
+						switch(dw_cfa_reg_rule_offset_spec)
+						{
+							case DW_CFA_REG_RULE_OFFSET_IS_CFA_RELATIVE: // standard
+								prev_reg_value = cfa + offset;
+								break;
+							case DW_CFA_REG_RULE_OFFSET_IS_SP_RELATIVE: // non-standard
+								prev_reg_value = sp + offset;
+								break;
+						}
 						WriteRegister(dw_reg_num, prev_reg_value);
 					}
 					break;
@@ -366,7 +391,7 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 						DWARF_RegisterRuleRegister<MEMORY_ADDR> *reg_rule_reg = reinterpret_cast<DWARF_RegisterRuleRegister<MEMORY_ADDR> *>(reg_rule);
 						unsigned int dw_prev_reg_num = reg_rule_reg->GetRegisterNumber();
 						MEMORY_ADDR prev_reg_value = 0;
-						if(!prev_frame->ReadRegister(dw_prev_reg_num, prev_reg_value)) return false;
+						if(!next_frame->ReadRegister(dw_prev_reg_num, prev_reg_value)) return false;
 						WriteRegister(dw_reg_num, prev_reg_value);
 					}
 					break;
@@ -397,10 +422,18 @@ bool DWARF_Frame<MEMORY_ADDR>::Unwind(const DWARF_CFIRow<MEMORY_ADDR> *cfi_row, 
 		}
 	}
 	
-	// architectural rule: SP = CFA
-	WriteRegister(sp_reg_num, cfa);
+	// architectural rule: SP = CFA (standard) or CFA + call context size (non-standard)
+	switch(dw_cfa_spec)
+	{
+		case DW_CFA_IS_SP_AT_THE_CALL_SITE_IN_THE_PREVIOUS_FRAME:
+			WriteRegister(sp_reg_num, cfa);
+			break;
+		case DW_CFA_IS_SP_VALUE_ON_ENTRY_TO_THE_CURRENT_FRAME:
+			WriteRegister(sp_reg_num, cfa + dw_handler->GetReturnAddressSize(pc));
+			break;
+	}
 
-	// return address of previous frame
+	// return address of next frame
 	pc_is_defined = ReadRegister(dw_ret_addr_reg_num, pc);
 	
 	return true;

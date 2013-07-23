@@ -70,7 +70,8 @@ typedef enum
 	CAP_ADDRESS_SIZE = 128,
 	CAP_MEMORY_ATOM_SIZE = 256,
 	CAP_ELF_PHOFF = 512,
-	CAP_ELF_PHENT = 1024
+	CAP_ELF_PHENT = 1024,
+	CAP_ELF_FLAGS = 2048
 } Capability;
 
 template <class MEMORY_ADDR>
@@ -92,6 +93,7 @@ public:
 	void SetMemoryAtomSize(unsigned int memory_atom_size);
 	void SetELF_PHOFF(uint64_t elf_phoff);
 	void SetELF_PHENT(unsigned int elf_phent);
+	void SetELF_Flags(uint32_t elf_flags);
 	
 	Capability GetCapability() const;
 	const char *GetFilename() const;
@@ -105,6 +107,7 @@ public:
 	unsigned int GetMemoryAtomSize() const;
 	uint64_t GetELF_PHOFF() const;
 	unsigned int GetELF_PHENT() const;
+	uint32_t GetELF_Flags() const;
 	const std::vector<const Blob<MEMORY_ADDR> *>& GetBlobs() const;
 	const std::vector<const Section<MEMORY_ADDR> *>& GetSections() const;
 	const std::vector<const Segment<MEMORY_ADDR> *>& GetSegments() const;
@@ -134,6 +137,7 @@ private:
 	unsigned int memory_atom_size;
 	uint64_t elf_phoff;
 	unsigned int elf_phent;
+	uint32_t elf_flags;
 	std::vector<const Blob<MEMORY_ADDR> *> blobs;
 	std::vector<const Section<MEMORY_ADDR> *> sections;
 	std::vector<const Segment<MEMORY_ADDR> *> segments;
