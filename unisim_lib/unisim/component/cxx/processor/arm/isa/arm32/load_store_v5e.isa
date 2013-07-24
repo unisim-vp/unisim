@@ -128,12 +128,9 @@ ldrd_reg_pre.disasm = {
 }
 
 ldrd_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -147,17 +144,14 @@ ldrd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.Read32toGPRAligned(address, rd);
-	cpu.Read32toGPRAligned(address + 4, rd + 1);
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
@@ -170,17 +164,14 @@ ldrd_imm_offset.execute = {
 			(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.Read32toGPRAligned(address, rd);
-	cpu.Read32toGPRAligned(address + 4, rd + 1);
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -194,19 +185,16 @@ ldrd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.Read32toGPRAligned(address, rd);
-	cpu.Read32toGPRAligned(address + 4, rd + 1);
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rd_value = cpu.GetGPR(rd);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
@@ -220,19 +208,16 @@ ldrd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.Read32toGPRAligned(address, rd);
-	cpu.Read32toGPRAligned(address + 4, rd + 1);
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rd_value = cpu.GetGPR(rd);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -245,19 +230,16 @@ ldrd_reg_offset.execute = {
 			(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.Read32toGPRAligned(address, rd);
-	cpu.Read32toGPRAligned(address + 4, rd + 1);
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 ldrd_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-  
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rd_value = cpu.GetGPR(rd);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
@@ -271,8 +253,8 @@ ldrd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
-	cpu.Read32toGPRAligned(address, rd);
-	cpu.Read32toGPRAligned(address + 4, rd + 1);
+	cpu.SetGPR( rd, cpu.MemRead32( address & -4 ) );
+	cpu.SetGPR( rd + 1, cpu.MemRead32( (address + 4) & -4 ) );
 }
 
 /*
@@ -363,14 +345,11 @@ strd_reg_pre.disasm = {
 }
 
 strd_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
-	uint32_t rdp1_value = inherited::rdp1_init + cpu.GetGPR(rd + 1);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rd_value = cpu.GetGPR(rd);
+	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
@@ -384,19 +363,16 @@ strd_imm_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
-	uint32_t rdp1_value = inherited::rdp1_init + cpu.GetGPR(rd + 1);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rd_value = cpu.GetGPR(rd);
+	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -409,19 +385,16 @@ strd_imm_offset.execute = {
 		(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
-	uint32_t rdp1_value = inherited::rdp1_init + cpu.GetGPR(rd + 1);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rd_value = cpu.GetGPR(rd);
+	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
@@ -435,20 +408,17 @@ strd_imm_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
-	uint32_t rdp1_value = inherited::rdp1_init + cpu.GetGPR(rd + 1);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rd_value = cpu.GetGPR(rd);
+	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
   
@@ -462,20 +432,17 @@ strd_reg_post.execute = {
 		return;
 
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
-	uint32_t rdp1_value = inherited::rdp1_init + cpu.GetGPR(rd + 1);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rd_value = cpu.GetGPR(rd);
+	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -488,20 +455,17 @@ strd_reg_offset.execute = {
 		(rd == 14) ) // undefined behavior
 		return;
 
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 strd_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rd_value = inherited::rd_init + cpu.GetGPR(rd);
-	uint32_t rdp1_value = inherited::rdp1_init + cpu.GetGPR(rd + 1);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rd_value = cpu.GetGPR(rd);
+	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -515,8 +479,8 @@ strd_reg_pre.execute = {
 		return;
 
 	cpu.SetGPR(rn, address);
-	cpu.Write32(address, rd_value);
-	cpu.Write32(address + 4, rdp1_value);
+	cpu.MemWrite32(address, rd_value);
+	cpu.MemWrite32(address + 4, rdp1_value);
 }
 
 /*
@@ -534,42 +498,3 @@ strd_reg_pre.execute = {
 /*
  * end of pld instruction
  *******************************************************************/
-
-group load_store_5e_rn_init(ldrd_imm_post, ldrd_imm_offset, ldrd_imm_pre, \
-                            ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
-                            strd_imm_post, strd_imm_offset, strd_imm_pre, \
-                            strd_reg_post, strd_reg_offset, strd_reg_pre)
-load_store_5e_rn_init.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rn == 15) inherited::rn_init = 8;
-	else inherited::rn_init = 0;
-}
-
-group load_store_5e_rm_init(ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
-                            strd_reg_post, strd_reg_offset, strd_reg_pre)
-load_store_5e_rm_init.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-	
-	if(rm == 15) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
-
-group load_store_5e_rd_init(ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
-                            strd_imm_post, strd_imm_offset, strd_imm_pre, \
-                            strd_reg_post, strd_reg_offset, strd_reg_pre)
-load_store_5e_rd_init.initialize_rd_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rd == 15) inherited::rd_init = 8;
-	else inherited::rd_init = 0;
-}
-
-group load_store_5e_rdp1_init(strd_imm_post, strd_imm_offset, strd_imm_pre, \
-                              strd_reg_post, strd_reg_offset, strd_reg_pre)
-load_store_5e_rdp1_init.initialize_rdp1_init = {
-	typedef Operation<STATE> inherited;
-	
-	if(rd  == 14) inherited::rdp1_init = 8;
-	else inherited::rdp1_init = 0;
-}

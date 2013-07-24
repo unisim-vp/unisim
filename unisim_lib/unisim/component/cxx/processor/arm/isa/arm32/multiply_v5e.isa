@@ -70,7 +70,6 @@ smlaxy.execute = {
 	uint32_t val_rn;
 	uint32_t val_rd;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -150,7 +149,6 @@ smlalxy.execute = {
 	uint32_t val_rs;
 	uint64_t val_rd;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -222,7 +220,6 @@ smlawy.execute = {
 	uint32_t val_rn;
 	uint32_t val_rd;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -311,7 +308,6 @@ smulxy.execute = {
 	uint32_t val_rs;
 	uint32_t val_rd;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -380,7 +376,6 @@ smulwy.execute = {
 	uint32_t val_rs;
 	uint32_t val_rd;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	

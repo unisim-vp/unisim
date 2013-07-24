@@ -107,6 +107,7 @@ include "coprocessor.isa"
 include "coprocessor_v5e.isa"
 include "misc_arithmetic.isa"
 
+include "ordering.isa"
 include "dependency.isa"
 
 //include "specialization.isa"

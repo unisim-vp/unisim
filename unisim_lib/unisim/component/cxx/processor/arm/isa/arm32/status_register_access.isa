@@ -54,7 +54,6 @@ mrs.disasm = {
 mrs.execute = {
 	uint32_t run_mode;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -127,7 +126,6 @@ msr_imm.execute = {
 	uint32_t reg_mask = 0;
 	uint32_t run_mode;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if ( !cpu.CheckCondition(cond) ) return;
 
@@ -198,10 +196,9 @@ msr_reg.execute = {
 	uint32_t reg;
 	uint32_t byte_mask = 0;
 	uint32_t reg_mask = 0;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = cpu.GetGPR(rm);
 	uint32_t run_mode;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if ( !cpu.CheckCondition(cond) ) return;
 
@@ -255,14 +252,6 @@ msr_reg.execute = {
 /*
  * end of msr instruction
  *******************************************************************/
-
-group status_register_access_rm_init(msr_reg)
-status_register_access_rm_init.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rm == 15) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
 
 group status_register_access_masks_init(msr_imm, msr_reg)
 status_register_access_masks_init.initialize_msr_masks = {

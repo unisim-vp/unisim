@@ -59,19 +59,12 @@ swp.disasm = {
 }
 
 swp.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(cond)) return;
-
-	address = rn_value;
-	cpu.Read32toGPR(address, rd);
-	cpu.Write32(address, rm_value);
+        
+        uint32_t value = cpu.GetGPR(rm);
+	uint32_t address = cpu.GetGPR(rn);
+	cpu.SetGPR( rd, cpu.MemRead32(address) );
+	cpu.MemWrite32(address, value);
 }
 
 /*
@@ -93,20 +86,12 @@ swpb.disasm = {
 }
 
 swpb.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(cond)) return;
 
-	uint8_t value = rm_value & (uint32_t)0x0ff;
-	address = rn_value;
-	cpu.Read8toGPR(address, rd);
-	cpu.Write8(address, value);
+	uint8_t value = cpu.GetGPR(rm) & uint32_t( 0x0ff );
+	uint32_t address = cpu.GetGPR(rn);
+	cpu.SetGPR( rd, cpu.MemRead8(address) );
+	cpu.MemWrite8(address, value);
 }
 
 /*

@@ -166,14 +166,13 @@ CPU(const char *name, Object *parent)
 			"The stack pointer (SP) register (alias of GPR[13]).")
 	, reg_lr("LR", this, gpr[14],
 			"The link register (LR) (alias of GPR[14]).")
-	, reg_pc("PC", this, gpr[15],
-			"The program counter (PC) register (alias of GPR[15]).")
+	, reg_pc("PC", this, pc,
+			"The program counter (PC) register (alias of debug logical GPR[15]).")
 	, reg_cpsr("CPSR", this, cpsr,
 			"The CPSR register.")
 	, ls_queue()
 	, first_ls(0)
 	, has_sent_first_ls(false)
-	, free_ls_queue()
 	, num_data_prefetches(0)
 	, num_data_reads(0)
 	, num_data_writes(0)
@@ -197,7 +196,7 @@ CPU(const char *name, Object *parent)
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
 					this, phys_gpr[i], ss_desc.str().c_str());
 	}
-	for (unsigned int i = 0; i < num_log_gprs; i++)
+	for (unsigned int i = 0; i < (num_log_gprs-1); i++)
 	{
 		stringstream ss;
 		stringstream ss_desc;
@@ -207,6 +206,7 @@ CPU(const char *name, Object *parent)
 			new unisim::kernel::service::Register<uint32_t>(ss.str().c_str(), 
 					this, gpr[i], ss_desc.str().c_str());
 	}
+	reg_gpr[15] = new unisim::kernel::service::Register<uint32_t>("GPR[15]", this, pc, "Logical register 15 (PC debug register)");
 	for (unsigned int i = 0; i < num_phys_spsrs; i++)
 	{
 		stringstream ss;
@@ -287,7 +287,7 @@ BeginSetup()
 			<< "Setting initial pc to 0x"
 			<< hex << init_pc << dec
 			<< EndDebugInfo;
-	SetGPR(15, init_pc);
+	BranchExchange( init_pc );
 
 	if ( cpu_cycle_time_ps == 0 )
 	{
@@ -317,7 +317,7 @@ BeginSetup()
 	}
 	registers_registry["sp"] = new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] = new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &gpr[15]);
+	registers_registry["pc"] = new SimpleRegister<uint32_t>("pc", &pc);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 	/* End TODO */
 
@@ -443,9 +443,8 @@ void
 CPU::
 StepInstruction()
 {
-	uint32_t current_pc;
+	uint32_t current_pc = GetNPC();
 
-	current_pc = GetGPR(PC_reg);
 	cur_instruction_address = current_pc;
 
 	if (debug_control_import) 
@@ -479,47 +478,46 @@ StepInstruction()
 		while(1);
 	}
 
-	if (requires_memory_access_reporting) 
+	if (GetCPSR_T())
 	{
-		if(memory_access_reporting_import)
-		{
-			uint32_t insn_size;
-			if (GetCPSR_T())
-			{
-				/* This implementation should never enter into thumb mode
-				 *   so if we enter this code we have an error in the 
-				 *   implementation.
-				 */
-				insn_size = 2;
-				assert("Thumb mode not supported" == 0);
-			}
-			else
-				insn_size = 4;
-			memory_access_reporting_import->ReportMemoryAccess(
-				MemoryAccessReporting<uint64_t>::MAT_READ, 
-				MemoryAccessReporting<uint64_t>::MT_INSN, 
-				current_pc, insn_size);
-		}
+		/* Thumb state */
+		
+		/* This implementation should never enter into thumb mode */
+		logger << DebugError << "Thumb mode not supported in" << endl
+		       << unisim::kernel::debug::BackTrace() << EndDebugError;
+		Stop(-1);
 	}
 	
-	/* arm32 state */
-	isa::arm32::Operation<unisim::component::cxx::processor::arm::arm926ejs::CPU> *
-		op = NULL;
-	uint32_t insn;
-	
-	ReadInsn(current_pc, insn);
-	/* convert the instruction to host endianness */
-	insn = Target2Host(GetEndianness(), insn);
+	else {
+		/* Arm32 state */
+		if(requires_memory_access_reporting and memory_access_reporting_import) {
+			memory_access_reporting_import->ReportMemoryAccess(MemoryAccessReporting<uint64_t>::MAT_READ, 
+			                                                   MemoryAccessReporting<uint64_t>::MT_INSN, 
+			                                                   current_pc, 4 /*insn_size*/);
+		}
 		
-	/* Decode current PC */
-	op = arm32_decoder.Decode(current_pc, insn);
-	/* Execute instruction */
-	op->execute(*this);
-	//op->profile(profile);
+                /* fetch instruction word from memory */
+		uint32_t memword;
+		ReadInsn(current_pc, memword);
+		/* convert the instruction to host endianness */
+		isa::arm32::CodeType insn = Target2Host(GetEndianness(), memword);
+			
+		/* Decode current PC */
+		isa::arm32::Operation<unisim::component::cxx::processor::arm::arm926ejs::CPU>* op;
+		op = arm32_decoder.Decode(current_pc, insn);
+		
+		/* update PC registers value before execution */
+		this->gpr[15] = this->pc + 8;
+		this->pc += 4;
+		
+		/* Execute instruction */
+		op->execute(*this);
+		//op->profile(profile);
+		
+		/* perform the memory load/store operations */
+		PerformLoadStoreAccesses();
+	}
 	
-	/* perform the memory load/store operations */
-	PerformLoadStoreAccesses();
-
 	bool exception_occurred = false;
 	if ( unlikely(exception) )
 		exception_occurred = HandleException();
@@ -537,7 +535,7 @@ StepInstruction()
 	if(requires_finished_instruction_reporting)
 		if(memory_access_reporting_import)
 			memory_access_reporting_import->ReportFinishedInstruction(
-					GetGPR(PC_reg));
+					GetNPC());
 }
 
 /** Inject an intrusive read memory operation.
@@ -726,8 +724,7 @@ RequiresFinishedInstructionReporting(bool report)
  * @return true on success, false otherwise
  */
 bool 
-CPU::
-ReadMemory(uint64_t addr, 
+CPU::ReadMemory(uint64_t addr, 
 		void *buffer, 
 		uint32_t size)
 {
@@ -974,8 +971,7 @@ Disasm(uint64_t addr, uint64_t &next_addr)
  * @param val the buffer to fill with the read data
  */
 void 
-CPU::
-ReadInsn(uint32_t address, uint32_t &val)
+CPU::ReadInsn(uint32_t address, uint32_t &val)
 {
 	uint32_t size = 4;
 	uint8_t *data;
@@ -1098,81 +1094,11 @@ ReadInsn(uint32_t address, uint32_t &val)
  * @param address the address of the prefetch
  */
 void 
-CPU::
-ReadPrefetch(uint32_t address)
+CPU::ReadPrefetch(uint32_t address)
 {
-	address = address & ~((uint32_t)0x3);
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetPrefetch(address);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetPrefetch(address & -4);
 	ls_queue.push(memop);
-}
-
-/** 32bits memory read that stores result into the PC
- * This methods reads 32bits from memory and stores the result into
- *   the pc register of the CPU.
- * 
- * @param address the base address of the 32bits read
- */
-void 
-CPU::
-Read32toPCUpdateT(uint32_t address)
-{
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetReadToPCUpdateT(address);
-	ls_queue.push(memop);
-
-	if (requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
-}
-
-/** 32bits memory read into the PC and updates thumb state.
- * This methods reads 32bits from memory and stores the result into
- *   the pc register of the CPU and updates thumb state if necessary
- * 
- * @param address the base address of the 32bits read
- */
-void 
-CPU::
-Read32toPC(uint32_t address)
-{
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetReadToPC(address);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,				
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
 }
 
 /** 32bits memory read into one of the general purpose registers.
@@ -1182,127 +1108,12 @@ Read32toPC(uint32_t address)
  * @param address the base address of the 32bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read32toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::MemRead32(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 4, reg, false, false);
-	ls_queue.push(memop);
-
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
-}
-
-/** 32bits aligned memory read into one of the general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the general purpose register indicated by the input reg. Note that this
- *   read methods supposes that the address is 32bits aligned.
- * 
- * @param address the base address of the 32bits read
- * @param reg the register to store the resulting read
- */
-void 
-CPU::
-Read32toGPRAligned(uint32_t address, uint32_t reg)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 4, reg, true, false);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 4);
-}
-
-/** 32bits memory read into one of the user general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the user general purpose register indicated by the input reg
- * 
- * @param address the base address of the 32bits read
- * @param reg the user register to store the resulting read
- */
-void
-CPU::
-Read32toUserGPR(uint32_t address, uint32_t reg)
-{
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetUserRead(address, 4, reg, false, false);
-	ls_queue.push(memop);
-
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address & ~((uint32_t)0x3), 4);
-}
-
-/** 32bits aligned memory read into one of the user general purpose registers.
- * This method reads 32bits from memory and stores the result into
- *   the user general purpose register indicated by the input reg. Note that
- *   this read methods supposes that the address is 32bits aligned.
- * 
- * @param address the base address of the 32bits read
- * @param reg the user register to store the resulting read
- */
-void
-CPU::
-Read32toUserGPRAligned(uint32_t address, uint32_t reg)
-{
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetUserRead(address, 4, reg, true, false);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 4);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetRead(address, 4, false);
+	return memop;
 }
 
 /** 16bits aligned memory read into one of the general purpose registers.
@@ -1313,30 +1124,12 @@ Read32toUserGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 16bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read16toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::MemRead16(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x1);
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 2, reg, true, false);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 2);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetRead(address, 2, false);
+	return memop;
 }
 
 /** Signed 16bits aligned memory read into one of the GPRs.
@@ -1348,29 +1141,12 @@ Read16toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 16bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-ReadS16toGPRAligned(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::MemReadS16(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x1);
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 2, reg, /* aligned */true, /* signed */true);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 2);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetRead(address, 2, true);
+	return memop;
 }
 
 /** 8bits memory read into one of the general purpose registers.
@@ -1380,28 +1156,12 @@ ReadS16toGPRAligned(uint32_t address, uint32_t reg)
  * @param address the base address of the 8bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-ReadS8toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::MemReadS8(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */true);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 1);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetRead(address, 1, true);
+	return memop;
 }
 
 /** signed 8bits memory read into one of the general purpose registers.
@@ -1412,28 +1172,12 @@ ReadS8toGPR(uint32_t address, uint32_t reg)
  * @param address the base address of the 8bits read
  * @param reg the register to store the resulting read
  */
-void 
-CPU::
-Read8toGPR(uint32_t address, uint32_t reg)
+MemoryOp*
+CPU::MemRead8(uint32_t address)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
-	memop->SetRead(address, 1, reg, /* aligned */true, /* signed */false);
-	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 1);
+	MemoryOp *memop = MemoryOp::alloc();
+	memop->SetRead(address, 1, false);
+	return memop;
 }
 
 /** 32bits memory write.
@@ -1444,27 +1188,11 @@ Read8toGPR(uint32_t address, uint32_t reg)
  */
 void 
 CPU::
-Write32(uint32_t address, uint32_t value)
+MemWrite32(uint32_t address, uint32_t value)
 {
-	MemoryOp *memop;
-	
-	address = address & ~((uint32_t)0x3);
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetWrite(address, 4, value);
 	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 4);
 }
 
 /** 16bits memory write.
@@ -1475,27 +1203,11 @@ Write32(uint32_t address, uint32_t value)
  */
 void 
 CPU::
-Write16(uint32_t address, uint16_t value)
+MemWrite16(uint32_t address, uint16_t value)
 {
-	address = address & ~((uint32_t)0x1);
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetWrite(address, 2, value);
 	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 2);
 }
 
 /** 8bits memory write.
@@ -1506,26 +1218,11 @@ Write16(uint32_t address, uint16_t value)
  */
 void 
 CPU::
-Write8(uint32_t address, uint8_t value)
+MemWrite8(uint32_t address, uint8_t value)
 {
-	MemoryOp *memop;
-	
-	if ( free_ls_queue.empty() )
-		memop = new MemoryOp();
-	else
-	{
-		memop = free_ls_queue.front();
-		free_ls_queue.pop();
-	}
+	MemoryOp *memop = MemoryOp::alloc();
 	memop->SetWrite(address, 1, value);
 	ls_queue.push(memop);
-	
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_WRITE,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					address, 1);
 }
 
 /** Coprocessor Load
@@ -2370,7 +2067,7 @@ NonIntrusiveTranslateVA(bool is_read,
 					<< "Address translated using a small page descriptor"
 					<< " (non intrusive access):"
 					<< std::endl
-					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - current pc = 0x" << std::hex << cur_instruction_address
 					<< std::endl
 					<< " - va  = 0x" << va << std::endl
 					<< " - mva = 0x" << mva << std::endl
@@ -2399,7 +2096,7 @@ NonIntrusiveTranslateVA(bool is_read,
 		if ( verbose & 0x020 )
 			logger << DebugInfo
 				<< "Address translated using a section descriptor:" << std::endl
-				<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< "- current pc = 0x" << std::hex << cur_instruction_address
 				<< std::dec << std::endl
 				<< "- va  = 0x" << std::hex << va << std::endl
 				<< "- mva = 0x" << mva << std::endl
@@ -2609,7 +2306,7 @@ TranslateVA(bool is_read,
 			<< std::endl
 			<< " - first level fetched = 0x" << std::hex
 			<< first_level << std::endl
-			<< " - pc = 0x" << GetGPR(PC_reg) << std::dec
+			<< " - pc = 0x" << cur_instruction_address << std::dec
 			<< EndDebugError;
 		return false;
 	}
@@ -2680,7 +2377,7 @@ TranslateVA(bool is_read,
 				logger << DebugInfo
 					<< "Address translated using a small page descriptor:"
 					<< std::endl
-					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - current pc = 0x" << std::hex << cur_instruction_address
 					<< std::endl
 					<< " - va  = 0x" << va << std::endl
 					<< " - mva = 0x" << mva << std::endl
@@ -2700,7 +2397,7 @@ TranslateVA(bool is_read,
 				logger << DebugError
 					<< "Check access permission and domain"
 					<< std::endl
-					<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+					<< " - current pc = 0x" << std::hex << cur_instruction_address
 					<< " - va  = 0x" << va << std::endl
 					<< " - mva = 0x" << mva << std::endl
 					<< " - pa  = 0x" << pa << std::dec << std::endl
@@ -2737,7 +2434,7 @@ TranslateVA(bool is_read,
 		if ( verbose & 0x010 )
 			logger << DebugInfo
 				<< "Address translated using a section descriptor:" << std::endl
-				<< "- current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< "- current pc = 0x" << std::hex << cur_instruction_address
 				<< std::dec << std::endl
 				<< "- va  = 0x" << std::hex << va << std::endl
 				<< "- mva = 0x" << mva << std::endl
@@ -2757,7 +2454,7 @@ TranslateVA(bool is_read,
 			logger << DebugError
 				<< "Check access permission and domain"
 				<< std::endl
-				<< " - current pc = 0x" << std::hex << GetGPR(PC_reg)
+				<< " - current pc = 0x" << std::hex << cur_instruction_address
 				<< " - va  = 0x" << va << std::endl
 				<< " - mva = 0x" << mva << std::endl
 				<< " - pa  = 0x" << pa << std::dec << std::endl
@@ -2829,10 +2526,9 @@ HandleException()
 			<< "Received IRQ interrupt, handling it."
 			<< EndDebugInfo;
 		handled = true;
-		uint32_t cur_pc = GetGPR(15);
 		spsr[3] = cpsr;
 		SetGPRMapping(GetCPSR_Mode(), IRQ_MODE);
-		SetGPR(14, cur_pc + 4);
+		SetGPR(14, GetNPC());
 		SetCPSR_Mode(IRQ_MODE);
 		SetCPSR_T(false);
 		SetCPSR_I(true);
@@ -2918,16 +2614,8 @@ PerformLoadStoreAccesses()
 				num_data_reads++;
 				PerformReadAccess(memop);
 				break;
-			case MemoryOp::READ_TO_PC_UPDATE_T:
-				num_data_reads++;
-				PerformReadToPCUpdateTAccess(memop);
-				break;
-			case MemoryOp::READ_TO_PC:
-				num_data_reads++;
-				PerformReadToPCAccess(memop);
-				break;
 		}
-		free_ls_queue.push(memop);
+                MemoryOp::release(memop);
 	}
 }
 
@@ -3128,7 +2816,7 @@ PerformWriteAccess(unisim::component::cxx::processor::arm::MemoryOp
 				<< std::endl
 				<< " - va = 0x" << std::hex << va << std::dec << std::endl
 				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
 			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
@@ -3370,7 +3058,7 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 				<< std::endl
 				<< " - va = 0x" << std::hex << va << std::dec << std::endl
 				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
+				<< " - pc = 0x" << std::hex << cur_instruction_address << std::dec << std::endl
 				<< " - instruction counter = " << instruction_counter
 				<< EndDebugError;
 			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
@@ -3549,310 +3237,6 @@ PerformReadAccess(unisim::component::cxx::processor::arm::MemoryOp
 	if ( likely(dcache.GetSize()) )
 		if ( unlikely(dcache.power_estimator_import != 0) )
 			dcache.power_estimator_import->ReportReadAccess();
-
-	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					memop->GetAddress(), size);
-}
-
-/** Performs a read access and puts result in the PC register.
- * @param memop the memory operation containing the read access
- */
-void 
-CPU::
-PerformReadToPCAccess(unisim::component::cxx::processor::arm::MemoryOp
-		*memop)
-{
-	uint32_t va = memop->GetAddress() & ~(uint32_t)0x03;
-	uint32_t mva = va;
-	uint32_t pa = mva;
-	const uint32_t size = 4;
-	uint32_t cacheable = 1;
-	uint32_t bufferable = 1;
-	uint8_t data32[4];
-	uint8_t *data;
-
-	if ( unlikely(verbose & 0x02) )
-		logger << DebugInfo
-			<< "Performing read to PC with memop values:" << std::endl
-			<< " - addr = 0x" << std::hex << va << std::dec << std::endl
-			<< "- size = " << size
-			<< EndDebugInfo;
-
-	if ( likely(cp15.IsMMUEnabled()) )
-		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
-		{
-			logger << DebugError
-				<< "Could not translate address when performing read to PC:"
-				<< std::endl
-				<< " - va = 0x" << std::hex << va << std::dec << std::endl
-				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
-				<< " - instruction counter = " << instruction_counter
-				<< EndDebugError;
-			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
-		}
-
-	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
-	{
-		dcache.read_accesses++;
-		uint32_t cache_tag = dcache.GetTag(mva);
-		uint32_t cache_set = dcache.GetSet(mva);
-		uint32_t cache_way;
-		bool cache_hit = false;
-
-		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( unlikely(!cache_hit) )
-		{
-			// get a way to replace
-			cache_way = dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = dcache.GetDirty(cache_set,
-					cache_way);
-
-			if ( (cache_valid != 0) && (cache_dirty != 0) )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t mva_cache_address =
-						dcache.GetBaseAddress(cache_set,
-								cache_way);
-				uint32_t pa_cache_address = mva_cache_address;
-				// translate the address
-				if ( likely(cp15.IsMMUEnabled()) )
-					TranslateMVA(mva_cache_address,
-							pa_cache_address);
-				dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				PrWrite(pa_cache_address, rep_cache_data,
-						dcache.LINE_SIZE);
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					dcache.GetBaseAddressFromAddress(pa);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			PrRead(cache_address, cache_data,
-					cache_line_size);
-			dcache.SetTag(cache_set, cache_way, cache_tag);
-			dcache.SetValid(cache_set, cache_way, 1);
-			dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			// cache hit
-			dcache.read_hits++;
-		}
-
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = dcache.GetIndex(mva);
-		(void)dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
-	}
-	else
-	{
-		PrRead(pa, data32, size);
-		data = data32;
-	}
-	// fix the data depending on its size
-	uint32_t value;
-	uint32_t val32;
-	uint32_t val32_l, val32_r;
-	uint32_t align;
-
-	memcpy(&val32, data, sizeof(uint32_t));
-	val32 = Target2Host(GetEndianness(), val32);
-	// we need to check alignment
-	align = memop->GetAddress() & 0x03;
-	if (align != 0)
-	{
-		val32_l = (val32 << (align*8)) &
-				((~((uint32_t)0)) << (align*8));
-		val32_r = (val32 >> ((4 - align) * 8)) &
-				((~((uint32_t)0)) >> ((4 - align) * 8));
-		val32 = val32_l + val32_r;
-	}
-	value = val32;
-
-	SetGPR(PC_reg, value & ~(uint32_t)0x01);
-
-	if ( unlikely(dcache.power_estimator_import != 0) )
-		dcache.power_estimator_import->ReportReadAccess();
-
-	/* report read memory access if necessary */
-	if ( requires_memory_access_reporting )
-		if ( memory_access_reporting_import )
-			memory_access_reporting_import->ReportMemoryAccess(
-					MemoryAccessReporting<uint64_t>::MAT_READ,
-					MemoryAccessReporting<uint64_t>::MT_DATA,
-					memop->GetAddress(), size);
-}
-
-/** Performs a read access and puts result in the PC register.
- * Performs a read access and puts result in the PC register and updates the
- * thumb status if necessary
- * 
- * @param memop the memory operation containing the read access
- */
-void 
-CPU::
-PerformReadToPCUpdateTAccess(
-		unisim::component::cxx::processor::arm::MemoryOp *memop)
-{
-	uint32_t va = memop->GetAddress() & ~(uint32_t)0x03;
-	uint32_t mva = va;
-	uint32_t pa = mva;
-	uint32_t cacheable = 1;
-	uint32_t bufferable = 1;
-	const uint32_t size = 4;
-	uint8_t data32[4];
-	uint8_t *data;
-
-	if ( unlikely(verbose & 0x02) )
-		logger << DebugInfo
-			<< "Performing read to PC update T with memop values:" << std::endl
-			<< " - addr = 0x" << std::hex << va << std::dec << std::endl
-			<< "- size = " << size
-			<< EndDebugInfo;
-
-	if ( likely(cp15.IsMMUEnabled()) )
-		if ( !TranslateVA(true, va, mva, pa, cacheable, bufferable) )
-		{
-			logger << DebugError
-				<< "Could not translate address when performing read to PC with T update:"
-				<< std::endl
-				<< " - va = 0x" << std::hex << va << std::dec << std::endl
-				<< " - size = " << size << std::endl
-				<< " - pc = 0x" << std::hex << GetGPR(PC_reg) << std::dec << std::endl
-				<< " - instruction counter = " << instruction_counter
-				<< EndDebugError;
-			unisim::kernel::service::Simulator::simulator->Stop(this, __LINE__);
-		}
-
-	if ( likely(cp15.IsDCacheEnabled() && dcache.GetSize()) )
-	{
-		dcache.read_accesses++;
-		uint32_t cache_tag = dcache.GetTag(mva);
-		uint32_t cache_set = dcache.GetSet(mva);
-		uint32_t cache_way;
-		bool cache_hit = false;
-
-		if ( dcache.GetWay(cache_tag, cache_set, &cache_way) )
-		{
-			if ( dcache.GetValid(cache_set, cache_way) )
-			{
-				// the access is a hit, nothing needs to be done
-				cache_hit = true;
-			}
-		}
-		// if the access was a miss, data needs to be fetched from main
-		//   memory and placed into the cache
-		if ( unlikely(!cache_hit) )
-		{
-			// get a way to replace
-			cache_way = dcache.GetNewWay(cache_set);
-			// get the valid and dirty bits from the way to replace
-			uint8_t cache_valid = dcache.GetValid(cache_set,
-					cache_way);
-			uint8_t cache_dirty = dcache.GetDirty(cache_set,
-					cache_way);
-			if ( (cache_valid != 0) && (cache_dirty != 0) )
-			{
-				// the cache line to replace is valid and dirty so it needs
-				//   to be sent to the main memory
-				uint8_t *rep_cache_data = 0;
-				uint32_t mva_cache_address =
-						dcache.GetBaseAddress(cache_set,
-								cache_way);
-				uint32_t pa_cache_address = mva_cache_address;
-				// translate the address
-				if ( likely(cp15.IsMMUEnabled()) )
-					TranslateMVA(mva_cache_address,
-							pa_cache_address);
-				dcache.GetData(cache_set, cache_way,
-						&rep_cache_data);
-				PrWrite(pa_cache_address, rep_cache_data,
-						dcache.LINE_SIZE);
-			}
-			// the new data can be requested
-			uint8_t *cache_data = 0;
-			uint32_t cache_address =
-					dcache.GetBaseAddressFromAddress(pa);
-			// when getting the data we get the pointer to the cache line
-			//   containing the data, so no need to write the cache
-			//   afterwards
-			uint32_t cache_line_size = dcache.GetData(cache_set,
-					cache_way, &cache_data);
-			PrRead(cache_address, cache_data,
-					cache_line_size);
-			dcache.SetTag(cache_set, cache_way, cache_tag);
-			dcache.SetValid(cache_set, cache_way, 1);
-			dcache.SetDirty(cache_set, cache_way, 0);
-		}
-		else
-		{
-			// cache hit
-			dcache.read_hits++;
-		}
-
-		// at this point the data is in the cache, we can read it from the
-		//   cache
-		uint32_t cache_index = dcache.GetIndex(mva);
-		(void)dcache.GetData(cache_set, cache_way, cache_index,
-				size, &data);
-	}
-	else // there is no data cache
-	{
-		PrRead(pa, data32, size);
-		data = data32;
-	}
-
-	// fix the data depending on its size
-	uint32_t value;
-	uint32_t val32;
-	uint32_t val32_l, val32_r;
-	uint32_t align;
-
-	memcpy(&val32, data, sizeof(uint32_t));
-	val32 = Target2Host(GetEndianness(), val32);
-	// we need to check alignment
-	align = memop->GetAddress() & 0x03;
-	if (align != 0)
-	{
-		val32_l = (val32 << (align*8)) &
-				((~((uint32_t)0)) << (align*8));
-		val32_r = (val32 >> ((4 - align) * 8)) &
-				((~((uint32_t)0)) >> ((4 - align) * 8));
-		val32 = val32_l + val32_r;
-	}
-	value = val32;
-
-	SetGPR(PC_reg, value & ~(uint32_t)0x01);
-	SetCPSR_T((value & (uint32_t)0x01) == 0x01);
-
-	if ( unlikely(dcache.power_estimator_import != 0) )
-		dcache.power_estimator_import->ReportReadAccess();
 
 	/* report read memory access if necessary */
 	if ( requires_memory_access_reporting )

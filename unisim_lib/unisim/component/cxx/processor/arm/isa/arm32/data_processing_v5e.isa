@@ -69,7 +69,6 @@ qadd.execute = {
 	uint8_t does_sat;
 	uint32_t result;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -110,7 +109,6 @@ qsub.execute = {
 	uint8_t does_sat;
 	uint32_t result;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -151,7 +149,6 @@ qdadd.execute = {
 	uint8_t does_sat, does_sat_tmp;
 	uint32_t result;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -193,7 +190,6 @@ qdsub.execute = {
 	uint8_t does_sat, does_sat_tmp;
 	uint32_t result;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	

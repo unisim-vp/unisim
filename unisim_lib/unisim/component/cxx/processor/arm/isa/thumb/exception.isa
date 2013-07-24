@@ -49,11 +49,7 @@ bkpt.disasm = {
 }
 
 bkpt.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-	// no need to check the model, the thumb instruction set can 
-	//  only be executed by the full system implementations (i.e.,
-	//  not ARMEMU)
+	// we are executing on full system mode
 	cpu.MarkVirtualExceptionVector(
 		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
 }
@@ -73,11 +69,7 @@ swi.disasm = {
 }
 
 swi.execute = {
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 2);
-
-	// no need to check the model, the thumb instruction set can 
-	//  only be executed by the full system implementations (i.e.,
-	//  not ARMEMU)
+	// we are executing on full system mode
 	cpu.MarkVirtualExceptionVector(
 		unisim::component::cxx::processor::arm::exception::SWI);
 }

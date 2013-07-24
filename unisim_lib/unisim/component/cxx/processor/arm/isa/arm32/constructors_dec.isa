@@ -32,50 +32,10 @@
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
  */ 
 
-var cond_init : {unsigned int}
-// var cond_res : {bool} // keeps the result of the condition check if necessary
-var rn_init : {unsigned int}
-var rm_init : {unsigned int}
-var rd_init : {unsigned int}
-var rs_init : {unsigned int}
-var rdhi_init : {unsigned int}
-var rdlo_init : {unsigned int}
-var rdp1_init : {unsigned int}
 var msr_unallocmask : {uint32_t}
 var msr_usermask : {uint32_t}
 var msr_privmask : {uint32_t}
 var msr_statemask : {uint32_t}
-
-constructor action initialize_condition() {
-}
-
-constructor action initialize_rn_init() {
-  rn_init = 0;
-}
-
-constructor action initialize_rm_init() {
-  rm_init = 0;
-}
-
-constructor action initialize_rd_init() {
-  rd_init = 0;
-}
-
-constructor action initialize_rs_init() {
-  rs_init = 0;
-}
-
-constructor action initialize_rdhi_init() {
-  rdhi_init = 0;
-}
-
-constructor action initialize_rdlo_init() {
-  rdlo_init = 0;
-}
-
-constructor action initialize_rdp1_init() {
-  rdp1_init = 0;
-}
 
 constructor action initialize_msr_masks() {
 	msr_unallocmask = 0;

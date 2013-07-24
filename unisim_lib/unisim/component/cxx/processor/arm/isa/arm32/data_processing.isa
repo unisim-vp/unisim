@@ -120,9 +120,8 @@ and_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -138,10 +137,9 @@ and_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -156,11 +154,10 @@ and_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -176,9 +173,8 @@ ands_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -203,10 +199,9 @@ ands_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -232,11 +227,10 @@ ands_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -342,9 +336,8 @@ eor_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -359,10 +352,9 @@ eor_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -377,11 +369,10 @@ eor_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
   
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -397,9 +388,8 @@ eors_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -424,10 +414,9 @@ eors_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -453,11 +442,10 @@ eors_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -563,9 +551,8 @@ sub_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -580,10 +567,9 @@ sub_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -598,11 +584,10 @@ sub_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -617,9 +602,8 @@ subs_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -643,10 +627,9 @@ subs_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -670,11 +653,10 @@ subs_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -779,9 +761,8 @@ rsb_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -796,10 +777,9 @@ rsb_imm_shift.execute = {
 	
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -814,11 +794,10 @@ rsb_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -833,9 +812,8 @@ rsbs_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -859,10 +837,9 @@ rsbs_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -886,11 +863,10 @@ rsbs_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -995,9 +971,8 @@ add_32imm.execute = {
   
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1012,10 +987,9 @@ add_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1030,11 +1004,10 @@ add_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1049,12 +1022,11 @@ adds_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1079,13 +1051,12 @@ adds_imm_shift.execute = {
 	
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1110,14 +1081,13 @@ adds_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1224,9 +1194,8 @@ adc_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t carry_in;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1243,10 +1212,9 @@ adc_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t carry_in;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1263,11 +1231,10 @@ adc_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t carry_in;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1284,12 +1251,11 @@ adcs_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint8_t carry_in;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -1316,13 +1282,12 @@ adcs_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint8_t carry_in;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1349,14 +1314,13 @@ adcs_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint8_t carry_in;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 	uint8_t carry_out;
 	uint8_t overflow_out;
 	uint8_t sign;
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1464,9 +1428,8 @@ sbc_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1483,10 +1446,9 @@ sbc_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1503,11 +1465,10 @@ sbc_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1524,9 +1485,8 @@ sbcs_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1552,10 +1512,9 @@ sbcs_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1581,11 +1540,10 @@ sbcs_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1692,9 +1650,8 @@ rsc_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1711,10 +1668,9 @@ rsc_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1731,11 +1687,10 @@ rsc_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1752,9 +1707,8 @@ rscs_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -1780,10 +1734,9 @@ rscs_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1809,11 +1762,10 @@ rscs_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	uint32_t in_neg_carry;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1878,9 +1830,8 @@ tst_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1900,10 +1851,9 @@ tst_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -1924,11 +1874,10 @@ tst_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -1988,9 +1937,8 @@ teq_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2010,10 +1958,9 @@ teq_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2034,11 +1981,10 @@ teq_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2099,9 +2045,8 @@ cmp_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2121,10 +2066,9 @@ cmp_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2145,11 +2089,10 @@ cmp_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2209,9 +2152,8 @@ cmn_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-  	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+  	uint32_t rn_value = cpu.GetGPR(rn);
 
-  	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
   	if(!cpu.CheckCondition(cond)) return;
 
@@ -2231,10 +2173,9 @@ cmn_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2255,11 +2196,10 @@ cmn_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2360,9 +2300,8 @@ orr_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2377,10 +2316,9 @@ orr_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2395,11 +2333,10 @@ orr_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -2415,9 +2352,8 @@ orrs_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2442,10 +2378,9 @@ orrs_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2471,11 +2406,10 @@ orrs_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2571,7 +2505,6 @@ mov_32imm.execute = {
 	uint32_t s1;
 	uint32_t res;
 	
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -2585,9 +2518,8 @@ mov_imm_shift.execute = {
 
 	uint32_t s1;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2601,10 +2533,9 @@ mov_reg_shift.execute = {
 
 	uint32_t s1;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2618,7 +2549,6 @@ movs_32imm.execute = {
 	uint32_t res;
 	bool shift_carry_out = false;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2642,9 +2572,8 @@ movs_imm_shift.execute = {
 	uint32_t s1;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 	
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -2669,10 +2598,9 @@ movs_reg_shift.execute = {
 	uint32_t s1;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2777,9 +2705,8 @@ bic_32imm.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2794,10 +2721,9 @@ bic_imm_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2812,11 +2738,10 @@ bic_reg_shift.execute = {
 
 	uint32_t s1, s2;
 	uint32_t res;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2832,9 +2757,8 @@ bics_32imm.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+	uint32_t rn_value = cpu.GetGPR(rn);
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2859,10 +2783,9 @@ bics_imm_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2888,11 +2811,10 @@ bics_reg_shift.execute = {
 	uint32_t s1, s2;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rn_value = cpu.GetGPR(rn);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2985,7 +2907,6 @@ mvn_32imm.execute = {
 	uint32_t s1;
 	uint32_t res;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -2999,9 +2920,8 @@ mvn_imm_shift.execute = {
   
 	uint32_t s1;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -3015,10 +2935,9 @@ mvn_reg_shift.execute = {
 
 	uint32_t s1;
 	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 	
@@ -3032,7 +2951,6 @@ mvns_32imm.execute = {
 	uint32_t res;
 	bool shift_carry_out = false;
 
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -3056,9 +2974,8 @@ mvns_imm_shift.execute = {
 	uint32_t s1;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
+	uint32_t rm_value = cpu.GetGPR(rm);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -3083,10 +3000,9 @@ mvns_reg_shift.execute = {
 	uint32_t s1;
 	uint32_t res;
 	bool shift_carry_out = false;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-	uint32_t rs_value = inherited::rs_init + cpu.GetGPR(rs);
+	uint32_t rm_value = cpu.GetGPR(rm);
+	uint32_t rs_value = cpu.GetGPR(rs);
   
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
 
 	if(!cpu.CheckCondition(cond)) return;
 
@@ -3108,105 +3024,3 @@ mvns_reg_shift.execute = {
 /*
  * end of mvn instruction
  *******************************************************************/
-
-group dp_rn_init(and_32imm, and_imm_shift, and_reg_shift, \
-                 ands_32imm, ands_imm_shift, ands_reg_shift, \
-                 eor_32imm, eor_imm_shift, eor_reg_shift, \
-                 eors_32imm, eors_imm_shift, eors_reg_shift, \
-                 sub_32imm, sub_imm_shift, sub_reg_shift, \
-                 subs_32imm, subs_imm_shift, subs_reg_shift, \
-                 rsb_32imm, rsb_imm_shift, rsb_reg_shift, \
-                 rsbs_32imm, rsbs_imm_shift, rsbs_reg_shift, \
-                 add_32imm, add_imm_shift, add_reg_shift, \
-                 adds_32imm, adds_imm_shift, adds_reg_shift, \
-                 adc_32imm, adc_imm_shift, adc_reg_shift, \
-                 adcs_32imm, adcs_imm_shift, adcs_reg_shift, \
-                 sbc_32imm, sbc_imm_shift, sbc_reg_shift, \
-                 sbcs_32imm, sbcs_imm_shift, sbcs_reg_shift, \
-                 rsc_32imm, rsc_imm_shift, rsc_reg_shift, \
-                 rscs_32imm, rscs_imm_shift, rscs_reg_shift, \
-                 tst_32imm, tst_imm_shift, tst_reg_shift, \
-                 teq_32imm, teq_imm_shift, teq_reg_shift, \
-                 cmp_32imm, cmp_imm_shift, cmp_reg_shift, \
-                 cmn_32imm, cmn_imm_shift, cmn_reg_shift, \
-                 orr_32imm, orr_imm_shift, orr_reg_shift, \
-                 orrs_32imm, orrs_imm_shift, orrs_reg_shift, \
-                 bic_32imm, bic_imm_shift, bic_reg_shift, \
-                 bics_32imm, bics_imm_shift, bics_reg_shift)
-dp_rn_init.initialize_rn_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rn == 15) inherited::rn_init = 8;
-	else inherited::rn_init = 0;
-}
-
-group dp_rm_init(and_imm_shift, and_reg_shift, \
-                 ands_imm_shift, ands_reg_shift, \
-                 eor_imm_shift, eor_reg_shift, \
-                 eors_imm_shift, eors_reg_shift, \
-                 sub_imm_shift, sub_reg_shift, \
-                 subs_imm_shift, subs_reg_shift, \
-                 rsb_imm_shift, rsb_reg_shift, \
-                 rsbs_imm_shift, rsbs_reg_shift, \
-                 add_imm_shift, add_reg_shift, \
-                 adds_imm_shift, adds_reg_shift, \
-                 adc_imm_shift, adc_reg_shift, \
-                 adcs_imm_shift, adcs_reg_shift, \
-                 sbc_imm_shift, sbc_reg_shift, \
-                 sbcs_imm_shift, sbcs_reg_shift, \
-                 rsc_imm_shift, rsc_reg_shift, \
-                 rscs_imm_shift, rscs_reg_shift, \
-                 tst_imm_shift, tst_reg_shift, \
-                 teq_imm_shift, teq_reg_shift, \
-                 cmp_imm_shift, cmp_reg_shift, \
-                 cmn_imm_shift, cmn_reg_shift, \
-                 orr_imm_shift, orr_reg_shift, \
-                 orrs_imm_shift, orrs_reg_shift, \
-                 mov_imm_shift, mov_reg_shift, \
-                 movs_imm_shift, movs_reg_shift, \
-                 bic_imm_shift, bic_reg_shift, \
-                 bics_imm_shift, bics_reg_shift, \
-                 mvn_imm_shift, mvn_reg_shift, \
-                 mvns_imm_shift, mvns_reg_shift)
-dp_rm_init.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rm == 15) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
-
-group dp_rs_init(and_reg_shift, \
-                 ands_reg_shift, \
-                 eor_reg_shift, \
-                 eors_reg_shift, \
-                 sub_reg_shift, \
-                 subs_reg_shift, \
-                 rsb_reg_shift, \
-                 rsbs_reg_shift, \
-                 add_reg_shift, \
-                 adds_reg_shift, \
-                 adc_reg_shift, \
-                 adcs_reg_shift, \
-                 sbc_reg_shift, \
-                 sbcs_reg_shift, \
-                 rsc_reg_shift, \
-                 rscs_reg_shift, \
-                 tst_reg_shift, \
-                 teq_reg_shift, \
-                 cmp_reg_shift, \
-                 cmn_reg_shift, \
-                 orr_reg_shift, \
-                 orrs_reg_shift, \
-                 mov_reg_shift, \
-                 movs_reg_shift, \
-                 bic_reg_shift, \
-                 bics_reg_shift, \
-                 mvn_reg_shift, \
-                 mvns_reg_shift)
-dp_rs_init.initialize_rs_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rs == 15) inherited::rs_init = 8;
-	else inherited::rs_init = 0;
-}
-

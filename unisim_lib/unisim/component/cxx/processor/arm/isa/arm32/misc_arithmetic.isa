@@ -57,42 +57,11 @@ clz.disasm = {
 }
 
 clz.execute = {
-	typedef Operation<STATE> inherited;
-	
-// 	uint32_t src;
-	uint32_t res;
-	uint32_t rm_value = inherited::rm_init + cpu.GetGPR(rm);
-  
-	cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
 	if(!cpu.CheckCondition(cond)) return;
 	
-// 	src = rm_value;
-// 	if(src == 0) {
-// 		res = 32;
-// 	} else {
-// 		res = 0;
-// 		while((src & 0x80000000) == 0) {
-// 			res++;
-// 			src = src << 1;
-// 		}
-// 		//    res = 31 - res;
-// 	}
-  
-  res = CountLeadingZeros(rm_value);
-  
-	cpu.SetGPR(rd, res);
+	cpu.SetGPR(rd, CountLeadingZeros(cpu.GetGPR(rm)));
 }
 
 /*
  * end of clz instruction
  *******************************************************************/
-
-group misc_arithmetic_rm_init(clz)
-misc_arithmetic_rm_init.initialize_rm_init = {
-	typedef Operation<STATE> inherited;
-
-	if(rm == STATE::PC_reg) inherited::rm_init = 8;
-	else inherited::rm_init = 0;
-}
-

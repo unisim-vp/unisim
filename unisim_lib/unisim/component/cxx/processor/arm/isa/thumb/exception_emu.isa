@@ -30,20 +30,56 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
- */ 
+ */
+ 
+/**********************************************
 
-var rm_index : {unsigned int}
-var rn_index : {unsigned int}
-var rd_index : {unsigned int}
+        THUMB EXCEPTION INSTRUCTIONS
 
-constructor action initialize_rm_index() {
-	rm_index = 0;
+**********************************************/
+
+/*******************************************************************
+ * bkpt (breakpoint) instruction
+ */
+
+op bkpt(0b10111110[8]:imm[8])
+
+bkpt.disasm = {
+	buffer << "bkpt #" << dec << imm;
 }
 
-constructor action initialize_rn_index() {
-	rn_index = 0;
+bkpt.execute = {
+	// we are executing on linux emulation mode
+	// what should we do with this kind of call? ignore it
 }
 
-constructor action initialize_rd_index() {
-	rd_index = 0;
+/*
+ * end of bkpt (breakpoint) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * swi (software interrupt) instruction
+ */
+
+op swi(0b11011111[8]:imm[8])
+
+swi.disasm = {
+	buffer << "swi #" << dec << imm;
 }
+
+swi.execute = {
+	// we are executing on linux emulation mode
+	// use linux_os_import
+	try
+	{
+		cpu.linux_os_import->ExecuteSystemCall(imm);
+	}
+	catch(std::exception &e)
+	{
+		cerr << e.what() << endl;
+	}
+}
+
+/*
+ * end of swi (software interrupt) instruction
+ *******************************************************************/

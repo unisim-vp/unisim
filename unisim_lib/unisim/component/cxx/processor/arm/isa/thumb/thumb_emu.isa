@@ -34,20 +34,19 @@
  
 /**********************************************
 
-             ARM EMULATOR ISA
+           THUMB ARM EMULATOR ISA
 
 **********************************************/
 
-namespace unisim::component::cxx::processor::arm::isa::arm32
+namespace unisim::component::cxx::processor::arm::isa::thumb
 set endianness big
 set addressclass {uint32_t}
 template <{class} {STATE}>
 
 decl {
-#include <iostream>
 #include <sstream>
-#include <stdexcept>
-	
+#include <iostream>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -69,7 +68,6 @@ using std::dec;
 } // end of decl
 
 impl {
-#include "unisim/kernel/logger/logger.hh"
 #include "unisim/component/cxx/processor/arm/models.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
 #include "unisim/component/cxx/processor/arm/masks.hh"
@@ -78,18 +76,16 @@ impl {
 #include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
 #include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
 #include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
-#include "unisim/component/cxx/processor/arm/carry_overflow.hh"
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
-#include <stdexcept>
+#include "unisim/util/arithmetic/arithmetic.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/component/cxx/processor/arm/carry_overflow.hh"
 #include <stdint.h>
 	
 using unisim::util::arithmetic::Add32;
-using unisim::util::arithmetic::CountLeadingZeros;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
-using unisim::kernel::logger::DebugInfo;
-using unisim::kernel::logger::EndDebugInfo;
+using unisim::util::arithmetic::RotateRight;
+
 }
 
 include "constructors_dec.isa"
@@ -97,21 +93,10 @@ include "actions_dec.isa"
 
 include "branch.isa"
 include "data_processing.isa"
-include "data_processing_v5e.isa"
-include "multiply.isa"
-include "multiply_v5e.isa"
-include "status_register_access.isa"
-include "load_store.isa"
+include "load_store_reg.isa"
 include "load_store_multiple.isa"
-include "semaphore.isa"
-include "exception.isa"
-include "coprocessor.isa"
-include "coprocessor_v5e.isa"
-include "misc_arithmetic.isa"
+include "exception_emu.isa"
 
 include "ordering.isa"
-include "dependency.isa"
-
-//include "specialization.isa"
 
 include "profiling.isa"

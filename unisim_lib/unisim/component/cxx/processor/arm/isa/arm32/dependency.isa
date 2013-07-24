@@ -148,14 +148,14 @@ group group_read_rm(bx, \
 		msr_reg)
 
 group group_read_rn( \
-		ldc_offset_0xxx, ldc_offset_10xx, ldc_offset_110x, ldc_offset_1110, \
-		ldc_pre_0xxx, ldc_pre_10xx, ldc_pre_110x, ldc_pre_1110, \
-		ldc_post_0xxx, ldc_post_10xx, ldc_post_110x, ldc_post_1110, \
-		ldc_unindexed_0xxx, ldc_unindexed_10xx, ldc_unindexed_110x, ldc_unindexed_1110, \
-		stc_offset_0xxx, stc_offset_10xx, stc_offset_110x, stc_offset_1110, \
-		stc_pre_0xxx, stc_pre_10xx, stc_pre_110x, stc_pre_1110, \
-		stc_post_0xxx, stc_post_10xx, stc_post_110x, stc_post_1110, \
-		stc_unindexed_0xxx, stc_unindexed_10xx, stc_unindexed_110x, stc_unindexed_1110, \
+		ldc_offset, \
+		ldc_pre, \
+		ldc_post, \
+		ldc_unindexed, \
+		stc_offset, \
+		stc_pre, \
+		stc_post, \
+		stc_unindexed, \
 		ldc2_offset, ldc2_pre, ldc2_post, ldc2_unindexed, \
 		stc2_offset, stc2_pre, stc2_post, stc2_unindexed, \
 		and_32imm, and_imm_shift, and_reg_shift, ands_32imm, ands_imm_shift, ands_reg_shift, \
@@ -243,22 +243,22 @@ group group_read_reglist( \
 		stm_2_ia, stm_2_ib, stm_2_da, stm_2_db)
 
 group group_read_crn( \
-		cdp_0xxx, cdp_10xx, cdp_110x, cdp_1110, \
-		mcr_0xxx, mcr_10xx, mcr_110x, mcr_1110, \
-		mrc_0xxx, mrc_10xx, mrc_110x, mrc_1110, \
+		cdp, \
+		mcr, \
+		mrc, \
 		cdp2, mcr2, mrc2)
 
 group group_read_crm( \
-		cdp_0xxx, cdp_10xx, cdp_110x, cdp_1110, \
-		mcr_0xxx, mcr_10xx, mcr_110x, mcr_1110, \
-		mrc_0xxx, mrc_10xx, mrc_110x, mrc_1110, \
+		cdp, \
+		mcr, \
+		mrc, \
 		cdp2, mcr2, mrc2)
 
 group group_write_rn( \
-		ldc_pre_0xxx, ldc_pre_10xx, ldc_pre_110x, ldc_pre_1110, \
-		ldc_post_0xxx, ldc_post_10xx, ldc_post_110x, ldc_post_1110, \
-		stc_pre_0xxx, stc_pre_10xx, stc_pre_110x, stc_pre_1110, \
-		stc_post_0xxx, stc_post_10xx, stc_post_110x, stc_post_1110, \
+		ldc_pre, \
+		ldc_post, \
+		stc_pre, \
+		stc_post, \
 		ldc2_pre, ldc2_post, \
 		stc2_pre, stc2_post, \
 		ldr_imm_post, ldr_imm_pre, \
@@ -336,15 +336,15 @@ group group_write_reglist( \
 		ldm_3_ia, ldm_3_ib, ldm_3_da, ldm_3_db)
 
 group group_write_crd( \
-		cdp_0xxx, cdp_10xx, cdp_110x, cdp_1110, \
-		ldc_offset_0xxx, ldc_offset_10xx, ldc_offset_110x, ldc_offset_1110, \
-		ldc_pre_0xxx, ldc_pre_10xx, ldc_pre_110x, ldc_pre_1110, \
-		ldc_post_0xxx, ldc_post_10xx, ldc_post_110x, ldc_post_1110, \
-		ldc_unindexed_0xxx, ldc_unindexed_10xx, ldc_unindexed_110x, ldc_unindexed_1110, \
-		stc_offset_0xxx, stc_offset_10xx, stc_offset_110x, stc_offset_1110, \
-		stc_pre_0xxx, stc_pre_10xx, stc_pre_110x, stc_pre_1110, \
-		stc_post_0xxx, stc_post_10xx, stc_post_110x, stc_post_1110, \
-		stc_unindexed_0xxx, stc_unindexed_10xx, stc_unindexed_110x, stc_unindexed_1110, \
+		cdp, \
+		ldc_offset, \
+		ldc_pre, \
+		ldc_post, \
+		ldc_unindexed, \
+		stc_offset, \
+		stc_pre, \
+		stc_post, \
+		stc_unindexed, \
 		cdp2, \
 		ldc2_offset, ldc2_pre, ldc2_post, ldc2_unindexed, \
 		stc2_offset, stc2_pre, stc2_post, stc2_unindexed)
