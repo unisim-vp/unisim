@@ -1111,8 +1111,9 @@ void Linux<ADDRESS_TYPE, PARAMETER_TYPE>::LSC__llseek() {
   whence = GetSystemCallParam(4);
   if (unlikely(verbose_))
     logger_ << DebugInfo
-        << "llseek(fd=" << fd
-        << ", offset=" << offset
+        << "_llseek(fd=" << fd
+        << ", offset_high=" << offset_high
+        << ", offset_low=" << offset_low
         << ", result_addr=0x" << std::hex << result_addr << std::dec
         << ", whence=" << whence << ")" << EndDebugInfo;
   if (offset_high == 0) {
