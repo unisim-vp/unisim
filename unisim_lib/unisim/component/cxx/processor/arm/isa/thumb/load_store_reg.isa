@@ -59,7 +59,7 @@ ldr_1.execute = {
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
-/* 
+/*
  * end of ldr(1) (load word immediate offset) instruction
  *******************************************************************/
 
@@ -85,7 +85,7 @@ ldr_2.execute = {
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
-/* 
+/*
  * ldr(2) (load word register offset) instruction
  *******************************************************************/
 
@@ -111,7 +111,7 @@ ldr_3.execute = {
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
-/* 
+/*
  * ldr(3) (load word pc-relative) instruction
  *******************************************************************/
 
@@ -136,7 +136,7 @@ ldr_4.execute = {
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
-/* 
+/*
  * ldr(4) (load word sp-relative) instruction
  *******************************************************************/
 
@@ -162,7 +162,7 @@ ldrb_1.execute = {
 	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
 }
 
-/* 
+/*
  * ldrb(1) (load unsigned byte immediate offset) instruction
  *******************************************************************/
 
@@ -189,7 +189,7 @@ ldrb_2.execute = {
 	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
 }
 
-/* 
+/*
  * ldrb(2) (load unsigned byte register offset) instruction
  *******************************************************************/
 
@@ -215,7 +215,7 @@ ldrh_1.execute = {
 	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
 }
 
-/* 
+/*
  * ldrh(1) (load unsigned halfword immediate offset) instruction
  *******************************************************************/
 
@@ -242,7 +242,7 @@ ldrh_2.execute = {
 	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
 }
 
-/* 
+/*
  * ldrh(2) (load unsigned halfword register offset) instruction
  *******************************************************************/
 
@@ -269,7 +269,7 @@ ldrsb.execute = {
 	cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
 }
 
-/* 
+/*
  * ldrsb (load signed byte register offset) instruction
  *******************************************************************/
 
@@ -296,7 +296,7 @@ ldrsh.execute = {
 	cpu.SetGPR( rd, cpu.MemReadS16( addr & -2 ) );
 }
 
-/* 
+/*
  * ldrsh (load signed halfword register offset) instruction
  *******************************************************************/
 
@@ -321,7 +321,7 @@ str_1.execute = {
 	cpu.MemWrite32(addr, rd_value);
 }
 
-/* 
+/*
  * str(1) (store word immediate offset) instruction
  *******************************************************************/
 
@@ -347,7 +347,7 @@ str_2.execute = {
 	cpu.MemWrite32(addr, rd_value);
 }
 
-/* 
+/*
  * str(2) (store word register offset) instruction
  *******************************************************************/
 
@@ -372,7 +372,7 @@ str_3.execute = {
 	cpu.MemWrite32(addr, rd_value);
 }
 
-/* 
+/*
  * str(3) (store word sp-relative) instruction
  *******************************************************************/
 
@@ -399,7 +399,7 @@ strb_1.execute = {
 	cpu.MemWrite8(addr, data);
 }
 
-/* 
+/*
  * strb(1) (store byte immediate offset) instruction
  *******************************************************************/
 
@@ -427,7 +427,7 @@ strb_2.execute = {
 	cpu.MemWrite8(addr, data);
 }
 
-/* 
+/*
  * strb(2) (store byte register offset) instruction
  *******************************************************************/
 
@@ -454,7 +454,7 @@ strh_1.execute = {
 	cpu.MemWrite16(addr, data);
 }
 
-/* 
+/*
  * strh(1) (store halfword immediate offset) instruction
  *******************************************************************/
 
@@ -482,7 +482,7 @@ strh_2.execute = {
 	cpu.MemWrite16(addr, data);
 }
 
-/* 
+/*
  * strh(2) (store halfword register offset) instruction
  *******************************************************************/
 

@@ -46,63 +46,32 @@ namespace arm {
 
 using namespace std;
 
+static char const* const  conds_dis[] =
+  {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "<und>"};
+
 /* Condition opcode bytes disassembling method */
-void
-DisasmCondition(const uint32_t cond, stringstream &buffer)
+char const*
+DisasmCondition(uint32_t cond)
 {
-	switch (cond)
-	{
-	case COND_EQ:
-		buffer << "eq";
-		break;
-	case COND_NE:
-		buffer << "ne";
-		break;
-	case COND_CS_HS:
-		buffer << "cs/hs";
-		break;
-	case COND_CC_LO:
-		buffer << "cc/lo";
-		break;
-	case COND_MI:
-		buffer << "mi";
-		break;
-	case COND_PL:
-		buffer << "pl";
-		break;
-	case COND_VS:
-		buffer << "vs";
-		break;
-	case COND_VC:
-		buffer << "vc";
-		break;
-	case COND_HI:
-		buffer << "hi";
-		break;
-	case COND_LS:
-		buffer << "ls";
-		break;
-	case COND_GE:
-		buffer << "ge";
-		break;
-	case COND_LT:
-		buffer << "lt";
-		break;
-	case COND_GT:
-		buffer << "gt";
-		break;
-	case COND_LE:
-		buffer << "le";
-		break;
-	case COND_AL:
-		// buffer << "al";
-		break;
-	default:
-		cerr << "ERROR(" << __FUNCTION__ << "): "
-			<< "unknown condition code (" << cond << ")" << endl;
-		break;
-	}
+  if (cond < 14)
+    return conds_dis[cond];
+  else if (cond == 14)
+    return "";
+  std::cerr << "ERROR(" << __FUNCTION__ << "): "
+            << "unknown condition code (" << cond << ")" << endl;
 }
+
+static char const* const register_dis[] =
+  {"r0","r1","r2","r3","r4","r5","r6","r7", "r8","r9","sl","fp","ip","sp","lr","pc"};
+
+/* Register disassembling method */
+char const*
+DisasmRegister(uint32_t r)
+{
+  return register_dis[r];
+}
+
+#define DisasmRegister(IDX) (regnames[IDX])
 
 void
 DisasmConditionFieldsMask(const uint32_t mask,

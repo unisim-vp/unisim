@@ -313,6 +313,12 @@ public:
 	 * @return the value of the CPSR register.
 	 */
 	uint32_t GetCPSR() const;
+	/** Get the NZCV bits of the CPSR register
+	 * 
+	 * @return the NZCV bits of the CPSR register
+	 */
+	uint32_t GetCPSR_NZCV() const { return (cpsr >> 28) & 0xf; }
+	
 	/** Set the value of the CPSR register.
 	 *
 	 * @param val the value to set
@@ -607,17 +613,6 @@ public:
 	 */
 	void MoveSPSRtoCPSR();
 
-	/** Check the condition mask given agains current CPSR status.
-	 * Returns true if the condition matches CPSR, false otherwise.
-	 *
-	 * @param cond the condition to check
-	 * @return true if the condition matches CPSR, false otherwise
-	 */
-	bool CheckCondition(uint32_t cond); 
-	/* TODO: Condition codes update method */
-	// void UpdateConditionCodes();
-	/* END TODO */
-
 	/**************************************************************/
 	/* Registers access methods    END                            */
 	/**************************************************************/
@@ -736,23 +731,6 @@ protected:
 	 */
 	uint32_t spsr[5];
 		
-	/** The condition table used to check condition in the instructions.
-	 * This table allows a fast check of the condition bits.
-	 */
-	uint16_t check_condition_table[16];
-	/** Check the given condition against CPSR.
-	 * This method checks the given condition against the given value of
-	 *   CPSR and returns true if the condition succeeds, and false otherwise.
-	 *
-	 * @param cond the condition to check
-	 * @param cpsr_val the value of the CPSR register
-	 * @return true if the condition check succeeds, false otherwise.
-	 */
-	bool CheckCondition(unsigned int cond, unsigned int cpsr_val);
-	/** Initialize the values of the condition table.
-	 */
-	void InitializeCheckConditionTable();
-
 	/* TODO: check if the fake floating point registers could be removed. */
 	uint64_t fake_fpr[8];
 	uint32_t fake_fps;

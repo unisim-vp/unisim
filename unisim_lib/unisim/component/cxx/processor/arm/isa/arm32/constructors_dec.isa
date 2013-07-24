@@ -30,7 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
- */ 
+ */
 
 var msr_unallocmask : {uint32_t}
 var msr_usermask : {uint32_t}

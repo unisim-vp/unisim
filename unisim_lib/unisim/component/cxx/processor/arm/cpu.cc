@@ -160,9 +160,6 @@ CPU(endian_type endianness)
 	registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
 	registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
 	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
-
-	// Initialize check condition table
-	InitializeCheckConditionTable();
 }
 
 /** Destructor.
@@ -1268,19 +1265,6 @@ MoveSPSRtoCPSR()
 		SetGPRMapping(src_mode, dst_mode);
 }
 
-/** Check the condition mask given agains current CPSR status.
- * Returns true if the condition matches CPSR, false otherwise.
- *
- * @param cond the condition to check
- * @return true if the condition matches CPSR, false otherwise
- */
-bool 
-CPU::
-CheckCondition(uint32_t cond)
-{
-	return (cond == 0xe) || ((check_condition_table[cond] >> (cpsr >> 28)) & 1);
-}
-
 /** Mark an exception in the virtual exception vector.
  * This marks an new exception in the virtual exception vector for 
  *   later treatment.
@@ -1316,129 +1300,6 @@ CPU::
 ResetVirtualExceptionVector(uint32_t mask)
 {
 	exception = mask;
-}
-
-/** Check the given condition against CPSR.
- * This method checks the given condition against the given value of
- *   CPSR and returns true if the condition succeeds, and false otherwise.
- *
- * @param cond the condition to check
- * @param cpsr_val the value of the CPSR register
- * @return true if the condition check succeeds, false otherwise.
- */
-bool 
-CPU::
-CheckCondition(unsigned int cond, unsigned int cpsr_val)
-{
-	switch (cond) 
-	{
-		case COND_EQ:
-			if ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
-				return true;
-			break;
-		case COND_NE:
-			if ((cpsr_val & CPSR_Z_MASK) == 0)
-				return true;
-			break;
-		case COND_CS_HS:
-			if ((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK)
-				return true;
-			break;
-		case COND_CC_LO:
-			if ((cpsr_val & CPSR_C_MASK) == 0)
-				return true;
-			break;
-		case COND_MI:
-			if ((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK)
-				return true;
-			break;
-		case COND_PL:
-			if ((cpsr_val & CPSR_N_MASK) == 0)
-				return true;
-			break;
-		case COND_VS:
-			if ((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK)
-				return true;
-			break;
-		case COND_VC:
-			if ((cpsr_val & CPSR_V_MASK) == 0)
-				return true;
-			break;
-		case COND_HI:
-			if (((cpsr_val & CPSR_C_MASK) == CPSR_C_MASK) &&
-					((cpsr_val & CPSR_Z_MASK) == 0))
-				return true;
-			break;
-		case COND_LS:
-			if (((cpsr_val & CPSR_C_MASK) == 0) ||
-					((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK))
-				return true;
-			break;
-		case COND_GE:
-			if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 
-					(CPSR_N_MASK | CPSR_V_MASK))
-				return true;
-			if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
-				return true;
-			break;
-		case COND_LT:
-			if (((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
-					((cpsr_val & CPSR_V_MASK) == 0))
-				return true;
-			if (((cpsr_val & CPSR_N_MASK) == 0) &&
-					((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
-				return true;
-			break;
-		case COND_GT:
-			if ((cpsr_val & CPSR_Z_MASK) == 0)
-			{
-				if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 
-						(CPSR_N_MASK | CPSR_V_MASK))
-					return true;
-				if ((cpsr_val & (CPSR_N_MASK | CPSR_V_MASK)) == 0)
-					return true;
-			}
-			break;
-		case COND_LE:
-			if ((cpsr_val & CPSR_Z_MASK) == CPSR_Z_MASK)
-				return true;
-			if (((cpsr_val & CPSR_N_MASK) == CPSR_N_MASK) &&
-					((cpsr_val & CPSR_V_MASK) == 0))
-				return true;
-			if (((cpsr_val & CPSR_N_MASK) == 0) &&
-					((cpsr_val & CPSR_V_MASK) == CPSR_V_MASK))
-				return true;
-			break;
-		case COND_AL:
-			return true;
-			break;
-		default:
-			return false;
-			break;
-	}
-
-	return false;
-}
-
-void 
-CPU::
-InitializeCheckConditionTable()
-{
-	for (unsigned int cond = 0; cond < 16; cond++) 
-	{
-		uint16_t entry = 0;
-		for (uint32_t cpsr_val = 0; cpsr_val < 16; cpsr_val++) 
-		{
-			uint16_t val = 0;
-			if (CheckCondition(cond, cpsr_val << 28))
-				val = 1;
-			else
-				val = 0;
-			val = val << cpsr_val;
-			entry += val;
-		}
-		check_condition_table[cond] = entry;
-	}
 }
 
 } // end of namespace arm

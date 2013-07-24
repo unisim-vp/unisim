@@ -56,7 +56,7 @@ op ldrh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sb
 
 ldrh_imm_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "h r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
@@ -64,7 +64,7 @@ ldrh_imm_post.disasm = {
 
 ldrh_imm_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "h r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
@@ -72,7 +72,7 @@ ldrh_imm_offset.disasm = {
 
 ldrh_imm_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "h r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
@@ -80,21 +80,21 @@ ldrh_imm_pre.disasm = {
 
 ldrh_reg_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "h r" << (unsigned int) rd << ", ";
   DisasmMLSReg_post(u, rn, rm, buffer);
 }
 
 ldrh_reg_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "h r" << (unsigned int) rd << ", ";
   DisasmMLSReg_offset(u, rn, rm, buffer);
 }
 
 ldrh_reg_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "h r" << (unsigned int) rd << ", ";
   DisasmMLSReg_pre(u, rn, rm, buffer);
 }
@@ -106,7 +106,7 @@ ldrh_imm_post.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -121,9 +121,9 @@ ldrh_imm_offset.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR( rd, cpu.MemRead16( address & -2 ) );
 }
@@ -135,7 +135,7 @@ ldrh_imm_pre.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -152,7 +152,7 @@ ldrh_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value;
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -169,7 +169,7 @@ ldrh_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -185,7 +185,7 @@ ldrh_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -210,7 +210,7 @@ op ldrsh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:s
 
 ldrsh_imm_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sh r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
@@ -218,7 +218,7 @@ ldrsh_imm_post.disasm = {
 
 ldrsh_imm_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sh r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
@@ -226,7 +226,7 @@ ldrsh_imm_offset.disasm = {
 
 ldrsh_imm_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sh r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
@@ -234,21 +234,21 @@ ldrsh_imm_pre.disasm = {
 
 ldrsh_reg_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sh r" << (unsigned int) rd << ", ";
   DisasmMLSReg_post(u, rn, rm, buffer);
 }
 
 ldrsh_reg_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sh r" << (unsigned int) rd << ", ";
   DisasmMLSReg_offset(u, rn, rm, buffer);
 }
 
 ldrsh_reg_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sh r" << (unsigned int) rd << ", ";
   DisasmMLSReg_pre(u, rn, rm, buffer);
 }
@@ -260,7 +260,7 @@ ldrsh_imm_post.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -275,9 +275,9 @@ ldrsh_imm_offset.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	cpu.SetGPR( rd, cpu.MemReadS16( address & -2 ) );
 }
@@ -289,7 +289,7 @@ ldrsh_imm_pre.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -306,7 +306,7 @@ ldrsh_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value;
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -323,7 +323,7 @@ ldrsh_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 //	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
 	address = MLSReg(u, rn_value, rd_value, rm_value);
@@ -340,7 +340,7 @@ ldrsh_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -365,7 +365,7 @@ op ldrsb_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:s
 
 ldrsb_imm_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sb r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
@@ -373,7 +373,7 @@ ldrsb_imm_post.disasm = {
 
 ldrsb_imm_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sb r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
@@ -381,7 +381,7 @@ ldrsb_imm_offset.disasm = {
 
 ldrsb_imm_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sb r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
@@ -389,21 +389,21 @@ ldrsb_imm_pre.disasm = {
 
 ldrsb_reg_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sb r" << (unsigned int) rd << ", ";
   DisasmMLSReg_post(u, rn, rm, buffer);
 }
 
 ldrsb_reg_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sb r" << (unsigned int) rd << ", ";
   DisasmMLSReg_offset(u, rn, rm, buffer);
 }
 
 ldrsb_reg_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "sb r" << (unsigned int) rd << ", ";
   DisasmMLSReg_pre(u, rn, rm, buffer);
 }
@@ -415,7 +415,7 @@ ldrsb_imm_post.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = rn_value; // address used is the contents of rn
 	cpu.SetGPR(rn, MLSImmOffset(u, rn_value, immedH, immedL)); // update rn
@@ -429,9 +429,9 @@ ldrsb_imm_offset.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL);
 	cpu.SetGPR( rd, cpu.MemReadS8( address ) );
 }
 
@@ -442,7 +442,7 @@ ldrsb_imm_pre.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
@@ -458,7 +458,7 @@ ldrsb_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value;
 	cpu.SetGPR(rn, MLSReg(u, rn_value, rd_value, rm_value));
@@ -474,7 +474,7 @@ ldrsb_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.SetGPR( rd, cpu.MemReadS8( address ) );
@@ -489,7 +489,7 @@ ldrsb_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	cpu.SetGPR(rn, address);
@@ -513,7 +513,7 @@ op strh_reg_pre(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:sb
 
 strh_imm_post.disasm = {
 	buffer << "str";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << "h r" << (unsigned int) rd << ", ";
 	// MLS = Miscellaneous Load Store
 	DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
@@ -521,7 +521,7 @@ strh_imm_post.disasm = {
 
 strh_imm_offset.disasm = {
 	buffer << "str";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << "h r" << (unsigned int) rd << ", ";
 	// MLS = Miscellaneous Load Store
 	DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
@@ -529,7 +529,7 @@ strh_imm_offset.disasm = {
 
 strh_imm_pre.disasm = {
 	buffer << "str";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << "h r" << (unsigned int) rd << ", ";
 	// MLS = Miscellaneous Load Store
 	DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
@@ -537,21 +537,21 @@ strh_imm_pre.disasm = {
 
 strh_reg_post.disasm = {
 	buffer << "str";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << "h r" << (unsigned int) rd << ", ";
 	DisasmMLSReg_post(u, rn, rm, buffer);
 }
 
 strh_reg_offset.disasm = {
 	buffer << "str";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << "h r" << (unsigned int) rd << ", ";
 	DisasmMLSReg_offset(u, rn, rm, buffer);
 }
 
 strh_reg_pre.disasm = {
 	buffer << "str";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << "h r" << (unsigned int) rd << ", ";
 	DisasmMLSReg_pre(u, rn, rm, buffer);
 }
@@ -561,7 +561,7 @@ strh_imm_post.execute = {
 	uint16_t value16;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = cpu.GetGPR(rn); // address used is the contents of rn
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -575,9 +575,9 @@ strh_imm_offset.execute = {
 	uint16_t value16;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	address = MLSImmOffset(u, cpu.GetGPR(rn), immedH, immedL); 
+	address = MLSImmOffset(u, cpu.GetGPR(rn), immedH, immedL);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
 	value16 = cpu.GetGPR(rd) & 0x0FFFF;
 	cpu.MemWrite16(address, value16);
@@ -588,7 +588,7 @@ strh_imm_pre.execute = {
 	uint16_t value16;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = MLSImmOffset(u, cpu.GetGPR(rn), immedH, immedL); // compute address
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -602,7 +602,7 @@ strh_reg_post.execute = {
 	uint16_t value16;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = cpu.GetGPR(rn);
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -616,7 +616,7 @@ strh_reg_offset.execute = {
 	uint16_t value16;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
@@ -629,7 +629,7 @@ strh_reg_pre.execute = {
 	uint16_t value16;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = MLSReg(u, cpu.GetGPR(rn), cpu.GetGPR(rd), cpu.GetGPR(rm));
 	// TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))

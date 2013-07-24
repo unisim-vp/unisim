@@ -393,6 +393,7 @@ unisim/component/cxx/processor/arm/armemu/cache.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/decode_misc_load_store.hh \
 unisim/component/cxx/processor/arm/exception.hh \
+unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/decode_load_store_multiple.hh \

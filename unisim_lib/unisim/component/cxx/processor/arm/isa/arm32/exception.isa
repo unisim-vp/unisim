@@ -47,12 +47,12 @@ op swi(cond[4]:0b1111[4]:immed[24])
 
 swi.disasm = {
 	buffer << "swi";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " #" << dec << (unsigned int) immed;
 }
 
 swi.execute = {
-	if (!cpu.CheckCondition(cond)) return;
+	if (not CheckCondition(cpu, cond)) return;
 
 	// we are executing on full system mode
 	cpu.MarkVirtualExceptionVector(

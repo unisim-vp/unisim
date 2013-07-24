@@ -51,7 +51,7 @@ using unisim::util::arithmetic::SignedSatSub32;
  */
 
 { STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
@@ -59,7 +59,7 @@ using unisim::util::arithmetic::SignedSatSub32;
 
 qadd.disasm = {
 	buffer << "qadd";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rn;
@@ -70,7 +70,7 @@ qadd.execute = {
 	uint32_t result;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -91,7 +91,7 @@ qadd.execute = {
  */
 
 { STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
@@ -99,7 +99,7 @@ qadd.execute = {
 
 qsub.disasm = {
 	buffer << "qsub";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rn;
@@ -110,7 +110,7 @@ qsub.execute = {
 	uint32_t result;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -131,7 +131,7 @@ qsub.execute = {
  */
 
 { STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
@@ -139,7 +139,7 @@ qsub.execute = {
 
 qdadd.disasm = {
 	buffer << "qdadd";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rn;
@@ -150,7 +150,7 @@ qdadd.execute = {
 	uint32_t result;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -172,7 +172,7 @@ qdadd.execute = {
  */
 
 { STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ || 
+  STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
@@ -180,7 +180,7 @@ qdadd.execute = {
 
 qdsub.disasm = {
 	buffer << "qdsub";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rn;
@@ -191,7 +191,7 @@ qdsub.execute = {
 	uint32_t result;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing

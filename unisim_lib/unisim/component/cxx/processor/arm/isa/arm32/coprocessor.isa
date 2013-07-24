@@ -46,7 +46,7 @@ op cdp(cond[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4])
 
 cdp.disasm = {
 	buffer << "cdp";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " " << dec << (unsigned int) cp_num;
 	buffer << ", " << dec << (unsigned int) op1;
 	buffer << ", cr" << dec << (unsigned int) crd;
@@ -56,7 +56,7 @@ cdp.disasm = {
 }
 
 cdp.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
 }
@@ -79,7 +79,7 @@ op ldc_unindexed(cond[4]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*/n[1]:/*w*/0b0[1]:
 
 ldc_offset.disasm = {
 	buffer << "ldc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -89,7 +89,7 @@ ldc_offset.disasm = {
 
 ldc_pre.disasm = {
 	buffer << "ldc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -99,7 +99,7 @@ ldc_pre.disasm = {
 
 ldc_post.disasm = {
 	buffer << "ldc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -109,7 +109,7 @@ ldc_post.disasm = {
 
 ldc_unindexed.disasm = {
 	buffer << "ldc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -118,7 +118,7 @@ ldc_unindexed.disasm = {
 }
 
 ldc_offset.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
@@ -127,7 +127,7 @@ ldc_offset.execute = {
 }
 
 ldc_pre.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
         
 	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	cpu.SetGPR(rn, address);
@@ -137,7 +137,7 @@ ldc_pre.execute = {
 }
 
 ldc_post.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = cpu.GetGPR(rn);
 	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
@@ -147,7 +147,7 @@ ldc_post.execute = {
 }
 
 ldc_unindexed.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorLoad(cp_num, address, option)) {
@@ -167,7 +167,7 @@ op mcr(cond[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[
 
 mcr.disasm = {
 	buffer << "mcr";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", " << (unsigned int) op1;
 	buffer << ", r" << (unsigned int) rd;
@@ -177,7 +177,7 @@ mcr.disasm = {
 }
 
 mcr.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
 }
@@ -194,7 +194,7 @@ op mrc(cond[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[
 
 mrc.disasm = {
 	buffer << "mrc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", " << (unsigned int) op1;
 	buffer << ", r" << (unsigned int) rd;
@@ -204,7 +204,7 @@ mrc.disasm = {
 }
 
 mrc.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
 }
@@ -227,17 +227,17 @@ op stc_unindexed(cond[4]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*/n[1]:/*w*/0b0[1]:
 
 stc_offset.disasm = {
 	buffer << "stc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
 	DisasmCLSImm_offset(u, rn, offset, buffer);
-}	
+}
 
 stc_pre.disasm = {
 	buffer << "stc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -247,7 +247,7 @@ stc_pre.disasm = {
 
 stc_post.disasm = {
 	buffer << "stc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -257,7 +257,7 @@ stc_post.disasm = {
 
 stc_unindexed.disasm = {
 	buffer << "stc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
@@ -266,16 +266,16 @@ stc_unindexed.disasm = {
 }
 
 stc_offset.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}	
+}
 
 stc_pre.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
 	cpu.SetGPR(rn, address);
@@ -285,7 +285,7 @@ stc_pre.execute = {
 }
 
 stc_post.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = cpu.GetGPR(rn);
 	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
@@ -295,7 +295,7 @@ stc_post.execute = {
 }
 
 stc_unindexed.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorStore(cp_num, address, option)) {

@@ -58,7 +58,7 @@ group ldr_group(ldr_imm_post, ldr_imm_offset, ldr_imm_pre, \
 
 ldr_imm_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
@@ -66,7 +66,7 @@ ldr_imm_post.disasm = {
 
 ldr_imm_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
@@ -74,7 +74,7 @@ ldr_imm_offset.disasm = {
 
 ldr_imm_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
@@ -82,21 +82,21 @@ ldr_imm_pre.disasm = {
 
 ldr_reg_post.disasm = {
 			   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_reg_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldr_reg_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -109,7 +109,7 @@ ldr_imm_post.execute = {
 	uint32_t new_rn_value = 0;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value; // address used is the contents of rn
 	new_rn_value = LSWUBImmOffset(u, rn_value, offset);
@@ -125,9 +125,9 @@ ldr_imm_offset.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset);
 	cpu.SetGPR( rd, cpu.MemRead32( address ) );
 }
 
@@ -138,7 +138,7 @@ ldr_imm_pre.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
@@ -154,10 +154,10 @@ ldr_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	cpu.SetGPR( rd, cpu.MemRead32( address ) );
@@ -172,9 +172,9 @@ ldr_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR( rd, cpu.MemRead32( address ) );
@@ -189,9 +189,9 @@ ldr_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
@@ -215,7 +215,7 @@ op ldrb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b1[1]:rn[4]:rd[4]:sh
 
 ldrb_imm_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
@@ -223,7 +223,7 @@ ldrb_imm_post.disasm = {
 
 ldrb_imm_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
@@ -231,7 +231,7 @@ ldrb_imm_offset.disasm = {
 
 ldrb_imm_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
@@ -239,21 +239,21 @@ ldrb_imm_pre.disasm = {
 
 ldrb_reg_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_reg_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 ldrb_reg_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -265,7 +265,7 @@ ldrb_imm_post.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = cpu.GetGPR(rn); // address used is the contents of rn
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
@@ -279,9 +279,9 @@ ldrb_imm_offset.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset);
 	cpu.SetGPR( rd, cpu.MemRead8( address ) );
 }
 
@@ -292,7 +292,7 @@ ldrb_imm_pre.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
@@ -308,10 +308,10 @@ ldrb_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	cpu.SetGPR( rd, cpu.MemRead8( address ) );
@@ -326,9 +326,9 @@ ldrb_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR( rd, cpu.MemRead8( address ) );
@@ -343,9 +343,9 @@ ldrb_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
@@ -376,10 +376,10 @@ ldrb_rd15_imm_post.disasm = {
 }
 
 ldrb_rd15_imm_offset.disasm = {
-	if(STATE::MODEL == ARMV5TE || 
+	if(STATE::MODEL == ARMV5TE ||
 		STATE::MODEL == ARMV5TEJ ||
 		STATE::MODEL == ARMV6 ||
-		STATE::MODEL == ARMEMU) 
+		STATE::MODEL == ARMEMU)
 	{
 		buffer << "pld";
 		DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
@@ -396,10 +396,10 @@ ldrb_rd15_reg_post.disasm = {
 }
 
 ldrb_rd15_reg_offset.disasm = {
-	if(STATE::MODEL == ARMV5TE || 
+	if(STATE::MODEL == ARMV5TE ||
 		STATE::MODEL == ARMV5TEJ ||
 		STATE::MODEL == ARMV6 ||
-		STATE::MODEL == ARMEMU) 
+		STATE::MODEL == ARMEMU)
 	{
 		buffer << "pld ";
 		DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
@@ -417,7 +417,7 @@ ldrb_rd15_imm_post.execute = {
 }
 
 ldrb_rd15_imm_offset.execute = {
-	if ((STATE::MODEL == ARMV5TE || 
+	if ((STATE::MODEL == ARMV5TE ||
 		 STATE::MODEL == ARMV5TEJ ||
 		 STATE::MODEL == ARMV6 ||
 		 STATE::MODEL == ARMEMU) && cond == 15 )
@@ -447,7 +447,7 @@ ldrb_rd15_reg_post.execute = {
 }
 
 ldrb_rd15_reg_offset.execute = {
-	if ((STATE::MODEL == ARMV5TE || 
+	if ((STATE::MODEL == ARMV5TE ||
 		 STATE::MODEL == ARMV5TEJ ||
 		 STATE::MODEL == ARMV6 ||
 		 STATE::MODEL == ARMEMU) && cond == 15 )
@@ -459,7 +459,7 @@ ldrb_rd15_reg_offset.execute = {
 		uint32_t rm_value = cpu.GetGPR(rm);
 
 
-		address = 
+		address =
 			LSWUBReg(u, rn_value, 15, shift_imm, shift, rm_value,
 				cpu.GetCPSR_C());
 		cpu.ReadPrefetch(address);
@@ -488,14 +488,14 @@ op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b
 
 ldrt_imm.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrt_reg.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -507,7 +507,7 @@ ldrt_imm.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
@@ -521,7 +521,7 @@ ldrt_reg.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
 	cpu.SetGPR( rd, cpu.MemRead32( address ) );
@@ -541,14 +541,14 @@ op ldrbt_reg(cond[4]:0b0110[4]:u[1]:0b111[3]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0
 
 ldrbt_imm.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "bt r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 ldrbt_reg.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "bt r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -560,7 +560,7 @@ ldrbt_imm.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
@@ -576,10 +576,10 @@ ldrbt_reg.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	cpu.SetGPR( rd, cpu.MemRead8( address ) );
@@ -602,42 +602,42 @@ op str_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shi
 
 str_imm_post.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 str_imm_offset.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
 }
 
 str_imm_pre.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
 }
 
 str_reg_post.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_reg_offset.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 str_reg_pre.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << " r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -651,7 +651,7 @@ str_imm_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception
@@ -669,9 +669,9 @@ str_imm_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset);
 	// TODO: Check Alignment Exception
 	value = rd_value;
 
@@ -687,7 +687,7 @@ str_imm_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	// TODO: Check Alignment Exception
@@ -706,11 +706,11 @@ str_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
 	// TODO: Check Alignment Exception
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	value = rd_value;
@@ -727,9 +727,9 @@ str_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	// TODO: Check Alignment Exception
@@ -747,9 +747,9 @@ str_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	// TODO: Check Alignment Exception
@@ -775,7 +775,7 @@ op strb_reg_pre(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:sh
 
 strb_imm_post.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
@@ -783,7 +783,7 @@ strb_imm_post.disasm = {
 
 strb_imm_offset.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_offset(u, rn, offset, buffer);
@@ -791,7 +791,7 @@ strb_imm_offset.disasm = {
 
 strb_imm_pre.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_pre(u, rn, offset, buffer);
@@ -799,21 +799,21 @@ strb_imm_pre.disasm = {
 
 strb_reg_post.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_reg_offset.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_offset(u, rn, shift_imm, shift, rm, buffer);
 }
 
 strb_reg_pre.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "b r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_pre(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -827,7 +827,7 @@ strb_imm_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = rn_value; // address used is the contents of rn
 	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
@@ -844,9 +844,9 @@ strb_imm_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = LSWUBImmOffset(u, rn_value, offset); 
+	address = LSWUBImmOffset(u, rn_value, offset);
 	value = rd_value & 0x0FF;
 	cpu.MemWrite8(address, value);
 }
@@ -860,7 +860,7 @@ strb_imm_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = LSWUBImmOffset(u, rn_value, offset); // compute address
 	cpu.SetGPR(rn, address); // update rn with the address
@@ -878,10 +878,10 @@ strb_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	value = rd_value & 0x0FF;
@@ -898,9 +898,9 @@ strb_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	value = rd_value & 0x0FF;
@@ -917,9 +917,9 @@ strb_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = 
+	address =
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C());
 	cpu.SetGPR(rn, address);
@@ -941,14 +941,14 @@ op strt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift_
 
 strt_imm.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
 }
 
 strt_reg.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "t r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -962,7 +962,7 @@ strt_imm.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception
@@ -981,11 +981,11 @@ strt_reg.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	address = rn_value;
 	// TODO: Check Alignment Exception
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	value = rd_value;
@@ -1006,7 +1006,7 @@ op strbt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:shift
 
 strbt_imm.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "bt r" << (unsigned int) rd << ", ";
   // LSWUB = Load Store Word or Unsigned Byte
   DisasmLSWUBImmOffset_post(u, rn, offset, buffer);
@@ -1014,7 +1014,7 @@ strbt_imm.disasm = {
 
 strbt_reg.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "bt r" << (unsigned int) rd << ", ";
   DisasmLSWUBReg_post(u, rn, shift_imm, shift, rm, buffer);
 }
@@ -1024,7 +1024,7 @@ strbt_imm.execute = {
 	uint8_t value;
   
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = cpu.GetGPR(rn); // address used is the contents of rn
 	cpu.SetGPR(rn, LSWUBImmOffset(u, cpu.GetGPR(rn), offset)); // update rn
@@ -1042,10 +1042,10 @@ strbt_reg.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value;
-	cpu.SetGPR(rn, 
+	cpu.SetGPR(rn,
 		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
 			cpu.GetCPSR_C()));
 	value = rd_value & 0x0FF;

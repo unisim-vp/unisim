@@ -46,7 +46,7 @@ op mla(cond[4]:0b01[7]:s[1]:rd[4]:rn[4]:rs[4]:0b01001[4]:rm[4])
 
 mla.disasm = {
 	buffer << "mla";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(s) buffer << "s";
 	buffer << " r" << (unsigned int) rd << ", "
 		<< "r" << (unsigned int) rm << ", "
@@ -63,7 +63,7 @@ mla.execute = {
 	uint32_t rs_value = cpu.GetGPR(rs);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	res = rm_value * rs_value;
 	res += rn_value;
@@ -87,7 +87,7 @@ op mul(cond[4]:0b0[7]:s[1]:rd[4]:sbz[4]:rs[4]:0b01001[4]:rm[4])
 
 mul.disasm = {
 	buffer << "mul";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(s) buffer << "s";
 	buffer << " r" << (unsigned int) rd << ", "
 		<< "r" << (unsigned int) rm << ", "
@@ -102,7 +102,7 @@ mul.execute = {
 	uint32_t rs_value = cpu.GetGPR(rs);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	res = rm_value * rs_value;
 	cpu.SetGPR(rd, res);
@@ -134,7 +134,7 @@ mul.execute = {
 
 smlal.disasm = {
 	buffer << "smlal";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(s) buffer << "s";
 	buffer << " r" << (unsigned int) rdhi << ", "
 		<< "r" << (unsigned int) rdlo << ", "
@@ -153,7 +153,7 @@ smlal.execute = {
 	uint32_t rs_value = cpu.GetGPR(rs);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
 	res = (int64_t)res + ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
@@ -184,7 +184,7 @@ op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 smull.disasm = {
 	buffer << "smull";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(s) buffer << "s";
 	buffer << " r" << (unsigned int) rdhi << ", "
 	<< "r" << (unsigned int) rdlo << ", "
@@ -201,7 +201,7 @@ smull.execute = {
 	uint32_t rs_value = cpu.GetGPR(rs);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	res = ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);
@@ -231,7 +231,7 @@ op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 umlal.disasm = {
 	buffer << "umlal";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(s) buffer << "s";
 	buffer << " r" << (unsigned int) rdhi << ", "
 		<< "r" << (unsigned int) rdlo << ", "
@@ -250,7 +250,7 @@ umlal.execute = {
 	uint32_t rs_value = cpu.GetGPR(rs);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
 	res += ((int64_t)rm_value) * ((int64_t)rs_value);
@@ -281,7 +281,7 @@ op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 umull.disasm = {
 	buffer << "umull";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	if(s) buffer << "s";
 	buffer << " r" << (unsigned int) rdhi << ", "
 		<< "r" << (unsigned int) rdlo << ", "
@@ -298,7 +298,7 @@ umull.execute = {
 	uint32_t rs_value = cpu.GetGPR(rs);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	res = ((int64_t)rm_value) * ((int64_t)rs_value);
 	res_lo = res & (uint64_t)(~(uint32_t)0);

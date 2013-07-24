@@ -49,11 +49,14 @@ namespace processor {
 namespace arm {
 
 /* Condition opcode bytes disassembling method */
-void
-DisasmCondition(const uint32_t cond, std::stringstream &buffer);
+char const* DisasmCondition(uint32_t cond);
+
 void
 DisasmConditionFieldsMask(const uint32_t mask,
 		std::stringstream &buffer);
+
+/* Register disassembling method */
+char const* DisasmRegister(uint32_t r);
 
 /* Data processing operand disassembling methods */
 void
