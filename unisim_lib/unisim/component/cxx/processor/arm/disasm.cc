@@ -59,6 +59,7 @@ DisasmCondition(uint32_t cond)
     return "";
   std::cerr << "ERROR(" << __FUNCTION__ << "): "
             << "unknown condition code (" << cond << ")" << endl;
+  return "?";
 }
 
 static char const* const register_dis[] =
