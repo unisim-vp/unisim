@@ -566,7 +566,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("atd-pwm-stub.atd0-stub-enabled", false);
 	simulator->SetVariable("atd-pwm-stub.atd1-stub-enabled", false);
 
-	simulator->SetVariable("ATD0.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD0.bus-cycle-time", 500000);
 	simulator->SetVariable("ATD0.base-address", 0x2c0);
 	simulator->SetVariable("ATD0.interrupt-offset", 0xd2);
 	simulator->SetVariable("ATD0.vrl", 0.000000e+00);
@@ -574,12 +574,12 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD0.debug-enabled", false);
 	simulator->SetVariable("ATD0.use-atd-stub", false);
 	simulator->SetVariable("ATD0.atd-anx-stimulus-file", "ATD.xml");
-//	simulator->SetVariable("ATD0.start-scan-at", 900);
+	simulator->SetVariable("ATD0.start-scan-at", 0);
 	simulator->SetVariable("ATD0.vih", 3.250000e+00);
 	simulator->SetVariable("ATD0.vil", 1.750000e+00);
 	simulator->SetVariable("ATD0.Has-External-Trigger", false);
 
-	simulator->SetVariable("ATD1.bus-cycle-time", 250000);
+	simulator->SetVariable("ATD1.bus-cycle-time", 500000);
 	simulator->SetVariable("ATD1.base-address", 0x80);
 	simulator->SetVariable("ATD1.interrupt-offset", 0xd0);
 	simulator->SetVariable("ATD1.vrl", 0.000000e+00);
@@ -587,7 +587,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ATD1.debug-enabled", false);
 	simulator->SetVariable("ATD1.use-atd-stub", false);
 	simulator->SetVariable("ATD1.atd-anx-stimulus-file", "ATD.xml");
-//	simulator->SetVariable("ATD1.start-scan-at", 900);
+	simulator->SetVariable("ATD1.start-scan-at", 0);
 	simulator->SetVariable("ATD1.vih", 3.250000e+00);
 	simulator->SetVariable("ATD1.vil", 1.750000e+00);
 	simulator->SetVariable("ATD1.Has-External-Trigger", false);
@@ -616,7 +616,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("XGATE.debug-enabled", false);
 	simulator->SetVariable("XGATE.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("XGATE.nice-time", "1 ms");
-	simulator->SetVariable("XGATE.core-clock", 125000);
+	simulator->SetVariable("XGATE.core-clock", 500000);
 	simulator->SetVariable("XGATE.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("XGATE.verbose-tlm-run-thread", false);
 	simulator->SetVariable("XGATE.verbose-tlm-commands", false);
@@ -636,14 +636,14 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CPU.debug-enabled", false);
 	simulator->SetVariable("CPU.max-inst", 0xffffffffffffffffULL);
 	simulator->SetVariable("CPU.nice-time", "1 ms");
-	simulator->SetVariable("CPU.core-clock", 125000);
+	simulator->SetVariable("CPU.core-clock", 500000);
 	simulator->SetVariable("CPU.verbose-tlm-bus-synchronize", false);
 	simulator->SetVariable("CPU.verbose-tlm-run-thread", false);
 	simulator->SetVariable("CPU.verbose-tlm-commands", false);
 	simulator->SetVariable("CPU.trap-on-instruction-counter", -1);
 	simulator->SetVariable("CPU.enable-fine-timing", true);
 
-	simulator->SetVariable("CRG.oscillator-clock", 125000);  // 8 MHz
+	simulator->SetVariable("CRG.oscillator-clock", 250000);  // 4 MHz
 	simulator->SetVariable("CRG.base-address", 0x34);
 	simulator->SetVariable("CRG.interrupt-offset-rti", 0xf0);
 	simulator->SetVariable("CRG.interrupt-offset-pll-lock", 0xc6);
@@ -652,7 +652,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("CRG.pll-stabilization-delay", 0.24);
 	simulator->SetVariable("CRG.self-clock-mode-clock", 100000);
 
-	simulator->SetVariable("ECT.bus-cycle-time", 250000);
+	simulator->SetVariable("ECT.bus-cycle-time", 500000);
 	simulator->SetVariable("ECT.base-address", 0x40);
 	simulator->SetVariable("ECT.interrupt-offset-channel0", 0xee);
 	simulator->SetVariable("ECT.interrupt-offset-timer-overflow", 0xde);
@@ -665,7 +665,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("ECT.built-in-signal-generator-enable", true);
 	simulator->SetVariable("ECT.built-in-signal-generator-period", 80000);
 
-	simulator->SetVariable("PIT.bus-cycle-time", 250000);
+	simulator->SetVariable("PIT.bus-cycle-time", 500000);
 	simulator->SetVariable("PIT.base-address", 0x0340);
 	simulator->SetVariable("PIT.interrupt-offset-channel[0]", 0x7A);
 	simulator->SetVariable("PIT.interrupt-offset-channel[1]", 0x78);
@@ -673,47 +673,47 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("PIT.interrupt-offset-channel[3]", 0x74);
 	simulator->SetVariable("PIT.debug-enabled", false);
 
-	simulator->SetVariable("SCI2.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI2.bus-cycle-time", 500000);
 	simulator->SetVariable("SCI2.base-address", 0x00B8);
 	simulator->SetVariable("SCI2.interrupt-offset-channel", 0x8A);
 	simulator->SetVariable("SCI2.debug-enabled", false);
 
-	simulator->SetVariable("SCI3.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI3.bus-cycle-time", 500000);
 	simulator->SetVariable("SCI3.base-address", 0x00C0);
 	simulator->SetVariable("SCI3.interrupt-offset-channel", 0x88);
 	simulator->SetVariable("SCI3.debug-enabled", false);
 
-	simulator->SetVariable("SCI0.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI0.bus-cycle-time", 500000);
 	simulator->SetVariable("SCI0.base-address", 0x00C8);
 	simulator->SetVariable("SCI0.interrupt-offset-channel", 0xD6);
 	simulator->SetVariable("SCI0.debug-enabled", false);
 
-	simulator->SetVariable("SCI1.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI1.bus-cycle-time", 500000);
 	simulator->SetVariable("SCI1.base-address", 0x00D0);
 	simulator->SetVariable("SCI1.interrupt-offset-channel", 0xD4);
 	simulator->SetVariable("SCI1.debug-enabled", false);
 
-	simulator->SetVariable("SCI4.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI4.bus-cycle-time", 500000);
 	simulator->SetVariable("SCI4.base-address", 0x0130);
 	simulator->SetVariable("SCI4.interrupt-offset-channel", 0x86);
 	simulator->SetVariable("SCI4.debug-enabled", false);
 
-	simulator->SetVariable("SCI5.bus-cycle-time", 250000);
+	simulator->SetVariable("SCI5.bus-cycle-time", 500000);
 	simulator->SetVariable("SCI5.base-address", 0x0138);
 	simulator->SetVariable("SCI5.interrupt-offset-channel", 0x84);
 	simulator->SetVariable("SCI5.debug-enabled", false);
 
-	simulator->SetVariable("SPI0.bus-cycle-time", 250000);
+	simulator->SetVariable("SPI0.bus-cycle-time", 500000);
 	simulator->SetVariable("SPI0.base-address", 0x00D8);
 	simulator->SetVariable("SPI0.interrupt-offset", 0xD8);
 	simulator->SetVariable("SPI0.debug-enabled", false);
 
-	simulator->SetVariable("SPI1.bus-cycle-time", 250000);
+	simulator->SetVariable("SPI1.bus-cycle-time", 500000);
 	simulator->SetVariable("SPI1.base-address", 0x00F0);
 	simulator->SetVariable("SPI1.interrupt-offset", 0xBE);
 	simulator->SetVariable("SPI1.debug-enabled", false);
 
-	simulator->SetVariable("SPI2.bus-cycle-time", 250000);
+	simulator->SetVariable("SPI2.bus-cycle-time", 500000);
 	simulator->SetVariable("SPI2.base-address", 0x00F8);
 	simulator->SetVariable("SPI2.interrupt-offset", 0xBC);
 	simulator->SetVariable("SPI2.debug-enabled", false);
@@ -723,7 +723,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 //	simulator->SetVariable("RAM.org", 0x0F8000);
 //	simulator->SetVariable("RAM.bytesize", 0x8000); // 32Ko
 	simulator->SetVariable("RAM.initial-byte-value", 0x00);
-	simulator->SetVariable("RAM.cycle-time", 250000);
+	simulator->SetVariable("RAM.cycle-time", 500000);
 	simulator->SetVariable("RAM.verbose", false);
 
 	simulator->SetVariable("EEPROM.org", 0x100000);
@@ -731,8 +731,8 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 //	simulator->SetVariable("EEPROM.org", 0x13F000);
 //	simulator->SetVariable("EEPROM.bytesize", 0x1000); // 4Ko
 	simulator->SetVariable("EEPROM.initial-byte-value", 0xFF);
-	simulator->SetVariable("EEPROM.cycle-time", 250000);
-	simulator->SetVariable("EEPROM.oscillator-cycle-time", 125000);
+	simulator->SetVariable("EEPROM.cycle-time", 500000);
+	simulator->SetVariable("EEPROM.oscillator-cycle-time", 250000);
 	simulator->SetVariable("EEPROM.base-address", 0x0110);
 	simulator->SetVariable("EEPROM.erase-fail-ratio", 0.01);
 	simulator->SetVariable("EEPROM.command-interrupt", 0xBA);
@@ -743,7 +743,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 //	simulator->SetVariable("FLASH.org", 0x780000);
 //	simulator->SetVariable("FLASH.bytesize", 0x80000); // 512Ko
 	simulator->SetVariable("FLASH.initial-byte-value", 0xFF);
-	simulator->SetVariable("FLASH.cycle-time", 250000);
+	simulator->SetVariable("FLASH.cycle-time", 500000);
 	simulator->SetVariable("FLASH.verbose", false);
 
 	simulator->SetVariable("kernel_logger.std_err", true);
@@ -763,7 +763,7 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("MMC.ppage-address", 0x30);
 	simulator->SetVariable("MMC.version", "V3");
 
-	simulator->SetVariable("PWM.bus-cycle-time", 250000);
+	simulator->SetVariable("PWM.bus-cycle-time", 500000);
 	simulator->SetVariable("PWM.base-address", 0x300);
 	simulator->SetVariable("PWM.interrupt-offset", 0x8c);
 	simulator->SetVariable("PWM.debug-enabled", false);

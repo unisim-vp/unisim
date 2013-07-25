@@ -410,6 +410,7 @@ address_t HCS12X ::getIntVector(uint8_t &ipl)
 
 		switch (buffer->getVectorAddress() & 0x00FF)
 		{
+			case 0: /* There is no interrupt with higher priority than current IPL*/ break;
 			case XINT::INT_SYS_RESET_OFFSET: {
 				/*
 				 * Are mapped to vector 0xFFFE: Pin reset, Power-on reset, low-voltage reset, illegal address reset

@@ -672,6 +672,7 @@ void CRG::runRTI() {
 		crgflg_register = crgflg_register | 0x80;
 
 		assertInterrupt(interrupt_offset_rti);
+
 	}
 }
 

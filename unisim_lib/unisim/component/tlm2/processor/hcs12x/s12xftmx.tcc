@@ -1483,7 +1483,7 @@ unsigned int S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transp
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 20))) {
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			return (inherited::transport_dbg(payload));
 		} else {
@@ -1492,10 +1492,10 @@ unsigned int S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::transp
 			payload.set_response_status(tlm::TLM_OK_RESPONSE);
 
 		}
-
 	} else {
 		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}
+
 
 	return (0);
 
@@ -1509,7 +1509,7 @@ tlm::tlm_sync_enum S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 20))) {
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			validateFlashRead(address);
 
@@ -1545,7 +1545,7 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tl
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 20))) {
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			validateFlashRead(address);
 
@@ -1556,7 +1556,6 @@ void S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::b_transport(tl
 
 			payload.set_response_status( tlm::TLM_OK_RESPONSE );
 		}
-
 	} else {
 		payload.set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
 	}

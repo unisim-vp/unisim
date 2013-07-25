@@ -454,6 +454,7 @@ address_t S12XGATE ::getIntVector(uint8_t& priority)
 
 void S12XGATE::assertInterrupt(uint8_t offset, bool isXGATE_flag) {
 
+
 	if (!inherited::isInterruptEnabled()) return;
 
 	tlm_phase phase = BEGIN_REQ;

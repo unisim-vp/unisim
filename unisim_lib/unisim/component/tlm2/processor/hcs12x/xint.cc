@@ -69,7 +69,6 @@ XINT::XINT(const sc_module_name& name, Object *parent) :
 	, baseAddress(0x0120)
 	, param_baseAddress("base-address", this, baseAddress)
 
-
 {
 
 	interrupt_request(*this);
@@ -198,28 +197,24 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 		buffer.setVectorAddress(get_ClockMonitorReset_Vector());
 		buffer.setID(XINT::INT_CLK_MONITOR_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_COP_WATCHDOG_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_COPWatchdogReset_Vector());
 		buffer.setID(XINT::INT_COP_WATCHDOG_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_IllegalAccessReset_Vector());
 		buffer.setID(XINT::INT_ILLEGAL_ACCESS_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_SYS_RESET_OFFSET/2].getState()) {
 
 		buffer.setVectorAddress(get_SysReset_Vector());
 		buffer.setID(XINT::INT_SYS_RESET_OFFSET/2);
 		buffer.setPriority(0x7);
-
 	}
 	else if ((owner == TOWNER::CPU12X) && interrupt_flags[XINT::INT_XIRQ_OFFSET/2].getState()) {
 
@@ -235,8 +230,12 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 		buffer.setPriority(0x7);
 	}
 	else {
-		for (int index=0x9; index < 0x79; index++) {
+		for (int index=0x79; index > 0x9; index--) {
 			if (interrupt_flags[index].getState()) {
+
+				if (debug_enabled) {
+					std::cout << sc_object::name() << " Interrupt State true for 0x" << std::hex << (unsigned int) (index * 2) << std::endl;
+				}
 
 				uint8_t dataPriority = 0;
 
@@ -250,7 +249,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 					}
 
 				} else {
-					if (((int_cfwdata[index] & 0x80) != 0) && !interrupt_flags[index].getPayload().isXGATE_shared_channel()) {
+					if (((int_cfwdata[index] & 0x80) != 0) && !(interrupt_flags[index].getPayload().isXGATE_shared_channel())) {
 						dataPriority = int_cfwdata[index] & 0x07;
 					}
 				}
@@ -259,6 +258,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 					buffer.setPriority(dataPriority);
 					buffer.setID(index);
 					buffer.setVectorAddress(((address_t) getIVBR() << 8) + index * 2);
+					break;
 				}
 
 			}
@@ -266,10 +266,14 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 
 	}
 
+	if (debug_enabled) {
+		std::cout << sc_object::name() << " Interrupt 0x" << std::hex << buffer.getVectorAddress() << std::endl;
+	}
+
 	if (buffer.getVectorAddress() == 0) {
-		buffer.setVectorAddress(get_Spurious_Vector());
-		buffer.setPriority(0x7);
-		buffer.setID(get_Spurious_Vector()/2);
+		buffer.setVectorAddress(getIVBR() << 8);
+		buffer.setID((getIVBR() << 8)/2);
+
 		return (false);
 	}
 
@@ -333,12 +337,10 @@ void XINT::run()
 		} while(payload);
 
 		if (found_cpu) {
-
 			tlm_sync_enum ret = toCPU12X_request->nb_transport_fw( *trans, *phase, zeroTime );
 		}
 
 		if (found_xgate) {
-
 			tlm_sync_enum ret = toXGATE_request->nb_transport_fw( *trans, *phase, zeroTime );
 
 		}

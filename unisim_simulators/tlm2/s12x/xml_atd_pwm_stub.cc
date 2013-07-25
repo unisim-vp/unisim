@@ -308,11 +308,6 @@ void XML_ATD_PWM_STUB::processPWM()
 
 	bool pwmValue[PWM_SIZE];
 
-//	while(enabled)
-//	{
-//		Input(pwmValue);
-//	}
-
 	while(true)
 	{
 		input(pwmValue);

@@ -717,7 +717,7 @@ unsigned int S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_S
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 			return (inherited::transport_dbg(payload));
 		} else {
@@ -741,7 +741,7 @@ tlm::tlm_sync_enum S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, 
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 
 			return (inherited::nb_transport_fw(payload, phase, t));
@@ -776,7 +776,7 @@ void S12XEETX<CMD_PIPELINE_SIZE, BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEB
 	void *data_ptr = payload.get_data_ptr();
 	unsigned int data_length = payload.get_data_length();
 
-	if ((address >= baseAddress) && (address < (baseAddress + 12))) {
+	if ((address >= inherited::GetLowAddress()) && (address <= inherited::GetHighAddress())) {
 		if (cmd == tlm::TLM_READ_COMMAND) {
 
 			inherited::b_transport(payload, t);

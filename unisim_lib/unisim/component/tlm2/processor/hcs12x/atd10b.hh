@@ -226,6 +226,7 @@ private:
 	bool conversionStop;
 	bool abortSequence;
 	uint8_t resultIndex;
+	bool isATDStarted;
 
 	bool isTriggerModeRunning;
 	bool isATDON;
@@ -310,20 +311,13 @@ private:
 	 * Analog signals are modeled as sample potential within VSSA and VDDA given by external tool
 	 */
 	double analog_signal[ATD_SIZE];
-//	int start_scan_at;
-//	Parameter<int> param_start_scan_at;
+	int start_scan_at;
+	Parameter<int> param_start_scan_at;
 
 	struct data_t {
 		double volte[ATD_SIZE];
 		double time;
 	};
-
-	std::vector<data_t > atd_vect;
-	string atd_anx_stimulus_file;
-	Parameter<string>	param_atd_anx_stimulus_file;
-
-	void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t &data);
-	void LoadXmlData(const char *filename, std::vector<data_t > &vect);
 
 	// Authorised Bus Clock
 	struct {

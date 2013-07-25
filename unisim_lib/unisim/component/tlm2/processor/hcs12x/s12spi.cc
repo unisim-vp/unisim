@@ -159,6 +159,7 @@ bool S12SPI::write(unsigned int offset, const void *buffer, unsigned int data_le
 
 void S12SPI::assertInterrupt(uint8_t interrupt_offset) {
 
+
 	tlm_phase phase = BEGIN_REQ;
 	XINT_Payload *payload = xint_payload_fabric.allocate();
 
