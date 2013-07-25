@@ -397,13 +397,6 @@ uint8_t CPU::step()
 				trap_reporting_import->ReportTrap();
 			}
 
-			if(requires_finished_instruction_reporting) {
-				if(memory_access_reporting_import) {
-					memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getCPU12XPagedAddress(lastPC), MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
-
-				}
-			}
-
 		}
 
 		if(hasAsynchronousInterrupt())
@@ -426,6 +419,13 @@ uint8_t CPU::step()
 		if(debug_enabled && verbose_step)
 			*logger << DebugError << "uncaught processor exception :" << e.what() << std::endl << EndDebugError;
 		Stop(1);
+	}
+
+	if(requires_finished_instruction_reporting) {
+		if(memory_access_reporting_import) {
+			memory_access_reporting_import->ReportFinishedInstruction(MMC::getInstance()->getCPU12XPagedAddress(lastPC), MMC::getInstance()->getCPU12XPagedAddress(getRegPC()));
+
+		}
 	}
 
 	if (instruction_counter >= max_inst) Stop(0);
