@@ -2030,7 +2030,7 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSPPC()
 	SetSyscallId("fcntl64", 204);
 	SetSyscallId("madvise", 205);
 	SetSyscallId("mincore", 206);
-	SetSyscallId("getpid", 207); // in a mono-thread environment pid=tid
+	SetSyscallId("getpid", 207); // in reality gettid: assuming that in a mono-thread environment pid=tid
 	SetSyscallId("tkill", 208);
 	SetSyscallId("setxattr", 209);
 	SetSyscallId("lsetxattr", 210);
