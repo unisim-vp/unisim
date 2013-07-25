@@ -43,7 +43,7 @@ namespace arm {
 
 using std::map;
 
-} // end of namespace arm 
+} // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component

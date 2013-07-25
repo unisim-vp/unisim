@@ -59,7 +59,7 @@ using std::endl;
 using std::hex;
 using std::dec;
 
-} // end of namespace arm 
+} // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx
 } // end of namespace component
@@ -76,6 +76,7 @@ impl {
 #include "unisim/component/cxx/processor/arm/decode_load_store_multiple.hh"
 #include "unisim/component/cxx/processor/arm/decode_misc_load_store.hh"
 #include "unisim/component/cxx/processor/arm/decode_copro_load_store.hh"
+#include "unisim/component/cxx/processor/arm/execute.hh"
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"

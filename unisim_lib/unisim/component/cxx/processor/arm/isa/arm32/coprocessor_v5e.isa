@@ -50,7 +50,7 @@
 
 mcrr.disasm = {
 	buffer << "mcrr";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", " << (unsigned int) op1;
 	buffer << ", r" << (unsigned int) rd;
@@ -59,7 +59,7 @@ mcrr.disasm = {
 }
 
 mcrr.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	cpu.MoveToCoprocessor(cp_num, op1, 0, rd, 0, crm);
 	cpu.MoveToCoprocessor(cp_num, op1, 0, rn, 0, crm);
@@ -81,7 +81,7 @@ mcrr.execute = {
 
 mrrc.disasm = {
 	buffer << "mrrc";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", " << (unsigned int) op1;
 	buffer << ", r" << (unsigned int) rd;
@@ -90,7 +90,7 @@ mrrc.disasm = {
 }
 
 mrrc.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
 	cpu.MoveFromCoprocessor(cp_num, op1, 0, rd, 0, crm);
 	cpu.MoveFromCoprocessor(cp_num, op1, 0, rn, 0, crm);

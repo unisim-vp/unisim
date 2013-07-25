@@ -52,12 +52,12 @@
 
 clz.disasm = {
 	buffer << "clz";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd << ", r" << (unsigned int) rm;
 }
 
 clz.execute = {
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	cpu.SetGPR(rd, CountLeadingZeros(cpu.GetGPR(rm)));
 }

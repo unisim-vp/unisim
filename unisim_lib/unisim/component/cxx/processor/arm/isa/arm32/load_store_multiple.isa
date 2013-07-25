@@ -54,7 +54,7 @@ ldm_1_ia.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -77,7 +77,7 @@ ldm_1_ib.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -100,7 +100,7 @@ ldm_1_da.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -123,7 +123,7 @@ ldm_1_db.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -145,17 +145,14 @@ ldm_1_ia.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -182,17 +179,14 @@ ldm_1_ib.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-		       			&start_address, &end_address,
-		       			&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -219,17 +213,14 @@ ldm_1_da.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 	
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -256,17 +247,14 @@ ldm_1_db.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -309,7 +297,7 @@ ldm_2_ia.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -332,7 +320,7 @@ ldm_2_ib.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -355,7 +343,7 @@ ldm_2_da.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -378,7 +366,7 @@ ldm_2_db.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -400,17 +388,14 @@ ldm_2_ia.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -429,17 +414,14 @@ ldm_2_ib.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -458,17 +440,14 @@ ldm_2_da.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -487,17 +466,14 @@ ldm_2_db.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -532,7 +508,7 @@ ldm_3_ia.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -555,7 +531,7 @@ ldm_3_ib.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -578,7 +554,7 @@ ldm_3_da.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -601,7 +577,7 @@ ldm_3_db.disasm = {
   bool prev = false;
 
   buffer << "ldm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -623,17 +599,14 @@ ldm_3_ia.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -660,17 +633,14 @@ ldm_3_ib.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-			&start_address, &end_address,
-			&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -697,17 +667,14 @@ ldm_3_da.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 	
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -734,17 +701,14 @@ ldm_3_db.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
   
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -787,7 +751,7 @@ stm_1_ia.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -809,7 +773,7 @@ stm_1_ib.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -831,7 +795,7 @@ stm_1_da.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -853,7 +817,7 @@ stm_1_db.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn << ((w == 1) ? "!" : "");
   buffer << ", {";
@@ -874,18 +838,15 @@ stm_1_ia.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -913,18 +874,15 @@ stm_1_ib.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMib(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -952,18 +910,15 @@ stm_1_da.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -991,18 +946,15 @@ stm_1_db.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -1046,7 +998,7 @@ stm_2_ia.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ia";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1068,7 +1020,7 @@ stm_2_ib.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "ib";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1090,7 +1042,7 @@ stm_2_da.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "da";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1112,7 +1064,7 @@ stm_2_db.disasm = {
   bool prev = false;
 
   buffer << "stm";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "db";
   buffer << " r" << (unsigned int) rn;
   buffer << ", {";
@@ -1133,18 +1085,15 @@ stm_2_ia.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -1168,18 +1117,15 @@ stm_2_ib.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMib(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMib(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -1203,18 +1149,15 @@ stm_2_da.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 
-	num_regs = LSMda(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMda(rn_value, reg_list, &start_address, &end_address,	&rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {
@@ -1238,18 +1181,15 @@ stm_2_db.execute = {
 	uint32_t cur_address;
 	uint32_t start_address;
 	uint32_t end_address;
-	uint32_t num_regs = 0;
 	uint32_t rn_new_val = 0;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	unsigned int mask = 1;
 	uint32_t value = 0;
   
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	num_regs = LSMdb(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMdb(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
   
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 15; i++) {

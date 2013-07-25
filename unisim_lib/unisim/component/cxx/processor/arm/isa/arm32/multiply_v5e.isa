@@ -55,7 +55,7 @@ smlaxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rs;
@@ -71,7 +71,7 @@ smlaxy.execute = {
 	uint32_t val_rd;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg || rs == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -134,7 +134,7 @@ smlalxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rdlo;
 	buffer << ", r" << (unsigned int) rdhi;
 	buffer << ", r" << (unsigned int) rm;
@@ -150,7 +150,7 @@ smlalxy.execute = {
 	uint64_t val_rd;
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rdhi == cpu.PC_reg || rdlo == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -206,7 +206,7 @@ smlawy.disasm = {
 	buffer << "smlaw";
 	if(y) buffer << "t";
 	else buffer << "b";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rs;
@@ -221,7 +221,7 @@ smlawy.execute = {
 	uint32_t val_rd;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg || rs == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -247,26 +247,25 @@ smlawy.execute = {
 	op64 = op64 * op;
 	op64 = op64 >> 16;
 	op64 = op64 & (uint64_t)0xffffffffULL;
-	int32_t sval_rd;
 	uint32_t op_tmp = op64;
-	sval_rd = (int32_t)op_tmp;
+	//int32_t sval_rd = (int32_t)op_tmp;
 	//val_rd = (uint32_t)(sval_rd + (int32_t)val_rn);
 	uint8_t carry_out, overflow_out, sign;
 	Add32(val_rd, carry_out, overflow_out, sign, op_tmp, val_rn, 0);
 // 	if ( (op_tmp & (uint32_t)0x80000000ULL) !=
-// 		(val_rn & (uint32_t)0x80000000ULL) ) 
+// 		(val_rn & (uint32_t)0x80000000ULL) )
 	if(overflow_out)
 	{
 //		cpu.SetCPSR_Q(false);
 		cpu.SetCPSR_Q(true);
-	} 
-// 	else 
+	}
+// 	else
 // 	{
 // 		if ( (op_tmp & (uint32_t)0x80000000ULL) !=
 // 			(val_rd & (uint32_t)0x80000000ULL) )
 // 		{
 // 			cpu.SetCPSR_Q(true);
-// 		} 
+// 		}
 // 		else
 // 			cpu.SetCPSR_Q(false);
 // 	}
@@ -295,7 +294,7 @@ smulxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rs;
@@ -309,7 +308,7 @@ smulxy.execute = {
 	uint32_t val_rd;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing
@@ -363,7 +362,7 @@ smulwy.disasm = {
 	buffer << "smulw";
 	if(y) buffer << "t";
 	else buffer << "b";
-	DisasmCondition(cond, buffer);
+	buffer << DisasmCondition(cond);
 	buffer << " r" << (unsigned int) rd;
 	buffer << ", r" << (unsigned int) rm;
 	buffer << ", r" << (unsigned int) rs;
@@ -377,7 +376,7 @@ smulwy.execute = {
 	uint32_t val_rd;
 	
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	if(rd == cpu.PC_reg || rm == cpu.PC_reg || rs == cpu.PC_reg) {
 		// unpredictable behavior, we do nothing

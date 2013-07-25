@@ -81,7 +81,7 @@
 
 ldrd_imm_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
@@ -89,7 +89,7 @@ ldrd_imm_post.disasm = {
 
 ldrd_imm_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
@@ -97,7 +97,7 @@ ldrd_imm_offset.disasm = {
 
 ldrd_imm_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
@@ -105,7 +105,7 @@ ldrd_imm_pre.disasm = {
 
 ldrd_reg_post.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_post(u, rn, rm, buffer);
@@ -113,7 +113,7 @@ ldrd_reg_post.disasm = {
 
 ldrd_reg_offset.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_offset(u, rn, rm, buffer);
@@ -121,7 +121,7 @@ ldrd_reg_offset.disasm = {
 
 ldrd_reg_pre.disasm = {
   buffer << "ldr";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_pre(u, rn, rm, buffer);
@@ -132,7 +132,7 @@ ldrd_imm_post.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception
@@ -153,9 +153,9 @@ ldrd_imm_offset.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
-	address = MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL);
 	// TODO: Check Alignment Exception
 
 	if(rd % 2 != 0) // rd must be even numbered, unpredictable behavior
@@ -173,7 +173,7 @@ ldrd_imm_pre.execute = {
 	uint32_t rn_value = cpu.GetGPR(rn);
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	// TODO: Check Alignment Exception
@@ -196,7 +196,7 @@ ldrd_reg_post.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value;
 	// TODO: Check Alignment Exception
@@ -219,7 +219,7 @@ ldrd_reg_offset.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception
@@ -241,7 +241,7 @@ ldrd_reg_pre.execute = {
 	uint32_t rd_value = cpu.GetGPR(rd);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception
@@ -298,7 +298,7 @@ ldrd_reg_pre.execute = {
 
 strd_imm_post.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_post(u, rn, immedH, immedL, buffer);
@@ -306,7 +306,7 @@ strd_imm_post.disasm = {
 
 strd_imm_offset.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_offset(u, rn, immedH, immedL, buffer);
@@ -314,7 +314,7 @@ strd_imm_offset.disasm = {
 
 strd_imm_pre.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSImmOffset_pre(u, rn, immedH, immedL, buffer);
@@ -322,7 +322,7 @@ strd_imm_pre.disasm = {
 
 strd_reg_post.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_post(u, rn, rm, buffer);
@@ -330,7 +330,7 @@ strd_reg_post.disasm = {
 
 strd_reg_offset.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_offset(u, rn, rm, buffer);
@@ -338,7 +338,7 @@ strd_reg_offset.disasm = {
 
 strd_reg_pre.disasm = {
   buffer << "str";
-  DisasmCondition(cond, buffer);
+  buffer << DisasmCondition(cond);
   buffer << "d r" << (unsigned int) rd << ", ";
   // MLS = Miscellaneous Load Store
   DisasmMLSReg_pre(u, rn, rm, buffer);
@@ -351,7 +351,7 @@ strd_imm_post.execute = {
 	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
  
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value; // address used is the contents of rn
 	// TODO: Check Alignment Exception
@@ -374,9 +374,9 @@ strd_imm_offset.execute = {
 	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
-	address = MLSImmOffset(u, rn_value, immedH, immedL); 
+	address = MLSImmOffset(u, rn_value, immedH, immedL);
 	// TODO: Check Alignment Exception
 
 	if ( (rd % 2) != 0) // rd must be even numbered, unpredictable behavior
@@ -396,7 +396,7 @@ strd_imm_pre.execute = {
 	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = MLSImmOffset(u, rn_value, immedH, immedL); // compute address
 	// TODO: Check Alignment Exception
@@ -420,7 +420,7 @@ strd_reg_post.execute = {
 	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
 
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
   
 	address = rn_value;
 	// TODO: Check Alignment Exception
@@ -444,7 +444,7 @@ strd_reg_offset.execute = {
 	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception
@@ -467,7 +467,7 @@ strd_reg_pre.execute = {
 	uint32_t rdp1_value = cpu.GetGPR(rd + 1);
 
 	
-	if(!cpu.CheckCondition(cond)) return;
+	if(not CheckCondition(cpu, cond)) return;
 	
 	address = MLSReg(u, rn_value, rd_value, rm_value);
 	// TODO: Check Alignment Exception
@@ -489,7 +489,7 @@ strd_reg_pre.execute = {
 
 /*******************************************************************
  * pld instruction
- * 
+ *
  * this instruction conflicts with a case of ldrb (with rd = 15) which is an invalid
  *   instruciton.
  * you will find the implementation of pld in load_store.isa under the implementation of ldrb_rd15

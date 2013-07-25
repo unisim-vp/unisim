@@ -30,7 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
- */ 
+ */
 
 var rm_index : {unsigned int}
 var rn_index : {unsigned int}
