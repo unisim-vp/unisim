@@ -341,6 +341,7 @@ unisim/util/debug/dwarf/frame.hh \
 unisim/util/debug/dwarf/util.hh \
 unisim/util/debug/dwarf/version.hh \
 unisim/util/debug/dwarf/option.hh \
+unisim/util/debug/dwarf/cfa.hh \
 unisim/util/debug/dwarf/data_object.hh \
 unisim/util/debug/dwarf/c_loc_expr_parser.hh \
 unisim/util/debug/memory_access_type.hh \

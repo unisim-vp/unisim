@@ -1772,7 +1772,6 @@ bool Linux<ADDRESS_TYPE, PARAMETER_TYPE>::SetupLinuxOSARM() {
 	SetSyscallId("set_robust_list", 338);
 	SetSyscallId("get_robust_list", 339);
 	SetSyscallId("splice", 340);
-	SetSyscallId("arm_sync_file_range", 341);
 	SetSyscallId("sync_file_range2", 341);
 	SetSyscallId("tee", 342);
 	SetSyscallId("vmsplice", 343);
