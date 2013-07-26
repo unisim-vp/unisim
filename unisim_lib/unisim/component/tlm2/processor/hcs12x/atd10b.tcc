@@ -95,6 +95,10 @@ ATD10B<ATD_SIZE>::ATD10B(const sc_module_name& name, Object *parent) :
 	use_atd_stub(false),
 	param_use_atd_stub("use-atd-stub", this, use_atd_stub),
 
+	use_rand_generator(false),
+	param_use_rand_generator("use-rand-generator", this, use_rand_generator),
+
+
 	start_scan_at(0),
 	param_start_scan_at("start-scan-at", this, start_scan_at, "ATD start scan at <delay> ms"),
 
@@ -251,9 +255,11 @@ void ATD10B<ATD_SIZE>::Process()
 			InputANx(analog_signal);
 		}
 		else {
-			for (uint8_t i=0; i < ATD_SIZE; i++) {
-				analog_signal[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
-				if (analog_signal[i] < vrl) analog_signal[i] = vrl;
+			if (use_rand_generator) {
+				for (uint8_t i=0; i < ATD_SIZE; i++) {
+					analog_signal[i] = 5.2 * ((double) rand() / (double) RAND_MAX); // Compute a random value: 0 Volts <= anValue[i] < 5 Volts
+					if (analog_signal[i] < vrl) analog_signal[i] = vrl;
+				}
 			}
 		}
 

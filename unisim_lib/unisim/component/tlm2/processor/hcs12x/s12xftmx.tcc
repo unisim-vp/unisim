@@ -154,11 +154,17 @@ S12XFTMX(const sc_module_name& name, Object *parent) :
 	, frsv2_reg(0x00)
 	, etag_reg(0x0000)
 
-	, min_fclk_time(1250000, SC_PS) // 0.8 MHz
-	, param_min_fclk_time("min-fclk-time", this, min_fclk_time, "Specify minimum frequency of FTM")
-	, max_fclk_time(952000, SC_PS)  // 1.05 MHz
-	, param_max_fclk_time("max-fclk-time", this, max_fclk_time, "Specify maximum frequency of FTM")
+//	, fclk_time(1250000, SC_PS) // 0.8 MHz
+//	, min_fclk_time(1250000, SC_PS) // 0.8 MHz
+//	, param_min_fclk_time("min-fclk-time", this, min_fclk_time, "Specify minimum frequency of FTM")
+//	, max_fclk_time(952000, SC_PS)  // 1.05 MHz
+//	, param_max_fclk_time("max-fclk-time", this, max_fclk_time, "Specify maximum frequency of FTM")
 
+	, fclk_time(1250000, SC_PS) // 0.8 MHz
+	, min_fclk_time_int(1250000) // 0.8 MHz
+	, param_min_fclk_time("min-fclk-time", this, min_fclk_time_int, "Specify minimum frequency of FTM")
+	, max_fclk_time_int(952000)  // 1.05 MHz
+	, param_max_fclk_time("max-fclk-time", this, max_fclk_time_int, "Specify maximum frequency of FTM")
 
 {
 
@@ -1432,6 +1438,9 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 	fopt_var->setCallBack(this, FOPT, &CallBackObject::write, NULL);
 
 	oscillator_cycle_time = sc_time(oscillator_cycle_time_int, SC_PS);
+
+	min_fclk_time = sc_time(min_fclk_time_int, SC_PS);
+	max_fclk_time = sc_time(max_fclk_time_int, SC_PS);
 
 	vector<string> result;
 	stringSplit(pflash_blocks_description_string, ";", result);

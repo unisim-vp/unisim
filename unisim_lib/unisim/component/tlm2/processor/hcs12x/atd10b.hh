@@ -248,6 +248,9 @@ private:
 	bool	use_atd_stub;
 	Parameter<bool>		param_use_atd_stub;
 
+	bool use_rand_generator;
+	Parameter<bool>		param_use_rand_generator;
+
 	RegisterArray<double> analog_signal_reg;
 
 

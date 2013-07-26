@@ -263,10 +263,12 @@ private:
 	sc_time		oscillator_cycle_time;
 
 	sc_time		fclk_time;
+	long		min_fclk_time_int;
 	sc_time		min_fclk_time;
-	Parameter<sc_time> param_min_fclk_time;
+	Parameter<long> param_min_fclk_time;
+	long		max_fclk_time_int;
 	sc_time		max_fclk_time;
-	Parameter<sc_time> param_max_fclk_time;
+	Parameter<long> param_max_fclk_time;
 
 	sc_event command_launch_event;
 

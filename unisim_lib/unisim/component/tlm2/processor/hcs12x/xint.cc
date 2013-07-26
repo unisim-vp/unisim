@@ -267,7 +267,7 @@ bool XINT::selectInterrupt(TOWNER::OWNER owner, INT_TRANS_T &buffer) {
 	}
 
 	if (debug_enabled) {
-		std::cout << sc_object::name() << " Interrupt 0x" << std::hex << buffer.getVectorAddress() << std::endl;
+		std::cout << sc_object::name() << " Interrupt 0x" << std::hex << buffer.getVectorAddress() << " at " << sc_time_stamp() << std::endl;
 	}
 
 	if (buffer.getVectorAddress() == 0) {
