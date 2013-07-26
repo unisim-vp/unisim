@@ -93,7 +93,108 @@ namespace arm {
     assert( cond < 15 );
     return ((condition_truth_tables[cond] >> nzcv) & 1);
   }
+  
+  template <typename coreT>
+  uint32_t
+  ComputeImmShift( coreT const& core, uint32_t shift_lhs, uint32_t shift, uint32_t shift_rhs )
+  {
+    if (shift_rhs) {
+      switch (shift) {
+      case 0: return shift_lhs << shift_rhs;
+      case 1: return shift_lhs >> shift_rhs;
+      case 2: return ((int32_t)shift_lhs) >> shift_rhs;
+      case 3: return (shift_lhs >> shift_rhs) | (shift_lhs << (32 - shift_rhs));
+      }
+    } else {
+      switch (shift) {
+      case 0: return shift_lhs;
+      case 1: return 0;
+      case 2: return ((int32_t)shift_lhs) >> 31;
+      case 3: return ((core.GetCPSR_C() << 31) | (shift_lhs >> 1));
+      }
+    }
 
+    assert( false );
+    return 0;
+  }
+  
+  template <typename coreT>
+  void
+  UpdateStatusImmShift( coreT& core, uint32_t res, uint32_t shift_lhs, uint32_t shift, uint32_t shift_rhs )
+  {
+    uint32_t carry = 0;
+
+    if      ((shift_rhs == 0) and (shift == 0)) /* MOVS */
+      carry = core.GetCPSR_C();
+    else if ((shift_rhs == 0) and (shift == 3)) /* RRX */
+      carry = (shift_lhs & 1);
+    else if (shift == 0)                        /* LSL */
+      carry = (shift_lhs >> (32 - shift_rhs)) & 1;
+    else                                        /* LSR, ASR, ROR */
+      carry = (shift_lhs >> ((shift_rhs - 1) & 0x1f)) & 1;
+
+    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0, carry, core.GetCPSR_V() );
+  }
+
+  template <typename coreT>
+  uint32_t
+  ComputeRegShift( coreT& core, uint32_t value, uint32_t shift, uint32_t shift_val )
+  {
+    shift_val &= 0xff;
+
+    switch (shift) {
+    case 0: return (shift_val < 32) ? (value << shift_val) : 0;
+    case 1: return (shift_val < 32) ? (value >> shift_val) : 0;
+    case 2: return (shift_val < 32) ? (((int32_t)value) >> shift_val) : (((int32_t)value) >> 31);
+    case 3: return (value >> (shift_val & 0x1f)) | (value << (32 - (shift_val & 0x1f)));
+    }
+
+    return 0;
+  }
+  
+  template <typename coreT>
+  void
+  UpdateStatusRegShift( coreT& core, uint32_t res, uint32_t value, uint32_t shift, uint32_t shift_val )
+  {
+    shift_val &= 0xff;
+    uint32_t carry = 0;
+
+    if (shift_val == 0) carry = core.GetCPSR_C();
+    else {
+      switch (shift) {
+      case 0: carry =  (shift_val <= 32) ? (value >> (32 - shift_val)) & 1 : 0; break;
+      case 1: carry =  (shift_val <= 32) ? (value >> (shift_val - 1)) & 1 : 0; break;
+      case 2: carry =  (shift_val <= 32) ? (value >> (shift_val - 1)) & 1 : (value >> 31) & 1; break;
+      case 3: carry =  (value >> ((shift_val - 1) & 0x1f)) & 1; break;
+      default: assert( false );
+      }
+    }
+
+    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0, carry, core.GetCPSR_V() );
+  }
+  
+  template <typename coreT>
+  void
+  UpdateStatusAdd( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
+  {
+    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0,
+                   ((lhs & rhs) | ((~res) & (lhs | rhs))) >> 31,
+                   ((lhs & rhs & (~res)) | ((~lhs) & (~rhs) & res)) >> 31 );
+  }
+
+  /* In ARM isa, the substraction carry correspond to the complementary                                                                          
+   * addition's carry.                                                                                                                           
+   */
+  template <typename coreT>
+  void
+  UpdateStatusSub( coreT& core, uint32_t res, uint32_t lhs, uint32_t rhs )
+  {
+    core.SetCPSR_NZCV( (res >> 31) & 1, res == 0,
+                   ((lhs & (~rhs)) | ((~res) & (lhs | (~rhs)))) >> 31,
+                   ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
+  }
+
+  
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

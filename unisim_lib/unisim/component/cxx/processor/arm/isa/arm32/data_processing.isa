@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -42,213 +42,52 @@
  * and instruction
  */
 
-op and_32imm(cond[4]:0b00[2]:0b1[1]:0b0000[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op and_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op and_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op ands_32imm(cond[4]:0b00[2]:0b1[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op ands_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op ands_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op and_32imm (cond[4]:0b00[2]:0b1[1]:0b0000[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+and_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 and_32imm.disasm = {
-  buffer << "and";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-and_imm_shift.disasm = {
-  buffer << "and";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-and_reg_shift.disasm = {
-  buffer << "and";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-ands_32imm.disasm = {
-  buffer << "and";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-ands_imm_shift.disasm = {
-  buffer << "and";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-ands_reg_shift.disasm = {
-  buffer << "and";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "and" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 and_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
+  cpu.SetGPR( rd, res );
+  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+};
 
+op and_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-//	s2 = cpu.ShiftOperand32imm(rotate_imm, imm);
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1 & s2;
-	cpu.SetGPR(rd, res);
-}
+and_imm_shift.disasm = {
+  buffer << "and" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 and_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 & op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op and_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-  	res = s1 & s2;
-  	cpu.SetGPR(rd, res);
-}
+and_reg_shift.disasm = {
+  buffer << "and" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 and_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 & s2;
-	cpu.SetGPR(rd, res);
-}
-
-ands_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-ands_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-ands_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 & op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+};
 
 /*
  * end of and instruction
@@ -258,212 +97,52 @@ ands_reg_shift.execute = {
  * eor instruction
  */
 
-op eor_32imm(cond[4]:0b00[2]:0b1[1]:0b0001[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op eor_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op eor_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op eors_32imm(cond[4]:0b00[2]:0b1[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op eors_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op eors_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op eor_32imm(cond[4]:0b00[2]:0b1[1]:0b0001[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+eor_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 eor_32imm.disasm = {
-  buffer << "eor";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-eor_imm_shift.disasm = {
-  buffer << "eor";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-eor_reg_shift.disasm = {
-  buffer << "eor";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-eors_32imm.disasm = {
-  buffer << "eor";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-eors_imm_shift.disasm = {
-  buffer << "eor";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-eors_reg_shift.disasm = {
-  buffer << "eor";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "eor" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 eor_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
+  cpu.SetGPR( rd, res );
+  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+};
 
+op eor_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1 ^ s2;
-	cpu.SetGPR(rd, res);
-}
+eor_imm_shift.disasm = {
+  buffer << "eor" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 eor_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 ^ op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op eor_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1 ^ s2;
-	cpu.SetGPR(rd, res);
-}
+eor_reg_shift.disasm = {
+  buffer << "eor" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 eor_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-  
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 ^ s2;
-	cpu.SetGPR(rd, res);
-}
-
-eors_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	
-	
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 ^ s2;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-eors_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 ^ s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-eors_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 ^ s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 ^ op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+};
 
 /*
  * end of eor instruction
@@ -473,207 +152,52 @@ eors_reg_shift.execute = {
  * sub instruction
  */
 
-op sub_32imm(cond[4]:0b00[2]:0b1[1]:0b0010[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op sub_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op sub_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op subs_32imm(cond[4]:0b00[2]:0b1[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op subs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op subs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op sub_32imm(cond[4]:0b00[2]:0b1[1]:0b0010[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+sub_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 sub_32imm.disasm = {
-  buffer << "sub";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-sub_imm_shift.disasm = {
-  buffer << "sub";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-sub_reg_shift.disasm = {
-  buffer << "sub";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-subs_32imm.disasm = {
-  buffer << "sub";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-subs_imm_shift.disasm = {
-  buffer << "sub";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-subs_reg_shift.disasm = {
-  buffer << "sub";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "sub" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 sub_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
+op sub_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-}
+sub_imm_shift.disasm = {
+  buffer << "sub" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 sub_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
-	
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-}
+op sub_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+sub_reg_shift.disasm = {
+  buffer << "sub" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 sub_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-}
-
-subs_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
-	}
-}
-
-subs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
-	}
-}
-
-subs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of sub instruction
@@ -683,207 +207,52 @@ subs_reg_shift.execute = {
  * rsb instruction
  */
 
-op rsb_32imm(cond[4]:0b00[2]:0b1[1]:0b0011[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op rsb_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op rsb_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op rsbs_32imm(cond[4]:0b00[2]:0b1[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op rsbs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op rsbs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op rsb_32imm(cond[4]:0b00[2]:0b1[1]:0b0011[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+rsb_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 rsb_32imm.disasm = {
-  buffer << "rsb";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-rsb_imm_shift.disasm = {
-  buffer << "rsb";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-rsb_reg_shift.disasm = {
-  buffer << "rsb";
-  buffer << DisasmCondition(cond);
-  buffer << " r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-rsbs_32imm.disasm = {
-  buffer << "rsb";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-rsbs_imm_shift.disasm = {
-  buffer << "rsb";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-rsbs_reg_shift.disasm = {
-  buffer << "rsb";
-  buffer << DisasmCondition(cond);
-  buffer << "s r";
-  buffer << (unsigned int) rd;
-  buffer << ", r";
-  buffer << (unsigned int) rn;
-  buffer << ", ";
-  DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "rsb" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 rsb_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = imm, op2 = cpu.GetGPR( rn ), res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
-	
-	if(not CheckCondition(cpu, cond)) return;
+op rsb_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s2 - s1;
-	cpu.SetGPR(rd, res);
-}
+rsb_imm_shift.disasm = {
+  buffer << "rsb" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 rsb_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
+  if (not CheckCondition(cpu, cond)) return;
 
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
+           res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s2 - s1;
-	cpu.SetGPR(rd, res);
-}
+op rsb_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+rsb_reg_shift.disasm = {
+  buffer << "rsb" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 rsb_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s2 - s1;
-	cpu.SetGPR(rd, res);
-}
-
-rsbs_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s2 - s1;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1)); // to check
-	}
-}
-
-rsbs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s2 - s1;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1)); // to check
-	}
-}
-
-rsbs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s2 - s1;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1)); // to check
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ),
+           res = op1 - op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of rsb instruction
@@ -893,219 +262,52 @@ rsbs_reg_shift.execute = {
  * add instruction
  */
 
-op add_32imm(cond[4]:0b00[2]:0b1[1]:0b0100[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op add_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op add_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op adds_32imm(cond[4]:0b00[2]:0b1[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op adds_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op adds_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op add_32imm(cond[4]:0b00[2]:0b1[1]:0b0100[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+add_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 add_32imm.disasm = {
-	buffer << "add";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-add_imm_shift.disasm = {
-	buffer << "add";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-add_reg_shift.disasm = {
-	buffer << "add";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-adds_32imm.disasm = {
-	buffer << "add";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-adds_imm_shift.disasm = {
-	buffer << "add";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-adds_reg_shift.disasm = {
-	buffer << "add";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "add" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 add_32imm.execute = {
-	typedef Operation<STATE> inherited;
-  
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  if (not CheckCondition(cpu, cond)) return;
 
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op add_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-  	res = s1 + s2;
-  	cpu.SetGPR(rd, res);
-}
+add_imm_shift.disasm = {
+  buffer << "add" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 add_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 + op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op add_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1 + s2;
-	cpu.SetGPR(rd, res);
-}
+add_reg_shift.disasm = {
+  buffer << "add" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 add_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 + s2;
-	cpu.SetGPR(rd, res);
-}
-
-adds_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint8_t carry_out;
-	uint8_t overflow_out;
-	uint8_t sign;
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, 0);
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-	}
-}
-
-adds_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint8_t carry_out;
-	uint8_t overflow_out;
-	uint8_t sign;
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, 0);
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-	}
-}
-
-adds_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-	uint8_t carry_out;
-	uint8_t overflow_out;
-	uint8_t sign;
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, 0);
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 + op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
 /*
  * end of add instruction
@@ -1115,231 +317,52 @@ adds_reg_shift.execute = {
  * adc instruction
  */
 
-op adc_32imm(cond[4]:0b00[2]:0b1[1]:0b0101[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op adc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op adc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op adcs_32imm(cond[4]:0b00[2]:0b1[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op adcs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op adcs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op adc_32imm(cond[4]:0b00[2]:0b1[1]:0b0101[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+adc_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 adc_32imm.disasm = {
-	buffer << "adc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-adc_imm_shift.disasm = {
-	buffer << "adc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-adc_reg_shift.disasm = {
-	buffer << "adc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-adcs_32imm.disasm = {
-	buffer << "adc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-adcs_imm_shift.disasm = {
-	buffer << "adc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-adcs_reg_shift.disasm = {
-	buffer << "adc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "adc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 adc_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t carry_in;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2 + cpu.GetCPSR_C();
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
+op adc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	res = s1 + s2 + carry_in;
-	cpu.SetGPR(rd, res);
-}
+adc_imm_shift.disasm = {
+  buffer << "adc" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 adc_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t carry_in;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
+  if (not CheckCondition(cpu, cond)) return;
 
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 + op2 + cpu.GetCPSR_C();
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op adc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	res = s1 + s2 + carry_in;
-	cpu.SetGPR(rd, res);
-}
+adc_reg_shift.disasm = {
+  buffer << "adc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 adc_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t carry_in;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	res = s1 + s2 + carry_in;
-	cpu.SetGPR(rd, res);
-}
-
-adcs_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint8_t carry_in;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint8_t carry_out;
-	uint8_t overflow_out;
-	uint8_t sign;
-
-
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, carry_in);
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-	}
-}
-
-adcs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint8_t carry_in;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint8_t carry_out;
-	uint8_t overflow_out;
-	uint8_t sign;
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, carry_in);
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-	}
-}
-
-adcs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint8_t carry_in;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-	uint8_t carry_out;
-	uint8_t overflow_out;
-	uint8_t sign;
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	carry_in = (cpu.GetCPSR_C() ? 1 : 0);
-	Add32(res, carry_out, overflow_out, sign,
-			s1, s2, carry_in);
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(carry_out); // to check
-		cpu.SetCPSR_V(overflow_out); // to check
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 + op2 + cpu.GetCPSR_C();
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
 /*
  * end of adc instruction
@@ -1349,219 +372,52 @@ adcs_reg_shift.execute = {
  * sbc instruction
  */
 
-op sbc_32imm(cond[4]:0b00[2]:0b1[1]:0b0110[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op sbc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op sbc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op sbcs_32imm(cond[4]:0b00[2]:0b1[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op sbcs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op sbcs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op sbc_32imm(cond[4]:0b00[2]:0b1[1]:0b0110[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+sbc_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 sbc_32imm.disasm = {
-	buffer << "sbc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-sbc_imm_shift.disasm = {
-	buffer << "sbc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-sbc_reg_shift.disasm = {
-	buffer << "sbc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-sbcs_32imm.disasm = {
-	buffer << "sbc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-sbcs_imm_shift.disasm = {
-	buffer << "sbc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-sbcs_reg_shift.disasm = {
-	buffer << "sbc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "sbc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 sbc_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
+op sbc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-}
+sbc_imm_shift.disasm = {
+  buffer << "sbc" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 sbc_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op sbc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR());
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-}
+sbc_reg_shift.disasm = {
+  buffer << "sbc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 sbc_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-}
-
-sbcs_32imm.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
-	}
-}
-
-sbcs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
-	}
-}
-
-sbcs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s1 - s2 - in_neg_carry;;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s1, s2, in_neg_carry)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2, in_neg_carry)); // to check
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of sbc instruction
@@ -1571,325 +427,213 @@ sbcs_reg_shift.execute = {
  * rsc instruction
  */
 
-op rsc_32imm(cond[4]:0b00[2]:0b1[1]:0b0111[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op rsc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op rsc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op rscs_32imm(cond[4]:0b00[2]:0b1[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op rscs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op rscs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op rsc_32imm(cond[4]:0b00[2]:0b1[1]:0b0111[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+rsc_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 rsc_32imm.disasm = {
-	buffer << "rsc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-rsc_imm_shift.disasm = {
-	buffer << "rsc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-rsc_reg_shift.disasm = {
-	buffer << "rsc";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-rscs_32imm.disasm = {
-	buffer << "rsc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-rscs_imm_shift.disasm = {
-	buffer << "rsc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-rscs_reg_shift.disasm = {
-	buffer << "rsc";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "rsc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
 
 rsc_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t op1 = imm, op2 = cpu.GetGPR( rn ), res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
+op rsc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s2 - s1 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-}
+rsc_imm_shift.disasm = {
+  buffer << "rsc" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 rsc_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	
-	
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = ComputeImmShift( cpu, rmval, shift, imm ), op2 = cpu.GetGPR( rn ),
+           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s2 - s1 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-}
+op rsc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+rsc_reg_shift.disasm = {
+  buffer << "rsc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
 
 rsc_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s2 - s1 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-}
-
-rscs_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-	
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s2 - s1 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1, in_neg_carry)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
-	}
-}
-
-rscs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s2 - s1 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1, in_neg_carry)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
-	}
-}
-
-rscs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t in_neg_carry;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	in_neg_carry = (cpu.GetCPSR_C() ? 0 : 1);
-	res = s2 - s1 - in_neg_carry;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(!BorrowFrom(res, s2, s1, in_neg_carry)); // to check
-		cpu.SetCPSR_V(SubtractionOverflowFrom(res, s2, s1, in_neg_carry)); // to check
-	}
-}
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = ComputeRegShift( cpu, rmval, shift, rsval ), op2 = cpu.GetGPR( rn ),
+           res = op1 - op2 - (cpu.GetCPSR_C() ^ 1);
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusSub( cpu, res, op1, op2 );
+};
 
 /*
  * end of rsc instruction
  *******************************************************************/
 
 /*******************************************************************
+ * orr instruction
+ */
+
+op orr_32imm(cond[4]:0b00[2]:0b1[1]:0b1100[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+orr_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
+
+orr_32imm.disasm = {
+  buffer << "orr" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
+
+orr_32imm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 | op2;
+  cpu.SetGPR( rd, res );
+  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+};
+
+op orr_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+orr_imm_shift.disasm = {
+  buffer << "orr" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
+
+orr_imm_shift.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 | op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
+};
+
+op orr_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+orr_reg_shift.disasm = {
+  buffer << "orr" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
+
+orr_reg_shift.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 | op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+};
+
+/*
+ * end of orr instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bic instruction
+ */
+
+op bic_32imm(cond[4]:0b00[2]:0b1[1]:0b1110[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+bic_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
+
+bic_32imm.disasm = {
+  buffer << "bic" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+};
+
+bic_32imm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & ~op2;
+  cpu.SetGPR( rd, res );
+  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+};
+
+op bic_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+bic_imm_shift.disasm = {
+  buffer << "bic" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
+
+bic_imm_shift.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 & ~op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
+};
+
+op bic_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+bic_reg_shift.disasm = {
+  buffer << "bic" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
+
+bic_reg_shift.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 & ~op2;
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+};
+
+/*
+ * end of bic instruction
+ *******************************************************************/
+
+/*******************************************************************
  * tst instruction
  */
 
-op tst_32imm(cond[4]:0b00[2]:0b1[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
-op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op tst_32imm(cond[4]:0b00[2]:0b1[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+tst_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 tst_32imm.disasm = {
-	buffer << "tst";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-tst_imm_shift.disasm = {
-	buffer << "tst";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-tst_reg_shift.disasm = {
-	buffer << "tst";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "tst" << DisasmCondition(cond) << DisasmRegister(rn) << ", #" << imm;
+};
 
 tst_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & s2;
-
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(shift_carry_out);
-	// nothing to do with overflow (V) flag
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
+  cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
 }
+
+op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+tst_imm_shift.disasm = {
+  buffer << "tst" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 tst_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & s2;
-  
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(shift_carry_out);
-	// nothing to do with overflow (V) flag
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 & op2;
+  UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 }
 
+op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+tst_reg_shift.disasm = {
+  buffer << "tst" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
+
 tst_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 	
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & s2;
-	
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(shift_carry_out);
-	// nothing to do with overflow (V) flag
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 & op2;
+  UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
 }
 
 /*
@@ -1900,103 +644,48 @@ tst_reg_shift.execute = {
  * teq instruction
  */
 
-op teq_32imm(cond[4]:0b00[2]:0b1[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
-op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op teq_32imm(cond[4]:0b00[2]:0b1[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+teq_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 teq_32imm.disasm = {
-	buffer << "teq";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-teq_imm_shift.disasm = {
-	buffer << "teq";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-teq_reg_shift.disasm = {
-	buffer << "teq";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "teq" << DisasmCondition(cond) << DisasmRegister(rn) << ", #" << imm;
+};
 
 teq_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-	
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 ^ s2;
-
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(shift_carry_out);
-	// nothing to do with overflow (V) flag
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
+  cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
 }
+
+op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+teq_imm_shift.disasm = {
+  buffer << "teq" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 teq_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 ^ s2;
-  
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(shift_carry_out);
-	// nothing to do with overflow (V) flag
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 ^ op2;
+  UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 }
 
+op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+teq_reg_shift.disasm = {
+  buffer << "teq" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
+
 teq_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 ^ s2;
-  
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(shift_carry_out);
-	// nothing to do with overflow (V) flag
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 ^ op2;
+  UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
 }
 
 /*
@@ -2007,104 +696,48 @@ teq_reg_shift.execute = {
  * cmp instruction
  */
 
-op cmp_32imm(cond[4]:0b00[2]:0b1[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
-op cmp_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op cmp_32imm(cond[4]:0b00[2]:0b1[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+cmp_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 cmp_32imm.disasm = {
-	buffer << "cmp";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-cmp_imm_shift.disasm = {
-	buffer << "cmp";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-
-cmp_reg_shift.disasm = {
-	buffer << "cmp";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "cmp" << DisasmCondition(cond) << DisasmRegister(rn) << ", #" << imm;
+};
 
 cmp_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 - s2;
-	
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
+  UpdateStatusSub( cpu, res, op1, op2 );
 }
+
+op cmp_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+cmp_imm_shift.disasm = {
+  buffer << "cmp" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 cmp_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 - s2;
-  
-	cpu.SetCPSR_N((res & 0x80000000) != 0);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 - op2;
+  UpdateStatusSub( cpu, res, op1, op2 );
 }
 
+op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+cmp_reg_shift.disasm = {
+  buffer << "cmp" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
+
 cmp_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 - s2;
-  
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2)); // to check
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 - op2;
+  UpdateStatusSub( cpu, res, op1, op2 );
 }
 
 /*
@@ -2115,103 +748,48 @@ cmp_reg_shift.execute = {
  * cmn instruction
  */
 
-op cmn_32imm(cond[4]:0b00[2]:0b1[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rotate_imm[4]:imm[8])
-op cmn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op cmn_32imm(cond[4]:0b00[2]:0b1[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+cmn_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 cmn_32imm.disasm = {
-	buffer << "cmn";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-cmn_imm_shift.disasm = {
-	buffer << "cmn";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-cmn_reg_shift.disasm = {
-	buffer << "cmn";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "cmn" << DisasmCondition(cond) << "\t" << DisasmRegister(rn) << ", #" << imm;
+};
 
 cmn_32imm.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 + op2;
+  UpdateStatusAdd( cpu, res, op1, op2 );
+};
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-  	uint32_t rn_value = cpu.GetGPR(rn);
+op cmn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-
-  	if(not CheckCondition(cpu, cond)) return;
-
-  	s1 = rn_value;
-  	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-  	res = s1 + s2;
-
-  	cpu.SetCPSR_N(res & 0x80000000);
-  	cpu.SetCPSR_Z(res == 0);
-  	cpu.SetCPSR_C(CarryFrom(res, s1, s2)); // to check
-  	cpu.SetCPSR_V(AdditionOverflowFrom(res, s1, s2)); // to check
-}
+cmn_imm_shift.disasm = {
+  buffer << "cmn" << DisasmCondition(cond) << "\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 cmn_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
+  if (not CheckCondition(cpu, cond)) return;
   
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 + s2;
-  
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(CarryFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(AdditionOverflowFrom(res, s1, s2)); // to check
+  uint32_t rmval = cpu.GetGPR( rm ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
+           res = op1 + op2;
+  UpdateStatusAdd( cpu, res, op1, op2 );
 }
 
+op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+
+cmn_reg_shift.disasm = {
+  buffer << "cmn" << DisasmCondition(cond) << "\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+};
+
 cmn_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 + s2;
-	
-	cpu.SetCPSR_N(res & 0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(CarryFrom(res, s1, s2)); // to check
-	cpu.SetCPSR_V(AdditionOverflowFrom(res, s1, s2)); // to check
+  uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+           op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
+           res = op1 + op2;
+  UpdateStatusAdd( cpu, res, op1, op2 );
 }
 
 /*
@@ -2219,807 +797,108 @@ cmn_reg_shift.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * orr instruction
- */
-
-op orr_32imm(cond[4]:0b00[2]:0b1[1]:0b1100[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op orr_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op orr_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op orrs_32imm(cond[4]:0b00[2]:0b1[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op orrs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op orrs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-
-orr_32imm.disasm = {
-	buffer << "orr";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-orr_imm_shift.disasm = {
-	buffer << "orr";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-orr_reg_shift.disasm = {
-	buffer << "orr";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-orrs_32imm.disasm = {
-	buffer << "orr";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-orrs_imm_shift.disasm = {
-	buffer << "orr";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-orrs_reg_shift.disasm = {
-	buffer << "orr";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-orr_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
-}
-
-orr_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
-}
-
-orr_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
-}
-
-orrs_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-orrs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-orrs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 | s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-/*
- * end of orr instruction
- *******************************************************************/
-
-/*******************************************************************
  * mov instruction
  */
 
-op mov_32imm(cond[4]:0b00[2]:0b1[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:rotate_imm[4]:imm[8])
-op mov_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op mov_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b0[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op movs_32imm(cond[4]:0b00[2]:0b1[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:rotate_imm[4]:imm[8])
-op movs_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op movs_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1101[4]:0b1[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-
-group mov(mov_32imm, mov_imm_shift, mov_reg_shift, \
-	  movs_32imm, movs_imm_shift, movs_reg_shift)
+op mov_32imm (cond[4]:0b00[2]:0b1[1]:0b1101[4]:s[1]:sbz[4]:rd[4]:shl<1> imr[4]:imb[8]);
+mov_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 mov_32imm.disasm = {
-	buffer << "mov";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-mov_imm_shift.disasm = {
-	buffer << "mov";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-mov_reg_shift.disasm = {
-	buffer << "mov";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-movs_32imm.disasm = {
-	buffer << "mov";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-movs_imm_shift.disasm = {
-	buffer << "mov";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-movs_reg_shift.disasm = {
-	buffer << "mov";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "mov" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", #" << imm;
+};
 
 mov_32imm.execute = {
-	uint32_t s1;
-	uint32_t res;
-	
+  if (not CheckCondition(cpu, cond)) return;
 
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1;
-	cpu.SetGPR(rd, res);
-}
+  uint32_t res = imm;
+  cpu.SetGPR( rd, res );
+  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+};
+
+op mov_imm_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:sbz[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+mov_imm_shift.disasm = {
+  buffer << "mov" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 mov_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
+  if (not CheckCondition(cpu, cond)) return;
   
+  uint32_t rmval = cpu.GetGPR( rm ), res = ComputeImmShift( cpu, rmval, shift, imm );
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op mov_reg_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1;
-	cpu.SetGPR(rd, res);
-}
+mov_reg_shift.disasm = {
+  buffer << "mov" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
+         << DisasmShReg( shift, rs );
+};
 
 mov_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
+  if (not CheckCondition(cpu, cond)) return;
   
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1;
-	cpu.SetGPR(rd, res);
-}
-
-movs_32imm.execute = {
-	uint32_t s1;
-	uint32_t res;
-	bool shift_carry_out = false;
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-movs_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-	
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-movs_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
+  uint32_t
+    rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+    res = ComputeRegShift( cpu, rmval, shift, rsval );
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+};
 
 /*
  * end of mov instruction
  *******************************************************************/
 
 /*******************************************************************
- * bic instruction
- */
-
-op bic_32imm(cond[4]:0b00[2]:0b1[1]:0b1110[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op bic_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op bic_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op bics_32imm(cond[4]:0b00[2]:0b1[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op bics_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op bics_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-
-bic_32imm.disasm = {
-	buffer << "bic";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-bic_imm_shift.disasm = {
-	buffer << "bic";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-bic_reg_shift.disasm = {
-	buffer << "bic";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-bics_32imm.disasm = {
-	buffer << "bic";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-bics_imm_shift.disasm = {
-	buffer << "bic";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-bics_reg_shift.disasm = {
-	buffer << "bic";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", r";
-	buffer << (unsigned int) rn;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-bic_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm);
-	res = s1 & ~s2;
-	cpu.SetGPR(rd, res);
-}
-
-bic_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = s1 & ~s2;
-	cpu.SetGPR(rd, res);
-}
-
-bic_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = s1 & ~s2;
-	cpu.SetGPR(rd, res);
-}
-
-bics_32imm.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & ~s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-bics_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & ~s2;
-	cpu.SetGPR(rd, res);
-	
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-bics_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = rn_value;
-	s2 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = s1 & ~s2;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-/*
- * end of bic instruction
- *******************************************************************/
-
-/*******************************************************************
  * mvn instruction
  */
 
-op mvn_32imm(cond[4]:0b00[2]:0b1[1]:0b1111[4]:0b0[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op mvn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b0[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op mvn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b0[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
-op mvns_32imm(cond[4]:0b00[2]:0b1[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:rotate_imm[4]:imm[8])
-op mvns_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:shift_imm[5]:shift[2]:0b0[1]:rm[4])
-op mvns_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:0b1[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4])
+op mvn_32imm (cond[4]:0b00[2]:0b1[1]:0b1111[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+mvn_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 mvn_32imm.disasm = {
-	buffer << "mvn";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-mvn_imm_shift.disasm = {
-	buffer << "mvn";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-mvn_reg_shift.disasm = {
-	buffer << "mvn";
-	buffer << DisasmCondition(cond);
-	buffer << " r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
-
-mvns_32imm.disasm = {
-	buffer << "mvn";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperand32Imm(rotate_imm, imm, buffer);
-}
-
-mvns_imm_shift.disasm = {
-	buffer << "mvn";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandImmShift(shift_imm, shift, rm, buffer);
-}
-
-mvns_reg_shift.disasm = {
-	buffer << "mvn";
-	buffer << DisasmCondition(cond);
-	buffer << "s r";
-	buffer << (unsigned int) rd;
-	buffer << ", ";
-	DisasmShiftOperandRegShift(rs, shift, rm, buffer);
-}
+  buffer << "mvn" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", #" << imm;
+};
 
 mvn_32imm.execute = {
-	uint32_t s1;
-	uint32_t res;
+  if (not CheckCondition(cpu, cond)) return;
 
+  uint32_t res = ~imm;
+  cpu.SetGPR( rd, res );
+  if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op mvn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
-	s1 = ShiftOperand32imm(rotate_imm, imm);
-	res = ~s1;
-	cpu.SetGPR(rd, res);
-}
+mvn_imm_shift.disasm = {
+  buffer << "mvn" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+};
 
 mvn_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
+  if (not CheckCondition(cpu, cond)) return;
   
-	uint32_t s1;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
+  uint32_t rmval = cpu.GetGPR( rm ), res = ~(ComputeImmShift( cpu, rmval, shift, imm ));
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
+};
 
-	if(not CheckCondition(cpu, cond)) return;
+op mvn_reg_shift (cond[4]:0b00[2]:0b0[1]:0b1111[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
-	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value, cpu.GetCPSR_C());
-	res = ~s1;
-	cpu.SetGPR(rd, res);
-}
+mvn_reg_shift.disasm = {
+  buffer << "mvn" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
+         << DisasmShReg( shift, rs );
+};
 
 mvn_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
+  if (not CheckCondition(cpu, cond)) return;
   
-
-	if(not CheckCondition(cpu, cond)) return;
-	
-	s1 = ShiftOperandRegShift(rs_value, shift, rm_value);
-	res = ~s1;
-	cpu.SetGPR(rd, res);
-}
-
-mvns_32imm.execute = {
-	uint32_t s1;
-	uint32_t res;
-	bool shift_carry_out = false;
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = ShiftOperand32imm(rotate_imm, imm, cpu.GetCPSR_C(), &shift_carry_out);
-	res = ~s1;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-mvns_imm_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = ShiftOperandImmShift(shift_imm, shift, rm_value,
-				cpu.GetCPSR_C(), &shift_carry_out);
-	res = ~s1;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
-
-mvns_reg_shift.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1;
-	uint32_t res;
-	bool shift_carry_out = false;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-  
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	s1 = ShiftOperandRegShift(rs_value, shift, rm_value,
-			cpu.GetCPSR_C(), &shift_carry_out);
-	res = ~s1;
-	cpu.SetGPR(rd, res);
-
-	if(rd == cpu.PC_reg) {
-		cpu.MoveSPSRtoCPSR();
-	} else {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-		cpu.SetCPSR_C(shift_carry_out);
-		// nothing to do with overflow (V) flag
-	}
-}
+  uint32_t
+    rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
+  res = ~(ComputeRegShift( cpu, rmval, shift, rsval ));
+  cpu.SetGPR( rd, res );
+  if (s) UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
+};
 
 /*
  * end of mvn instruction

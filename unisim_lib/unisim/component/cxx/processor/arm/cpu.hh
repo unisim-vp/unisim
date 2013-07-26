@@ -348,7 +348,7 @@ public:
 	 *
 	 * @return the value of the CPSR register N bit
 	 */
-	bool GetCPSR_N();
+	bool GetCPSR_N() const;
 	/** Set the Z bit of the CPSR register.
 	 *
 	 * @param val the value of the Z bit
@@ -362,7 +362,7 @@ public:
 	 *
 	 * @return the value of the CPSR register Z bit
 	 */
-	bool GetCPSR_Z();
+	bool GetCPSR_Z() const;
 	/** Set the C bit of the CPSR register.
 	 *
 	 * @param val the value of the C bit
@@ -376,7 +376,7 @@ public:
 	 *
 	 * @return the value of the CPSR register C bit
 	 */
-	bool GetCPSR_C();
+	bool GetCPSR_C() const;
 	/** Set teh V bit of the CPSR register.
 	 *
 	 * @param val the value of the V bit
@@ -390,7 +390,7 @@ public:
 	 *
 	 * @return the value of the CPSR register V bit
 	 */
-	bool GetCPSR_V();
+	bool GetCPSR_V() const;
 	/** Set the Q bit of the CPSR register.
 	 *
 	 * @param val teh value of the Q bit

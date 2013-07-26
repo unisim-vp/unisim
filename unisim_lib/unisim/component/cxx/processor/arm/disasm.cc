@@ -46,33 +46,65 @@ namespace arm {
 
 using namespace std;
 
-static char const* const  conds_dis[] =
-  {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "<und>"};
+  std::ostream&
+  operator << ( std::ostream& sink, DisasmObject const& dobj )
+  {
+    dobj( sink );
+    return sink;
+  }
 
-/* Condition opcode bytes disassembling method */
-char const*
-DisasmCondition(uint32_t cond)
-{
-  if (cond < 14)
-    return conds_dis[cond];
-  else if (cond == 14)
-    return "";
-  std::cerr << "ERROR(" << __FUNCTION__ << "): "
-            << "unknown condition code (" << cond << ")" << endl;
-  return "?";
-}
+  static char const* const  conds_dis[] =
+    {"eq", "ne", "cs", "cc", "mi", "pl", "vs", "vc", "hi", "ls", "ge", "lt", "gt", "le", "al", "<und>"};
+  
+  /* Condition opcode bytes disassembling method */
+  void DisasmCondition::operator() ( std::ostream& sink ) const
+  {
+    if (m_cond < 14)
+      sink << conds_dis[m_cond];
+    else if (m_cond == 14)
+      return;
+    
+    sink << "?";
+    std::cerr << "ERROR(" << __FUNCTION__ << "): "
+              << "unknown condition code (" << m_cond << ")" << endl;
+    
+  }
 
-static char const* const register_dis[] =
-  {"r0","r1","r2","r3","r4","r5","r6","r7", "r8","r9","sl","fp","ip","sp","lr","pc"};
+  void DisasmShImm::operator() ( std::ostream& sink ) const
+  {
+    if (m_offset) {
+      switch (m_shift) {
+      case 0: sink << ", lsl #"; break;
+      case 1: sink << ", lsr #"; break;
+      case 2: sink << ", asr #"; break;
+      case 3: sink << ", ror #"; break;
+      }
+      sink << m_offset;
+    } else {
+      switch (m_shift) {
+      case 0: break;
+      case 1: sink << ", lsr #32"; break;
+      case 2: sink << ", asr #32"; break;
+      case 3: sink << ", rrx"; break;
+      }
+    }
+  }
+  
+  static char const* const register_dis[] =
+    {"r0","r1","r2","r3","r4","r5","r6","r7", "r8","r9","sl","fp","ip","sp","lr","pc"};
 
-/* Register disassembling method */
-char const*
-DisasmRegister(uint32_t r)
-{
-  return register_dis[r];
-}
+  static char const* const sornames[] = { "lsl", "lsr", "asr", "ror" };
+  
+  void DisasmShReg::operator() ( std::ostream& sink ) const
+  {
+    sink << sornames[m_shift] << " " << register_dis[m_reg];
+  }
 
-#define DisasmRegister(IDX) (regnames[IDX])
+  /* Register disassembling method */
+  void DisasmRegister::operator() ( std::ostream& sink ) const
+  {
+    sink << register_dis[m_reg];
+  }
 
 void
 DisasmConditionFieldsMask(const uint32_t mask,

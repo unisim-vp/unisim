@@ -48,15 +48,47 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-/* Condition opcode bytes disassembling method */
-char const* DisasmCondition(uint32_t cond);
+  struct DisasmObject
+  {
+    virtual void operator() ( std::ostream& _sink ) const = 0;
+  };
+  std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
+  
+  /* Condition opcode bytes disassembling method */
+  struct DisasmCondition : public DisasmObject
+  {
+    DisasmCondition( uint32_t cond ) : m_cond( cond ) {}
+    void operator() ( std::ostream& _sink ) const;
+    uint32_t m_cond;
+  };
+  
+  /* Shifted Immediate disassembly */
+  struct DisasmShImm : public DisasmObject
+  {
+    DisasmShImm( uint32_t shift, uint32_t offset ) : m_shift( shift ), m_offset( offset ) {}
+    void operator() ( std::ostream& _sink ) const;
+    uint32_t m_shift, m_offset;
+  };
 
-void
-DisasmConditionFieldsMask(const uint32_t mask,
-		std::stringstream &buffer);
+  /* Shifted Immediate disassembly */
+  struct DisasmShReg : public DisasmObject
+  {
+    DisasmShReg( uint32_t shift, uint32_t reg ) : m_shift( shift ), m_reg( reg ) {}
+    void operator() ( std::ostream& _sink ) const;
+    uint32_t m_shift, m_reg;
+  };
+  
+  void
+  DisasmConditionFieldsMask(const uint32_t mask,
+                            std::stringstream &buffer);
 
-/* Register disassembling method */
-char const* DisasmRegister(uint32_t r);
+  /* Register disassembling method */
+  struct DisasmRegister : public DisasmObject
+  {
+    DisasmRegister( uint32_t reg ) : m_reg( reg ) {}
+    void operator() ( std::ostream& _sink ) const;
+    uint32_t m_reg;
+  };
 
 /* Data processing operand disassembling methods */
 void

@@ -106,22 +106,22 @@ constructor action initialize_dependency_write_reglist() {}
 
 group group_read_rm(bx, \
 		blx_2, \
-		and_imm_shift, and_reg_shift, ands_imm_shift, ands_reg_shift, \
-		eor_imm_shift, eor_reg_shift, eors_imm_shift, eors_reg_shift, \
-		sub_imm_shift, sub_reg_shift, subs_imm_shift, subs_reg_shift, \
-		rsb_imm_shift, rsb_reg_shift, rsbs_imm_shift, rsbs_reg_shift, \
-		add_imm_shift, add_reg_shift, adds_imm_shift, adds_reg_shift, \
-		adc_imm_shift, adc_reg_shift, adcs_imm_shift, adcs_reg_shift, \
-		sbc_imm_shift, sbc_reg_shift, sbcs_imm_shift, sbcs_reg_shift, \
-		rsc_imm_shift, rsc_reg_shift, rscs_imm_shift, rscs_reg_shift, \
+		and_imm_shift, and_reg_shift, \
+		eor_imm_shift, eor_reg_shift, \
+		sub_imm_shift, sub_reg_shift, \
+		rsb_imm_shift, rsb_reg_shift, \
+		add_imm_shift, add_reg_shift, \
+		adc_imm_shift, adc_reg_shift, \
+		sbc_imm_shift, sbc_reg_shift, \
+		rsc_imm_shift, rsc_reg_shift, \
 		tst_imm_shift, tst_reg_shift, \
 		teq_imm_shift, teq_reg_shift, \
 		cmp_imm_shift, cmp_reg_shift, \
 		cmn_imm_shift, cmn_reg_shift, \
-		orr_imm_shift, orr_reg_shift, orrs_imm_shift, orrs_reg_shift, \
-		mov_imm_shift, mov_reg_shift, movs_imm_shift, movs_reg_shift, \
-		bic_imm_shift, bic_reg_shift, bics_imm_shift, bics_reg_shift, \
-		mvn_imm_shift, mvn_reg_shift, mvns_imm_shift, mvns_reg_shift, \
+		orr_imm_shift, orr_reg_shift, \
+		mov_imm_shift, mov_reg_shift, \
+		bic_imm_shift, bic_reg_shift, \
+		mvn_imm_shift, mvn_reg_shift, \
 		ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
 		ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
 		ldrt_reg, \
@@ -158,21 +158,21 @@ group group_read_rn( \
 		stc_unindexed, \
 		ldc2_offset, ldc2_pre, ldc2_post, ldc2_unindexed, \
 		stc2_offset, stc2_pre, stc2_post, stc2_unindexed, \
-		and_32imm, and_imm_shift, and_reg_shift, ands_32imm, ands_imm_shift, ands_reg_shift, \
-		eor_32imm, eor_imm_shift, eor_reg_shift, eors_32imm, eors_imm_shift, eors_reg_shift, \
-		sub_32imm, sub_imm_shift, sub_reg_shift, subs_32imm, subs_imm_shift, subs_reg_shift, \
-		rsb_32imm, rsb_imm_shift, rsb_reg_shift, rsbs_32imm, rsbs_imm_shift, rsbs_reg_shift, \
-		add_32imm, add_imm_shift, add_reg_shift, adds_32imm, adds_imm_shift, adds_reg_shift, \
-		adc_32imm, adc_imm_shift, adc_reg_shift, adcs_32imm, adcs_imm_shift, adcs_reg_shift, \
-		sbc_32imm, sbc_imm_shift, sbc_reg_shift, sbcs_32imm, sbcs_imm_shift, sbcs_reg_shift, \
-		rsc_32imm, rsc_imm_shift, rsc_reg_shift, rscs_32imm, rscs_imm_shift, rscs_reg_shift, \
+		and_32imm, and_imm_shift, and_reg_shift, \
+		eor_32imm, eor_imm_shift, eor_reg_shift, \
+		sub_32imm, sub_imm_shift, sub_reg_shift, \
+		rsb_32imm, rsb_imm_shift, rsb_reg_shift, \
+		add_32imm, add_imm_shift, add_reg_shift, \
+		adc_32imm, adc_imm_shift, adc_reg_shift, \
+		sbc_32imm, sbc_imm_shift, sbc_reg_shift, \
+		rsc_32imm, rsc_imm_shift, rsc_reg_shift, \
 		tst_32imm, tst_imm_shift, tst_reg_shift, \
 		teq_32imm, teq_imm_shift, teq_reg_shift, \
 		cmp_32imm, cmp_imm_shift, cmp_reg_shift, \
 		cmn_32imm, cmn_imm_shift, cmn_reg_shift, \
-		orr_32imm, orr_imm_shift, orr_reg_shift, orrs_32imm, orrs_imm_shift, orrs_reg_shift, \
-		bic_32imm, bic_imm_shift, bic_reg_shift, bics_32imm, bics_imm_shift, bics_reg_shift, \
-		mvn_32imm, mvn_imm_shift, mvn_reg_shift, mvns_32imm, mvns_imm_shift, mvns_reg_shift, \
+		orr_32imm, orr_imm_shift, orr_reg_shift, \
+		bic_32imm, bic_imm_shift, bic_reg_shift, \
+		mvn_32imm, mvn_imm_shift, mvn_reg_shift, \
 		ldr_imm_post, ldr_imm_offset, ldr_imm_pre, ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
 		ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
 		ldrt_imm, ldrt_reg, \
@@ -197,22 +197,22 @@ group group_read_rn( \
 		swpb)
 
 group group_read_rs( \
-		and_reg_shift, ands_reg_shift, \
-		eor_reg_shift, eors_reg_shift, \
-		sub_reg_shift, subs_reg_shift, \
-		rsb_reg_shift, rsbs_reg_shift, \
-		add_reg_shift, adds_reg_shift, \
-		adc_reg_shift, adcs_reg_shift, \
-		sbc_reg_shift, sbcs_reg_shift, \
-		rsc_reg_shift, rscs_reg_shift, \
+		and_reg_shift, \
+		eor_reg_shift, \
+		sub_reg_shift, \
+		rsb_reg_shift, \
+		add_reg_shift, \
+		adc_reg_shift, \
+		sbc_reg_shift, \
+		rsc_reg_shift, \
 		tst_reg_shift, \
 		teq_reg_shift, \
 		cmp_reg_shift, \
 		cmn_reg_shift, \
-		orr_reg_shift, orrs_reg_shift, \
-		mov_reg_shift, movs_reg_shift, \
-		bic_reg_shift, bics_reg_shift, \
-		mvn_reg_shift, mvns_reg_shift, \
+		orr_reg_shift, \
+		mov_reg_shift, \
+		bic_reg_shift, \
+		mvn_reg_shift, \
 		mla, \
 		mul, \
 		smlal, \
@@ -292,17 +292,17 @@ group group_write_rn_cond_w( \
 		ldm_3_ia, ldm_3_ib, ldm_3_da, ldm_3_db)
 
 group group_write_rd( \
-		and_32imm, and_imm_shift, and_reg_shift, ands_32imm, ands_imm_shift, ands_reg_shift, \
-		eor_32imm, eor_imm_shift, eor_reg_shift, eors_32imm, eors_imm_shift, eors_reg_shift, \
-		sub_32imm, sub_imm_shift, sub_reg_shift, subs_32imm, subs_imm_shift, subs_reg_shift, \
-		rsb_32imm, rsb_imm_shift, rsb_reg_shift, rsbs_32imm, rsbs_imm_shift, rsbs_reg_shift, \
-		add_32imm, add_imm_shift, add_reg_shift, adds_32imm, adds_imm_shift, adds_reg_shift, \
-		adc_32imm, adc_imm_shift, adc_reg_shift, adcs_32imm, adcs_imm_shift, adcs_reg_shift, \
-		sbc_32imm, sbc_imm_shift, sbc_reg_shift, sbcs_32imm, sbcs_imm_shift, sbcs_reg_shift, \
-		rsc_32imm, rsc_imm_shift, rsc_reg_shift, rscs_32imm, rscs_imm_shift, rscs_reg_shift, \
-		orr_32imm, orr_imm_shift, orr_reg_shift, orrs_32imm, orrs_imm_shift, orrs_reg_shift, \
-		bic_32imm, bic_imm_shift, bic_reg_shift, bics_32imm, bics_imm_shift, bics_reg_shift, \
-		mvn_32imm, mvn_imm_shift, mvn_reg_shift, mvns_32imm, mvns_imm_shift, mvns_reg_shift, \
+		and_32imm, and_imm_shift, and_reg_shift, \
+		eor_32imm, eor_imm_shift, eor_reg_shift, \
+		sub_32imm, sub_imm_shift, sub_reg_shift, \
+		rsb_32imm, rsb_imm_shift, rsb_reg_shift, \
+		add_32imm, add_imm_shift, add_reg_shift, \
+		adc_32imm, adc_imm_shift, adc_reg_shift, \
+		sbc_32imm, sbc_imm_shift, sbc_reg_shift, \
+		rsc_32imm, rsc_imm_shift, rsc_reg_shift, \
+		orr_32imm, orr_imm_shift, orr_reg_shift, \
+		bic_32imm, bic_imm_shift, bic_reg_shift, \
+		mvn_32imm, mvn_imm_shift, mvn_reg_shift, \
 		ldr_imm_post, ldr_imm_offset, ldr_imm_pre, ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
 		ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
 		ldrt_imm, ldrt_reg, \

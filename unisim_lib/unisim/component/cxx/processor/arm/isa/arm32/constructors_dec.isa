@@ -43,3 +43,7 @@ constructor action initialize_msr_masks() {
 	msr_privmask = 0;
 	msr_statemask = 0;
 }
+
+impl {
+  static uint32_t DecodeRotImm( uint32_t imr, uint32_t imb ) { return ((imb >> imr) | (imb << (32 - imr))); };
+}

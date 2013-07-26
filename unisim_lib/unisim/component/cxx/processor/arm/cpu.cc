@@ -498,7 +498,7 @@ UnsetCPSR_N()
  */
 bool 
 CPU::
-GetCPSR_N()
+GetCPSR_N() const
 {
 	return (cpsr & CPSR_N_MASK) == CPSR_N_MASK;
 }
@@ -531,7 +531,7 @@ UnsetCPSR_Z()
  */
 bool 
 CPU::
-GetCPSR_Z()
+GetCPSR_Z() const
 {
 	return (cpsr & CPSR_Z_MASK) == CPSR_Z_MASK;
 }
@@ -564,7 +564,7 @@ UnsetCPSR_C()
  */
 bool 
 CPU::
-GetCPSR_C()
+GetCPSR_C() const
 {
 	return (cpsr & CPSR_C_MASK) == CPSR_C_MASK;
 }
@@ -597,7 +597,7 @@ UnsetCPSR_V()
  */
 bool 
 CPU::
-GetCPSR_V()
+GetCPSR_V() const
 {
 	return (cpsr & CPSR_V_MASK) == CPSR_V_MASK;
 }
