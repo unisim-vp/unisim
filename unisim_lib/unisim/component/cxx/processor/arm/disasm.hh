@@ -78,9 +78,13 @@ namespace arm {
     uint32_t m_shift, m_reg;
   };
   
-  void
-  DisasmConditionFieldsMask(const uint32_t mask,
-                            std::stringstream &buffer);
+  /* PSR mask disassembling method */
+  struct DisasmPSRMask : public DisasmObject
+  {
+    DisasmPSRMask( uint32_t mask ) : m_mask( mask ) {}
+    void operator() ( std::ostream& _sink ) const;
+    uint32_t m_mask;
+  };
 
   /* Register disassembling method */
   struct DisasmRegister : public DisasmObject

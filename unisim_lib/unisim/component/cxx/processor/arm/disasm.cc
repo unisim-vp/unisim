@@ -66,7 +66,7 @@ using namespace std;
     
     sink << "?";
     std::cerr << "ERROR(" << __FUNCTION__ << "): "
-              << "unknown condition code (" << m_cond << ")" << endl;
+              << "unknown condition code (" << m_cond << ")" << std::endl;
     
   }
 
@@ -105,16 +105,15 @@ using namespace std;
   {
     sink << register_dis[m_reg];
   }
-
-void
-DisasmConditionFieldsMask(const uint32_t mask,
-		stringstream &buffer)
-{
-	if ((mask & 0x01) == 0x01) buffer << "c";
-	if ((mask & 0x02) == 0x02) buffer << "x";
-	if ((mask & 0x04) == 0x04) buffer << "s";
-	if ((mask & 0x08) == 0x08) buffer << "f";
-}
+  
+  /* PSR mask disassembling method */
+  void DisasmPSRMask::operator() ( std::ostream& sink ) const
+  {
+    if ((m_mask & 0x01) == 0x01) sink << "c";
+    if ((m_mask & 0x02) == 0x02) sink << "x";
+    if ((m_mask & 0x04) == 0x04) sink << "s";
+    if ((m_mask & 0x08) == 0x08) sink << "f";
+  }
 
 /* Load/store operand disassembling methods */
 void
