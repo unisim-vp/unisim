@@ -51,6 +51,7 @@ namespace arm {
   struct DisasmObject
   {
     virtual void operator() ( std::ostream& _sink ) const = 0;
+    virtual ~DisasmObject() {};
   };
   std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
   
