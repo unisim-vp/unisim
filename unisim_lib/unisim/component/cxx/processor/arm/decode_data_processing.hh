@@ -47,30 +47,6 @@ namespace cxx {
 namespace processor {
 namespace arm {
 
-uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-		const uint32_t imm);
-uint32_t ShiftOperand32imm(const uint32_t rotate_imm,
-		const uint32_t imm,
-		const bool carry_in,
-		bool *shift_carry_out);
-uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in);
-uint32_t ShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in,
-		bool *shift_carry_out);
-uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
-		const uint32_t shift,
-		const uint32_t val_reg);
-uint32_t ShiftOperandRegShift(const uint32_t shift_reg,
-		const uint32_t shift,
-		const uint32_t val_reg,
-		const bool carry_in,
-		bool *shift_carry_out);
-
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

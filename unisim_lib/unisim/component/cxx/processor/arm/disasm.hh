@@ -90,22 +90,6 @@ namespace arm {
     uint32_t m_reg;
   };
 
-/* Data processing operand disassembling methods */
-void
-DisasmShiftOperand32Imm(const uint32_t rotate_imm,
-		const uint32_t imm,
-		std::stringstream &buffer);
-void
-DisasmShiftOperandImmShift(const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		std::stringstream &buffer);
-void
-DisasmShiftOperandRegShift(const uint32_t rs,
-		const uint32_t shift,
-		const uint32_t rm,
-		std::stringstream &buffer);
-
 /* Load/store operand disassembling methods */
 void
 DisasmLSWUBImmOffset_post(const uint32_t u,
