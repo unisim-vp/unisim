@@ -194,7 +194,62 @@ namespace arm {
                    ((lhs & (~rhs) & (~res)) | ((~lhs) & rhs & res)) >> 31 );
   }
 
+  template <typename coreT>
+  void
+  ComputeMoveToPSR( coreT& core, uint32_t operand, uint32_t mask, bool isSPSR )
+  {
+    static uint32_t const msr_unallocmask = 0x06ffff00UL;
+    static uint32_t const msr_usermask    = 0xf8000000UL;
+    static uint32_t const msr_privmask    = 0x000000dfUL;
+    static uint32_t const msr_statemask   = 0x01000020UL;
+    
+    if ( operand & msr_unallocmask ) // unpredictable
+      return;
   
+    /* creating the byte mask */
+    uint32_t byte_mask = 0;
+    if ((mask & 0x01) == 0x01) byte_mask |= 0x000000ff;
+    if ((mask & 0x02) == 0x02) byte_mask |= 0x0000ff00;
+    if ((mask & 0x04) == 0x04) byte_mask |= 0x00ff0000;
+    if ((mask & 0x08) == 0x08) byte_mask |= 0xff000000;
+  
+    uint32_t run_mode = core.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
+    if (isSPSR == 0)
+      {
+        uint32_t reg_mask = 0;
+        if ( run_mode != USER_MODE ) // we are in a privileged mode
+          {
+            if ( operand & msr_statemask )
+              return; // unpredictable
+            reg_mask = byte_mask &
+              ( msr_usermask | msr_privmask );
+          }
+        else
+          {
+            reg_mask = byte_mask & msr_usermask;
+          }
+        uint32_t reg = (core.GetCPSR() & ~reg_mask) | (operand & reg_mask);
+        core.SetCPSR(reg);
+      
+        /* check if the running mode did change, if so switch registers */
+        uint32_t new_run_mode = reg & RUNNING_MODE_MASK;
+        if ( run_mode != new_run_mode )
+          core.SetGPRMapping(run_mode, new_run_mode);
+      }
+    else // isSPSR == 1
+      {
+        // check that the mode has SPSR
+        if ( !((run_mode == USER_MODE) || (run_mode == SYSTEM_MODE)) )
+          {
+            uint32_t reg_mask = byte_mask & (msr_usermask | msr_privmask | msr_statemask);
+            uint32_t reg = (core.GetSPSR() & ~reg_mask) | (operand & reg_mask);
+            core.SetSPSR(reg);
+          }
+        else
+          return; // unpredictable
+      }
+  }
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

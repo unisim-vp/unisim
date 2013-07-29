@@ -102,100 +102,78 @@ ldr_reg_pre.disasm = {
 }
 
 ldr_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t new_rn_value = 0;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t new_rn_value = 0;
 
 
-	if(not CheckCondition(cpu, cond)) return;
+  if(not CheckCondition(cpu, cond)) return;
 
-	address = rn_value; // address used is the contents of rn
-	new_rn_value = LSWUBImmOffset(u, rn_value, offset);
-	cpu.SetGPR(rn, new_rn_value); // update rn
+  uint32_t address = rn_value; // address used is the contents of rn
+  new_rn_value = LSWUBImmOffset(u, rn_value, offset);
+  cpu.SetGPR(rn, new_rn_value); // update rn
 
-	cpu.SetGPR( rd, cpu.MemRead32( address ) );
-}
+  cpu.SetGPR( rd, cpu.MemRead32( address ) );
+};
 
 ldr_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
+  uint32_t rn_value = cpu.GetGPR(rn);
 
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
+  if(not CheckCondition(cpu, cond)) return;
   
-	address = LSWUBImmOffset(u, rn_value, offset);
-	cpu.SetGPR( rd, cpu.MemRead32( address ) );
-}
+  uint32_t address = LSWUBImmOffset(u, rn_value, offset);
+  cpu.SetGPR( rd, cpu.MemRead32( address ) );
+};
 
 ldr_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rn_value = cpu.GetGPR(rn);
 
 
-	if(not CheckCondition(cpu, cond)) return;
+  if(not CheckCondition(cpu, cond)) return;
   
-	address = LSWUBImmOffset(u, rn_value, offset); // compute address
-	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.SetGPR( rd, cpu.MemRead32( address ) );
-}
+  uint32_t address = LSWUBImmOffset(u, rn_value, offset); // compute address
+  cpu.SetGPR(rn, address); // update rn with the address
+  cpu.SetGPR( rd, cpu.MemRead32( address ) );
+};
 
 ldr_reg_post.execute = {
-	typedef Operation<STATE> inherited;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rd_value = cpu.GetGPR(rd);
 
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rd_value = cpu.GetGPR(rd);
+  if(not CheckCondition(cpu, cond)) return;
 
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	address = rn_value;
-	cpu.SetGPR(rn,
-		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
-			cpu.GetCPSR_C()));
-	cpu.SetGPR( rd, cpu.MemRead32( address ) );
-}
+  uint32_t address = rn_value;
+  cpu.SetGPR(rn,
+             LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+                      cpu.GetCPSR_C()));
+  cpu.SetGPR( rd, cpu.MemRead32( address ) );
+};
 
 ldr_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rd_value = cpu.GetGPR(rd);
 
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rd_value = cpu.GetGPR(rd);
+  if(not CheckCondition(cpu, cond)) return;
 
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	address =
-		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
-			cpu.GetCPSR_C());
-	cpu.SetGPR( rd, cpu.MemRead32( address ) );
-}
+  uint32_t address =
+  LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+           cpu.GetCPSR_C());
+  cpu.SetGPR( rd, cpu.MemRead32( address ) );
+};
 
 ldr_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rd_value = cpu.GetGPR(rd);
+  
+  if(not CheckCondition(cpu, cond)) return;
 
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rd_value = cpu.GetGPR(rd);
-
-	
-	if(not CheckCondition(cpu, cond)) return;
-
-	address =
-		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
-			cpu.GetCPSR_C());
-	cpu.SetGPR(rn, address);
-	cpu.SetGPR( rd, cpu.MemRead32( address ) );
+  uint32_t address =
+  LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+           cpu.GetCPSR_C());
+  cpu.SetGPR(rn, address);
+  cpu.SetGPR( rd, cpu.MemRead32( address ) );
 }
 
 /*
@@ -259,97 +237,73 @@ ldrb_reg_pre.disasm = {
 }
 
 ldrb_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rn_value = cpu.GetGPR(rn);
 
-
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
   
-	address = cpu.GetGPR(rn); // address used is the contents of rn
-	cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
-	cpu.SetGPR( rd, cpu.MemRead8( address ) );
-}
+  uint32_t address = cpu.GetGPR(rn); // address used is the contents of rn
+  cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset)); // update rn
+  cpu.SetGPR( rd, cpu.MemRead8( address ) );
+};
 
 ldrb_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rn_value = cpu.GetGPR(rn);
   
-	address = LSWUBImmOffset(u, rn_value, offset);
-	cpu.SetGPR( rd, cpu.MemRead8( address ) );
-}
+  if(not CheckCondition(cpu, cond)) return;
+  
+  uint32_t address = LSWUBImmOffset(u, rn_value, offset);
+  cpu.SetGPR( rd, cpu.MemRead8( address ) );
+};
 
 ldrb_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-
-
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rn_value = cpu.GetGPR(rn);
   
-	address = LSWUBImmOffset(u, rn_value, offset); // compute address
-	cpu.SetGPR(rn, address); // update rn with the address
-	cpu.SetGPR( rd, cpu.MemRead8( address ) );
-}
+  if(not CheckCondition(cpu, cond)) return;
+  
+  uint32_t address = LSWUBImmOffset(u, rn_value, offset); // compute address
+  cpu.SetGPR(rn, address); // update rn with the address
+  cpu.SetGPR( rd, cpu.MemRead8( address ) );
+};
 
 ldrb_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rd_value = cpu.GetGPR(rd);
-
-
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rd_value = cpu.GetGPR(rd);
   
-	address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn,
-		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
-			cpu.GetCPSR_C()));
-	cpu.SetGPR( rd, cpu.MemRead8( address ) );
-}
+  if(not CheckCondition(cpu, cond)) return;
+  
+  uint32_t address = cpu.GetGPR(rn);
+  cpu.SetGPR(rn,
+             LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+                      cpu.GetCPSR_C()));
+  cpu.SetGPR( rd, cpu.MemRead8( address ) );
+};
 
 ldrb_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rd_value = cpu.GetGPR(rd);
-
-
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rd_value = cpu.GetGPR(rd);
+  
+  if(not CheckCondition(cpu, cond)) return;
 	
-	address =
-		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
-			cpu.GetCPSR_C());
-	cpu.SetGPR( rd, cpu.MemRead8( address ) );
-}
+  uint32_t address =
+  LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+           cpu.GetCPSR_C());
+  cpu.SetGPR( rd, cpu.MemRead8( address ) );
+};
 
 ldrb_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t address;
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rd_value = cpu.GetGPR(rd);
-
-
-	if(not CheckCondition(cpu, cond)) return;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rd_value = cpu.GetGPR(rd);
   
-	address =
-		LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
-			cpu.GetCPSR_C());
-	cpu.SetGPR(rn, address);
-	cpu.SetGPR( rd, cpu.MemRead8( address ) );
+  if(not CheckCondition(cpu, cond)) return;
+  
+  uint32_t address =
+  LSWUBReg(u, rn_value, rd_value, shift_imm, shift, rm_value,
+           cpu.GetCPSR_C());
+  cpu.SetGPR(rn, address);
+  cpu.SetGPR( rd, cpu.MemRead8( address ) );
 }
 
 /*
@@ -422,8 +376,6 @@ ldrb_rd15_imm_offset.execute = {
 		 STATE::MODEL == ARMV6 ||
 		 STATE::MODEL == ARMEMU) && cond == 15 )
 	{
-		typedef Operation<STATE> inherited;
-
 		uint32_t address;
 		uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -452,8 +404,6 @@ ldrb_rd15_reg_offset.execute = {
 		 STATE::MODEL == ARMV6 ||
 		 STATE::MODEL == ARMEMU) && cond == 15 )
 	{
-		typedef Operation<STATE> inherited;
-
 		uint32_t address;
 		uint32_t rn_value = cpu.GetGPR(rn);
 		uint32_t rm_value = cpu.GetGPR(rm);
@@ -501,8 +451,6 @@ ldrt_reg.disasm = {
 }
 
 ldrt_imm.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -515,8 +463,6 @@ ldrt_imm.execute = {
 }
 
 ldrt_reg.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -554,8 +500,6 @@ ldrbt_reg.disasm = {
 }
 
 ldrbt_imm.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -568,8 +512,6 @@ ldrbt_imm.execute = {
 }
 
 ldrbt_reg.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -643,8 +585,6 @@ str_reg_pre.disasm = {
 }
 
 str_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -661,8 +601,6 @@ str_imm_post.execute = {
 }
 
 str_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -679,8 +617,6 @@ str_imm_offset.execute = {
 }
 
 str_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -697,8 +633,6 @@ str_imm_pre.execute = {
 }
 
 str_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -718,8 +652,6 @@ str_reg_post.execute = {
 }
 
 str_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -738,8 +670,6 @@ str_reg_offset.execute = {
 }
 
 str_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -819,8 +749,6 @@ strb_reg_pre.disasm = {
 }
 
 strb_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -836,8 +764,6 @@ strb_imm_post.execute = {
 }
 
 strb_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -852,8 +778,6 @@ strb_imm_offset.execute = {
 }
 
 strb_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -869,8 +793,6 @@ strb_imm_pre.execute = {
 }
 
 strb_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -889,8 +811,6 @@ strb_reg_post.execute = {
 }
 
 strb_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -908,8 +828,6 @@ strb_reg_offset.execute = {
 }
 
 strb_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -954,8 +872,6 @@ strt_reg.disasm = {
 }
 
 strt_imm.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -972,8 +888,6 @@ strt_imm.execute = {
 }
 
 strt_reg.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -1033,8 +947,6 @@ strbt_imm.execute = {
 }
 
 strbt_reg.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint8_t value;
 	uint32_t rn_value = cpu.GetGPR(rn);

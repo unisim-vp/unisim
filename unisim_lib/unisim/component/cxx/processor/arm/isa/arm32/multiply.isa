@@ -55,8 +55,6 @@ mla.disasm = {
 }
 
 mla.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t res;
 	uint32_t rm_value = cpu.GetGPR(rm);
 	uint32_t rn_value = cpu.GetGPR(rn);
@@ -95,8 +93,6 @@ mul.disasm = {
 }
 
 mul.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t res;
 	uint32_t rm_value = cpu.GetGPR(rm);
 	uint32_t rs_value = cpu.GetGPR(rs);
@@ -143,8 +139,6 @@ smlal.disasm = {
 }
 
 smlal.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint64_t res;
 	uint64_t res_lo, res_hi;
 	uint32_t rdhi_value = cpu.GetGPR(rdhi);
@@ -193,8 +187,6 @@ smull.disasm = {
 }
 
 smull.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint64_t res;
 	uint64_t res_lo, res_hi;
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -240,8 +232,6 @@ umlal.disasm = {
 }
 
 umlal.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint64_t res;
 	uint64_t res_lo, res_hi;
 	uint32_t rdhi_value = cpu.GetGPR(rdhi);
@@ -290,8 +280,6 @@ umull.disasm = {
 }
 
 umull.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint64_t res;
 	uint64_t res_lo, res_hi;
 	uint32_t rm_value = cpu.GetGPR(rm);

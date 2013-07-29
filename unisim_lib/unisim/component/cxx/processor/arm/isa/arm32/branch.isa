@@ -172,8 +172,9 @@ blx_2.disasm = {
 blx_2.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
+  uint32_t rm_value = cpu.GetGPR(rm);
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
-  cpu.BranchExchange( cpu.GetGPR(rm) );
+  cpu.BranchExchange( rm_value );
 };
 
 /*

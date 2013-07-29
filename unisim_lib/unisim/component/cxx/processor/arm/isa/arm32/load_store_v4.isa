@@ -100,8 +100,6 @@ ldrh_reg_pre.disasm = {
 }
 
 ldrh_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -115,8 +113,6 @@ ldrh_imm_post.execute = {
 }
 
 ldrh_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -129,8 +125,6 @@ ldrh_imm_offset.execute = {
 }
 
 ldrh_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -144,8 +138,6 @@ ldrh_imm_pre.execute = {
 }
 
 ldrh_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -161,8 +153,6 @@ ldrh_reg_post.execute = {
 }
 
 ldrh_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -177,8 +167,6 @@ ldrh_reg_offset.execute = {
 }
 
 ldrh_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -254,8 +242,6 @@ ldrsh_reg_pre.disasm = {
 }
 
 ldrsh_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -269,8 +255,6 @@ ldrsh_imm_post.execute = {
 }
 
 ldrsh_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -283,8 +267,6 @@ ldrsh_imm_offset.execute = {
 }
 
 ldrsh_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -298,8 +280,6 @@ ldrsh_imm_pre.execute = {
 }
 
 ldrsh_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -315,8 +295,6 @@ ldrsh_reg_post.execute = {
 }
 
 ldrsh_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -332,8 +310,6 @@ ldrsh_reg_offset.execute = {
 }
 
 ldrsh_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -409,8 +385,6 @@ ldrsb_reg_pre.disasm = {
 }
 
 ldrsb_imm_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -423,8 +397,6 @@ ldrsb_imm_post.execute = {
 }
 
 ldrsb_imm_offset.execute = {
-	typedef Operation<STATE> inherited;
-  
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -436,8 +408,6 @@ ldrsb_imm_offset.execute = {
 }
 
 ldrsb_imm_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 
@@ -450,8 +420,6 @@ ldrsb_imm_pre.execute = {
 }
 
 ldrsb_reg_post.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -466,8 +434,6 @@ ldrsb_reg_post.execute = {
 }
 
 ldrsb_reg_offset.execute = {
-	typedef Operation<STATE> inherited;
-	
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);
@@ -481,8 +447,6 @@ ldrsb_reg_offset.execute = {
 }
 
 ldrsb_reg_pre.execute = {
-	typedef Operation<STATE> inherited;
-
 	uint32_t address;
 	uint32_t rn_value = cpu.GetGPR(rn);
 	uint32_t rm_value = cpu.GetGPR(rm);

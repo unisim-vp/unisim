@@ -126,29 +126,15 @@ bl.execute = {
  * op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
  */
 
-op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
+op bx(0b010001110[9]:shl<3> rm1[1]:rm0[3]:sbz[3]);
+bx.var rm : {uint8_t} = {rm1|rm0};
 
 bx.disasm = {
-	typedef Operation<STATE> inherited;
-
-	buffer << "bx "
-		<< "r" << inherited::rm_index << endl;
-}
-
-bx.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
+  buffer << "bx\t" << DisasmRegister(rm);
 }
 
 bx.execute = {
-	typedef Operation<STATE> inherited;
-	
-	uint32_t rm_value;
-	
-	rm_value = cpu.GetGPR(inherited::rm_index);
-	
-	cpu.BranchExchange( rm_value );
+  cpu.BranchExchange( cpu.GetGPR(rm) );
 }
 
 /*
@@ -163,8 +149,6 @@ bx.execute = {
 op blx_1(0b111[3]:0b01[2]:offset[11])
 
 blx_1.disasm = {
-	typedef Operation<STATE> inherited;
-	
 	int32_t blx_soffset;
 	
 	if(offset & 0x0400)
@@ -193,28 +177,18 @@ blx_1.execute = {
  * op blx_2(0b111[3]:0b01[2]:sext<32> imm[11])
  */
 
-op blx_2(0b010001111[9]:h2[1]:rm[3]:sbz[3])
-
-blx_2.initialize_rm_index = {
-		typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
+op blx_2(0b010001111[9]:shl<3> rm1[1]:rm0[3]:sbz[3]);
+blx_2.var rm : {uint8_t} = {rm1|rm0};
 
 blx_2.disasm = {
-	typedef Operation<STATE> inherited;
-	
-	buffer << "blx r" << inherited::rm_index;
+  buffer << "blx\t" << DisasmRegister(rm);
 }
 
 blx_2.execute = {
-	typedef Operation<STATE> inherited;
-	uint32_t rm_value;
-	
-	rm_value = cpu.GetGPR(inherited::rm_index);
-	
-	cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
-	cpu.BranchExchange(rm_value);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  
+  cpu.SetGPR(cpu.LR_reg, cpu.GetNPC());
+  cpu.BranchExchange(rm_value);
 }
 
 /*

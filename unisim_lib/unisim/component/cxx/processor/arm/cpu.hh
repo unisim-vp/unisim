@@ -63,7 +63,7 @@ namespace arm {
  * This class is the base for all the cpu's of the ARM processor family, for
  *   that purpose it defiens the basic registers and different methods to handle
  *   them.
- * It includes some pure virtual methods that inherited classes should 
+ * It describes some pseudo virtual methods that specialized classes should 
  *   implement.
  * IMPORTANT: addresses are 32 bits (uint32_t), registers are 32 bits signed or
  *   unsigned (int32_t and uint32_t).

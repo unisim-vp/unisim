@@ -175,36 +175,20 @@ add_3.execute = {
  * add (add high registers) instruction
  */
 
-op add_4(0b01000100[8]:h1[1]:h2[1]:rm[3]:rd[3])
-
-add_4.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-add_4.initialize_rd_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rd_index = (h1 << 3) + rd;
-}
+op add_4(0b01000100[8]:shl<3> rd1[1]:shl<3> rm1[1]:rm0[3]:rd0[3]);
+add_4.var rm : {uint8_t} = {rm1|rm0}, rd : {uint8_t} = {rd1|rd0};
 
 add_4.disasm = {
-	typedef Operation<STATE> inherited;
-	
-	buffer << "add r" << inherited::rd_index << ", r" << inherited::rm_index;
-}
+  buffer << "add\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 add_4.execute = {
-	typedef Operation<STATE> inherited;
-
-	uint32_t s1, s2, res;
-	s1 = cpu.GetGPR(inherited::rd_index);
-	s2 = cpu.GetGPR(inherited::rm_index);
-	
-
-	res = s1 + s2;
-	cpu.SetGPR(inherited::rd_index, res);
+  uint32_t s1, s2, res;
+  s1 = cpu.GetGPR(rd);
+  s2 = cpu.GetGPR(rm);
+        
+  res = s1 + s2;
+  cpu.SetGPR(rd, res);
 }
 
 /*
@@ -502,40 +486,26 @@ cmp_2.execute = {
  * cmp(3) (compare high registers) instruction
  */
 
-op cmp_3(0b01000101[8]:h1[1]:h2[1]:rm[3]:rn[3])
-
-cmp_3.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-cmp_3.initialize_rn_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rn_index = (h1 << 3) + rn;
-}
+op cmp_3(0b01000101[8]:shl<3> rn1[1]:shl<3> rm1[1]:rm0[3]:rn0[3]);
+cmp_3.var rm : {uint8_t} = {rm1|rm0}, rn : {uint8_t} = {rn1|rn0};
 
 cmp_3.disasm = {
-	typedef Operation<STATE> inherited;
-
-	buffer << "cmp r" << inherited::rn_index << ", r" << inherited::rm_index;
-}
+  buffer << "cmp " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 cmp_3.execute = {
-	typedef Operation<STATE> inherited;
-	uint32_t res, s1, s2;
+  uint32_t res, s1, s2;
 	
-	s1 = cpu.GetGPR(inherited::rn_index);
-	s2 = cpu.GetGPR(inherited::rm_index);
+  s1 = cpu.GetGPR(rn);
+  s2 = cpu.GetGPR(rm);
 	
-	res = s1 - s2;
+  res = s1 - s2;
 
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+  cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
+};
 
 /*
  * end of cmp(3) (compare high registers) instruction
@@ -740,35 +710,19 @@ mov_1.execute = {
  * mov(3) (move high registers) instruction
  */
 
-op mov_3(0b01000110[8]:h1[1]:h2[1]:rm[3]:rd[3])
-
-mov_3.initialize_rm_index = {
-	typedef Operation<STATE> inherited;
-
-	inherited::rm_index = (h2 << 3) + rm;
-}
-
-mov_3.initialize_rd_index = {
-	typedef Operation<STATE> inherited;
-	
-	inherited::rd_index = (h1 << 3) + rd;
-}
+op mov_3(0b01000110[8]:shl<3> rd1[1]:shl<3> rm1[1]:rm0[3]:rd0[3]);
+mov_3.var rm : {uint8_t} = {rm1|rm0}, rd : {uint8_t} = {rd1|rd0};
 
 mov_3.disasm = {
-	typedef Operation<STATE> inherited;
-
-	buffer << "mov r" << inherited::rd_index << ", r" << inherited::rm_index;
-}
+  buffer << "mov\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 mov_3.execute = {
-	typedef Operation<STATE> inherited;
-	uint32_t res;
-	
-	res = cpu.GetGPR(inherited::rm_index);
-	
-	
-	cpu.SetGPR(inherited::rd_index, res);
-}
+  uint32_t res = cpu.GetGPR(rm);
+  
+  cpu.SetGPR(rd, res);
+};
+
 /*
  * end of mov(3) (move high registers) instruction
  *******************************************************************/
@@ -976,29 +930,26 @@ sub_1.execute = {
  * sub(2) (subtract large immediate) instruction
  */
 
-op sub_2(0b00111[5]:rd[3]:imm[8])
+op sub_2(0b00111[5]:rd[3]:imm[8]);
 
 sub_2.disasm = {
-	buffer << "sub r" << rd << ", #" << dec << imm;
-}
+  buffer << "sub\t" << DisasmRegister(rd) << ", #" << std::dec << imm;
+};
 
 sub_2.execute = {
-	typedef Operation<STATE> inherited;
+  uint32_t s1, s2;
+  uint32_t res;
 
-	uint32_t s1, s2;
-	uint32_t res;
-	  
-
-	s1 = cpu.GetGPR(rd);
-	s2 = imm;
-	res = s1 - s2;
-	cpu.SetGPR(rd, res);
+  s1 = cpu.GetGPR(rd);
+  s2 = imm;
+  res = s1 - s2;
+  cpu.SetGPR(rd, res);
 	
-	cpu.SetCPSR_N(res & (uint32_t)0x80000000);
-	cpu.SetCPSR_Z(res == 0);
-	cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
-	cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
-}
+  cpu.SetCPSR_N(res & (uint32_t)0x80000000);
+  cpu.SetCPSR_Z(res == 0);
+  cpu.SetCPSR_C(!BorrowFrom(res, s1, s2));
+  cpu.SetCPSR_V(SubtractionOverflowFrom(res, s1, s2));
+};
 
 /*
  * end of sub(2) (subtract large immediate) instruction
