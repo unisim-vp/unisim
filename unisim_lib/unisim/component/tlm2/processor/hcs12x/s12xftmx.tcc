@@ -1449,8 +1449,8 @@ bool S12XFTMX<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::BeginSetup()
 		stringSplit(result[i], ",", oneBlockSegments);
 		BlockDescription *oneBlock = new BlockDescription();
 		std::stringstream ss;
-		ss << std::hex << oneBlockSegments[0] << " " << std::hex << oneBlockSegments[1];
-		ss >> oneBlock->start_address >> oneBlock->end_address;
+		ss << std::hex << oneBlockSegments[0] << " " << std::hex << oneBlockSegments[1] << std::dec;
+		ss >> std::hex >> oneBlock->start_address >> std::hex >> oneBlock->end_address;
 
 		pflash_blocks_description.push_back(oneBlock);
 		oneBlockSegments.clear();

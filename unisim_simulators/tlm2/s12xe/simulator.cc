@@ -729,12 +729,18 @@ void Simulator::LoadBuiltInConfig(unisim::kernel::service::Simulator *simulator)
 	simulator->SetVariable("SPI2.interrupt-offset", 0xBC);
 	simulator->SetVariable("SPI2.debug-enabled", false);
 
+	simulator->SetVariable("MMC.version", "V4");
 	simulator->SetVariable("MMC.debug-enabled", false);
 	simulator->SetVariable("MMC.mode", 0x80);
 	simulator->SetVariable("MMC.mmcctl1", 0x5);
 	simulator->SetVariable("MMC.address-encoding", 0x0);
 	simulator->SetVariable("MMC.ppage-address", 0x15); // ppage address for S12XE is 0x15
-	simulator->SetVariable("MMC.version", "V4");
+	simulator->SetVariable("MMC.memory-map",
+"0,0034,003F;1,0040,007F;2,0080,00AF;3,00B8,00BF;4,00C0,00C7;5,00C8,00CF;\
+6,00D0,00D7;7,00D8,00DF;8,00F0,00F7;9,00F8,00FF;10,0100,0113;11,0114,011F;\
+12,0120,012F;13,0130,0137;14,0138,013F;15,02C0,02EF;16,0300,0327;17,0340,0367;\
+18,0380,03BF;19,0007FF,0FFFFF;20,100000,13FFFF;20,400000,7FFFFF");
+
 
 	simulator->SetVariable("MPU.debug-enabled", false);
 	simulator->SetVariable("MPU.base-address", 0x0114);

@@ -63,6 +63,8 @@ public:
 	template <int SIZE> int LoadXmlData(const char *filename, std::vector<data_t<SIZE> > &vect);
 	template <int SIZE> void parseRow (xmlDocPtr doc, xmlNodePtr cur, data_t<SIZE> &data);
 
+	virtual bool BeginSetup();
+
 private:
 
 	std::vector<data_t<ATD0_SIZE> > atd0_vect;

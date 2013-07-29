@@ -36,6 +36,7 @@
 
 #include <unisim/component/tlm2/processor/hcs12x/s12xmmc.hh>
 #include <unisim/component/tlm2/processor/hcs12x/tlm_types.hh>
+#include <unisim/util/converter/convert.hh>
 
 namespace unisim {
 namespace component {
@@ -57,6 +58,9 @@ S12XMMC::S12XMMC(const sc_module_name& name, S12MPU_IF *_mpu, Object *parent) :
 	, busSemaphore()
 	, busSemaphore_event()
 
+	, memoryMapStr("")
+	, param_memoryMapStr("memory-map", this, memoryMapStr)
+
 {
 
 	cpu_socket.register_b_transport(this, &S12XMMC::cpu_b_transport);
@@ -75,39 +79,42 @@ S12XMMC::~S12XMMC() {
 bool S12XMMC::accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd) {
 
 	bool find = false;
-	tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
 
-	mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
-
-	mmc_trans->set_data_length( buffer->data_size );
-	mmc_trans->set_streaming_width( buffer->data_size );
-
-	mmc_trans->set_byte_enable_ptr( 0 );
-	mmc_trans->set_dmi_allowed( false );
-	mmc_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
-
-	if (cmd == tlm::TLM_READ_COMMAND) {
-		mmc_trans->set_command( tlm::TLM_READ_COMMAND );
-
-		memset(buffer->buffer, 0, buffer->data_size);
-
-	} else {
-		mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
-	}
-
-	mmc_trans->set_address( addr & 0x7FFFFF);
-
-	for (int i=0; i <init_socket.size(); i++) {
-		init_socket[i]->b_transport( *mmc_trans, tlm2_btrans_time );
-
-		tlm::tlm_response_status response = mmc_trans->get_response_status();
-		if (response == TLM_OK_RESPONSE) {
+	for (uint16_t i; i <memoryMap.size(); i++) {
+		if ((addr >= memoryMap[i]->start_address) && (addr <= memoryMap[i]->end_address)) {
 			find = true;
+
+			tlm::tlm_generic_payload* mmc_trans = payloadFabric.allocate();
+
+			mmc_trans->set_data_ptr( (unsigned char *)buffer->buffer );
+
+			mmc_trans->set_data_length( buffer->data_size );
+			mmc_trans->set_streaming_width( buffer->data_size );
+
+			mmc_trans->set_byte_enable_ptr( 0 );
+			mmc_trans->set_dmi_allowed( false );
+			mmc_trans->set_response_status( tlm::TLM_INCOMPLETE_RESPONSE );
+
+			if (cmd == tlm::TLM_READ_COMMAND) {
+				mmc_trans->set_command( tlm::TLM_READ_COMMAND );
+
+				memset(buffer->buffer, 0, buffer->data_size);
+
+			} else {
+				mmc_trans->set_command( tlm::TLM_WRITE_COMMAND );
+			}
+
+			mmc_trans->set_address( addr & 0x7FFFFF);
+
+			init_socket[memoryMap[i]->module_index]->b_transport( *mmc_trans, tlm2_btrans_time );
+			tlm::tlm_response_status response = mmc_trans->get_response_status();
+
+			mmc_trans->release();
+
 			break;
 		}
 	}
 
-	mmc_trans->release();
 
 	return (find);
 
@@ -246,6 +253,25 @@ void S12XMMC::cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay )
 
 }
 
+bool S12XMMC::BeginSetup() {
+
+	vector<string> result;
+	stringSplit(memoryMapStr, ";", result);
+	vector<string> oneMemoryMapEntrySegments;
+	for ( int i = 0; i < result.size(); ++i) {
+		stringSplit(result[i], ",", oneMemoryMapEntrySegments);
+		MemoryMapEntry *oneMemoryMapEntry = new MemoryMapEntry();
+		std::stringstream ss;
+		ss << std::dec << oneMemoryMapEntrySegments[0] << " " << std::hex << oneMemoryMapEntrySegments[1] << " " << std::hex << oneMemoryMapEntrySegments[2] << std::dec;
+		ss >> std::dec >> oneMemoryMapEntry->module_index >> std::hex >> oneMemoryMapEntry->start_address >> std::hex >> oneMemoryMapEntry->end_address;
+
+		memoryMap.push_back(oneMemoryMapEntry);
+		oneMemoryMapEntrySegments.clear();
+	}
+	result.clear();
+
+	return (inherited::BeginSetup());
+}
 
 } // end of namespace hcs12x
 } // end of namespace processor

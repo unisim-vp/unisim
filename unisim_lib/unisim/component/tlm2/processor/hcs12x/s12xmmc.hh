@@ -42,6 +42,8 @@
 #include <inttypes.h>
 #include <iostream>
 #include <cmath>
+#include <string>
+#include <vector>
 
 #include <systemc>
 #include <tlm.h>
@@ -65,6 +67,8 @@ namespace tlm2 {
 namespace processor {
 namespace hcs12x {
 
+using namespace std;
+
 using namespace sc_core;
 using namespace sc_dt;
 using tlm_utils::simple_initiator_socket;
@@ -72,6 +76,7 @@ using tlm_utils::simple_initiator_socket;
 using unisim::kernel::service::ServiceImport;
 using unisim::kernel::service::Client;
 using unisim::service::interfaces::TrapReporting;
+using unisim::kernel::service::Parameter;
 
 using unisim::component::cxx::processor::hcs12x::ADDRESS;
 using unisim::component::cxx::processor::hcs12x::MMC;
@@ -111,6 +116,9 @@ public:
 	virtual void cpu_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 	virtual void xgate_b_transport( tlm::tlm_generic_payload& trans, sc_time& delay );
 
+	virtual bool BeginSetup();
+
+
 private:
 
 	sc_time tlm2_btrans_time;
@@ -120,6 +128,22 @@ private:
 	sc_event   busSemaphore_event;
 
 	bool accessBus(sc_dt::uint64 logicalAddress, physical_address_t addr, MMC_DATA *buffer, tlm::tlm_command cmd);
+
+	string memoryMapStr;
+	Parameter<string> param_memoryMapStr;
+
+	struct MemoryMapEntry {
+		/**
+		 * The module_index is necessary because some module have a fragmented address space
+		 * Such modules are PIM, MMC and can be accounted for others
+		 * This index also cover the case of EEPROM emulation by the flash
+		 */
+		uint16_t			module_index;
+		physical_address_t	start_address;
+		physical_address_t	end_address;
+	};
+
+	vector<MemoryMapEntry *> memoryMap;
 
 }; /* end class S12XMMC */
 
