@@ -106,6 +106,24 @@ using namespace std;
     sink << register_dis[m_reg];
   }
   
+  /* Register list disassembling method */
+  void DisasmRegList::operator() ( std::ostream& sink ) const
+  {
+    char const* sep = "";
+    for (int reg = 0; reg < 16; ++reg) {
+      if (((m_reglist >> reg) & 1) == 0) continue;
+      sink << sep << register_dis[reg];
+      sep = ", ";
+    }
+  }
+  
+  /* Multiple Load Store Mode disassembling method */
+  void DisasmLSMMode::operator() ( std::ostream& sink ) const
+  {
+    static char const* const lsmmod[] = {"da","ia","db","ib"};
+    sink << lsmmod[m_mode%4];
+  }
+  
   /* PSR mask disassembling method */
   void DisasmPSRMask::operator() ( std::ostream& sink ) const
   {
@@ -114,263 +132,6 @@ using namespace std;
     if ((m_mask & 0x04) == 0x04) sink << "s";
     if ((m_mask & 0x08) == 0x08) sink << "f";
   }
-
-/* Load/store operand disassembling methods */
-void
-DisasmLSWUBImmOffset_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< "#" << (u == 0 ? "-" : "") << dec << offset;
-}
-
-void
-DisasmLSWUBImmOffset_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << (u == 0 ? "-" : "") << dec << offset << "]";
-}
-
-void
-DisasmLSWUBImmOffset_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << (u == 0 ? "-" : "") << dec << offset << "]!";
-}
-
-void
-DisasmLSWUBReg_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< (u == 0 ? "-" : "") << "r" << rm;
-	if (!((shift_imm == 0) && (shift == 0)))
-	{
-		buffer << ", ";
-		switch (shift)
-		{
-		case 0:
-			buffer << "lsl";
-			break;
-		case 1:
-			buffer << "lsr";
-			break;
-		case 2:
-			buffer << "asr";
-			break;
-		case 3:
-			if (shift_imm == 0) buffer << "rrx";
-			else buffer << "ror";
-			break;
-		default:
-			buffer << "(?)";
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-			break;
-		}
-		if ((shift != 3) && (shift_imm != 0))
-			buffer << " #" << shift_imm;
-	}
-}
-
-void
-DisasmLSWUBReg_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< (u == 0 ? "-" : "") << "r" << rm;
-	if (!((shift_imm == 0) && (shift == 0)))
-	{
-		buffer << ", ";
-		switch (shift)
-		{
-		case 0:
-			buffer << "lsl";
-			break;
-		case 1:
-			buffer << "lsr";
-			break;
-		case 2:
-			buffer << "asr";
-			break;
-		case 3:
-			if (shift_imm == 0) buffer << "rrx";
-			else buffer << "ror";
-			break;
-		default:
-			buffer << "(?)";
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-			break;
-		}
-		if (shift != 3 && shift_imm != 0)
-			buffer << " #" << shift_imm;
-	}
-	buffer << "]";
-}
-
-void
-DisasmLSWUBReg_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< (u == 0 ? "-" : "") << "r" << rm;
-	if (!((shift_imm == 0) && (shift == 0)))
-	{
-		buffer << ", ";
-		switch (shift)
-		{
-		case 0:
-			buffer << "lsl";
-			break;
-		case 1:
-			buffer << "lsr";
-			break;
-		case 2:
-			buffer << "asr";
-			break;
-		case 3:
-			if (shift_imm == 0) buffer << "rrx";
-			else buffer << "ror";
-			break;
-		default:
-			buffer << "(?)";
-			cerr << "ERROR(" << __FUNCTION__ << "): "
-				<< "unknown shift value (" << dec << shift << ")" << endl;
-			break;
-		}
-		if ((shift != 3) && (shift_imm != 0))
-			buffer << " #" << shift_imm;
-	}
-	buffer << "]!";
-}
-
-/* Miscellaneous load/store operand disassembling methods */
-void
-DisasmMLSImmOffset_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< "#" << ((u == 1) ? "" : "-")
-			<< (immedH << 4) + immedL;
-}
-
-void
-DisasmMLSImmOffset_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << ((u == 1) ? "" : "-")
-			<< (immedH << 4) + immedL << "]";
-}
-
-void
-DisasmMLSImmOffset_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< "#" << ((u == 1) ? "" : "-")
-			<< (immedH << 4) + immedL << "]!";
-}
-
-void
-DisasmMLSReg_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< ((u == 1) ? "" : "-") << "r" << rm;
-}
-
-void
-DisasmMLSReg_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< ((u == 1) ? "" : "-") << "r" << rm << "]";
-}
-
-void
-DisasmMLSReg_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", "
-			<< ((u == 1) ? "" : "-") << "r" << rm << "]!";
-}
-
-/* Coprocessor load/store operand disassembling methods */
-void
-DisasmCLSImm_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], #"
-			<< ((u == 1) ? "" : "-") << offset * 4;
-}
-
-void
-DisasmCLSImm_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", #"
-			<< ((u == 1) ? "" : "-") << offset * 4 << "]";
-}
-
-void
-DisasmCLSImm_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << ", #"
-			<< ((u == 1) ? "" : "-") << offset * 4 << "]!";
-}
-
-void
-DisasmCLSUnindexed(const uint32_t rn,
-		const uint32_t option,
-		stringstream &buffer)
-{
-	buffer << "[r" << rn << "], "
-			<< "{" << option << "}";
-}
 
 } // end of namespace arm
 } // end of namespace processor

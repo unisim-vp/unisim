@@ -64,15 +64,12 @@ ldmia.execute = {
 	uint32_t rn_value, rn_new_val;
 	uint32_t start_address, end_address;
 	uint32_t cur_address;
-	uint32_t num_regs;
 	unsigned int mask = 1;
 	
 	
 	rn_value = cpu.GetGPR(rn);
 	
-	num_regs = LSMia(rn_value, reg_list,
-						&start_address, &end_address,
-						&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 
 	cpu.SetGPR(rn, rn_new_val);
 
@@ -116,16 +113,13 @@ pop.execute = {
 	uint32_t sp_value, sp_new_val;
 	uint32_t start_address, end_address;
 	uint32_t cur_address;
-	uint32_t num_regs;
 	unsigned int mask = 1;
 	
 	if(r == 0)
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	
-	num_regs = LSMia(sp_value, reg_list,
-						&start_address, &end_address,
-						&sp_new_val);
+	LSMia(sp_value, reg_list, &start_address, &end_address, &sp_new_val);
 
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {
@@ -178,15 +172,12 @@ push.execute = {
 	uint32_t sp_value, sp_new_val, value;
 	uint32_t start_address, end_address;
 	uint32_t cur_address;
-	uint32_t num_regs;
 	unsigned int mask = 1;
 	
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 
-	num_regs = LSMdb(sp_value, reg_list,
-			&start_address, &end_address,
-			&sp_new_val);
+	LSMdb(sp_value, reg_list, &start_address, &end_address, &sp_new_val);
 	if(r)
 		start_address -= 4;
 
@@ -239,15 +230,12 @@ stmia.execute = {
 	uint32_t rn_value, rn_new_val, value;
 	uint32_t start_address, end_address;
 	uint32_t cur_address;
-	uint32_t num_regs;
 	unsigned int mask = 1;
 	
 	
 	rn_value = cpu.GetGPR(rn);
 
-	num_regs = LSMia(rn_value, reg_list,
-			&start_address, &end_address,
-			&rn_new_val);
+	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
 
 	cur_address = start_address;
 	for(unsigned int i = 0; i < 8; i++) {

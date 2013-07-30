@@ -50,12 +50,10 @@ ldr_1.disasm = {
 
 ldr_1.execute = {
 	uint32_t addr;
-	uint32_t rn_value, value;
-	
+	uint32_t rn_value;
 	
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 4);
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -75,13 +73,11 @@ ldr_2.disasm = {
 
 ldr_2.execute = {
 	uint32_t addr;
-	uint32_t rn_value, rm_value, value;
-	
+	uint32_t rn_value, rm_value;
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -101,13 +97,12 @@ ldr_3.disasm = {
 
 ldr_3.execute = {
 	uint32_t addr;
-	uint32_t pc_value, value;
+	uint32_t pc_value;
 	
 	pc_value = (cpu.GetGPR(cpu.PC_reg) + 4) & ~((uint32_t)0x03);
 	
 	
 	addr = pc_value + (imm * 4);
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -127,12 +122,11 @@ ldr_4.disasm = {
 
 ldr_4.execute = {
 	uint32_t addr;
-	uint32_t sp_value, value;
+	uint32_t sp_value;
 	
 	
 	sp_value = cpu.GetGPR(cpu.SP_reg);
 	addr = sp_value + (imm * 4);
-	value = 0;
 	cpu.SetGPR( rd, cpu.MemRead32( addr & -4 ) );
 }
 
@@ -153,12 +147,10 @@ ldrb_1.disasm = {
 ldrb_1.execute = {
 	uint32_t addr;
 	uint32_t rn_value;
-	uint8_t val8;
 	
 	
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + imm;
-	val8 = 0;
 	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
 }
 
@@ -179,13 +171,10 @@ ldrb_2.disasm = {
 ldrb_2.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	uint8_t val8;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val8 = 0;
 	cpu.SetGPR( rd, cpu.MemRead8( addr ) );
 }
 
@@ -206,12 +195,9 @@ ldrh_1.disasm = {
 ldrh_1.execute = {
 	uint32_t addr;
 	uint32_t rn_value;
-	uint16_t val16;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	addr = rn_value + (imm * 2);
-	val16 = 0;
 	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
 }
 
@@ -232,13 +218,10 @@ ldrh_2.disasm = {
 ldrh_2.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	uint16_t val16;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val16 = 0;
 	cpu.SetGPR( rd, cpu.MemRead16( addr & -2 ) );
 }
 
@@ -259,13 +242,10 @@ ldrsb.disasm = {
 ldrsb.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	int8_t val8;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val8 = 0;
 	cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
 }
 
@@ -286,13 +266,10 @@ ldrsh.disasm = {
 ldrsh.execute = {
 	uint32_t addr;
 	uint32_t rn_value, rm_value;
-	int16_t val16;
-	
 	
 	rn_value = cpu.GetGPR(rn);
 	rm_value = cpu.GetGPR(rm);
 	addr = rn_value + rm_value;
-	val16 = 0;
 	cpu.SetGPR( rd, cpu.MemReadS16( addr & -2 ) );
 }
 

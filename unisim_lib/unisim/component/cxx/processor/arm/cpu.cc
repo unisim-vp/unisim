@@ -362,8 +362,9 @@ SetGPRMapping(uint32_t src_mode, uint32_t tar_mode)
  */
 uint32_t 
 CPU::
-GetGPR_usr(uint32_t id, uint32_t mode) const
+GetGPR_usr(uint32_t id) const
 {
+	uint32_t mode = GetCPSR_Mode();
 	switch ( mode )
 	{
 		case SUPERVISOR_MODE:
@@ -398,8 +399,9 @@ GetGPR_usr(uint32_t id, uint32_t mode) const
  */
 void
 CPU::
-SetGPR_usr(uint32_t id, uint32_t val, uint32_t mode)
+SetGPR_usr(uint32_t id, uint32_t val)
 {
+	uint32_t mode = GetCPSR_Mode();
 	switch ( mode )
 	{
 		case USER_MODE:
@@ -752,7 +754,7 @@ SetCPSR_Mode(uint32_t mode)
  */
 uint32_t 
 CPU::
-GetCPSR_Mode()
+GetCPSR_Mode() const
 {
 	uint32_t mode = cpsr & CPSR_RUNNING_MODE_MASK;
 	return mode;

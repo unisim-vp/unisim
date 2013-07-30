@@ -42,7 +42,7 @@
  * cdp instruction
  */
 
-op cdp(cond[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4])
+op cdp(cond[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp.disasm = {
 	buffer << "cdp";
@@ -53,13 +53,13 @@ cdp.disasm = {
 	buffer << ", cr" << dec << (unsigned int) crn;
 	buffer << ", cr" << dec << (unsigned int) crm;
 	buffer << ", " << dec << (unsigned int) op2;
-}
+};
 
 cdp.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 	
 	cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
-}
+};
 
 /*
  * end of cdp instruction
@@ -69,13 +69,16 @@ cdp.execute = {
  * ldc instruction
  */
 
-op ldc_offset(cond[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+op ldc_offset(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc_offset.var imm : {int32_t} = {u?offset:-offset};
 
-op ldc_pre(cond[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+op ldc_pre(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc_pre.var imm : {int32_t} = {u?offset:-offset};
 
-op ldc_post(cond[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+op ldc_post(cond[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc_post.var imm : {int32_t} = {u?offset:-offset};
 
-op ldc_unindexed(cond[4]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8])
+op ldc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 ldc_offset.disasm = {
 	buffer << "ldc";
@@ -84,8 +87,8 @@ ldc_offset.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSImm_offset(u, rn, offset, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+};
 
 ldc_pre.disasm = {
 	buffer << "ldc";
@@ -94,8 +97,8 @@ ldc_pre.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSImm_pre(u, rn, offset, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+};
 
 ldc_post.disasm = {
 	buffer << "ldc";
@@ -104,8 +107,8 @@ ldc_post.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSImm_post(u, rn, offset, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+};
 
 ldc_unindexed.disasm = {
 	buffer << "ldc";
@@ -114,37 +117,37 @@ ldc_unindexed.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSUnindexed(rn, option, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+};
 
 ldc_offset.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 	
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 ldc_pre.execute = {
 	if(not CheckCondition(cpu, cond)) return;
         
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 ldc_post.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
+	cpu.SetGPR(rn, address + imm);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 ldc_unindexed.execute = {
 	if(not CheckCondition(cpu, cond)) return;
@@ -153,7 +156,7 @@ ldc_unindexed.execute = {
 	while(cpu.CoprocessorLoad(cp_num, address, option)) {
 		address += 4;
 	}
-}
+};
 
 /*
  * end of ldc instruction
@@ -163,7 +166,7 @@ ldc_unindexed.execute = {
  * mcr instruction
  */
 
-op mcr(cond[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
+op mcr(cond[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mcr.disasm = {
 	buffer << "mcr";
@@ -174,13 +177,13 @@ mcr.disasm = {
 	buffer << ", cr" << (unsigned int) crn;
 	buffer << ", cr" << (unsigned int) crm;
 	if(op2 != 0) buffer << ", " << (unsigned int) op2;
-}
+};
 
 mcr.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 
 	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
-}
+};
 
 /*
  * end of mcr instruction
@@ -190,7 +193,7 @@ mcr.execute = {
  * mrc instruction
  */
 
-op mrc(cond[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
+op mrc(cond[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mrc.disasm = {
 	buffer << "mrc";
@@ -201,13 +204,13 @@ mrc.disasm = {
 	buffer << ", cr" << (unsigned int) crn;
 	buffer << ", cr" << (unsigned int) crm;
 	if(op2 != 0) buffer << ", " << (unsigned int) op2;
-}
+};
 
 mrc.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 
 	cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
-}
+};
 
 /*
  * end of mrc instruction
@@ -217,13 +220,16 @@ mrc.execute = {
  * stc instruction
  */
 
-op stc_offset(cond[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+op stc_offset(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc_offset.var imm : {int32_t} = {u?offset:-offset};
 
-op stc_pre(cond[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+op stc_pre(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc_pre.var imm : {int32_t} = {u?offset:-offset};
 
-op stc_post(cond[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8]);
+op stc_post(cond[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc_post.var imm : {int32_t} = {u?offset:-offset};
 
-op stc_unindexed(cond[4]:0b110[3]:/*p*/0b0[1]:/*u*/0b1[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8])
+op stc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 stc_offset.disasm = {
 	buffer << "stc";
@@ -232,8 +238,8 @@ stc_offset.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSImm_offset(u, rn, offset, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+};
 
 stc_pre.disasm = {
 	buffer << "stc";
@@ -242,8 +248,8 @@ stc_pre.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSImm_pre(u, rn, offset, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+};
 
 stc_post.disasm = {
 	buffer << "stc";
@@ -252,8 +258,8 @@ stc_post.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSImm_post(u, rn, offset, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+};
 
 stc_unindexed.disasm = {
 	buffer << "stc";
@@ -262,37 +268,37 @@ stc_unindexed.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSUnindexed(rn, option, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+};
 
 stc_offset.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 	
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 stc_pre.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 	
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 stc_post.execute = {
 	if(not CheckCondition(cpu, cond)) return;
 	
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
+	cpu.SetGPR(rn, address + imm);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 stc_unindexed.execute = {
 	if(not CheckCondition(cpu, cond)) return;
@@ -301,7 +307,7 @@ stc_unindexed.execute = {
 	while(cpu.CoprocessorStore(cp_num, address, option)) {
 		address += 4;
 	}
-}
+};
 
 /*
  * end of stc instruction
@@ -317,7 +323,7 @@ stc_unindexed.execute = {
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4])
+}:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp2.disasm = {
 	buffer << "cdp2";
@@ -327,12 +333,12 @@ cdp2.disasm = {
 	buffer << ", cr" << dec << (unsigned int) crn;
 	buffer << ", cr" << dec << (unsigned int) crm;
 	buffer << ", " << dec << (unsigned int) op2;
-}
+};
 
 cdp2.execute = {
 
 	cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
-}
+};
 
 /*
  * end of cdp2 instruction
@@ -348,28 +354,34 @@ cdp2.execute = {
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op ldc2_offset(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+}:op ldc2_offset(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc2_offset.var imm : {int32_t} = {u?offset:-offset};
+
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op ldc2_pre(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+}:op ldc2_pre(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc2_pre.var imm : {int32_t} = {u?offset:-offset};
+
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op ldc2_post(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+}:op ldc2_post(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc2_post.var imm : {int32_t} = {u?offset:-offset};
+
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op ldc2_unindexed(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8])
+}:op ldc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 ldc2_offset.disasm = {
   buffer << "ldc";
@@ -377,8 +389,8 @@ ldc2_offset.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSImm_offset(u, rn, offset, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+};
 
 ldc2_pre.disasm = {
   buffer << "ldc";
@@ -386,8 +398,8 @@ ldc2_pre.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSImm_pre(u, rn, offset, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+};
 
 ldc2_post.disasm = {
   buffer << "ldc";
@@ -395,8 +407,8 @@ ldc2_post.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSImm_post(u, rn, offset, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+};
 
 ldc2_unindexed.disasm = {
 	buffer << "ldc";
@@ -404,38 +416,38 @@ ldc2_unindexed.disasm = {
 	buffer << " " << (unsigned int) cp_num;
 	buffer << ", cr" << (unsigned int) crd;
 	buffer << ", ";
-	DisasmCLSUnindexed(rn, option, buffer);
-}
+	buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+};
 
 ldc2_offset.execute = {
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 ldc2_pre.execute = {
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 ldc2_post.execute = {
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
+	cpu.SetGPR(rn, address + imm);
 	while(cpu.CoprocessorLoad(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 ldc2_unindexed.execute = {
 	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorLoad(cp_num, address, option)) {
 		address += 4;
 	}
-}
+};
 
 /*
  * end of ldc2 instruction
@@ -451,7 +463,7 @@ ldc2_unindexed.execute = {
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
+}:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mcr2.disasm = {
   buffer << "mcr2";
@@ -461,11 +473,11 @@ mcr2.disasm = {
   buffer << ", cr" << (unsigned int) crn;
   buffer << ", cr" << (unsigned int) crm;
   if(op2 != 0) buffer << ", " << (unsigned int) op2;
-}
+};
 
 mcr2.execute = {
 	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
-}
+};
 
 /*
  * end of mcr2 instruction
@@ -481,7 +493,7 @@ mcr2.execute = {
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4])
+}:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mrc2.disasm = {
   buffer << "mrc2";
@@ -491,12 +503,12 @@ mrc2.disasm = {
   buffer << ", cr" << (unsigned int) crn;
   buffer << ", cr" << (unsigned int) crm;
   if(op2 != 0) buffer << ", " << (unsigned int) op2;
-}
+};
 
 mrc2.execute = {
 
 	cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
-}
+};
 
 /*
  * end of mrc2 instruction
@@ -512,28 +524,34 @@ mrc2.execute = {
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op stc2_offset(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+}:op stc2_offset(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc2_offset.var imm : {int32_t} = {u?offset:-offset};
+
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op stc2_pre(0b1111[4]:0b110[3]:/*p*/0b1[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+}:op stc2_pre(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc2_pre.var imm : {int32_t} = {u?offset:-offset};
+
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op stc2_post(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:offset[8])
+}:op stc2_post(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc2_post.var imm : {int32_t} = {u?offset:-offset};
+
 { STATE::MODEL == ARMV5T ||
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op stc2_unindexed(0b1111[4]:0b110[3]:/*p*/0b0[1]:/*u*/u[1]:/*n*/n[1]:/*w*/0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8])
+}:op stc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 stc2_offset.disasm = {
   buffer << "stc";
@@ -541,8 +559,8 @@ stc2_offset.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSImm_offset(u, rn, offset, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+};
 
 stc2_pre.disasm = {
   buffer << "stc";
@@ -550,8 +568,8 @@ stc2_pre.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSImm_pre(u, rn, offset, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+};
 
 stc2_post.disasm = {
   buffer << "stc";
@@ -559,8 +577,8 @@ stc2_post.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSImm_post(u, rn, offset, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+};
 
 stc2_unindexed.disasm = {
   buffer << "stc";
@@ -568,38 +586,38 @@ stc2_unindexed.disasm = {
   buffer << " " << (unsigned int) cp_num;
   buffer << ", cr" << (unsigned int) crd;
   buffer << ", ";
-  DisasmCLSUnindexed(rn, option, buffer);
-}
+  buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+};
 
 stc2_offset.execute = {
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 stc2_pre.execute = {
-	uint32_t address = CLSOpDec(u, cpu.GetGPR(rn), offset);
+	uint32_t address = cpu.GetGPR(rn) + imm;
 	cpu.SetGPR(rn, address);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 stc2_post.execute = {
 	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, CLSOpDec(u, address, offset));
+	cpu.SetGPR(rn, address + imm);
 	while(cpu.CoprocessorStore(cp_num, address)) {
 		address += 4;
 	}
-}
+};
 
 stc2_unindexed.execute = {
 	uint32_t address = cpu.GetGPR(rn);
 	while(cpu.CoprocessorStore(cp_num, address, option)) {
 		address += 4;
 	}
-}
+};
 /*
  * end of stc2 instruction
  *******************************************************************/

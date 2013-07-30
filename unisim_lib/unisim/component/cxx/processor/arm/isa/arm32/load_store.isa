@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -37,6 +37,1136 @@
          LOAD AND STORE INSTRUCTIONS
 
 **********************************************/
+
+/*******************************************************************
+ * ldr instruction
+ */
+
+op ldr_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:offset[12]);
+ldr_imm_post.var imm : {int32_t} = {u?offset:-offset};
+
+ldr_imm_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldr_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+};
+
+op ldr_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b1[1]:rn[4]:rd[4]:offset[12]);
+ldr_imm_offset.var imm : {int32_t} = {u?offset:-offset};
+
+ldr_imm_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+ldr_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+};
+
+op ldr_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldr_reg_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+  buffer << DisasmShImm(shift, imm);
+};
+
+ldr_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+};
+
+op ldr_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldr_reg_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm) << "]" << (x?"!":"");
+};
+
+ldr_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn ) + (u?isval:-isval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+};
+
+/*
+ * end of ldr instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrh instruction
+ */
+
+op ldrh_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1011[4]:im0[4]);
+ldrh_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrh_imm_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrh_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( rd, cpu.MemRead16( addr ) );
+};
+
+op ldrh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1011[4]:im0[4]);
+ldrh_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrh_imm_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+ldrh_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemRead16( addr ) );
+};
+
+op ldrh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4]);
+
+ldrh_reg_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+};
+
+ldrh_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?rmval:-rmval) );
+  cpu.SetGPR( rd, cpu.MemRead16( addr ) );
+};
+
+op ldrh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4]);
+
+ldrh_reg_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+ldrh_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ) + (u?rmval:-rmval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemRead16( addr ) );
+};
+
+/*
+ * end of ldrh instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrsh instruction
+ */
+
+op ldrsh_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1111[4]:im0[4]);
+ldrsh_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrsh_imm_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrsh_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( rd, cpu.MemReadS16( addr ) );
+};
+
+op ldrsh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1111[4]:im0[4]);
+ldrsh_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrsh_imm_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+ldrsh_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemReadS16( addr ) );
+};
+
+op ldrsh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4]);
+
+ldrsh_reg_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sh\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+};
+
+ldrsh_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?rmval:-rmval) );
+  cpu.SetGPR( rd, cpu.MemReadS16( addr ) );
+};
+
+op ldrsh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4]);
+
+ldrsh_reg_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sh\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+ldrsh_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ) + (u?rmval:-rmval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemReadS16( addr ) );
+};
+
+/*
+ * end of ldrsh instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrb instruction
+ */
+
+op ldrb_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:offset[12]);
+ldrb_imm_post.var imm : {int32_t} = {u?offset:-offset};
+
+ldrb_imm_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrb_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+};
+
+op ldrb_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:rd[4]:offset[12]);
+ldrb_imm_offset.var imm : {int32_t} = {u?offset:-offset};
+
+ldrb_imm_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+ldrb_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+};
+
+op ldrb_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldrb_reg_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+  buffer << DisasmShImm(shift, imm);
+};
+
+ldrb_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+};
+
+op ldrb_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldrb_reg_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm);
+  buffer << DisasmShImm(shift, imm);
+  buffer << "]" << (x?"!":"");
+};
+
+ldrb_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn ) + (u?isval:-isval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+};
+
+/*
+ * end of ldrb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrsb instruction
+ */
+
+op ldrsb_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1101[4]:im0[4]);
+ldrsb_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrsb_imm_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrsb_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
+};
+
+op ldrsb_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1101[4]:im0[4]);
+ldrsb_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrsb_imm_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sb\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+ldrsb_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
+};
+
+op ldrsb_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4]);
+
+ldrsb_reg_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+};
+
+ldrsb_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?rmval:-rmval) );
+  cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
+};
+
+op ldrsb_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b1[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4]);
+
+ldrsb_reg_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "sb\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+ldrsb_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ) + (u?rmval:-rmval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( rd, cpu.MemReadS8( addr ) );
+};
+
+/*
+ * end of ldrsb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrd instruction
+ */
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op ldrd_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1101[4]:im0[4]);
+ldrd_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrd_imm_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrd_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( (rd + 0) & 0xf, cpu.MemRead32( addr + 0 ) );
+  cpu.SetGPR( (rd + 1) & 0xf, cpu.MemRead32( addr + 4 ) );
+};
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op ldrd_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1101[4]:im0[4]);
+ldrd_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+ldrd_imm_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+ldrd_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( (rd + 0) & 0xf, cpu.MemRead32( addr + 0 ) );
+  cpu.SetGPR( (rd + 1) & 0xf, cpu.MemRead32( addr + 4 ) );
+};
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op ldrd_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4]);
+
+ldrd_reg_post.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+};
+
+ldrd_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?rmval:-rmval) );
+  cpu.SetGPR( (rd + 0) & 0xf, cpu.MemRead32( addr + 0 ) );
+  cpu.SetGPR( (rd + 1) & 0xf, cpu.MemRead32( addr + 4 ) );
+};
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op ldrd_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4]);
+
+ldrd_reg_offset.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+ldrd_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ) + (u?rmval:-rmval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.SetGPR( (rd + 0) & 0xf, cpu.MemRead32( addr + 0 ) );
+  cpu.SetGPR( (rd + 1) & 0xf, cpu.MemRead32( addr + 4 ) );
+};
+
+/*
+ * end of ldrd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * str instruction
+ */
+
+op str_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:offset[12]);
+str_imm_post.var imm : {int32_t} = {u?offset:-offset};
+
+str_imm_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+str_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR( rn );
+  // TODO: Check Alignment Exception
+  cpu.SetGPR( rn, addr + imm );
+  cpu.MemWrite32( addr, cpu.GetGPR( rd ) );
+};
+
+op str_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:offset[12]);
+str_imm_offset.var imm : {int32_t} = {u?offset:-offset};
+
+str_imm_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+str_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  // TODO: Check Alignment Exception
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite32( addr, cpu.GetGPR( rd ) );
+};
+
+op str_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+str_reg_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], "
+         << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
+};
+
+str_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.MemWrite32( addr, cpu.GetGPR( rd ) );
+};
+
+op str_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+str_reg_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm);
+  buffer << DisasmShImm(shift, imm);
+  buffer << "]" << (x?"!":"");
+};
+
+str_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn ) + (u?isval:-isval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite32( addr, cpu.GetGPR( rd ) );
+};
+
+/*
+ * end of str instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strh instruction
+ */
+
+op strh_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1011[4]:im0[4]);
+strh_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+strh_imm_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+strh_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR( rn );
+  // TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
+  cpu.SetGPR( rn, addr + imm );
+  cpu.MemWrite16( addr, cpu.GetGPR( rd ) );
+};
+
+op strh_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1011[4]:im0[4]);
+strh_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+strh_imm_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+strh_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  // TODO: Check Alignment Exception (address & ~(uint32_t)(0x02))
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite16( addr, cpu.GetGPR( rd ) );
+};
+
+op strh_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4]);
+
+strh_reg_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+};
+
+strh_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?rmval:-rmval) );
+  cpu.MemWrite16( addr, cpu.GetGPR( rd ) );
+};
+
+op strh_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1011[4]:rm[4]);
+
+strh_reg_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "h\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+strh_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ) + (u?rmval:-rmval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite16( addr, cpu.GetGPR( rd ) );
+};
+
+/*
+ * end of strh instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strb instruction
+ */
+
+op strb_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:offset[12]);
+strb_imm_post.var imm : {int32_t} = {u?offset:-offset};
+
+strb_imm_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << "b, [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+strb_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.MemWrite8( addr, cpu.GetGPR( rd ) );
+};
+
+op strb_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:offset[12] );
+strb_imm_offset.var imm : {int32_t} = {u?offset:-offset};
+
+strb_imm_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << "b, [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+strb_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ) + imm;
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite8( addr, cpu.GetGPR( rd ) );
+};
+
+op strb_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+strb_reg_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+  buffer << DisasmShImm(shift, imm);
+};
+
+strb_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.MemWrite8( addr, cpu.GetGPR( rd ) );
+};
+
+op strb_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+strb_reg_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", "
+         << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+strb_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn ) + (u?isval:-isval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite8( addr, cpu.GetGPR( rd ) );
+};
+
+/*
+ * end of strb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strd instruction
+ */
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op strd_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1111[4]:im0[4]);
+strd_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+strd_imm_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+strd_imm_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.MemWrite32( addr + 0, cpu.GetGPR( (rd + 0) & 0xf ) );
+  cpu.MemWrite32( addr + 4, cpu.GetGPR( (rd + 1) & 0xf ) );
+};
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op strd_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1111[4]:im0[4]);
+strd_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
+
+strd_imm_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "d " << DisasmRegister(rd) << ", ";
+  buffer << "str" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
+};
+
+strd_imm_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn + imm );
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite32( addr + 0, cpu.GetGPR( (rd + 0) & 0xf ) );
+  cpu.MemWrite32( addr + 4, cpu.GetGPR( (rd + 1) & 0xf ) );
+};
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op strd_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4]);
+
+strd_reg_post.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
+};
+
+strd_reg_post.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?rmval:-rmval) );
+  cpu.MemWrite32( addr + 0, cpu.GetGPR( (rd + 0) & 0xf ) );
+  cpu.MemWrite32( addr + 4, cpu.GetGPR( (rd + 1) & 0xf ) );
+};
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op strd_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4]);
+
+strd_reg_offset.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << "]" << (x?"!":"");
+};
+
+strd_reg_offset.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t rmval = cpu.GetGPR( rm ), addr = cpu.GetGPR( rn ) + (u?rmval:-rmval);
+  if (x) cpu.SetGPR( rn, addr );
+  cpu.MemWrite32( addr + 0, cpu.GetGPR( (rd + 0) & 0xf ) );
+  cpu.MemWrite32( addr + 4, cpu.GetGPR( (rd + 1) & 0xf ) );
+};
+
+/*
+ * end of strd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * pld instruction
+ */
+
+op pld_ri(0xf5[8]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:0xf[4]:offset[12]);
+pld_ri.var imm : {int32_t} = {u?offset:-offset};
+
+pld_ri.disasm = { buffer << "pld\t[" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":""); };
+
+pld_ri.execute = {
+  /* XXX: should do a real prefetch, or else will have a memory leak on pending MemoryOp */
+  /* cpu.MemRead32( cpu.GetGPR( rn ) + imm ); */
+};
+
+/*
+ * end of pld instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrb_rd15 instruction this is the specialization of the instruction
+ * ldrb when rd = 15 for most of the arm architectures this is an
+ * undefined behavior instruction (thus, we currently do not implement
+ * execute method).  However for the armv5e architectures some of the
+ * combinations correspond to a pld instruction if it is a imm_offset
+ * or reg_offset type and cond == 0b1111. The pld instruction defines
+ * this specialization.
+ */
+
+op ldrb_rd15_imm_post(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b1111[4]:offset[12]);
+ldrb_rd15_imm_post.var imm : {int32_t} = {u?offset:-offset};
+
+ldrb_rd15_imm_post.disasm = { buffer << "unpredictable instruction (ldrb)"; };
+
+op ldrb_rd15_imm_offset(cond[4]:0b010[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:0b1111[4]:offset[12]);
+ldrb_rd15_imm_offset.var imm : {int32_t} = {u?offset:-offset};
+
+ldrb_rd15_imm_offset.disasm = { buffer << "pld" << DisasmCondition(cond) << "\t[" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":""); };
+
+op ldrb_rd15_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:0b1111[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldrb_rd15_reg_post.disasm = { buffer << "unpredictable instruction (ldrb)"; };
+
+op ldrb_rd15_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:0b1111[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldrb_rd15_reg_offset.disasm = {
+  buffer << "pld" << DisasmCondition(cond) << "\t[" << DisasmRegister(rn) << ", " << ((u?"":"-")) << DisasmRegister(rm);
+  buffer << DisasmShImm(shift, imm);
+  buffer << "]" << (x?"!":"");
+};
+
+/*
+ * end of ldrb instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrt instruction
+ * TODO: check running mode
+ */
+
+op ldrt_imm(cond[4]:0b0100[4]:u[1]:0b011[3]:rn[4]:rd[4]:offset[12] );
+ldrt_imm.var imm : {int32_t} = {u?offset:-offset};
+
+ldrt_imm.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "t\t" << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrt_imm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR(rn);
+  cpu.SetGPR( rn, addr + imm );
+  cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+}
+
+// ldrt_imm.execute = {
+//   typedef Operation<STATE> inherited;
+
+//   uint32_t address;
+//   uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
+
+//   cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
+
+//   if (not CheckCondition(cpu, cond)) return;
+
+//   address = rn_value;
+//   cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
+//   cpu.Read32toGPR(address, rd);
+// };
+
+op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldrt_reg.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "t\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
+};
+
+ldrt_reg.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  cpu.SetGPR( rd, cpu.MemRead32( cpu.GetGPR(rn) ) );
+};
+
+/*
+ * end of ldrt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ldrbt instruction
+ * TODO: check running mode
+ */
+
+op ldrbt_imm( cond[4]:0b0100[4]:u[1]:0b111[3]:rn[4]:rd[4]:offset[12] );
+ldrbt_imm.var imm : {int32_t} = {u?offset:-offset};
+
+ldrbt_imm.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "bt " << DisasmRegister(rd)
+         << ", [" << DisasmRegister(rn) << "], #" << imm;
+};
+
+ldrbt_imm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR(rn);
+  cpu.SetGPR(rn, addr + imm);
+  cpu.SetGPR(rd, cpu.MemRead8( addr ));
+};
+
+op ldrbt_reg(cond[4]:0b0110[4]:u[1]:0b111[3]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+ldrbt_reg.disasm = {
+  buffer << "ldr" << DisasmCondition(cond) << "bt\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], "
+         << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
+};
+
+ldrbt_reg.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.SetGPR( rd, cpu.MemRead8( addr ) );
+};
+
+/*
+ * end of ldrbt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strt instruction
+ * TODO: check running mode
+ */
+
+op strt_imm(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset[12]);
+strt_imm.var imm : {int32_t} = {u?offset:-offset};
+
+strt_imm.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "t " << DisasmRegister(rd) << ", ";
+  buffer << "[" << DisasmRegister(rn) << "], #" << imm;
+};
+
+strt_imm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t addr = cpu.GetGPR( rn );
+  // TODO: Check Alignment Exception
+  cpu.SetGPR( rn, addr + imm );
+  cpu.MemWrite32( addr, cpu.GetGPR( rd ) );
+};
+
+op strt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+strt_reg.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "t\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], "
+         << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
+};
+
+strt_reg.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  // TODO: Check Alignment Exception
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.MemWrite32( addr, cpu.GetGPR( rd ) );
+};
+
+/*
+ * end of strt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * strbt instruction
+ * TODO: check running mode
+ */
+
+op strbt_imm(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset[12] );
+strbt_imm.var imm : {int32_t} = {u?offset:-offset};
+
+strbt_imm.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "bt " << DisasmRegister(rd) << ", ";
+  buffer << "[" << DisasmRegister(rn) << "], #" << imm;
+};
+
+strbt_imm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + imm );
+  cpu.MemWrite8( addr, cpu.GetGPR( rd ) );
+};
+
+op strbt_reg(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+
+strbt_reg.disasm = {
+  buffer << "str" << DisasmCondition(cond) << "bt\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], "
+         << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
+};
+
+strbt_reg.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+
+  uint32_t isval = ComputeImmShift( cpu, cpu.GetGPR( rm ), shift, imm ),
+           addr = cpu.GetGPR( rn );
+  cpu.SetGPR( rn, addr + (u?isval:-isval) );
+  cpu.MemWrite8( addr, cpu.GetGPR( rd ) );
+};
+
+/*
+ * end of strbt instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * pld instruction
+ *
+ * this instruction conflicts with a case of ldrb (with rd = 15) which is an invalid
+ *   instruciton.
+ * you will find the implementation of pld in load_store.isa under the implementation of ldrb_rd15
+ */
+
+/*
+ * end of pld instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * LDM instruction
+ */
+
+op ldm(cond[4]:0b100[3]:mod[2]:0b0[1]:w[1]:0b1[1]:rn[4]:reglist[16]);
+
+ldm.disasm = {
+  buffer << "ldm" << DisasmCondition(cond) << DisasmLSMMode(mod) << "\t" << DisasmRegister(rn) << (w==1?"!":"")
+         << ", {" << DisasmRegList(reglist) << "}";
+};
+
+ldm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
+  switch (mod) {
+  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
+  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
+  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
+  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
+  }
+  
+  for (uint32_t idx = 0; idx < 16; ++idx) {
+    uint32_t rd = idx ^ mask;
+    if (((reglist >> rd) & 1) == 0) continue;
+    addr += incb;
+    cpu.SetGPR( rd, cpu.MemRead32( addr ) );
+    addr += inca;
+  }
+  
+  bool overwritten = (reglist >> rn) & 1;
+  if (w and not overwritten) cpu.SetGPR( rn, addr );
+};
+
+/*
+ * end of LDM instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * STM instruction
+ */
+
+op stm(cond[4]:0b100[3]:mod[2]:0b0[1]:w[1]:0b0[1]:rn[4]:reglist[16]);
+
+stm.disasm = {
+  buffer << "stm" << DisasmCondition(cond) << DisasmLSMMode(mod) << "\t" << DisasmRegister(rn) << (w==1?"!":"")
+         << ", {" << DisasmRegList(reglist) << "}";
+};
+
+stm.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
+  switch (mod) {
+  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
+  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
+  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
+  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
+  }
+  
+  for (uint32_t idx = 0; idx < 16; ++idx) {
+    uint32_t rs = idx ^ mask;
+    if (((reglist >> rs) & 1) == 0) continue;
+    addr += incb;
+    cpu.MemWrite32( addr, cpu.GetGPR( rs ) );
+    addr += inca;
+  }
+  
+  if (w) cpu.SetGPR( rn, addr );
+};
+
+/*
+ * end of STM instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * LDM^ instruction (load multiple user registers with and without pc)
+ */
+
+op ldm_npcusr(cond[4]:0b100[3]:mod[2]:0b1[1]:0[1]:0b1[1]:rn[4]:0[1]:reglist[15]);
+ldm_npcusr.var w : {uint32_t} = {0};
+op ldm_pcusr(cond[4]:0b100[3]:mod[2]:0b1[1]:w[1]:0b1[1]:rn[4]:0b1[1]:regnpclist[15]);
+ldm_pcusr.var reglist : {uint32_t} = {0x8000|regnpclist};
+
+group ldm_usr( ldm_npcusr, ldm_pcusr );
+
+ldm_usr.disasm = {
+  buffer << "ldm" << DisasmCondition(cond) << DisasmLSMMode(mod) << "\t" << DisasmRegister(rn) << (w==1?"!":"")
+         << ", {" << DisasmRegList(reglist) << "}^";
+};
+
+ldm_usr.execute = {
+  assert( not "privileged" );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
+  switch (mod) {
+  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
+  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
+  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
+  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
+  }
+  
+  for (uint32_t idx = 0; idx < 16; ++idx) {
+    uint32_t rd = idx ^ mask;
+    if (((reglist >> rd) & 1) == 0) continue;
+    addr += incb;
+    cpu.SetGPR_usr( rd, cpu.MemRead32( addr ) );
+    addr += inca;
+  }
+  
+  // TODO: if (reglist & 0x8000) cpu.MoveSPSRtoCPSR();
+  
+  bool overwritten = (reglist >> rn) & 1;
+  if (w and not overwritten) cpu.SetGPR_usr( rn, addr );
+};
+
+/*
+ * end of LDM^ instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * STM^ instruction (store multiple user registers)
+ */
+
+op stm_usr(cond[4]:0b100[3]:mod[2]:0b1[1]:w[1]:0b0[1]:rn[4]:reglist[16]);
+
+stm_usr.disasm = {
+  buffer << "stm" << DisasmCondition(cond) << DisasmLSMMode(mod) << "\t" << DisasmRegister(rn) << (w==1?"!":"")
+         << ", {" << DisasmRegList(reglist) << "}^";
+};
+
+stm_usr.execute = {
+  assert( not "privileged" );
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
+  switch (mod) {
+  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
+  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
+  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
+  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
+  }
+  
+  for (uint32_t idx = 0; idx < 16; ++idx) {
+    uint32_t rs = idx ^ mask;
+    if (((reglist >> rs) & 1) == 0) continue;
+    addr += incb;
+    cpu.MemWrite32( addr, cpu.GetGPR_usr( rs ) );
+    addr += inca;
+  }
+  
+  if (w) cpu.SetGPR_usr( rn, addr );
+};
+
+/*
+ * end of STM^ instruction
+ *******************************************************************/
 
 include "load_store_base.isa"
 include "load_store_v4.isa"

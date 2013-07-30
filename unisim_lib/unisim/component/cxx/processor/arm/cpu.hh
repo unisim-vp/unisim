@@ -297,7 +297,7 @@ public:
 	 * @param id the register index
 	 * @return the value contained by the register
 	 */
-	uint32_t GetGPR_usr(uint32_t id, uint32_t mode) const;
+	uint32_t GetGPR_usr(uint32_t id) const;
 	/** Set the value contained by a user GPR.
 	 * Sets the value contained by a user GPR. It is the same than SetGPR byt
 	 *   restricting the index from 0 to 15 (only the first 16 registers).
@@ -305,7 +305,7 @@ public:
 	 * @param id the register index
 	 * @param val the value to set
 	 */
-	void SetGPR_usr(uint32_t id, uint32_t val, uint32_t mode);
+	void SetGPR_usr(uint32_t id, uint32_t val);
 		
 	/* CPSR access functions */
 	/** Get the value of the CPSR register.
@@ -456,7 +456,7 @@ public:
 	 *
 	 * @return the mode value of the CPSR register
 	 */
-	uint32_t GetCPSR_Mode();
+	uint32_t GetCPSR_Mode() const;
 		
 	/* SPSR access functions */
 	/** Get the value of the CPSR register.

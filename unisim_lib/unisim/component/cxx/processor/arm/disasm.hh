@@ -50,7 +50,7 @@ namespace arm {
 
   struct DisasmObject
   {
-    virtual void operator() ( std::ostream& _sink ) const = 0;
+    virtual void operator() ( std::ostream& sink ) const = 0;
     virtual ~DisasmObject() {};
   };
   std::ostream& operator << ( std::ostream& sink, DisasmObject const& dobj );
@@ -59,7 +59,7 @@ namespace arm {
   struct DisasmCondition : public DisasmObject
   {
     DisasmCondition( uint32_t cond ) : m_cond( cond ) {}
-    void operator() ( std::ostream& _sink ) const;
+    void operator() ( std::ostream& sink ) const;
     uint32_t m_cond;
   };
   
@@ -67,7 +67,7 @@ namespace arm {
   struct DisasmShImm : public DisasmObject
   {
     DisasmShImm( uint32_t shift, uint32_t offset ) : m_shift( shift ), m_offset( offset ) {}
-    void operator() ( std::ostream& _sink ) const;
+    void operator() ( std::ostream& sink ) const;
     uint32_t m_shift, m_offset;
   };
 
@@ -75,7 +75,7 @@ namespace arm {
   struct DisasmShReg : public DisasmObject
   {
     DisasmShReg( uint32_t shift, uint32_t reg ) : m_shift( shift ), m_reg( reg ) {}
-    void operator() ( std::ostream& _sink ) const;
+    void operator() ( std::ostream& sink ) const;
     uint32_t m_shift, m_reg;
   };
   
@@ -83,7 +83,7 @@ namespace arm {
   struct DisasmPSRMask : public DisasmObject
   {
     DisasmPSRMask( uint32_t mask ) : m_mask( mask ) {}
-    void operator() ( std::ostream& _sink ) const;
+    void operator() ( std::ostream& sink ) const;
     uint32_t m_mask;
   };
 
@@ -91,103 +91,25 @@ namespace arm {
   struct DisasmRegister : public DisasmObject
   {
     DisasmRegister( uint32_t reg ) : m_reg( reg ) {}
-    void operator() ( std::ostream& _sink ) const;
+    void operator() ( std::ostream& sink ) const;
     uint32_t m_reg;
   };
+  
+  /* Register list disassembling method */
+  struct DisasmRegList : public DisasmObject
+  {
+    DisasmRegList( uint32_t reglist ) : m_reglist( reglist ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_reglist;
+  };
 
-/* Load/store operand disassembling methods */
-void
-DisasmLSWUBImmOffset_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		std::stringstream &buffer);
-void
-DisasmLSWUBImmOffset_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		std::stringstream &buffer);
-void
-DisasmLSWUBImmOffset_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		std::stringstream &buffer);
-void
-DisasmLSWUBReg_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		std::stringstream &buffer);
-void
-DisasmLSWUBReg_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		std::stringstream &buffer);
-void
-DisasmLSWUBReg_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t shift_imm,
-		const uint32_t shift,
-		const uint32_t rm,
-		std::stringstream &buffer);
-
-/* Miscellaneous load/store operand disassembling methods */
-void
-DisasmMLSImmOffset_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		std::stringstream &buffer);
-void
-DisasmMLSImmOffset_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		std::stringstream &buffer);
-void
-DisasmMLSImmOffset_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t immedH,
-		const uint32_t immedL,
-		std::stringstream &buffer);
-void
-DisasmMLSReg_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		std::stringstream &buffer);
-void
-DisasmMLSReg_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		std::stringstream &buffer);
-void
-DisasmMLSReg_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t rm,
-		std::stringstream &buffer);
-
-/* Coprocessor load/store operand disassembling methods */
-void
-DisasmCLSImm_post(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		std::stringstream &buffer);
-void
-DisasmCLSImm_offset(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		std::stringstream &buffer);
-void
-DisasmCLSImm_pre(const uint32_t u,
-		const uint32_t rn,
-		const uint32_t offset,
-		std::stringstream &buffer);
-void
-DisasmCLSUnindexed(const uint32_t rn,
-		const uint32_t option,
-		std::stringstream &buffer);
+  /* Multiple Load Store Mode disassembling method */
+  struct DisasmLSMMode : public DisasmObject
+  {
+    DisasmLSMMode( uint32_t mode ) : m_mode( mode ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_mode;
+  };
 
 } // end of namespace arm
 } // end of namespace processor

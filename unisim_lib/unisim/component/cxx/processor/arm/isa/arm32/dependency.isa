@@ -122,20 +122,20 @@ group group_read_rm(bx, \
 		mov_imm_shift, mov_reg_shift, \
 		bic_imm_shift, bic_reg_shift, \
 		mvn_imm_shift, mvn_reg_shift, \
-		ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-		ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+		ldr_reg_post, ldr_reg_offset, \
+		ldrb_reg_post, ldrb_reg_offset, \
 		ldrt_reg, \
 		ldrbt_reg, \
-		str_reg_post, str_reg_offset, str_reg_pre, \
-		strb_reg_post, strb_reg_offset, strb_reg_pre, \
+		str_reg_post, str_reg_offset, \
+		strb_reg_post, strb_reg_offset, \
 		strt_reg, \
 		strbt_reg, \
-		ldrh_reg_post, ldrh_reg_offset, ldrh_reg_pre, \
-		ldrsh_reg_post, ldrsh_reg_offset, ldrsh_reg_pre, \
-		ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre, \
-		strh_reg_post, strh_reg_offset, strh_reg_pre, \
-		ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
-		strd_reg_post, strd_reg_offset, strd_reg_pre, \
+		ldrh_reg_post, ldrh_reg_offset, \
+		ldrsh_reg_post, ldrsh_reg_offset, \
+		ldrsb_reg_post, ldrsb_reg_offset, \
+		strh_reg_post, strh_reg_offset, \
+		ldrd_reg_post, ldrd_reg_offset, \
+		strd_reg_post, strd_reg_offset, \
 		clz, \
 		mla, \
 		mul, \
@@ -173,25 +173,25 @@ group group_read_rn( \
 		orr_32imm, orr_imm_shift, orr_reg_shift, \
 		bic_32imm, bic_imm_shift, bic_reg_shift, \
 		mvn_32imm, mvn_imm_shift, mvn_reg_shift, \
-		ldr_imm_post, ldr_imm_offset, ldr_imm_pre, ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-		ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+		ldr_imm_post, ldr_imm_offset, ldr_reg_post, ldr_reg_offset, \
+		ldrb_imm_post, ldrb_imm_offset, ldrb_reg_post, ldrb_reg_offset, \
 		ldrt_imm, ldrt_reg, \
 		ldrbt_imm, ldrbt_reg, \
-		str_imm_post, str_imm_offset, str_imm_pre, str_reg_post, str_reg_offset, str_reg_pre, \
-		strb_imm_post, strb_imm_offset, strb_imm_pre, strb_reg_post, strb_reg_offset, strb_reg_pre, \
+		str_imm_post, str_imm_offset, str_reg_post, str_reg_offset, \
+		strb_imm_post, strb_imm_offset, strb_reg_post, strb_reg_offset, \
 		strt_imm, strt_reg, \
 		strbt_imm, strbt_reg, \
-		ldm_1_ia, ldm_1_ib, ldm_1_da, ldm_1_db, \
-		ldm_2_ia, ldm_2_ib, ldm_2_da, ldm_2_db, \
-		ldm_3_ia, ldm_3_ib, ldm_3_da, ldm_3_db, \
-		stm_1_ia, stm_1_ib, stm_1_da, stm_1_db, \
-		stm_2_ia, stm_2_ib, stm_2_da, stm_2_db, \
-		ldrh_imm_post, ldrh_imm_offset, ldrh_imm_pre, ldrh_reg_post, ldrh_reg_offset, ldrh_reg_pre, \
-		ldrsh_imm_post, ldrsh_imm_offset, ldrsh_imm_pre, ldrsh_reg_post, ldrsh_reg_offset, ldrsh_reg_pre, \
-		ldrsb_imm_post, ldrsb_imm_offset, ldrsb_imm_pre, ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre, \
-		strh_imm_post, strh_imm_offset, strh_imm_pre, strh_reg_post, strh_reg_offset, strh_reg_pre, \
-		ldrd_imm_post, ldrd_imm_offset, ldrd_imm_pre, ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
-		strd_imm_post, strd_imm_offset, strd_imm_pre, strd_reg_post, strd_reg_offset, strd_reg_pre, \
+		ldm, \
+		ldm_pcusr, \
+		ldm_npcusr, \
+		stm, \
+		stm_usr, \
+		ldrh_imm_post, ldrh_imm_offset, ldrh_reg_post, ldrh_reg_offset, \
+		ldrsh_imm_post, ldrsh_imm_offset, ldrsh_reg_post, ldrsh_reg_offset, \
+		ldrsb_imm_post, ldrsb_imm_offset, ldrsb_reg_post, ldrsb_reg_offset, \
+		strh_imm_post, strh_imm_offset, strh_reg_post, strh_reg_offset, \
+		ldrd_imm_post, ldrd_imm_offset, ldrd_reg_post, ldrd_reg_offset, \
+		strd_imm_post, strd_imm_offset, strd_reg_post, strd_reg_offset, \
 		mla, \
 		swp, \
 		swpb)
@@ -221,26 +221,26 @@ group group_read_rs( \
 		umull)
 
 group group_read_rd( \
-		ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-		ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+		ldr_reg_post, ldr_reg_offset, \
+		ldrb_reg_post, ldrb_reg_offset, \
 		ldrt_reg, \
-		str_imm_post, str_imm_offset, str_imm_pre, str_reg_post, str_reg_offset, str_reg_pre, \
-		strb_imm_post, strb_imm_offset, strb_imm_pre, strb_reg_post, strb_reg_offset, strb_reg_pre, \
+		str_imm_post, str_imm_offset, str_reg_post, str_reg_offset, \
+		strb_imm_post, strb_imm_offset, strb_reg_post, strb_reg_offset, \
 		strt_imm, strt_reg, \
 		strbt_imm, strbt_reg, \
-		ldrh_reg_post, ldrh_reg_offset, ldrh_reg_pre, \
-		ldrsh_reg_post, ldrsh_reg_offset, ldrsh_reg_pre, \
-		ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre, \
-		strh_imm_post, strh_imm_offset, strh_imm_pre, strh_reg_post, strh_reg_offset, strh_reg_pre, \
-		ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
-		strd_imm_post, strd_imm_offset, strd_imm_pre, strd_reg_post, strd_reg_offset, strd_reg_pre)
+		ldrh_reg_post, ldrh_reg_offset, \
+		ldrsh_reg_post, ldrsh_reg_offset, \
+		ldrsb_reg_post, ldrsb_reg_offset, \
+		strh_imm_post, strh_imm_offset, strh_reg_post, strh_reg_offset, \
+		ldrd_reg_post, ldrd_reg_offset, \
+		strd_imm_post, strd_imm_offset, strd_reg_post, strd_reg_offset)
 
 group group_read_rd_plus_one( \
-		strd_imm_post, strd_imm_offset, strd_imm_pre, strd_reg_post, strd_reg_offset, strd_reg_pre)
+		strd_imm_post, strd_imm_offset, strd_reg_post, strd_reg_offset)
 
 group group_read_reglist( \
-		stm_1_ia, stm_1_ib, stm_1_da, stm_1_db, \
-		stm_2_ia, stm_2_ib, stm_2_da, stm_2_db)
+		stm, \
+		stm_usr)
 
 group group_read_crn( \
 		cdp, \
@@ -261,35 +261,35 @@ group group_write_rn( \
 		stc_post, \
 		ldc2_pre, ldc2_post, \
 		stc2_pre, stc2_post, \
-		ldr_imm_post, ldr_imm_pre, \
-		ldr_reg_post, ldr_reg_pre, \
-		ldrb_imm_post, ldrb_imm_pre, \
-		ldrb_reg_post, ldrb_reg_pre, \
+		ldr_imm_post, \
+		ldr_reg_post, \
+		ldrb_imm_post, \
+		ldrb_reg_post, \
 		ldrt_imm, ldrt_reg, \
 		ldrbt_imm, ldrbt_reg, \
-		str_imm_post, str_imm_pre, \
-		str_reg_post, str_reg_pre, \
-		strb_imm_post, strb_imm_pre, \
-		strb_reg_post, strb_reg_pre, \
+		str_imm_post, \
+		str_reg_post, \
+		strb_imm_post, \
+		strb_reg_post, \
 		strt_imm, strt_reg, \
 		strbt_imm, strbt_reg, \
-		ldrh_imm_post, ldrh_imm_pre, \
-		ldrh_reg_post, ldrh_reg_pre, \
-		ldrsh_imm_post, ldrsh_imm_pre, \
-		ldrsh_reg_post, ldrsh_reg_pre, \
-		ldrsb_imm_post, ldrsb_imm_pre, \
-		ldrsb_reg_post, ldrsb_reg_pre, \
-		strh_imm_post, strh_imm_pre, \
-		strh_reg_post, strh_reg_pre, \
-		ldrd_imm_post, ldrd_imm_pre, \
-		ldrd_reg_post, ldrd_reg_pre, \
-		strd_imm_post, strd_imm_pre, \
-		strd_reg_post, strd_reg_pre)
+		ldrh_imm_post, \
+		ldrh_reg_post, \
+		ldrsh_imm_post, \
+		ldrsh_reg_post, \
+		ldrsb_imm_post, \
+		ldrsb_reg_post, \
+		strh_imm_post, \
+		strh_reg_post, \
+		ldrd_imm_post, \
+		ldrd_reg_post, \
+		strd_imm_post, \
+		strd_reg_post)
 
 group group_write_rn_cond_w( \
-		ldm_1_ia, ldm_1_ib, ldm_1_da, ldm_1_db, \
-		stm_1_ia, stm_1_ib, stm_1_da, stm_1_db, \
-		ldm_3_ia, ldm_3_ib, ldm_3_da, ldm_3_db)
+		ldm, \
+		stm, \
+		ldm_npcusr)
 
 group group_write_rd( \
 		and_32imm, and_imm_shift, and_reg_shift, \
@@ -303,21 +303,21 @@ group group_write_rd( \
 		orr_32imm, orr_imm_shift, orr_reg_shift, \
 		bic_32imm, bic_imm_shift, bic_reg_shift, \
 		mvn_32imm, mvn_imm_shift, mvn_reg_shift, \
-		ldr_imm_post, ldr_imm_offset, ldr_imm_pre, ldr_reg_post, ldr_reg_offset, ldr_reg_pre, \
-		ldrb_imm_post, ldrb_imm_offset, ldrb_imm_pre, ldrb_reg_post, ldrb_reg_offset, ldrb_reg_pre, \
+		ldr_imm_post, ldr_imm_offset, ldr_reg_post, ldr_reg_offset, \
+		ldrb_imm_post, ldrb_imm_offset, ldrb_reg_post, ldrb_reg_offset, \
 		ldrt_imm, ldrt_reg, \
 		ldrbt_imm, ldrbt_reg, \
-		ldrh_imm_post, ldrh_imm_offset, ldrh_imm_pre, ldrh_reg_post, ldrh_reg_offset, ldrh_reg_pre, \
-		ldrsh_imm_post, ldrsh_imm_offset, ldrsh_imm_pre, ldrsh_reg_post, ldrsh_reg_offset, ldrsh_reg_pre, \
-		ldrsb_imm_post, ldrsb_imm_offset, ldrsb_imm_pre, ldrsb_reg_post, ldrsb_reg_offset, ldrsb_reg_pre, \
-		ldrd_imm_post, ldrd_imm_offset, ldrd_imm_pre, ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre, \
+		ldrh_imm_post, ldrh_imm_offset, ldrh_reg_post, ldrh_reg_offset, \
+		ldrsh_imm_post, ldrsh_imm_offset, ldrsh_reg_post, ldrsh_reg_offset, \
+		ldrsb_imm_post, ldrsb_imm_offset, ldrsb_reg_post, ldrsb_reg_offset, \
+		ldrd_imm_post, ldrd_imm_offset, ldrd_reg_post, ldrd_reg_offset, \
 		clz, \
 		mla, \
 		mul, \
 		mrs)
 
 group group_write_rd_plus_one( \
-		ldrd_imm_post, ldrd_imm_offset, ldrd_imm_pre, ldrd_reg_post, ldrd_reg_offset, ldrd_reg_pre)
+		ldrd_imm_post, ldrd_imm_offset, ldrd_reg_post, ldrd_reg_offset)
 
 group group_write_rdhi( \
 		smlal, \
@@ -331,9 +331,9 @@ group group_write_rdlo( \
 		umull)
 
 group group_write_reglist( \
-		ldm_1_ia, ldm_1_ib, ldm_1_da, ldm_1_db, \
-		ldm_2_ia, ldm_2_ib, ldm_2_da, ldm_2_db, \
-		ldm_3_ia, ldm_3_ib, ldm_3_da, ldm_3_db)
+		ldm, \
+		ldm_pcusr, \
+		ldm_npcusr)
 
 group group_write_crd( \
 		cdp, \

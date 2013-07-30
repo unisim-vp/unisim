@@ -547,10 +547,9 @@ lsl_1.disasm = {
 }
 
 lsl_1.execute = {
-	uint32_t res, s1, s2;
+	uint32_t res, s1;
 	
 	s1 = cpu.GetGPR(rm);
-	s2 = imm;
 	
 	if(imm == 0) {
 		res = s1;
