@@ -841,21 +841,6 @@ ldrt_imm.execute = {
   cpu.SetGPR( rd, cpu.MemRead32( addr ) );
 }
 
-// ldrt_imm.execute = {
-//   typedef Operation<STATE> inherited;
-
-//   uint32_t address;
-//   uint32_t rn_value = inherited::rn_init + cpu.GetGPR(rn);
-
-//   cpu.SetGPR(cpu.PC_reg, cpu.GetGPR(cpu.PC_reg) + 4);
-
-//   if (not CheckCondition(cpu, cond)) return;
-
-//   address = rn_value;
-//   cpu.SetGPR(rn, LSWUBImmOffset(u, rn_value, offset));
-//   cpu.Read32toGPR(address, rd);
-// };
-
 op ldrt_reg(cond[4]:0b0110[4]:u[1]:0b011[3]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 ldrt_reg.disasm = {
