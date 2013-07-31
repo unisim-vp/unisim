@@ -55,11 +55,7 @@ smlaxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rs;
-	buffer << ", r" << (unsigned int) rn;
+	buffer << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
 }
 
 smlaxy.execute = {
@@ -134,11 +130,7 @@ smlalxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rdlo;
-	buffer << ", r" << (unsigned int) rdhi;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rs;
+	buffer << DisasmCondition(cond) << " " << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
 }
 
 smlalxy.execute = {
@@ -206,11 +198,7 @@ smlawy.disasm = {
 	buffer << "smlaw";
 	if(y) buffer << "t";
 	else buffer << "b";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rs;
-	buffer << ", r" << (unsigned int) rn;
+	buffer << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs) << ", " << DisasmRegister(rn);
 }
 
 smlawy.execute = {
@@ -294,10 +282,7 @@ smulxy.disasm = {
 	else buffer << "b";
 	if(y) buffer << "t";
 	else buffer << "b";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rs;
+	buffer << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
 }
 
 smulxy.execute = {
@@ -362,10 +347,7 @@ smulwy.disasm = {
 	buffer << "smulw";
 	if(y) buffer << "t";
 	else buffer << "b";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rs;
+	buffer << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
 }
 
 smulwy.execute = {

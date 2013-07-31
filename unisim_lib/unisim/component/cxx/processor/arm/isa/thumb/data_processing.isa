@@ -336,7 +336,7 @@ asr_1.execute = {
 op asr_2(0b010000[6]:0b0100[4]:rs[3]:rd[3]);
 
 asr_2.disasm = {
-  buffer << "asr " << DisasmRegister(rd) << ", r" << rs;
+  buffer << "asr " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
 };
 
 asr_2.execute = {
@@ -528,7 +528,7 @@ lsl_1.execute = {
 op lsl_2(0b010000[6]:0b0010[4]:rs[3]:rd[3]);
 
 lsl_2.disasm = {
-  buffer << "lsl " << DisasmRegister(rd) << ", r" << rs;
+  buffer << "lsl " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
 };
 
 lsl_2.execute = {
@@ -595,7 +595,7 @@ lsr_1.execute = {
 op lsr_2(0b010000[6]:0b0011[4]:rs[3]:rd[3]);
 
 lsr_2.disasm = {
-  buffer << "lsr " << DisasmRegister(rd) << ", r" << rs;
+  buffer << "lsr " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
 };
 
 lsr_2.execute = {
@@ -783,7 +783,7 @@ orr.execute = {
 op ror(0b010000[6]:0b0111[4]:rs[3]:rd[3]);
 
 ror.disasm = {
-  buffer << "ror " << DisasmRegister(rd) << ", r" << rs;
+  buffer << "ror " << DisasmRegister(rd) << ", " << DisasmRegister(rs);
 };
 
 ror.execute = {

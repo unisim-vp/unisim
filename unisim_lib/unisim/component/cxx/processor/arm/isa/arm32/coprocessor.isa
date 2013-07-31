@@ -45,14 +45,7 @@
 op cdp(cond[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp.disasm = {
-	buffer << "cdp";
-	buffer << DisasmCondition(cond);
-	buffer << " " << dec << (unsigned int) cp_num;
-	buffer << ", " << dec << (unsigned int) op1;
-	buffer << ", cr" << dec << (unsigned int) crd;
-	buffer << ", cr" << dec << (unsigned int) crn;
-	buffer << ", cr" << dec << (unsigned int) crm;
-	buffer << ", " << dec << (unsigned int) op2;
+	buffer << "cdp" << DisasmCondition(cond) << " " << dec << (unsigned int) cp_num << ", " << dec << (unsigned int) op1 << ", cr" << dec << (unsigned int) crd << ", cr" << dec << (unsigned int) crn << ", cr" << dec << (unsigned int) crm << ", " << dec << (unsigned int) op2;
 };
 
 cdp.execute = {
@@ -81,43 +74,27 @@ ldc_post.var imm : {int32_t} = {u?offset:-offset};
 op ldc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 ldc_offset.disasm = {
-	buffer << "ldc";
-	buffer << DisasmCondition(cond);
+	buffer << "ldc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
 };
 
 ldc_pre.disasm = {
-	buffer << "ldc";
-	buffer << DisasmCondition(cond);
+	buffer << "ldc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
 };
 
 ldc_post.disasm = {
-	buffer << "ldc";
-	buffer << DisasmCondition(cond);
+	buffer << "ldc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
 };
 
 ldc_unindexed.disasm = {
-	buffer << "ldc";
-	buffer << DisasmCondition(cond);
+	buffer << "ldc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 ldc_offset.execute = {
@@ -169,13 +146,7 @@ ldc_unindexed.execute = {
 op mcr(cond[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mcr.disasm = {
-	buffer << "mcr";
-	buffer << DisasmCondition(cond);
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", " << (unsigned int) op1;
-	buffer << ", r" << (unsigned int) rd;
-	buffer << ", cr" << (unsigned int) crn;
-	buffer << ", cr" << (unsigned int) crm;
+	buffer << "mcr" << DisasmCondition(cond) << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
 	if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
@@ -196,13 +167,7 @@ mcr.execute = {
 op mrc(cond[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mrc.disasm = {
-	buffer << "mrc";
-	buffer << DisasmCondition(cond);
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", " << (unsigned int) op1;
-	buffer << ", r" << (unsigned int) rd;
-	buffer << ", cr" << (unsigned int) crn;
-	buffer << ", cr" << (unsigned int) crm;
+	buffer << "mrc" << DisasmCondition(cond) << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
 	if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
@@ -232,43 +197,27 @@ stc_post.var imm : {int32_t} = {u?offset:-offset};
 op stc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 stc_offset.disasm = {
-	buffer << "stc";
-	buffer << DisasmCondition(cond);
+	buffer << "stc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
 };
 
 stc_pre.disasm = {
-	buffer << "stc";
-	buffer << DisasmCondition(cond);
+	buffer << "stc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
 };
 
 stc_post.disasm = {
-	buffer << "stc";
-	buffer << DisasmCondition(cond);
+	buffer << "stc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
 };
 
 stc_unindexed.disasm = {
-	buffer << "stc";
-	buffer << DisasmCondition(cond);
+	buffer << "stc" << DisasmCondition(cond);
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 stc_offset.execute = {
@@ -326,13 +275,7 @@ stc_unindexed.execute = {
 }:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp2.disasm = {
-	buffer << "cdp2";
-	buffer << " " << dec << (unsigned int) cp_num;
-	buffer << ", " << dec << (unsigned int) op1;
-	buffer << ", cr" << dec << (unsigned int) crd;
-	buffer << ", cr" << dec << (unsigned int) crn;
-	buffer << ", cr" << dec << (unsigned int) crm;
-	buffer << ", " << dec << (unsigned int) op2;
+	buffer << "cdp2" << " " << dec << (unsigned int) cp_num << ", " << dec << (unsigned int) op1 << ", cr" << dec << (unsigned int) crd << ", cr" << dec << (unsigned int) crn << ", cr" << dec << (unsigned int) crm << ", " << dec << (unsigned int) op2;
 };
 
 cdp2.execute = {
@@ -386,37 +329,25 @@ ldc2_post.var imm : {int32_t} = {u?offset:-offset};
 ldc2_offset.disasm = {
   buffer << "ldc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
 };
 
 ldc2_pre.disasm = {
   buffer << "ldc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
 };
 
 ldc2_post.disasm = {
   buffer << "ldc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
 };
 
 ldc2_unindexed.disasm = {
 	buffer << "ldc";
 	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", cr" << (unsigned int) crd;
-	buffer << ", ";
-	buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 ldc2_offset.execute = {
@@ -466,12 +397,7 @@ ldc2_unindexed.execute = {
 }:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mcr2.disasm = {
-  buffer << "mcr2";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", " << (unsigned int) op1;
-  buffer << ", r" << (unsigned int) rd;
-  buffer << ", cr" << (unsigned int) crn;
-  buffer << ", cr" << (unsigned int) crm;
+  buffer << "mcr2" << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
   if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
@@ -496,12 +422,7 @@ mcr2.execute = {
 }:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mrc2.disasm = {
-  buffer << "mrc2";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", " << (unsigned int) op1;
-  buffer << ", r" << (unsigned int) rd;
-  buffer << ", cr" << (unsigned int) crn;
-  buffer << ", cr" << (unsigned int) crm;
+  buffer << "mrc2" << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
   if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
@@ -556,37 +477,25 @@ stc2_post.var imm : {int32_t} = {u?offset:-offset};
 stc2_offset.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
 };
 
 stc2_pre.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
 };
 
 stc2_post.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << "], #" << imm;;
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
 };
 
 stc2_unindexed.disasm = {
   buffer << "stc";
   if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num;
-  buffer << ", cr" << (unsigned int) crd;
-  buffer << ", ";
-  buffer << "[" << DisasmRegister(rn) << "], {" << option << "}";
+  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 stc2_offset.execute = {

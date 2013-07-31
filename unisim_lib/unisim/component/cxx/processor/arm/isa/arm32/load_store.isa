@@ -75,8 +75,7 @@ ldr_imm_offset.execute = {
 op ldr_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 ldr_reg_post.disasm = {
-  buffer << "ldr" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
-  buffer << DisasmShImm(shift, imm);
+  buffer << "ldr" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
 };
 
 ldr_reg_post.execute = {
@@ -279,8 +278,7 @@ ldrb_imm_offset.execute = {
 op ldrb_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 ldrb_reg_post.disasm = {
-  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
-  buffer << DisasmShImm(shift, imm);
+  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
 };
 
 ldrb_reg_post.execute = {
@@ -295,9 +293,7 @@ ldrb_reg_post.execute = {
 op ldrb_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 ldrb_reg_offset.disasm = {
-  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm);
-  buffer << DisasmShImm(shift, imm);
-  buffer << "]" << (x?"!":"");
+  buffer << "ldr" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm) << "]" << (x?"!":"");
 };
 
 ldrb_reg_offset.execute = {
@@ -523,9 +519,7 @@ str_reg_post.execute = {
 op str_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 str_reg_offset.disasm = {
-  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm);
-  buffer << DisasmShImm(shift, imm);
-  buffer << "]" << (x?"!":"");
+  buffer << "str" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm) << "]" << (x?"!":"");
 };
 
 str_reg_offset.execute = {
@@ -646,8 +640,7 @@ strb_imm_offset.execute = {
 op strb_reg_post(cond[4]:0b011[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 strb_reg_post.disasm = {
-  buffer << "str" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm);
-  buffer << DisasmShImm(shift, imm);
+  buffer << "str" << DisasmCondition(cond) << "b\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << "], " << (u?"":"-") << DisasmRegister(rm) << DisasmShImm(shift, imm);
 };
 
 strb_reg_post.execute = {
@@ -711,7 +704,6 @@ strd_imm_post.execute = {
 strd_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
 
 strd_imm_offset.disasm = {
-  buffer << "str" << DisasmCondition(cond) << "d " << DisasmRegister(rd) << ", ";
   buffer << "str" << DisasmCondition(cond) << "d\t" << DisasmRegister(rd) << ", [" << DisasmRegister(rn) << ", #" << imm << "]" << (x?"!":"");
 };
 
@@ -811,9 +803,7 @@ ldrb_rd15_reg_post.disasm = { buffer << "unpredictable instruction (ldrb)"; };
 op ldrb_rd15_reg_offset(cond[4]:0b011[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b1[1]:rn[4]:0b1111[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 ldrb_rd15_reg_offset.disasm = {
-  buffer << "pld" << DisasmCondition(cond) << "\t[" << DisasmRegister(rn) << ", " << ((u?"":"-")) << DisasmRegister(rm);
-  buffer << DisasmShImm(shift, imm);
-  buffer << "]" << (x?"!":"");
+  buffer << "pld" << DisasmCondition(cond) << "\t[" << DisasmRegister(rn) << ", " << ((u?"":"-")) << DisasmRegister(rm) << DisasmShImm(shift, imm) << "]" << (x?"!":"");
 };
 
 /*
@@ -907,8 +897,7 @@ op strt_imm(cond[4]:0b010[3]:0b0[1]:u[1]:0b0[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offset
 strt_imm.var imm : {int32_t} = {u?offset:-offset};
 
 strt_imm.disasm = {
-  buffer << "str" << DisasmCondition(cond) << "t " << DisasmRegister(rd) << ", ";
-  buffer << "[" << DisasmRegister(rn) << "], #" << imm;
+  buffer << "str" << DisasmCondition(cond) << "t " << DisasmRegister(rd) << ", " << "[" << DisasmRegister(rn) << "], #" << imm;
 };
 
 strt_imm.execute = {
@@ -950,8 +939,7 @@ op strbt_imm(cond[4]:0b010[3]:0b0[1]:u[1]:0b1[1]:0b1[1]:0b0[1]:rn[4]:rd[4]:offse
 strbt_imm.var imm : {int32_t} = {u?offset:-offset};
 
 strbt_imm.disasm = {
-  buffer << "str" << DisasmCondition(cond) << "bt " << DisasmRegister(rd) << ", ";
-  buffer << "[" << DisasmRegister(rn) << "], #" << imm;
+  buffer << "str" << DisasmCondition(cond) << "bt " << DisasmRegister(rd) << ", " << "[" << DisasmRegister(rn) << "], #" << imm;
 };
 
 strbt_imm.execute = {

@@ -58,11 +58,7 @@ using unisim::util::arithmetic::SignedSatSub32;
 }:op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qadd.disasm = {
-	buffer << "qadd";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rn;
+	buffer << "qadd" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 }
 
 qadd.execute = {
@@ -98,11 +94,7 @@ qadd.execute = {
 }:op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qsub.disasm = {
-	buffer << "qsub";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rn;
+	buffer << "qsub" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 }
 
 qsub.execute = {
@@ -138,11 +130,7 @@ qsub.execute = {
 }:op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdadd.disasm = {
-	buffer << "qdadd";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rn;
+	buffer << "qdadd" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 }
 
 qdadd.execute = {
@@ -179,11 +167,7 @@ qdadd.execute = {
 }:op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4])
 
 qdsub.disasm = {
-	buffer << "qdsub";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rm;
-	buffer << ", r" << (unsigned int) rn;
+	buffer << "qdsub" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 }
 
 qdsub.execute = {

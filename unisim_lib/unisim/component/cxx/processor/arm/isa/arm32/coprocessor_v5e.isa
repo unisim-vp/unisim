@@ -49,13 +49,7 @@
 }:op mcrr(cond[4]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 
 mcrr.disasm = {
-	buffer << "mcrr";
-	buffer << DisasmCondition(cond);
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", " << (unsigned int) op1;
-	buffer << ", r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rn;
-	buffer << ", cr" << (unsigned int) crm;
+	buffer << "mcrr" << DisasmCondition(cond) << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", cr" << (unsigned int) crm;
 }
 
 mcrr.execute = {
@@ -80,13 +74,7 @@ mcrr.execute = {
 }:op mrrc(cond[4]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 
 mrrc.disasm = {
-	buffer << "mrrc";
-	buffer << DisasmCondition(cond);
-	buffer << " " << (unsigned int) cp_num;
-	buffer << ", " << (unsigned int) op1;
-	buffer << ", r" << (unsigned int) rd;
-	buffer << ", r" << (unsigned int) rn;
-	buffer << ", cr" << (unsigned int) crm;
+	buffer << "mrrc" << DisasmCondition(cond) << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", cr" << (unsigned int) crm;
 }
 
 mrrc.execute = {

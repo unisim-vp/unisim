@@ -51,9 +51,7 @@
 }:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4])
 
 clz.disasm = {
-	buffer << "clz";
-	buffer << DisasmCondition(cond);
-	buffer << " r" << (unsigned int) rd << ", r" << (unsigned int) rm;
+	buffer << "clz" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 }
 
 clz.execute = {

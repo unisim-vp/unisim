@@ -45,13 +45,12 @@
 op mla(cond[4]:0b01[7]:s[1]:rd[4]:rn[4]:rs[4]:0b01001[4]:rm[4])
 
 mla.disasm = {
-	buffer << "mla";
-	buffer << DisasmCondition(cond);
+	buffer << "mla" << DisasmCondition(cond);
 	if(s) buffer << "s";
-	buffer << " r" << (unsigned int) rd << ", "
-		<< "r" << (unsigned int) rm << ", "
-		<< "r" << (unsigned int) rs << ", "
-		<< "r" << (unsigned int) rn << "";
+	buffer << " " << DisasmRegister(rd) << ", "
+		<< DisasmRegister(rm) << ", "
+		<< DisasmRegister(rs) << ", "
+		<< DisasmRegister(rn);
 }
 
 mla.execute = {
@@ -84,12 +83,11 @@ mla.execute = {
 op mul(cond[4]:0b0[7]:s[1]:rd[4]:sbz[4]:rs[4]:0b01001[4]:rm[4])
 
 mul.disasm = {
-	buffer << "mul";
-	buffer << DisasmCondition(cond);
+	buffer << "mul" << DisasmCondition(cond);
 	if(s) buffer << "s";
-	buffer << " r" << (unsigned int) rd << ", "
-		<< "r" << (unsigned int) rm << ", "
-		<< "r" << (unsigned int) rs << "";
+	buffer << " " << DisasmRegister(rd) << ", "
+		<< DisasmRegister(rm) << ", "
+		<< DisasmRegister(rs);
 }
 
 mul.execute = {
@@ -126,18 +124,17 @@ mul.execute = {
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMEMU
-}:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4])
+}:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4]);
 
 smlal.disasm = {
-	buffer << "smlal";
-	buffer << DisasmCondition(cond);
-	if(s) buffer << "s";
-	buffer << " r" << (unsigned int) rdhi << ", "
-		<< "r" << (unsigned int) rdlo << ", "
-		<< "r" << (unsigned int) rm << ", "
-		<< "r" << (unsigned int) rs << "";
-}
-
+  buffer << "smlal" << DisasmCondition(cond);
+  if(s) buffer << "s";
+  buffer << " " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rdlo) << ", "
+         << DisasmRegister(rm) << ", "
+         << DisasmRegister(rs);
+};
+  
 smlal.execute = {
 	uint64_t res;
 	uint64_t res_lo, res_hi;
@@ -177,13 +174,12 @@ smlal.execute = {
 op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 smull.disasm = {
-	buffer << "smull";
-	buffer << DisasmCondition(cond);
+	buffer << "smull" << DisasmCondition(cond);
 	if(s) buffer << "s";
-	buffer << " r" << (unsigned int) rdhi << ", "
-	<< "r" << (unsigned int) rdlo << ", "
-	<< "r" << (unsigned int) rm << ", "
-	<< "r" << (unsigned int) rs << "";
+	buffer << " " << DisasmRegister(rdhi) << ", "
+	<< DisasmRegister(rdlo) << ", "
+	<< DisasmRegister(rm) << ", "
+	<< DisasmRegister(rs);
 }
 
 smull.execute = {
@@ -222,13 +218,12 @@ smull.execute = {
 op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 umlal.disasm = {
-	buffer << "umlal";
-	buffer << DisasmCondition(cond);
+	buffer << "umlal" << DisasmCondition(cond);
 	if(s) buffer << "s";
-	buffer << " r" << (unsigned int) rdhi << ", "
-		<< "r" << (unsigned int) rdlo << ", "
-		<< "r" << (unsigned int) rm << ", "
-		<< "r" << (unsigned int) rs << "";
+	buffer << " " << DisasmRegister(rdhi) << ", "
+		<< DisasmRegister(rdlo) << ", "
+		<< DisasmRegister(rm) << ", "
+		<< DisasmRegister(rs);
 }
 
 umlal.execute = {
@@ -270,13 +265,12 @@ umlal.execute = {
 op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
 
 umull.disasm = {
-	buffer << "umull";
-	buffer << DisasmCondition(cond);
+	buffer << "umull" << DisasmCondition(cond);
 	if(s) buffer << "s";
-	buffer << " r" << (unsigned int) rdhi << ", "
-		<< "r" << (unsigned int) rdlo << ", "
-		<< "r" << (unsigned int) rm << ", "
-		<< "r" << (unsigned int) rs << "";
+	buffer << " " << DisasmRegister(rdhi) << ", "
+		<< DisasmRegister(rdlo) << ", "
+		<< DisasmRegister(rm) << ", "
+		<< DisasmRegister(rs);
 }
 
 umull.execute = {
