@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
  
 /**********************************************
@@ -42,46 +42,21 @@
  * ldmia (load multiple) instruction
  */
 
-op ldmia(0b11001[5]:rn[3]:<32> reg_list[8])
+op ldmia(0b11001[5]:rn[3]:<32> reglist[8]);
 
 ldmia.disasm = {
-	unsigned int mask = 1;
-	bool prev = false;
-	
-	buffer << "ldmia r" << rn << ", {";
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			if(prev) buffer << ", ";
-			else prev = true;
-			buffer << "r" << i;
-		}
-		mask = mask << 1;
-	}
-	buffer << "}";
-}
+  buffer << "ldmia\t" << DisasmRegister(rn) << ", {" << DisasmRegList( reglist ) << "}";
+};
 
 ldmia.execute = {
-	uint32_t rn_value, rn_new_val;
-	uint32_t start_address, end_address;
-	uint32_t cur_address;
-	unsigned int mask = 1;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-	
-	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
-
-	cpu.SetGPR(rn, rn_new_val);
-
-	cur_address = start_address;
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
-			cur_address += 4;
-		}
-		mask = mask << 1;
-	}
-}
+  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.SetGPR( itr.reg(), cpu.MemRead32( itr.addr() ) );
+  }
+  
+  bool overwritten = (reglist >> rn) & 1;
+  if (not overwritten) cpu.SetGPR( rn, itr.addr() );
+};
 
 /*
  * end of ldmia (load multiple) instruction
@@ -91,52 +66,22 @@ ldmia.execute = {
 * pop (pop multiple) instruction
  */
 
-op pop(0b1011110[7]:r[1]:<32> reg_list[8])
+op pop(0b1011110[7]:shl<15> reglist1[1]:reglist0[8]);
+pop.var reglist : {uint32_t} = {reglist1|reglist0};
 
 pop.disasm = {
-	unsigned int mask = 1;
-	bool prev = false;
-	
-	buffer << "pop {";
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			if(prev) buffer << ", ";
-			else prev = true;
-			buffer << "r" << i;
-		}
-		mask = mask << 1;
-	}
-	buffer << "}";
-}
+  buffer << "pop\t{" << DisasmRegList(reglist) << "}";
+};
 
 pop.execute = {
-	uint32_t sp_value, sp_new_val;
-	uint32_t start_address, end_address;
-	uint32_t cur_address;
-	unsigned int mask = 1;
-	
-	if(r == 0)
-	
-	sp_value = cpu.GetGPR(cpu.SP_reg);
-	
-	LSMia(sp_value, reg_list, &start_address, &end_address, &sp_new_val);
-
-	cur_address = start_address;
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			cpu.SetGPR( i, cpu.MemRead32( cur_address & -4 ) );
-			cur_address += 4;
-		}
-		mask = mask << 1;
-	}
-	
-	if(r) {
-		cpu.SetGPR( 15, cpu.MemRead32( cur_address ) );
-		cur_address += 4;
-	}
-
-	cpu.SetGPR(cpu.SP_reg, cur_address);
-}
+  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( cpu.SP_reg ));
+  while (itr.next()) {
+    cpu.SetGPR( itr.reg(), cpu.MemRead32( itr.addr() ) );
+  }
+  
+  bool overwritten = (reglist >> cpu.SP_reg) & 1;
+  if (not overwritten) cpu.SetGPR( cpu.SP_reg, itr.addr() );
+};
 
 /*
  * end of pop (pop multiple) instruction
@@ -146,59 +91,21 @@ pop.execute = {
  * push (push multiple) instruction
  */
 
-op push(0b1011010[7]:r[1]:reg_list[8])
+op push(0b1011010[7]:shl<14> reglist1[1]:reglist0[8]);
+push.var reglist : {uint32_t} = {reglist1|reglist0};
 
 push.disasm = {
-	unsigned int mask = 1;
-	bool prev = false;
-		
-	buffer << "push {";
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			if(prev) buffer << ", ";
-			else prev = true;
-			buffer << "r" << i;
-		}
-		mask = mask << 1;
-	}
-	if(r) {
-		if(prev) buffer << ", lr";
-		else buffer << "lr";
-	}
-	buffer << "}";
-}
+  buffer << "push\t{" << DisasmRegList(reglist) << "}";
+};
 
 push.execute = {
-	uint32_t sp_value, sp_new_val, value;
-	uint32_t start_address, end_address;
-	uint32_t cur_address;
-	unsigned int mask = 1;
-	
-	
-	sp_value = cpu.GetGPR(cpu.SP_reg);
-
-	LSMdb(sp_value, reg_list, &start_address, &end_address, &sp_new_val);
-	if(r)
-		start_address -= 4;
-
-	cur_address = start_address;
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			value = cpu.GetGPR(i);
-			cpu.MemWrite32(cur_address, value);
-			cur_address += 4;
-		}
-		mask = mask << 1;
-	}
-	
-	if(r) {
-		value = cpu.GetGPR(cpu.LR_reg);
-		cpu.MemWrite32(cur_address, value);
-		cur_address += 4;
-	}
-
-	cpu.SetGPR(cpu.SP_reg, start_address);
-}
+  LSMIter itr(LSMIter::DB, reglist, cpu.GetGPR( cpu.SP_reg ));
+  while (itr.next()) {
+    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+  }
+  
+  cpu.SetGPR( cpu.SP_reg, itr.addr() );
+};
 
 /*
  * end of push (push multiple) instruction
@@ -208,47 +115,20 @@ push.execute = {
  * stmia (store multiple) instruction
  */
 
-op stmia(0b11000[5]:rn[3]:reg_list[8])
+op stmia(0b11000[5]:rn[3]:reglist[8]);
 
 stmia.disasm = {
-	unsigned int mask = 1;
-	bool prev = false;
-			
-	buffer << "stmia r" << rn << "!, {";
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			if(prev) buffer << ", ";
-			else prev = true;
-			buffer << "r" << i;
-		}
-		mask = mask << 1;
-	}
-	buffer << "}";
-}
+  buffer << "stmia\t" << DisasmRegister(rn) << "!, {" << DisasmRegList(reglist) << "}";
+};
 
 stmia.execute = {
-	uint32_t rn_value, rn_new_val, value;
-	uint32_t start_address, end_address;
-	uint32_t cur_address;
-	unsigned int mask = 1;
-	
-	
-	rn_value = cpu.GetGPR(rn);
-
-	LSMia(rn_value, reg_list, &start_address, &end_address, &rn_new_val);
-
-	cur_address = start_address;
-	for(unsigned int i = 0; i < 8; i++) {
-		if((reg_list & mask) == mask) {
-			value = cpu.GetGPR(i);
-			cpu.MemWrite32(cur_address, value);
-			cur_address += 4;
-		}
-		mask = mask << 1;
-	}
-		
-	cpu.SetGPR(rn, end_address + 4);
-}
+  LSMIter itr(LSMIter::IA, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
+  }
+  
+  cpu.SetGPR( rn, itr.addr() );
+};
 
 /*
  * end of stmia (store multiple) instruction

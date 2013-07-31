@@ -1008,24 +1008,13 @@ ldm.disasm = {
 ldm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
-  switch (mod) {
-  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
-  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
-  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
-  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
-  }
-  
-  for (uint32_t idx = 0; idx < 16; ++idx) {
-    uint32_t rd = idx ^ mask;
-    if (((reglist >> rd) & 1) == 0) continue;
-    addr += incb;
-    cpu.SetGPR( rd, cpu.MemRead32( addr ) );
-    addr += inca;
+  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.SetGPR( itr.reg(), cpu.MemRead32( itr.addr() ) );
   }
   
   bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetGPR( rn, addr );
+  if (w and not overwritten) cpu.SetGPR( rn, itr.addr() );
 };
 
 /*
@@ -1046,23 +1035,12 @@ stm.disasm = {
 stm.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
-  switch (mod) {
-  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
-  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
-  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
-  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
+  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.MemWrite32( itr.addr(), cpu.GetGPR( itr.reg() ) );
   }
   
-  for (uint32_t idx = 0; idx < 16; ++idx) {
-    uint32_t rs = idx ^ mask;
-    if (((reglist >> rs) & 1) == 0) continue;
-    addr += incb;
-    cpu.MemWrite32( addr, cpu.GetGPR( rs ) );
-    addr += inca;
-  }
-  
-  if (w) cpu.SetGPR( rn, addr );
+  if (w) cpu.SetGPR( rn, itr.addr() );
 };
 
 /*
@@ -1089,26 +1067,15 @@ ldm_usr.execute = {
   assert( not "privileged" );
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
-  switch (mod) {
-  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
-  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
-  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
-  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
-  }
-  
-  for (uint32_t idx = 0; idx < 16; ++idx) {
-    uint32_t rd = idx ^ mask;
-    if (((reglist >> rd) & 1) == 0) continue;
-    addr += incb;
-    cpu.SetGPR_usr( rd, cpu.MemRead32( addr ) );
-    addr += inca;
+  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.SetGPR_usr( itr.reg(), cpu.MemRead32( itr.addr() ) );
   }
   
   // TODO: if (reglist & 0x8000) cpu.MoveSPSRtoCPSR();
   
   bool overwritten = (reglist >> rn) & 1;
-  if (w and not overwritten) cpu.SetGPR_usr( rn, addr );
+  if (w and not overwritten) cpu.SetGPR_usr( rn, itr.addr() );
 };
 
 /*
@@ -1130,30 +1097,14 @@ stm_usr.execute = {
   assert( not "privileged" );
   if (not CheckCondition(cpu, cond)) return;
   
-  uint32_t addr = cpu.GetGPR( rn ), mask, incb, inca;
-  switch (mod) {
-  case 0: /*da*/ mask = 0xf; incb =  0; inca = -4; break;
-  case 1: /*ia*/ mask = 0x0; incb =  0; inca = +4; break;
-  case 2: /*db*/ mask = 0xf; incb = -4; inca =  0; break;
-  case 3: /*ib*/ mask = 0x0; incb = +4; inca =  0; break;
+  LSMIter itr(mod, reglist, cpu.GetGPR( rn ));
+  while (itr.next()) {
+    cpu.MemWrite32( itr.addr(), cpu.GetGPR_usr( itr.reg() ) );
   }
   
-  for (uint32_t idx = 0; idx < 16; ++idx) {
-    uint32_t rs = idx ^ mask;
-    if (((reglist >> rs) & 1) == 0) continue;
-    addr += incb;
-    cpu.MemWrite32( addr, cpu.GetGPR_usr( rs ) );
-    addr += inca;
-  }
-  
-  if (w) cpu.SetGPR_usr( rn, addr );
+  if (w) cpu.SetGPR_usr( rn, itr.addr() );
 };
 
 /*
  * end of STM^ instruction
  *******************************************************************/
-
-include "load_store_base.isa"
-include "load_store_v4.isa"
-include "load_store_v5e.isa"
-

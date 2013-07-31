@@ -250,6 +250,35 @@ namespace arm {
       }
   }
 
+  struct LSMIter {
+    enum mode_t { DA=0, IA=1, DB=2, IB=3 };
+    LSMIter( uint32_t mode, uint32_t reglist, uint32_t addr )
+      : m_reglist( reglist ), m_addr( addr )
+    {
+      switch (mode_t( mode )) {
+      case DA: m_dir = -1; m_reg = 16; m_incb =  0; m_inca = -4; m_addr += 4; break;
+      case IA: m_dir = +1; m_reg = -1; m_incb =  0; m_inca = +4; m_addr -= 4; break;
+      case DB: m_dir = -1; m_reg = 16; m_incb = -4; m_inca =  0; break;
+      case IB: m_dir = +1; m_reg = -1; m_incb = +4; m_inca =  0; break;
+      default: assert( false );
+      }
+    
+    }
+    bool
+    next() {
+      m_addr += m_inca;
+      do    { m_reg += m_dir; if (m_reg & -16) return false; }
+      while (((m_reglist >> m_reg) & 1) == 0);
+      m_addr += m_incb;
+      return true;
+    }
+    uint32_t addr() const { return m_addr; }
+    uint32_t reg() const { return m_reg; }
+
+    uint32_t m_reglist, m_addr, m_inca, m_incb;
+    int32_t  m_dir, m_reg;
+  };
+
 } // end of namespace arm
 } // end of namespace processor
 } // end of namespace cxx

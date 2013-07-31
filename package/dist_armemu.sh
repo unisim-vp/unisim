@@ -189,17 +189,12 @@ unisim/component/tlm2/processor/arm/armemu/armemu.cc \
 unisim/component/tlm2/memory/ram/memory.cc \
 unisim/component/tlm2/memory/ram/memory_debug.cc \
 unisim/component/cxx/processor/arm/disasm.cc \
-unisim/component/cxx/processor/arm/decode_load_store_multiple.cc \
 unisim/component/cxx/processor/arm/armemu/cache.cc \
 unisim/component/cxx/processor/arm/armemu/cpu.cc \
 unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
-unisim/component/cxx/processor/arm/decode_copro_load_store.cc \
-unisim/component/cxx/processor/arm/decode_data_processing.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
-unisim/component/cxx/processor/arm/decode_load_store.cc \
 unisim/component/cxx/processor/arm/cpu.cc \
-unisim/component/cxx/processor/arm/decode_misc_load_store.cc \
 unisim/component/cxx/processor/arm/carry_overflow.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
@@ -228,9 +223,7 @@ unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
 unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_v4.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_base.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
@@ -241,9 +234,7 @@ unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
-unisim/component/cxx/processor/arm/isa/arm32/load_store_multiple.isa \
 unisim/component/cxx/processor/arm/isa/arm32/arm32.isa \
 unisim/component/cxx/processor/arm/isa/arm32/semaphore.isa"
 
@@ -392,16 +383,11 @@ unisim/component/cxx/processor/arm/instruction.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
 unisim/component/cxx/processor/arm/armemu/cache.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
-unisim/component/cxx/processor/arm/decode_misc_load_store.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
-unisim/component/cxx/processor/arm/decode_load_store_multiple.hh \
-unisim/component/cxx/processor/arm/decode_data_processing.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/processor/arm/decode_load_store.hh \
-unisim/component/cxx/processor/arm/decode_copro_load_store.hh \
 unisim/component/cxx/processor/arm/carry_overflow.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
