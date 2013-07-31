@@ -37,7 +37,7 @@ action {void} execute({STATE &} {cpu}) {
 		unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
 }
 
-action {void} disasm({STATE &} {cpu}, {stringstream &} {buffer}) {
+action {void} disasm({STATE &} {cpu}, {std::ostream &} {buffer}) {
 	buffer << "Unknown instruction";
 }
 
