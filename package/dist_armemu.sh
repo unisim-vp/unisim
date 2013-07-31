@@ -195,7 +195,6 @@ unisim/component/cxx/processor/arm/armemu/isa_arm32.cc \
 unisim/component/cxx/processor/arm/armemu/isa_thumb.cc \
 unisim/component/cxx/processor/arm/memory_op.cc \
 unisim/component/cxx/processor/arm/cpu.cc \
-unisim/component/cxx/processor/arm/carry_overflow.cc \
 unisim/component/cxx/memory/ram/memory_64.cc \
 unisim/component/cxx/memory/ram/memory_32.cc"
 
@@ -388,7 +387,6 @@ unisim/component/cxx/processor/arm/execute.hh \
 unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
-unisim/component/cxx/processor/arm/carry_overflow.hh \
 unisim/component/cxx/memory/ram/memory.hh"
 
 UNISIM_LIB_ARMEMU_TEMPLATE_FILES="\
