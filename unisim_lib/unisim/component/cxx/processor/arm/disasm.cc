@@ -29,14 +29,13 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <inttypes.h>
 #include <sstream>
 
 #include "unisim/component/cxx/processor/arm/disasm.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 
 namespace unisim {
 namespace component {

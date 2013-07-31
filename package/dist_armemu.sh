@@ -378,13 +378,11 @@ unisim/component/tlm2/processor/arm/armemu/armemu.hh \
 unisim/component/tlm2/memory/ram/memory.hh \
 unisim/component/cxx/processor/arm/cpu.hh \
 unisim/component/cxx/processor/arm/coprocessor_interface.hh \
-unisim/component/cxx/processor/arm/instruction.hh \
 unisim/component/cxx/processor/arm/armemu/cpu.hh \
 unisim/component/cxx/processor/arm/armemu/cache.hh \
 unisim/component/cxx/processor/arm/memory_op.hh \
 unisim/component/cxx/processor/arm/exception.hh \
 unisim/component/cxx/processor/arm/execute.hh \
-unisim/component/cxx/processor/arm/masks.hh \
 unisim/component/cxx/processor/arm/models.hh \
 unisim/component/cxx/processor/arm/disasm.hh \
 unisim/component/cxx/memory/ram/memory.hh"

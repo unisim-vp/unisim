@@ -29,7 +29,7 @@
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 /**************************************************************/
@@ -213,11 +213,11 @@ namespace arm {
     if ((mask & 0x04) == 0x04) byte_mask |= 0x00ff0000;
     if ((mask & 0x08) == 0x08) byte_mask |= 0xff000000;
   
-    uint32_t run_mode = core.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
+    uint32_t run_mode = core.GetCPSR() & core.RUNNING_MODE_MASK; /* get running mode */
     if (isSPSR == 0)
       {
         uint32_t reg_mask = 0;
-        if ( run_mode != USER_MODE ) // we are in a privileged mode
+        if ( run_mode != core.USER_MODE ) // we are in a privileged mode
           {
             if ( operand & msr_statemask )
               return; // unpredictable
@@ -232,14 +232,14 @@ namespace arm {
         core.SetCPSR(reg);
       
         /* check if the running mode did change, if so switch registers */
-        uint32_t new_run_mode = reg & RUNNING_MODE_MASK;
+        uint32_t new_run_mode = reg & core.RUNNING_MODE_MASK;
         if ( run_mode != new_run_mode )
           core.SetGPRMapping(run_mode, new_run_mode);
       }
     else // isSPSR == 1
       {
         // check that the mode has SPSR
-        if ( !((run_mode == USER_MODE) || (run_mode == SYSTEM_MODE)) )
+        if ( !((run_mode == core.USER_MODE) || (run_mode == core.SYSTEM_MODE)) )
           {
             uint32_t reg_mask = byte_mask & (msr_usermask | msr_privmask | msr_statemask);
             uint32_t reg = (core.GetSPSR() & ~reg_mask) | (operand & reg_mask);

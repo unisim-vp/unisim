@@ -44,7 +44,6 @@
 #include <string.h>
 
 #include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/kernel/logger/logger.hh"
 

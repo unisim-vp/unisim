@@ -44,10 +44,9 @@
 
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
+#include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/util/endian/endian.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-#include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/likely/likely.hh"
 

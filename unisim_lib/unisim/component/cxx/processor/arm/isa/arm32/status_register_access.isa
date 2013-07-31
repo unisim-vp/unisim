@@ -64,20 +64,19 @@ mrs.execute = {
       return;
     }
 
-  run_mode = cpu.GetCPSR() & RUNNING_MODE_MASK; /* get running mode */
+  run_mode = cpu.GetCPSR() & cpu.RUNNING_MODE_MASK; /* get running mode */
   if (r)
     {
       /* check current running mode, if in user or system mode then the behaviour is
        *   unpredictable, so we will do a return */
-      if((run_mode == USER_MODE) ||
-         (run_mode == SYSTEM_MODE))
+      if((run_mode == cpu.USER_MODE) or (run_mode == cpu.SYSTEM_MODE))
         {
           stringstream str;
           this->disasm(cpu, str);
 
           cpu.logger << DebugWarning
                      << "trying to access SPSR while running in "
-                     << ((run_mode == USER_MODE)?"user":"system")
+                     << ((run_mode == cpu.USER_MODE)?"user":"system")
                      << " mode with the following instruction: "
                      << endl;
           cpu.logger << str.str() << endl

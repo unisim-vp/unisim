@@ -30,7 +30,7 @@
  *  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
  *  SUCH DAMAGE.
  *
- * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr), Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
 #include <iostream>
@@ -38,34 +38,9 @@
 #include <inttypes.h>
 #include <assert.h>
 #include "unisim/component/cxx/processor/arm/cpu.hh"
-#include "unisim/component/cxx/processor/arm/masks.hh"
 #include "unisim/util/debug/symbol.hh"
 #include "unisim/util/debug/simple_register.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
-
-//#include <sstream>
-//#include <iostream>
-//#include <stdlib.h>
-//#include "unisim/component/cxx/processor/arm/cpu.hh"
-//#include "unisim/component/cxx/processor/arm/masks.hh"
-//#include "unisim/component/cxx/processor/arm/config.hh"
-//#include "unisim/component/cxx/processor/arm/isa_arm32.tcc"
-//#include "unisim/component/cxx/processor/arm/isa_thumb.tcc"
-//#include "unisim/component/cxx/processor/arm/instruction.tcc"
-//#include "unisim/component/cxx/processor/arm/exception.tcc"
-//#include "unisim/util/debug/simple_register.hh"
-//#ifndef __STDC_CONSTANT_MACROS
-//#define __STDC_CONSTANT_MACROS
-//#endif // __STDC_CONSTANT_MACROS
-//#include <stdint.h>
-
-// #if (defined(__GNUC__) && (__GNUC__ >= 3))
-// #define INLINE __attribute__((always_inline))
-// #else
-// #define INLINE
-// #endif
-
-// #define ARM_OPTIMIZATION
 
 namespace unisim {
 namespace component {
