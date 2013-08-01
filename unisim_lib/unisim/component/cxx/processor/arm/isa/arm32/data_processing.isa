@@ -1082,7 +1082,7 @@ movt.var imm : {uint32_t} = {imm1|imm0};
 
 movt.disasm = { buffer << "movt" << DisasmCondition(cond) << "\t" << DisasmRegister(rsd) << ", #" << imm; };
 
-movt.execute = { cpu.SetGPR( rsd, (cpu.regnpcread( rsd ) & 0xffff) | (imm << 16) ); };
+movt.execute = { cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & 0xffff) | (imm << 16) ); };
 
 /*
  * end of mov[wt] instruction
