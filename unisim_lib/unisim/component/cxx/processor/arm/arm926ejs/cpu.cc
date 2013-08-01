@@ -1694,6 +1694,26 @@ TestCleanAndInvalidateDCache()
 	return cleaned;
 }
 
+/** Software Interrupt
+ *  This method is called by SWI instructions to handle software interrupts.
+ */
+void
+CPU::SWI( uint32_t imm )
+{
+  // we are executing on full system mode
+  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
+}
+
+/** Breakpoint
+ *  This method is called by BKPT instructions to handle breakpoints.
+ */
+void
+CPU::BKPT( uint32_t imm )
+{
+  // we are executing on full system mode
+  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
+}
+	
 /** Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
  *   notifiy the processor.

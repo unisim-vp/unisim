@@ -40,7 +40,7 @@
 #define __UNISIM_COMPONENT_CXX_PROCESSOR_ARM_DISASM_HH__
 
 #include <inttypes.h>
-#include <iostream>
+#include <iosfwd>
 
 namespace unisim {
 namespace component {

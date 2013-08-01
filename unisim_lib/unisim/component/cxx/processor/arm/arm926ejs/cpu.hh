@@ -643,6 +643,15 @@ public:
 	/* cp15 to cpu interface                            END       */
 	/**************************************************************/
 
+	/** Software Interrupt
+         *  This method is called by SWI instructions to handle software interrupts.
+         */
+	void SWI( uint32_t imm );
+	/** Breakpoint
+         *  This method is called by BKPT instructions to handle breakpoints.
+         */
+	void BKPT( uint32_t imm );
+	
  	/** Unpredictable Instruction Behaviour.
  	 * This method is just called when an unpredictable behaviour is detected to
  	 *   notifiy the processor.

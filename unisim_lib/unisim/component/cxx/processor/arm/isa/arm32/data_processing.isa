@@ -604,7 +604,7 @@ tst_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 & op2;
   cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
-}
+};
 
 op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
@@ -619,7 +619,7 @@ tst_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 & op2;
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
-}
+};
 
 op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
@@ -629,12 +629,12 @@ tst_reg_shift.disasm = {
 
 tst_reg_shift.execute = {
   if (not CheckCondition(cpu, cond)) return;
-	
+  
   uint32_t rmval = cpu.GetGPR( rm ), rsval = cpu.GetGPR( rs ),
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
            res = op1 & op2;
   UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
-}
+};
 
 /*
  * end of tst instruction
@@ -656,7 +656,7 @@ teq_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 ^ op2;
   cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
-}
+};
 
 op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
@@ -671,7 +671,7 @@ teq_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 ^ op2;
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
-}
+};
 
 op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
@@ -686,7 +686,7 @@ teq_reg_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
            res = op1 ^ op2;
   UpdateStatusRegShift( cpu, res, rmval, shift, rsval );
-}
+};
 
 /*
  * end of teq instruction
@@ -708,7 +708,7 @@ cmp_32imm.execute = {
 
   uint32_t op1 = cpu.GetGPR( rn ), op2 = imm, res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
-}
+};
 
 op cmp_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
@@ -723,7 +723,7 @@ cmp_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
-}
+};
 
 op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
@@ -738,7 +738,7 @@ cmp_reg_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
            res = op1 - op2;
   UpdateStatusSub( cpu, res, op1, op2 );
-}
+};
 
 /*
  * end of cmp instruction
@@ -775,7 +775,7 @@ cmn_imm_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeImmShift( cpu, rmval, shift, imm ),
            res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
-}
+};
 
 op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
@@ -790,7 +790,7 @@ cmn_reg_shift.execute = {
            op1 = cpu.GetGPR( rn ), op2 = ComputeRegShift( cpu, rmval, shift, rsval ),
            res = op1 + op2;
   UpdateStatusAdd( cpu, res, op1, op2 );
-}
+};
 
 /*
  * end of cmn instruction
@@ -903,3 +903,160 @@ mvn_reg_shift.execute = {
 /*
  * end of mvn instruction
  *******************************************************************/
+
+/**********************************************
+
+       ARMV5E DATA PROCESSING INSTRUCTIONS
+
+**********************************************/
+
+impl {
+#include "unisim/util/arithmetic/arithmetic.hh"
+
+using unisim::util::arithmetic::SignedSatAdd32;
+using unisim::util::arithmetic::SignedSatSub32;
+
+};
+
+/*******************************************************************
+ * qadd instruction
+ */
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+
+qadd.disasm = {
+  buffer << "qadd" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qadd.execute = {
+  uint8_t does_sat;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatAdd32(result, does_sat, cpu.GetGPR(rn) , cpu.GetGPR(rm));
+  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qadd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub instruction
+ */
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+
+qsub.disasm = {
+  buffer << "qsub" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qsub.execute = {
+  uint8_t does_sat;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , cpu.GetGPR(rn));
+  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qsub instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qdadd instruction
+ */
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+
+qdadd.disasm = {
+  buffer << "qdadd" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qdadd.execute = {
+  uint8_t does_sat, does_sat_tmp;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
+  SignedSatAdd32(result, does_sat, cpu.GetGPR(rm) , result);
+  cpu.SetCPSR_Q(does_sat == 1 || does_sat_tmp == 1? true : false);
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qdadd instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qdsub instruction
+ */
+
+{ STATE::MODEL == ARMV5TE ||
+  STATE::MODEL == ARMV5TEJ ||
+  STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMEMU
+}:op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+
+qdsub.disasm = {
+  buffer << "qdsub" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qdsub.execute = {
+  uint8_t does_sat, does_sat_tmp;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
+  SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , result);
+  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.SetGPR(rd, result);
+};
+
+/*
+ * end of qdsub instruction
+ *******************************************************************/
+

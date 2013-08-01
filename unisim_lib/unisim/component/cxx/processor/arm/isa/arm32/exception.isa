@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,48 +39,41 @@
 **********************************************/
 
 /*******************************************************************
- * swi instruction
+ * swi (software interrupt) instruction; also known as: svc (supervisor call) in armv7
  * NOTE: this instruction is used to make the system calls
  */
 
-op swi(cond[4]:0b1111[4]:immed[24])
+op swi(cond[4]:0b1111[4]:imm[24]);
 
 swi.disasm = {
-	buffer << "swi" << DisasmCondition(cond) << " #" << dec << (unsigned int) immed;
-}
+  buffer << "swi" << DisasmCondition(cond) << "\t#" << std::dec << imm;
+};
 
 swi.execute = {
-	if (not CheckCondition(cpu, cond)) return;
-
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::SWI);
-}
+  if (not CheckCondition(cpu, cond)) return;
+  
+  cpu.SWI( imm );
+};
 
 /*
- * end of swi instruction
+ * end of swi (software interrupt) instruction
  *******************************************************************/
 
 /*******************************************************************
- * bkpt instruction
+ * bkpt (breakpoint) instruction
  */
 
-op bkpt(0b1110[4]:0b00010010[8]:himmed[12]:0b0111[4]:limmed[4])
+op bkpt(0b1110[4]:0b00010010[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+bkpt.var imm : {uint32_t} = {im1|im0};
 
 bkpt.disasm = {
-	uint32_t immed = limmed + ((uint32_t)himmed << 4);
-	buffer << "bkpt" << " #" << dec << (unsigned int) immed;
-}
+  buffer << "bkpt\t#" << std::dec << imm;
+};
 
 bkpt.execute = {
-	uint32_t immed = limmed + ((uint32_t)himmed << 4);
-
-	// we are executing on full system mode
-	cpu.MarkVirtualExceptionVector(
-		unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
-}
+  cpu.BKPT( imm );
+};
 
 /*
- * end of bkpt instruction
+ * end of bkpt (breakpoint) instruction
  *******************************************************************/
-

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2008,
+ *  Copyright (c) 2008-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -34,28 +34,14 @@
 
 decl {
 #include <map>
-
-namespace unisim {
-namespace component {
-namespace cxx {
-namespace processor {
-namespace arm {
-
-using std::map;
-
-} // end of namespace arm
-} // end of namespace processor
-} // end of namespace cxx
-} // end of namespace component
-} // end of namespace unisim
 }
 
-action {void} profile({map<uint64_t, uint32_t> &} {prof}) {
-	uint64_t val = GetEncoding();
-	map<uint64_t, uint32_t>::iterator it = prof.find(val);
-	if(it != prof.end()) {
-		it->second = it->second + 1;
-	} else {
-		prof[val] = 1;
-	}
+action {void} profile({std::map<uint64_t, uint32_t> &} {prof}) {
+  uint64_t val = GetEncoding();
+  std::map<uint64_t, uint32_t>::iterator it = prof.find(val);
+  if(it != prof.end()) {
+    it->second = it->second + 1;
+  } else {
+    prof[val] = 1;
+  }
 }

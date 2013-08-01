@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,47 +39,38 @@
 **********************************************/
 
 /*******************************************************************
- * bkpt (breakpoint) instruction
+ * swi (software interrupt) instruction; also known as: svc (supervisor call) in armv7
+ * NOTE: this instruction is used to make the system calls
  */
 
-op bkpt(0b10111110[8]:imm[8])
-
-bkpt.disasm = {
-	buffer << "bkpt #" << dec << imm;
-}
-
-bkpt.execute = {
-	// we are executing on linux emulation mode
-	// what should we do with this kind of call? ignore it
-}
-
-/*
- * end of bkpt (breakpoint) instruction
- *******************************************************************/
-
-/*******************************************************************
- * swi (software interrupt) instruction
- */
-
-op swi(0b11011111[8]:imm[8])
+op swi(0b11011111[8]:imm[8]);
 
 swi.disasm = {
-	buffer << "swi #" << dec << imm;
-}
+  buffer << "swi\t#" << std::dec << imm;
+};
 
 swi.execute = {
-	// we are executing on linux emulation mode
-	// use linux_os_import
-	try
-	{
-		cpu.linux_os_import->ExecuteSystemCall(imm);
-	}
-	catch(std::exception &e)
-	{
-		cerr << e.what() << endl;
-	}
-}
+  cpu.SWI( imm );
+};
 
 /*
  * end of swi (software interrupt) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bkpt (breakpoint) instruction
+ */
+
+op bkpt(0b10111110[8]:imm[8]);
+
+bkpt.disasm = {
+  buffer << "bkpt\t#" << std::dec << imm;
+};
+
+bkpt.execute = {
+  cpu.BKPT( imm );
+};
+
+/*
+ * end of bkpt (breakpoint) instruction
  *******************************************************************/

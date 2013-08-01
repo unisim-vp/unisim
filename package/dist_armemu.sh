@@ -223,7 +223,6 @@ unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
 unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
-unisim/component/cxx/processor/arm/isa/arm32/data_processing_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
 unisim/component/cxx/processor/arm/isa/arm32/exception_emu.isa \

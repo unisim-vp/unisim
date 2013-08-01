@@ -1344,6 +1344,33 @@ MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2,
 	Stop(-1);
 }
 
+/** Software Interrupt
+ *  This method is called by SWI instructions to handle software interrupts.
+ */
+void
+CPU::SWI( uint32_t imm )
+{
+  // we are executing on linux emulation mode, use linux_os_import
+  try
+    {
+      cpu.linux_os_import->ExecuteSystemCall(imm);
+    }
+  catch(std::exception &e)
+    {
+      cerr << e.what() << endl;
+    }
+}
+
+/** Breakpoint
+ *  This method is called by BKPT instructions to handle breakpoints.
+ */
+void
+CPU::BKPT( uint32_t imm )
+{
+  // we are executing on linux emulation mode
+  // what should we do with this kind of call? ignore it
+}
+	
 /** Unpredictable Instruction Behaviour.
  * This method is just called when an unpredictable behaviour is detected to
  *   notifiy the processor.

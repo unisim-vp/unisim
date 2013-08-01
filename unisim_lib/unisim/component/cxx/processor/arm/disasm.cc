@@ -33,7 +33,7 @@
  */
 
 #include <inttypes.h>
-#include <sstream>
+#include <iostream>
 
 #include "unisim/component/cxx/processor/arm/disasm.hh"
 
@@ -42,8 +42,6 @@ namespace component {
 namespace cxx {
 namespace processor {
 namespace arm {
-
-using namespace std;
 
   std::ostream&
   operator << ( std::ostream& sink, DisasmObject const& dobj )
