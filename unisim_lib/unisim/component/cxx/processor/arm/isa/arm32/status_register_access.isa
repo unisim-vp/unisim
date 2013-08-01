@@ -69,19 +69,19 @@ mrs.execute = {
        *   unpredictable, so we will do a return */
       if((run_mode == cpu.USER_MODE) or (run_mode == cpu.SYSTEM_MODE))
         {
-          stringstream str;
-          this->disasm(cpu, str);
+          // stringstream str;
+          // this->disasm(cpu, str);
 
-          cpu.logger << DebugWarning
-                     << "trying to access SPSR while running in "
-                     << ((run_mode == cpu.USER_MODE)?"user":"system")
-                     << " mode with the following instruction: "
-                     << endl;
-          cpu.logger << str.str() << endl
-                     << "Location: " << __FUNCTION__
-                     << ":" << __FILE__
-                     << ":" << __LINE__
-                     << EndDebugWarning;
+          // cpu.logger << DebugWarning
+          //            << "trying to access SPSR while running in "
+          //            << ((run_mode == cpu.USER_MODE)?"user":"system")
+          //            << " mode with the following instruction: "
+          //            << endl;
+          // cpu.logger << str.str() << endl
+          //            << "Location: " << __FUNCTION__
+          //            << ":" << __FILE__
+          //            << ":" << __LINE__
+          //            << EndDebugWarning;
 				
           return;
         }
