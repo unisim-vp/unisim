@@ -1353,7 +1353,7 @@ CPU::SWI( uint32_t imm )
   // we are executing on linux emulation mode, use linux_os_import
   try
     {
-      cpu.linux_os_import->ExecuteSystemCall(imm);
+      this->linux_os_import->ExecuteSystemCall(imm);
     }
   catch(std::exception &e)
     {

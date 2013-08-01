@@ -1701,7 +1701,7 @@ void
 CPU::SWI( uint32_t imm )
 {
   // we are executing on full system mode
-  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
+  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::SWI);
 }
 
 /** Breakpoint
@@ -1711,7 +1711,7 @@ void
 CPU::BKPT( uint32_t imm )
 {
   // we are executing on full system mode
-  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
+  this->MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::PREFETCH_ABORT);
 }
 	
 /** Unpredictable Instruction Behaviour.
