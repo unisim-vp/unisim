@@ -87,7 +87,7 @@ include "branch.isa"
 include "data_processing.isa"
 include "load_store_reg.isa"
 include "load_store_multiple.isa"
-include "exception_emu.isa"
+include "exception.isa"
 
 include "ordering.isa"
 

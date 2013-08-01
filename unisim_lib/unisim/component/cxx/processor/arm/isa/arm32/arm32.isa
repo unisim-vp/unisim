@@ -70,8 +70,8 @@ using std::dec;
 
 impl {
 #include "unisim/component/cxx/processor/arm/models.hh"
-#include "unisim/component/cxx/processor/arm/execute.hh"
 #include "unisim/component/cxx/processor/arm/disasm.hh"
+#include "unisim/component/cxx/processor/arm/execute.hh"
 #include "unisim/component/cxx/processor/arm/exception.hh"
 #include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/arithmetic/arithmetic.hh"
