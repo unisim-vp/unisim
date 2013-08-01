@@ -35,6 +35,8 @@
 #ifndef __UNISIM_COMPONENT_CXX_INTERCONNECT_XILINX_CROSSBAR_CROSSBAR_TCC__
 #define __UNISIM_COMPONENT_CXX_INTERCONNECT_XILINX_CROSSBAR_CROSSBAR_TCC__
 
+#include <iostream>
+
 namespace unisim {
 namespace component {
 namespace cxx {
@@ -50,8 +52,50 @@ using unisim::kernel::logger::EndDebugWarning;
 using unisim::kernel::logger::EndDebugError;
 
 template <class CONFIG>
+AddressRange<CONFIG>::AddressRange(typename CONFIG::ADDRESS _start_addr, typename CONFIG::ADDRESS _end_addr)
+	: start_addr(_start_addr)
+	, end_addr(_end_addr)
+{
+}
+
+template <class CONFIG>
+AddressRange<CONFIG>::~AddressRange()
+{
+}
+
+template <class CONFIG>
+typename CONFIG::ADDRESS AddressRange<CONFIG>::GetStartAddr() const
+{
+	return start_addr;
+}
+
+template <class CONFIG>
+typename CONFIG::ADDRESS AddressRange<CONFIG>::GetEndAddr() const
+{
+	return end_addr;
+}
+
+template <class CONFIG>
+void AddressRange<CONFIG>::SetStartAddr(typename CONFIG::ADDRESS _start_addr)
+{
+	start_addr = _start_addr;
+}
+
+template <class CONFIG>
+void AddressRange<CONFIG>::SetEndAddr(typename CONFIG::ADDRESS _end_addr)
+{
+	end_addr = _end_addr;
+}
+
+template <class CONFIG>
+std::ostream& operator << (std::ostream& os, const AddressRange<CONFIG>& addr_range)
+{
+	return os << "0x" << std::hex << addr_range.start_addr << "-0x" << addr_range.end_addr << std::dec;
+}
+
+template <class CONFIG>
 Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
-	: Object(name, parent, "A crossbar")
+	: Object(name, parent)
 	, Service<Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, Client<Memory<typename CONFIG::ADDRESS> >(name, parent)
 	, memory_export("memory-export", this)
@@ -62,6 +106,15 @@ Crossbar<CONFIG>::Crossbar(const char *name, Object *parent)
 	, param_verbose("verbose", this, verbose, "Enable/Disable verbosity")
 {
 	Reset();
+	
+	std::stringstream sstr_description;
+	sstr_description << "This module implements the crossbar of the embedded processor block in Virtex-5 FXT FPGAs from Xilinx. It has the following address mappings at reset:" << std::endl;
+	DumpAddressMapping(IF_ICURD_PLB, sstr_description);
+	DumpAddressMapping(IF_DCUWR_PLB, sstr_description);
+	DumpAddressMapping(IF_DCURD_PLB, sstr_description);
+	DumpAddressMapping(IF_SPLB0, sstr_description);
+	DumpAddressMapping(IF_SPLB1, sstr_description);
+	Object::SetDescription(sstr_description.str().c_str());
 }
 
 template <class CONFIG>
@@ -129,7 +182,9 @@ void Crossbar<CONFIG>::Reset()
 template <class CONFIG>
 bool Crossbar<CONFIG>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, uint32_t size)
 {
-	Interface intf = Route(IF_DCURD_PLB, addr);
+	typename CONFIG::ADDRESS start_range = 0;
+	typename CONFIG::ADDRESS end_range = 0;
+	Interface intf = Route(IF_DCURD_PLB, addr, start_range, end_range);
 	
 	switch(intf)
 	{
@@ -149,7 +204,9 @@ bool Crossbar<CONFIG>::ReadMemory(typename CONFIG::ADDRESS addr, void *buffer, u
 template <class CONFIG>
 bool Crossbar<CONFIG>::WriteMemory(typename CONFIG::ADDRESS addr, const void *buffer, uint32_t size)
 {
-	Interface intf = Route(IF_DCUWR_PLB, addr);
+	typename CONFIG::ADDRESS start_range = 0;
+	typename CONFIG::ADDRESS end_range = 0;
+	Interface intf = Route(IF_DCUWR_PLB, addr, start_range, end_range);
 	
 	switch(intf)
 	{
@@ -332,11 +389,11 @@ bool Crossbar<CONFIG>::IsMappedDCR(uint32_t dcrn) const
 }
 
 template <class CONFIG>
-typename Crossbar<CONFIG>::Interface Crossbar<CONFIG>::Route(Interface intf, typename CONFIG::ADDRESS addr)
+typename Crossbar<CONFIG>::Interface Crossbar<CONFIG>::Route(Interface intf, typename CONFIG::ADDRESS addr, typename CONFIG::ADDRESS& start_range, typename CONFIG::ADDRESS& end_range)
 {
 	// addr = UAbus[28:31] || ABus[0:4] || ABus[5:31]
 	unsigned int uabus_28_31 = (addr >> 32) & 0xf;
-	unsigned int tmpl_reg_num = GetTMPL_SEL_REG() >> (30 - (2 * uabus_28_31)) & 0x3; 
+	unsigned int tmpl_reg_num = (GetTMPL_SEL_REG() >> (30 - (2 * uabus_28_31))) & 0x3;
 	
 	unsigned int abus_0_4 = (addr >> 27) & 0x1f;
 	
@@ -360,7 +417,162 @@ typename Crossbar<CONFIG>::Interface Crossbar<CONFIG>::Route(Interface intf, typ
 			return IF_MPLB;
 	}
 	
+	start_range = ((typename CONFIG::ADDRESS) uabus_28_31 << 32) | ((typename CONFIG::ADDRESS) abus_0_4 << 27);
+	end_range = start_range | 0x7ffffffULL;
+	
 	return (map & (1 << (31 - abus_0_4))) ? IF_MCI : IF_MPLB;
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::DumpAddressMapping(typename CONFIG::ADDRESS start_addr, typename CONFIG::ADDRESS end_addr, Interface dst_if, std::ostream& os)
+{
+	os << "0x" << std::hex << start_addr << "-0x" << end_addr << std::dec << " -> ";
+	switch(dst_if)
+	{
+		case IF_MCI:
+			os << "MCI";
+			break;
+		case IF_MPLB:
+			os << "MPLB";
+			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+			return;
+	}
+	os << std::dec << std::endl;
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::DumpAddressMapping(Interface intf, std::ostream& os)
+{
+	switch(intf)
+	{
+		case IF_ICURD_PLB:
+			os << "ICURD";
+			break;
+		case IF_DCUWR_PLB:
+			os << "DCUWR";
+			break;
+		case IF_DCURD_PLB:
+			os << "DCURD";
+			break;
+		case IF_SPLB0:
+			os << "SPLB0";
+			break;
+		case IF_SPLB1:
+			os << "SPLB1";
+			break;
+		default:
+			logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+			return;
+	}
+	os << " mapping:" << std::endl;
+	
+	unsigned int uabus_28_31;
+	typename CONFIG::ADDRESS start_addr = 0;
+	typename CONFIG::ADDRESS end_addr = 0;
+	Interface dst_if = IF_MCI;
+	for(uabus_28_31 = 0; uabus_28_31 < 16; uabus_28_31++)
+	{
+		unsigned int abus_0_4;
+		for(abus_0_4 = 0; abus_0_4 < 32; abus_0_4++)
+		{
+			typename CONFIG::ADDRESS new_start_addr = ((typename CONFIG::ADDRESS) uabus_28_31 << 32) | ((typename CONFIG::ADDRESS) abus_0_4 << 27);
+			typename CONFIG::ADDRESS new_end_addr = new_start_addr | 0x7ffffffULL;
+			
+			unsigned int tmpl_reg_num = (GetTMPL_SEL_REG() >> (30 - (2 * uabus_28_31))) & 0x3;
+
+			uint32_t map;
+			
+			switch(intf)
+			{
+				case IF_ICURD_PLB:
+				case IF_DCUWR_PLB:
+				case IF_DCURD_PLB:
+					map = GetTMPL_XBAR_MAP(tmpl_reg_num);
+					break;
+				case IF_SPLB0:
+					map = GetTMPL_PLBS0_MAP(tmpl_reg_num);
+					break;
+				case IF_SPLB1:
+					map = GetTMPL_PLBS1_MAP(tmpl_reg_num);
+					break;
+				default:
+					logger << DebugError << "Internal error" << EndDebugError;
+					Object::Stop(-1);
+					return;
+			}
+			
+			Interface new_dst_if = (map & (1 << (31 - abus_0_4))) ? IF_MCI : IF_MPLB;
+			if((uabus_28_31 == 15) && (abus_0_4 == 31))
+			{
+				// last mapping
+				os << "  - ";
+				DumpAddressMapping(start_addr, new_end_addr, dst_if, os);
+			}
+			else if(((uabus_28_31 != 0) || (abus_0_4 != 0)) && (new_dst_if != dst_if))
+			{
+				// not the first mapping, and destination interface is different from previous mapping
+				os << "  - ";
+				DumpAddressMapping(start_addr, end_addr, dst_if, os);
+				start_addr = new_start_addr;
+			}
+			end_addr = new_end_addr;
+			dst_if = new_dst_if;
+		}
+	}
+}
+
+template <class CONFIG>
+void Crossbar<CONFIG>::GetAddressRanges(Interface src_if, Interface dst_if, std::list<AddressRange<CONFIG> >& lst)
+{
+	unsigned int uabus_28_31;
+	for(uabus_28_31 = 0; uabus_28_31 < 16; uabus_28_31++)
+	{
+		unsigned int abus_0_4;
+		for(abus_0_4 = 0; abus_0_4 < 32; abus_0_4++)
+		{
+			typename CONFIG::ADDRESS start_addr = ((typename CONFIG::ADDRESS) uabus_28_31 << 32) | ((typename CONFIG::ADDRESS) abus_0_4 << 27);
+			typename CONFIG::ADDRESS end_addr = start_addr | 0x7ffffffULL;
+			
+			unsigned int tmpl_reg_num = (GetTMPL_SEL_REG() >> (30 - (2 * uabus_28_31))) & 0x3;
+
+			uint32_t map;
+			
+			switch(src_if)
+			{
+				case IF_ICURD_PLB:
+				case IF_DCUWR_PLB:
+				case IF_DCURD_PLB:
+					map = GetTMPL_XBAR_MAP(tmpl_reg_num);
+					break;
+				case IF_SPLB0:
+					map = GetTMPL_PLBS0_MAP(tmpl_reg_num);
+					break;
+				case IF_SPLB1:
+					map = GetTMPL_PLBS1_MAP(tmpl_reg_num);
+					break;
+				default:
+					logger << DebugError << "Internal error" << EndDebugError;
+					Object::Stop(-1);
+					return;
+			}
+			
+			if(dst_if == ((map & (1 << (31 - abus_0_4))) ? IF_MCI : IF_MPLB))
+			{
+				if(!lst.empty() && (lst.back().GetEndAddr() == (start_addr - 1)))
+				{
+					lst.back().SetEndAddr(end_addr);
+				}
+				else
+				{
+					lst.push_back(AddressRange<CONFIG>(start_addr, end_addr));
+				}
+			}
+		}
+	}
 }
 
 template <class CONFIG>

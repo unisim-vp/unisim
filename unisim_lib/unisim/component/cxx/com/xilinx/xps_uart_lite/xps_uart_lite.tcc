@@ -472,7 +472,7 @@ void XPS_UARTLite<CONFIG>::WriteCTRL_REG(uint8_t value)
 }
 
 template <class CONFIG>
-void XPS_UARTLite<CONFIG>::TelnetProcess(bool flush_telnet_output)
+void XPS_UARTLite<CONFIG>::TelnetProcessInput()
 {
 	if(char_io_import)
 	{
@@ -500,6 +500,16 @@ void XPS_UARTLite<CONFIG>::TelnetProcess(bool flush_telnet_output)
 			}
 			while(!rx_fifo.Full());
 		}
+	}
+}
+
+template <class CONFIG>
+void XPS_UARTLite<CONFIG>::TelnetProcessOutput(bool flush_telnet_output)
+{
+	if(char_io_import)
+	{
+		char c;
+		uint8_t v;
 		
 		if(!tx_fifo.Empty())
 		{

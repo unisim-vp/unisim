@@ -197,6 +197,25 @@ unsigned int MCI<CONFIG>::transport_dbg(unsigned int intf, tlm::tlm_generic_payl
 template <class CONFIG>
 bool MCI<CONFIG>::get_direct_mem_ptr(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	if(intf == inherited::IF_SLAVE_MCI)
+	{
+		if(inherited::GetMI_CONTROL_ENABLE())
+		{
+			//std::cerr << "MCI: grant exactly what Memory grants." << std::endl;
+			bool dmi_status = mci_master_sock->get_direct_mem_ptr(payload, dmi_data);
+			if(dmi_status)
+			{
+				dmi_data.set_read_latency(dmi_data.get_read_latency() + cycle_time);
+				dmi_data.set_write_latency(dmi_data.get_write_latency() + cycle_time);
+			}
+			return dmi_status;
+		}
+	}
+	
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
+	//std::cerr << "MCI: grant no access at all" << std::endl;
 	return false;
 }
 
@@ -236,6 +255,10 @@ tlm::tlm_sync_enum MCI<CONFIG>::nb_transport_bw(unsigned int intf, tlm::tlm_gene
 template <class CONFIG>
 void MCI<CONFIG>::invalidate_direct_mem_ptr(unsigned int intf, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+	if(intf == inherited::IF_MASTER_MCI)
+	{
+		mci_slave_sock->invalidate_direct_mem_ptr(start_range, end_range);
+	}
 }
 
 template <class CONFIG>
@@ -460,6 +483,10 @@ void MCI<CONFIG>::ProcessDCREvent(Event *event)
 					uint32_t value;
 					memcpy(&value, data_ptr, sizeof(value));
 					inherited::WriteDCR(dcrn, unisim::util::endian::BigEndian2Host(value));
+					if(dcrn == CONFIG::MI_CONTROL)
+					{
+						mci_slave_sock->invalidate_direct_mem_ptr(0, (sc_dt::uint64) -1);
+					}
 				}
 				break;
 			case tlm::TLM_IGNORE_COMMAND:

@@ -181,23 +181,25 @@ bool Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::get_direct_mem_p
 {
 	// tlm::tlm_command cmd = payload.get_command();
 	ADDRESS addr = payload.get_address();
-	ADDRESS dmi_start_addr;
-	ADDRESS dmi_end_addr;
-	sc_core::sc_time dmi_read_latency = read_latency;
-	sc_core::sc_time dmi_write_latency = write_latency;
-	tlm::tlm_dmi::dmi_access_e dmi_granted_access = tlm::tlm_dmi::DMI_ACCESS_READ_WRITE;
+	ADDRESS dmi_start_addr = addr;
+	ADDRESS dmi_end_addr = addr;
 
 	unsigned char *dmi_ptr = (unsigned char *) inherited::GetDirectAccess(addr, dmi_start_addr, dmi_end_addr);
 
-	if(!dmi_ptr) return false;
-
-	dmi_data.set_dmi_ptr(dmi_ptr);
 	dmi_data.set_start_address(dmi_start_addr);
 	dmi_data.set_end_address(dmi_end_addr);
-	dmi_data.set_read_latency(dmi_read_latency);
-	dmi_data.set_write_latency(dmi_write_latency);
-	dmi_data.set_granted_access(dmi_granted_access);
-	return true;
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+
+	if(dmi_ptr)
+	{
+		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
+		dmi_data.set_dmi_ptr(dmi_ptr);
+		dmi_data.set_read_latency(read_latency);
+		dmi_data.set_write_latency(write_latency);
+		return true;
+	}
+
+	return false;
 }
 
 template <unsigned int BUSWIDTH, class ADDRESS, unsigned int BURST_LENGTH, uint32_t PAGE_SIZE, bool DEBUG>

@@ -187,6 +187,9 @@ bool XPS_Timer<CONFIG>::BeginSetup()
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -409,6 +412,9 @@ unsigned int XPS_Timer<CONFIG>::capture_trigger_transport_dbg(unsigned int chann
 template <class CONFIG>
 bool XPS_Timer<CONFIG>::capture_trigger_get_direct_mem_ptr(unsigned int channel, CaptureTriggerPayload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 

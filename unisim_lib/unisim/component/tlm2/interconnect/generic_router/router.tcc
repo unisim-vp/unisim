@@ -30,6 +30,7 @@
  *  EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * Authors: Daniel Gracia Perez (daniel.gracia-perez@cea.fr)
+ *          Gilles Mouchard (gilles.mouchard@cea.fr)
  */
  
 #ifndef __UNISIM_COMPONENT_TLM2_INTERCONNECT_GENERIC_ROUTER_TCC__
@@ -473,7 +474,39 @@ void
 Router<CONFIG>::
 I_invalidate_direct_mem_ptr_cb(int id, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
-	/* nothing to do */
+	unsigned int mapping_id;
+	
+	for(mapping_id = 0; mapping_id < MAX_NUM_MAPPINGS; mapping_id++)
+	{
+		if(mapping[mapping_id].used)
+		{
+			if(mapping[mapping_id].output_port == (unsigned int) id)
+			{
+				// do reverse translation on DMI invalidation range
+				start_range -= mapping[mapping_id].translation;
+				start_range += mapping[mapping_id].range_start;
+				end_range -= mapping[mapping_id].translation;
+				end_range += mapping[mapping_id].range_start;
+
+				sc_dt::uint64 mapping_start_addr = mapping[mapping_id].range_start;
+				sc_dt::uint64 mapping_end_addr = mapping[mapping_id].range_end;
+				
+				if((mapping_end_addr >= start_range) && (mapping_start_addr <= end_range))
+				{
+					// collision
+					if(mapping_start_addr < start_range) mapping_start_addr = start_range; // cut lower region
+					if(mapping_end_addr > end_range) mapping_end_addr = end_range; // cut upper region
+				
+					// invalidate direct memory pointers on all input sockets
+					unsigned int i;
+					for(i = 0; i < INPUT_SOCKETS; i++)
+					{
+						(*targ_socket[i])->invalidate_direct_mem_ptr(mapping_start_addr, mapping_end_addr);
+					}
+				}
+			}
+		}
+	}
 }
 
 /*************************************************************************
@@ -913,8 +946,88 @@ template<class CONFIG>
 bool
 Router<CONFIG>::
 T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
-	/* nothing to do */
-	return false;
+	/* the first thing that must be done is the translation from the mapping table */
+	if (VerboseTLM()) 
+	{
+		logger << DebugInfo << "Received get_direct_mem_ptr on port " << id << ", forwarding it" << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+	}
+	/* check the address of the transaction to perform the port routing */
+	unsigned int mapping_id;
+	bool found = ApplyMap(trans, mapping_id);
+	if (!found) 
+	{
+		logger << DebugError << "Received get_direct_mem_ptr transaction on port " << id << " has an unmapped address"  << endl
+			<< LOCATION << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+		dmi.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+		dmi.set_start_address(0);
+		dmi.set_end_address((sc_dt::uint64) -1);
+		return false;
+	}
+	/* perform the address translation */
+	uint64_t translated_addr = trans.get_address();
+	translated_addr -= mapping[mapping_id].range_start;
+	translated_addr += mapping[mapping_id].translation;
+	if (VerboseTLM() && translated_addr != trans.get_address())
+	{
+		logger << DebugInfo << "Performing address translation on transaction:" << endl;
+		TRANS(logger, trans);
+		logger << endl
+			<< "--> address translated to 0x" << hex << translated_addr << dec
+			<< EndDebug;
+	}
+	trans.set_address(translated_addr);
+	/* forward the transaction to the selected output port */
+	if(VerboseTLM()) {
+		logger << DebugInfo << "Forwarding get_direct_mem_ptr received on port " << id << " to port " << mapping[mapping_id].output_port << endl;
+		TRANS(logger, trans);
+		logger << EndDebug;
+	}
+	bool dmi_status = (*init_socket[mapping[mapping_id].output_port])->get_direct_mem_ptr(trans, dmi);
+	
+	sc_dt::uint64 dmi_start_address = dmi.get_start_address();
+	sc_dt::uint64 dmi_end_address = dmi.get_end_address();
+	
+	// do reverse translation on DMI
+	dmi_start_address -= mapping[mapping_id].translation;
+	dmi_start_address += mapping[mapping_id].range_start;
+	dmi_end_address -= mapping[mapping_id].translation;
+	dmi_end_address += mapping[mapping_id].range_start;
+
+	// restrict address range of DMI
+	sc_dt::uint64 start_range = mapping[mapping_id].range_start;
+	sc_dt::uint64 end_range = mapping[mapping_id].range_end;
+	
+	if(dmi_start_address < start_range)
+	{
+		// cut lower region
+		dmi.set_dmi_ptr(dmi.get_dmi_ptr() + (start_range - dmi_start_address));
+		dmi.set_start_address(start_range);
+	}
+	else
+	{
+		dmi.set_start_address(dmi_start_address);
+	}
+		
+	if(dmi_end_address > end_range)
+	{
+		// cut upper region
+		dmi.set_end_address(end_range);
+	}
+	else
+	{
+		dmi.set_end_address(dmi_end_address);
+	}
+
+	if(dmi_status)
+	{
+		dmi.set_read_latency(dmi.get_read_latency() + cycle_time);
+		dmi.set_write_latency(dmi.get_write_latency() + cycle_time);
+	}
+	return dmi_status;
 }
 
 /*************************************************************************

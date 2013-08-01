@@ -1,4 +1,4 @@
-This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta10 on Jun 18 2013.
+This documentation has been automatically generated from the simulator \texttt{UNISIM Virtex 5 FXT} version 1.0beta11 on Aug  1 2013.
 \subsection{Introduction}
 UNISIM Virtex 5 FXT, full system PPC440x5 based simulator including some Virtex 5 IPs.\\
 Section \ref{UNISIM Virtex 5 FXT_licensing} gives licensing informations about the simulator.
@@ -9,7 +9,7 @@ Section \ref{UNISIM Virtex 5 FXT_statistics} gives the simulator statistic count
 Section \ref{UNISIM Virtex 5 FXT_formulas} gives the simulator statistic formulas.
 \subsection{Licensing}
 \label{UNISIM Virtex 5 FXT_licensing}
-UNISIM Virtex 5 FXT 1.0beta10\\
+UNISIM Virtex 5 FXT 1.0beta11\\
 Copyright (C) 2007-2011, Commissariat a l'Energie Atomique (CEA)\\
 License: BSD (see file COPYING)\\
 Authors: Gilles Mouchard $<$gilles.mouchard@cea.fr$>$, Daniel Gracia P\'erez $<$daniel.gracia-perez@cea.fr$>$\\
@@ -44,7 +44,21 @@ FSB/PLB width:128 bits\\
 MMU: yes\\
 FPU APU: yes
 \item \textbf{critical-input-interrupt-stub}: An initiator stub
-\item \textbf{crossbar}: A crossbar
+\item \textbf{crossbar}: This module implements the crossbar of the embedded processor block in Virtex-5 FXT FPGAs from Xilinx. It has the following address mappings at reset:\\
+ICURD mapping:\\
+  - 0x0-0x7fffffff $\rightarrow$ MCI\\
+  - 0x80000000-0xfffffffff $\rightarrow$ MPLB\\
+DCUWR mapping:\\
+  - 0x0-0x7fffffff $\rightarrow$ MCI\\
+  - 0x80000000-0xfffffffff $\rightarrow$ MPLB\\
+DCURD mapping:\\
+  - 0x0-0x7fffffff $\rightarrow$ MCI\\
+  - 0x80000000-0xfffffffff $\rightarrow$ MPLB\\
+SPLB0 mapping:\\
+  - 0x0-0xfffffffff $\rightarrow$ MCI\\
+SPLB1 mapping:\\
+  - 0x0-0xfffffffff $\rightarrow$ MCI\\
+
 \item \textbf{dcr-controller}: A Device Control Register bus controller
 \item \textbf{debugger}
 \item \textbf{dip-switches-8bit}: This module implements a 8-switch board (DIP switch or push buttons) on GPIO.\\
@@ -234,7 +248,7 @@ Parity: odd\\
 \label{UNISIM Virtex 5 FXT_using}
 The UNISIM Virtex 5 FXT simulator has the following command line options:\\
 ~\\
-\noindent Usage: \texttt{unisim-virtex5fxt-wfpu-1.0beta10 [<options>] [...]}
+\noindent Usage: \texttt{unisim-virtex5fxt-wfpu-1.0beta11 [<options>] [...]}
 
 \noindent Options:
 \begin{itemize}
@@ -686,6 +700,18 @@ Simulator configuration (see below) can be modified using command line Options \
 \multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
 \multicolumn{2}{|l|}{}\\
 \multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable host idle periods when target is idle.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.enable-dmi}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation.}\\
+\hline
+\multicolumn{1}{|p{7.5cm}}{\textbf{Name:} \texttt{cpu.debug-dmi}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Type:} \texttt{parameter}}\\
+\multicolumn{1}{|p{7.5cm}}{\textbf{Default:} \texttt{false}} & \multicolumn{1}{p{7.5cm}|}{\textbf{Data type:} \texttt{boolean}}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Valid:} \texttt{true},~\texttt{false}}\\
+\multicolumn{2}{|l|}{}\\
+\multicolumn{2}{|p{15cm}|}{\textbf{Description:} \newline Enable/Disable debugging of DMI (Direct Memory Access).}\\
 \hline
 \hline
 \multicolumn{2}{|l|}{\textbf{\Large critical-input-interrupt-stub}}\\

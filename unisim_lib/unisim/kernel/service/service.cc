@@ -143,6 +143,7 @@ static Translation conversion_table[] = {
 	{"}", "$\\}$"},
 	{"&", "\\&"},
 	{"--", "{-}{-}"},
+	{"->", "$\\rightarrow$"},
 	{"<<", "<}\\texttt{<"},
 	{">>", ">}\\texttt{>"},
 	{"<", "$<$"},

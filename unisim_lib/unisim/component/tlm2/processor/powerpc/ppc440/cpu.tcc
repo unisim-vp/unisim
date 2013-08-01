@@ -80,11 +80,15 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, ev_irq()
 	, ipc(1.0)
 	, one(1.0)
+	, enable_dmi(false)
+	, debug_dmi(false)
 	, param_bus_cycle_time("bus-cycle-time", this, bus_cycle_time, "bus cycle time")
 	, param_ext_timer_cycle_time("ext-timer-cycle-time", this, ext_timer_cycle_time, "external timer cycle time")
 	, param_nice_time("nice-time", this, nice_time, "maximum time between synchonizations")
 	, param_ipc("ipc", this, ipc, "targeted average instructions per second")
 	, param_enable_host_idle("enable-host-idle", this, enable_host_idle, "Enable/Disable host idle periods when target is idle")
+	, param_enable_dmi("enable-dmi", this, enable_dmi, "Enable/Disable TLM 2.0 DMI (Direct Memory Access) to speed-up simulation")
+	, param_debug_dmi("debug-dmi", this, debug_dmi, "Enable/Disable debugging of DMI (Direct Memory Access)")
 	, stat_one("one", this, one, "one")
 	, stat_run_time("run-time", this, run_time, "run time")
 	, stat_idle_time("idle-time", this, idle_time, "idle time")
@@ -97,6 +101,9 @@ CPU<CONFIG>::CPU(const sc_module_name& name, Object *parent)
 	, dcuwr_plb_redirector(0)
 	, dcurd_plb_redirector(0)
 	, dcr_redirector(0)
+	, icurd_dmi_region_cache()
+	, dcuwr_dmi_region_cache()
+	, dcurd_dmi_region_cache()
 {
 	stat_one.SetMutable(false);
 	stat_one.SetSerializable(false);
@@ -191,7 +198,7 @@ CPU<CONFIG>::~CPU()
 		delete dcr_redirector;
 	}
 	
-	//std::cerr << "total time=" << total_time << std::endl;
+	////std::cerr << "total time=" << total_time << std::endl;
 }
 
 template <class CONFIG>
@@ -216,6 +223,21 @@ tlm::tlm_sync_enum CPU<CONFIG>::nb_transport_bw(unsigned int if_id, tlm::tlm_gen
 template <class CONFIG>
 void CPU<CONFIG>::invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::uint64 start_range, sc_dt::uint64 end_range)
 {
+	switch(if_id)
+	{
+		case IF_ICURD_PLB:
+			icurd_dmi_region_cache.Invalidate(start_range, end_range);
+			//std::cerr << "PLB Instruction Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << std::endl;
+			break;
+		case IF_DCUWR_PLB:
+			dcuwr_dmi_region_cache.Invalidate(start_range, end_range);
+			//std::cerr << "PLB Data Write: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << std::endl;
+			break;
+		case IF_DCURD_PLB:
+			dcurd_dmi_region_cache.Invalidate(start_range, end_range);
+			//std::cerr << "PLB Data Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << std::endl;
+			break;
+	}
 }
 
 template <class CONFIG>
@@ -360,7 +382,7 @@ inline void CPU<CONFIG>::UpdateTime()
 #if 0
 		do
 		{
-			//std::cerr << "timer_time=" << timer_time << std::endl;
+			////std::cerr << "timer_time=" << timer_time << std::endl;
 			inherited::RunTimers(1);
 			timer_time += timer_cycle_time;
 		}
@@ -493,7 +515,45 @@ template <class CONFIG>
 bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
+
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
 	
+	if(likely(enable_dmi))
+	{
+		dmi_region = icurd_dmi_region_cache.Lookup(physical_addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			
+			if(likely(dmi_region->IsAllowed()))
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
+					cpu_time += dmi_data->get_read_latency();
+					return true;
+				}
+				else
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				}
+			}
+			else
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			}
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+		}
+	}
+	
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -508,8 +568,25 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	
 	tlm::tlm_response_status status = payload->get_response_status();
 	
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && payload->is_dmi_allowed()))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = icurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			icurd_dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+		}
+	}
+	
 	payload->release();
-
+	
 	return status == tlm::TLM_OK_RESPONSE;
 }
 
@@ -517,6 +594,44 @@ template <class CONFIG>
 bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
+	
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+	
+	if(likely(enable_dmi))
+	{
+		dmi_region = dcurd_dmi_region_cache.Lookup(physical_addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(likely(dmi_region->IsAllowed()))
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
+					cpu_time += dmi_data->get_read_latency();
+					return true;
+				}
+				else
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				}
+			}
+			else
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			}
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+		}
+	}
+
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -532,6 +647,23 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 
 	tlm::tlm_response_status status = payload->get_response_status();
 	
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && payload->is_dmi_allowed()))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = dcurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			dcurd_dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+		}
+	}
+
 	payload->release();
 
 	return status == tlm::TLM_OK_RESPONSE;
@@ -541,6 +673,44 @@ template <class CONFIG>
 bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr)
 {
 	AlignToBusClock();
+	
+	unisim::kernel::tlm2::DMIRegion *dmi_region = 0;
+
+	if(likely(enable_dmi))
+	{
+		dmi_region = dcuwr_dmi_region_cache.Lookup(physical_addr, size);
+		
+		if(likely(dmi_region != 0))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(likely(dmi_region->IsAllowed()))
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
+				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
+					cpu_time += dmi_data->get_write_latency();
+					return true;
+				}
+				else
+				{
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: granted DMI access does not allow direct write access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				}
+			}
+			else
+			{
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			}
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+		}
+	}
+
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -555,6 +725,22 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	run_time += cpu_time;
 
 	tlm::tlm_response_status status = payload->get_response_status();
+
+	if(likely(enable_dmi))
+	{
+		if(likely(!dmi_region && payload->is_dmi_allowed()))
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
+			unisim::kernel::tlm2::DMIGrant dmi_grant = icurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
+			
+			dcuwr_dmi_region_cache.Insert(dmi_grant, dmi_data);
+		}
+		else
+		{
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+		}
+	}
 
 	payload->release();
 

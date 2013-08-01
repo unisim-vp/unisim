@@ -693,6 +693,7 @@ void CPU<CONFIG>::Dcbf(typename CONFIG::address_t addr)
 	EmuTranslateAddress<false>(mmu_access);
 
 	// DL1 Access
+	if(!CONFIG::DL1_CONFIG::ENABLE) return;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 	l1_access.storage_attr = mmu_access.storage_attr;
@@ -766,6 +767,7 @@ void CPU<CONFIG>::Dcbi(typename CONFIG::address_t addr)
 	EmuTranslateAddress<false>(mmu_access);
 
 	// DL1 Access
+	if(!CONFIG::DL1_CONFIG::ENABLE) return;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -802,6 +804,7 @@ void CPU<CONFIG>::Dcbst(typename CONFIG::address_t addr)
 	EmuTranslateAddress<false>(mmu_access);
 
 	// DL1 Access
+	if(!CONFIG::DL1_CONFIG::ENABLE) return;
 	CacheAccess<class CONFIG::DL1_CONFIG> l1_access;
 	l1_access.addr = mmu_access.physical_addr;
 
@@ -924,40 +927,51 @@ void CPU<CONFIG>::Dccci(typename CONFIG::address_t addr)
 		throw PrivilegeViolationException<CONFIG>();
 	}
 
+	if(!CONFIG::DL1_CONFIG::ENABLE) return;
+	
 	InvalidateDL1();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Dcread(typename CONFIG::address_t addr, unsigned int rd)
 {
-	uint32_t way = addr / CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE;
-	uint32_t offset = (addr % CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
-	uint32_t index = 0;
-	uint32_t sector = 0;
-	
-	CacheSet<typename CONFIG::DL1_CONFIG>& l1_set = dl1[index];
-	CacheLine<typename CONFIG::DL1_CONFIG>& l1_line = l1_set[way];
-	CacheBlock<typename CONFIG::DL1_CONFIG>& l1_block = l1_line[sector];
-	
-	uint32_t data;
-	memcpy(&data, &l1_block[offset], sizeof(data));
-	
-	SetGPR(rd, data);
-	
-	typename CONFIG::physical_address_t base_physical_addr = l1_block.GetBaseAddr();
-	
-	uint32_t tagh = (((base_physical_addr >> 8) << CONFIG::DCDBTRH_TRA_OFFSET) & CONFIG::DCDBTRH_TRA_MASK)
-	              | ((((sizeof(typename CONFIG::physical_address_t) > 32) ? base_physical_addr >> 32 : 0) << CONFIG::DCDBTRH_TERA_OFFSET) & CONFIG::DCDBTRH_TERA_MASK)
-	              | (l1_block.status.valid ? CONFIG::DCDBTRH_V_MASK : 0);
-	
-	uint32_t tagl = (((uint32_t) l1_block.status.dirty << CONFIG::DCDBTRL_D_OFFSET) & CONFIG::DCDBTRL_D_MASK)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U0) ? CONFIG::DCDBTRL_U0_MASK : 0)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U1) ? CONFIG::DCDBTRL_U1_MASK : 0)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U2) ? CONFIG::DCDBTRL_U2_MASK : 0)
-	              | ((l1_line.status.storage_attr & CONFIG::SA_U3) ? CONFIG::DCDBTRL_U3_MASK : 0);
-	
-	SetDCDBTRH(tagh);
-	SetDCDBTRL(tagl);
+	if(CONFIG::DL1_CONFIG::ENABLE)
+	{
+		uint32_t way = addr / CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE;
+		uint32_t offset = (addr % CONFIG::DL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
+		uint32_t index = 0;
+		uint32_t sector = 0;
+		
+		CacheSet<typename CONFIG::DL1_CONFIG>& l1_set = dl1[index];
+		CacheLine<typename CONFIG::DL1_CONFIG>& l1_line = l1_set[way];
+		CacheBlock<typename CONFIG::DL1_CONFIG>& l1_block = l1_line[sector];
+		
+		uint32_t data;
+		memcpy(&data, &l1_block[offset], sizeof(data));
+		
+		SetGPR(rd, data);
+		
+		typename CONFIG::physical_address_t base_physical_addr = l1_block.GetBaseAddr();
+		
+		uint32_t tagh = (((base_physical_addr >> 8) << CONFIG::DCDBTRH_TRA_OFFSET) & CONFIG::DCDBTRH_TRA_MASK)
+					| ((((sizeof(typename CONFIG::physical_address_t) > 32) ? base_physical_addr >> 32 : 0) << CONFIG::DCDBTRH_TERA_OFFSET) & CONFIG::DCDBTRH_TERA_MASK)
+					| (l1_block.status.valid ? CONFIG::DCDBTRH_V_MASK : 0);
+		
+		uint32_t tagl = (((uint32_t) l1_block.status.dirty << CONFIG::DCDBTRL_D_OFFSET) & CONFIG::DCDBTRL_D_MASK)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U0) ? CONFIG::DCDBTRL_U0_MASK : 0)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U1) ? CONFIG::DCDBTRL_U1_MASK : 0)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U2) ? CONFIG::DCDBTRL_U2_MASK : 0)
+					| ((l1_line.status.storage_attr & CONFIG::SA_U3) ? CONFIG::DCDBTRL_U3_MASK : 0);
+		
+		SetDCDBTRH(tagh);
+		SetDCDBTRL(tagl);
+	}
+	else
+	{
+		SetGPR(rd, 0);
+		SetDCDBTRH(0);
+		SetDCDBTRL(0);
+	}
 }
 
 /* Instruction Cache Management */
@@ -976,14 +990,17 @@ void CPU<CONFIG>::Icbi(typename CONFIG::address_t addr)
 
 	EmuTranslateAddress<false>(mmu_access);
 
-	// invalidation operation is performed whether or not the access is cacheable
-	CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
+	if(CONFIG::IL1_CONFIG::ENABLE)
+	{
+		// invalidation operation is performed whether or not the access is cacheable
+		CacheAccess<class CONFIG::IL1_CONFIG> l1_access;
 
-	l1_access.addr = mmu_access.virtual_addr;
-	l1_access.storage_attr = mmu_access.storage_attr;
-	LookupIL1<false>(l1_access);
-	
-	InvalidateIL1Set(l1_access.index);
+		l1_access.addr = mmu_access.virtual_addr;
+		l1_access.storage_attr = mmu_access.storage_attr;
+		LookupIL1<false>(l1_access);
+		
+		InvalidateIL1Set(l1_access.index);
+	}
 
 	unisim::component::cxx::processor::powerpc::ppc440::Decoder<CONFIG>::InvalidateDecodingCacheEntry(addr);
 }
@@ -1003,40 +1020,51 @@ void CPU<CONFIG>::Iccci(typename CONFIG::address_t addr)
 		throw PrivilegeViolationException<CONFIG>();
 	}
 
+	if(!CONFIG::IL1_CONFIG::ENABLE) return;
+
 	InvalidateIL1();
 }
 
 template <class CONFIG>
 void CPU<CONFIG>::Icread(typename CONFIG::address_t addr)
 {
-	uint32_t way = addr / CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE;
-	uint32_t offset = (addr % CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
-	uint32_t index = 0;
-	uint32_t sector = 0;
-	
-	CacheSet<typename CONFIG::IL1_CONFIG>& l1_set = il1[index];
-	CacheLine<typename CONFIG::IL1_CONFIG>& l1_line = l1_set[way];
-	CacheBlock<typename CONFIG::IL1_CONFIG>& l1_block = l1_line[sector];
-	
-	uint32_t data;
-	memcpy(&data, &l1_block[offset], sizeof(data));
-	
-	SetICDBDR(data);
-	
-	typename CONFIG::virtual_address_t base_virtual_addr = l1_block.GetBaseAddr();
-	typename CONFIG::address_t ea = (base_virtual_addr & CONFIG::VADDR_EA_MASK) >> CONFIG::VADDR_EA_OFFSET;
-	typename CONFIG::process_id_t pid = (base_virtual_addr & CONFIG::VADDR_PID_MASK) >> CONFIG::VADDR_PID_OFFSET;
-	typename CONFIG::address_space_t as = (typename CONFIG::address_space_t)((base_virtual_addr & CONFIG::VADDR_AS_MASK) >> CONFIG::VADDR_AS_OFFSET);
-	
-	uint32_t tagh = (((ea >> 8) << CONFIG::ICDBTRH_TEA_OFFSET) & CONFIG::ICDBTRH_TEA_MASK)
-	              | (l1_block.status.valid ? CONFIG::ICDBTRH_V_MASK : 0);
-	
-	uint32_t tagl = (((uint32_t) as << CONFIG::ICDBTRL_TS_OFFSET) & CONFIG::ICDBTRL_TS_MASK)
-	              | ((pid << CONFIG::ICDBTRL_TID_OFFSET) & CONFIG::ICDBTRL_TID_MASK)
-	              | (pid ? 0 : CONFIG::ICDBTRL_TD_MASK);
-	
-	SetICDBTRH(tagh);
-	SetICDBTRL(tagl);
+	if(CONFIG::IL1_CONFIG::ENABLE)
+	{
+		uint32_t way = addr / CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE;
+		uint32_t offset = (addr % CONFIG::IL1_CONFIG::CACHE_BLOCK_SIZE) & 0xfffffffcUL;
+		uint32_t index = 0;
+		uint32_t sector = 0;
+		
+		CacheSet<typename CONFIG::IL1_CONFIG>& l1_set = il1[index];
+		CacheLine<typename CONFIG::IL1_CONFIG>& l1_line = l1_set[way];
+		CacheBlock<typename CONFIG::IL1_CONFIG>& l1_block = l1_line[sector];
+		
+		uint32_t data;
+		memcpy(&data, &l1_block[offset], sizeof(data));
+		
+		SetICDBDR(data);
+		
+		typename CONFIG::virtual_address_t base_virtual_addr = l1_block.GetBaseAddr();
+		typename CONFIG::address_t ea = (base_virtual_addr & CONFIG::VADDR_EA_MASK) >> CONFIG::VADDR_EA_OFFSET;
+		typename CONFIG::process_id_t pid = (base_virtual_addr & CONFIG::VADDR_PID_MASK) >> CONFIG::VADDR_PID_OFFSET;
+		typename CONFIG::address_space_t as = (typename CONFIG::address_space_t)((base_virtual_addr & CONFIG::VADDR_AS_MASK) >> CONFIG::VADDR_AS_OFFSET);
+		
+		uint32_t tagh = (((ea >> 8) << CONFIG::ICDBTRH_TEA_OFFSET) & CONFIG::ICDBTRH_TEA_MASK)
+					| (l1_block.status.valid ? CONFIG::ICDBTRH_V_MASK : 0);
+		
+		uint32_t tagl = (((uint32_t) as << CONFIG::ICDBTRL_TS_OFFSET) & CONFIG::ICDBTRL_TS_MASK)
+					| ((pid << CONFIG::ICDBTRL_TID_OFFSET) & CONFIG::ICDBTRL_TID_MASK)
+					| (pid ? 0 : CONFIG::ICDBTRL_TD_MASK);
+		
+		SetICDBTRH(tagh);
+		SetICDBTRL(tagl);
+	}
+	else
+	{
+		SetICDBDR(0);
+		SetICDBTRH(0);
+		SetICDBTRL(0);
+	}
 }
 
 } // end of namespace ppc440

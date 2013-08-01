@@ -102,6 +102,9 @@ bool XPS_UARTLite<CONFIG>::BeginSetup()
 template <class CONFIG>
 bool XPS_UARTLite<CONFIG>::get_direct_mem_ptr(tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 
@@ -325,7 +328,10 @@ void XPS_UARTLite<CONFIG>::ProcessEvents()
 		schedule.Notify(event);
 	}
 	
-	inherited::TelnetProcess(flush_telnet_output);       // Handle I/O with telnet client
+	// Handle I/O with telnet client
+	inherited::TelnetProcessInput();
+	inherited::TelnetProcessOutput(flush_telnet_output);
+	
 	GenerateOutput();                 // Generate interrupt signal
 		
 	inherited::ResetTX_FIFO_BecomesEmpty();

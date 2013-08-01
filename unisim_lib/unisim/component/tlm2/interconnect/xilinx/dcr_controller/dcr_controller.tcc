@@ -189,6 +189,9 @@ unsigned int DCRController<CONFIG>::transport_dbg(unsigned int num_slave, tlm::t
 template <class CONFIG>
 bool DCRController<CONFIG>::get_direct_mem_ptr(unsigned int num_slave, tlm::tlm_generic_payload& payload, tlm::tlm_dmi& dmi_data)
 {
+	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
+	dmi_data.set_start_address(0);
+	dmi_data.set_end_address((sc_dt::uint64) -1);
 	return false;
 }
 

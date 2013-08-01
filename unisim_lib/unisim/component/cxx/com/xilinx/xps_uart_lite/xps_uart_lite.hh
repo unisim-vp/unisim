@@ -119,7 +119,8 @@ protected:
 	void WriteTX_FIFO(uint8_t value);
 	void WriteCTRL_REG(uint8_t value);
 	
-	void TelnetProcess(bool flush_telnet_output);
+	void TelnetProcessInput();
+	void TelnetProcessOutput(bool flush_telnet_output);
 };
 
 } // end of namespace xps_uart_lite
