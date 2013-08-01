@@ -45,7 +45,7 @@
 op cdp(cond[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp.disasm = {
-	buffer << "cdp" << DisasmCondition(cond) << " " << dec << (unsigned int) cp_num << ", " << dec << (unsigned int) op1 << ", cr" << dec << (unsigned int) crd << ", cr" << dec << (unsigned int) crn << ", cr" << dec << (unsigned int) crm << ", " << dec << (unsigned int) op2;
+	buffer << "cdp" << DisasmCondition(cond) << " " << std::dec << (unsigned int) cp_num << ", " << std::dec << (unsigned int) op1 << ", cr" << std::dec << (unsigned int) crd << ", cr" << std::dec << (unsigned int) crn << ", cr" << std::dec << (unsigned int) crm << ", " << std::dec << (unsigned int) op2;
 };
 
 cdp.execute = {
@@ -276,7 +276,7 @@ stc_unindexed.execute = {
 }:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp2.disasm = {
-	buffer << "cdp2" << " " << dec << (unsigned int) cp_num << ", " << dec << (unsigned int) op1 << ", cr" << dec << (unsigned int) crd << ", cr" << dec << (unsigned int) crn << ", cr" << dec << (unsigned int) crm << ", " << dec << (unsigned int) op2;
+	buffer << "cdp2" << " " << std::dec << (unsigned int) cp_num << ", " << std::dec << (unsigned int) op1 << ", cr" << std::dec << (unsigned int) crd << ", cr" << std::dec << (unsigned int) crn << ", cr" << std::dec << (unsigned int) crm << ", " << std::dec << (unsigned int) op2;
 };
 
 cdp2.execute = {
