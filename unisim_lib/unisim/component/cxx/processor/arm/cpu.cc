@@ -1192,37 +1192,48 @@ uint32_t
 CPU::
 GetSPSRIndex()
 {
-	uint32_t rm = 0;
-
-	switch (cpsr & CPSR_RUNNING_MODE_MASK) 
-	{
-		case USER_MODE:
-			assert(USER_MODE != USER_MODE);
-			break;
-		case SYSTEM_MODE:
-			assert(SYSTEM_MODE != SYSTEM_MODE);
-			break;
-		case SUPERVISOR_MODE:
-			rm = 0;
-			break;
-		case ABORT_MODE:
-			rm = 1;
-			break;
-		case UNDEFINED_MODE:
-			rm = 2;
-			break;
-		case IRQ_MODE:
-			rm = 3;
-			break;
-		case FIQ_MODE:
-			rm = 4;
-			break;
-		default:
-			assert(0);
-			break;
-	}
+  uint32_t rm = 0;
+  uint32_t run_mode = cpsr & CPSR_RUNNING_MODE_MASK;
+  switch (run_mode)
+    {
+    case USER_MODE: case SYSTEM_MODE: {
+      /* In user or system mode, access to SPSR are unpredictable,
+       * thus the code whould never try to access SPSR in such
+       * modes. */
+      
+      this->UnpredictableInsnBehaviour();
+      // logger << DebugWarning
+      //        << "trying to access SPSR while running in "
+      //        << ((run_mode == cpu.USER_MODE) ? "user" : "system")
+      //        << " mode with the following instruction: "
+      //        << std::endl
+      //        << "Location: " << __FUNCTION__
+      //        << ":" << __FILE__
+      //        << ":" << __LINE__
+      //        << EndDebugWarning;
+      // Stop(-1);
+    } break;
+    case SUPERVISOR_MODE:
+      rm = 0;
+      break;
+    case ABORT_MODE:
+      rm = 1;
+      break;
+    case UNDEFINED_MODE:
+      rm = 2;
+      break;
+    case IRQ_MODE:
+      rm = 3;
+      break;
+    case FIQ_MODE:
+      rm = 4;
+      break;
+    default:
+      assert(0);
+      break;
+    }
 	
-	return rm;
+  return rm;
 }
 
 /** Copy the value of current SPSR register into CPSR.

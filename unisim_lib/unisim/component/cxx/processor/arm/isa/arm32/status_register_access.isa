@@ -41,56 +41,28 @@
 /*******************************************************************
  * mrs instruction
  */
-op mrs(cond[4]:0b00010[5]:r[1]:0b0[2]:0b1111[4]:rd[4]:0b0[12])
+op mrs(cond[4]:0b00010[5]:r[1]:0b0[2]:0b1111[4]:rd[4]:0b0[12]);
 
-  mrs.disasm = {
+mrs.disasm = {
   buffer << "mrs" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", ";
   if(r) buffer << "spsr";
   else buffer << "cpsr";
 };
 
 mrs.execute = {
-  uint32_t run_mode;
+  if (not CheckCondition(cpu, cond)) return;
 	
-	
-  if(not CheckCondition(cpu, cond)) return;
-	
-  /* if rd is the pc register the behavior is unpredictable,
-   *   we just return */
-  if(rd == cpu.PC_reg)
-    {
-      return;
-    }
-
-  run_mode = cpu.GetCPSR() & cpu.RUNNING_MODE_MASK; /* get running mode */
+  /* if rd is the pc register the behavior is unpredictable, notify
+   * and return */
+  if (rd == cpu.PC_reg) {
+    cpu.UnpredictableInsnBehaviour();
+    return;
+  }
+  
   if (r)
-    {
-      /* check current running mode, if in user or system mode then the behaviour is
-       *   unpredictable, so we will do a return */
-      if((run_mode == cpu.USER_MODE) or (run_mode == cpu.SYSTEM_MODE))
-        {
-          // stringstream str;
-          // this->disasm(cpu, str);
-
-          // cpu.logger << DebugWarning
-          //            << "trying to access SPSR while running in "
-          //            << ((run_mode == cpu.USER_MODE)?"user":"system")
-          //            << " mode with the following instruction: "
-          //            << endl;
-          // cpu.logger << str.str() << endl
-          //            << "Location: " << __FUNCTION__
-          //            << ":" << __FILE__
-          //            << ":" << __LINE__
-          //            << EndDebugWarning;
-				
-          return;
-        }
-      cpu.SetGPR(rd, cpu.GetSPSR());
-    }
+    cpu.SetGPR(rd, cpu.GetSPSR());
   else
-    {
-      cpu.SetGPR(rd, cpu.GetCPSR());
-    }
+    cpu.SetGPR(rd, cpu.GetCPSR());
 };
 
 /*

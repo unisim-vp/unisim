@@ -635,7 +635,13 @@ public:
    * @param mask the value to set at reset
    */
   void ResetVirtualExceptionVector(uint32_t mask = 0);
-
+  
+  /** Unpredictable Instruction Behaviour.
+   * This method is just called when an unpredictable behaviour is detected to
+   *   notifiy the processor.
+   */
+  virtual void UnpredictableInsnBehaviour() {};
+  
   /*
    * ARM architecture constants
    */
