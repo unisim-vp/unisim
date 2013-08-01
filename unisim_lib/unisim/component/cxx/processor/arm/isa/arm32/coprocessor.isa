@@ -271,6 +271,7 @@ stc_unindexed.execute = {
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
@@ -296,6 +297,7 @@ cdp2.execute = {
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldc2_offset(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
 ldc2_offset.var imm : {int32_t} = {u?offset:-offset};
@@ -305,6 +307,7 @@ ldc2_offset.var imm : {int32_t} = {u?offset:-offset};
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldc2_pre(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
 ldc2_pre.var imm : {int32_t} = {u?offset:-offset};
@@ -314,6 +317,7 @@ ldc2_pre.var imm : {int32_t} = {u?offset:-offset};
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldc2_post(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
 ldc2_post.var imm : {int32_t} = {u?offset:-offset};
@@ -323,6 +327,7 @@ ldc2_post.var imm : {int32_t} = {u?offset:-offset};
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
@@ -393,6 +398,7 @@ ldc2_unindexed.execute = {
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
@@ -418,6 +424,7 @@ mcr2.execute = {
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
@@ -444,6 +451,7 @@ mrc2.execute = {
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op stc2_offset(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
 stc2_offset.var imm : {int32_t} = {u?offset:-offset};
@@ -453,6 +461,7 @@ stc2_offset.var imm : {int32_t} = {u?offset:-offset};
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op stc2_pre(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
 stc2_pre.var imm : {int32_t} = {u?offset:-offset};
@@ -462,6 +471,7 @@ stc2_pre.var imm : {int32_t} = {u?offset:-offset};
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op stc2_post(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
 stc2_post.var imm : {int32_t} = {u?offset:-offset};
@@ -471,6 +481,7 @@ stc2_post.var imm : {int32_t} = {u?offset:-offset};
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op stc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 

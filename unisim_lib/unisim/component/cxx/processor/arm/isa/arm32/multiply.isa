@@ -123,6 +123,7 @@ mul.execute = {
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4]);
 

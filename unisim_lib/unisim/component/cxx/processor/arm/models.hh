@@ -51,6 +51,7 @@ static const uint32_t ARMV5TE = 5;
 static const uint32_t ARMV5TEJ = 6;
 static const uint32_t ARMV5TEXP = 7;
 static const uint32_t ARMV6 = 8;
+static const uint32_t ARMV7 = 9;
 
 static const uint32_t ARMEMU = 1000;
 

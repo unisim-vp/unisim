@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007-2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -39,7 +39,7 @@
 **********************************************/
 
 /*******************************************************************
- * clz instruction
+ * clz (count leading zero) instruction
  */
 
 { STATE::MODEL == ARMV5T ||
@@ -47,19 +47,39 @@
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4])
+}:op clz(cond[4]:0b00010110[8]:sbo1[4]:rd[4]:sbo2[4]:0b0001[4]:rm[4]);
 
 clz.disasm = {
-	buffer << "clz" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-}
+  buffer << "clz" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+};
 
 clz.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-	
-	cpu.SetGPR(rd, CountLeadingZeros(cpu.GetGPR(rm)));
-}
+  if (not CheckCondition(cpu, cond)) return;
+  
+  cpu.SetGPR(rd, CountLeadingZeros( cpu.GetGPR(rm) ));
+};
 
 /*
- * end of clz instruction
+ * end of (count leading zero) clz instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * rbit instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op rbit( cond[4]:0x6ff[12]:rd[4]:0xf3[8]:rm[4] );
+
+rbit.disasm = { buffer << "rbit" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm); };
+
+rbit.execute = {
+  uint32_t src = cpu.GetGPR( rm ), dst = 0;
+  for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & 1); src >>= 1; }
+  cpu.SetGPR( rd, dst );
+};
+
+/*
+ * end of rbit instruction
  *******************************************************************/

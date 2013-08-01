@@ -45,6 +45,7 @@
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op mcrr(cond[4]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 
@@ -70,6 +71,7 @@ mcrr.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op mrrc(cond[4]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4])
 

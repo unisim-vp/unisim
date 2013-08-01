@@ -97,6 +97,8 @@ bl.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op bx(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0001[4]:rm[4]);
 
@@ -129,6 +131,8 @@ bx.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op blx_1(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
 blx_1.var imm : {uint32_t} = {im1|im0};
@@ -162,6 +166,8 @@ blx_1.execute = {
   STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV5TEXP ||
+  STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op blx_2(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0011[4]:rm[4]);
 

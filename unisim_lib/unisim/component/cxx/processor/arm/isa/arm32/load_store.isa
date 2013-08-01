@@ -383,6 +383,7 @@ ldrsb_reg_offset.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldrd_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1101[4]:im0[4]);
 ldrd_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
@@ -403,6 +404,7 @@ ldrd_imm_post.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldrd_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1101[4]:im0[4]);
 ldrd_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
@@ -423,6 +425,7 @@ ldrd_imm_offset.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldrd_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4]);
 
@@ -443,6 +446,7 @@ ldrd_reg_post.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op ldrd_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1101[4]:rm[4]);
 
@@ -679,6 +683,7 @@ strb_reg_offset.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op strd_imm_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b1[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1111[4]:im0[4]);
 strd_imm_post.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
@@ -699,6 +704,7 @@ strd_imm_post.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op strd_imm_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b1[1]:x[1]:0b0[1]:rn[4]:rd[4]:shl<4> im1[4]:0b1111[4]:im0[4]);
 strd_imm_offset.var imm : {int32_t} = {u?(im1|im0):-(im1|im0)};
@@ -719,6 +725,7 @@ strd_imm_offset.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op strd_reg_post(cond[4]:0b000[3]:0b0[1]:u[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4]);
 
@@ -738,6 +745,7 @@ strd_reg_post.execute = {
 { STATE::MODEL == ARMV5TE ||
   STATE::MODEL == ARMV5TEJ ||
   STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
 }:op strd_reg_offset(cond[4]:0b000[3]:0b1[1]:u[1]:0b0[1]:x[1]:0b0[1]:rn[4]:rd[4]:sbz[4]:0b1111[4]:rm[4]);
 
