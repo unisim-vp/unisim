@@ -38,6 +38,8 @@
 #include <string>
 #include <map>
 #include <inttypes.h>
+#include "unisim/kernel/service/service.hh"
+#include "unisim/kernel/logger/logger.hh"
 #include "unisim/util/debug/register.hh"
 #include "unisim/util/endian/endian.hh"
 
@@ -184,7 +186,8 @@ namespace arm {
  * void UnpredictableInsnBehaviour();
  */
 
-class CPU 
+class CPU
+  : public virtual unisim::kernel::service::Object
 {
 public:
   //=====================================================================
@@ -198,12 +201,21 @@ public:
    *
    * @param endianness the endianness to use
    */
-  CPU(unisim::util::endian::endian_type endianness = 
-      unisim::util::endian::E_BIG_ENDIAN);
+  CPU( char const* name, Object* parent = 0,
+       unisim::util::endian::endian_type endianness =
+       unisim::util::endian::E_BIG_ENDIAN
+       );
   /** Destructor.
    */
   ~CPU();
-
+  
+  //=====================================================================
+  //=                       Logger                                      =
+  //=====================================================================
+  
+  /** Unisim logging services. */
+  unisim::kernel::logger::Logger logger;
+  
   /**************************************************************/
   /* Endian variables and methods                         START */
   /**************************************************************/
@@ -635,12 +647,6 @@ public:
    * @param mask the value to set at reset
    */
   void ResetVirtualExceptionVector(uint32_t mask = 0);
-  
-  /** Unpredictable Instruction Behaviour.
-   * This method is just called when an unpredictable behaviour is detected to
-   *   notifiy the processor.
-   */
-  virtual void UnpredictableInsnBehaviour() {};
   
   /*
    * ARM architecture constants

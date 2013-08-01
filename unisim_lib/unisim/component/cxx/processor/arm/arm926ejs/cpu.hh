@@ -45,8 +45,6 @@
 #include "unisim/component/cxx/processor/arm/arm926ejs/lockdown_tlb.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_arm32.hh"
 #include "unisim/component/cxx/processor/arm/arm926ejs/isa_thumb.hh"
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
 #include "unisim/service/interfaces/memory_access_reporting.hh"
@@ -148,13 +146,6 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting>
 		exception_trap_reporting_import;
-
-	//=====================================================================
-	//=                       Logger                                      =
-	//=====================================================================
-	
-	/** Unisim logging services. */
-	unisim::kernel::logger::Logger logger;
 
 	//=====================================================================
 	//=                    Constructor/Destructor                         =

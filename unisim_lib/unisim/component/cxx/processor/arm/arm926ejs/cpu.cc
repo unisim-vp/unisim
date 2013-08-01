@@ -100,7 +100,7 @@ using std::string;
 CPU::
 CPU(const char *name, Object *parent)
 	: Object(name, parent)
-	, unisim::component::cxx::processor::arm::CPU()
+	, unisim::component::cxx::processor::arm::CPU(name, parent)
 	, unisim::component::cxx::processor::arm::arm926ejs::CP15Interface()
 	, Service<MemoryInjection<uint64_t> >(name, parent)
 	, Client<DebugControl<uint64_t> >(name, parent)
@@ -123,7 +123,6 @@ CPU(const char *name, Object *parent)
 			"instruction-counter-trap-reporting-import", this)
 	, exception_trap_reporting_import(
 			"exception-trap-reporting-import", this)
-	, logger(*this)
 	, icache("icache", this)
 	, dcache("dcache", this)
 	, ltlb("lockdown-tlb", this)

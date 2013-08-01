@@ -100,7 +100,7 @@ using std::stringstream;
 CPU::
 CPU(const char *name, Object *parent)
 	: Object(name, parent)
-	, unisim::component::cxx::processor::arm::CPU()
+	, unisim::component::cxx::processor::arm::CPU(name, parent)
 	, Client<LinuxOS>(name, parent)
 	, Service<MemoryInjection<uint32_t> >(name, parent)
 	, Client<DebugControl<uint32_t> >(name, parent)
@@ -122,7 +122,6 @@ CPU(const char *name, Object *parent)
 	, linux_os_import("linux-os-import", this)
 	, instruction_counter_trap_reporting_import(
 			"instruction-counter-trap-reporting-import", this)
-	, logger(*this)
 	, icache("icache", this)
 	, dcache("dcache", this)
 	, arm32_decoder()

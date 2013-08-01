@@ -39,8 +39,6 @@
 #include "unisim/component/cxx/processor/arm/cpu.hh"
 #include "unisim/component/cxx/processor/arm/memory_op.hh"
 #include "unisim/component/cxx/processor/arm/armemu/cache.hh"
-#include "unisim/kernel/service/service.hh"
-#include "unisim/kernel/logger/logger.hh"
 #include "unisim/service/interfaces/linux_os.hh"
 #include "unisim/service/interfaces/debug_control.hh"
 #include "unisim/service/interfaces/disassembly.hh"
@@ -146,13 +144,6 @@ public:
 	unisim::kernel::service::ServiceImport<
 		unisim::service::interfaces::TrapReporting> 
 		instruction_counter_trap_reporting_import;
-
-	//=====================================================================
-	//=                       Logger                                      =
-	//=====================================================================
-	
-	/** Unisim logging services. */
-	unisim::kernel::logger::Logger logger;
 
 	//=====================================================================
 	//=                    Constructor/Destructor                         =

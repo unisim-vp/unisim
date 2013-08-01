@@ -73,6 +73,9 @@ using std::dec;
 using std::ostringstream;
 using unisim::util::debug::SimpleRegister;
 using unisim::util::debug::Symbol;
+using unisim::kernel::logger::DebugWarning;
+using unisim::kernel::logger::EndDebugWarning;
+
 
 // class ProgramCounterRegister (unisim::util::debug::Register) used for PC/R15 view
 class ProgramCounterRegister : public Register
@@ -90,51 +93,52 @@ private:
 };
 
 // Constructor
-CPU ::
-CPU(endian_type endianness)
-	: default_endianness(endianness)
-	, munged_address_mask8(0)
-	, munged_address_mask16(0)
-	, registers_registry()
-	, cpsr(0)
-	, fake_fps(0)
-	, exception(0)
+CPU::CPU(char const* name, Object* parent, endian_type endianness)
+  : Object(name, parent)
+  , logger(*this)
+  , default_endianness(endianness)
+  , munged_address_mask8(0)
+  , munged_address_mask16(0)
+  , registers_registry()
+  , cpsr(0)
+  , fake_fps(0)
+  , exception(0)
 {
-	// Initialize general purpose registers
-	for(unsigned int i = 0; i < num_log_gprs; i++)
-		gpr[i] = 0;
-	pc = 0;
+  // Initialize general purpose registers
+  for(unsigned int i = 0; i < num_log_gprs; i++)
+    gpr[i] = 0;
+  pc = 0;
 	
-	for(unsigned int i = 0; i < num_phys_gprs; i++)
-		phys_gpr[i] = 0;
+  for(unsigned int i = 0; i < num_phys_gprs; i++)
+    phys_gpr[i] = 0;
 
-	// Initialize status (CPSR/SPSR) registers
-	cpsr = 0;
-	for(unsigned int i = 0; i < num_phys_spsrs; i++) {
-		spsr[i] = 0;
-	}
+  // Initialize status (CPSR/SPSR) registers
+  cpsr = 0;
+  for(unsigned int i = 0; i < num_phys_spsrs; i++) {
+    spsr[i] = 0;
+  }
 
-	// Initialize fake floating point registers
-	for(unsigned int i = 0; i < 8; i++) {
-		fake_fpr[i] = 0;
-	}
-	fake_fps = 0;
+  // Initialize fake floating point registers
+  for(unsigned int i = 0; i < 8; i++) {
+    fake_fpr[i] = 0;
+  }
+  fake_fps = 0;
 
-	// Initialize address mungling
-	SetEndianness(default_endianness);
+  // Initialize address mungling
+  SetEndianness(default_endianness);
 
-	// initialize the registers debugging interface
-	for(int i = 0; i < 15; i++) {
-		stringstream str;
-		str << "r" << i;
-		registers_registry[str.str().c_str()] =
-		new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
-	}
-        registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
-	registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
-	registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
-	registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
-	registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
+  // initialize the registers debugging interface
+  for(int i = 0; i < 15; i++) {
+    stringstream str;
+    str << "r" << i;
+    registers_registry[str.str().c_str()] =
+      new SimpleRegister<uint32_t>(str.str().c_str(), &gpr[i]);
+  }
+  registers_registry["r15"] =  new ProgramCounterRegister("r15", *this);
+  registers_registry["pc"] =   new ProgramCounterRegister("pc", *this);
+  registers_registry["sp"] =   new SimpleRegister<uint32_t>("sp", &gpr[13]);
+  registers_registry["lr"] =   new SimpleRegister<uint32_t>("lr", &gpr[14]);
+  registers_registry["cpsr"] = new SimpleRegister<uint32_t>("cpsr", &cpsr);
 }
 
 /** Destructor.
@@ -1201,17 +1205,16 @@ GetSPSRIndex()
        * thus the code whould never try to access SPSR in such
        * modes. */
       
-      this->UnpredictableInsnBehaviour();
-      // logger << DebugWarning
-      //        << "trying to access SPSR while running in "
-      //        << ((run_mode == cpu.USER_MODE) ? "user" : "system")
-      //        << " mode with the following instruction: "
-      //        << std::endl
-      //        << "Location: " << __FUNCTION__
-      //        << ":" << __FILE__
-      //        << ":" << __LINE__
-      //        << EndDebugWarning;
-      // Stop(-1);
+      logger << DebugWarning
+             << "trying to access SPSR while running in "
+             << ((run_mode == USER_MODE) ? "user" : "system")
+             << " mode with the following instruction: "
+             << std::endl
+             << "Location: " << __FUNCTION__
+             << ":" << __FILE__
+             << ":" << __LINE__
+             << EndDebugWarning;
+      Stop(-1);
     } break;
     case SUPERVISOR_MODE:
       rm = 0;

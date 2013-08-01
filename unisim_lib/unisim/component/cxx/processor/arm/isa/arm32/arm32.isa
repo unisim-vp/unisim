@@ -80,8 +80,6 @@ impl {
 	
 using unisim::util::arithmetic::Add32;
 using unisim::util::arithmetic::CountLeadingZeros;
-using unisim::kernel::logger::DebugWarning;
-using unisim::kernel::logger::EndDebugWarning;
 }
 
 include "constructors_dec.isa"
