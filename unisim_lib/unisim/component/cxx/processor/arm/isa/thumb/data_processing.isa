@@ -80,7 +80,7 @@ adc.execute = {
 op add_1(0b0001110[7]:imm[3]:rn[3]:rd[3]);
 
 add_1.disasm = {
-  buffer << "add " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << dec << imm;
+  buffer << "add " << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << std::dec << imm;
 };
 
 add_1.execute = {
@@ -112,7 +112,7 @@ add_1.execute = {
 op add_2(0b00110[5]:rd[3]:imm[8]);
 
 add_2.disasm = {
-  buffer << "add " << DisasmRegister(rd) << ", #" << dec << imm;
+  buffer << "add " << DisasmRegister(rd) << ", #" << std::dec << imm;
 };
 
 add_2.execute = {
@@ -202,7 +202,7 @@ add_4.execute = {
 op add_5(0b10100[5]:rd[3]:imm[8]);
 
 add_5.disasm = {
-  buffer << "add " << DisasmRegister(rd) << ", PC, #" << dec << ((unsigned int)imm * 4);
+  buffer << "add " << DisasmRegister(rd) << ", PC, #" << std::dec << ((unsigned int)imm * 4);
 };
 
 add_5.execute = {
@@ -229,7 +229,7 @@ add_5.execute = {
 op add_6(0b10101[5]:rd[3]:imm[8]);
 
 add_6.disasm = {
-  buffer << "add " << DisasmRegister(rd) << ", SP, #" << dec << ((unsigned int)imm * 4);
+  buffer << "add " << DisasmRegister(rd) << ", SP, #" << std::dec << ((unsigned int)imm * 4);
 };
 
 add_6.execute = {
@@ -298,7 +298,7 @@ and.execute = {
 op asr_1(0b00010[5]:imm[5]:rm[3]:rd[3]);
 
 asr_1.disasm = {
-  buffer << "asr " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << dec << imm;
+  buffer << "asr " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << std::dec << imm;
 };
 
 asr_1.execute = {
@@ -434,7 +434,7 @@ cmn.execute = {
 op cmp_1(0b00101[5]:rn[3]:imm[8]);
 
 cmp_1.disasm = {
-  buffer << "cmp " << DisasmRegister(rn) << ", #" << dec << imm;
+  buffer << "cmp " << DisasmRegister(rn) << ", #" << std::dec << imm;
 };
 
 cmp_1.execute = {
@@ -499,7 +499,7 @@ eor.execute = {
 op lsl_1(0b00000[5]:imm[5]:rm[3]:rd[3]);
 
 lsl_1.disasm = {
-  buffer << "lsl " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << dec << imm;
+  buffer << "lsl " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << std::dec << imm;
 };
 
 lsl_1.execute = {
@@ -564,7 +564,7 @@ lsl_2.execute = {
 op lsr_1(0b00001[5]:imm[5]:rm[3]:rd[3]);
 
 lsr_1.disasm = {
-  buffer << "lsr " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << dec << imm;
+  buffer << "lsr " << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << std::dec << imm;
 };
 
 lsr_1.execute = {
@@ -633,7 +633,7 @@ lsr_2.execute = {
 op mov_1(0b00100[5]:rd[3]:imm[8]);
 
 mov_1.disasm = {
-  buffer << "mov " << DisasmRegister(rd) << ", #" << dec << imm;
+  buffer << "mov " << DisasmRegister(rd) << ", #" << std::dec << imm;
 };
 
 mov_1.execute = {
@@ -838,7 +838,7 @@ sbc.execute = {
 op sub_1(0b0001111[7]:imm[3]:rn[3]:rd[3]);
 
 sub_1.disasm = {
-  buffer << "sub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << dec << imm;
+  buffer << "sub\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << std::dec << imm;
 };
 
 sub_1.execute = {

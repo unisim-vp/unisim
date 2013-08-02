@@ -46,7 +46,7 @@
 op b_1(0b1101[4]:cond[4]:sext<32> imm[8])
 
 b_1.disasm = {
-	buffer << "b" << DisasmCondition(cond) << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
+	buffer << "b" << DisasmCondition(cond) << " 0x" << std::hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << std::dec;
 }
 
 b_1.execute = {
@@ -67,7 +67,7 @@ b_1.execute = {
 op b_2(0b11100[5]:sext<32> imm[11])
 
 b_2.disasm = {
-	buffer << "b" << " 0x" << hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << dec;
+	buffer << "b" << " 0x" << std::hex << cpu.GetGPR(cpu.PC_reg) + 4 + (imm << 1) << std::dec;
 }
 
 b_2.execute = {
@@ -94,7 +94,7 @@ bl.disasm = {
 		return;
 	} else {
 		bl_soffset = cpu.GetGPR(cpu.LR_reg) + (offset << 1);
-		buffer << "0x" << hex << bl_soffset << dec;
+		buffer << "0x" << std::hex << bl_soffset << std::dec;
 	}
 }
 
@@ -153,9 +153,9 @@ blx_1.disasm = {
 	else
 		blx_soffset = offset;
 	
-	buffer << "blx" << " 0x" << hex
+	buffer << "blx" << " 0x" << std::hex
 		<< ((blx_soffset << 12) + cpu.GetGPR(cpu.PC_reg) + 4 + (offset << 1))
-		<< dec;
+		<< std::dec;
 }
 
 blx_1.execute = {

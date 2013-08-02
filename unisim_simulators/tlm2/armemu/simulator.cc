@@ -32,6 +32,8 @@
  */
 
 #include "simulator.hh"
+#include <stdexcept>
+
 bool debug_enabled;
 
 void SigIntHandler(int signum) {

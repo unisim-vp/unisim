@@ -316,9 +316,9 @@ EndSetup()
 			logger << DebugWarning;
 			logger << "A cycle time of " << cpu_cycle_time_ps
 				<< " ps is too low for the simulated"
-				<< " hardware !" << endl;
+				<< " hardware !" << std::endl;
 			logger << "cpu cycle time should be >= "
-				<< min_cycle_time << " ps." << endl;
+				<< min_cycle_time << " ps." << std::endl;
 			logger << EndDebugWarning;
 		}
 	}
@@ -333,7 +333,7 @@ EndSetup()
 			<< " Using the maximum voltage found from the caches as "
 			<< " current voltage. Voltage used is "
 			<< voltage
-			<< " mV." << endl;
+			<< " mV." << std::endl;
 		if ( icache.power_mode_import )
 			logger << "  - instruction cache voltage = "
 				<< il1_def_voltage
@@ -341,7 +341,7 @@ EndSetup()
 		if ( dcache.power_mode_import )
 		{
 			if ( icache.power_mode_import )
-				logger << endl;
+				logger << std::endl;
 			logger << "  - data cache voltage = "
 				<< dl1_def_voltage
 				<< " mV";
@@ -452,7 +452,7 @@ StepInstruction()
 		/* Thumb state */
 		
 		/* This implementation should never enter into thumb mode */
-		logger << DebugError << "Thumb mode not supported in" << endl
+		logger << DebugError << "Thumb mode not supported in" << std::endl
 		       << unisim::kernel::debug::BackTrace() << EndDebugError;
 		Stop(-1);
 	}
@@ -877,7 +877,7 @@ Disasm(uint32_t addr, uint32_t &next_addr)
 	stringstream buffer;
 	if (GetCPSR_T()) 
 	{
-		logger << DebugError << "Thumb instructions not supported in" << endl
+		logger << DebugError << "Thumb instructions not supported in" << std::endl
 		       << unisim::kernel::debug::BackTrace() << EndDebugError;
 		Stop(-1);
 	} 
@@ -1209,7 +1209,7 @@ bool
 CPU::
 CoprocessorLoad(uint32_t cp_num, uint32_t address)
 {
-	logger << DebugError << "CoprocessorLoad not implemented in" << endl
+	logger << DebugError << "CoprocessorLoad not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1231,7 +1231,7 @@ bool
 CPU::
 CoprocessorLoad(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	logger << DebugError << "CoprocessorLoad not implemented in" << endl
+	logger << DebugError << "CoprocessorLoad not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1251,7 +1251,7 @@ bool
 CPU::
 CoprocessorStore(uint32_t cp_num, uint32_t address)
 {
-	logger << DebugError << "CoprocessorStore not implemented in" << endl
+	logger << DebugError << "CoprocessorStore not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1273,7 +1273,7 @@ bool
 CPU::
 CoprocessorStore(uint32_t cp_num, uint32_t address, uint32_t option)
 {
-	logger << DebugError << "CoprocessorStore not implemented in" << endl
+	logger << DebugError << "CoprocessorStore not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 	return false;
@@ -1293,7 +1293,7 @@ CPU::
 CoprocessorDataProcess(uint32_t cp_num, uint32_t op1, uint32_t op2,
 		uint32_t crd, uint32_t crn, uint32_t crm)
 {
-	logger << DebugError << "CoprocessorDataProcess not implemented in" << endl
+	logger << DebugError << "CoprocessorDataProcess not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 }
@@ -1314,7 +1314,7 @@ CPU::
 MoveToCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	logger << DebugError << "MoveToCoprocessor not implemented in" << endl
+	logger << DebugError << "MoveToCoprocessor not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 }
@@ -1338,7 +1338,7 @@ CPU::
 MoveFromCoprocessor(uint32_t cp_num, uint32_t op1, uint32_t op2, 
 		uint32_t rd, uint32_t crn, uint32_t crm)
 {
-	logger << DebugError << "MoveFromCoprocessor not implemented in" << endl
+	logger << DebugError << "MoveFromCoprocessor not implemented in" << std::endl
 	       << unisim::kernel::debug::BackTrace() << EndDebugError;
 	Stop(-1);
 }
@@ -1356,7 +1356,7 @@ CPU::SWI( uint32_t imm )
     }
   catch(std::exception &e)
     {
-      cerr << e.what() << endl;
+      std::cerr << e.what() << std::endl;
     }
 }
 
@@ -1411,7 +1411,7 @@ PerformLoadStoreAccesses()
 				PerformReadAccess(memop);
 				break;
 			case MemoryOp::USER_READ:
-				logger << DebugError << "Not permitted operation with armemu in" <<endl
+				logger << DebugError << "Not permitted operation with armemu in" <<std::endl
 				       << unisim::kernel::debug::BackTrace() << EndDebugError;
 				Stop(-1);
 				break;
