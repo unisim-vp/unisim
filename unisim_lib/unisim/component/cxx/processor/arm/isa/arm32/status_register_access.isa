@@ -41,28 +41,22 @@
 /*******************************************************************
  * mrs instruction
  */
-op mrs(cond[4]:0b00010[5]:r[1]:0b0[2]:0b1111[4]:rd[4]:0b0[12]);
+
+op mrs(cond[4]:0b00010[5]:shl <6> sr2[1]:0b0[2]:sr0[4]:rd[4]:0[2]:shl <4> sr1[2]:0[8]);
+mrs.var sr : {uint8_t} = {sr2|sr1|sr0};
 
 mrs.disasm = {
-  buffer << "mrs" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", ";
-  if(r) buffer << "spsr";
-  else buffer << "cpsr";
+  buffer << "mrs" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmSpecReg(sr);
 };
 
 mrs.execute = {
   if (not CheckCondition(cpu, cond)) return;
-	
-  /* if rd is the pc register the behavior is unpredictable, notify
-   * and return */
-  if (rd == cpu.PC_reg) {
-    cpu.UnpredictableInsnBehaviour();
-    return;
+  if (rd == cpu.PC_reg) { cpu.UnpredictableInsnBehaviour(); return; }
+  switch (sr) {
+  case 15: cpu.SetGPR(rd, cpu.GetCPSR()); break;
+  case 79: cpu.SetGPR(rd, cpu.GetSPSR()); break;
+  default: cpu.UnpredictableInsnBehaviour(); break;
   }
-  
-  if (r)
-    cpu.SetGPR(rd, cpu.GetSPSR());
-  else
-    cpu.SetGPR(rd, cpu.GetCPSR());
 };
 
 /*
@@ -73,29 +67,37 @@ mrs.execute = {
  * msr instruction
  */
 
-op msr_imm(cond[4]:0b00110[5]:r[1]:0b10[2]:mask[4]:0b1111[4]:shl<1> imr[4]:imb[8]);
-msr_imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
+op msr_reg(cond[4]:0b00010[5]:shl <6> sr2[1]:0b10[2]:sr0[4]:/*sbo*/0b1111[4]:0[2]:shl <4> sr1[2]:0[4]:rn[4]);
+msr_reg.var sr : {uint8_t} = {sr2|sr1|sr0};
 
-msr_imm.disasm = {
-  buffer << "msr" << DisasmCondition(cond) << "\t" << (r ? "spsr_" : "cpsr_") << DisasmPSRMask(mask) << ", " << imm;
+msr_reg.disasm = {
+  buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmSpecReg(sr) << ", " << DisasmRegister(rn);
 };
 
-msr_imm.execute = {
+op msr_reg_psr(cond[4]:0b00010[5]:r[1]:0b10[2]:mask[4]:/*sbo*/0b1111[4]:0[2]:0[2]:0[4]:rn[4]);
+
+msr_reg_psr.disasm = {
+  buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmPSRMask(r,mask) << ", " << DisasmRegister(rn);
+};
+
+msr_reg_psr.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  ComputeMoveToPSR( cpu, cpu.GetGPR(rn), mask, r );
+};
+
+op msr_imm_psr(cond[4]:0b00110[5]:r[1]:0b10[2]:mask[4]:0b1111[4]:shl<1> imr[4]:imb[8]);
+msr_imm_psr.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
+
+msr_imm_psr.disasm = {
+  buffer << "msr" << DisasmCondition(cond) << '\t' << DisasmPSRMask(r,mask) << ", #"
+         << std::hex << std::showbase << imm << std::noshowbase << std::dec;
+};
+
+msr_imm_psr.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   ComputeMoveToPSR( cpu, imm, mask, r );
-};
-
-op msr_reg(cond[4]:0b00010[5]:r[1]:0b10[2]:mask[4]:0b1111[4]:0b0[4]:0b0[4]:rm[4]);
-
-msr_reg.disasm = {
-  buffer << "msr" << DisasmCondition(cond) << "\t" << (r ? "spsr_" : "cpsr_" ) << DisasmPSRMask(mask) << ", " << DisasmRegister(rm);
-};
-
-msr_reg.execute = {
-  if (not CheckCondition(cpu, cond)) return;
-  
-  ComputeMoveToPSR( cpu, cpu.GetGPR(rm), mask, r );
 };
 
 /*

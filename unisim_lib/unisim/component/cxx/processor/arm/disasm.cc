@@ -56,17 +56,24 @@ namespace arm {
   /* Condition opcode bytes disassembling method */
   void DisasmCondition::operator() ( std::ostream& sink ) const
   {
-    if (m_cond < 14)
+    /* Printing opcode postfix before condition, as in GNU toolchains (binutils and GCC). */
+    sink << m_postfix;
+    
+    if         (m_cond >= 15) {
+      sink << "?";
+      std::cerr << "ERROR(" << __FUNCTION__ << "): "
+                << "unknown condition code (" << m_cond << ")" << std::endl;
+    } else if  (m_cond < 14) {
       sink << conds_dis[m_cond];
-    else if (m_cond == 14)
-      return;
-    
-    sink << "?";
-    std::cerr << "ERROR(" << __FUNCTION__ << "): "
-              << "unknown condition code (" << m_cond << ")" << std::endl;
-    
+    }
   }
 
+  /* Immediate disassembly */
+  void DisasmI::operator() ( std::ostream& sink ) const
+  {
+    sink << '#' << std::dec << static_cast<int32_t>( m_imm );
+  }
+  
   void DisasmShImm::operator() ( std::ostream& sink ) const
   {
     if (m_offset) {
@@ -97,6 +104,55 @@ namespace arm {
     sink << sornames[m_shift] << " " << register_dis[m_reg];
   }
 
+  void DisasmShift::operator() ( std::ostream& sink ) const
+  {
+    sink << sornames[m_shift];
+  }
+
+  /* Special Register disassembling method */
+  void DisasmSpecReg::operator() ( std::ostream& sink ) const
+  {
+    switch (m_reg)
+      {
+      default: sink << "(UNDEF: " << (unsigned int)m_reg << ")"; break;
+      case 15: sink << "CPSR"; break;
+      case 32: sink << "R8_usr"; break;
+      case 33: sink << "R9_usr"; break;
+      case 34: sink << "R10_usr"; break;
+      case 35: sink << "R11_usr"; break;
+      case 36: sink << "R12_usr"; break;
+      case 37: sink << "SP_usr"; break;
+      case 38: sink << "LR_usr"; break;
+      case 40: sink << "R8_fiq"; break;
+      case 41: sink << "R9_fiq"; break;
+      case 42: sink << "R10_fiq"; break;
+      case 43: sink << "R11_fiq"; break;
+      case 44: sink << "R12_fiq"; break;
+      case 45: sink << "SP_fiq"; break;
+      case 46: sink << "LR_fiq"; break;
+      case 48: sink << "LR_irq"; break;
+      case 49: sink << "SP_irq"; break;
+      case 50: sink << "LR_svc"; break;
+      case 51: sink << "SP_svc"; break;
+      case 52: sink << "LR_abt"; break;
+      case 53: sink << "SP_abt"; break;
+      case 54: sink << "LR_und"; break;
+      case 55: sink << "SP_und"; break;
+      case 60: sink << "LR_mon"; break;
+      case 61: sink << "SP_mon"; break;
+      case 62: sink << "ELR_hyp"; break;
+      case 63: sink << "SP_hyp"; break;
+      case 79: sink << "SPSR"; break;
+      case 110: sink << "SPSR_fiq"; break;
+      case 112: sink << "SPSR_irq"; break;
+      case 114: sink << "SPSR_svc"; break;
+      case 116: sink << "SPSR_abt"; break;
+      case 118: sink << "SPSR_und"; break;
+      case 124: sink << "SPSR_mon"; break;
+      case 126: sink << "SPSR_hyp"; break;
+      }
+  }
+  
   /* Register disassembling method */
   void DisasmRegister::operator() ( std::ostream& sink ) const
   {
@@ -124,10 +180,11 @@ namespace arm {
   /* PSR mask disassembling method */
   void DisasmPSRMask::operator() ( std::ostream& sink ) const
   {
-    if ((m_mask & 0x01) == 0x01) sink << "c";
-    if ((m_mask & 0x02) == 0x02) sink << "x";
-    if ((m_mask & 0x04) == 0x04) sink << "s";
+    sink << (m_r ? "SPSR_" : "CPSR_");
     if ((m_mask & 0x08) == 0x08) sink << "f";
+    if ((m_mask & 0x04) == 0x04) sink << "s";
+    if ((m_mask & 0x02) == 0x02) sink << "x";
+    if ((m_mask & 0x01) == 0x01) sink << "c";
   }
 
 } // end of namespace arm

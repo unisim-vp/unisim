@@ -58,12 +58,22 @@ namespace arm {
   /* Condition opcode bytes disassembling method */
   struct DisasmCondition : public DisasmObject
   {
-    DisasmCondition( uint32_t cond ) : m_cond( cond ) {}
+    DisasmCondition( uint32_t cond, char const* postfix = 0 )
+      : m_cond( cond ), m_postfix( postfix ? postfix : "" ) {}
     void operator() ( std::ostream& sink ) const;
-    uint32_t m_cond;
+    uint32_t    m_cond;
+    char const* m_postfix;
   };
   
-  /* Shifted Immediate disassembly */
+  /* Immediate disassembly */
+  struct DisasmI : public DisasmObject
+  {
+    DisasmI( uint32_t imm ) : m_imm( imm ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_imm;
+  };
+
+  /* Immediate shifting disassembly */
   struct DisasmShImm : public DisasmObject
   {
     DisasmShImm( uint32_t shift, uint32_t offset ) : m_shift( shift ), m_offset( offset ) {}
@@ -71,7 +81,7 @@ namespace arm {
     uint32_t m_shift, m_offset;
   };
 
-  /* Shifted Immediate disassembly */
+  /* Register shifting disassembly */
   struct DisasmShReg : public DisasmObject
   {
     DisasmShReg( uint32_t shift, uint32_t reg ) : m_shift( shift ), m_reg( reg ) {}
@@ -79,14 +89,30 @@ namespace arm {
     uint32_t m_shift, m_reg;
   };
   
+  /* Shift disassembly */
+  struct DisasmShift : public DisasmObject
+  {
+    DisasmShift( uint32_t shift ) : m_shift( shift ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint32_t m_shift;
+  };
+  
   /* PSR mask disassembling method */
   struct DisasmPSRMask : public DisasmObject
   {
-    DisasmPSRMask( uint32_t mask ) : m_mask( mask ) {}
+    DisasmPSRMask( uint8_t r, uint32_t mask ) : m_r( r ), m_mask( mask ) {}
     void operator() ( std::ostream& sink ) const;
-    uint32_t m_mask;
+    uint8_t m_r, m_mask;
   };
 
+  /* Special Register disassembling method */
+  struct DisasmSpecReg : public DisasmObject
+  {
+    DisasmSpecReg( uint8_t reg ) : m_reg( reg ) {}
+    void operator() ( std::ostream& sink ) const;
+    uint8_t m_reg;
+  };
+  
   /* Register disassembling method */
   struct DisasmRegister : public DisasmObject
   {
