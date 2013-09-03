@@ -32,6 +32,6 @@
  * Authors: Yves Lhuillier (yves.lhuillier@cea.fr)
  */
 
-ldc2_unindexed.specialize( ldc_unindexed, mrrc );
-stc2_unindexed.specialize( stc_unindexed, mcrr );
+ldc2.specialize( ldc_undefined, ldc_unindexed, mrrc );
+stc2.specialize( stc_undefined, stc_unindexed, mcrr );
 blx_1.specialize( b, bl );

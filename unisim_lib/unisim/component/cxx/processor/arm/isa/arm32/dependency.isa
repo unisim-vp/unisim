@@ -148,16 +148,12 @@ group group_read_rm(bx, \
 		msr_reg)
 
 group group_read_rn( \
-		ldc_offset, \
-		ldc_pre, \
-		ldc_post, \
+		ldc, \
 		ldc_unindexed, \
-		stc_offset, \
-		stc_pre, \
-		stc_post, \
+		stc, \
 		stc_unindexed, \
-		ldc2_offset, ldc2_pre, ldc2_post, ldc2_unindexed, \
-		stc2_offset, stc2_pre, stc2_post, stc2_unindexed, \
+		ldc2, ldc2_unindexed, \
+		stc2, stc2_unindexed, \
 		and_32imm, and_imm_shift, and_reg_shift, \
 		eor_32imm, eor_imm_shift, eor_reg_shift, \
 		sub_32imm, sub_imm_shift, sub_reg_shift, \
@@ -255,12 +251,10 @@ group group_read_crm( \
 		cdp2, mcr2, mrc2)
 
 group group_write_rn( \
-		ldc_pre, \
-		ldc_post, \
-		stc_pre, \
-		stc_post, \
-		ldc2_pre, ldc2_post, \
-		stc2_pre, stc2_post, \
+		ldc, \
+		stc, \
+		ldc2, \
+		stc2, \
 		ldr_imm_post, \
 		ldr_reg_post, \
 		ldrb_imm_post, \
@@ -337,17 +331,13 @@ group group_write_reglist( \
 
 group group_write_crd( \
 		cdp, \
-		ldc_offset, \
-		ldc_pre, \
-		ldc_post, \
+		ldc, \
 		ldc_unindexed, \
-		stc_offset, \
-		stc_pre, \
-		stc_post, \
+		stc, \
 		stc_unindexed, \
 		cdp2, \
-		ldc2_offset, ldc2_pre, ldc2_post, ldc2_unindexed, \
-		stc2_offset, stc2_pre, stc2_post, stc2_unindexed)
+		ldc2, ldc2_unindexed, \
+		stc2, stc2_unindexed)
 
 /********************************************************************************************************/
 /* definition of groups of instructions that share dependencies                                   END   */

@@ -45,13 +45,13 @@
 op cdp(cond[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp.disasm = {
-	buffer << "cdp" << DisasmCondition(cond) << " " << std::dec << (unsigned int) cp_num << ", " << std::dec << (unsigned int) op1 << ", cr" << std::dec << (unsigned int) crd << ", cr" << std::dec << (unsigned int) crn << ", cr" << std::dec << (unsigned int) crm << ", " << std::dec << (unsigned int) op2;
+  buffer << "cdp" << DisasmCondition(cond) << '\t' << std::dec << (unsigned int) cp_num << ", " << std::dec << (unsigned int) op1 << ", cr" << std::dec << (unsigned int) crd << ", cr" << std::dec << (unsigned int) crn << ", cr" << std::dec << (unsigned int) crm << ", " << std::dec << (unsigned int) op2;
 };
 
 cdp.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 	
-	cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
+  cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
 };
 
 /*
@@ -62,77 +62,44 @@ cdp.execute = {
  * ldc instruction
  */
 
-op ldc_offset(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-ldc_offset.var imm : {int32_t} = {u?offset:-offset};
+op ldc(cond[4]:0b110[3]:p[1]:u[1]:d[1]:w[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc.var imm : {int32_t} = {u?offset:-offset};
 
-op ldc_pre(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-ldc_pre.var imm : {int32_t} = {u?offset:-offset};
-
-op ldc_post(cond[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-ldc_post.var imm : {int32_t} = {u?offset:-offset};
-
-op ldc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
-
-ldc_offset.disasm = {
-	buffer << "ldc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+ldc.disasm = {
+  buffer << "ldc" << DisasmCondition(cond, d?"l":"") << '\t'
+         << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", ["
+         << DisasmRegister(rn) << (p?"":"]")<< ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
 
-ldc_pre.disasm = {
-	buffer << "ldc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+ldc.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+	
+  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  if (w) cpu.SetGPR( rn, oaddr );
+  
+  uint32_t address = p?oaddr:addr;
+  while (cpu.CoprocessorLoad(cp_num, address)) { address += 4; }
 };
 
-ldc_post.disasm = {
-	buffer << "ldc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
+op ldc_undefined(cond[4]:0b110[3]:0b0[1]:0b0[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
+
+ldc_undefined.disasm = {
+  buffer << "ldc" << DisasmCondition(cond) << '\t'
+         << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", [" << DisasmRegister(rn) << "], {" << option << "}";
 };
+
+op ldc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:d[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 ldc_unindexed.disasm = {
-	buffer << "ldc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
-};
-
-ldc_offset.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-	
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	while(cpu.CoprocessorLoad(cp_num, address)) {
-		address += 4;
-	}
-};
-
-ldc_pre.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-        
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	cpu.SetGPR(rn, address);
-	while(cpu.CoprocessorLoad(cp_num, address)) {
-		address += 4;
-	}
-};
-
-ldc_post.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-	
-	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, address + imm);
-	while(cpu.CoprocessorLoad(cp_num, address)) {
-		address += 4;
-	}
+  buffer << "ldc" << DisasmCondition(cond, d?"l":"") << '\t'
+         << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", [" << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 ldc_unindexed.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 	
-	uint32_t address = cpu.GetGPR(rn);
-	while(cpu.CoprocessorLoad(cp_num, address, option)) {
-		address += 4;
-	}
+  uint32_t address = cpu.GetGPR(rn);
+  while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }
 };
 
 /*
@@ -146,14 +113,14 @@ ldc_unindexed.execute = {
 op mcr(cond[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mcr.disasm = {
-	buffer << "mcr" << DisasmCondition(cond) << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
-	if(op2 != 0) buffer << ", " << (unsigned int) op2;
+  buffer << "mcr" << DisasmCondition(cond) << '\t' << (unsigned int)cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int)crn << ", cr" << (unsigned int)crm;
+  if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
 mcr.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 
-	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
+  cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
 };
 
 /*
@@ -167,14 +134,14 @@ mcr.execute = {
 op mrc(cond[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mrc.disasm = {
-	buffer << "mrc" << DisasmCondition(cond) << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
-	if(op2 != 0) buffer << ", " << (unsigned int) op2;
+  buffer << "mrc" << DisasmCondition(cond) << '\t' << (unsigned int)cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int)crn << ", cr" << (unsigned int)crm;
+  if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
 mrc.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 
-	cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
+  cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
 };
 
 /*
@@ -185,77 +152,44 @@ mrc.execute = {
  * stc instruction
  */
 
-op stc_offset(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-stc_offset.var imm : {int32_t} = {u?offset:-offset};
+op stc(cond[4]:0b110[3]:p[1]:u[1]:d[1]:w[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc.var imm : {int32_t} = {u?offset:-offset};
 
-op stc_pre(cond[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-stc_pre.var imm : {int32_t} = {u?offset:-offset};
-
-op stc_post(cond[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-stc_post.var imm : {int32_t} = {u?offset:-offset};
-
-op stc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
-
-stc_offset.disasm = {
-	buffer << "stc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+stc.disasm = {
+  buffer << "stc" << DisasmCondition(cond, d?"l":"") << '\t'
+         << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", [" 
+         << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
 
-stc_pre.disasm = {
-	buffer << "stc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+stc.execute = {
+  if (not CheckCondition(cpu, cond)) return;
+  
+  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  if (w) cpu.SetGPR( rn, oaddr );
+  
+  uint32_t address = p?oaddr:addr;
+  while(cpu.CoprocessorStore(cp_num, address)) { address += 4; }
 };
 
-stc_post.disasm = {
-	buffer << "stc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
+op stc_undefined(cond[4]:0b110[3]:0b0[1]:0b0[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
+
+stc_undefined.disasm = {
+  buffer << "stc" << DisasmCondition(cond) << '\t'
+         << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", [" << DisasmRegister(rn) << "], {" << option << "}";
 };
+
+op stc_unindexed(cond[4]:0b110[3]:0b0[1]:0b1[1]:d[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 stc_unindexed.disasm = {
-	buffer << "stc" << DisasmCondition(cond);
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
-};
-
-stc_offset.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-	
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	while(cpu.CoprocessorStore(cp_num, address)) {
-		address += 4;
-	}
-};
-
-stc_pre.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-	
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	cpu.SetGPR(rn, address);
-	while(cpu.CoprocessorStore(cp_num, address)) {
-		address += 4;
-	}
-};
-
-stc_post.execute = {
-	if(not CheckCondition(cpu, cond)) return;
-	
-	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, address + imm);
-	while(cpu.CoprocessorStore(cp_num, address)) {
-		address += 4;
-	}
+  buffer << "stc" << DisasmCondition(cond, d?"l":"") << '\t'
+         << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", [" << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 stc_unindexed.execute = {
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 	
-	uint32_t address = cpu.GetGPR(rn);
-	while(cpu.CoprocessorStore(cp_num, address, option)) {
-		address += 4;
-	}
+  uint32_t address = cpu.GetGPR(rn);
+  while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
 };
 
 /*
@@ -266,22 +200,15 @@ stc_unindexed.execute = {
  * cdp2 instruction
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op cdp2(0b1111[4]:0b1110[4]:op1[4]:crn[4]:crd[4]:cp_num[4]:op2[3]:0b0[1]:crm[4]);
 
 cdp2.disasm = {
-	buffer << "cdp2" << " " << std::dec << (unsigned int) cp_num << ", " << std::dec << (unsigned int) op1 << ", cr" << std::dec << (unsigned int) crd << ", cr" << std::dec << (unsigned int) crn << ", cr" << std::dec << (unsigned int) crm << ", " << std::dec << (unsigned int) op2;
+  buffer << "cdp2\t" << std::dec << (unsigned int)cp_num << ", " << std::dec << (unsigned int) op1 << ", cr" << std::dec << (unsigned int)crd << ", cr" << std::dec << (unsigned int)crn << ", cr" << std::dec << (unsigned int)crm << ", " << std::dec << (unsigned int) op2;
 };
 
 cdp2.execute = {
-
-	cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
+  cpu.CoprocessorDataProcess(cp_num, op1, op2, crd, crn, crm);
 };
 
 /*
@@ -292,97 +219,43 @@ cdp2.execute = {
  * ldc2 instruction
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op ldc2_offset(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-ldc2_offset.var imm : {int32_t} = {u?offset:-offset};
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op ldc2(0b1111[4]:0b110[3]:p[1]:u[1]:d[1]:w[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+ldc2.var imm : {int32_t} = {u?offset:-offset};
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op ldc2_pre(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-ldc2_pre.var imm : {int32_t} = {u?offset:-offset};
-
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op ldc2_post(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-ldc2_post.var imm : {int32_t} = {u?offset:-offset};
-
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op ldc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
-
-ldc2_offset.disasm = {
-  buffer << "ldc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+ldc2.disasm = {
+  buffer << "ldc2" << (d?"l":"") << '\t'
+         << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", ["
+         << DisasmRegister(rn) << (p?"":"]")<< ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
 
-ldc2_pre.disasm = {
-  buffer << "ldc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+ldc2.execute = {
+  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  if (w) cpu.SetGPR( rn, oaddr );
+  
+  uint32_t address = p?oaddr:addr;
+  while(cpu.CoprocessorLoad(cp_num, address)) { address += 4; }
 };
 
-ldc2_post.disasm = {
-  buffer << "ldc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op ldc2_undefined(0b1111[4]:0b110[3]:0b0[1]:0b0[1]:0b0[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
+
+ldc2_undefined.disasm = {
+  buffer << "ldc2\t" << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", ["
+         << DisasmRegister(rn) << "], {" << option << "}";
 };
+
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op ldc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:0b1[1]:d[1]:0b0[1]:0b1[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 ldc2_unindexed.disasm = {
-	buffer << "ldc";
-	if(n == 1) buffer << "l";
-	buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
-};
-
-ldc2_offset.execute = {
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	while(cpu.CoprocessorLoad(cp_num, address)) {
-		address += 4;
-	}
-};
-
-ldc2_pre.execute = {
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	cpu.SetGPR(rn, address);
-	while(cpu.CoprocessorLoad(cp_num, address)) {
-		address += 4;
-	}
-};
-
-ldc2_post.execute = {
-	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, address + imm);
-	while(cpu.CoprocessorLoad(cp_num, address)) {
-		address += 4;
-	}
+  buffer << "ldc2" << (d?"l":"") << '\t' << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", ["
+         << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 ldc2_unindexed.execute = {
-	uint32_t address = cpu.GetGPR(rn);
-	while(cpu.CoprocessorLoad(cp_num, address, option)) {
-		address += 4;
-	}
+  uint32_t address = cpu.GetGPR(rn);
+  while(cpu.CoprocessorLoad(cp_num, address, option)) { address += 4; }
 };
 
 /*
@@ -393,22 +266,16 @@ ldc2_unindexed.execute = {
  * mcr2 instruction
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op mcr2(0b1111[4]:0b1110[4]:op1[3]:0b0[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mcr2.disasm = {
-  buffer << "mcr2" << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
+  buffer << "mcr2\t" << (unsigned int)cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int)crn << ", cr" << (unsigned int)crm;
   if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
 mcr2.execute = {
-	cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
+  cpu.MoveToCoprocessor(cp_num, op1, op2, rd, crn, crm);
 };
 
 /*
@@ -419,23 +286,16 @@ mcr2.execute = {
  * mrc2 instruction
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op mrc2(0b1111[4]:0b1110[4]:op1[3]:0b1[1]:crn[4]:rd[4]:cp_num[4]:op2[3]:0b1[1]:crm[4]);
 
 mrc2.disasm = {
-  buffer << "mrc2" << " " << (unsigned int) cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int) crn << ", cr" << (unsigned int) crm;
+  buffer << "mrc2\t" << (unsigned int)cp_num << ", " << (unsigned int) op1 << ", " << DisasmRegister(rd) << ", cr" << (unsigned int)crn << ", cr" << (unsigned int)crm;
   if(op2 != 0) buffer << ", " << (unsigned int) op2;
 };
 
 mrc2.execute = {
-
-	cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
+  cpu.MoveFromCoprocessor(cp_num, op1, op2, rd, crn, crm);
 };
 
 /*
@@ -446,97 +306,42 @@ mrc2.execute = {
  * stc2 instruction
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op stc2_offset(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-stc2_offset.var imm : {int32_t} = {u?offset:-offset};
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op stc2(0b1111[4]:0b110[3]:p[1]:u[1]:d[1]:w[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
+stc2.var imm : {int32_t} = {u?offset:-offset};
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op stc2_pre(0b1111[4]:0b110[3]:0b1[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-stc2_pre.var imm : {int32_t} = {u?offset:-offset};
-
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op stc2_post(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b1[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:shl<2> offset[8]);
-stc2_post.var imm : {int32_t} = {u?offset:-offset};
-
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op stc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:u[1]:n[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
-
-stc2_offset.disasm = {
-  buffer << "stc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]";
+stc2.disasm = {
+  buffer << "stc2" << (d?"l":"") << '\t' << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", ["
+         << DisasmRegister(rn) << (p?"":"]") << ", " << DisasmI(imm) << (p?(w?"]!":"]"):"");
 };
 
-stc2_pre.disasm = {
-  buffer << "stc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << ", #" << imm << "]!";
+stc2.execute = {
+  uint32_t addr = cpu.GetGPR( rn ), oaddr = addr + imm;
+  if (w) cpu.SetGPR( rn, oaddr );
+  
+  uint32_t address = p?oaddr:addr;
+  while (cpu.CoprocessorStore(cp_num, address)) { address += 4; }
 };
 
-stc2_post.disasm = {
-  buffer << "stc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], #" << imm;;
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op stc2_undefined(0b1111[4]:0b110[3]:0b0[1]:0b0[1]:0b0[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
+
+stc2_undefined.disasm = {
+  buffer << "stc2\t" << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", ["
+         << DisasmRegister(rn) << "], {" << option << "}";
 };
+
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op stc2_unindexed(0b1111[4]:0b110[3]:0b0[1]:0b1[1]:d[1]:0b0[1]:0b0[1]:rn[4]:crd[4]:cp_num[4]:option[8]);
 
 stc2_unindexed.disasm = {
-  buffer << "stc";
-  if(n == 1) buffer << "l";
-  buffer << " " << (unsigned int) cp_num << ", cr" << (unsigned int) crd << ", " << "[" << DisasmRegister(rn) << "], {" << option << "}";
-};
-
-stc2_offset.execute = {
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	while(cpu.CoprocessorStore(cp_num, address)) {
-		address += 4;
-	}
-};
-
-stc2_pre.execute = {
-	uint32_t address = cpu.GetGPR(rn) + imm;
-	cpu.SetGPR(rn, address);
-	while(cpu.CoprocessorStore(cp_num, address)) {
-		address += 4;
-	}
-};
-
-stc2_post.execute = {
-	uint32_t address = cpu.GetGPR(rn);
-	cpu.SetGPR(rn, address + imm);
-	while(cpu.CoprocessorStore(cp_num, address)) {
-		address += 4;
-	}
+  buffer << "stc2" << (d?"l":"") << '\t' << (unsigned int)cp_num << ", cr" << (unsigned int)crd << ", ["
+         << DisasmRegister(rn) << "], {" << option << "}";
 };
 
 stc2_unindexed.execute = {
-	uint32_t address = cpu.GetGPR(rn);
-	while(cpu.CoprocessorStore(cp_num, address, option)) {
-		address += 4;
-	}
+  uint32_t address = cpu.GetGPR(rn);
+  while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
 };
 /*
  * end of stc2 instruction
