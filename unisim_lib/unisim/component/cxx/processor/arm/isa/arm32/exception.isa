@@ -46,7 +46,7 @@
 op swi(cond[4]:0b1111[4]:imm[24]);
 
 swi.disasm = {
-  buffer << "swi" << DisasmCondition(cond) << "\t#" << std::dec << imm;
+  buffer << "swi" << DisasmCondition(cond) << "\t" << DisasmI(imm);
 };
 
 swi.execute = {
@@ -67,7 +67,7 @@ op bkpt(0b1110[4]:0b00010010[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
 bkpt.var imm : {uint32_t} = {im1|im0};
 
 bkpt.disasm = {
-  buffer << "bkpt\t#" << std::dec << imm;
+  buffer << "bkpt\t0x" << std::hex << std::setw( 4 ) << std::setfill( '0' ) << imm << std::setw( 0 ) << std::dec;
 };
 
 bkpt.execute = {
@@ -76,4 +76,48 @@ bkpt.execute = {
 
 /*
  * end of bkpt (breakpoint) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * hvc () instruction
+ */
+
+op hvc(cond[4]:0b00010100[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+hvc.var imm : {uint32_t} = {im1|im0};
+
+hvc.disasm = {
+  buffer << "hvc" << DisasmCondition(cond) << '\t' << std::dec << imm;
+};
+
+/*
+ * end of hvc () instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smc () instruction
+ */
+
+op smc(cond[4]:0b00010110[8]:shl<4> im1[12]:0b0111[4]:im0[4]);
+smc.var imm : {uint32_t} = {im1|im0};
+
+smc.disasm = {
+  buffer << "smc" << DisasmCondition(cond) << '\t' << std::dec << imm;
+};
+
+/*
+ * end of smc () instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * eret (Exception Return) instruction
+ */
+
+op eret(cond[4]:0b0001011000000000000001101110[28]);
+
+eret.disasm = {
+  buffer << "eret" << DisasmCondition(cond);
+};
+
+/*
+ * end of eret (Exception Return) instruction
  *******************************************************************/

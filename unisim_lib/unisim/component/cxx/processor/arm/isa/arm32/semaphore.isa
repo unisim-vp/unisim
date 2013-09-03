@@ -51,7 +51,7 @@
 op swp(cond[4]:0b00010000[8]:rn[4]:rd[4]:0b0000[4]:0b1001[4]:rm[4])
 
 swp.disasm = {
-  buffer << "swp" << DisasmCondition(cond) << " " << DisasmRegister(rd) << ", "
+  buffer << "swp" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", "
   << DisasmRegister(rm) << ", "
   << "[" << DisasmRegister(rn) << "]";
 }
@@ -76,7 +76,7 @@ swp.execute = {
 op swpb(cond[4]:0b00010100[8]:rn[4]:rd[4]:0b0000[4]:0b1001[4]:rm[4])
 
 swpb.disasm = {
-  buffer << "swp" << DisasmCondition(cond) << "b " << DisasmRegister(rd) << ", "
+  buffer << "swp" << DisasmCondition(cond,"b") << '\t' << DisasmRegister(rd) << ", "
   << DisasmRegister(rm) << ", "
   << "[" << DisasmRegister(rn) << "]";
 }
