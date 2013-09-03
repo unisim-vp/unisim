@@ -42,70 +42,79 @@
  * mla instruction
  */
 
-op mla(cond[4]:0b01[7]:s[1]:rd[4]:rn[4]:rs[4]:0b01001[4]:rm[4])
+op mla(cond[4]:0b01[7]:s[1]:rd[4]:rn[4]:rs[4]:0b01001[4]:rm[4]);
 
 mla.disasm = {
-	buffer << "mla" << DisasmCondition(cond);
-	if(s) buffer << "s";
-	buffer << " " << DisasmRegister(rd) << ", "
-		<< DisasmRegister(rm) << ", "
-		<< DisasmRegister(rs) << ", "
-		<< DisasmRegister(rn);
-}
+  buffer << "mla" << DisasmCondition(cond, s?"s":"") << '\t'
+  << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
+  << DisasmRegister(rs) << ", " << DisasmRegister(rn);
+};
 
 mla.execute = {
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rn_value = cpu.GetGPR(rn);
-	uint32_t rs_value = cpu.GetGPR(rs);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	res = rm_value * rs_value;
-	res += rn_value;
-	cpu.SetGPR(rd, res);
+  uint32_t res;
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rs_value = cpu.GetGPR(rs);
   
-	if(s) {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-	}
-}
+  if(not CheckCondition(cpu, cond)) return;
+
+  res = rm_value * rs_value;
+  res += rn_value;
+  cpu.SetGPR(rd, res);
+  
+  if(s) {
+    cpu.SetCPSR_N(res & 0x80000000);
+    cpu.SetCPSR_Z(res == 0);
+  }
+};
 
 /*
  * end of mla instruction
  *******************************************************************/
 
 /*******************************************************************
+ * mls instruction
+ */
+
+op mls(cond[4]:0b00000110[8]:rd[4]:ra[4]:rm[4]:0b01001[4]:rn[4]);
+
+mls.disasm = {
+  buffer << "mls" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << ", " << DisasmRegister(ra);
+};
+
+/*
+ * end of mls instruction
+ *******************************************************************/
+
+/*******************************************************************
  * mul instruction
  */
 
-op mul(cond[4]:0b0[7]:s[1]:rd[4]:sbz[4]:rs[4]:0b01001[4]:rm[4])
+op mul(cond[4]:0b0[7]:s[1]:rd[4]:/*sbz*/0[4]:rs[4]:0b01001[4]:rm[4]);
 
 mul.disasm = {
-	buffer << "mul" << DisasmCondition(cond);
-	if(s) buffer << "s";
-	buffer << " " << DisasmRegister(rd) << ", "
-		<< DisasmRegister(rm) << ", "
-		<< DisasmRegister(rs);
-}
+  buffer << "mul" << DisasmCondition(cond, s?"s":"") << '\t'
+  << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
+  << DisasmRegister(rs);
+};
 
 mul.execute = {
-	uint32_t res;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
-
-
-	if(not CheckCondition(cpu, cond)) return;
-
-	res = rm_value * rs_value;
-	cpu.SetGPR(rd, res);
+  uint32_t res;
+  uint32_t rm_value = cpu.GetGPR(rm);
+  uint32_t rs_value = cpu.GetGPR(rs);
   
-	if(s) {
-		cpu.SetCPSR_N(res & 0x80000000);
-		cpu.SetCPSR_Z(res == 0);
-	}
-}
+  if (not CheckCondition(cpu, cond)) return;
+
+  res = rm_value * rs_value;
+  cpu.SetGPR(rd, res);
+  
+  if(s) {
+    cpu.SetCPSR_N(res & 0x80000000);
+    cpu.SetCPSR_Z(res == 0);
+  }
+};
 
 /*
  * end of mul instruction
@@ -125,43 +134,80 @@ mul.execute = {
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b01001[4]:rm[4]);
+}:op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b01001[4]:rn[4]);
 
 smlal.disasm = {
-  buffer << "smlal" << DisasmCondition(cond);
-  if(s) buffer << "s";
-  buffer << " " << DisasmRegister(rdhi) << ", "
-         << DisasmRegister(rdlo) << ", "
-         << DisasmRegister(rm) << ", "
-         << DisasmRegister(rs);
+  buffer << "smlal" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
 };
   
 smlal.execute = {
-	uint64_t res;
-	uint64_t res_lo, res_hi;
-	uint32_t rdhi_value = cpu.GetGPR(rdhi);
-	uint32_t rdlo_value = cpu.GetGPR(rdlo);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
+  uint64_t res;
+  uint64_t res_lo, res_hi;
+  uint32_t rdhi_value = cpu.GetGPR(rdhi);
+  uint32_t rdlo_value = cpu.GetGPR(rdlo);
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
 
 
-	if(not CheckCondition(cpu, cond)) return;
+  if(not CheckCondition(cpu, cond)) return;
 
-	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
-	res = (int64_t)res + ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
-	res_lo = res & (uint64_t)(~(uint32_t)0);
-	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (uint32_t)res_hi);
-	cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  res = rdlo_value + (((uint64_t)rdhi_value) << 32);
+  res = (int64_t)res + ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
+  res_lo = res & (uint64_t)(~(uint32_t)0);
+  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+  cpu.SetGPR(rdhi, (uint32_t)res_hi);
+  cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
-	if(s) {
-		cpu.SetCPSR_N(res_hi & 0x80000000);
-		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-	}
-}
+  if(s) {
+    cpu.SetCPSR_N(res_hi & 0x80000000);
+    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+  }
+};
 
 /*
  * end of smlal instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlald (Signed Multiply Accumulate Long Dual) instruction
+ *
+ * SMLALD performs two signed 16 * 16-bit multiplications. It adds the
+ * products to a 64-bit accumulate operand.
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op smlald(cond[4]:0b01110100[8]:rdhi[4]:rdlo[4]:rm[4]:0b00[2]:m[1]:1[1]:rn[4]);
+
+smlald.disasm = {
+  buffer << "smlald" << DisasmCondition(cond, m?"x":"") << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of smlald instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * smlsld (Signed Multiply Accumulate Long Dual) instruction
+ *
+ * SMLSLD performs two signed 16 * 16-bit multiplications. It adds the
+ * products to a 64-bit accumulate operand.
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op smlsld(cond[4]:0b01110100[8]:rdhi[4]:rdlo[4]:rm[4]:0b01[2]:m[1]:1[1]:rn[4]);
+
+smlsld.disasm = {
+  buffer << "smlsld" << DisasmCondition(cond, m?"x":"") << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of smlsld instruction
  *******************************************************************/
 
 /*******************************************************************
@@ -172,37 +218,34 @@ smlal.execute = {
  *    ARMV5TXM
  */
 
-op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
 
 smull.disasm = {
-	buffer << "smull" << DisasmCondition(cond);
-	if(s) buffer << "s";
-	buffer << " " << DisasmRegister(rdhi) << ", "
-	<< DisasmRegister(rdlo) << ", "
-	<< DisasmRegister(rm) << ", "
-	<< DisasmRegister(rs);
-}
+  buffer << "smull" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 smull.execute = {
-	uint64_t res;
-	uint64_t res_lo, res_hi;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
+  uint64_t res;
+  uint64_t res_lo, res_hi;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
 
 
-	if(not CheckCondition(cpu, cond)) return;
+  if (not CheckCondition(cpu, cond)) return;
 
-	res = ((int64_t)(int32_t)rm_value) * ((int64_t)(int32_t)rs_value);
-	res_lo = res & (uint64_t)(~(uint32_t)0);
-	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (uint32_t)res_hi);
-	cpu.SetGPR(rdlo, (uint32_t)res_lo);
+  res = ((int64_t)(int32_t)rn_value) * ((int64_t)(int32_t)rm_value);
+  res_lo = res & (uint64_t)(~(uint32_t)0);
+  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+  cpu.SetGPR(rdhi, (uint32_t)res_hi);
+  cpu.SetGPR(rdlo, (uint32_t)res_lo);
 	
-	if(s) {
-		cpu.SetCPSR_N(res_hi & 0x80000000);
-		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-	}
-}
+  if(s) {
+    cpu.SetCPSR_N(res_hi & 0x80000000);
+    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+  }
+};
 
 /*
  * end of smull instruction
@@ -216,43 +259,58 @@ smull.execute = {
  *    ARMV5TXM
  */
 
-op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
 
 umlal.disasm = {
-	buffer << "umlal" << DisasmCondition(cond);
-	if(s) buffer << "s";
-	buffer << " " << DisasmRegister(rdhi) << ", "
-		<< DisasmRegister(rdlo) << ", "
-		<< DisasmRegister(rm) << ", "
-		<< DisasmRegister(rs);
-}
+  buffer << "umlal" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 umlal.execute = {
-	uint64_t res;
-	uint64_t res_lo, res_hi;
-	uint32_t rdhi_value = cpu.GetGPR(rdhi);
-	uint32_t rdlo_value = cpu.GetGPR(rdlo);
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
+  uint64_t res;
+  uint64_t res_lo, res_hi;
+  uint32_t rdhi_value = cpu.GetGPR(rdhi);
+  uint32_t rdlo_value = cpu.GetGPR(rdlo);
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
 
+  if (not CheckCondition(cpu, cond)) return;
 
-	if(not CheckCondition(cpu, cond)) return;
+  res = rdlo_value + (((uint64_t)rdhi_value) << 32);
+  res += ((int64_t)rn_value) * ((int64_t)rm_value);
+  res_lo = res & (uint64_t)(~(uint32_t)0);
+  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+  cpu.SetGPR(rdhi, (uint32_t)res_hi);
+  cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
-	res = rdlo_value + (((uint64_t)rdhi_value) << 32);
-	res += ((int64_t)rm_value) * ((int64_t)rs_value);
-	res_lo = res & (uint64_t)(~(uint32_t)0);
-	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (uint32_t)res_hi);
-	cpu.SetGPR(rdlo, (uint32_t)res_lo);
-
-	if(s) {
-		cpu.SetCPSR_N(res_hi & 0x80000000);
-		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-	}
-}
+  if(s) {
+    cpu.SetCPSR_N(res_hi & 0x80000000);
+    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+  }
+};
 
 /*
  * end of umlal instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * umaal instruction
+ * Note: this instruction is only supported for:
+ *    ARMV6
+ *    ARMV7
+ */
+
+op umaal(cond[4]:0b00000100[8]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
+
+umaal.disasm = {
+  buffer << "umaal" << DisasmCondition(cond) << '\t'
+  << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+  << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of umaal instruction
  *******************************************************************/
 
 /*******************************************************************
@@ -263,37 +321,33 @@ umlal.execute = {
  *    ARMV5TXM
  */
 
-op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rs[4]:0b1001[4]:rm[4])
+op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
 
 umull.disasm = {
-	buffer << "umull" << DisasmCondition(cond);
-	if(s) buffer << "s";
-	buffer << " " << DisasmRegister(rdhi) << ", "
-		<< DisasmRegister(rdlo) << ", "
-		<< DisasmRegister(rm) << ", "
-		<< DisasmRegister(rs);
-}
+  buffer << "umull" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rdlo) << ", " << DisasmRegister(rdhi) << ", "
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
 
 umull.execute = {
-	uint64_t res;
-	uint64_t res_lo, res_hi;
-	uint32_t rm_value = cpu.GetGPR(rm);
-	uint32_t rs_value = cpu.GetGPR(rs);
+  uint64_t res;
+  uint64_t res_lo, res_hi;
+  uint32_t rn_value = cpu.GetGPR(rn);
+  uint32_t rm_value = cpu.GetGPR(rm);
+  
+  if (not CheckCondition(cpu, cond)) return;
 
+  res = ((int64_t)rn_value) * ((int64_t)rm_value);
+  res_lo = res & (uint64_t)(~(uint32_t)0);
+  res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
+  cpu.SetGPR(rdhi, (uint32_t)res_hi);
+  cpu.SetGPR(rdlo, (uint32_t)res_lo);
 
-	if(not CheckCondition(cpu, cond)) return;
-
-	res = ((int64_t)rm_value) * ((int64_t)rs_value);
-	res_lo = res & (uint64_t)(~(uint32_t)0);
-	res_hi = (res >> 32) & (uint64_t)(~(uint32_t)0);
-	cpu.SetGPR(rdhi, (uint32_t)res_hi);
-	cpu.SetGPR(rdlo, (uint32_t)res_lo);
-
-	if(s) {
-		cpu.SetCPSR_N(res_hi & 0x80000000);
-		cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
-	}
-}
+  if(s) {
+    cpu.SetCPSR_N(res_hi & 0x80000000);
+    cpu.SetCPSR_Z(res_hi == 0 && res_lo == 0);
+  }
+};
 
 /*
  * end of umull instruction
