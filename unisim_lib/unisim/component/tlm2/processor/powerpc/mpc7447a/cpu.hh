@@ -119,10 +119,14 @@ private:
 	sc_event ev_max_idle;
 	sc_event ev_irq;
 	double ipc;
+	bool enable_dmi;
+	bool debug_dmi;
 
 	Parameter<sc_time> param_bus_cycle_time;
 	Parameter<sc_time> param_nice_time;
 	Parameter<double> param_ipc;
+	Parameter<bool> param_enable_dmi;
+	Parameter<bool> param_debug_dmi;
 	
 	class IRQQueue : public tlm::tlm_fw_transport_if<InterruptProtocolTypes>
 	{
@@ -150,6 +154,7 @@ private:
 	IRQQueue mcp_queue;
 	//IRQQueue tea_queue;
 	IRQQueue smi_queue;
+	unisim::kernel::tlm2::DMIRegionCache dmi_region_cache;
 
 	void SignalIRQ(IRQQueue& queue, unsigned int irq);
 };
