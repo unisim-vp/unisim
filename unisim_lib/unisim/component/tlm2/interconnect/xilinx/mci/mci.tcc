@@ -135,7 +135,6 @@ tlm::tlm_sync_enum MCI<CONFIG>::nb_transport_fw(unsigned int intf, tlm::tlm_gene
 		case tlm::BEGIN_REQ:
 			switch(intf)
 			{
-				case inherited::IF_MASTER_MCI:
 				case inherited::IF_SLAVE_MCI:
 				case inherited::IF_DCR:
 					{
@@ -168,7 +167,6 @@ void MCI<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& paylo
 {
 	switch(intf)
 	{
-		case inherited::IF_MASTER_MCI:
 		case inherited::IF_SLAVE_MCI:
 		case inherited::IF_DCR:
 			{
@@ -191,6 +189,16 @@ void MCI<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& paylo
 template <class CONFIG>
 unsigned int MCI<CONFIG>::transport_dbg(unsigned int intf, tlm::tlm_generic_payload& payload)
 {
+	switch(intf)
+	{
+		case inherited::IF_SLAVE_MCI:
+			return inherited::GetMI_CONTROL_ENABLE() ? mci_master_sock->transport_dbg(payload) : 0;
+		case inherited::IF_DCR:
+			return 0;
+		default:
+			inherited::logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+	}
 	return 0;
 }
 
@@ -201,7 +209,6 @@ bool MCI<CONFIG>::get_direct_mem_ptr(unsigned int intf, tlm::tlm_generic_payload
 	{
 		if(inherited::GetMI_CONTROL_ENABLE())
 		{
-			//std::cerr << "MCI: grant exactly what Memory grants." << std::endl;
 			bool dmi_status = mci_master_sock->get_direct_mem_ptr(payload, dmi_data);
 			if(dmi_status)
 			{
@@ -215,7 +222,6 @@ bool MCI<CONFIG>::get_direct_mem_ptr(unsigned int intf, tlm::tlm_generic_payload
 	dmi_data.set_granted_access(tlm::tlm_dmi::DMI_ACCESS_READ_WRITE);
 	dmi_data.set_start_address(0);
 	dmi_data.set_end_address((sc_dt::uint64) -1);
-	//std::cerr << "MCI: grant no access at all" << std::endl;
 	return false;
 }
 

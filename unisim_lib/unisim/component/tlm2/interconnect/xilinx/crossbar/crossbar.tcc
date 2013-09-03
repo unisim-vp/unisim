@@ -315,6 +315,23 @@ void Crossbar<CONFIG>::b_transport(unsigned int intf, tlm::tlm_generic_payload& 
 template <class CONFIG>
 unsigned int Crossbar<CONFIG>::transport_dbg(unsigned int intf, tlm::tlm_generic_payload& payload)
 {
+	typename CONFIG::ADDRESS start_range = 0;
+	typename CONFIG::ADDRESS end_range = 0;
+	typename inherited::Interface src_if = (typename inherited::Interface) intf;
+	typename inherited::Interface dst_if = inherited::Route(src_if, payload.get_address(), start_range, end_range);
+	
+	switch(dst_if)
+	{
+		case inherited::IF_MPLB:
+			return mplb_master_sock->transport_dbg(payload);
+			break;
+		case inherited::IF_MCI:
+			return mci_master_sock->transport_dbg(payload);
+			break;
+		default:
+			inherited::logger << DebugError << "Internal error" << EndDebugError;
+			Object::Stop(-1);
+	}
 	return 0;
 }
 
