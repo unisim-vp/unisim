@@ -42,11 +42,12 @@
  * and instruction
  */
 
-op and_32imm (cond[4]:0b00[2]:0b1[1]:0b0000[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+op and_32imm(cond[4]:0b00[2]:0b1[1]:0b0000[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
 and_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 and_32imm.disasm = {
-  buffer << "and" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "and" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 and_32imm.execute = {
@@ -60,7 +61,9 @@ and_32imm.execute = {
 op and_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 and_imm_shift.disasm = {
-  buffer << "and" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "and" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 and_imm_shift.execute = {
@@ -76,7 +79,8 @@ and_imm_shift.execute = {
 op and_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0000[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 and_reg_shift.disasm = {
-  buffer << "and" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "and" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 and_reg_shift.execute = {
@@ -101,7 +105,8 @@ op eor_32imm(cond[4]:0b00[2]:0b1[1]:0b0001[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 eor_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 eor_32imm.disasm = {
-  buffer << "eor" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "eor" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 eor_32imm.execute = {
@@ -115,7 +120,8 @@ eor_32imm.execute = {
 op eor_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 eor_imm_shift.disasm = {
-  buffer << "eor" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "eor" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 eor_imm_shift.execute = {
@@ -131,7 +137,8 @@ eor_imm_shift.execute = {
 op eor_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0001[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 eor_reg_shift.disasm = {
-  buffer << "eor" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "eor" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 eor_reg_shift.execute = {
@@ -156,7 +163,8 @@ op sub_32imm(cond[4]:0b00[2]:0b1[1]:0b0010[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 sub_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 sub_32imm.disasm = {
-  buffer << "sub" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "sub" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 sub_32imm.execute = {
@@ -170,7 +178,8 @@ sub_32imm.execute = {
 op sub_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 sub_imm_shift.disasm = {
-  buffer << "sub" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "sub" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 sub_imm_shift.execute = {
@@ -186,7 +195,8 @@ sub_imm_shift.execute = {
 op sub_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0010[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 sub_reg_shift.disasm = {
-  buffer << "sub" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "sub" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 sub_reg_shift.execute = {
@@ -211,7 +221,8 @@ op rsb_32imm(cond[4]:0b00[2]:0b1[1]:0b0011[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 rsb_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 rsb_32imm.disasm = {
-  buffer << "rsb" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "rsb" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 rsb_32imm.execute = {
@@ -225,7 +236,9 @@ rsb_32imm.execute = {
 op rsb_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 rsb_imm_shift.disasm = {
-  buffer << "rsb" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "rsb" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 rsb_imm_shift.execute = {
@@ -241,7 +254,8 @@ rsb_imm_shift.execute = {
 op rsb_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0011[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 rsb_reg_shift.disasm = {
-  buffer << "rsb" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "rsb" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 rsb_reg_shift.execute = {
@@ -266,7 +280,8 @@ op add_32imm(cond[4]:0b00[2]:0b1[1]:0b0100[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 add_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 add_32imm.disasm = {
-  buffer << "add" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "add" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 add_32imm.execute = {
@@ -280,7 +295,9 @@ add_32imm.execute = {
 op add_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 add_imm_shift.disasm = {
-  buffer << "add" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "add" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 add_imm_shift.execute = {
@@ -296,7 +313,8 @@ add_imm_shift.execute = {
 op add_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0100[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 add_reg_shift.disasm = {
-  buffer << "add" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "add" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 add_reg_shift.execute = {
@@ -321,7 +339,8 @@ op adc_32imm(cond[4]:0b00[2]:0b1[1]:0b0101[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 adc_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 adc_32imm.disasm = {
-  buffer << "adc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "adc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 adc_32imm.execute = {
@@ -335,7 +354,9 @@ adc_32imm.execute = {
 op adc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 adc_imm_shift.disasm = {
-  buffer << "adc" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "adc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 adc_imm_shift.execute = {
@@ -351,7 +372,8 @@ adc_imm_shift.execute = {
 op adc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0101[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 adc_reg_shift.disasm = {
-  buffer << "adc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "adc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 adc_reg_shift.execute = {
@@ -376,7 +398,8 @@ op sbc_32imm(cond[4]:0b00[2]:0b1[1]:0b0110[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 sbc_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 sbc_32imm.disasm = {
-  buffer << "sbc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "sbc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 sbc_32imm.execute = {
@@ -390,7 +413,9 @@ sbc_32imm.execute = {
 op sbc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 sbc_imm_shift.disasm = {
-  buffer << "sbc" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "sbc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", "
+         << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 sbc_imm_shift.execute = {
@@ -406,7 +431,8 @@ sbc_imm_shift.execute = {
 op sbc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0110[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 sbc_reg_shift.disasm = {
-  buffer << "sbc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "sbc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 sbc_reg_shift.execute = {
@@ -431,7 +457,8 @@ op rsc_32imm(cond[4]:0b00[2]:0b1[1]:0b0111[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 rsc_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 rsc_32imm.disasm = {
-  buffer << "rsc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "rsc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 rsc_32imm.execute = {
@@ -445,7 +472,8 @@ rsc_32imm.execute = {
 op rsc_imm_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 rsc_imm_shift.disasm = {
-  buffer << "rsc" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "rsc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 rsc_imm_shift.execute = {
@@ -461,7 +489,8 @@ rsc_imm_shift.execute = {
 op rsc_reg_shift(cond[4]:0b00[2]:0b0[1]:0b0111[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 rsc_reg_shift.disasm = {
-  buffer << "rsc" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "rsc" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 rsc_reg_shift.execute = {
@@ -486,7 +515,8 @@ op orr_32imm(cond[4]:0b00[2]:0b1[1]:0b1100[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 orr_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 orr_32imm.disasm = {
-  buffer << "orr" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "orr" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 orr_32imm.execute = {
@@ -500,7 +530,8 @@ orr_32imm.execute = {
 op orr_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 orr_imm_shift.disasm = {
-  buffer << "orr" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "orr" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 orr_imm_shift.execute = {
@@ -516,7 +547,8 @@ orr_imm_shift.execute = {
 op orr_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1100[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 orr_reg_shift.disasm = {
-  buffer << "orr" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "orr" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 orr_reg_shift.execute = {
@@ -541,7 +573,8 @@ op bic_32imm(cond[4]:0b00[2]:0b1[1]:0b1110[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : i
 bic_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 bic_32imm.disasm = {
-  buffer << "bic" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", #" << imm;
+  buffer << "bic" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 bic_32imm.execute = {
@@ -555,7 +588,8 @@ bic_32imm.execute = {
 op bic_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 bic_imm_shift.disasm = {
-  buffer << "bic" << DisasmCondition(cond) << (s?"s":"") << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "bic" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 bic_imm_shift.execute = {
@@ -571,7 +605,8 @@ bic_imm_shift.execute = {
 op bic_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1110[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 bic_reg_shift.disasm = {
-  buffer << "bic" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "bic" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 bic_reg_shift.execute = {
@@ -592,11 +627,12 @@ bic_reg_shift.execute = {
  * tst instruction
  */
 
-op tst_32imm(cond[4]:0b00[2]:0b1[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+op tst_32imm(cond[4]:0b00[2]:0b1[1]:0b1000[4]:1[1]:rn[4]:/*sbz*/0[4]:shl<1> imr[4] : imb[8]);
 tst_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 tst_32imm.disasm = {
-  buffer << "tst" << DisasmCondition(cond) << DisasmRegister(rn) << ", #" << imm;
+  buffer << "tst" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 tst_32imm.execute = {
@@ -606,10 +642,11 @@ tst_32imm.execute = {
   cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
 };
 
-op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+op tst_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:1[1]:rn[4]:/*sbz*/0[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 tst_imm_shift.disasm = {
-  buffer << "tst" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "tst" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 tst_imm_shift.execute = {
@@ -621,10 +658,11 @@ tst_imm_shift.execute = {
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+op tst_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1000[4]:0b1[1]:rn[4]:/*sbz*/0[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 tst_reg_shift.disasm = {
-  buffer << "tst" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "tst" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 tst_reg_shift.execute = {
@@ -644,11 +682,12 @@ tst_reg_shift.execute = {
  * teq instruction
  */
 
-op teq_32imm(cond[4]:0b00[2]:0b1[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+op teq_32imm(cond[4]:0b00[2]:0b1[1]:0b1001[4]:0b1[1]:rn[4]:/*sbz*/0[4]:shl<1> imr[4] : imb[8]);
 teq_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 teq_32imm.disasm = {
-  buffer << "teq" << DisasmCondition(cond) << DisasmRegister(rn) << ", #" << imm;
+  buffer << "teq" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 teq_32imm.execute = {
@@ -658,10 +697,11 @@ teq_32imm.execute = {
   cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
 };
 
-op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+op teq_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:1[1]:rn[4]:/*sbz*/0[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 teq_imm_shift.disasm = {
-  buffer << "teq" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "teq" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 teq_imm_shift.execute = {
@@ -673,10 +713,11 @@ teq_imm_shift.execute = {
   UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+op teq_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1001[4]:0b1[1]:rn[4]:/*sbz*/0[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 teq_reg_shift.disasm = {
-  buffer << "teq" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "teq" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 teq_reg_shift.execute = {
@@ -696,11 +737,12 @@ teq_reg_shift.execute = {
  * cmp instruction
  */
 
-op cmp_32imm(cond[4]:0b00[2]:0b1[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+op cmp_32imm(cond[4]:0b00[2]:0b1[1]:0b1010[4]:0b1[1]:rn[4]:/*sbz*/0[4]:shl<1> imr[4] : imb[8]);
 cmp_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 cmp_32imm.disasm = {
-  buffer << "cmp" << DisasmCondition(cond) << DisasmRegister(rn) << ", #" << imm;
+  buffer << "cmp" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 cmp_32imm.execute = {
@@ -710,10 +752,11 @@ cmp_32imm.execute = {
   UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op cmp_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+op cmp_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:/*sbz*/0[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 cmp_imm_shift.disasm = {
-  buffer << "cmp" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "cmp" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 cmp_imm_shift.execute = {
@@ -725,10 +768,11 @@ cmp_imm_shift.execute = {
   UpdateStatusSub( cpu, res, op1, op2 );
 };
 
-op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+op cmp_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1010[4]:0b1[1]:rn[4]:/*sbz*/0[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 cmp_reg_shift.disasm = {
-  buffer << "cmp" << DisasmCondition(cond) << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "cmp" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 cmp_reg_shift.execute = {
@@ -748,11 +792,12 @@ cmp_reg_shift.execute = {
  * cmn instruction
  */
 
-op cmn_32imm(cond[4]:0b00[2]:0b1[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:shl<1> imr[4] : imb[8]);
+op cmn_32imm(cond[4]:0b00[2]:0b1[1]:0b1011[4]:0b1[1]:rn[4]:/*sbz*/0[4]:shl<1> imr[4] : imb[8]);
 cmn_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 cmn_32imm.disasm = {
-  buffer << "cmn" << DisasmCondition(cond) << "\t" << DisasmRegister(rn) << ", #" << imm;
+  buffer << "cmn" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmI(imm);
 };
 
 cmn_32imm.execute = {
@@ -762,10 +807,11 @@ cmn_32imm.execute = {
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-op cmn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+op cmn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:/*sbz*/0[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 cmn_imm_shift.disasm = {
-  buffer << "cmn" << DisasmCondition(cond) << "\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "cmn" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 cmn_imm_shift.execute = {
@@ -777,10 +823,11 @@ cmn_imm_shift.execute = {
   UpdateStatusAdd( cpu, res, op1, op2 );
 };
 
-op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:sbz[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+op cmn_reg_shift(cond[4]:0b00[2]:0b0[1]:0b1011[4]:0b1[1]:rn[4]:/*sbz*/0[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 cmn_reg_shift.disasm = {
-  buffer << "cmn" << DisasmCondition(cond) << "\t" << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
+  buffer << "cmn" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rn) << ", " << DisasmRegister(rm) << ", " << DisasmShReg( shift, rs );
 };
 
 cmn_reg_shift.execute = {
@@ -800,11 +847,12 @@ cmn_reg_shift.execute = {
  * mov instruction
  */
 
-op mov_32imm (cond[4]:0b00[2]:0b1[1]:0b1101[4]:s[1]:sbz[4]:rd[4]:shl<1> imr[4]:imb[8]);
+op mov_32imm (cond[4]:0b00[2]:0b1[1]:0b1101[4]:s[1]:/*sbz*/0[4]:rd[4]:shl<1> imr[4]:imb[8]);
 mov_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 mov_32imm.disasm = {
-  buffer << "mov" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", #" << imm;
+  buffer << "mov" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmI(imm);
 };
 
 mov_32imm.execute = {
@@ -815,10 +863,23 @@ mov_32imm.execute = {
   if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
 };
 
-op mov_imm_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:sbz[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+op mov_imm_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:/*sbz*/0[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 mov_imm_shift.disasm = {
-  buffer << "mov" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  DisasmCondition postfix(cond, s?"s":"");
+  uint32_t shift_value = imm;
+  
+  if (imm == 0) {
+    char const* mnemonic = shift ? "rrx" : "mov";
+    if (shift == 0 or shift == 3) {
+      buffer << mnemonic << postfix << '\t'
+             << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+      return;
+    }
+    shift_value = 32;
+  }
+  buffer << DisasmShift(shift) << postfix << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", #" << shift_value;
 };
 
 mov_imm_shift.execute = {
@@ -829,11 +890,11 @@ mov_imm_shift.execute = {
   if (s) UpdateStatusImmShift( cpu, res, rmval, shift, imm );
 };
 
-op mov_reg_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:sbz[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
+op mov_reg_shift (cond[4]:0b00[2]:0b0[1]:0b1101[4]:s[1]:/*sbz*/0[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 mov_reg_shift.disasm = {
-  buffer << "mov" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
-         << DisasmShReg( shift, rs );
+  buffer << DisasmShift(shift) << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rs);
 };
 
 mov_reg_shift.execute = {
@@ -854,11 +915,12 @@ mov_reg_shift.execute = {
  * mvn instruction
  */
 
-op mvn_32imm (cond[4]:0b00[2]:0b1[1]:0b1111[4]:s[1]:rn[4]:rd[4]:shl<1> imr[4] : imb[8]);
+op mvn_32imm (cond[4]:0b00[2]:0b1[1]:0b1111[4]:s[1]:/*sbz*/0[4]:rd[4]:shl<1> imr[4] : imb[8]);
 mvn_32imm.var imm : {uint32_t} = {DecodeRotImm( imr, imb )};
 
 mvn_32imm.disasm = {
-  buffer << "mvn" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", #" << imm;
+  buffer << "mvn" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmI(imm);
 };
 
 mvn_32imm.execute = {
@@ -869,10 +931,11 @@ mvn_32imm.execute = {
   if (s) cpu.SetCPSR_NZCV( (res >> 31) & 1, res == 0, imr == 0 ? cpu.GetCPSR_C() : (imm >> 31), cpu.GetCPSR_V() );
 };
 
-op mvn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:s[1]:rn[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
+op mvn_imm_shift(cond[4]:0b00[2]:0b0[1]:0b1111[4]:s[1]:/*sbz*/0[4]:rd[4]:imm[5]:shift[2]:0b0[1]:rm[4]);
 
 mvn_imm_shift.disasm = {
-  buffer << "mvn" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
+  buffer << "mvn" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << DisasmShImm( shift, imm );
 };
 
 mvn_imm_shift.execute = {
@@ -886,7 +949,8 @@ mvn_imm_shift.execute = {
 op mvn_reg_shift (cond[4]:0b00[2]:0b0[1]:0b1111[4]:s[1]:rn[4]:rd[4]:rs[4]:0b0[1]:shift[2]:0b1[1]:rm[4]);
 
 mvn_reg_shift.disasm = {
-  buffer << "mvn" << DisasmCondition(cond) << (s?"s":"") << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
+  buffer << "mvn" << DisasmCondition(cond, s?"s":"") << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", "
          << DisasmShReg( shift, rs );
 };
 
@@ -928,10 +992,11 @@ using unisim::util::arithmetic::SignedSatSub32;
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+}:op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:0[4]:0b0101[4]:rm[4]);
 
 qadd.disasm = {
-  buffer << "qadd" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qadd" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qadd.execute = {
@@ -964,10 +1029,11 @@ qadd.execute = {
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+}:op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
 qsub.disasm = {
-  buffer << "qsub" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qsub" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qsub.execute = {
@@ -1000,10 +1066,11 @@ qsub.execute = {
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+}:op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
 qdadd.disasm = {
-  buffer << "qdadd" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qdadd" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qdadd.execute = {
@@ -1037,10 +1104,11 @@ qdadd.execute = {
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:sbz[4]:0b0101[4]:rm[4]);
+}:op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
 qdsub.disasm = {
-  buffer << "qdsub" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+  buffer << "qdsub" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
 qdsub.execute = {
@@ -1072,7 +1140,8 @@ qdsub.execute = {
 }:op movw( cond[4]:0x30[8]:shl<12> imm1[4]:rd[4]:imm0[12] );
 movw.var imm : {uint32_t} = {imm1|imm0};
 
-movw.disasm = { buffer << "movw" << DisasmCondition(cond) << "\t" << DisasmRegister(rd) << ", #" << imm; };
+movw.disasm = { buffer << "movw" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmI(imm); };
 
 movw.execute = { cpu.SetGPR( rd, imm ); };
 
@@ -1080,7 +1149,8 @@ movw.execute = { cpu.SetGPR( rd, imm ); };
 }:op movt( cond[4]:0x34[8]:shl<12> imm1[4]:rsd[4]:imm0[12] );
 movt.var imm : {uint32_t} = {imm1|imm0};
 
-movt.disasm = { buffer << "movt" << DisasmCondition(cond) << "\t" << DisasmRegister(rsd) << ", #" << imm; };
+movt.disasm = { buffer << "movt" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rsd) << ", " << DisasmI(imm); };
 
 movt.execute = { cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & 0xffff) | (imm << 16) ); };
 
@@ -1088,3 +1158,614 @@ movt.execute = { cpu.SetGPR( rsd, (cpu.GetGPR( rsd ) & 0xffff) | (imm << 16) ); 
  * end of mov[wt] instruction
  *******************************************************************/
 
+/*******************************************************************
+ * sadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op sadd16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+sadd16.disasm = {
+  buffer << "sadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op sadd8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+sadd8.disasm = {
+  buffer << "sadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssub16 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op ssub16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+ssub16.disasm = {
+  buffer << "ssub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssub8 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op ssub8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+ssub8.disasm = {
+  buffer << "ssub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sasx instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op sasx(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+sasx.disasm = {
+  buffer << "sasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssax instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op ssax(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+ssax.disasm = {
+  buffer << "ssax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op shadd16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+shadd16.disasm = {
+  buffer << "shadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shasx instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op shasx(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+shasx.disasm = {
+  buffer << "shasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsax instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op shsax(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+shsax.disasm = {
+  buffer << "shsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op shsub16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+shsub16.disasm = {
+  buffer << "shsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op shadd8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+shadd8.disasm = {
+  buffer << "shadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op shsub8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+shsub8.disasm = {
+  buffer << "shsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op uadd16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+uadd16.disasm = {
+  buffer << "uadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uasx instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op uasx(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+uasx.disasm = {
+  buffer << "uasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usax instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op usax(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+usax.disasm = {
+  buffer << "usax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usub16 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op usub16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+usub16.disasm = {
+  buffer << "usub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op uadd8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+uadd8.disasm = {
+  buffer << "uadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usub8 instruction
+ */
+
+{ STATE::MODEL == ARMV7
+}:op usub8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+usub8.disasm = {
+  buffer << "usub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op qadd16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+qadd16.disasm = {
+  buffer << "qadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qasx instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op qasx(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+qasx.disasm = {
+  buffer << "qasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsax instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op qsax(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+qsax.disasm = {
+  buffer << "qsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op qsub16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+qsub16.disasm = {
+  buffer << "qsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op qadd8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+qadd8.disasm = {
+  buffer << "qadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op qsub8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+qsub8.disasm = {
+  buffer << "qsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uqadd16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+uqadd16.disasm = {
+  buffer << "uqadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqasx instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uqasx(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+uqasx.disasm = {
+  buffer << "uqasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsax instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uqsax(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+uqsax.disasm = {
+  buffer << "uqsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uqsub16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+uqsub16.disasm = {
+  buffer << "uqsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uqadd8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+uqadd8.disasm = {
+  buffer << "uqadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uqsub8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+uqsub8.disasm = {
+  buffer << "uqsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uhadd16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+uhadd16.disasm = {
+  buffer << "uhadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhasx instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uhasx(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+uhasx.disasm = {
+  buffer << "uhasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsax instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uhsax(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+uhsax.disasm = {
+  buffer << "uhsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uhsub16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+uhsub16.disasm = {
+  buffer << "uhsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uhadd8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+uhadd8.disasm = {
+  buffer << "uhadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 ||
+  STATE::MODEL == ARMV7 ||
+  STATE::MODEL == ARMEMU
+}:op uhsub8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+uhsub8.disasm = {
+  buffer << "uhsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsub8 instruction
+ *******************************************************************/
