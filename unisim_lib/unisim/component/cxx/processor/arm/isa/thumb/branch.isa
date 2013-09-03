@@ -120,10 +120,10 @@ bl.execute = {
 
 /*******************************************************************
  * bx (branch and exchange) instruction
- * op bx(0b010001110[9]:h2[1]:rm[3]:sbz[3])
+ * op bx(0b010001110[9]:h2[1]:rm[3]:/ *sbz* /0[3])
  */
 
-op bx(0b010001110[9]:shl<3> rm1[1]:rm0[3]:sbz[3]);
+op bx(0b010001110[9]:shl<3> rm1[1]:rm0[3]:/*sbz*/0[3]);
 bx.var rm : {uint8_t} = {rm1|rm0};
 
 bx.disasm = {
@@ -173,7 +173,7 @@ blx_1.execute = {
  * op blx_2(0b111[3]:0b01[2]:sext<32> imm[11])
  */
 
-op blx_2(0b010001111[9]:shl<3> rm1[1]:rm0[3]:sbz[3]);
+op blx_2(0b010001111[9]:shl<3> rm1[1]:rm0[3]:/*sbz*/0[3]);
 blx_2.var rm : {uint8_t} = {rm1|rm0};
 
 blx_2.disasm = {

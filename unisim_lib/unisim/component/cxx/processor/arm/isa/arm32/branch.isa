@@ -100,7 +100,7 @@ bl.execute = {
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op bx(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0001[4]:rm[4]);
+}:op bx(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0001[4]:rm[4]);
 
 bx.disasm = {
   buffer << "bx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
@@ -110,6 +110,23 @@ bx.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   cpu.BranchExchange( cpu.GetGPR(rm) );
+};
+
+/*
+ * end of bx (branch and exchange) instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * bxj (Branch and Exchange Jazelle) instruction
+ * 
+ * This instruction attempts to change to Jazelle state. If the
+ * attempt fails, it branches to an address and instruction set
+ * specified by a register as though it were a BX instruction.
+ */
+op bxj(cond[4]:0b00010010[8]:0b1111[4]:0b1111[4]:0b1111[4]:0b0010[4]:rm[4]);
+
+bxj.disasm = {
+  buffer << "bxj" << DisasmCondition(cond) << '\t' << DisasmRegister(rm);
 };
 
 /*
@@ -169,7 +186,7 @@ blx_1.execute = {
   STATE::MODEL == ARMV6 ||
   STATE::MODEL == ARMV7 ||
   STATE::MODEL == ARMEMU
-}:op blx_2(cond[4]:0b00010010[8]:sbo1[4]:sbo2[4]:sbo3[4]:0b0011[4]:rm[4]);
+}:op blx_2(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
 
 blx_2.disasm = {
   buffer << "blx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
