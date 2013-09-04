@@ -72,8 +72,8 @@ Memory(const sc_module_name& name, Object *parent)
 	, param_read_latency("read-latency", this, read_latency, "memory read latency")
 	, param_write_latency("write-latency", this, write_latency, "memory write latency")
 	, param_verbose("verbose", this, verbose, "enable/disable verbosity")
-	, stat_read_counter("read-counter", this, read_counter, "read counter")
-	, stat_write_counter("write-counter", this, write_counter, "write counter")
+	, stat_read_counter("read-counter", this, read_counter, "read access counter (not accurate when using SystemC TLM 2.0 DMI)")
+	, stat_write_counter("write-counter", this, write_counter, "write access counter (not accurate when using SystemC TLM 2.0 DMI)")
 {
 	slave_sock(*this);
 	
@@ -141,7 +141,7 @@ sc_time& Memory<BUSWIDTH, ADDRESS, BURST_LENGTH, PAGE_SIZE, DEBUG>::GetBurstLate
 		sc_time burst_latency = num_burst_beats * cycle_time;
 		burst_latency_slow_lookup[num_burst_beats] = burst_latency;
 	}
-	while(pass < 2);
+	while(++pass < 2);
 	
 	logger << DebugError << LOCATION << "Internal error" << EndDebugError;
 	
@@ -162,12 +162,12 @@ UpdateTime(unsigned int data_length, const sc_time& latency, sc_time& t)
 			t = (((time + t) >= ready_time) ? t : ready_time - time) + latency;
 			if(data_bus_word_length <= BURST_LENGTH)
 			{
-				ready_time = time + t + GetBurstLatency(data_bus_word_length);
+				ready_time = time + t + GetBurstLatency(data_bus_word_length - 1);
 				data_bus_word_length = 0;
 			}
 			else
 			{
-				ready_time = time + t + GetBurstLatency(BURST_LENGTH);
+				ready_time = time + t + GetBurstLatency(BURST_LENGTH - 1);
 				data_bus_word_length -= BURST_LENGTH;
 			}
 		}
@@ -459,9 +459,6 @@ b_transport(tlm::tlm_generic_payload& payload, sc_core::sc_time& t)
 		payload.set_response_status(tlm::TLM_OK_RESPONSE);
 	else
 		payload.set_response_status(tlm::TLM_ADDRESS_ERROR_RESPONSE);
-
-	
-	//std::cerr << "t=" << t << std::endl;
 }
 
 } // end of namespace ram

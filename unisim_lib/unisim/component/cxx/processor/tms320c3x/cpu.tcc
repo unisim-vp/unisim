@@ -378,18 +378,46 @@ bool
 CPU<CONFIG, DEBUG> ::
 InjectReadMemory(typename CONFIG::address_t addr, void *buffer, uint32_t size)
 {
-	if(unlikely(!PrRead(addr, buffer, size, false)))
+	if(size > 0)
 	{
-		throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
-	}
+		typename CONFIG::address_t buf_addr = addr;
+		uint32_t buf_size = size;
+		uint32_t sz;
+		uint8_t *dst = (uint8_t *) buffer;
+		do
+		{
+			uint32_t size_to_fsb_boundary = 4 - (addr & 3);
+			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
 
-	// Memory access reporting
-	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
-	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, 4);
+			if(unlikely(!PrRead(addr, dst, sz, false)))
+			{
+				throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
+			}
+			
+			dst += sz;
+			addr += sz;
+			size -= sz;
+		} while(size > 0);
+		
+		// Memory access reporting
+		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+		{
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, buf_addr, buf_size);
+		}
 	}
-
 	return true;
+// 	if(unlikely(!PrRead(addr, buffer, size, false)))
+// 	{
+// 		throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
+// 	}
+// 
+// 	// Memory access reporting
+// 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+// 	{
+// 		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, addr, 4);
+// 	}
+// 
+// 	return true;
 }
 
 template<class CONFIG, bool DEBUG>
@@ -397,18 +425,46 @@ bool
 CPU<CONFIG, DEBUG> ::
 InjectWriteMemory(typename CONFIG::address_t addr, const void *buffer, uint32_t size)
 {
-	if(unlikely(!PrWrite(addr, buffer, size, false)))
+	if(size > 0)
 	{
-		throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
-	}
+		typename CONFIG::address_t buf_addr = addr;
+		uint32_t buf_size = size;
+		uint32_t sz;
+		uint8_t *src = (uint8_t *) buffer;
+		do
+		{
+			uint32_t size_to_fsb_boundary = 4 - (addr & 3);
+			sz = size > size_to_fsb_boundary ? size_to_fsb_boundary : size;
 
-	// Memory access reporting
-	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
-	{
-		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, 4);
+			if(unlikely(!PrWrite(addr, src, sz, false)))
+			{
+				throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
+			}
+			
+			src += sz;
+			addr += sz;
+			size -= sz;
+		} while(size > 0);
+		
+		// Memory access reporting
+		if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+		{
+			memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_READ, unisim::util::debug::MT_DATA, buf_addr, buf_size);
+		}
 	}
-
 	return true;
+// 	if(unlikely(!PrWrite(addr, buffer, size, false)))
+// 	{
+// 		throw BadMemoryAccessException<CONFIG, DEBUG>(addr / 4);
+// 	}
+// 
+// 	// Memory access reporting
+// 	if(unlikely(requires_memory_access_reporting && memory_access_reporting_import))
+// 	{
+// 		memory_access_reporting_import->ReportMemoryAccess(unisim::util::debug::MAT_WRITE, unisim::util::debug::MT_DATA, addr, 4);
+// 	}
+// 
+// 	return true;
 }
 
 //===============================================================
