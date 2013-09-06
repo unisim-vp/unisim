@@ -826,7 +826,13 @@ pld_reg.execute = { /*ignore for now*/ };
  *******************************************************************/
 
 /*******************************************************************
- * LDM instruction
+ * ldm (Load Multiple) instruction
+ *
+ * LDM loads multiple registers from consecutive memory locations
+ * using an address from a base register. The end-bound address of
+ * those locations can optionally be written back to the base
+ * register. The registers loaded can include the PC, causing a branch
+ * to a loaded address.
  */
 
 op ldm(cond[4]:0b100[3]:mod[2]:0b0[1]:w[1]:0b1[1]:rn[4]:reglist[16]);
@@ -849,11 +855,15 @@ ldm.execute = {
 };
 
 /*
- * end of LDM instruction
+ * end of ldm instruction
  *******************************************************************/
 
 /*******************************************************************
- * STM instruction
+ * stm (Store Multiple) instruction
+ *
+ * STM stores multiple registers to consecutive memory locations using
+ * an address from a base register. The end-bound address of those
+ * locations can optionally be written back to the base register.
  */
 
 op stm(cond[4]:0b100[3]:mod[2]:0b0[1]:w[1]:0b0[1]:rn[4]:reglist[16]);
@@ -875,11 +885,11 @@ stm.execute = {
 };
 
 /*
- * end of STM instruction
+ * end of stm instruction
  *******************************************************************/
 
 /*******************************************************************
- * LDM^ instruction (load multiple user registers with and without pc)
+ * ldm ^ (Load Multiple User Registers) instruction 
  */
 
 op ldm_npcusr(cond[4]:0b100[3]:mod[2]:0b1[1]:0[1]:0b1[1]:rn[4]:0[1]:reglist[15]);
@@ -910,11 +920,11 @@ ldm_usr.execute = {
 };
 
 /*
- * end of LDM^ instruction
+ * end of ldm ^ (Load Multiple User Registers) instruction
  *******************************************************************/
 
 /*******************************************************************
- * STM^ instruction (store multiple user registers)
+ * stm ^ (Store Multiple User Registers) instruction 
  */
 
 op stm_usr(cond[4]:0b100[3]:mod[2]:0b1[1]:w[1]:0b0[1]:rn[4]:reglist[16]);
@@ -937,7 +947,7 @@ stm_usr.execute = {
 };
 
 /*
- * end of STM^ instruction
+ * end of stm ^ (Store Multiple User Registers) instruction
  *******************************************************************/
 
 /**********************************************

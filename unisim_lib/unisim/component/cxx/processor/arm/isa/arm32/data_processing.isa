@@ -986,7 +986,7 @@ clz.execute = {
 };
 
 /*
- * end of (count leading zero) clz instruction
+ * end of clz (count leading zero) instruction
  *******************************************************************/
 
 /*******************************************************************
@@ -1079,7 +1079,11 @@ rev16.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * mov[wt] instructions
+ * movw (Move Wide) instruction
+ *
+ * MOVW writes a zero-extended 16-bits immediate value to a
+ * destination register. In combination with MOVW, this instruction
+ * allows to load a 32-bits constants in a destination register.
  */
 
 { STATE::MODEL == ARMV7 }:                                      \
@@ -1095,6 +1099,18 @@ movw.execute = {
   cpu.SetGPR( rd, imm );
 };
 
+/*
+ * end of movw instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * movt (Move Top) instruction
+ *
+ * MOVT writes an immediate value to the top halfword of the
+ * destination register. It does not affect the contents of the bottom
+ * halfword.
+ */
+
 { STATE::MODEL == ARMV7 }:                                      \
 op movt( cond[4]:0x34[8]:shl<12> imm1[4]:rsd[4]:imm0[12] );
 movt.var imm : {uint32_t} = {imm1|imm0};
@@ -1109,5 +1125,5 @@ movt.execute = {
 };
 
 /*
- * end of mov[wt] instruction
+ * end of movt (Move Top) instruction
  *******************************************************************/

@@ -114,43 +114,37 @@ bxj.disasm = {
 };
 
 /*
- * end of bx (Branch and Exchange Jazelle) instruction
+ * end of bxj (Branch and Exchange Jazelle) instruction
  *******************************************************************/
 
 /*******************************************************************
- * blx (1) (branch with link and exchange version 1) instruction
+ * blx (Branch with Link and Exchange) instruction
+ *
+ * BLX calls a subroutine (at a PC-relative or register address), and
+ * changes instruction set from ARM to Thumb, or from Thumb to ARM.
  */
 
 { STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
-op blx_1(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
-blx_1.var imm : {uint32_t} = {im1|im0};
+op blx_pcrel(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
+blx_pcrel.var imm : {uint32_t} = {im1|im0};
 
-blx_1.disasm = {
+blx_pcrel.disasm = {
   buffer << "blx\t" << std::hex << ((this->GetAddr() + 8 + imm) & -2) << std::dec;
 };
 
-blx_1.execute = {
+blx_pcrel.execute = {
   cpu.SetGPR( cpu.LR_reg, cpu.GetNPC() );
   cpu.BranchExchange( (cpu.GetGPR(cpu.PC_reg) + imm) | 1 );
 };
 
-/*
- * end of blx (1) (branch with link and exchange version 1) instruction
- *******************************************************************/
-
-
-/*******************************************************************
- * blx (2) (branch with link and exchange version 2) instruction
- */
-
 { STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
-op blx_2(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
+op blx_reg(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
 
-blx_2.disasm = {
+blx_reg.disasm = {
   buffer << "blx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
 };
 
-blx_2.execute = {
+blx_reg.execute = {
   if (not CheckCondition(cpu, cond)) return;
   
   uint32_t rm_value = cpu.GetGPR(rm);
@@ -159,5 +153,5 @@ blx_2.execute = {
 };
 
 /*
- * end of blx (2) (branch with link and exchange version 2) instruction
+ * end of blx (Branch with Link and Exchange) instruction
  *******************************************************************/

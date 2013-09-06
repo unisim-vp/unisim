@@ -79,9 +79,7 @@ var operands : {operands_t}
 var unit : {unit_type_t} = {NO_UNIT_T}
 
 
-/********************************************************************************************************/
-/* constructors actions to set up dependencies                                                    START */
-/********************************************************************************************************/
+/*** constructors actions to set up dependencies START ***/
 
 constructor action initialize_dependency_read_rm() {}
 constructor action initialize_dependency_read_rn() {}
@@ -96,13 +94,9 @@ constructor action initialize_dependency_write_rdhi() {}
 constructor action initialize_dependency_write_rdlo() {}
 constructor action initialize_dependency_write_reglist() {}
 
-/********************************************************************************************************/
-/* constructors actions to set up dependencies                                                    END   */
-/********************************************************************************************************/
+/*** constructors actions to set up dependencies END ***/
 
-/********************************************************************************************************/
-/* definition of groups of instructions that share dependencies                                   START */
-/********************************************************************************************************/
+/*** definition of groups of instructions that share dependencies START ***/
 
 group group_read_rm(bx, \
 		blx_2, \
@@ -339,13 +333,9 @@ group group_write_crd( \
 		ldc2, ldc2_unindexed, \
 		stc2, stc2_unindexed)
 
-/********************************************************************************************************/
-/* definition of groups of instructions that share dependencies                                   END   */
-/********************************************************************************************************/
+/* definition of groups of instructions that share dependencies END ***/
 
-/********************************************************************************************************/
-/* specialization of the groups dependencies                                                      START */
-/********************************************************************************************************/
+/* specialization of the groups dependencies START ***/
 
 //constructor action initialize_dependency_read_rm() {}
 //constructor action initialize_dependency_read_rn() {}
@@ -394,6 +384,4 @@ group group_write_crd( \
 //
 //group_write_crd
 
-/********************************************************************************************************/
-/* specialization of the groups dependencies                                                      END    */
-/********************************************************************************************************/
+/* specialization of the groups dependencies END ***/
