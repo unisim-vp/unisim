@@ -34,6 +34,6 @@
 
 ldc2.specialize( ldc_undefined, ldc_unindexed, mrrc );
 stc2.specialize( stc_undefined, stc_unindexed, mcrr );
-blx_1.specialize( b, bl );
+blx_pcrel.specialize( b, bl );
 pld_imm.specialize( ldr_imm, ldrb_imm );
 pld_reg.specialize( ldr_reg, ldrb_reg );
