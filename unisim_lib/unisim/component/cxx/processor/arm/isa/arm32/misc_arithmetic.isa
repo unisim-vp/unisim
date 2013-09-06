@@ -34,125 +34,153 @@
  
 /**********************************************
 
-     MISCELLANEOUS ARITHMETIC INSTRUCTIONS
+       SATURATING ARITHMETIC INSTRUCTIONS
 
 **********************************************/
 
-/*******************************************************************
- * clz (count leading zero) instruction
- */
+impl {
+#include "unisim/util/arithmetic/arithmetic.hh"
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op clz(cond[4]:0b00010110[8]:/*sbo*/0xf[4]:rd[4]:/*sbo*/0xf[4]:0b0001[4]:rm[4]);
+using unisim::util::arithmetic::SignedSatAdd32;
+using unisim::util::arithmetic::SignedSatSub32;
 
-clz.disasm = {
-  buffer << "clz" << DisasmCondition(cond) << '\t' << DisasmRegister(rd) << ", " << DisasmRegister(rm);
 };
 
-clz.execute = {
+/*******************************************************************
+ * qadd instruction
+ */
+
+{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:0[4]:0b0101[4]:rm[4]);
+
+qadd.disasm = {
+  buffer << "qadd" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qadd.execute = {
+  uint8_t does_sat;
+  uint32_t result;
+  
   if (not CheckCondition(cpu, cond)) return;
   
-  cpu.SetGPR(rd, CountLeadingZeros( cpu.GetGPR(rm) ));
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatAdd32(result, does_sat, cpu.GetGPR(rn) , cpu.GetGPR(rm));
+  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.SetGPR(rd, result);
 };
 
 /*
- * end of (count leading zero) clz instruction
+ * end of qadd instruction
  *******************************************************************/
 
 /*******************************************************************
- * rbit instruction
+ * qsub instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                              \
-op rbit( cond[4]:0x6ff[12]:rd[4]:0xf3[8]:rm[4] );
+{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
-rbit.disasm = {
-  buffer << "rbit" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+qsub.disasm = {
+  buffer << "qsub" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
-rbit.execute = {
-  uint32_t src = cpu.GetGPR( rm ), dst = 0;
-  for (int idx = 0; idx < 32; ++idx) { dst = (dst << 1) | (src & 1); src >>= 1; }
-  cpu.SetGPR( rd, dst );
+qsub.execute = {
+  uint8_t does_sat;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , cpu.GetGPR(rn));
+  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.SetGPR(rd, result);
 };
 
 /*
- * end of rbit instruction
+ * end of qsub instruction
  *******************************************************************/
 
 /*******************************************************************
- * rev (Byte-Reverse Word) instruction
- *
- * REV reverses the byte order in a 32-bit register.
+ * qdadd instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
-op rev( cond[4]:0b01101[5]:0[1]:0b11[2]:/*sbo*/0b1111[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4] );
+{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
-rev.disasm = {
-  buffer << "rev" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+qdadd.disasm = {
+  buffer << "qdadd" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
 };
 
-rev.execute = {
-  uint32_t src = cpu.GetGPR( rm ), dst = 0;
-  for (int idx = 0; idx < 32; idx += 8) { dst = (dst << 8) | (src & 0xff); src >>= 8; }
-  cpu.SetGPR( rd, dst );
+qdadd.execute = {
+  uint8_t does_sat, does_sat_tmp;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
+  SignedSatAdd32(result, does_sat, cpu.GetGPR(rm) , result);
+  cpu.SetCPSR_Q(does_sat == 1 || does_sat_tmp == 1? true : false);
+  cpu.SetGPR(rd, result);
 };
 
 /*
- * end of rev instruction
+ * end of qdadd instruction
  *******************************************************************/
 
 /*******************************************************************
- * revsh (Byte-Reverse Word) instruction
- *
- * REVSH reverses the byte order in a 32-bit register.
+ * qdsub instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
-op revsh( cond[4]:0b01101[5]:1[1]:0b11[2]:/*sbo*/0b1111[4]:rd[4]:/*sbo*/0b1111[4]:0b1011[4]:rm[4] );
+{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
-revsh.disasm = {
-  buffer << "revsh" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm);
+qdsub.disasm = {
+  buffer << "qdsub" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rm) << ", " << DisasmRegister(rn);
+};
+
+qdsub.execute = {
+  uint8_t does_sat, does_sat_tmp;
+  uint32_t result;
+  
+  if (not CheckCondition(cpu, cond)) return;
+  
+  if(rd == cpu.PC_reg || rm == cpu.PC_reg || rn == cpu.PC_reg) {
+    // unpredictable behavior, we do nothing
+    return;
+  }
+  
+  SignedSatAdd32(result, does_sat_tmp, cpu.GetGPR(rn) , cpu.GetGPR(rn));
+  SignedSatSub32(result, does_sat, cpu.GetGPR(rm) , result);
+  cpu.SetCPSR_Q(does_sat == 1 ? true : false);
+  cpu.SetGPR(rd, result);
 };
 
 /*
- * end of revsh instruction
+ * end of qdsub instruction
  *******************************************************************/
 
-/*******************************************************************
- * rev16 (Byte-Reverse Packed Halfword) instruction
- *
- * REV16 reverses the byte order in each16-bit halfword of a 32-bit
- * register.
- */
+/**********************************************
 
-{ STATE::MODEL == ARMV7 }:                                              \
-op rev16( cond[4]:0b01101[5]:0[1]:0b11[2]:/*sbo*/0b1111[4]:rd[4]:/*sbo*/0b1111[4]:0b1011[4]:rm[4] );
+       HINTS INSTRUCTIONS
 
-rev16.disasm = {
-  buffer << "rev16" << DisasmCondition(cond) << '\t'
-         << DisasmRegister(rd) << ", " << DisasmRegister(rm);
-};
-
-rev16.execute = {
-  uint32_t src = cpu.GetGPR( rm ), dst = 0;
-  for (int idx = 0; idx < 32; idx += 8) { dst = (dst << 8) | (src & 0xff); src >>= 8; }
-  cpu.SetGPR( rd, (dst << 16) | (dst >> 16) );
-};
-
-/*
- * end of rev16 instruction
- *******************************************************************/
+**********************************************/
 
 /*******************************************************************
  * nop instruction
@@ -160,7 +188,9 @@ rev16.execute = {
 
 op nop( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:idx[8] );
 
-nop.disasm = { buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}"; };
+nop.disasm = {
+  buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}";
+};
 
 /*
  * end of nop instruction
@@ -172,7 +202,9 @@ nop.disasm = { buffer << "nop" << DisasmCondition(cond) << "\t{" << idx << "}"; 
 
 op yield( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:1[8] );
 
-yield.disasm = { buffer << "yield" << DisasmCondition(cond); };
+yield.disasm = {
+  buffer << "yield" << DisasmCondition(cond);
+};
 
 /*
  * end of yield instruction
@@ -184,7 +216,9 @@ yield.disasm = { buffer << "yield" << DisasmCondition(cond); };
 
 op wfe( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:2[8] );
 
-wfe.disasm = { buffer << "wfe" << DisasmCondition(cond); };
+wfe.disasm = {
+  buffer << "wfe" << DisasmCondition(cond);
+};
 
 /*
  * end of wfe instruction
@@ -196,7 +230,9 @@ wfe.disasm = { buffer << "wfe" << DisasmCondition(cond); };
 
 op wfi( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:3[8] );
 
-wfi.disasm = { buffer << "wfi" << DisasmCondition(cond); };
+wfi.disasm = {
+  buffer << "wfi" << DisasmCondition(cond);
+};
 
 /*
  * end of wfi instruction
@@ -208,7 +244,9 @@ wfi.disasm = { buffer << "wfi" << DisasmCondition(cond); };
 
 op sev( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:4[8] );
 
-sev.disasm = { buffer << "sev" << DisasmCondition(cond); };
+sev.disasm = {
+  buffer << "sev" << DisasmCondition(cond);
+};
 
 /*
  * end of sev instruction
@@ -220,11 +258,19 @@ sev.disasm = { buffer << "sev" << DisasmCondition(cond); };
 
 op dbg( cond[4]:0b0011[4]:0b0010[4]:0b0000[4]:/*sbo*/0b1111[4]:/*sbz*/0b0000[4]:0b1111[4]:idx[4] );
 
-dbg.disasm = { buffer << "dbg" << DisasmCondition(cond) << '\t' << DisasmI(idx); };
+dbg.disasm = {
+  buffer << "dbg" << DisasmCondition(cond) << '\t' << DisasmI(idx);
+};
 
 /*
  * end of dbg instruction
  *******************************************************************/
+
+/**********************************************
+
+       PACKING INSTRUCTIONS
+
+**********************************************/
 
 /*******************************************************************
  * pkh (Pack Halfword) instruction
@@ -244,6 +290,12 @@ pkh.disasm = {
 /*
  * end of pkh instruction
  *******************************************************************/
+
+/**********************************************
+
+       TO SORT INSTRUCTIONS
+
+**********************************************/
 
 /*******************************************************************
  * sxtab16 (Signed Extend and Add Byte 16) instruction
@@ -702,4 +754,580 @@ ubfx.disasm = {
 
 /*
  * end of ubfx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op sadd16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+sadd16.disasm = {
+  buffer << "sadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op sadd8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+sadd8.disasm = {
+  buffer << "sadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssub16 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op ssub16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+ssub16.disasm = {
+  buffer << "ssub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssub8 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op ssub8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+ssub8.disasm = {
+  buffer << "ssub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * sasx instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op sasx(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+sasx.disasm = {
+  buffer << "sasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of sasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * ssax instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op ssax(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+ssax.disasm = {
+  buffer << "ssax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of ssax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op shadd16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+shadd16.disasm = {
+  buffer << "shadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shasx instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op shasx(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+shasx.disasm = {
+  buffer << "shasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsax instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op shsax(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+shsax.disasm = {
+  buffer << "shsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op shsub16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+shsub16.disasm = {
+  buffer << "shsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op shadd8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+shadd8.disasm = {
+  buffer << "shadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * shsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op shsub8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+shsub8.disasm = {
+  buffer << "shsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of shsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op uadd16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+uadd16.disasm = {
+  buffer << "uadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uasx instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op uasx(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+uasx.disasm = {
+  buffer << "uasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usax instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op usax(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+usax.disasm = {
+  buffer << "usax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usub16 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op usub16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+usub16.disasm = {
+  buffer << "usub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op uadd8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+uadd8.disasm = {
+  buffer << "uadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * usub8 instruction
+ */
+
+{ STATE::MODEL == ARMV7 }:                                              \
+op usub8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+usub8.disasm = {
+  buffer << "usub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of usub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qadd16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+qadd16.disasm = {
+  buffer << "qadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qasx instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qasx(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+qasx.disasm = {
+  buffer << "qasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsax instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qsax(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+qsax.disasm = {
+  buffer << "qsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qsub16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+qsub16.disasm = {
+  buffer << "qsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qadd8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+qadd8.disasm = {
+  buffer << "qadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * qsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op qsub8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+qsub8.disasm = {
+  buffer << "qsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of qsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uqadd16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+uqadd16.disasm = {
+  buffer << "uqadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqasx instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uqasx(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+uqasx.disasm = {
+  buffer << "uqasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsax instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uqsax(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+uqsax.disasm = {
+  buffer << "uqsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uqsub16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+uqsub16.disasm = {
+  buffer << "uqsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uqadd8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+uqadd8.disasm = {
+  buffer << "uqadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uqsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uqsub8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+uqsub8.disasm = {
+  buffer << "uqsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uqsub8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhadd16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uhadd16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
+
+uhadd16.disasm = {
+  buffer << "uhadd16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhadd16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhasx instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uhasx(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
+
+uhasx.disasm = {
+  buffer << "uhasx" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhasx instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsax instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uhsax(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
+
+uhsax.disasm = {
+  buffer << "uhsax" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsax instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsub16 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uhsub16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
+
+uhsub16.disasm = {
+  buffer << "uhsub16" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsub16 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhadd8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uhadd8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
+
+uhadd8.disasm = {
+  buffer << "uhadd8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhadd8 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * uhsub8 instruction
+ */
+
+{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op uhsub8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
+
+uhsub8.disasm = {
+  buffer << "uhsub8" << DisasmCondition(cond) << '\t'
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", " << DisasmRegister(rm);
+};
+
+/*
+ * end of uhsub8 instruction
  *******************************************************************/

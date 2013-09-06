@@ -80,27 +80,11 @@ bl.execute = {
  *******************************************************************/
 
 /*******************************************************************
- * bx (branch and exchange) instruction
- * this instruction is only availabe for the following architectures
- * 	ARMV4T,
- *  ARMV4TXM,
- *  ARMV5 (ARMEMU),
- *	ARMV5XM,
- *	ARMV5T,
- *	ARMV5TXM,
- *	ARMV5TE,
- *	ARMV5TEXP
+ * bx (Branch and Exchange) instruction
  */
 
-{ STATE::MODEL == ARMV4T ||
-  STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op bx(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0001[4]:rm[4]);
+{ STATE::MODEL == ARMV4T || STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op bx(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0001[4]:rm[4]);
 
 bx.disasm = {
   buffer << "bx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);
@@ -130,28 +114,15 @@ bxj.disasm = {
 };
 
 /*
- * end of bx (branch and exchange) instruction
+ * end of bx (Branch and Exchange Jazelle) instruction
  *******************************************************************/
 
 /*******************************************************************
  * blx (1) (branch with link and exchange version 1) instruction
- * this instruction is only availabe for the following architectures
- *  ARMV5 (ARMEMU),
- *	ARMV5XM,
- *	ARMV5T,
- *	ARMV5TXM,
- *	ARMV5TE,
- *	ARMV5TEXP
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op blx_1(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op blx_1(0b1111101[7]:shl<1> im0[1]:shl<2> sext<32> im1[24]);
 blx_1.var imm : {uint32_t} = {im1|im0};
 
 blx_1.disasm = {
@@ -170,23 +141,10 @@ blx_1.execute = {
 
 /*******************************************************************
  * blx (2) (branch with link and exchange version 2) instruction
- * this instruction is only availabe for the following architectures
- *  ARMV5 (ARMEMU),
- *	ARMV5XM,
- *	ARMV5T,
- *	ARMV5TXM,
- *	ARMV5TE,
- *	ARMV5TEXP
  */
 
-{ STATE::MODEL == ARMV5T ||
-  STATE::MODEL == ARMV5TE ||
-  STATE::MODEL == ARMV5TEJ ||
-  STATE::MODEL == ARMV5TEXP ||
-  STATE::MODEL == ARMV6 ||
-  STATE::MODEL == ARMV7 ||
-  STATE::MODEL == ARMEMU
-}:op blx_2(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
+{ STATE::MODEL == ARMV5T || STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+op blx_2(cond[4]:0b00010010[8]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:/*sbo*/0xf[4]:0b0011[4]:rm[4]);
 
 blx_2.disasm = {
   buffer << "blx" << DisasmCondition(cond) << "\t" << DisasmRegister(rm);

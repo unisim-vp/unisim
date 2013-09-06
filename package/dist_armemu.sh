@@ -200,9 +200,7 @@ unisim/component/cxx/memory/ram/memory_32.cc"
 
 UNISIM_LIB_ARMEMU_ISA_THUMB_FILES="\
 unisim/component/cxx/processor/arm/isa/thumb/thumb.isa \
-unisim/component/cxx/processor/arm/isa/thumb/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/exception.isa \
-unisim/component/cxx/processor/arm/isa/thumb/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/thumb/load_store_reg.isa \
 unisim/component/cxx/processor/arm/isa/thumb/branch.isa \
 unisim/component/cxx/processor/arm/isa/thumb/data_processing.isa \
@@ -213,24 +211,19 @@ unisim/component/cxx/processor/arm/isa/thumb/load_store_multiple.isa \
 
 UNISIM_LIB_ARMEMU_ISA_ARM32_FILES="\
 unisim/component/cxx/processor/arm/isa/arm32/specialization.isa \
-unisim/component/cxx/processor/arm/isa/arm32/actions_dec.isa \
 unisim/component/cxx/processor/arm/isa/arm32/coprocessor.isa \
-unisim/component/cxx/processor/arm/isa/arm32/coprocessor_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/exception.isa \
 unisim/component/cxx/processor/arm/isa/arm32/execution_latency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/constructors_dec.isa \
 unisim/component/cxx/processor/arm/isa/arm32/branch.isa \
 unisim/component/cxx/processor/arm/isa/arm32/data_processing.isa \
 unisim/component/cxx/processor/arm/isa/arm32/dependency.isa \
-unisim/component/cxx/processor/arm/isa/arm32/multiply_v5e.isa \
 unisim/component/cxx/processor/arm/isa/arm32/misc_arithmetic.isa \
 unisim/component/cxx/processor/arm/isa/arm32/multiply.isa \
 unisim/component/cxx/processor/arm/isa/arm32/status_register_access.isa \
 unisim/component/cxx/processor/arm/isa/arm32/ordering.isa \
 unisim/component/cxx/processor/arm/isa/arm32/profiling.isa \
 unisim/component/cxx/processor/arm/isa/arm32/load_store.isa \
-unisim/component/cxx/processor/arm/isa/arm32/arm32.isa \
-unisim/component/cxx/processor/arm/isa/arm32/semaphore.isa"
+unisim/component/cxx/processor/arm/isa/arm32/arm32.isa"
 
 UNISIM_LIB_ARMEMU_ISA_FILES="${UNISIM_LIB_ARMEMU_ISA_THUMB_FILES} ${UNISIM_LIB_ARMEMU_ISA_ARM32_FILES}"
 

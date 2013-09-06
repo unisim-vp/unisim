@@ -49,27 +49,35 @@ decl {
 } // end of decl
 
 impl {
+#include "unisim/component/cxx/processor/arm/models.hh"
+#include "unisim/component/cxx/processor/arm/disasm.hh"
+#include "unisim/component/cxx/processor/arm/execute.hh"
+#include "unisim/component/cxx/processor/arm/exception.hh"
+#include "unisim/util/arithmetic/arithmetic.hh"
 #include <iostream>
+#include <iomanip>
 } // end of impl
 
-include "constructors_dec.isa"
-include "actions_dec.isa"
+action {void} execute({STATE &} {cpu}) {
+  cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
+}
 
-include "branch.isa"
+action {void} disasm({STATE &} {cpu}, {std::ostream&} {buffer}) {
+  buffer << "Unknown instruction";
+}
+
 include "data_processing.isa"
-include "multiply.isa"
-include "multiply_v5e.isa"
-include "status_register_access.isa"
 include "load_store.isa"
-include "semaphore.isa"
-include "exception.isa"
-include "coprocessor.isa"
-include "coprocessor_v5e.isa"
+include "multiply.isa"
 include "misc_arithmetic.isa"
+include "branch.isa"
+include "coprocessor.isa"
+include "exception.isa"
+include "status_register_access.isa"
 
 include "ordering.isa"
-//include "dependency.isa"
 
+//include "dependency.isa"
 //include "specialization.isa"
 
 include "profiling.isa"

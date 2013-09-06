@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2007,
+ *  Copyright (c) 2007 - 2013,
  *  Commissariat a l'Energie Atomique (CEA)
  *  All rights reserved.
  *
@@ -343,6 +343,55 @@ stc2_unindexed.execute = {
   uint32_t address = cpu.GetGPR(rn);
   while(cpu.CoprocessorStore(cp_num, address, option)) { address += 4; }
 };
+
 /*
  * end of stc2 instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * mcrr instruction
+ */
+
+{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU}: \
+op mcrr(cond[4]:0b11000100[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4]);
+
+mcrr.disasm = {
+  buffer << "mcrr" << DisasmCondition(cond) << '\t'
+         << (unsigned int)cp_num << ", " << (unsigned int) op1 << ", "
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", cr" << (unsigned int)crm;
+};
+
+mcrr.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+
+  cpu.MoveToCoprocessor(cp_num, op1, 0, rd, 0, crm);
+  cpu.MoveToCoprocessor(cp_num, op1, 0, rn, 0, crm);
+};
+
+/*
+ * end of mcrr instruction
+ *******************************************************************/
+
+/*******************************************************************
+ * mrrc instruction
+ */
+
+{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU}: \
+op mrrc(cond[4]:0b11000101[8]:rn[4]:rd[4]:cp_num[4]:op1[4]:crm[4]);
+
+mrrc.disasm = {
+  buffer << "mrrc" << DisasmCondition(cond) << '\t'
+         << (unsigned int)cp_num << ", " << (unsigned int) op1 << ", "
+         << DisasmRegister(rd) << ", " << DisasmRegister(rn) << ", cr" << (unsigned int)crm;
+};
+
+mrrc.execute = {
+  if(not CheckCondition(cpu, cond)) return;
+
+  cpu.MoveFromCoprocessor(cp_num, op1, 0, rd, 0, crm);
+  cpu.MoveFromCoprocessor(cp_num, op1, 0, rn, 0, crm);
+};
+
+/*
+ * end of mrrc instruction
  *******************************************************************/

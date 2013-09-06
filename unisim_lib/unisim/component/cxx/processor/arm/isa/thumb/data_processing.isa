@@ -58,7 +58,7 @@ adc.execute = {
   carry_in = (cpu.GetCPSR_C() ? 1 : 0);
   s1 = cpu.GetGPR(rd);
   s2 = cpu.GetGPR(rm);
-  Add32(res, carry_out, overflow_out, sign,
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
         s1, s2, carry_in);
   cpu.SetGPR(rd, res);
 
@@ -91,7 +91,7 @@ add_1.execute = {
 		
   s1 = cpu.GetGPR(rn);
   carry_in = 0;
-  Add32(res, carry_out, overflow_out, sign,
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
         s1, imm, carry_in);
   cpu.SetGPR(rd, res);
 
@@ -123,7 +123,7 @@ add_2.execute = {
 	
   s1 = cpu.GetGPR(rd);
   carry_in = 0;
-  Add32(res, carry_out, overflow_out, sign,
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
         s1, imm, carry_in);
 
   cpu.SetGPR(rd, res);
@@ -157,7 +157,7 @@ add_3.execute = {
   s2 = cpu.GetGPR(rn);
 	
   carry_in = 0;
-  Add32(res, carry_out, overflow_out, sign,
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
         s1, s2, carry_in);
 
   cpu.SetGPR(rd, res);
@@ -415,7 +415,7 @@ cmn.execute = {
   s2 = cpu.GetGPR(rm);
 	
   carry_in = 0;
-  Add32(res, carry_out, overflow_out, sign,
+  unisim::util::arithmetic::Add32(res, carry_out, overflow_out, sign,
         s1, s2, carry_in);
 
   cpu.SetCPSR_N(res & (uint32_t)0x80000000);
@@ -799,7 +799,7 @@ ror.execute = {
     res = s1;
   } else {
     cpu.SetCPSR_C((s1 >> ((s2 & 0x01f) - 1)) & 0x01);
-    res = RotateRight(s1, s2);
+    res = unisim::util::arithmetic::RotateRight(s1, s2);
   }
   cpu.SetGPR(rd, res);
 	
