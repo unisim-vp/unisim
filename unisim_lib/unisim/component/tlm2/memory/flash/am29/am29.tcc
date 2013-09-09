@@ -92,8 +92,9 @@ bool AM29<CONFIG, BYTESIZE, IO_WIDTH, BUSWIDTH>::get_direct_mem_ptr(tlm::tlm_gen
 	{
 		//std::cerr << sc_module::name() << ": grant 0x" << std::hex << dmi_start_addr << "-0x" << dmi_end_addr << std::dec << std::endl;
 		dmi_data.set_dmi_ptr(dmi_ptr);
-		dmi_data.set_read_latency(cycle_time);
-		dmi_data.set_write_latency(cycle_time);
+		// set latency per byte
+		dmi_data.set_read_latency(cycle_time / (BUSWIDTH / 8));
+		dmi_data.set_write_latency(cycle_time / (BUSWIDTH / 8));
 		return true;
 	}
 

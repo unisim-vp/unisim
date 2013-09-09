@@ -149,7 +149,7 @@ private:
 	Statistic<uint64_t> stat_read_counter;
 	Statistic<uint64_t> stat_write_counter;
 
-
+	unisim::kernel::tlm2::LatencyLookupTable burst_latency_lut;
 };
 
 } // end of namespace ram

@@ -207,6 +207,7 @@ private:
 	unisim::kernel::tlm2::Schedule<Event> schedule;
 	
 	sc_time cycle_time;
+	unisim::kernel::tlm2::LatencyLookupTable burst_latency_lut;
 	Parameter<sc_time> param_cycle_time;
 	
 	tlm::tlm_sync_enum nb_transport_fw(unsigned int intf, tlm::tlm_generic_payload& payload, tlm::tlm_phase& phase, sc_core::sc_time& t);
@@ -220,6 +221,7 @@ private:
 	void ProcessForwardEvent(Event *event);
 	void ProcessBackwardEvent(Event *event);
 	void ProcessDCREvent(Event *event);
+	sc_time& GetBurstLatency(unsigned int num_burst_beats);
 };
 
 } // end of namespace mci

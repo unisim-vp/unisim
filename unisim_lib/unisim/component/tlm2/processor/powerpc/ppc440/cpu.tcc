@@ -227,15 +227,24 @@ void CPU<CONFIG>::invalidate_direct_mem_ptr(unsigned int if_id, sc_dt::uint64 st
 	{
 		case IF_ICURD_PLB:
 			icurd_dmi_region_cache.Invalidate(start_range, end_range);
-			//std::cerr << "PLB Instruction Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << std::endl;
+			if(CONFIG::DEBUG_ENABLE && debug_dmi)
+			{
+				inherited::logger << DebugInfo << "PLB Instruction Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+			}
 			break;
 		case IF_DCUWR_PLB:
 			dcuwr_dmi_region_cache.Invalidate(start_range, end_range);
-			//std::cerr << "PLB Data Write: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << std::endl;
+			if(CONFIG::DEBUG_ENABLE && debug_dmi)
+			{
+				inherited::logger << DebugInfo << "PLB Data Write: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+			}
 			break;
 		case IF_DCURD_PLB:
 			dcurd_dmi_region_cache.Invalidate(start_range, end_range);
-			//std::cerr << "PLB Data Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << std::endl;
+			if(CONFIG::DEBUG_ENABLE && debug_dmi)
+			{
+				inherited::logger << DebugInfo << "PLB Data Read: invalidate granted access for 0x" << std::hex << start_range << "-0x" << end_range << std::dec << EndDebugInfo;
+			}
 			break;
 	}
 }
@@ -524,36 +533,36 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					cpu_time += dmi_data->get_read_latency();
+					cpu_time += size * dmi_data->get_read_latency();
 					return true;
 				}
 				else
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 	
-	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
 	payload->set_address(physical_addr);
@@ -572,7 +581,7 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			unisim::kernel::tlm2::DMIGrant dmi_grant = icurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
@@ -581,7 +590,7 @@ bool CPU<CONFIG>::PLBInsnRead(typename CONFIG::physical_address_t physical_addr,
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Instruction Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Instruction Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 	
@@ -603,35 +612,35 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_READ) == tlm::tlm_dmi::DMI_ACCESS_READ))
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(buffer, dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), size);
-					cpu_time += dmi_data->get_read_latency();
+					cpu_time += size * dmi_data->get_read_latency();
 					return true;
 				}
 				else
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: granted DMI access does not allow direct read access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
-	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -651,7 +660,7 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			unisim::kernel::tlm2::DMIGrant dmi_grant = dcurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
@@ -660,7 +669,7 @@ bool CPU<CONFIG>::PLBDataRead(typename CONFIG::physical_address_t physical_addr,
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Read: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
@@ -682,35 +691,35 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 		
 		if(likely(dmi_region != 0))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI region cache hit for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			if(likely(dmi_region->IsAllowed()))
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI access allowed for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				tlm::tlm_dmi *dmi_data = dmi_region->GetDMI();
 				if(likely((dmi_data->get_granted_access() & tlm::tlm_dmi::DMI_ACCESS_WRITE) == tlm::tlm_dmi::DMI_ACCESS_WRITE))
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: using granted DMI access " << dmi_data->get_granted_access() << " for 0x" << std::hex << dmi_data->get_start_address() << "-0x" << dmi_data->get_end_address() << std::dec << EndDebugInfo;
 					memcpy(dmi_data->get_dmi_ptr() + (physical_addr - dmi_data->get_start_address()), buffer, size);
-					cpu_time += dmi_data->get_write_latency();
+					cpu_time += size * dmi_data->get_write_latency();
 					return true;
 				}
 				else
 				{
-					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: granted DMI access does not allow direct write access for 0x" << std::hex << physical_addr << std::dec << std::endl;
+					if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: granted DMI access does not allow direct write access for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 				}
 			}
 			else
 			{
-				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << std::endl;
+				if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI access denied for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			}
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: DMI region cache miss for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 
-	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: traditional way for 0x" << std::hex << physical_addr << std::dec << std::endl;
+	if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: traditional way for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 	
 	tlm::tlm_generic_payload *payload = payload_fabric.allocate();
 	
@@ -730,7 +739,7 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 	{
 		if(likely(!dmi_region && payload->is_dmi_allowed()))
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: target allows DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 			tlm::tlm_dmi *dmi_data = new tlm::tlm_dmi();
 			unisim::kernel::tlm2::DMIGrant dmi_grant = icurd_plb_master_sock->get_direct_mem_ptr(*payload, *dmi_data) ? unisim::kernel::tlm2::DMI_ALLOW : unisim::kernel::tlm2::DMI_DENY;
 			
@@ -738,7 +747,7 @@ bool CPU<CONFIG>::PLBDataWrite(typename CONFIG::physical_address_t physical_addr
 		}
 		else
 		{
-			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) std::cerr << "CPU: PLB Data Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << std::endl;
+			if(unlikely(CONFIG::DEBUG_ENABLE && debug_dmi)) inherited::logger << DebugInfo << "PLB Data Write: target does not allow DMI for 0x" << std::hex << physical_addr << std::dec << EndDebugInfo;
 		}
 	}
 

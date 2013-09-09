@@ -70,6 +70,7 @@ Crossbar<CONFIG>::Crossbar(const sc_module_name& name, Object *parent)
 	, plbm_dcr_slave_sock("plbm-dcr-slave-sock")
 	, cycle_time(SC_ZERO_TIME)
 	, param_cycle_time("cycle-time", this, cycle_time, "Enable/Disable verbosity")
+	, burst_latency_lut()
 {
 	icurd_plb_redirector = 
 		new unisim::kernel::tlm2::FwRedirector<Crossbar<CONFIG> >(
@@ -236,6 +237,8 @@ bool Crossbar<CONFIG>::BeginSetup()
 		return false;
 	}
 	
+	burst_latency_lut.SetCycleTime(cycle_time);
+	
 	return true;
 }
 
@@ -388,11 +391,11 @@ bool Crossbar<CONFIG>::get_direct_mem_ptr(unsigned int intf, tlm::tlm_generic_pa
 					dmi_data.set_end_address(end_range);
 				}
 				
-				// add crossbar latency
+				// add crossbar latency per byte
 				if(dmi_status)
 				{
-					dmi_data.set_read_latency(dmi_data.get_read_latency() + cycle_time);
-					dmi_data.set_write_latency(dmi_data.get_write_latency() + cycle_time);
+					dmi_data.set_read_latency(dmi_data.get_read_latency() + (cycle_time / CONFIG::PLB_WIDTH));
+					dmi_data.set_write_latency(dmi_data.get_write_latency() + (cycle_time / CONFIG::PLB_WIDTH));
 				}
 				return dmi_status;
 			}
@@ -556,7 +559,6 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 {
 	sc_event *ev_completed = event->GetCompletionEvent();
 	tlm::tlm_generic_payload *payload = event->GetPayload();
-	sc_time t(cycle_time);
 	
 	typename CONFIG::ADDRESS start_range = 0;
 	typename CONFIG::ADDRESS end_range = 0;
@@ -570,6 +572,8 @@ void Crossbar<CONFIG>::ProcessForwardEvent(Event *event)
 			<< inherited::GetInterfaceName(dst_if) << ", @0x" << std::hex << payload->get_address() << std::dec << ")" << EndDebugInfo;
 	}
 	
+	sc_time t(burst_latency_lut.Lookup((payload->get_data_length() + CONFIG::PLB_WIDTH - 1) / CONFIG::PLB_WIDTH));
+
 	tlm::tlm_phase phase = tlm::BEGIN_REQ;
 	tlm::tlm_sync_enum sync = tlm::TLM_ACCEPTED;
 	

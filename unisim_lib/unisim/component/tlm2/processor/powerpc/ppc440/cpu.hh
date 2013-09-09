@@ -103,6 +103,7 @@ public:
 	void Run();
 	
 protected:
+	sc_time GetBurstLatency(uint32_t size, const sc_time& latency) const;
 	virtual bool PLBInsnRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
 	virtual bool PLBDataRead(typename CONFIG::physical_address_t physical_addr, void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);
 	virtual bool PLBDataWrite(typename CONFIG::physical_address_t physical_addr, const void *buffer, uint32_t size, typename CONFIG::STORAGE_ATTR storage_attr = CONFIG::SA_DEFAULT);

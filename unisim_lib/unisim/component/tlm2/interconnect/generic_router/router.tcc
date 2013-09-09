@@ -1022,10 +1022,11 @@ T_get_direct_mem_ptr_cb(int id, transaction_type &trans, tlm::tlm_dmi &dmi) {
 		dmi.set_end_address(dmi_end_address);
 	}
 
+	// add router latency per byte
 	if(dmi_status)
 	{
-		dmi.set_read_latency(dmi.get_read_latency() + cycle_time);
-		dmi.set_write_latency(dmi.get_write_latency() + cycle_time);
+		dmi.set_read_latency(dmi.get_read_latency() + (cycle_time / (CONFIG::BUSWIDTH / 8)));
+		dmi.set_write_latency(dmi.get_write_latency() + (cycle_time / (CONFIG::BUSWIDTH / 8)));
 	}
 	return dmi_status;
 }

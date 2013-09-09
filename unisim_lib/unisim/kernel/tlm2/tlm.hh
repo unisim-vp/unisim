@@ -1140,6 +1140,70 @@ inline void DMIRegionCache::Invalidate(sc_dt::uint64 start_range, sc_dt::uint64 
 	}
 }
 
+class LatencyLookupTable
+{
+public:
+	inline LatencyLookupTable();
+	inline LatencyLookupTable(const sc_time& cycle_time);
+	inline ~LatencyLookupTable();
+	inline void SetCycleTime(const sc_time& cycle_time);
+	inline sc_time& Lookup(unsigned int num_cycle);
+private:
+	static const unsigned int NUM_LATENCY_FAST_LOOKUP = 16; // 0 <= n < 16 for fast lookup
+	sc_time cycle_time;
+	sc_time latency_fast_lookup[NUM_LATENCY_FAST_LOOKUP];
+	std::map<unsigned int, sc_time> latency_slow_lookup;
+};
+
+LatencyLookupTable::LatencyLookupTable()
+	: cycle_time(SC_ZERO_TIME)
+{
+}
+
+LatencyLookupTable::LatencyLookupTable(const sc_time& _cycle_time)
+{
+	SetCycleTime(_cycle_time);
+}
+
+LatencyLookupTable::~LatencyLookupTable()
+{
+}
+
+inline void LatencyLookupTable::SetCycleTime(const sc_time& _cycle_time)
+{
+	cycle_time = _cycle_time;
+	
+	unsigned int num_cycles;
+	for(num_cycles = 0; num_cycles < NUM_LATENCY_FAST_LOOKUP; num_cycles++)
+	{
+		latency_fast_lookup[num_cycles] = num_cycles * cycle_time;
+	}
+}
+
+sc_time& LatencyLookupTable::Lookup(unsigned int num_cycles)
+{
+	if(num_cycles < NUM_LATENCY_FAST_LOOKUP)
+	{
+		return latency_fast_lookup[num_cycles];
+	}
+	
+	do
+	{
+		std::map<unsigned int, sc_time>::iterator iter = latency_slow_lookup.find(num_cycles);
+		
+		if(iter != latency_slow_lookup.end())
+		{
+			return (*iter).second;
+		}
+		
+		sc_time burst_latency = num_cycles * cycle_time;
+		latency_slow_lookup[num_cycles] = burst_latency;
+	}
+	while(1);
+	
+	return latency_fast_lookup[0]; // shall never occur
+}
+
 } // end of namespace tlm2
 } // end of namespace kernel
 } // end of namespace unisim
