@@ -122,13 +122,9 @@ mul.execute = {
 
 /*******************************************************************
  * smlal instruction
- * Note: this instruction is only supported for the M variants, that is:
- *    ARMV4TXM
- *    ARMV5XM
- *    ARMV5TXM
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }:                                                     \
 op smlal(cond[4]:0b0111[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b01001[4]:rn[4]);
 
 smlal.disasm = {
@@ -172,7 +168,7 @@ smlal.execute = {
  * products to a 64-bit accumulate operand.
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smlald(cond[4]:0b01110100[8]:rdhi[4]:rdlo[4]:rm[4]:0b00[2]:m[1]:1[1]:rn[4]);
 
 smlald.disasm = {
@@ -192,7 +188,7 @@ smlald.disasm = {
  * products to a 64-bit accumulate operand.
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smlsld(cond[4]:0b01110100[8]:rdhi[4]:rdlo[4]:rm[4]:0b01[2]:m[1]:1[1]:rn[4]);
 
 smlsld.disasm = {
@@ -207,10 +203,6 @@ smlsld.disasm = {
 
 /*******************************************************************
  * smull instruction
- * Note: this instruction is only supported for the M variants, that is:
- *    ARMV4TXM
- *    ARMV5XM
- *    ARMV5TXM
  */
 
 op smull(cond[4]:0b0110[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
@@ -248,10 +240,6 @@ smull.execute = {
 
 /*******************************************************************
  * umlal instruction
- * Note: this instruction is only supported for the M variants, that is:
- *    ARMV4TXM
- *    ARMV5XM
- *    ARMV5TXM
  */
 
 op umlal(cond[4]:0b0101[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
@@ -291,11 +279,9 @@ umlal.execute = {
 
 /*******************************************************************
  * umaal instruction
- * Note: this instruction is only supported for:
- *    ARMV6
- *    ARMV7
  */
 
+{ ARCH::insns6 }:                                                      \
 op umaal(cond[4]:0b00000100[8]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
 
 umaal.disasm = {
@@ -309,11 +295,10 @@ umaal.disasm = {
  *******************************************************************/
 
 /*******************************************************************
- * umull instruction
- * Note: this instruction is only supported for the M variants, that is:
- *    ARMV4TXM
- *    ARMV5XM
- *    ARMV5TXM
+ * umull (Unsigned Multiply Long) instruction
+ *
+ * UMULL multiplies two 32-bit unsigned values to produce a 64-bit
+ * result.
  */
 
 op umull(cond[4]:0b0100[7]:s[1]:rdhi[4]:rdlo[4]:rm[4]:0b1001[4]:rn[4]);
@@ -352,7 +337,7 @@ umull.execute = {
  * smlaxy instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }:                                                     \
 op smlaxy(cond[4]:0b00010000[8]:rd[4]:ra[4]:rm[4]:0b1[1]:y[1]:x[1]:0b0[1]:rn[4])
 
 smlaxy.disasm = {
@@ -420,7 +405,7 @@ smlaxy.execute = {
  * smlad instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smlad(cond[4]:0b01110000[8]:rd[4]:ra[4]:rm[4]:0b00[2]:m[1]:1[1]:rn[4]);
 
 smlad.disasm = {
@@ -437,7 +422,7 @@ smlad.disasm = {
  * smuad instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smuad(cond[4]:0b01110000[8]:rd[4]:0b1111[4]:rm[4]:0b00[2]:m[1]:1[1]:rn[4]);
 
 smuad.disasm = {
@@ -454,7 +439,7 @@ smuad.disasm = {
  * smlsd instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smlsd(cond[4]:0b01110000[8]:rd[4]:ra[4]:rm[4]:0b01[2]:m[1]:1[1]:rn[4]);
 
 smlsd.disasm = {
@@ -471,7 +456,7 @@ smlsd.disasm = {
  * smusd instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smusd(cond[4]:0b01110000[8]:rd[4]:0b1111[4]:rm[4]:0b01[2]:m[1]:1[1]:rn[4]);
 
 smusd.disasm = {
@@ -488,7 +473,7 @@ smusd.disasm = {
  * smmla instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smmla(cond[4]:0b01110101[8]:rd[4]:ra[4]:rm[4]:0b00[2]:r[1]:1[1]:rn[4]);
 
 smmla.disasm = {
@@ -505,7 +490,7 @@ smmla.disasm = {
  * smmul instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smmul(cond[4]:0b01110101[8]:rd[4]:0b1111[4]:rm[4]:0b00[2]:r[1]:1[1]:rn[4]);
 
 smmul.disasm = {
@@ -522,7 +507,7 @@ smmul.disasm = {
  * smmls instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                                      \
 op smmls(cond[4]:0b01110101[8]:rd[4]:ra[4]:rm[4]:0b11[2]:r[1]:1[1]:rn[4]);
 
 smmls.disasm = {
@@ -539,7 +524,7 @@ smmls.disasm = {
  * smlalxy instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }:                                                     \
 op smlalxy(cond[4]:0b00010100[8]:rdhi[4]:rdlo[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
 
 smlalxy.disasm = {
@@ -600,7 +585,7 @@ smlalxy.execute = {
  * smlawy instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }:                                                     \
 op smlawy(cond[4]:0b00010010[8]:rd[4]:rn[4]:rs[4]:0b1[1]:y[1]:0b00[2]:rm[4])
 
 smlawy.disasm = {
@@ -675,7 +660,7 @@ smlawy.execute = {
  * smulxy instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }:                                                     \
 op smulxy(cond[4]:0b00010110[8]:rd[4]:/*sbz*/0[4]:rs[4]:0b1[1]:y[1]:x[1]:0b0[1]:rm[4])
 
 smulxy.disasm = {
@@ -734,7 +719,7 @@ smulxy.execute = {
  * smulwy instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }:                                                     \
 op smulwy(cond[4]:0b00010010[8]:rd[4]:/*sbz*/0[4]:rs[4]:0b1[1]:y[1]:0b10[2]:rm[4])
 
 smulwy.disasm = {
@@ -789,7 +774,7 @@ smulwy.execute = {
  * destination register. The condition code flags are not affected
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insnsRM }:                                                     \
 op sdiv(cond[4]:0b01110001[8]:rd[4]:0b1111[4]:rm[4]:0b0001[4]:rn[4]);
 
 sdiv.disasm = {
@@ -809,7 +794,7 @@ sdiv.disasm = {
  * destination register. The condition code flags are not affected.
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insnsRM }:                                                     \
 op udiv(cond[4]:0b01110011[8]:rd[4]:0b1111[4]:rm[4]:0b0001[4]:rn[4]);
 
 udiv.disasm = {

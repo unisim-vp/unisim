@@ -50,7 +50,7 @@ using unisim::util::arithmetic::SignedSatSub32;
  * qadd instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }: \
 op qadd(cond[4]:0b00010000[8]:rn[4]:rd[4]:0[4]:0b0101[4]:rm[4]);
 
 qadd.disasm = {
@@ -82,7 +82,7 @@ qadd.execute = {
  * qsub instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }: \
 op qsub(cond[4]:0b00010010[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
 qsub.disasm = {
@@ -114,7 +114,7 @@ qsub.execute = {
  * qdadd instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }: \
 op qdadd(cond[4]:0b00010100[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
 qdadd.disasm = {
@@ -147,7 +147,7 @@ qdadd.execute = {
  * qdsub instruction
  */
 
-{ STATE::MODEL == ARMV5TE || STATE::MODEL == ARMV5TEJ || STATE::MODEL == ARMV5TEXP || STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns5E }: \
 op qdsub(cond[4]:0b00010110[8]:rn[4]:rd[4]:/*sbz*/0[4]:0b0101[4]:rm[4]);
 
 qdsub.disasm = {
@@ -760,7 +760,7 @@ ubfx.disasm = {
  * sadd16 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                                  \
 op sadd16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
 
 sadd16.disasm = {
@@ -776,7 +776,7 @@ sadd16.disasm = {
  * sadd8 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op sadd8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
 
 sadd8.disasm = {
@@ -792,7 +792,7 @@ sadd8.disasm = {
  * ssub16 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                       \
 op ssub16(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
 
 ssub16.disasm = {
@@ -808,7 +808,7 @@ ssub16.disasm = {
  * ssub8 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op ssub8(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
 
 ssub8.disasm = {
@@ -824,7 +824,7 @@ ssub8.disasm = {
  * sasx instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op sasx(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
 
 sasx.disasm = {
@@ -840,7 +840,7 @@ sasx.disasm = {
  * ssax instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op ssax(cond[4]:0b01100001[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
 
 ssax.disasm = {
@@ -856,7 +856,7 @@ ssax.disasm = {
  * shadd16 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op shadd16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
 
 shadd16.disasm = {
@@ -872,7 +872,7 @@ shadd16.disasm = {
  * shasx instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op shasx(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
 
 shasx.disasm = {
@@ -888,7 +888,7 @@ shasx.disasm = {
  * shsax instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op shsax(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
 
 shsax.disasm = {
@@ -904,7 +904,7 @@ shsax.disasm = {
  * shsub16 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op shsub16(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
 
 shsub16.disasm = {
@@ -920,7 +920,7 @@ shsub16.disasm = {
  * shadd8 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op shadd8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
 
 shadd8.disasm = {
@@ -936,7 +936,7 @@ shadd8.disasm = {
  * shsub8 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op shsub8(cond[4]:0b01100011[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
 
 shsub8.disasm = {
@@ -952,7 +952,7 @@ shsub8.disasm = {
  * uadd16 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op uadd16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
 
 uadd16.disasm = {
@@ -968,7 +968,7 @@ uadd16.disasm = {
  * uasx instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op uasx(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
 
 uasx.disasm = {
@@ -984,7 +984,7 @@ uasx.disasm = {
  * usax instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op usax(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
 
 usax.disasm = {
@@ -1000,7 +1000,7 @@ usax.disasm = {
  * usub16 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op usub16(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
 
 usub16.disasm = {
@@ -1016,7 +1016,7 @@ usub16.disasm = {
  * uadd8 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                              \
 op uadd8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
 
 uadd8.disasm = {
@@ -1032,7 +1032,7 @@ uadd8.disasm = {
  * usub8 instruction
  */
 
-{ STATE::MODEL == ARMV7 }:                                              \
+{ ARCH::insns6 }:                                       \
 op usub8(cond[4]:0b01100101[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
 
 usub8.disasm = {
@@ -1048,7 +1048,7 @@ usub8.disasm = {
  * qadd16 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op qadd16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
 
 qadd16.disasm = {
@@ -1064,7 +1064,7 @@ qadd16.disasm = {
  * qasx instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op qasx(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
 
 qasx.disasm = {
@@ -1080,7 +1080,7 @@ qasx.disasm = {
  * qsax instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op qsax(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
 
 qsax.disasm = {
@@ -1096,7 +1096,7 @@ qsax.disasm = {
  * qsub16 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op qsub16(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
 
 qsub16.disasm = {
@@ -1112,7 +1112,7 @@ qsub16.disasm = {
  * qadd8 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op qadd8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
 
 qadd8.disasm = {
@@ -1128,7 +1128,7 @@ qadd8.disasm = {
  * qsub8 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op qsub8(cond[4]:0b01100010[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
 
 qsub8.disasm = {
@@ -1144,7 +1144,7 @@ qsub8.disasm = {
  * uqadd16 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op uqadd16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
 
 uqadd16.disasm = {
@@ -1160,7 +1160,7 @@ uqadd16.disasm = {
  * uqasx instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }:                                       \
 op uqasx(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
 
 uqasx.disasm = {
@@ -1176,7 +1176,7 @@ uqasx.disasm = {
  * uqsax instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uqsax(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
 
 uqsax.disasm = {
@@ -1192,7 +1192,7 @@ uqsax.disasm = {
  * uqsub16 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uqsub16(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
 
 uqsub16.disasm = {
@@ -1208,7 +1208,7 @@ uqsub16.disasm = {
  * uqadd8 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uqadd8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
 
 uqadd8.disasm = {
@@ -1224,7 +1224,7 @@ uqadd8.disasm = {
  * uqsub8 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uqsub8(cond[4]:0b01100110[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
 
 uqsub8.disasm = {
@@ -1240,7 +1240,7 @@ uqsub8.disasm = {
  * uhadd16 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uhadd16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0001[4]:rm[4]);
 
 uhadd16.disasm = {
@@ -1256,7 +1256,7 @@ uhadd16.disasm = {
  * uhasx instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uhasx(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0011[4]:rm[4]);
 
 uhasx.disasm = {
@@ -1272,7 +1272,7 @@ uhasx.disasm = {
  * uhsax instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uhsax(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0101[4]:rm[4]);
 
 uhsax.disasm = {
@@ -1288,7 +1288,7 @@ uhsax.disasm = {
  * uhsub16 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uhsub16(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b0111[4]:rm[4]);
 
 uhsub16.disasm = {
@@ -1304,7 +1304,7 @@ uhsub16.disasm = {
  * uhadd8 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uhadd8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1001[4]:rm[4]);
 
 uhadd8.disasm = {
@@ -1320,7 +1320,7 @@ uhadd8.disasm = {
  * uhsub8 instruction
  */
 
-{ STATE::MODEL == ARMV6 || STATE::MODEL == ARMV7 || STATE::MODEL == ARMEMU }: \
+{ ARCH::insns6 }: \
 op uhsub8(cond[4]:0b01100111[8]:rn[4]:rd[4]:/*sbo*/0b1111[4]:0b1111[4]:rm[4]);
 
 uhsub8.disasm = {

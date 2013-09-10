@@ -41,7 +41,7 @@
 namespace unisim::component::cxx::processor::arm::isa::thumb
 set endianness big
 set addressclass {uint32_t}
-template <{class} {STATE}>
+template <{class} {ARCH}>
 
 decl {
 #include <iosfwd>
@@ -57,11 +57,11 @@ impl {
 #include <iostream>
 } // end of impl
 
-action {void} execute({STATE &} {cpu}) {
+action {void} execute({ARCH &} {cpu}) {
   cpu.MarkVirtualExceptionVector(unisim::component::cxx::processor::arm::exception::UNDEFINED_INSN);
 }
 
-action {void} disasm({STATE &} {cpu}, {std::ostream &} {buffer}) {
+action {void} disasm({ARCH &} {cpu}, {std::ostream &} {buffer}) {
   buffer << "Unknown instruction";
 }
 
